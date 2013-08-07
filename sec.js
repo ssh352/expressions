@@ -3,7 +3,7 @@
 
 // phantomjs --web-security=false --ignore-ssl-errors=true --local-to-remote-url-access=true sec.js >> sec.out.txt
 
-// BUT MOST RECENT ..
+// BUT MOST RECENT ...
 
 // NOTE
 // http://sec.gov/edgar/searchedgar/currentevents.htm
