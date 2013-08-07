@@ -1,7 +1,7 @@
 ﻿
 // I AM DOING ARCHIVES
 
-// phantomjs --web-security=false --ignore-ssl-errors=true --local-to-remote-url-access=true sec.js >> sec.out.txt
+// phantomjs --web-security=false --ignore-ssl-errors=true --local-to-remote-url-access=true sec.js > sec.out.txt
 
 // BUT MOST RECENT ...
 
@@ -86,8 +86,8 @@ system = require('system');
 utilities = require('utils');
 
 var casper = require('casper').create( {
-                                          verbose: true,     
-                                          logLevel: 'debug',
+                                          // verbose: true,     
+                                          // logLevel: 'debug',
                                           pageSettings: {
                                                   loadImages:  false,
                                                   loadPlugins: false
@@ -98,7 +98,8 @@ var casper = require('casper').create( {
 casper.userAgent('Lynx/2.8.8dev.3 libwww-FM/2.14 SSL-MM/1.4.1');                                  
 casper.start(); 
 
-console.log("Using default encoding..." + phantom.outputEncoding);
+// used to verify that I am using UTF-8 
+// console.log("Using default encoding..." + phantom.outputEncoding);
 
 
 casper.then(function f_casper_open(){
@@ -235,11 +236,11 @@ casper.then(function f_gotoLinks() {
                               // }
                           // }
                           
-                          // Period Ended March 31 2013
+                          // Period Ended March 31 2013    
                           thePeriodEnded_date = new Date(Date.parse(match_result_item[2] + ' ' + match_result_item[3] + ' ' + match_result_item[4]));
-                          
-                          thePeriodEnded = thePeriodEnded_date.getDate() + '-'  + 
-                                         ( thePeriodEnded_date.getMonth() + 1 ) + '-' + 
+                          // properly format a UTF date
+                          thePeriodEnded = ( (thePeriodEnded_date.getDate() +  0) < 10 ? '0' + (thePeriodEnded_date.getDate() +  0)  : '' + (thePeriodEnded_date.getDate() +  0) ) + '-' + 
+                                           ( (thePeriodEnded_date.getMonth() + 1) < 10 ? '0' + (thePeriodEnded_date.getMonth() + 1)  : '' + (thePeriodEnded_date.getMonth() + 1) ) + '-' + 
                                            thePeriodEnded_date.getFullYear();
                           this.echo(thePeriodEnded);
                           
@@ -314,10 +315,12 @@ casper.then(function f_gotoLinks() {
 
 
 casper.run(function f_steps_map() {
-  this.echo('RUNNING');
-//	utilities.dump(casper.steps.map(function(step) { return step.toString(); }));
-  utilities.dump(casper.steps.map(function(step) { return step.toString().substring(0,step.toString().search(/\(/)); }));
-  this.echo('RUNNING_DONE');
+  // this.echo('RUNNING');
+  // Display function calls
+  // utilities.dump(casper.steps.map(function(step) { return step.toString(); }));
+  // Display function calls better
+  // utilities.dump(casper.steps.map(function(step) { return step.toString().substring(0,step.toString().search(/\(/)); }));
+  // this.echo('RUNNING_DONE');
 	this.exit();
 });
 
