@@ -302,7 +302,20 @@ casper.then(function f_gotoLinks() {
                           // 8364
                           // 0.23
                           // 9666
-                          
+                          this.echo(JSON.stringify(
+    
+                            [ { 
+                                "ticker" : ticker,
+                                "thePeriodEnded"  : thePeriodEnded,
+                                "theRevenueRaw"   : theRevenueRaw,
+                                "theNetIncomeRaw" : theNetIncomeRaw,
+                                "theEarningsPerShareBasicRaw"  : theEarningsPerShareBasicRaw,
+                                "theWeightedAveSharesBasicRaw" : theWeightedAveSharesBasicRaw,
+                                "theCashDivDeclPerCommonShareRaw" : theCashDivDeclPerCommonShareRaw,
+                                "theNetCashFromOperationsRaw" : theNetCashFromOperationsRaw
+                            } ]
+    
+                          ,null,'  '));
 
                           
                       } ;
