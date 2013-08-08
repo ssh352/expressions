@@ -235,6 +235,9 @@ casper.then(function f_gotoLinks() {
                                 // for ( var i in match_result_item ) {
                               // }
                           // }
+
+                          // ticker in the output
+                          this.echo(ticker);
                           
                           // Period Ended March 31 2013    
                           thePeriodEnded_date = new Date(Date.parse(match_result_item[2] + ' ' + match_result_item[3] + ' ' + match_result_item[4]));
@@ -298,6 +301,8 @@ casper.then(function f_gotoLinks() {
                           // 8364
                           // 0.23
                           // 9666
+                          
+                          
                           
                       } ;
                       
