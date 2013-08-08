@@ -32,11 +32,11 @@ var mybody    = [];
 
 var base = 'http://www.sec.gov';
 var subdirquerystringPRE_CIKticker = '/cgi-bin/browse-edgar?CIK=';
-var ticker = 'MSFT';
+var theTicker = 'MSFT';
 var subdirquerystringPOST_CIKticker = '&Find=Search&owner=exclude&action=getcompany&count=100&type=10-Q';
 
 // var subdirquerystring = '/cgi-bin/browse-edgar?CIK=MSFT&Find=Search&owner=exclude&action=getcompany&count=100&type=10-Q'
-var subdirquerystring = subdirquerystringPRE_CIKticker + ticker + subdirquerystringPOST_CIKticker;
+var subdirquerystring = subdirquerystringPRE_CIKticker + theTicker + subdirquerystringPOST_CIKticker;
 
 // var mainsite = 'http://www.sec.gov/cgi-bin/browse-edgar?CIK=MSFT&Find=Search&owner=exclude&action=getcompany&count=100&type=10-Q';
 mainsite = base + '/' + subdirquerystring
@@ -237,7 +237,7 @@ casper.then(function f_gotoLinks() {
                           // }
 
                           // ticker in the output
-                          this.echo(ticker);
+                          this.echo(theTicker);
                           
                           // Period Ended March 31 2013    
                           thePeriodEnded_date = new Date(Date.parse(match_result_item[2] + ' ' + match_result_item[3] + ' ' + match_result_item[4]));
@@ -305,7 +305,7 @@ casper.then(function f_gotoLinks() {
                           this.echo(JSON.stringify(
     
                             [ { 
-                                "ticker" : ticker,
+                                "theTicker" : theTicker,
                                 "thePeriodEnded"  : thePeriodEnded,
                                 "theRevenueRaw"   : theRevenueRaw,
                                 "theNetIncomeRaw" : theNetIncomeRaw,
