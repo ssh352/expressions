@@ -302,11 +302,7 @@ casper.then(function f_gotoLinks() {
                           // 0.23
                           // 9666
                           
-                          this.echo(JSON.stringify(
-    
-                            [ { "myEcon0" : myEcon0, "myEcon1" : myEcon1, "myEcon2" : myEcon2 } ]
-    
-                          ,null,'  '));
+
                           
                       } ;
                       
