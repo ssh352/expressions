@@ -237,7 +237,7 @@ casper.then(function f_gotoLinks() {
                           // }
 
                           // ticker in the output
-                          this.echo(theTicker);
+                          // this.echo(theTicker);
                           
                           // Period Ended March 31 2013    
                           thePeriodEnded_date = new Date(Date.parse(match_result_item[2] + ' ' + match_result_item[3] + ' ' + match_result_item[4]));
@@ -245,7 +245,7 @@ casper.then(function f_gotoLinks() {
                           thePeriodEnded = ( (thePeriodEnded_date.getDate() +  0) < 10 ? '0' + (thePeriodEnded_date.getDate() +  0)  : '' + (thePeriodEnded_date.getDate() +  0) ) + '-' + 
                                            ( (thePeriodEnded_date.getMonth() + 1) < 10 ? '0' + (thePeriodEnded_date.getMonth() + 1)  : '' + (thePeriodEnded_date.getMonth() + 1) ) + '-' + 
                                            thePeriodEnded_date.getFullYear();
-                          this.echo(thePeriodEnded);
+                          // this.echo(thePeriodEnded);
                           
                           
                           // Revenue
@@ -254,7 +254,7 @@ casper.then(function f_gotoLinks() {
 
                           
                           theRevenueRaw = match_result_item[1];
-                          this.echo(theRevenueRaw);
+                          // this.echo(theRevenueRaw);
 
                           // Net income
                           match_result = page_text.match(/Net\sincome\s\d+.?\d+/gmi);
@@ -262,7 +262,7 @@ casper.then(function f_gotoLinks() {
 
 
                           theNetIncomeRaw = match_result_item[2];
-                          this.echo(theNetIncomeRaw);
+                          // this.echo(theNetIncomeRaw);
 
                           // Earnings per share: Basic
                           match_result = page_text.match(/Earnings\sper\sshare:?\sBasic\s\d+.?\d+/gmi);
@@ -270,21 +270,21 @@ casper.then(function f_gotoLinks() {
 
 
                           theEarningsPerShareBasicRaw = match_result_item[4];
-                          this.echo(theEarningsPerShareBasicRaw);
+                          // this.echo(theEarningsPerShareBasicRaw);
 
                           // Weighted average shares outstanding: Basic
                           match_result = page_text.match(/Weighted\saverage\sshares\soutstanding:?\sBasic\s\d+.?\d+/gmi);
                           match_result_item = match_result[0].split(" ");
 
                           theWeightedAveSharesBasicRaw = match_result_item[5];
-                          this.echo(theWeightedAveSharesBasicRaw);
+                          // this.echo(theWeightedAveSharesBasicRaw);
 
                           // Cash dividends declared per common share
                           match_result = page_text.match(/Cash\sdividends\sdeclared\sper\scommon\sshare\s\d+.?\d+/gmi);
                           match_result_item = match_result[0].split(" ");
 
                           theCashDivDeclPerCommonShareRaw = match_result_item[6];
-                          this.echo(theCashDivDeclPerCommonShareRaw);
+                          // this.echo(theCashDivDeclPerCommonShareRaw);
 
                           // Net cash from operations
                           // NOTE FOUND FIRST AND IGNORED ( NOT MATCHED ): net cash from operations: Depreciation:
@@ -292,7 +292,7 @@ casper.then(function f_gotoLinks() {
                           match_result_item = match_result[0].split(" ");
 
                           theNetCashFromOperationsRaw = match_result_item[4];
-                          this.echo(theNetCashFromOperationsRaw);
+                          // this.echo(theNetCashFromOperationsRaw);
 
                           // MSFT
                           // 31-03-2013
