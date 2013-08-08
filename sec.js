@@ -294,7 +294,7 @@ casper.then(function f_gotoLinks() {
                           theNetCashFromOperationsRaw = match_result_item[4];
                           // this.echo(theNetCashFromOperationsRaw);
 
-                          // MSFT
+                          // MSFT 
                           // 31-03-2013
                           // 20489
                           // 6055
