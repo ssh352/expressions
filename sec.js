@@ -337,7 +337,7 @@ casper.then(function f_gotoLinks() {
 
 
                           try {
-                              fs.write("sec.write.out.txt", "MSFT", 'a');
+                              fs.write("sec.write.out.txt", JSONoutput, 'a');
                               fs.flush;
                               fs.close;
                           } catch(e) {
