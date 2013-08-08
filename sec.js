@@ -78,6 +78,8 @@ function getimportantLinks() {
     });
 }
 
+// From phantom JS
+var fs = require('fs');
 
 phantom.casperPath = 'M:\\YDrive\\All_Economics\\eclipse_workspace\\headlessWebkit\\n1k0-casperjs-1.0.2-0-gbc0da16';
 phantom.injectJs(phantom.casperPath + '\\bin\\bootstrap.js');
@@ -166,6 +168,7 @@ casper.then(function f_gotoLinks() {
                  // Top link found is the most important - browse to it to read the 10-Q
                  this.thenOpen(base + importantLinksOfInterest[0], function f___gotoCustomLink() {
 
+                      var JSONoutput;
                       var thePeriodEnded_date = Date();
                  
                       // this.echo(this.getTitle());  // O.K.
@@ -302,7 +305,7 @@ casper.then(function f_gotoLinks() {
                           // 8364
                           // 0.23
                           // 9666
-                          this.echo(JSON.stringify(
+                          JSONoutput = JSON.stringify(
     
                             [ { 
                                 "theTicker" : theTicker,
@@ -315,8 +318,10 @@ casper.then(function f_gotoLinks() {
                                 "theNetCashFromOperationsRaw" : theNetCashFromOperationsRaw
                             } ]
     
-                          ,null,'  '));
+                          ,null,'  ');
 
+                          this.echo(JSONoutput);
+                          
                             // [
                               // {
                                 // "theTicker": "MSFT",
@@ -329,7 +334,16 @@ casper.then(function f_gotoLinks() {
                                 // "theNetCashFromOperationsRaw": "9666"
                               // }
                             // ]
-                          
+
+
+                          try {
+                              fs.write("sec.write.out.txt", "MSFT", 'a');
+                              fs.flush;
+                              fs.close;
+                          } catch(e) {
+                              console.log(e);
+}                            
+                            
                       } ;
                       
                  });
