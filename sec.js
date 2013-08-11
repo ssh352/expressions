@@ -1,7 +1,69 @@
 ﻿
 // I AM DOING ARCHIVES
 
+// BEFORE END OF JULY 2013 ( BECAUSE A NEW QUARTERLY REPORT WILL CCOME OUT )
+// [
+  // {
+    // "theTicker": "MSFT",
+    // "thePeriodEnded": "31-03-2013",
+    // "theRevenueRaw": "20489",
+    // "theNetIncomeRaw": "6055",
+    // "theEarningsPerShareBasicRaw": "0.72",
+    // "theWeightedAveSharesBasicRaw": "8364",
+    // "theCashDivDeclPerCommonShareRaw": "0.23",
+    // "theNetCashFromOperationsRaw": "9666"
+  // }
+// ]
+
 // phantomjs --web-security=false --ignore-ssl-errors=true --local-to-remote-url-access=true sec.js > sec.out.txt
+
+// simple
+// phantomjs sec.js 
+
+// phantomjs  --remote-debugger-port=9000 sec.js
+// XOR
+// FOR /l %i in (1,1,1000) DO phantomjs --remote-debugger-port=9000 sec.js
+
+
+
+
+// Google Dev Tools ... Javascript
+
+// Console
+  // F12 or a "2nd lower left icon (Show Console)
+    // left clock on lower right wheel 
+      // Disable cache (while DevTools is open)  (ON - BUT NOT TESTED YET )
+
+// Chrome Settings
+  // chrome://settings/
+  // show advanced settings
+  // [Clear Browsing Data]
+
+// FIRST TAB
+// http://localhost:9000/ ( see shortcut )
+
+// about:blank
+  // http://localhost:9000/webkit/inspector/inspector.html?page=1
+
+  // Scripts Icon
+     // about:blank
+
+  // click on 2nd lower left icon
+    // show console
+      // in console type "__run()"
+
+// SECOND TAB
+// http://localhost:9000/ ( see shortcut )
+
+// about:blank
+  // http://localhost:9000/webkit/inspector/inspector.html?page=2
+
+  // click on 2nd lower left icon
+    // show console
+
+// (MAKE SURE: pageant is running and has the private key: examples key.ppk)
+// (easy every time) ( but I must first modify sec.js ) #1 #2 #3
+// git add sec.js && git commit -m "X# commit" &&  git push -u origin master
 
 // BUT MOST RECENT ...
 
