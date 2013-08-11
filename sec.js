@@ -211,7 +211,7 @@ casper.then(function f_gotoLinks() {
                  var match_result = [];
                  var match_result_item = [];
             
-                 importantlinks = importantlinks.concat(this.evaluate(getimportantLinks));
+                 importantlinks = importantlinks.concat(this.evaluate(getLinks,'table.tableFile tbody tr td a'));
                           
                  // this.echo(importantlinks.length + ' importantlinks found:'); 
 
