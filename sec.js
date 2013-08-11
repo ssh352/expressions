@@ -126,8 +126,8 @@ var theTotalDividendsPaidSELFCALCRaw = 0.0;
 
 var theNetCashFromOperationsRaw = 0.0;
 
-function getLinks() {
-    var links = document.querySelectorAll('table.tableFile2 tbody tr td a');
+function getLinks(cssSelector) {
+    var links = document.querySelectorAll(cssSelector);
     return Array.prototype.map.call(links, function(e) {
         return e.getAttribute('href')
     });
@@ -176,7 +176,7 @@ casper.then(function f_concatechodumpLinks() {
 
      var li;
 
-     links = links.concat(this.evaluate(getLinks));
+     links = links.concat(this.evaluate(getLinks,'table.tableFile2 tbody tr td a'));
               
      // this.echo(links.length + ' links found:'); 
 
