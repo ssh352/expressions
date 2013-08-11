@@ -133,12 +133,12 @@ function getLinks(cssSelector) {
     });
 }
 
-function getimportantLinks() {
-    var importantlinks = document.querySelectorAll('table.tableFile tbody tr td a');
-    return Array.prototype.map.call(importantlinks, function(e) {
-        return e.getAttribute('href')
-    });
-}
+// function getimportantLinks() {
+    // var importantlinks = document.querySelectorAll('table.tableFile tbody tr td a');
+    // return Array.prototype.map.call(importantlinks, function(e) {
+        // return e.getAttribute('href')
+    // });
+// }
 
 // From phantom JS
 var fs = require('fs');
