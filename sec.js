@@ -110,7 +110,7 @@ mainsite = base + '/' + subdirquerystring
 var is10Q = false;
 var is10QA = false;
 
-
+var theAdjustUnits = 0.0;
 
 var thePeriodEnded;  // as text
 
@@ -289,8 +289,10 @@ casper.then(function f_gotoLinks() {
 
                           if         ( /Millions/gmi.test(page_text) ){
                                inMillions = true;
+                               theAdjustUnits = 1000000;
                           } else if  ( /Thousands/gmi.test(page_text) ){
                                inThousands = true;
+                               theAdjustUnits = 1000
                           }
 
                           
@@ -379,6 +381,7 @@ casper.then(function f_gotoLinks() {
                             [ { 
                                 "theTicker" : theTicker,
                                 "thePeriodEnded"  : thePeriodEnded,
+                                "theAdjustUnits" : theAdjustUnits,
                                 "theRevenueRaw"   : theRevenueRaw,
                                 "theNetIncomeRaw" : theNetIncomeRaw,
                                 "theEarningsPerShareBasicRaw"  : theEarningsPerShareBasicRaw,
