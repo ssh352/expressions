@@ -133,6 +133,14 @@ function getLinks(cssSelector) {
     });
 }
 
+function cleanPageText(page_text) {
+
+    return page_text;
+
+}
+
+
+
 // From phantom JS
 var fs = require('fs');
 
