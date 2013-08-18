@@ -392,21 +392,21 @@ casper.then(function f_gotoLinks() {
                           JSONoutput = JSONoutput + '\n';
                           
                           this.echo(JSONoutput);
-                          
+                         
                             // [
                               // {
                                 // "theTicker": "MSFT",
                                 // "thePeriodEnded": "31-03-2013",
-                                // "theRevenueRaw": "20489",
-                                // "theNetIncomeRaw": "6055",
-                                // "theEarningsPerShareBasicRaw": "0.72",
-                                // "theWeightedAveSharesBasicRaw": "8364",
-                                // "theCashDivDeclPerCommonShareRaw": "0.23",
-                                // "theNetCashFromOperationsRaw": "9666"
+                                // "theRevenueRaw": 20489,
+                                // "theNetIncomeRaw": 6055,
+                                // "theEarningsPerShareBasicRaw": 0.72,
+                                // "theWeightedAveSharesBasicRaw": 8364,
+                                // "theCashDivDeclPerCommonShareRaw": 0.23,
+                                // "theNetCashFromOperationsRaw": 9666
                               // }
                             // ]
-
-
+                            
+                            
                           try {
 
                               // overwrite
