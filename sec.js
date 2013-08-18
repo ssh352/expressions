@@ -136,6 +136,37 @@ function getLinks(cssSelector) {
 function cleanPageText(page_text,thatCasper) {
 
     page_text = thatCasper.fetchText('body');
+    
+    // page_text = this.fetchText('body');
+
+    // replace all WORTHLESS commas with nothing
+    page_text = page_text.replace(/,/gm,'');
+    
+    // replace all WORTHLESS dollar signs with a space
+    page_text = page_text.replace(/\$/gm,' ');
+
+    // replace all WORTHLESS carriage returns with a space
+    page_text = page_text.replace(/\n/gm,' ');
+    
+    // replace all 2+ CHAR WHITESPACE with a space
+    page_text = page_text.replace(/\s{2,}/gm,' ');
+    
+    // NOTE 1: ON WINDOWS ... MAKE SURE 'EOL' IS WINDOWS
+    // IF NOT, CAN WRECK REGULAR EXPRESSIONS
+    
+    // NOTE 2: Notepad++ and Notepad MAKE SURE SAVE IS UTF-8
+    
+    // NOTE 3:
+    // replace all 1 CHAR WHITESPACE with a single WHITESPACE
+    // A Regex for no-break space Unicode Entities
+    // http://www.perlmonks.org/?node_id=572690
+    // FIXES &nbsp; PROBLEM ... 
+    // BUT NOTE: &#150; ... ( hyphen? )   UNRESOLVED
+    // http://www.tedmontgomery.com/tutorial/htmlchrc.html
+    // NOT THE SAME AS
+    // http://www.asciitable.com/
+    page_text = page_text.replace(/\s/gm,' ');
+    
     return page_text;
 
 }
@@ -251,38 +282,8 @@ casper.then(function f_gotoLinks() {
                       
                           page_text = cleanPageText(page_text,this);
                       
-                          // HUMANLY READABLE when do " >> file.out.txt"            
+                          // HUMANLY READABLE when do " >> file.out.txt"          
 
-                          // page_text = this.fetchText('body');
-
-                          // replace all WORTHLESS commas with nothing
-                          page_text = page_text.replace(/,/gm,'');
-                          
-                          // replace all WORTHLESS dollar signs with a space
-                          page_text = page_text.replace(/\$/gm,' ');
-
-                          // replace all WORTHLESS carriage returns with a space
-                          page_text = page_text.replace(/\n/gm,' ');
-                          
-                          // replace all 2+ CHAR WHITESPACE with a space
-                          page_text = page_text.replace(/\s{2,}/gm,' ');
-                          
-                          // NOTE 1: ON WINDOWS ... MAKE SURE 'EOL' IS WINDOWS
-                          // IF NOT, CAN WRECK REGULAR EXPRESSIONS
-                          
-                          // NOTE 2: Notepad++ and Notepad MAKE SURE SAVE IS UTF-8
-                          
-                          // NOTE 3:
-                          // replace all 1 CHAR WHITESPACE with a single WHITESPACE
-                          // A Regex for no-break space Unicode Entities
-                          // http://www.perlmonks.org/?node_id=572690
-                          // FIXES &nbsp; PROBLEM ... 
-                          // BUT NOTE: &#150; ... ( hyphen? )   UNRESOLVED
-                          // http://www.tedmontgomery.com/tutorial/htmlchrc.html
-                          // NOT THE SAME AS
-                          // http://www.asciitable.com/
-                          page_text = page_text.replace(/\s/gm,' ');
-                          
                           // this.echo(page_text);
 
                           if         ( /Millions/gmi.test(page_text) ){
