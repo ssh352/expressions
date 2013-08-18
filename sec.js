@@ -323,8 +323,8 @@ casper.then(function f_gotoLinks() {
                           match_result = page_text.match(/Revenue\s\d+.?\d+/gmi);
                           match_result_item = match_result[0].split(" ");
 
-                          
-                          theRevenueRaw = match_result_item[1];
+                          // page returns TEXT so sometimes parseFloat has to be done manually
+                          theRevenueRaw = parseFloat(match_result_item[1]);
                           // this.echo(theRevenueRaw);
 
                           // Net income
@@ -332,7 +332,7 @@ casper.then(function f_gotoLinks() {
                           match_result_item = match_result[0].split(" ");
 
 
-                          theNetIncomeRaw = match_result_item[2];
+                          theNetIncomeRaw = parseFloat(match_result_item[2]);
                           // this.echo(theNetIncomeRaw);
 
                           // Earnings per share: Basic
@@ -340,21 +340,21 @@ casper.then(function f_gotoLinks() {
                           match_result_item = match_result[0].split(" ");
 
 
-                          theEarningsPerShareBasicRaw = match_result_item[4];
+                          theEarningsPerShareBasicRaw = parseFloat(match_result_item[4]);
                           // this.echo(theEarningsPerShareBasicRaw);
 
                           // Weighted average shares outstanding: Basic
                           match_result = page_text.match(/Weighted\saverage\sshares\soutstanding:?\sBasic\s\d+.?\d+/gmi);
                           match_result_item = match_result[0].split(" ");
 
-                          theWeightedAveSharesBasicRaw = match_result_item[5];
+                          theWeightedAveSharesBasicRaw = parseFloat(match_result_item[5]);
                           // this.echo(theWeightedAveSharesBasicRaw);
 
                           // Cash dividends declared per common share
                           match_result = page_text.match(/Cash\sdividends\sdeclared\sper\scommon\sshare\s\d+.?\d+/gmi);
                           match_result_item = match_result[0].split(" ");
 
-                          theCashDivDeclPerCommonShareRaw = match_result_item[6];
+                          theCashDivDeclPerCommonShareRaw = parseFloat(match_result_item[6]);
                           // this.echo(theCashDivDeclPerCommonShareRaw);
 
                           // Net cash from operations
@@ -362,7 +362,7 @@ casper.then(function f_gotoLinks() {
                           match_result = page_text.match(/Net\scash\sfrom\soperations\s\d+.?\d+/gmi);
                           match_result_item = match_result[0].split(" ");
 
-                          theNetCashFromOperationsRaw = match_result_item[4];
+                          theNetCashFromOperationsRaw = parseFloat(match_result_item[4]);
                           // this.echo(theNetCashFromOperationsRaw);
 
                           // MSFT 
