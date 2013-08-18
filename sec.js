@@ -61,7 +61,7 @@
   // click on 2nd lower left icon
     // show console
 
-// (MAKE SURE: pageant is running and has the private key: examples key.ppk)
+// (MAKE SURE: pageant is running and has the private key: examples key.ppk) 
 // (easy every time) ( but I must first modify sec.js ) #1 #2 #3
 // git add sec.js && git commit -m "X# commit" &&  git push -u origin master
 
@@ -132,13 +132,6 @@ function getLinks(cssSelector) {
         return e.getAttribute('href')
     });
 }
-
-// function getimportantLinks() {
-    // var importantlinks = document.querySelectorAll('table.tableFile tbody tr td a');
-    // return Array.prototype.map.call(importantlinks, function(e) {
-        // return e.getAttribute('href')
-    // });
-// }
 
 // From phantom JS
 var fs = require('fs');
