@@ -5,8 +5,14 @@
 library("RJSONIO")
 
 con <- file("sec.write.out.txt", "rt")
-print(isValidJSON(con))
+
+myRobject <- fromJSON(content=con)
+print(myRobject)
+
 close(con) # always after any 'fullread'
+
+
+
 
 
 
