@@ -39,12 +39,12 @@ while (i < totalRobjectsCount ) {
 
 # [1] "MSFT"
 # [1] "31-03-2013"
-# [1] "20489"
-# [1] "6055"
-# [1] "0.72"
-# [1] "8364"
-# [1] "0.23"
-# [1] "9666"
+# [1] 20489
+# [1] 6055
+# [1] 0.72
+# [1] 8364
+# [1] 0.23
+# [1] 9666
 
 
 # LATER: put put back into a better R object e.g. dataframe or matrix
