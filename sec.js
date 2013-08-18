@@ -247,6 +247,9 @@ casper.then(function f_gotoLinks() {
 
                       if ( !is10QA ) { 
                       
+                      
+                          cleanPageText(page_text);
+                      
                           // HUMANLY READABLE when do " >> file.out.txt"            
 
                           page_text = this.fetchText('body');
