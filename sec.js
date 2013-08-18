@@ -110,8 +110,7 @@ mainsite = base + '/' + subdirquerystring
 var is10Q = false;
 var is10QA = false;
 
-var inThousands = false;
-var inMillions = false;
+
 
 var thePeriodEnded;  // as text
 
@@ -240,6 +239,8 @@ casper.then(function f_gotoLinks() {
                  var li;
                  var page_text;
                  
+                 var inThousands = false;
+                 var inMillions = false;
 
                  var match_result = [];
                  var match_result_item = [];
