@@ -94,6 +94,9 @@ var mybody    = [];
 
 var base = 'http://www.sec.gov';
 var subdirquerystringPRE_CIKticker = '/cgi-bin/browse-edgar?CIK=';
+
+
+
 var theTicker = 'MSFT';
 var subdirquerystringPOST_CIKticker = '&Find=Search&owner=exclude&action=getcompany&count=100&type=10-Q';
 
@@ -227,9 +230,16 @@ casper.then(function f_concatechodumpLinks() {
 
 casper.then(function f_gotoLinks() {
 
-     for (var i = 0; i < 1; i++) {
-     // for (var i in linksOfInterest) { 
+     // zero(0)based
+     for (var i in linksOfInterest) { 
 
+       // Testing: First only link
+       // if ( 0 < i ) break;
+       
+       // Testing: First two links
+       if ( 1 < i ) break;
+     
+     
        this.thenOpen(base + linksOfInterest[i], function f__gotoCustomLink() {
             // this.echo(this.getTitle())
             
@@ -414,7 +424,6 @@ casper.then(function f_gotoLinks() {
                           try {
 
                               // overwrite
-
                               fs.write("sec.write.out.txt", JSONoutput, 'w');
 
                               // append: later: when I have one big JSON object to make
