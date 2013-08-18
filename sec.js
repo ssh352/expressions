@@ -388,6 +388,9 @@ casper.then(function f_gotoLinks() {
     
                           ,null,'  ');
 
+                          // r package RJSONIO seems to want
+                          JSONoutput = JSONoutput + '\n';
+                          
                           this.echo(JSONoutput);
                           
                             // [
@@ -405,9 +408,18 @@ casper.then(function f_gotoLinks() {
 
 
                           try {
-                              fs.write("sec.write.out.txt", JSONoutput, 'a');
+
+                              // overwrite
+
+                              fs.write("sec.write.out.txt", JSONoutput, 'w');
+
+                              // append: later: when I have one big JSON object to make
+                              // fs.write("sec.write.out.txt", JSONoutput, 'a');
+                              // REM ( FUTURE ) - APPEND A COMMA AFTER EACH OBJ EXCEPT THE LAST
+                                                            
                               fs.flush;
                               fs.close;
+
                           } catch(e) {
                               console.log(e);
 }                            
