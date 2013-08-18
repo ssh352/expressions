@@ -133,8 +133,9 @@ function getLinks(cssSelector) {
     });
 }
 
-function cleanPageText(page_text) {
+function cleanPageText(page_text,thatCasper) {
 
+    page_text = thatCasper.fetchText('body');
     return page_text;
 
 }
@@ -248,11 +249,11 @@ casper.then(function f_gotoLinks() {
                       if ( !is10QA ) { 
                       
                       
-                          cleanPageText(page_text);
+                          page_text = cleanPageText(page_text,this);
                       
                           // HUMANLY READABLE when do " >> file.out.txt"            
 
-                          page_text = this.fetchText('body');
+                          // page_text = this.fetchText('body');
 
                           // replace all WORTHLESS commas with nothing
                           page_text = page_text.replace(/,/gm,'');
