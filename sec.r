@@ -27,13 +27,17 @@ if ( totalRobjectsCount > 0) {
 
 # control ( iterate though the list )
 
-# i <- 0
-# while () {
-    # print()
-    # i <- i + 1
-# }
+i <- 0
+while (i < totalRobjectsCount ) {
+    j <- 0
+    while (j < totalaRobjectAttributeCount ) {
+        print(as.list(myRobject[[i + 1]])[[j + 1]])
+        j <- j + 1
+    }
+    i <- i + 1
+}
 
-# later put put back into a better R object e.g. dataframe or matrix
+# LATER: put put back into a better R object e.g. dataframe or matrix
 
 
 
