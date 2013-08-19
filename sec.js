@@ -232,6 +232,9 @@ casper.then(function f_concatechodumpLinks() {
 
 casper.then(function f_gotoLinks() {
 
+     // array of objects: meant to hold regular objects
+     var JSObject = []; 
+
      // zero(0)based
      for (var i in linksOfInterest) { 
 
@@ -388,9 +391,9 @@ casper.then(function f_gotoLinks() {
                           // 8364
                           // 0.23
                           // 9666
-                          JSONoutput = JSON.stringify(
-    
-                            [ { 
+                          
+                          // Remember: zero(0) based
+                          JSObject[JSObject.length] = { 
                                 "theTicker" : theTicker,
                                 "thePeriodEnded"  : thePeriodEnded,
                                 "theAdjustUnits" : theAdjustUnits,
@@ -400,8 +403,10 @@ casper.then(function f_gotoLinks() {
                                 "theWeightedAveSharesBasicRaw" : theWeightedAveSharesBasicRaw,
                                 "theCashDivDeclPerCommonShareRaw" : theCashDivDeclPerCommonShareRaw,
                                 "theNetCashFromOperationsRaw" : theNetCashFromOperationsRaw
-                            } ]
-    
+                              } 
+                          
+                          JSONoutput = JSON.stringify(
+                            JSObject
                           ,null,'  ');
 
                           // r package RJSONIO seems to want
@@ -425,13 +430,13 @@ casper.then(function f_gotoLinks() {
                             
                           try {
 
-                              // overwrite
-                              // fs.write("sec.write.out.txt", JSONoutput, 'w');
+                              // overwrite - because the ENTIRE object HAS TO BE WRITTEN at ONCE
+                              //   i CAN NOT append
+                              fs.write("sec.write.out.txt", JSONoutput, 'w');
 
-                              // append: later: when I have one big JSON object to make
-                              fs.write("sec.write.out.txt", JSONoutput, 'a');
-                              // REM ( FUTURE ) - APPEND A COMMA AFTER EACH OBJ EXCEPT THE LAST
-                                                            
+                              // append - not currently usable
+                              // fs.write("sec.write.out.txt", JSONoutput, 'a');
+                     
                               fs.flush;
                               fs.close;
 
