@@ -69,9 +69,9 @@
 var fs = require('fs');
 
 // garantee an empty file
-fs.write("sec.write.out.txt", "", 'w');
-fs.flush;
-fs.close;
+// fs.write("sec.write.out.txt", "", 'w');
+// fs.flush;
+// fs.close;
 
 // BUT MOST RECENT ...
 
@@ -133,6 +133,10 @@ var theCashDivDeclPerCommonShareRaw = 0.0;
 var theTotalDividendsPaidSELFCALCRaw = 0.0;
 
 var theNetCashFromOperationsRaw = 0.0;
+
+// array of objects: meant to hold regular objects
+var JSObject = []; 
+var JSONoutput;
 
 function getLinks(cssSelector) {
     var links = document.querySelectorAll(cssSelector);
@@ -232,8 +236,7 @@ casper.then(function f_concatechodumpLinks() {
 
 casper.then(function f_gotoLinks() {
 
-     // array of objects: meant to hold regular objects
-     var JSObject = []; 
+
 
      // zero(0)based
      for (var i in linksOfInterest) { 
@@ -279,7 +282,7 @@ casper.then(function f_gotoLinks() {
                  // Top link found is the most important - browse to it to read the 10-Q
                  this.thenOpen(base + importantLinksOfInterest[0], function f___gotoCustomLink() {
 
-                      var JSONoutput;
+
                       var thePeriodEnded_date = Date();
                  
                       // this.echo(this.getTitle());  // O.K.
@@ -412,7 +415,7 @@ casper.then(function f_gotoLinks() {
                           // r package RJSONIO seems to want
                           JSONoutput = JSONoutput + '\n';
                           
-                          this.echo(JSONoutput);
+
                          
                             // [
                               // {
@@ -430,30 +433,52 @@ casper.then(function f_gotoLinks() {
                             
                           try {
 
-                              // overwrite - because the ENTIRE object HAS TO BE WRITTEN at ONCE
-                              //   i CAN NOT append
-                              fs.write("sec.write.out.txt", JSONoutput, 'w');
+
+
 
                               // append - not currently usable
                               // fs.write("sec.write.out.txt", JSONoutput, 'a');
                      
-                              fs.flush;
-                              fs.close;
+                              // fs.flush;
+                              // fs.close;
 
                           } catch(e) {
                               console.log(e);
-}                            
+                          }
+                           
+
+                          
                             
                       } ;
+
+                 this.echo(JSONoutput);
+                 
+                 // every time just ONE object is added to the array
+                 //   unnecessarile writing to disk TOO often
+                 
+                 // overwrite - because the ENTIRE object HAS TO BE WRITTEN at ONCE
+                 //   i CAN NOT append
+                 fs.write("sec.write.out.txt", JSONoutput, 'w');
+                 fs.flush;
+                 fs.close;
                       
                  });
-                 
+
+            // finds the first link but does not find the second link ???
+   
             });
+            
+       // finds the first link but does not find the second link ???
+
             
        });
 
+     
+       
      }
 
+
+     
 })
 
 
