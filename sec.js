@@ -65,6 +65,14 @@
 // (easy every time) ( but I must first modify sec.js ) #1 #2 #3
 // git add sec.js && git commit -m "X# commit" &&  git push -u origin master
 
+// From phantom JS
+var fs = require('fs');
+
+// garantee an empty file
+fs.write("sec.write.out.txt", "", 'w');
+fs.flush;
+fs.close;
+
 // BUT MOST RECENT ...
 
 // NOTE
@@ -94,8 +102,6 @@ var mybody    = [];
 
 var base = 'http://www.sec.gov';
 var subdirquerystringPRE_CIKticker = '/cgi-bin/browse-edgar?CIK=';
-
-
 
 var theTicker = 'MSFT';
 var subdirquerystringPOST_CIKticker = '&Find=Search&owner=exclude&action=getcompany&count=100&type=10-Q';
@@ -173,10 +179,6 @@ function cleanPageText(page_text,thatCasper) {
 
 }
 
-
-
-// From phantom JS
-var fs = require('fs');
 
 phantom.casperPath = 'M:\\YDrive\\All_Economics\\eclipse_workspace\\headlessWebkit\\n1k0-casperjs-1.0.2-0-gbc0da16';
 phantom.injectJs(phantom.casperPath + '\\bin\\bootstrap.js');
@@ -424,10 +426,10 @@ casper.then(function f_gotoLinks() {
                           try {
 
                               // overwrite
-                              fs.write("sec.write.out.txt", JSONoutput, 'w');
+                              // fs.write("sec.write.out.txt", JSONoutput, 'w');
 
                               // append: later: when I have one big JSON object to make
-                              // fs.write("sec.write.out.txt", JSONoutput, 'a');
+                              fs.write("sec.write.out.txt", JSONoutput, 'a');
                               // REM ( FUTURE ) - APPEND A COMMA AFTER EACH OBJ EXCEPT THE LAST
                                                             
                               fs.flush;
