@@ -25,7 +25,9 @@
 // FOR /l %i in (1,1,1000) DO phantomjs --remote-debugger-port=9000 sec.js
 
 
-
+// (MAKE SURE: pageant is running and has the private key)
+// (easy every time) ( but I must first modify sec.js ) #1 #2 #3
+// git add sec.js && git commit -m "X# commit" &&  git push -u origin master
 
 // Google Dev Tools ... Javascript
 
@@ -105,6 +107,11 @@ var subdirquerystringPRE_CIKticker = '/cgi-bin/browse-edgar?CIK=';
 
 var theTicker = 'MSFT';
 var subdirquerystringPOST_CIKticker = '&Find=Search&owner=exclude&action=getcompany&count=100&type=10-Q';
+
+// LEFT OFF: change from var JSONoutput; to var JSONoutput = '';
+// LEFT OFF: get first two records of Hewlett-Packard
+// LEFT OFF: Load a 'downward direction list of tickers' from a disk file
+// http://www.sec.gov/cgi-bin/browse-edgar?CIK=HPQ&Find=Search&owner=exclude&action=getcompany&count=100&type=10-Q
 
 // var subdirquerystring = '/cgi-bin/browse-edgar?CIK=MSFT&Find=Search&owner=exclude&action=getcompany&count=100&type=10-Q'
 var subdirquerystring = subdirquerystringPRE_CIKticker + theTicker + subdirquerystringPOST_CIKticker;
