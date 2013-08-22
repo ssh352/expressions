@@ -208,6 +208,9 @@ casper.start();
 // used to verify that I am using UTF-8 
 // console.log("Using default encoding..." + phantom.outputEncoding);
 
+// LEFT_OFF: TODO create an outer closure iterating through the ONE ticker MSFT
+// SUNDAY WORK
+
 casper.then(function f_casper_open(){
 	this.open(mainsite, function(response) {
     this.echo(response.data);
@@ -298,6 +301,10 @@ casper.then(function f_gotoLinks() {
                  // Top link found is the most important - browse to it to read the 10-Q
                  this.thenOpen(base + importantLinksOfInterest[0], function f___gotoCustomLink() {
 
+                      // TODO: move page_text and theXX variable assignments to their own global function
+                      // TODO: sec.test.js; Unit test on cleanPageText ( simple )
+                      // TODO: sec.test.js; Unit test on getPageVariables ( little more work )
+                      
                       var thePeriodEnded_date = Date();
                  
                       // this.echo(this.getTitle());  // O.K.
@@ -421,6 +428,10 @@ casper.then(function f_gotoLinks() {
                                 "theNetCashFromOperationsRaw" : theNetCashFromOperationsRaw
                               } 
                           
+                          current_index_linksOfInterest10Q_and_10Q_A = current_index_linksOfInterest10Q_and_10Q_A + 1;
+                          
+                          //TODO: If I want to ONLY create the JSONobject at the end ( performance )
+                          //  Then to and if-then here with the two variables above
                           JSONoutput = JSON.stringify(
                             JSObject
                           ,null,'  ');
@@ -442,8 +453,6 @@ casper.then(function f_gotoLinks() {
                             // ]
                                          
                           try {
-
-                              current_index_linksOfInterest10Q_and_10Q_A = current_index_linksOfInterest10Q_and_10Q_A + 1;
 
                               // append - not currently usable
                               // fs.write("sec.write.out.txt", JSONoutput, 'a');
