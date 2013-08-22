@@ -140,8 +140,6 @@ var theTotalDividendsPaidSELFCALCRaw = 0.0;
 
 var theNetCashFromOperationsRaw = 0.0;
 
-
-
 function getLinks(cssSelector) {
     //__utils__.echo("getLinks started");
     var links = document.querySelectorAll(cssSelector);
@@ -252,35 +250,29 @@ casper.then(function f_gotoLinks() {
      var current_index_linksOfInterest10Q_and_10Q_A = -1;
      
      // zero(0)based
-     for (var i in linksOfInterest) { 
+     for (var j in linksOfInterest) { 
      
-
-
        // Hack, I have no idea why max ( instead of 0,1,2, ... )
-       max_linksOfInterest10Q_and_10Q_A = i;
+       max_linksOfInterest10Q_and_10Q_A = j;
      
        // Testing: First only link
-       // if ( 0 < i ) break;
+       // if ( 0 < j ) break;
        
        // Testing: First two links
-       // if ( 1 < i ) break;
+       // if ( 1 < j ) break;
        
        // Testing: First three links
-       if ( 2 < i ) break;
+       if ( 2 < j ) break;
        
        // Testing: First five links CURRENLY PROGRAM DIES HERE
        // sec.js:373 in f___gotoCustomLink
        // TypeError: 'null' is not an object (evaluating 'match_result[0]')
-       // if ( 4 < i ) break;
+       // if ( 4 < j ) break;
      
-       this.thenOpen(base + linksOfInterest[i], function f__gotoCustomLink() {
+       this.thenOpen(base + linksOfInterest[j], function f__gotoCustomLink() {
             // this.echo(this.getTitle())
 
-
-            
             this.then(function f___concatechodumpimportantLinks() {
-            
-
             
                  var li;
                  var page_text;
@@ -296,9 +288,9 @@ casper.then(function f_gotoLinks() {
                  // this.echo(importantlinks.length + ' importantlinks found:'); 
 
                  li = 0;
-                 for (var i in importantlinks) { 
-                   if(/Archives/.test(importantlinks[i])) { 
-                     importantLinksOfInterest[li] = importantlinks[i]; 
+                 for (var k in importantlinks) { 
+                   if(/Archives/.test(importantlinks[k])) { 
+                     importantLinksOfInterest[li] = importantlinks[k]; 
                      li = li + 1;
                    }
                  }
