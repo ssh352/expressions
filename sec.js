@@ -186,7 +186,6 @@ function cleanPageText(page_text,thatCasper) {
 
 }
 
-
 phantom.casperPath = 'M:\\YDrive\\All_Economics\\eclipse_workspace\\headlessWebkit\\n1k0-casperjs-1.0.2-0-gbc0da16';
 phantom.injectJs(phantom.casperPath + '\\bin\\bootstrap.js');
 
@@ -208,7 +207,6 @@ casper.start();
 
 // used to verify that I am using UTF-8 
 // console.log("Using default encoding..." + phantom.outputEncoding);
-
 
 casper.then(function f_casper_open(){
 	this.open(mainsite, function(response) {
@@ -238,8 +236,6 @@ casper.then(function f_concatechodumpLinks() {
 });
 
 casper.then(function f_gotoLinks() {
-
-
 
      // MUST BE HERE, ELSE: FILE IS NOT APPENDED TO ( IT IS OVERWRITTEN )
      // array of objects: meant to hold regular objects
@@ -302,12 +298,10 @@ casper.then(function f_gotoLinks() {
                  // Top link found is the most important - browse to it to read the 10-Q
                  this.thenOpen(base + importantLinksOfInterest[0], function f___gotoCustomLink() {
 
-
                       var thePeriodEnded_date = Date();
                  
                       // this.echo(this.getTitle());  // O.K.
                       // this.echo(this.getHTML());   // O.K.
-
 
                       // want to scrape a 10-Q and 'not a 10-Q/A'
                       if         ( /10\-Q\/A/gmi.test(page_text) ){
@@ -318,24 +312,22 @@ casper.then(function f_gotoLinks() {
 
                       if ( !is10QA ) { 
                       
-                      
                           page_text = cleanPageText(page_text,this);
                       
                           // HUMANLY READABLE when do " >> file.out.txt"          
 
                           // this.echo(page_text);
 
-                          if         ( /Millions/gmi.test(page_text) ){
+                          if ( /Millions/gmi.test(page_text) ){
                                inMillions = true;
                                theAdjustUnits = 1000000;
-                          } else if  ( /Thousands/gmi.test(page_text) ){
+                          } else if ( /Thousands/gmi.test(page_text) ){
                                inThousands = true;
                                theAdjustUnits = 1000
                           } else {
                                theAdjustUnits = 1
                           }
 
-                          
                           // the phrase    Period Ended March 31 2013 - all Ele_1
                           match_result = page_text.match(/period\send[a-z]*\s[a-z]+\s\d{1,2}\s\d{4,4}/gmi)
                           // if ( !!match_result ) { 
@@ -360,7 +352,6 @@ casper.then(function f_gotoLinks() {
                                            ( (thePeriodEnded_date.getMonth() + 1) < 10 ? '0' + (thePeriodEnded_date.getMonth() + 1)  : '' + (thePeriodEnded_date.getMonth() + 1) ) + '-' + 
                                            thePeriodEnded_date.getFullYear();
                           // this.echo(thePeriodEnded);
-                          
                           
                           // Revenue
                           match_result = page_text.match(/Revenue\s\d+.?\d+/gmi);
@@ -437,8 +428,6 @@ casper.then(function f_gotoLinks() {
                           // r package RJSONIO seems to want
                           JSONoutput = JSONoutput + '\n';
                           
-
-                         
                             // [
                               // {
                                 // "theTicker": "MSFT",
@@ -451,10 +440,8 @@ casper.then(function f_gotoLinks() {
                                 // "theNetCashFromOperationsRaw": 9666
                               // }
                             // ]
-                            
-                            
+                                         
                           try {
-
 
                               current_index_linksOfInterest10Q_and_10Q_A = current_index_linksOfInterest10Q_and_10Q_A + 1;
 
@@ -467,10 +454,7 @@ casper.then(function f_gotoLinks() {
                           } catch(e) {
                               console.log(e);
                           }
-                           
-
-                          
-                            
+                              
                       } ;
 
                  this.echo(JSONoutput);
@@ -482,7 +466,6 @@ casper.then(function f_gotoLinks() {
                  // I CAN NOT append
                  // WRITE POSITIONS IS HERE
 
-                 
                 // if-then: will ONLY write at the end of a TOTAL history company search ( performance )
                 // not if-then: If I want 'garanteed not to fail write on JS error (write every time)' (safety)
                 //   then remove the surrounding if-then
@@ -500,14 +483,10 @@ casper.then(function f_gotoLinks() {
 
             // finds the LAST JSONoutput STRING object but the earliers are LOST
    
-   
             });
-            
             
        });
 
-     
-       
      }
 
      // this.echo("This is JSON Output: " + JSONoutput)
