@@ -91,7 +91,7 @@
 // e.g: http://www.sec.gov/Archives/edgar/data/915913/0001193125-13-295546-index.html
 
 //
-// From the result of the query: 'http://www.sec.gov/cgi-bin/browse-edgar?CIK=MSFT&Find=Search&owner=exclude&action=getcompany&count=100&type=10-Q';
+// From the result of the query: http://www.sec.gov/cgi-bin/browse-edgar?CIK=MSFT&Find=Search&owner=exclude&action=getcompany&count=100&type=10-Q
 var links     = [];
 var linksOfInterest = [];
 
@@ -241,19 +241,20 @@ casper.then(function f_concatechodumpLinks() {
 
 casper.then(function f_gotoLinks() {
 
-     // CAN BE ANYWHERE
-     // From phantom JS
-     var fs = require('fs');
+
 
      // MUST BE HERE, ELSE: FILE IS NOT APPENDED TO ( IT IS OVERWRITTEN )
      // array of objects: meant to hold regular objects
      var JSObject = []; 
      var JSONoutput = "AAA";
 
-     var current_i_of_linksOfInterest = -1;
+     var max_linksOfInterest10Q_and_10Q_A = -1;
+     var current_index_linksOfInterest10Q_and_10Q_A = -1;
      
      // zero(0)based
      for (var i in linksOfInterest) { 
+     
+
 
        // Hack, I have no idea why max ( instead of 0,1,2, ... )
        max_linksOfInterest10Q_and_10Q_A = i;
@@ -266,10 +267,15 @@ casper.then(function f_gotoLinks() {
        
        // Testing: First three links
        if ( 2 < i ) break;
+       
+       // Testing: First five links CURRENLY PROGRAM DIES HERE
+       // sec.js:373 in f___gotoCustomLink
+       // TypeError: 'null' is not an object (evaluating 'match_result[0]')
+       // if ( 4 < i ) break;
      
        this.thenOpen(base + linksOfInterest[i], function f__gotoCustomLink() {
             // this.echo(this.getTitle())
-            
+
 
             
             this.then(function f___concatechodumpimportantLinks() {
@@ -456,7 +462,7 @@ casper.then(function f_gotoLinks() {
                           try {
 
 
-
+                              current_index_linksOfInterest10Q_and_10Q_A = current_index_linksOfInterest10Q_and_10Q_A + 1;
 
                               // append - not currently usable
                               // fs.write("sec.write.out.txt", JSONoutput, 'a');
@@ -481,10 +487,22 @@ casper.then(function f_gotoLinks() {
                  // overwrite - because the ENTIRE object HAS TO BE WRITTEN at ONCE
                  // I CAN NOT append
                  // WRITE POSITIONS IS HERE
-                 this.echo("Disk write is performed: Max links of interest: " + max_linksOfInterest10Q_and_10Q_A)
-                 fs.write("sec.write.out.txt", JSONoutput, 'w');
-                 fs.flush;
-                 fs.close;
+
+                 
+                // if-then: will ONLY write at the end of a TOTAL history company search ( performance )
+                // not if-then: If I want 'garanteed not to fail write on JS error (write every time)' (safety)
+                //   then remove the surrounding if-then
+                // NOTE: === does NOT work
+                if ( max_linksOfInterest10Q_and_10Q_A == current_index_linksOfInterest10Q_and_10Q_A + 1  ) {
+                     // CAN BE ANYWHERE
+                     // From phantom JS ( note: this variable is hoisted )
+                     var fs = require('fs');
+                     fs.write("sec.write.out.txt", JSONoutput, 'w');
+                     fs.flush;
+                     fs.close;
+                     this.echo("Disk write is performed: Max links of interest: " + max_linksOfInterest10Q_and_10Q_A)
+                     this.echo("Disk write is performed: Cur link  of interest: " + current_index_linksOfInterest10Q_and_10Q_A)
+                 }
                       
                  });
 
