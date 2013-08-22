@@ -339,6 +339,8 @@ casper.then(function f_gotoLinks() {
                           } else if  ( /Thousands/gmi.test(page_text) ){
                                inThousands = true;
                                theAdjustUnits = 1000
+                          } else {
+                               theAdjustUnits = 1
                           }
 
                           
@@ -499,9 +501,7 @@ casper.then(function f_gotoLinks() {
                      var fs = require('fs');
                      fs.write("sec.write.out.txt", JSONoutput, 'w');
                      fs.flush;
-                     fs.close;
-                     this.echo("Disk write is performed: Max links of interest: " + max_linksOfInterest10Q_and_10Q_A)
-                     this.echo("Disk write is performed: Cur link  of interest: " + current_index_linksOfInterest10Q_and_10Q_A)
+                     fs.close
                  }
                       
                  });
