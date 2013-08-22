@@ -67,8 +67,7 @@
 // (easy every time) ( but I must first modify sec.js ) #1 #2 #3
 // git add sec.js && git commit -m "X# commit" &&  git push -u origin master
 
-// From phantom JS
-var fs = require('fs');
+
 
 // garantee an empty file
 // fs.write("sec.write.out.txt", "", 'w');
@@ -141,11 +140,10 @@ var theTotalDividendsPaidSELFCALCRaw = 0.0;
 
 var theNetCashFromOperationsRaw = 0.0;
 
-// array of objects: meant to hold regular objects
-var JSObject = []; 
-var JSONoutput;
+
 
 function getLinks(cssSelector) {
+    //__utils__.echo("getLinks started");
     var links = document.querySelectorAll(cssSelector);
     return Array.prototype.map.call(links, function(e) {
         return e.getAttribute('href')
@@ -243,7 +241,14 @@ casper.then(function f_concatechodumpLinks() {
 
 casper.then(function f_gotoLinks() {
 
+     // CAN BE ANYWHERE
+     // From phantom JS
+     var fs = require('fs');
 
+     // MUST BE HERE, ELSE: FILE IS NOT APPENDED TO ( IT IS OVERWRITTEN )
+     // array of objects: meant to hold regular objects
+     var JSObject = []; 
+     var JSONoutput = "AAA";
 
      // zero(0)based
      for (var i in linksOfInterest) { 
@@ -252,14 +257,19 @@ casper.then(function f_gotoLinks() {
        // if ( 0 < i ) break;
        
        // Testing: First two links
-       if ( 1 < i ) break;
-     
+       // if ( 1 < i ) break;
+       
+       // Testing: First three links
+       if ( 2 < i ) break;
      
        this.thenOpen(base + linksOfInterest[i], function f__gotoCustomLink() {
             // this.echo(this.getTitle())
             
-           
+
+            
             this.then(function f___concatechodumpimportantLinks() {
+            
+
             
                  var li;
                  var page_text;
@@ -465,18 +475,19 @@ casper.then(function f_gotoLinks() {
                  
                  // overwrite - because the ENTIRE object HAS TO BE WRITTEN at ONCE
                  //   i CAN NOT append
-                 fs.write("sec.write.out.txt", JSONoutput, 'w');
-                 fs.flush;
-                 fs.close;
+                 // WRITE POSITIONS IS HERE
+                this.echo("Disk write is performed.")
+                fs.write("sec.write.out.txt", JSONoutput, 'w');
+                fs.flush;
+                fs.close;
                       
                  });
 
-            // finds the first link but does not find the second link ???
+            // finds the LAST JSONoutput STRING object but the earliers are LOST
+   
    
             });
             
-       // finds the first link but does not find the second link ???
-
             
        });
 
@@ -484,7 +495,7 @@ casper.then(function f_gotoLinks() {
        
      }
 
-
+     // this.echo("This is JSON Output: " + JSONoutput)
      
 })
 
