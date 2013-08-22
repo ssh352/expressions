@@ -250,9 +250,14 @@ casper.then(function f_gotoLinks() {
      var JSObject = []; 
      var JSONoutput = "AAA";
 
+     var current_i_of_linksOfInterest = -1;
+     
      // zero(0)based
      for (var i in linksOfInterest) { 
 
+       // Hack, I have no idea why max ( instead of 0,1,2, ... )
+       max_linksOfInterest10Q_and_10Q_A = i;
+     
        // Testing: First only link
        // if ( 0 < i ) break;
        
@@ -474,12 +479,12 @@ casper.then(function f_gotoLinks() {
                  //   unnecessarile writing to disk TOO often
                  
                  // overwrite - because the ENTIRE object HAS TO BE WRITTEN at ONCE
-                 //   i CAN NOT append
+                 // I CAN NOT append
                  // WRITE POSITIONS IS HERE
-                this.echo("Disk write is performed.")
-                fs.write("sec.write.out.txt", JSONoutput, 'w');
-                fs.flush;
-                fs.close;
+                 this.echo("Disk write is performed: Max links of interest: " + max_linksOfInterest10Q_and_10Q_A)
+                 fs.write("sec.write.out.txt", JSONoutput, 'w');
+                 fs.flush;
+                 fs.close;
                       
                  });
 
