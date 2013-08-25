@@ -377,7 +377,6 @@ casper.then(function f_gotoLinks() {
                           } else {
                                theAdjustUnits = 1
                           }
-                          
                           theAdjustUnitsStr = theAdjustUnits.toString(); 
 
                           // the phrase    Period Ended March 31 2013 - all Ele_1
