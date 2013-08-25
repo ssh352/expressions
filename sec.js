@@ -15,6 +15,15 @@
   // }
 // ]
 
+// As of August 25, 2013 SEC has STILL HAD NOT updated MSFT with the latest data: WHY?
+// MSFT reported
+// Microsoft reports fourth-quarter and full-year results
+// July 18, 2013
+// http://www.microsoft.com/en-us/news/press/2013/jul13/07-18fy13Q4earningsPR.aspx
+
+// Testing
+// phantomjs CASPER102simpleTEST.js
+
 // phantomjs --web-security=false --ignore-ssl-errors=true --local-to-remote-url-access=true sec.js > sec.out.txt
 
 // simple
@@ -92,6 +101,11 @@
 
 //
 // From the result of the query: http://www.sec.gov/cgi-bin/browse-edgar?CIK=MSFT&Find=Search&owner=exclude&action=getcompany&count=100&type=10-Q
+
+// NOTE: ( Based on Last Year: ) MSFT does not file a 4th quarter 10-Q report
+// instead it files a July 10-K Quarterly Report
+// and quickly followed by a 10-K Annual Report
+
 var links     = [];
 var linksOfInterest = [];
 
