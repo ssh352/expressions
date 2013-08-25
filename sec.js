@@ -256,7 +256,7 @@ casper.then(function f_gotoLinks() {
      // MUST BE HERE, ELSE: FILE IS NOT APPENDED TO ( IT IS OVERWRITTEN )
      // array of objects: meant to hold regular objects
      var JSObject = []; 
-     var JSONoutput = "AAA";
+     var JSONoutput = "";
 
      var max_linksOfInterest10Q_and_10Q_A = -1;
      var current_index_linksOfInterest10Q_and_10Q_A = -1;
@@ -276,10 +276,15 @@ casper.then(function f_gotoLinks() {
        // Testing: First three links
        if ( 2 < j ) break;
        
-       // Testing: First five links CURRENLY PROGRAM DIES HERE
-       // sec.js:373 in f___gotoCustomLink
-       // TypeError: 'null' is not an object (evaluating 'match_result[0]')
+       // Testing: First five links ( KEEP: link #5 is a 10-Q/A )
        // if ( 4 < j ) break;
+       
+       // Testing: First six links ( link #5 is a non-interactive 10-Q )
+       // if ( 5 < j ) break;
+       
+       // TO DO: GENERAL FIX: CURRENLY PROGRAM DIES HERE
+       // IF string NOT found
+       // TypeError: 'null' is not an object (evaluating 'match_result[0]')
      
        this.thenOpen(base + linksOfInterest[j], function f__gotoCustomLink() {
             // this.echo(this.getTitle())
@@ -314,7 +319,6 @@ casper.then(function f_gotoLinks() {
                  // Top link found is the most important - browse to it to read the 10-Q
                  this.thenOpen(base + importantLinksOfInterest[0], function f___gotoCustomLink() {
 
-                      var is10Q = false;
                       var is10QA = false;
                  
                       // TODO: move page_text and theXX variable assignments to their own global function
@@ -325,17 +329,19 @@ casper.then(function f_gotoLinks() {
                  
                       // this.echo(this.getTitle());  // O.K.
                       // this.echo(this.getHTML());   // O.K.
-
+                      
+                      // starts by doing the "page_text = thatCasper.fetchText('body');"
+                      page_text = cleanPageText(page_text,this);
+                      
                       // want to scrape a 10-Q and 'not a 10-Q/A'
                       if         ( /10\-Q\/A/gmi.test(page_text) ){
                            is10QA = true;
-                      } else if  ( /10\-Q/gmi.test(page_text) ){
-                           is10Q = true;
+                           // this.echo('is10QA: ' + is10QA)
+                      } else {
+                           is10QA = false;
                       }
-
-                      if ( !is10QA ) { 
                       
-                          page_text = cleanPageText(page_text,this);
+                      if ( !is10QA ) { 
                       
                           // HUMANLY READABLE when do " >> file.out.txt"          
 
@@ -444,46 +450,18 @@ casper.then(function f_gotoLinks() {
                                 "theNetCashFromOperationsRaw" : theNetCashFromOperationsRaw
                               } 
                           
+                           //TODO: If I want to ONLY create the JSONobject at the end ( performance )
+                           //  Then to and if-then here with the two variables above
+                           JSONoutput = JSON.stringify(
+                             JSObject
+                          ,null,'  ');
+                          
+                          this.echo(JSONoutput);
+                          
                           current_index_linksOfInterest10Q_and_10Q_A = current_index_linksOfInterest10Q_and_10Q_A + 1;
                           
-                          //TODO: If I want to ONLY create the JSONobject at the end ( performance )
-                          //  Then to and if-then here with the two variables above
-                          JSONoutput = JSON.stringify(
-                            JSObject
-                          ,null,'  ');
-
-                          // r package RJSONIO seems to want
-                          JSONoutput = JSONoutput + '\n';
-                          
-                            // [
-                              // {
-                                // "theTicker": "MSFT",
-                                // "thePeriodEnded": "31-03-2013",
-                                // "theRevenueRaw": 20489,
-                                // "theNetIncomeRaw": 6055,
-                                // "theEarningsPerShareBasicRaw": 0.72,
-                                // "theWeightedAveSharesBasicRaw": 8364,
-                                // "theCashDivDeclPerCommonShareRaw": 0.23,
-                                // "theNetCashFromOperationsRaw": 9666
-                              // }
-                            // ]
-                                         
-                          try {
-
-                              // append - not currently usable
-                              // fs.write("sec.write.out.txt", JSONoutput, 'a');
-                     
-                              // fs.flush;
-                              // fs.close;
-
-                          } catch(e) {
-                              console.log(e);
-                          }
-                              
                       } ;
 
-                 this.echo(JSONoutput);
-                 
                  // every time just ONE object is added to the array
                  //   unnecessarile writing to disk TOO often
                  
@@ -496,6 +474,37 @@ casper.then(function f_gotoLinks() {
                 //   then remove the surrounding if-then
                 // NOTE: === does NOT work
                 if ( max_linksOfInterest10Q_and_10Q_A == current_index_linksOfInterest10Q_and_10Q_A + 1  ) {
+                
+
+
+                    // r package RJSONIO seems to want
+                    JSONoutput = JSONoutput + '\n';
+                    
+                      // [
+                        // {
+                          // "theTicker": "MSFT",
+                          // "thePeriodEnded": "31-03-2013",
+                          // "theRevenueRaw": 20489,
+                          // "theNetIncomeRaw": 6055,
+                          // "theEarningsPerShareBasicRaw": 0.72,
+                          // "theWeightedAveSharesBasicRaw": 8364,
+                          // "theCashDivDeclPerCommonShareRaw": 0.23,
+                          // "theNetCashFromOperationsRaw": 9666
+                        // }
+                      // ]                
+                                   
+                    try {
+
+                        // append - not currently usable
+                        // fs.write("sec.write.out.txt", JSONoutput, 'a');
+               
+                        // fs.flush;
+                        // fs.close;
+
+                    } catch(e) {
+                        console.log(e);
+                    }
+                
                      // CAN BE ANYWHERE
                      // From phantom JS ( note: this variable is hoisted )
                      var fs = require('fs');
