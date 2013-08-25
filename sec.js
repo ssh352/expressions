@@ -277,7 +277,7 @@ casper.then(function f_gotoLinks() {
        // if ( 2 < j ) break; // WORKS
        
        // Testing: First five links ( KEEP: link #5 is a 10-Q/A )
-       // if ( 4 < j ) break; // WORKS
+       if ( 4 < j ) break; // WORKS ( IF BREAKS ANYWHERE ... THEN MOST LIKELY HERE )
        
        // Testing: First six links ( link #5 is a non-interactive 10-Q )
        // if ( 5 < j ) break; // WORKS
@@ -498,22 +498,21 @@ casper.then(function f_gotoLinks() {
                                    
                     try {
 
-                        // append - not currently usable
-                        // fs.write("sec.write.out.txt", JSONoutput, 'a');
-               
-                        // fs.flush;
-                        // fs.close;
+                     // append - not currently usable
+                     // fs.write("sec.write.out.txt", JSONoutput, 'a');
 
-                    } catch(e) {
-                        console.log(e);
-                    }
-                
                      // CAN BE ANYWHERE
                      // From phantom JS ( note: this variable is hoisted )
                      var fs = require('fs');
                      fs.write("sec.write.out.txt", JSONoutput, 'w');
                      fs.flush;
                      fs.close
+
+                    } catch(e) {
+                        this.echo(e);
+                    }
+                
+
                  }
                       
                  });
