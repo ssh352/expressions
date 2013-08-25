@@ -136,8 +136,7 @@ mainsite = base + '/' + subdirquerystring
 // rem: global needed to 'pass info from closure_local to closure_local'
 // rem: global can not SEE closure_local
 
-var is10Q = false;
-var is10QA = false;
+
 
 var theAdjustUnits = 0.0;
 
@@ -315,6 +314,9 @@ casper.then(function f_gotoLinks() {
                  // Top link found is the most important - browse to it to read the 10-Q
                  this.thenOpen(base + importantLinksOfInterest[0], function f___gotoCustomLink() {
 
+                      var is10Q = false;
+                      var is10QA = false;
+                 
                       // TODO: move page_text and theXX variable assignments to their own global function
                       // TODO: sec.test.js; Unit test on cleanPageText ( simple )
                       // TODO: sec.test.js; Unit test on getPageVariables ( little more work )
