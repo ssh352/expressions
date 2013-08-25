@@ -277,11 +277,15 @@ casper.then(function f_gotoLinks() {
        // if ( 2 < j ) break; // WORKS
        
        // Testing: First five links ( KEEP: link #5 is a 10-Q/A )
-       if ( 4 < j ) break; // WORKS ( IF BREAKS ANYWHERE ... THEN MOST LIKELY HERE )
+       // if ( 4 < j ) break; // WORKS ( IF BREAKS ANYWHERE ... THEN MOST LIKELY HERE )
        
        // Testing: First six links ( link #5 is a non-interactive 10-Q )
        // if ( 5 < j ) break; // WORKS
        
+       // END OF PAGE ONLY LIMIT
+       // 65 links
+       // LAST GOOD OUTPUT: "thePeriodEnded": "30-09-2005"
+       // NEXT ERROR: TypeError: 'null' is not an object (evaluating 'match_result[0]')
        
        // TO DO: GENERAL FIX: CURRENLY PROGRAM DIES HERE
        // IF string NOT found
