@@ -377,6 +377,8 @@ casper.then(function f_gotoLinks() {
                           } else {
                                theAdjustUnits = 1
                           }
+                          
+                          theAdjustUnitsStr = theAdjustUnits.toString(); 
 
                           // the phrase    Period Ended March 31 2013 - all Ele_1
                           match_result = page_text.match(/period\send[a-z]*\s[a-z]+\s\d{1,2}\s\d{4,4}/gmi)
@@ -463,7 +465,7 @@ casper.then(function f_gotoLinks() {
                           JSObject[JSObject.length] = { 
                                 "theTicker" : theTicker,
                                 "thePeriodEnded"  : thePeriodEnded,
-                                "theAdjustUnits" : theAdjustUnits,
+                                "theAdjustUnits" : theAdjustUnitsStr,
                                 "theRevenueRaw"   : theRevenueRaw,
                                 "theNetIncomeRaw" : theNetIncomeRaw,
                                 "theEarningsPerShareBasicRaw"  : theEarningsPerShareBasicRaw,
