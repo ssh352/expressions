@@ -139,19 +139,33 @@ mainsite = base + '/' + subdirquerystring
 
 
 var theAdjustUnits = 0.0;
+var theAdjustUnitsStr = '';
 
-var thePeriodEnded;  // as text
+var thePeriodEnded = '';  // as text
 
 var theRevenueRaw = 0.0;
-var theNetIncomeRaw = 0.0;
-var theEarningsPerShareBasicRaw = 0.0;
-var theWeightedAveSharesBasicRaw = 0.0;
-var theCashDivDeclPerCommonShareRaw = 0.0;
+var theRevenueRawStr = '';
 
+var theNetIncomeRaw = 0.0;
+var theNetIncomeRawStr = ''; 
+
+var theEarningsPerShareBasicRaw = 0.0;
+var theEarningsPerShareBasicRawStr = '';
+
+var theWeightedAveSharesBasicRaw = 0.0;
+var theWeightedAveSharesBasicRawStr = '';
+
+var theCashDivDeclPerCommonShareRaw = 0.0;
+var theCashDivDeclPerCommonShareRawStr = '';
+
+var theNetCashFromOperationsRaw = 0.0;
+var theNetCashFromOperationsRawStr = '';
+
+// Curr not used anywhere
 // NOTE: CASH_DIV_PER_SHARE * SHARE_COUNT = TOT_DIV_PAID
 var theTotalDividendsPaidSELFCALCRaw = 0.0;
 
-var theNetCashFromOperationsRaw = 0.0;
+
 
 function getLinks(cssSelector) {
     //__utils__.echo("getLinks started");
@@ -444,6 +458,7 @@ casper.then(function f_gotoLinks() {
                           // 0.23
                           // 9666
                           
+                          // Unfornately
                           // Remember: zero(0) based
                           JSObject[JSObject.length] = { 
                                 "theTicker" : theTicker,
