@@ -274,13 +274,14 @@ casper.then(function f_gotoLinks() {
        // if ( 1 < j ) break;
        
        // Testing: First three links
-       if ( 2 < j ) break;
+       // if ( 2 < j ) break; // WORKS
        
        // Testing: First five links ( KEEP: link #5 is a 10-Q/A )
-       // if ( 4 < j ) break;
+       // if ( 4 < j ) break; // WORKS
        
        // Testing: First six links ( link #5 is a non-interactive 10-Q )
-       // if ( 5 < j ) break;
+       // if ( 5 < j ) break; // WORKS
+       
        
        // TO DO: GENERAL FIX: CURRENLY PROGRAM DIES HERE
        // IF string NOT found
@@ -319,6 +320,8 @@ casper.then(function f_gotoLinks() {
                  // Top link found is the most important - browse to it to read the 10-Q
                  this.thenOpen(base + importantLinksOfInterest[0], function f___gotoCustomLink() {
 
+                      current_index_linksOfInterest10Q_and_10Q_A = current_index_linksOfInterest10Q_and_10Q_A + 1;
+                 
                       var is10QA = false;
                  
                       // TODO: move page_text and theXX variable assignments to their own global function
@@ -458,7 +461,7 @@ casper.then(function f_gotoLinks() {
                           
                           this.echo(JSONoutput);
                           
-                          current_index_linksOfInterest10Q_and_10Q_A = current_index_linksOfInterest10Q_and_10Q_A + 1;
+
                           
                       } ;
 
