@@ -1,6 +1,5 @@
 
 
-
 Systematic Investor Toolkit
 https://github.com/systematicinvestor/SIT/R/data.r
 ALSO IN 
@@ -517,7 +516,7 @@ Sys.time()
 # show me the data ( and 'row name' )
 # tail(firmshistory[[1]],2) # JUST THE VERY LAST TWO ROWS
 
-# HTMLTITLEtext       "Almaden Minerals,
+# HTMLTITLEtext       "Almaden Minerals"
 # EXCHANGE_TICKERtext "AMEX_AAU"
 
 # show me the data ( and 'row name' )
