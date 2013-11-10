@@ -1,4 +1,3 @@
-
 Systematic Investor Toolkit
 https://github.com/systematicinvestor/SIT/R/data.r
 ALSO IN 
@@ -589,4 +588,31 @@ Sys.time()
 
 # END EXECUTABLE AREA HERE
 ############################
+
+############## BEGIN EXECUTABLE AREA #######################
+
+# CREATE A STRONG SYMs matrix with rownames of EXCHANGE_TICKER primary key values
+
+# load the symbols
+load(file="SYMsBefore.Rdata")
+
+# I need 'exchange and ticker' to be like a strong primary key
+# actually convert to a matrix
+SYMs <- as.matrix(SYMs)
+
+# remove the SYMS rownames
+rownames(SYMs) <- NULL 
+
+# give the rownames  names the same name as the exchange_symbols columns
+rownames(SYMs) <- paste(SYMs[,"Exchange"],SYMs[,"Symbol"],sep="_")
+
+# make persistent
+save(SYMs, file="SYMsBeforeDETAIL.Rdata")  # new: note: this is now a matrix
+
+# check for a successfull 'bring into memory'
+load(file="SYMsBeforeDETAIL.Rdata")
+
+############## END EXECUTABLE AREA #######################
+
+
 
