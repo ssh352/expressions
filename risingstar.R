@@ -616,3 +616,264 @@ load(file="SYMsBeforeDETAIL.Rdata")
 
 
 
+
+############## BEGIN EXECUTABLE AREA  #######################
+
+# REQUIRED **** ( IF NOT ALEADY DONE )( SEE ABOVE )
+# check for a successfull 'bring into memory'
+load(file="SYMsBeforeDETAIL.Rdata")
+
+# CREATE COLUMNS
+# get the data from 
+# SYMs matrix with rownames of EXCHANGE_TICKER primary key values
+# column bind to the right
+# give the column a new name
+# move over to the left
+
+# "MARKETCAP" "SECTOR" "INDUSTRY" "EXCHANGE_TICKER" "rownombres"
+
+# run at the start of a debugging sessoin
+# load(file="SYMsBeforeDETAIL.Rdata")
+# load(file="firmshistory_w_bottom_EXCHANGE_TICKERtext.Rdata")
+# firmshistory1 <- firmshistory[[1]]
+# firmshistory2 <- firmshistory[[2]]
+
+# wider printing is needed
+options(width = 255)
+
+# REQUIRED ( 90 seconds ) ( 420 MB of RAM )
+Sys.time()
+load(file="firmshistory_w_bottom_EXCHANGE_TICKERtext.Rdata")
+Sys.time()
+# NOTE:    firmshistory_w_bottom_EXCHANGE_TICKERtext_left_EXCHANGE_TICKER.Rdata
+#          IS NO LONGER BEING USED
+
+# run at the top of EACH debugging batch run
+# firmshistory[[1]] <- firmshistory1
+# firmshistory[[2]] <- firmshistory2
+# firm_index <- 1
+
+# ANDRE NOTE: R does not do global variables
+# THEREFORE: after the running function exits
+# variables in the outside scope ARE NOT MODIFIED 
+
+# runme <- function() {
+  firm_index <- 0
+  if ( length(firmshistory) > 0 ) {
+    for ( x in firmshistory ) {
+      firm_index <- firm_index + 1
+
+      # real work begins in here
+      
+      # if debugging
+      # ... browser()
+
+      # Problem 3
+      # if just ONE column ( and no column name  "" ) the situation in not salvagable
+      # also I can not make any inference from 'just ONE quarter'
+      # I need to remove this matrix list item and go on to the next
+      # I can not use NULL to remove the list item, this will  mess up my loop count
+      # at the end I should just remove those bad entries
+      # for now I will 
+      #   assign an empty matrix
+      #   continue ( next ) to the following iteration
+      if ( colnames(firmshistory[[firm_index]])[1] == "" &&
+           ncol(firmshistory[[firm_index]]) < 2
+      ) {
+           firmshistory[[firm_index]] <- matrix(nrow = 0, ncol = 0)
+           next
+      }
+
+      # Problem 1
+      # earliest_by_date column sometimes is missing a column name
+      # this is the fault of the row 1 item having a zero lenght string
+      # instead of a data in the format of "9999/99" 
+      # easiest to drop the column
+      # I do not like this!
+      # but ONE error in 420 firms AND one 'EARLY column drop' probabally will not matter
+      #
+      # Problem 2 ( related to Problem 1 )
+      # drop = FALSE because rare case after  ( number 1944 is the problem )
+      # where only one column  remains and R transforms THAT column into a vector
+      if ( colnames(firmshistory[[firm_index]])[1] == "" &&
+           ncol(firmshistory[[firm_index]]) > 1
+      ) {
+        firmshistory[[firm_index]] <- firmshistory[[firm_index]][,2:ncol(firmshistory[[firm_index]]),drop = FALSE]
+      }
+      
+      # save the rownames data entries to a newcolumn on the right ( because I am going to remove them)
+      firmshistory[[firm_index]] <- cbind(firmshistory[[firm_index]],rownames(firmshistory[[firm_index]]))
+      
+      # give the new column a name
+      colnames(firmshistory[[firm_index]])[ncol(firmshistory[[firm_index]])] <- c("rownombres")
+      
+      # move this column all the way over to the left
+      firmshistory[[firm_index]] <- firmshistory[[firm_index]][,c( tail(colnames(firmshistory[[firm_index]]),1), head(colnames(firmshistory[[firm_index]]),-1))]
+      
+      # remove all of the 'official' rownames
+      rownames(firmshistory[[firm_index]]) <- NULL
+      
+     # prepare to fill the right side EXCHANGE TICKER column with data 
+     # observe the data from the bottom row and 'second from the left' 
+     # ( earlier in column one I inserted 'rownombres' ) 
+     # verify the data I want to fill ( for a later step )
+     # firmshistory[[firm_index]][nrow(firmshistory[[firm_index]]),2]
+     #   2004/12
+     #"AMEX_AAU"
+     
+      # keep the current firm
+      current_firm <- firmshistory[[firm_index]][nrow(firmshistory[[firm_index]]),2]
+      #   2004/12
+      #"AMEX_AAU"
+     
+      # remove the useless names attribute
+      attr(current_firm,"names") <- NULL
+      #current_firm
+      
+      # of the current firm, verify the Symbol
+      #SYMs[ c(current_firm),c("Symbol")] 
+     
+     # now for REAL fill the right side EXCHANGE TICKER column with data
+      # fill the right side column with data from the previous step
+      firmshistory[[firm_index]] <- cbind( 
+            firmshistory[[firm_index]]
+          , firmshistory[[firm_index]][nrow(firmshistory[[firm_index]]),2] 
+          )
+      
+      # call the new column column at the end: EXCHANGE_TICKER"
+      colnames(firmshistory[[firm_index]])[ncol(firmshistory[[firm_index]])] <- c("EXCHANGE_TICKER")
+      
+      # move this column all the way over to the left
+      firmshistory[[firm_index]] <- firmshistory[[firm_index]][,c( tail(colnames(firmshistory[[firm_index]]),1), head(colnames(firmshistory[[firm_index]]),-1))]
+
+      # of the current firm, verify the Industry
+      # SYMs[ c(current_firm),c("Industry")] 
+      
+      # fill the right side column with data from the previous step
+      firmshistory[[firm_index]] <- cbind( 
+            firmshistory[[firm_index]]
+          , SYMs[ c(current_firm),c("Industry")] 
+          )
+
+      # call the new column column at the end: INDUSTRY"
+      colnames(firmshistory[[firm_index]])[ncol(firmshistory[[firm_index]])] <- c("INDUSTRY")
+
+      # move this column all the way over to the left
+      firmshistory[[firm_index]] <- firmshistory[[firm_index]][,c( tail(colnames(firmshistory[[firm_index]]),1), head(colnames(firmshistory[[firm_index]]),-1))]
+
+      # of the current firm, verify the Sector
+      # SYMs[ c(current_firm),c("Sector")] 
+      
+      # fill the right side column with data from the previous step
+      firmshistory[[firm_index]] <- cbind( 
+            firmshistory[[firm_index]]
+          , SYMs[ c(current_firm),c("Sector")] 
+          )
+
+      # call the new column column at the end: SECTOR"
+      colnames(firmshistory[[firm_index]])[ncol(firmshistory[[firm_index]])] <- c("SECTOR")
+      
+      # move this column all the way over to the left
+      firmshistory[[firm_index]] <- firmshistory[[firm_index]][,c( tail(colnames(firmshistory[[firm_index]]),1), head(colnames(firmshistory[[firm_index]]),-1))]
+
+      # of the current firm, verify the MarketCap
+      # SYMs[ c(current_firm),c("MarketCap")] 
+      # [1] "8.190652e+07
+      
+      # NOTE: I did not use as.integer to convert to an ONLY integer
+      # The *_AAPL result is beyond the .Machine[["integer.max"]] of 2 billion
+      # I will deal with THIS later
+      
+      # fill the right side column with data from the previous step
+      firmshistory[[firm_index]] <- cbind( 
+            firmshistory[[firm_index]]
+          , SYMs[ c(current_firm),c("MarketCap")] 
+          )
+
+      # call the new column column at the end: MARKETCAP"
+      colnames(firmshistory[[firm_index]])[ncol(firmshistory[[firm_index]])] <- c("MARKETCAP")
+      
+      # move this column all the way over to the left
+      firmshistory[[firm_index]] <- firmshistory[[firm_index]][,c( tail(colnames(firmshistory[[firm_index]]),1), head(colnames(firmshistory[[firm_index]]),-1))]
+
+      # verify that my new column names are there
+      # dimnames(firmshistory[[firm_index]])[2][1][[1]][1:5]
+      #[1] "MARKETCAP"       "SECTOR"          "INDUSTRY"        "EXCHANGE_TICKER"
+      #[5] "rownombres"
+      
+      # verify my ( colnames and ) first row of data are there
+      print(firmshistory[[firm_index]][1,1:5])
+
+      # show the number finished every 100 records
+      if ( firm_index %% 100 == 0 ) {
+        print(paste(firm_index," completed.",sep=""))
+      }
+      
+      # if testing
+      # if ( firm_index == 101 ) break
+      
+    }
+  }
+# }
+
+# debug(runme) # bombed out after 400
+# undebug(runme)
+
+# Sys.time()
+# runme()  # 150 seconds ( memory increases from 420M to 840M
+# traceback()
+# Sys.time()
+# about one second every 20 firms
+
+
+#  length(firmshistory)
+# [1] 4734
+
+# remove those '0 row and 0 column' matrixes 
+# this is a FIX upon problem 3 ABOVE
+# thoroughly tested 'list item removal' 
+# remove empty matrixes
+new_firm_index <- 0
+for ( x in firmshistory ) { 
+  new_firm_index <- new_firm_index + 1
+  if(ncol(x) == 0 ) {
+     firmshistory[[new_firm_index]] <- NULL 
+     # because my entire list has shifted down one ( became more compact )
+     new_firm_index <- new_firm_index - 1
+  } 
+}
+
+# length(firmshistory)
+# [1] 4731
+#          lost ONLY 3 firms
+
+
+Sys.time()
+save(firmshistory, file="firmshistory_w_bottom_EXCHANGE_TICKERtext__MARKETCAP_SECTOR_INDUSTRY_ET_listitem_ALL.Rdata")
+Sys.time()
+# 120 seconds
+
+Sys.time()
+load(              file="firmshistory_w_bottom_EXCHANGE_TICKERtext__MARKETCAP_SECTOR_INDUSTRY_ET_listitem_ALL.Rdata")
+Sys.time()
+# 90 seconds
+
+# browse
+# print(firmshistory[[4000]][1,1:5])
+#                   MARKETCAP                        SECTOR                      INDUSTRY               EXCHANGE_TICKER                    rownombres
+#              "8.996784e+09"            "Public Utilities" "Electric Utilities: Central"                    "NYSE_NRG"            "quarter end date"
+
+# print(firmshistory[[4000]][282,5:6])
+# firmshistory[[4000]][282,5:6]
+#                               rownombres                                    2004/03
+#                          "HTMLTITLEtext" "Nrg Energy Company Financial Information"
+
+
+############## END EXECUTABLE AREA #######################
+
+
+
+
+
+
+
