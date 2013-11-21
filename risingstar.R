@@ -931,6 +931,69 @@ print(summarycounts)
 
 
 
+###################### BEGIN EXECUTABLE AREA ##########################
+
+# FOR YOUR INFORMATION #
+
+# GOAL: FIND OUT 'HOW OFTEN' A GAP IN QUARTERLY DATA IS FOUND
+#   FIND OUT WHICH FIRMS HAVE GAPS
+
+# IF NOT ALREADY DONE
+Sys.time()
+load(file="firmshistory_w_bottom_EXCHANGE_TICKERtext__MARKETCAP_SECTOR_INDUSTRY_ET_listitem_ALL.Rdata")
+Sys.time()
+
+library(zoo)
+firm_index <- 0
+if ( length(firmshistory) > 0 ) {
+  for ( x in firmshistory ) {
+    firm_index <- firm_index + 1
+
+    # from the left, this is the furthest right column that is NOT a date column
+    date_col_index <- 5
+    if ( ncol(firmshistory[[firm_index]]) >= 6 ) {
+      for ( y in 6:ncol(firmshistory[[firm_index]]) ) {
+        date_col_index <- date_col_index + 1
+        # print(firmshistory[[firm_index]][1,date_col_index])
+        # print(as.yearmon(firmshistory[[firm_index]][1,date_col_index], "%Y/%m"))
+        # print(paste0(" ",as.yearmon(seq(as.Date(as.yearmon(firmshistory[[firm_index]][1,date_col_index],"%Y/%m")), by = "3 month", length = 2)[2],"%Y/%m")))
+        # IF I AM AT THE LAST DATE, DO NOT LOOK FORWARD TO THE NEXT DATE. IT DOES NOT EXIST
+        if ( date_col_index == ncol(firmshistory[[firm_index]]) ) { break } # no test for the 'next' because I am at the 'last' 
+        # GIVEN THE CURRENT DATE_COL_INDEX, GENERATE A DATE THAT IS 3 MONTHS LATER
+        generatednextdate <- as.yearmon(seq(as.Date(as.yearmon(firmshistory[[firm_index]][1,date_col_index],"%Y/%m")), by = "3 month", length = 2)[2],"%Y/%m")
+        
+        if (generatednextdate != as.yearmon(firmshistory[[firm_index]][1,date_col_index + 1], "%Y/%m") ) {
+          print(paste0("Gap in firmhistory x quarters is found: firm_index ", firm_index," EXCHANGE_TICKER: ", firmshistory[[firm_index]][1,4] ))
+          print(paste0("    Missing next date: ",generatednextdate))
+        } 
+      }
+    }
+
+    # show the number finished every 100 records
+    if ( firm_index %% 100 == 0 ) {
+      print(paste(firm_index," completed.",sep=""))
+    }
+    
+  }
+}
+detach("package:zoo", unload=TRUE)
+
+[1] "Gap in firmhistory x quarters is found: firm_index 5 EXCHANGE_TICKER: AMEX_ADK"
+[1] "    Missing next date: Mar 2013"
+
+# ONE OUT OF 3 FIRMS: AMEX
+# ONE OUT OF 4 FIRMS: NASDAQ
+# ONE OUT OF 5 FIMS: NYSE
+
+# END OF 30 PLUS MINUTE RUN
+
+# WILL DEAL WITH THIS LATER
+
+###################### END EXECUTABLE AREA ##########################
+
+
+
+
 
 
 
