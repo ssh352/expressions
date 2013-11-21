@@ -872,6 +872,63 @@ Sys.time()
 ############## END EXECUTABLE AREA #######################
 
 
+  
+################ BEGIN EXECUTABLE AREA ############
+
+# GOAL: FIND THE NUMBER OF FIRMS THAT HAVE A MARKET CAP OF AT LEAST 200 MILLION
+#   BY O'SHAUN: BELOW 200 MILLION IS A FIRM TOO SMALL TO BUY/SELL
+#   FOR AN INSTITUTIONAL BUYER/SELLER
+
+# BUT I TESTED AT 250 MILLION
+
+# IF NOT ALREADY DONE
+Sys.time()
+load(file="firmshistory_w_bottom_EXCHANGE_TICKERtext__MARKETCAP_SECTOR_INDUSTRY_ET_listitem_ALL.Rdata")
+Sys.time()
+
+# SHOW MY ALL REMAINING FIRMS AFTER SCRUBBING
+length(firmshistory)
+# [1] 4731
+
+# Sys.time()
+summarycounts <- 0
+firm_index <- 0
+if ( length(firmshistory) > 0 ) {
+  for ( x in firmshistory ) {
+    firm_index <- firm_index + 1
+
+    # if the number on the right side of 'e' is greater or equal to 100 million ( 8 zeros )
+    # 100,000,000 ( 8 zeros ) MARKET CAP OF AT LEAST 250 MILLION
+    if( ( as.numeric(substr(firmshistory[[firm_index]][1,1],regexpr(pattern ="e",firmshistory[[firm_index]][1,1])[1] + 2, nchar(firmshistory[[firm_index]][1,1]))) >= 8 &
+          # everything between 250 million and 999 million
+          as.numeric(substr(firmshistory[[firm_index]][1,1],1, regexpr(pattern ="e",firmshistory[[firm_index]][1,1])[1] -1 )) >= 2.5 ) |
+          # everything greater than 1 billion
+        ( as.numeric(substr(firmshistory[[firm_index]][1,1],regexpr(pattern ="e",firmshistory[[firm_index]][1,1])[1] + 2, nchar(firmshistory[[firm_index]][1,1]))) >= 9 )
+    ) {
+      # add them up
+      summarycounts <- summarycounts + 1
+    }
+
+    # show the number finished every 10 records
+    if ( firm_index %% 10 == 0 ) {
+      print(paste(firm_index," completed.",sep=""))
+    }
+    
+  }
+}
+# Sys.time()
+# how many of 4731
+print(summarycounts)
+# [1] 3240
+
+# REALLY NOT 2000 ( I MAY HAVE *MORE* FIRMS THAN *COMPUSTAT* AND/OR *CRSP* )
+# MIN 200 MARKETCAP TO BE SELLABLE ( IN FACT ) MY MARKETCAP IS 250 MILL MIN
+#   AND I *STILL* HAVE 3000 FIRMS ...
+
+############# END EXECUTABLE AREA ########################
+
+
+
 
 
 
