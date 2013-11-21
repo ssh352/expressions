@@ -1059,3 +1059,117 @@ Sys.time()
 
 
 
+######### BEGIN EXECUTABLE ( MERGE METHOD ) firms_total_revenue ############
+
+# NOTE: merge into a perfect DF followed by rbind MAY HAVE BEEN FASTER
+# perhaps ANOTHER day
+
+# merge into a new firms_total_revenue and save it.
+
+# options(width = 255)
+
+# IF NOT ALREADY DONE
+Sys.time()
+load(file="firmshistory_w_bottom_EXCHANGE_TICKERtext__MARKETCAP_SECTOR_INDUSTRY_ET_listitem_ALL.Rdata")
+Sys.time()
+# 315M to load ( but not first access yet )
+
+# I want do generate all month columns and in all in order
+# seems useful to 'many' time series
+#   ts,timeSeries, its,(irts),zoo,xts,quantmod and derivatives
+# seems useful to sql: e.g. library(sqldef) "select ... UNION ..."
+#   such that in UNION the column order is expected
+
+# create a vector of ordered dates from "1990/01" to "2013/12"
+alldatecolumns <- c()
+for ( i in 1990:2013 ) {
+  for ( j in 1:12 ) {
+    # of 0 through 9, pad with a leading zero
+    yyyymm <- paste0(i,"/", if  ( j < 10 ) { paste0(0,j) } else { j } )
+    alldatecolumns <- c(alldatecolumns,yyyymm)
+  } 
+} 
+rm("i","j","yyyymm")
+
+
+# create my alldatacolumns ( notice the 'a' ) columns and in my specific order
+alldatacolumns <- c(
+   "MARKETCAP","SECTOR","INDUSTRY"
+   ,"EXCHANGE_TICKER","rownombres"   
+   ,alldatecolumns
+   )
+# keep alldatacolumns and  alldatecolumns ( use former later to 'custom' sort )
+ 
+
+# generate some columns
+tempdf <- data.frame(row.names=alldatacolumns)
+# make these change from row.names into rownames
+tempdf <- as.matrix(tempdf)
+# flip along the diagnol axis ... rownames becomes colnames
+tempdf <- t(tempdf)
+# recreate a data frame as the 'target' of a merge ( see below )
+tempdf <- as.data.frame(tempdf)
+
+
+Sys.time()
+firm_index <- 0
+if ( length(firmshistory) > 0 ) {
+  for ( x in firmshistory ) {
+    firm_index <- firm_index + 1
+    
+    # exract only the "total revenue" row
+    firms_item_revenue <- as.matrix (subset(  as.data.frame( firmshistory[[firm_index]] ) , rownombres == "total revenue" ) )
+
+    # side affect: the 'number of' the column is kemp as a rowname: remove it
+    rownames(firms_item_revenue) <- NULL
+    
+    # perform merges
+    # perform and outer join ( all=TRUE )
+    # do not mix-up the row data ( sort=FALSE)
+    # note: this converts a matrix of characters to a data frame of factors
+    #  by the 'the programmer of merge' design
+    # actually merge
+    if ( firm_index == 1 ) { 
+      # merge into tempdf data from firms_item_revenue
+      firms_total_revenue <- merge(tempdf,firms_item_revenue,all=TRUE,sort=FALSE)
+    } else {
+      # merge into firms_total_revenue data from firms_item_revenue
+      firms_total_revenue <- merge(firms_total_revenue,firms_item_revenue,all=TRUE,sort=FALSE)
+    }
+
+    # convert back to a matrix ( those factors will be now strings )
+    firms_total_revenue <- as.matrix(firms_total_revenue) 
+    # unfortunately the columns are in a mixed order
+    # sort them to my custom sort
+    firms_total_revenue <- firms_total_revenue[,alldatacolumns,drop=FALSE]
+
+    # show the number finished every 10 records NOT FAST
+    if ( firm_index %% 10 == 0 ) {
+      print(paste(firm_index," completed.",sep=""))
+    }
+    
+    # testing
+    # if ( firm_index == 2 ) {
+      # break
+    # }
+    
+  }
+}
+Sys.time()
+# seems 5 minutes 500 records ( memory is holding GOOD  400M )
+
+rm("x","tempdf") # firms_item_revenue 
+
+# working with firms_total_revenue SO WE KEEP IT
+Sys.time()
+save(firms_total_revenue, file="firms_total_revenue_ALL.Rdata")
+Sys.time()
+
+rm("firms_item_revenue") 
+
+######### END EXECUTABLE ( MERGE METHOD ) firms_total_revenue ############
+
+
+
+
+
