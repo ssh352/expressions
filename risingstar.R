@@ -995,5 +995,67 @@ detach("package:zoo", unload=TRUE)
 
 
 
+########################## ( MAYBE ) BEGIN EXECUTABLE AREA ######################
+
+# FOR YOUR INFORMATION #
+
+# FIND firm_index OF EACH ITEM IN A COLLECTION OF TICKERS
+
+# IF NOT ALREADY DONE
+Sys.time()
+load(file="firmshistory_w_bottom_EXCHANGE_TICKERtext__MARKETCAP_SECTOR_INDUSTRY_ET_listitem_ALL.Rdata")
+Sys.time()
+
+
+Sys.time()
+EXCHANGE_TICKERvect <- c("NYSE_WMT","NYSE_TGT","NYSE_ORCL","NYSE_SAP")
+found_so_far_count <- 0
+firm_index <- 0
+if ( length(firmshistory) > 0 ) {
+  for ( x in firmshistory ) {
+    firm_index <- firm_index + 1
+
+    EXCHANGE_TICKERvect_index <- 0
+    if ( length(EXCHANGE_TICKERvect) > 0 ) {
+      for ( y in EXCHANGE_TICKERvect ) {
+        EXCHANGE_TICKERvect_index <- EXCHANGE_TICKERvect_index + 1
+        # READ JUST 'ROW 1' and 'column EXCHANGE_TICKER'
+        # CONVERT TO DF DO EASY QUERY ( USE SUBSET )
+        if ( 0 < nrow(subset(  as.data.frame( firmshistory[[firm_index]][1,4,drop=FALSE] ) , EXCHANGE_TICKER == EXCHANGE_TICKERvect[EXCHANGE_TICKERvect_index] )) ) {
+          print(paste0("At index: ",firm_index," EXCHANGE_TICKER found: ",EXCHANGE_TICKERvect[EXCHANGE_TICKERvect_index]))
+          found_so_far_count <- found_so_far_count + 1
+          # IF I HAVE REACHED THE END OF THE VECTOR (SEARCH COLLECTION) THEN DONE WITH LOOP
+          if ( found_so_far_count == length(EXCHANGE_TICKERvect) ) {
+            break
+          }
+        }
+      }
+    }
+
+    # show the number finished every 100 records
+    if ( firm_index %% 100 == 0 ) {
+      print(paste(firm_index," completed.",sep=""))
+    }
+    
+  }
+}
+Sys.time()
+
+# [1] "4000 completed."
+# [1] "At index: 4066 EXCHANGE_TICKER found: NYSE_ORCL"
+# [1] "4100 completed."
+# [1] "4200 completed."
+# [1] "At index: 4279 EXCHANGE_TICKER found: NYSE_SAP"
+# [1] "4300 completed."
+# [1] "4400 completed."
+# [1] "At index: 4471 EXCHANGE_TICKER found: NYSE_TGT"
+# [1] "4500 completed."
+# [1] "4600 completed."
+# [1] "At index: 4669 EXCHANGE_TICKER found: NYSE_WMT"
+# [1] "4700 completed."
+
+##################### ( MAYBE ) END EXECUTABLE AREA HERE #####################
+
+
 
 
