@@ -551,7 +551,7 @@ Sys.time()
 # show me the data ( and 'row name' )
 # tail(firmshistory[[1]],2) # JUST THE VERY LAST TWO ROWS
 
-# AMEX_AAU.HTMLTITLEtext       "Almaden Minerals
+# AMEX_AAU.HTMLTITLEtext       "Almaden Minerals"
 # AMEX_AAU.EXCHANGE_TICKERtext "AMEX_AAU"
 
 # show me the data ( and 'row name' )
