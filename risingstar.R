@@ -1172,4 +1172,894 @@ rm("firms_item_revenue")
 
 
 
+############ BEGIN EXECUTABLE AREA  ################### 
+
+Sys.time()
+load(file="firmshistory_w_bottom_EXCHANGE_TICKERtext__MARKETCAP_SECTOR_INDUSTRY_ET_listitem_ALL.Rdata")
+Sys.time()
+
+# below: trying to find the UNIQUE financial statement attributes
+# ( So I may use mysql to 'partition by these attributes' )
+
+firm_index <- 0
+unique_rownombres <- c()
+if ( length(firmshistory) > 0 ) {
+  for ( x in firmshistory ) {
+    firm_index <- firm_index + 1
+    
+    # note: 1 row matrix will become a vector
+    # just appending to a non-unique collection
+    # not UNIQUE yet: will be made unique BELOW
+    unique_rownombres <-  append(unique_rownombres, firmshistory[[firm_index]][,5])
+
+    if ( firm_index %% 100 == 0 ) {
+      print(paste(firm_index," completed.",sep=""))
+    }
+    
+    if ( firm_index %% 1000 == 0 ) {
+      print("Done with 1000 records.")
+      # break
+    }
+    
+  }
+}
+## rm(x)
+#Sys.time()
+# ONE SECOND PER 100 START ... EVENTUALLY 3 SECONDS / 100 ( EXP SLOWDOWN )
+
+# I SUSPECT that the situation is faster to run this
+# ONCE every 1000 records ( rather than here at the end )
+# remove duplicates ( I just want non-repeating financial statement attributes )
+# any(duplicated(unique_rownombres))
+# [1] TRUE     # BUT IS CASE SENSTITIVE
+unique_rownombres <- unique(unique_rownombres)
+# instantaneous
+# any(duplicated(unique_rownombres))
+# [1] FALSE   # BUT IS CASE SENSTITIVE
+
+# length(unique_rownombres)
+# 409
+
+# visually view
+# sort(unique_rownombres)
+
+# see ...
+# some plurals
+# many unique items
+
+# find the place where ONLY duplicates by case-senstivity is possible
+# MySQL partitions have to have partition names THAT are case-insensitive
+
+for ( x in unique_rownombres) {
+  for ( y in unique_rownombres) {
+     if( ( x != y ) & ( tolower(x) == tolower(y) ) ) { print(paste0(x," _may_equal_ ",y)) }
+  }
+}
+
+# [1] "Net Income from Total Operations (YTD) _may_equal_ Net income from Total Operations (YTD)"
+# [1] "Net income from Total Operations (YTD) _may_equal_ Net Income from Total Operations (YTD)"
+
+# sort(unique_rownombres)
+# [238] "net income from total operations"
+# [239] "Net income from Total Operations (YTD)"
+# [240] "Net Income from Total Operations (YTD)"
+# [241] "net increase federal funds sold"
+
+# need to be enclosed in single quotes NOW
+# because in the "PARTITION ... VALUES_IN 'a','A'" for below I lost the quoting logic
+
+unique_rownombres_index <- 0
+for ( x in unique_rownombres) {
+  unique_rownombres_index <- unique_rownombres_index + 1
+  unique_rownombres[unique_rownombres_index] <- paste0("'",unique_rownombres[unique_rownombres_index],"'")
+}
+
+# sort(unique_rownombres)
+
+# [238] "'net income from total operations'"
+# [239] "'Net income from Total Operations (YTD)'"
+# [240] "'Net Income from Total Operations (YTD)'"
+# [241] "'net increase federal funds sold'"
+
+# need to master vector containing all the VALUES_IN clauses in the CREATE TABLE statement
+# I am combining finanacial statement attributes that ONLY differ by case of the caracters
+# This will ( eventually ) lead to a multi-valued MySql PARTITION VALUES_IN item
+# e.g.  PARTITION ... VALUES_IN 'a','A'
+
+partition_values <- c()
+unique_rownombres_already_processed <- c()
+unique_rownombres_index <- 0
+for ( x in unique_rownombres) {
+  unique_rownombres_index <- unique_rownombres_index + 1
+  if ( unique_rownombres[unique_rownombres_index] %in% unique_rownombres_already_processed ) {
+    # already checked
+    next
+  } 
+  # itself ( later: plus additional possible values to the right ( if any ) )
+  partition_ele_original_plus_stored_duplicates_text <- paste0("",unique_rownombres[unique_rownombres_index],"")
+  if (unique_rownombres_index < length(unique_rownombres) ) {
+    for ( right_side_index in (unique_rownombres_index + 1):length(unique_rownombres)  ) {
+      # print(paste0(unique_rownombres_index,right_side_index))
+      if( ( unique_rownombres[unique_rownombres_index] != unique_rownombres[right_side_index] ) & ( tolower( unique_rownombres[unique_rownombres_index]) == tolower(unique_rownombres[right_side_index]) ) ) { 
+          print(paste0("DUPLICATE FOUND")) 
+          print(paste0(" ORIGINAL:",unique_rownombres[unique_rownombres_index])) 
+          print(paste0("DUPLICATE:",unique_rownombres[right_side_index])) 
+          # adding the near case sensitive copies
+          # ( earlier: from itself ) plus additional possible values to the right ( if any )
+          partition_ele_original_plus_stored_duplicates_text  <- paste0(partition_ele_original_plus_stored_duplicates_text,",",unique_rownombres[right_side_index],"")
+          # remove right_side_index, so in the future it is not checked
+          unique_rownombres_already_processed <- append(unique_rownombres_already_processed,unique_rownombres[right_side_index])
+      } 
+    }
+  } 
+  # print(partition_ele_original_plus_stored_duplicates_text)
+  # add it to the master collection of partition VALUES_IN"
+  partition_values <- append(partition_values,partition_ele_original_plus_stored_duplicates_text)
+  # remove unique_rownombres_index, so in the future it is not checked
+  # NOTE: this is in an ORDERED loop, so it is not rechecked ANYWAY
+  # This line is here for programing LOGICAL consistency
+  unique_rownombres_already_processed <- append(unique_rownombres_already_processed,unique_rownombres[unique_rownombres_index])
+}
+
+# notice below: only differ by 'i' and 'I' in i/Income
+
+# [1] "DUPLICATE FOUND"
+# [1] " ORIGINAL:'Net Income from Total Operations (YTD)'"
+# [1] "DUPLICATE:'Net income from Total Operations (YTD)'"
+
+# all mixed-case combinations
+# length(unique_rownombres)
+# [1] 409
+
+# length(partition_values)
+# [1] 408
+
+# see the mixed cases all in one column value
+# sort(partition_values)
+
+# [238] "'net income from total operations'"
+# [239] "'Net Income from Total Operations (YTD)','Net income from Total Operations (YTD)'"
+# [240] "'net increase federal funds sold'"
+
+# MANUALLY look at and choose the ones that NEED to be combined anyways
+# sort(partition_values)
+# ONLY 'THE VERY VERY CLOSE' ONES 'ONE CHARACTER ONLY'
+
+ # [57] "'Basic EPS (Cum. Effect of Acc. Change)'"
+ # [58] "'Basic EPS (Cum. Effect of Acct. Change)'"
+
+ # [64] "'Basic EPS from Total Operations'"
+ # [65] "'Basic EPS from Total Operations)'"
+
+ # [95] "'cumulative translation adjustment'"
+ # [96] "'cumulative translation adjustments'"
+ 
+ # [99] "'current defered income taxes'"
+# [100] "'current deferred income taxes'"
+ 
+# [126] "'dividends paid per share'"
+# [127] "'Dividends Paid Per Share (DPS)'"
+ 
+# [143] "'extraordinary income losses'"
+# [144] "'extraordinary income/losses'"
+ 
+# [146] "'federal funds sold (purchased)'"
+# [147] "'federal funds sold (securities purchased)'"
+ 
+# [166] "'INCOME STATEMENT (YEAR-TO-DATE)Revenue (YTD)'"
+# [167] "'INCOME STATEMENT (YEAR-TO-DATE)Revenues (YTD)'"
+
+# [222] "'NET CASH FLOWeffect exchange rate changes'"
+# [223] "'NET CASH FLOWeffect of exchange rate changes'"
+
+# [277] "'other gains (losses)'"
+# [278] "'other gains/losses'"
+ 
+# [282] "'other investing changes net'"
+# [283] "'other investing changes, net'"
+ 
+# [292] "'other receivable'"
+# [293] "'other receivables'"
+ 
+# [310] "'preliminary full context ind'"
+# [311] "'preliminary full context indicator'"
+ 
+# [326] "'provision for loan loss'"
+# [327] "'provision for loan losses'"
+ 
+# [363] "'separate account business'"
+# [364] "'separate accounts business'"
+
+# [367] "'short-term debt'"
+# [369] "'short -term debt'"
+
+# [371] "'special income (charges)'"
+# [372] "'special income charges'"
+
+# [404] "'unearned premiums'"
+# [405] "'unearnedp remiums'"
+
+# create a matrix of together items
+# slight DANGER here, I only have DOUBLE combinations
+# a TRIPLE combination would require different programming
+
+to_be_together_collection <- matrix ( 
+   c(
+    "'Basic EPS (Cum. Effect of Acc. Change)'",
+    "'Basic EPS (Cum. Effect of Acct. Change)'",
+
+    "'Basic EPS from Total Operations'",
+    "'Basic EPS from Total Operations)'",
+
+    "'cumulative translation adjustment'",
+    "'cumulative translation adjustments'",
+
+    "'current defered income taxes'",
+    "'current deferred income taxes'",
+
+    "'dividends paid per share'",
+    "'Dividends Paid Per Share (DPS)'",
+
+    "'extraordinary income losses'",
+    "'extraordinary income/losses'",
+
+    "'federal funds sold (purchased)'",
+    "'federal funds sold (securities purchased)'",
+
+    "'INCOME STATEMENT (YEAR-TO-DATE)Revenue (YTD)'",
+    "'INCOME STATEMENT (YEAR-TO-DATE)Revenues (YTD)'",
+
+    "'NET CASH FLOWeffect exchange rate changes'",
+    "'NET CASH FLOWeffect of exchange rate changes'",
+
+    "'other gains (losses)'",
+    "'other gains/losses'",
+
+    "'other investing changes net'",
+    "'other investing changes, net'",
+
+    "'other receivable'",
+    "'other receivables'",
+
+    "'preliminary full context ind'",
+    "'preliminary full context indicator'",
+
+    "'provision for loan loss'",
+    "'provision for loan losses'",
+
+    "'separate account business'",
+    "'separate accounts business'",
+
+    "'short-term debt'",
+    "'short -term debt'",
+
+    "'special income (charges)'",
+    "'special income charges'",
+
+    "'unearned premiums'",
+    "'unearnedp remiums'"
+    ), nrow=18, ncol=2, byrow=TRUE
+)
+
+# print to see
+to_be_together_collection
+      # [,1]
+ # [1,] "'Basic EPS (Cum. Effect of Acc. Change)'"
+ # [2,] "'Basic EPS from Total Operations'"
+ # [3,] "'cumulative translation adjustment'"
+ # [4,] "'current defered income taxes'"
+ # [5,] "'dividends paid per share'"
+ # [6,] "'extraordinary income losses'"
+ # [7,] "'federal funds sold (purchased)'"
+ # [8,] "'INCOME STATEMENT (YEAR-TO-DATE)Revenue (YTD)'"
+ # [9,] "'NET CASH FLOWeffect exchange rate changes'"
+# [10,] "'other gains (losses)'"
+# [11,] "'other investing changes net'"
+# [12,] "'other receivable'"
+# [13,] "'preliminary full context ind'"
+# [14,] "'provision for loan loss'"
+# [15,] "'separate account business'"
+# [16,] "'short-term debt'"
+# [17,] "'special income (charges)'"
+# [18,] "'unearned premiums'"
+      # [,2]
+ # [1,] "'Basic EPS (Cum. Effect of Acct. Change)'"
+ # [2,] "'Basic EPS from Total Operations)'"
+ # [3,] "'cumulative translation adjustments'"
+ # [4,] "'current deferred income taxes'"
+ # [5,] "'Dividends Paid Per Share (DPS)'"
+ # [6,] "'extraordinary income/losses'"
+ # [7,] "'federal funds sold (securities purchased)'"
+ # [8,] "'INCOME STATEMENT (YEAR-TO-DATE)Revenues (YTD)'"
+ # [9,] "'NET CASH FLOWeffect of exchange rate changes'"
+# [10,] "'other gains/losses'"
+# [11,] "'other investing changes, net'"
+# [12,] "'other receivables'"
+# [13,] "'preliminary full context indicator'"
+# [14,] "'provision for loan losses'"
+# [15,] "'separate accounts business'"
+# [16,] "'short -term debt'"
+# [17,] "'special income charges'"
+# [18,] "'unearnedp remiums'"
+
+
+# partition_values to be fixed
+partition_values_fixed <- partition_values
+
+# sort(partition_values_fixed)
+# [404] "'unearned premiums'" ( HERE AND )
+# [405] "'unearnedp remiums'" ( HERE TO BE COMBINED )
+# [406] "'working capital'"
+# [407] "'working capital as % of price'"
+# [408] "'working captial as % of equity'"
+
+
+# append(paste0) together 'the right element after the left element
+# to become the new left element
+
+if (nrow(to_be_together_collection) > 0) {
+  to_be_together_collection_both_side_index <- 0
+  for ( w in 1:nrow(to_be_together_collection) ) {
+    to_be_together_collection_both_side_index <- to_be_together_collection_both_side_index + 1
+
+    partition_values_left_side_index <- 0
+    partition_values_index <- 0
+    # find the index of left (first column) matrix element
+    for ( x in partition_values ) {
+      partition_values_index <- partition_values_index + 1
+      if ( partition_values[partition_values_index] == to_be_together_collection[to_be_together_collection_both_side_index ,1] )  {
+      partition_values_left_side_index <- partition_values_index
+      print(paste0("# ", partition_values_index," is ",partition_values[partition_values_index]))
+      }
+    }
+
+    partition_values_right_side_index <- 0
+    partition_values_index <- 0
+    # find the index of right (second column) matrix element
+    for ( x in partition_values ) {
+      partition_values_index <- partition_values_index + 1
+      if ( partition_values[partition_values_index] == to_be_together_collection[to_be_together_collection_both_side_index ,2] )  {
+        partition_values_right_side_index <- partition_values_index
+        print(paste0("# ",partition_values_index," is ",partition_values[partition_values_index]))
+
+        print( paste0( partition_values_left_side_index, " "
+                    ,  partition_values_right_side_index, " "
+                    ) 
+              )
+          
+        # append together the elements reference by 
+        #   partition_values_left_side_index AND
+        #   partition_values_right_side_index
+
+        partition_values_fixed[partition_values_left_side_index] <- paste0(
+          partition_values_fixed[partition_values_left_side_index],","
+          , partition_values_fixed[partition_values_right_side_index]
+        )
+    
+        print(partition_values_fixed[partition_values_left_side_index])
+        
+      }
+    }
+
+  }
+}
+
+# [1] "# 366 is 'unearned premiums'"
+# [1] "# 345 is 'unearnedp remiums'"
+# [1] "366 345 "
+# [1] "'unearned premiums','unearnedp remiums'"
+
+# clean up
+# remove from the partition_values_fixed collection, the element 
+# that IS ONLY equal to to_be_together_collection[to_be_together_collection_index,2]
+# that is 'to_be_together_collection_index matrix column 2'
+# [R] Asking Favor For "Remove element with Particular Value In Vector"
+# https://stat.ethz.ch/pipermail/r-help/2011-August/288183.html
+
+if ( length(partition_values_fixed) > 0 ) {
+  partition_values_fixed_index <- 0
+  for ( y in partition_values_fixed ) {
+    partition_values_fixed_index <- partition_values_fixed_index + 1
+
+    if ( nrow(to_be_together_collection) > 0 ) {
+      to_be_together_collection_index <- 0
+      for ( x in 1:nrow(to_be_together_collection) ) {
+        to_be_together_collection_index <- to_be_together_collection_index + 1
+        
+        # create a new partition_values_fixed that does not contain that
+        # right side 'to_be_together_collection column 2 value'
+        partition_values_fixed <- partition_values_fixed[partition_values_fixed != to_be_together_collection[to_be_together_collection_index,2] ]
+        
+      }
+    }
+
+  }
+}
+
+# sort(partition_values_fixed)
+# 408 [408] - 18 to_be_together_collection matrix rows = 390 [390]
+# ...
+# [355] "'special income (charges)','special income charges'"
+# ...
+# [387] "'unearned premiums','unearnedp remiums'"
+# [388] "'working capital'"
+# [389] "'working capital as % of price'"
+# [390] "'working captial as % of equity'"
+# >
+
+partition_values_fixed_part_name <- partition_values_fixed
+
+# take the 'first comma delmited thing' of the partition_values_fixed collection
+# and use that 'first comma delmited thing' as the partition name
+
+if ( length(partition_values_fixed_part_name) > 0 ) {
+  partition_values_fixed_part_name_index <- 0
+  for ( y in partition_values_fixed_part_name ) {
+    partition_values_fixed_part_name_index <- partition_values_fixed_part_name_index + 1
+    
+    # actually extract and that 'first comma delmited thing' 
+    # shorten partition_values_fixed_part_name to contain ONLY that 'first'
+    if ( regexpr(pattern ="','",partition_values_fixed_part_name[partition_values_fixed_part_name_index])[1] != -1 ) {
+      partition_values_fixed_part_name[partition_values_fixed_part_name_index] <- substr(partition_values_fixed_part_name[partition_values_fixed_part_name_index],
+        regexpr(pattern ="'",partition_values_fixed_part_name[partition_values_fixed_part_name_index])[1] + 1,
+        regexpr(pattern ="','",partition_values_fixed_part_name[partition_values_fixed_part_name_index])[1] -1
+      ) 
+    } else {
+        # no "','", therefore no 'first','second','third' ... just 'first'
+        # just chop off the first tick mark and the last tick mark
+      partition_values_fixed_part_name[partition_values_fixed_part_name_index] <- substr(partition_values_fixed_part_name[partition_values_fixed_part_name_index],
+        regexpr(pattern ="'",partition_values_fixed_part_name[partition_values_fixed_part_name_index])[1] + 1,
+        gregexpr(pattern ="'",partition_values_fixed_part_name[partition_values_fixed_part_name_index])[[1]][length(gregexpr(pattern ="'",partition_values_fixed_part_name[partition_values_fixed_part_name_index])[[1]])] - 1
+      )
+    }
+    
+  }
+}
+
+# sort(partition_values_fixed_part_name)
+# [386] "trust fees by commissions"
+# [387] "unearned premiums"
+# [388] "working capital"
+# [389] "working capital as % of price"
+# [390] "working captial as % of equity"
+
+# prepare to ... create partition names and values
+
+partition_values_fixed_part_name_database <- partition_values_fixed_part_name
+
+# testing
+# partition_values_fixed_part_name_database_orig_copy <- partition_values_fixed_part_name_database
+
+# testing put back
+# partition_values_fixed_part_name_database <- partition_values_fixed_part_name_database_orig_copy
+
+# tranform into my own partition names
+
+partition_values_fixed_part_name_database_index <- 0
+if ( length(partition_values_fixed_part_name_database) > 0 ) {
+  for ( x in partition_values_fixed_part_name_database ) {
+    partition_values_fixed_part_name_database_index <- partition_values_fixed_part_name_database_index + 1
+    
+    # remove problem characters that can not  or I do not want
+    # to  be MySQL identifiers
+    partition_values_fixed_part_name_database[partition_values_fixed_part_name_database_index] <- gsub(" ","_",partition_values_fixed_part_name_database[partition_values_fixed_part_name_database_index])
+    partition_values_fixed_part_name_database[partition_values_fixed_part_name_database_index] <- gsub("\\*","_ASK_" ,partition_values_fixed_part_name_database[partition_values_fixed_part_name_database_index])
+    partition_values_fixed_part_name_database[partition_values_fixed_part_name_database_index] <- gsub("%","_PCT_" ,partition_values_fixed_part_name_database[partition_values_fixed_part_name_database_index])
+    partition_values_fixed_part_name_database[partition_values_fixed_part_name_database_index] <- gsub("-","_HYP_" ,partition_values_fixed_part_name_database[partition_values_fixed_part_name_database_index])
+    partition_values_fixed_part_name_database[partition_values_fixed_part_name_database_index] <- gsub("&","_AND_" ,partition_values_fixed_part_name_database[partition_values_fixed_part_name_database_index])
+    partition_values_fixed_part_name_database[partition_values_fixed_part_name_database_index] <- gsub(",","_CMMA_" ,partition_values_fixed_part_name_database[partition_values_fixed_part_name_database_index])
+    partition_values_fixed_part_name_database[partition_values_fixed_part_name_database_index] <- gsub("/","_RSL_" ,partition_values_fixed_part_name_database[partition_values_fixed_part_name_database_index])
+    partition_values_fixed_part_name_database[partition_values_fixed_part_name_database_index] <- gsub("\\$","_DOL_" ,partition_values_fixed_part_name_database[partition_values_fixed_part_name_database_index])
+    partition_values_fixed_part_name_database[partition_values_fixed_part_name_database_index] <- gsub("\\.","_PRD_" ,partition_values_fixed_part_name_database[partition_values_fixed_part_name_database_index])
+    partition_values_fixed_part_name_database[partition_values_fixed_part_name_database_index] <- gsub("\\(","_LPN_",partition_values_fixed_part_name_database[partition_values_fixed_part_name_database_index])
+    partition_values_fixed_part_name_database[partition_values_fixed_part_name_database_index] <- gsub("\\)","_RPN_" ,partition_values_fixed_part_name_database[partition_values_fixed_part_name_database_index])
+    partition_values_fixed_part_name_database[partition_values_fixed_part_name_database_index] <- tolower(partition_values_fixed_part_name_database[partition_values_fixed_part_name_database_index])
+
+    # MySQL limit of 64 characters for a partition name. Therefore, truncate it
+    # I am NOT FULLY happy with this solution, but it is GOOD enough for right now
+    partition_values_fixed_part_name_database[partition_values_fixed_part_name_database_index] <- substr(partition_values_fixed_part_name_database[partition_values_fixed_part_name_database_index],1,64)
+    
+    # debugging
+    # print(partition_values_fixed_part_name_database[partition_values_fixed_part_name_database_index])
+
+  }
+}
+
+# visually view
+# sort(partition_values_fixed_part_name_database)
+
+# [1] "_ask_auditors_name"
+# [348] "selling_cmma__general__and__administrative__lpn_sg_and_a_rpn__ex"
+## WITHOUT 64 CHARACTER TRUNCATION
+## [348] "selling_cmma__general__and__administrative__lpn_sg_and_a_rpn__expense"
+
+# In the absence of other information, the programs use the compiled-in default 
+# character set, usually latin1
+# http://dev.mysql.com/doc/refman/5.6/en/charset-connection.html
+
+# R language is case sensitive
+# I found out: NEED TO HAVE IN PARTITIONS VALUES list when ITEMS only differ by CASE
+#   
+# http://mysqldatabaseadministration.blogspot.com/2006/09/case-sensitive-mysql.html
+
+# ONLY allowable combination that is case sentitive
+########################################
+# create datababase MySQL database advfn
+########################################
+# CREATE DATABASE `advfn` COLLATE 'latin1_general_cs' ;
+
+# NOTE: default OBJECTS will be created: CHARACTER SET latin1 COLLATE latin1_general_cs 
+# NOTE: I want it THIS WAY ( from experience: I want my JOINS to work )
+
+# generate the MySQL: create table names and rows
+
+create_table_firmshistory_partition_values_fixed_part_name_database <- "
+CREATE TABLE `firmshistory_partition_rownombres` (
+  `MARKETCAP` VARCHAR(64),
+  `SECTOR` VARCHAR(64),
+  `INDUSTRY` VARCHAR(64),
+  `EXCHANGE_TICKER` VARCHAR(21),
+  `rownombres` VARCHAR(64),  
+  `X1990_01` TEXT,
+  `X1990_02` TEXT,
+  `X1990_03` TEXT,
+  `X1990_04` TEXT,
+  `X1990_05` TEXT,
+  `X1990_06` TEXT,
+  `X1990_07` TEXT,
+  `X1990_08` TEXT,
+  `X1990_09` TEXT,
+  `X1990_10` TEXT,
+  `X1990_11` TEXT,
+  `X1990_12` TEXT,
+  `X1991_01` TEXT,
+  `X1991_02` TEXT,
+  `X1991_03` TEXT,
+  `X1991_04` TEXT,
+  `X1991_05` TEXT,
+  `X1991_06` TEXT,
+  `X1991_07` TEXT,
+  `X1991_08` TEXT,
+  `X1991_09` TEXT,
+  `X1991_10` TEXT,
+  `X1991_11` TEXT,
+  `X1991_12` TEXT,
+  `X1992_01` TEXT,
+  `X1992_02` TEXT,
+  `X1992_03` TEXT,
+  `X1992_04` TEXT,
+  `X1992_05` TEXT,
+  `X1992_06` TEXT,
+  `X1992_07` TEXT,
+  `X1992_08` TEXT,
+  `X1992_09` TEXT,
+  `X1992_10` TEXT,
+  `X1992_11` TEXT,
+  `X1992_12` TEXT,
+  `X1993_01` TEXT,
+  `X1993_02` TEXT,
+  `X1993_03` TEXT,
+  `X1993_04` TEXT,
+  `X1993_05` TEXT,
+  `X1993_06` TEXT,
+  `X1993_07` TEXT,
+  `X1993_08` TEXT,
+  `X1993_09` TEXT,
+  `X1993_10` TEXT,
+  `X1993_11` TEXT,
+  `X1993_12` TEXT,
+  `X1994_01` TEXT,
+  `X1994_02` TEXT,
+  `X1994_03` TEXT,
+  `X1994_04` TEXT,
+  `X1994_05` TEXT,
+  `X1994_06` TEXT,
+  `X1994_07` TEXT,
+  `X1994_08` TEXT,
+  `X1994_09` TEXT,
+  `X1994_10` TEXT,
+  `X1994_11` TEXT,
+  `X1994_12` TEXT,
+  `X1995_01` TEXT,
+  `X1995_02` TEXT,
+  `X1995_03` TEXT,
+  `X1995_04` TEXT,
+  `X1995_05` TEXT,
+  `X1995_06` TEXT,
+  `X1995_07` TEXT,
+  `X1995_08` TEXT,
+  `X1995_09` TEXT,
+  `X1995_10` TEXT,
+  `X1995_11` TEXT,
+  `X1995_12` TEXT,
+  `X1996_01` TEXT,
+  `X1996_02` TEXT,
+  `X1996_03` TEXT,
+  `X1996_04` TEXT,
+  `X1996_05` TEXT,
+  `X1996_06` TEXT,
+  `X1996_07` TEXT,
+  `X1996_08` TEXT,
+  `X1996_09` TEXT,
+  `X1996_10` TEXT,
+  `X1996_11` TEXT,
+  `X1996_12` TEXT,
+  `X1997_01` TEXT,
+  `X1997_02` TEXT,
+  `X1997_03` TEXT,
+  `X1997_04` TEXT,
+  `X1997_05` TEXT,
+  `X1997_06` TEXT,
+  `X1997_07` TEXT,
+  `X1997_08` TEXT,
+  `X1997_09` TEXT,
+  `X1997_10` TEXT,
+  `X1997_11` TEXT,
+  `X1997_12` TEXT,
+  `X1998_01` TEXT,
+  `X1998_02` TEXT,
+  `X1998_03` TEXT,
+  `X1998_04` TEXT,
+  `X1998_05` TEXT,
+  `X1998_06` TEXT,
+  `X1998_07` TEXT,
+  `X1998_08` TEXT,
+  `X1998_09` TEXT,
+  `X1998_10` TEXT,
+  `X1998_11` TEXT,
+  `X1998_12` TEXT,
+  `X1999_01` TEXT,
+  `X1999_02` TEXT,
+  `X1999_03` TEXT,
+  `X1999_04` TEXT,
+  `X1999_05` TEXT,
+  `X1999_06` TEXT,
+  `X1999_07` TEXT,
+  `X1999_08` TEXT,
+  `X1999_09` TEXT,
+  `X1999_10` TEXT,
+  `X1999_11` TEXT,
+  `X1999_12` TEXT,
+  `X2000_01` TEXT,
+  `X2000_02` TEXT,
+  `X2000_03` TEXT,
+  `X2000_04` TEXT,
+  `X2000_05` TEXT,
+  `X2000_06` TEXT,
+  `X2000_07` TEXT,
+  `X2000_08` TEXT,
+  `X2000_09` TEXT,
+  `X2000_10` TEXT,
+  `X2000_11` TEXT,
+  `X2000_12` TEXT,
+  `X2001_01` TEXT,
+  `X2001_02` TEXT,
+  `X2001_03` TEXT,
+  `X2001_04` TEXT,
+  `X2001_05` TEXT,
+  `X2001_06` TEXT,
+  `X2001_07` TEXT,
+  `X2001_08` TEXT,
+  `X2001_09` TEXT,
+  `X2001_10` TEXT,
+  `X2001_11` TEXT,
+  `X2001_12` TEXT,
+  `X2002_01` TEXT,
+  `X2002_02` TEXT,
+  `X2002_03` TEXT,
+  `X2002_04` TEXT,
+  `X2002_05` TEXT,
+  `X2002_06` TEXT,
+  `X2002_07` TEXT,
+  `X2002_08` TEXT,
+  `X2002_09` TEXT,
+  `X2002_10` TEXT,
+  `X2002_11` TEXT,
+  `X2002_12` TEXT,
+  `X2003_01` TEXT,
+  `X2003_02` TEXT,
+  `X2003_03` TEXT,
+  `X2003_04` TEXT,
+  `X2003_05` TEXT,
+  `X2003_06` TEXT,
+  `X2003_07` TEXT,
+  `X2003_08` TEXT,
+  `X2003_09` TEXT,
+  `X2003_10` TEXT,
+  `X2003_11` TEXT,
+  `X2003_12` TEXT,
+  `X2004_01` TEXT,
+  `X2004_02` TEXT,
+  `X2004_03` TEXT,
+  `X2004_04` TEXT,
+  `X2004_05` TEXT,
+  `X2004_06` TEXT,
+  `X2004_07` TEXT,
+  `X2004_08` TEXT,
+  `X2004_09` TEXT,
+  `X2004_10` TEXT,
+  `X2004_11` TEXT,
+  `X2004_12` TEXT,
+  `X2005_01` TEXT,
+  `X2005_02` TEXT,
+  `X2005_03` TEXT,
+  `X2005_04` TEXT,
+  `X2005_05` TEXT,
+  `X2005_06` TEXT,
+  `X2005_07` TEXT,
+  `X2005_08` TEXT,
+  `X2005_09` TEXT,
+  `X2005_10` TEXT,
+  `X2005_11` TEXT,
+  `X2005_12` TEXT,
+  `X2006_01` TEXT,
+  `X2006_02` TEXT,
+  `X2006_03` TEXT,
+  `X2006_04` TEXT,
+  `X2006_05` TEXT,
+  `X2006_06` TEXT,
+  `X2006_07` TEXT,
+  `X2006_08` TEXT,
+  `X2006_09` TEXT,
+  `X2006_10` TEXT,
+  `X2006_11` TEXT,
+  `X2006_12` TEXT,
+  `X2007_01` TEXT,
+  `X2007_02` TEXT,
+  `X2007_03` TEXT,
+  `X2007_04` TEXT,
+  `X2007_05` TEXT,
+  `X2007_06` TEXT,
+  `X2007_07` TEXT,
+  `X2007_08` TEXT,
+  `X2007_09` TEXT,
+  `X2007_10` TEXT,
+  `X2007_11` TEXT,
+  `X2007_12` TEXT,
+  `X2008_01` TEXT,
+  `X2008_02` TEXT,
+  `X2008_03` TEXT,
+  `X2008_04` TEXT,
+  `X2008_05` TEXT,
+  `X2008_06` TEXT,
+  `X2008_07` TEXT,
+  `X2008_08` TEXT,
+  `X2008_09` TEXT,
+  `X2008_10` TEXT,
+  `X2008_11` TEXT,
+  `X2008_12` TEXT,
+  `X2009_01` TEXT,
+  `X2009_02` TEXT,
+  `X2009_03` TEXT,
+  `X2009_04` TEXT,
+  `X2009_05` TEXT,
+  `X2009_06` TEXT,
+  `X2009_07` TEXT,
+  `X2009_08` TEXT,
+  `X2009_09` TEXT,
+  `X2009_10` TEXT,
+  `X2009_11` TEXT,
+  `X2009_12` TEXT,
+  `X2010_01` TEXT,
+  `X2010_02` TEXT,
+  `X2010_03` TEXT,
+  `X2010_04` TEXT,
+  `X2010_05` TEXT,
+  `X2010_06` TEXT,
+  `X2010_07` TEXT,
+  `X2010_08` TEXT,
+  `X2010_09` TEXT,
+  `X2010_10` TEXT,
+  `X2010_11` TEXT,
+  `X2010_12` TEXT,
+  `X2011_01` TEXT,
+  `X2011_02` TEXT,
+  `X2011_03` TEXT,
+  `X2011_04` TEXT,
+  `X2011_05` TEXT,
+  `X2011_06` TEXT,
+  `X2011_07` TEXT,
+  `X2011_08` TEXT,
+  `X2011_09` TEXT,
+  `X2011_10` TEXT,
+  `X2011_11` TEXT,
+  `X2011_12` TEXT,
+  `X2012_01` TEXT,
+  `X2012_02` TEXT,
+  `X2012_03` TEXT,
+  `X2012_04` TEXT,
+  `X2012_05` TEXT,
+  `X2012_06` TEXT,
+  `X2012_07` TEXT,
+  `X2012_08` TEXT,
+  `X2012_09` TEXT,
+  `X2012_10` TEXT,
+  `X2012_11` TEXT,
+  `X2012_12` TEXT,
+  `X2013_01` TEXT,
+  `X2013_02` TEXT,
+  `X2013_03` TEXT,
+  `X2013_04` TEXT,
+  `X2013_05` TEXT,
+  `X2013_06` TEXT,
+  `X2013_07` TEXT,
+  `X2013_08` TEXT,
+  `X2013_09` TEXT,
+  `X2013_10` TEXT,
+  `X2013_11` TEXT,
+  `X2013_12` TEXT
+) CHARACTER SET latin1 COLLATE latin1_general_cs 
+PARTITION BY LIST COLUMNS (`rownombres`) (
+
+"
+
+# debugging
+# writeLines(create_table_firmshistory_partition_values_fixed_part_name_database)
+# cat or writeLines
+# http://stackoverflow.com/questions/4071586/printing-newlines-with-print-in-r
+
+# testing
+# create_table_firmshistory_partition_values_fixed_part_name_database_orig_copy <- create_table_firmshistory_partition_values_fixed_part_name_database 
+
+# testing put back
+# create_table_firmshistory_partition_values_fixed_part_name_database <- create_table_firmshistory_partition_values_fixed_part_name_database_orig_copy
+
+# tranform into my own partition names and values
+# append partition names and values
+
+partition_snippet <- ""
+partition_values_fixed_part_name_database_index <- 0
+if ( length(partition_values_fixed_part_name_database) > 0 ) {
+  for ( x in partition_values_fixed_part_name_database ) {
+    partition_values_fixed_part_name_database_index <- partition_values_fixed_part_name_database_index + 1
+
+partition_snippet <- "
+  PARTITION 
+    `"
+    
+    create_table_firmshistory_partition_values_fixed_part_name_database <- paste0(create_table_firmshistory_partition_values_fixed_part_name_database
+       , partition_snippet, partition_values_fixed_part_name_database[partition_values_fixed_part_name_database_index],"`"
+       )
+    
+     partition_snippet <- "
+      VALUES IN ("
+    
+    create_table_firmshistory_partition_values_fixed_part_name_database <- paste0(create_table_firmshistory_partition_values_fixed_part_name_database
+       , partition_snippet
+       , partition_values_fixed[partition_values_fixed_part_name_database_index]
+       ,")"
+       ,ifelse( partition_values_fixed_part_name_database_index == length(partition_values_fixed_part_name_database),"" ,"," )
+       ,"
+"
+       )
+    
+  }
+  
+  # end of the MySQL statement ");"
+  partition_snippet <- "
+);
+"
+
+  create_table_firmshistory_partition_values_fixed_part_name_database <- paste0(
+    create_table_firmshistory_partition_values_fixed_part_name_database,
+    partition_snippet
+  )
+
+}
+
+# print it
+# writeLines(create_table_firmshistory_partition_values_fixed_part_name_database)
+
+# easier to see
+fileConn <- file("create_table_firmshistory_partition_rownombres.out.txt")
+writeLines(create_table_firmshistory_partition_values_fixed_part_name_database,fileConn)
+close(fileConn)
+
+# put the text into HeidiSQL
+# then execute it
+
+############ END EXECUTABLE AREA ####################
+
+
+
 
