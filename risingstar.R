@@ -995,7 +995,7 @@ detach("package:zoo", unload=TRUE)
 
 
 
-########################## ( MAYBE ) BEGIN EXECUTABLE AREA ######################
+########################## ( FYI ONLY ) BEGIN EXECUTABLE AREA ######################
 
 # FOR YOUR INFORMATION #
 
@@ -1054,7 +1054,7 @@ Sys.time()
 # [1] "At index: 4669 EXCHANGE_TICKER found: NYSE_WMT"
 # [1] "4700 completed."
 
-##################### ( MAYBE ) END EXECUTABLE AREA HERE #####################
+##################### ( FYI ONLY ) END EXECUTABLE AREA HERE #####################
 
 
 
