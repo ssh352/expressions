@@ -2061,5 +2061,159 @@ close(fileConn)
 ############ END EXECUTABLE AREA ####################
 
 
+######### BEGIN EXECUTABLE '' ############ 
+
+# UPSIZE TO MYSQL
+
+# options(width = 255)
+
+# IF NOT ALREADY DONE
+Sys.time()
+load(file="firmshistory_w_bottom_EXCHANGE_TICKERtext__MARKETCAP_SECTOR_INDUSTRY_ET_listitem_ALL.Rdata")
+Sys.time()
+# 315M to load ( but not first access yet )
+
+# I want do generate all month columns and in all in order
+# seems useful to 'many' time series
+#   ts,timeSeries, its,(irts),zoo,xts,quantmod and derivatives
+# seems useful to sql: e.g. library(sqldef) "select ... UNION ..."
+#   such that in UNION the column order is expected
+
+# create a vector of ordered dates from "1990/01" to "2013/12"
+alldatecolumns <- c()
+for ( i in 1990:2013 ) {
+  for ( j in 1:12 ) {
+    # of 0 through 9, pad with a leading zero
+    yyyymm <- paste0(i,"/", if  ( j < 10 ) { paste0(0,j) } else { j } )
+    alldatecolumns <- c(alldatecolumns,yyyymm)
+  } 
+} 
+rm("i","j","yyyymm")
+
+
+# create my alldatacolumns ( notice the 'a' ) columns and in my specific order
+alldatacolumns <- c(
+   "MARKETCAP","SECTOR","INDUSTRY"
+   ,"EXCHANGE_TICKER","rownombres"   
+   ,alldatecolumns
+   )
+# keep alldatacolumns and  alldatecolumns ( use former later to 'custom' sort )
+ 
+
+# generate some columns
+tempdf <- data.frame(row.names=alldatacolumns)
+# make these change from row.names into rownames
+tempdf <- as.matrix(tempdf)
+# flip along the diagnol axis ... rownames becomes colnames
+tempdf <- t(tempdf)
+# recreate a data frame as the 'target' of a merge ( see below )
+tempdf <- as.data.frame(tempdf)
+
+# begin R language MySQL
+Sys.setenv(MYSQL_HOME = "F:/Program Files/MySQL/MySQL Server 5.6")
+library(RMySQL)
+# Loading required package: DBI
+# MYSQL_HOME defined as F:/Program Files/MySQL/MySQL Server 5.6
+
+# begin DBI MySQL
+drv <- dbDriver("MySQL")
+# open a session to MySQL database 'advfn'
+con <- dbConnect(drv, user="root", pass="root",dbname="advfn",host="localhost")
+
+Sys.time()
+firm_index <- 0
+if ( length(firmshistory) > 0 ) {
+  for ( x in firmshistory ) {
+    firm_index <- firm_index + 1
+    
+    # exract all  the "(attributes)" rows
+    firms_item_all <- firmshistory[[firm_index]]
+    
+    # perform merges
+    # perform and outer join ( all=TRUE )
+    # do not mix-up the row data ( sort=FALSE)
+    # note: this converts a matrix of characters to a data frame of factors
+    #   by the 'the programmer of merge' design
+    # actually merge
+
+    # merge into tempdf data from firms_item_revenue
+    # firms_total_revenue <- merge(tempdf,firms_item_revenue,all=TRUE,sort=FALSE)
+    firms_item_all_df <- merge(tempdf,firms_item_all,all=TRUE,sort=FALSE)
+
+    # convert back to a matrix ( those factors will be now strings )
+    # firms_total_revenue <- as.matrix(firms_total_revenue) 
+    firms_item_all <- as.matrix(firms_item_all_df) 
+    
+    # unfortunately the columns are in a mixed order
+    # sort them to my custom sort
+    firms_item_all <- firms_item_all[,alldatacolumns,drop=FALSE]
+    
+    # convert back into a data frame ( to be ready to be made into a MySQL table )
+    firms_item_all_df <- as.data.frame(firms_item_all,stringsAsFactors = FALSE )
+
+    # leave message ( in case of a crash ) I do know the load dataframe will begin next.
+    print(paste0("Load dataframe into MySQL: firm: ",firm_index," starting."))
+    
+    # upsize to MySQL
+    dbWriteTable(con, name = "firms_item_all_df", value = firms_item_all_df, row.names = FALSE)
+    
+    # leave message ( in case of a crash ) I do know what is not yet began.
+    print(paste0("Upsize to MySQL advfn.firmshistory_partition_rownombres: firm: ",firm_index," starting."))
+    
+    # append to the MySQL partitioned table ( by rownombres ) firmshistory_partition_rownombres
+    dbSendQuery(con,"INSERT INTO advfn.firmshistory_partition_rownombres SELECT * FROM advfn.firms_item_all_df")
+    
+    # leave message ( in case of a crash ) I do know what is not yet done.
+    print(paste0("Upsize to MySQL advfn.firmshistory_partition_rownombres: firm: ",firm_index," completed."))
+    
+    # remove the 'now' useless table
+    dbSendQuery(con,"DROP TABLE advfn.firms_item_all_df")
+    
+    # show the number finished every 10 records NOT FAST
+    if ( firm_index %% 10 == 0 ) {
+      print(paste(firm_index," completed.",sep=""))
+    }
+    
+    # testing
+    # if ( firm_index == 1 ) {
+      # break
+    # }
+    
+  }
+}
+Sys.time()
+# seems 10 EXCHANGE_TICKERs every 13 seconds ( memory is holding ????  ###M )
+# DID NOT MAKE IT
+
+# [1] "Load dataframe into MySQL: firm: 4731 starting."
+# [1] "Upsize to MySQL advfn.firmshistory_partition_rownombres: firm: 4731 starting."
+# [1] "Upsize to MySQL advfn.firmshistory_partition_rownombres: firm: 4731 completed."
+# > Sys.time()
+# [1] "2013-12-09 23:01:23 CST" ( I STARTED ABOUT 08:00:00 )
+
+dbDisconnect(con)
+dbUnloadDriver(drv)
+
+rm("x","con","drv") # 
+
+# working with firms_total_revenue SO WE KEEP IT
+# Sys.time()
+### save(firms_total_revenue, file="firms_total_revenue_ALL.Rdata")
+# Sys.time()
+
+rm("firms_item_all") 
+rm("firms_item_all_df") 
+
+# MySQL memory is steady at 555M
+# Rterm.exe only at 15M
+
+# But firmshistory is still there
+# > ncol(firmshistory[[4731]])
+# [1] 15
+# > nrow(firmshistory[[4731]])
+# [1] 283
+# >
+
+######### END EXECUTABLE ############
 
 
