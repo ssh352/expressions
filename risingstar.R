@@ -1059,7 +1059,7 @@ Sys.time()
 
 
 
-######### BEGIN EXECUTABLE ( MERGE METHOD ) firms_total_revenue ############
+######### BEGIN EXECUTABLE ( MERGE METHOD: NEVER USED: NOT ENOUGH MEMORY TO FINISH ) firms_total_revenue ############
 
 # NOTE: merge into a perfect DF followed by rbind MAY HAVE BEEN FASTER
 # perhaps ANOTHER day
@@ -1167,7 +1167,7 @@ Sys.time()
 
 rm("firms_item_revenue") 
 
-######### END EXECUTABLE ( MERGE METHOD ) firms_total_revenue ############
+######### END EXECUTABLE ( MERGE METHOD: NEVER USED: NOT ENOUGH MEMORY TO FINISH ) firms_total_revenue ############
 
 
 
