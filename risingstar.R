@@ -2217,3 +2217,123 @@ rm("firms_item_all_df")
 ######### END EXECUTABLE ############
 
 
+################ BEGIN EXECUTABLE AREA #################### 
+                                                            
+# Note: this HAS BEEN tested with the NEXT EXECUTABLE area
+
+# create a partitioned table ( by ThisMonth ) to hold
+#   per ticker
+#     end of month Close and AdjustedClose
+# remember THIS advfn database is latin1_general_cs 
+# if column `ThisMonth` were to be of type `text` 
+# then upon attempted creation an error would occur
+#   MySQL Database Error: A BLOB field is not allowed in partition function
+# CREATE TABLE `firmshistory_quote_partition_thismonth` (
+  # `TICKER` varchar(64),
+  # `EXCHANGE_TICKER` varchar(64),
+  # `ThisMonth` varchar(64),
+  # `ThisMonthLastDate` varchar(64),
+  # `ThisMonthLastClose` double,
+  # `ThisMonthLastAdjustedClose` double
+# ) PARTITION BY LIST COLUMNS (`ThisMonth`) (
+
+  # PARTITION 
+    # `X1990_01`
+      # VALUES IN ('1990/01'),
+
+  # PARTITION 
+    # `X2013_01`
+      # VALUES IN ('2013/01')
+
+# );
+
+
+create_table_firmshistory_quote_partition_thismonth <- "
+CREATE TABLE `firmshistory_quote_partition_thismonth` (
+  `TICKER` varchar(64),
+  `EXCHANGE_TICKER` varchar(64),
+  `ThisMonth` varchar(64),
+  `ThisMonthLastDate` varchar(64),
+  `ThisMonthLastClose` double,
+  `ThisMonthLastAdjustedClose` double
+) PARTITION BY LIST COLUMNS (`ThisMonth`) (
+
+"
+
+# need to generate the complete set of MySQL partition LIST partitions names
+allpartitionnames <- c()
+for ( i in 1990:2013 ) {
+  for ( j in 1:12 ) {
+    # of 0 through 9, pad with a leading zero
+    Xyyyy_mm <- paste0("X",i,"_", if ( j < 10 ) { paste0(0,j) } else { j })
+    allpartitionnames <- c(allpartitionnames,Xyyyy_mm)
+  }
+}
+rm("i","j","Xyyyy_mm")
+
+# need to generate the complete set of MySQL partition LIST partitions values
+allpartitionvalues <- c()
+for ( i in 1990:2013 ) {
+  for ( j in 1:12 ) {
+    # of 0 through 9, pad with a leading zero
+    yyyy_mm <- paste0(i,"/", if ( j < 10 ) { paste0(0,j) } else { j })
+    allpartitionvalues <- c(allpartitionvalues,yyyy_mm)
+  }
+}
+rm("i","j","yyyy_mm")
+
+
+partition_snippet <- ""
+allpartitionnames_index <- 0
+if ( length(allpartitionnames) > 0 ) {
+  for ( x in allpartitionnames ) {
+    allpartitionnames_index <- allpartitionnames_index + 1
+
+partition_snippet <- "
+  PARTITION 
+    `"
+    
+    create_table_firmshistory_quote_partition_thismonth <- paste0(create_table_firmshistory_quote_partition_thismonth
+       , partition_snippet, allpartitionnames[allpartitionnames_index],"`"
+       )
+    
+     partition_snippet <- "
+      VALUES IN ("
+    
+    create_table_firmshistory_quote_partition_thismonth <- paste0(create_table_firmshistory_quote_partition_thismonth
+       , partition_snippet
+       # FUTURE: if multiple values per list partition ( I could ) iterate through them
+       , paste0("'",allpartitionvalues[allpartitionnames_index],"'")
+       ,")"
+       ,ifelse( allpartitionnames_index == length(allpartitionnames),"" ,"," )
+       ,"
+"
+       )
+    
+  }
+  
+  # end of the MySQL statement ");"
+  partition_snippet <- "
+);
+"
+
+  create_table_firmshistory_quote_partition_thismonth <- paste0(
+    create_table_firmshistory_quote_partition_thismonth,
+    partition_snippet
+  )
+
+}
+
+rm("allpartitionnames","allpartitionvalues","partition_snippet")
+
+# easier to see
+writeLines(create_table_firmshistory_quote_partition_thismonth)
+
+# easier to see
+fileConn <- file("create_table_firmshistory_quote_partition_thismonth.out.txt")
+writeLines(create_table_firmshistory_quote_partition_thismonth,fileConn)
+close(fileConn)
+
+
+################ END EXECUTABLE AREA ####################
+
