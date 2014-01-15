@@ -63,7 +63,7 @@ How to get a list of stocks symbol of a specific exchange? [duplicate]
 
 Edit: With TTR_0.20-3 from r-forge, 
 the list appears more complete than with the prior version:
-Aug 16 '11 
+Aug 16 '11' 
 
   TTR_0.2 now on CRAN
   Joshua Ulrich - 2009-02-20 
