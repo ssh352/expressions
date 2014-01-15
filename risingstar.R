@@ -2640,6 +2640,10 @@ CREATE TABLE `firmshistory_quote_partition_thismonth` (
 
 ############## END OF OUTPUT FROM ABOVE ###########
 
+################ BEGIN EXECUTABLE AREA ################
 
+# Get Yahoo End of Month Prices # ( WHEN REWRITTEN: WILL GO HERE )
+
+################ END OF EXECUTABLE AREA ###############
 
 
