@@ -3079,4 +3079,419 @@ PARTITION BY LIST  COLUMNS(ThisMonth)
 
 
 
+################ BEGIN EXECUTABLE AREA   ################
+
+# Get Yahoo Dividends #
+
+# http://stat.bell-labs.com/RS-DBI/doc/DBI.pdf
+# http://stat.bell-labs.com/RS-DBI/index.html
+
+# AVOID THIS ERROR
+# RS-DBI driver: (Failed to connect to database: Error: Lost connection to MySQL server at 
+#   'reading authorization packet', system error: 2
+
+# MUST MUST SET THESE my.ini entries
+# http://dev.mysql.com/doc/refman/5.6/en/error-lost-connection.html
+# [mysqld]
+# net_read_timeout=3000 # 100 times bigger
+# connect_timeout=1000 # 100 times bigger
+# max_allowed_packet=1073741824 # the max
+
+# HARD NOTE: TO RUN: Open a pink R windows and execute ALL CODE at the same time
+#  For some ( perhaps file handle situation ) I can not seem ot requery Yahoo interactively
+
+# gather all EXCHANGE_TICKER end of month Yahoo prices (Close,AdjustedClose)
+# put data into a MySQL database 
+
+library(quantmod)
+options("getSymbols.warning4.0"=FALSE)
+# As of 0.4-0, 'getSymbols' uses env=parent.frame() and auto.assign=TRUE by default.
+# This  behavior  will be  phased out in 0.5-0  when the call  will
+# default to use auto.assign=FALSE. getOption("getSymbols.env") and
+# getOptions("getSymbols.auto.assign") are now checked for alternate defaults
+
+library(timeDate)
+
+# begin R language MySQL
+Sys.setenv(MYSQL_HOME = "F:/Program Files/MySQL/MySQL Server 5.6")
+library(RMySQL)
+# Loading required package: DBI
+# MYSQL_HOME defined as F:/Program Files/MySQL/MySQL Server 5.6
+
+# begin DBI MySQL
+drv <- dbDriver("MySQL")
+
+# open a session to MySQL database 'advfn'
+# con <- dbConnect(drv, user="root", pass="root",dbname="advfn",host="localhost")
+
+# open a session to MySQL database 'advfn' ( be able to send many INSERT statements )
+con <- dbConnect(drv, user="root", pass="root", dbname="advfn", host="localhost")
+
+# load TTR symbols
+# if not already done
+load("SYMsBefore.Rdata", .GlobalEnv)
+
+# create a vector of 'begining of month'      ordered dates from "1990-01-01" to "2013-12-01"
+# create a vector of 'begining of month from' ordered dates from "1990-01-01" to "2013-12-01"
+# create a vector of '"end  of month"   to'   ordered dates from "1990-01-EOM" to "2013-12-EOM"
+
+allbeginmonthdates_to <- c()
+allbeginmonthdates_to_index <- 0 
+allbeginmonthdates_from <- c()
+allbeginmonthdates_from_index <- 0 
+# create a vector of 'begining of month' ordered dates from "1990-01-01" to "2013-12-01"
+allbeginmonthdates <- c()
+allbeginmonthdates_index <- 0  # NEW
+for ( i in 1990:2013 ) {
+  for ( j in 1:12 ) {
+
+    # of 0 through 9, pad with a leading zero
+    yyyy_mm_dd <- paste0(i,"-", if ( j < 10 ) { paste0(0,j) } else { j },"-","01" )
+    # put at the end of the vector
+    allbeginmonthdates_index <- allbeginmonthdates_index + 1 # NEW
+    allbeginmonthdates <- c(allbeginmonthdates,yyyy_mm_dd)
+    
+    # a copy from just above
+    # for getSymbols(later) create a  'from'       # put at the end of the vector
+    allbeginmonthdates_from_index <-   allbeginmonthdates_from_index + 1
+    allbeginmonthdates_from       <- c(allbeginmonthdates_from,yyyy_mm_dd)
+    
+    # Last 'store-bought-calandar' day of the month
+    # for getSymbols(later) create a 'to'          # put at the end of the vector
+    # UNTESTED: dateTime ... FinCenter = "New York" 
+    #  ( but I am only interested in EOD prices within 24 hours 
+    #    so I should be O.K. at the default GMT )
+    # Note: for Yahoo Finance has to be 'real' 'date of the month'
+    allbeginmonthdates_to_index   <-   allbeginmonthdates_to_index   + 1
+    # have R package timeData limit date range through the end of THAT month
+    # SUPRISINGLY: allbeginmonthdates_to BECOMES AN "R Datatype LIST"
+    allbeginmonthdates_to         <- c(allbeginmonthdates_to,timeLastDayInMonth(allbeginmonthdates[allbeginmonthdates_index]))
+  }
+}
+rm("i","j","yyyy_mm_dd")
+
+
+# just useful firms with out hyphens in the TICKER name
+exchange_useful <- c()
+exchange_useful_index <- 0
+firm_useful   <- c()
+firm_useful_index  <- 0 
+firm_index <- 0
+if ( length(SYMs[["Symbol"]]) > 0 ) {
+  for ( x in SYMs[["Symbol"]] ) {
+    firm_index <- firm_index + 1
+    
+    # if no hyphen then this is symbol that ADVFN ( and YAHOO ) can match
+    # NOTE: Possible: Yahoo can handle hyphens 
+    # ( but this is a different exchange with different data )
+    if( !(regexpr("-",SYMs[["Symbol"]][firm_index], ignore.case = FALSE)[1] > -1) ) {
+    
+      # put at the end of the vector
+      firm_useful_index      <- firm_useful_index + 1 # NEW
+      firm_useful            <- c(firm_useful,SYMs[["Symbol"]][firm_index])
+      exchange_useful_index  <- exchange_useful_index + 1
+      exchange_useful        <- c(exchange_useful,SYMs[["Exchange"]][firm_index])
+    
+    }
+    
+  }
+}
+
+# length(firm_useful)
+# [1] 5864
+# length(exchange_useful)
+# [1] 5864
+# tail(firm_useful,200)
+
+# Testing
+# firm_useful <- c("WMT","MSFT")
+# firm_index <- 1
+# exchange_useful <- c("NYSE","NASDAQ")
+
+Sys.time()
+firm_index <- 0
+if ( length(firm_useful) > 0 ) {
+  for ( x in 1:length(firm_useful) ) {
+    # dangerous: I used firm_index instead of firm_useful_index
+    firm_index <- firm_index + 1
+    
+    # debugging or mis-run to resume later ( break ( next: continue ) to the next the loop
+    # if ( firm_index <= SOMEFINITENUMBER ) next
+    
+    print(paste0("Examining ",firm_useful[firm_index]," at firm_index: ",firm_index))
+    # [1] "Examining AAMC at firm_index: 2"
+  
+      # have R package quantmod get all dividend data for that month
+      quoteDividendsgetQuote <- NULL
+      # only way that works to 'not show' those WARNINGS (if Yahoo can't find any data )
+      quoteDividendsgetQuote <-tryCatch({
+
+        Sys.sleep(1.0)
+        getDividends(firm_useful[firm_index], src='yahoo'
+          # the first date of THAT month
+          , from = allbeginmonthdates_from[1]
+          # have R package timeData limit date range through the end of THAT month
+          , to   = allbeginmonthdates_to[[length(allbeginmonthdates_to)]]
+          , auto.assign = FALSE # just return to the variable ( do not create an ENV )
+          )
+
+        }, warning = function(w) {
+             return('WARNING')
+        }, error = function(e) {
+             return('ERROR')
+        }, finally = function(f) {
+             NULL
+      })
+        
+      # NOT if a valid response ( 'got data' ) THEN just RETRY once MORE
+      if(!is.xts(quoteDividendsgetQuote)) {
+        print(paste0("  RETRY xts data of  ",firm_useful[firm_index]," at firm_index: ",firm_index))
+        
+        quoteDividendsgetQuote <-tryCatch({
+
+          Sys.sleep(1.0)
+          getDividends(firm_useful[firm_index], src='yahoo'
+            # the first date of THAT month
+            , from = allbeginmonthdates_from[1]
+            # have R package timeData limit date range through the end of THAT month
+            , to   = allbeginmonthdates_to[[length(allbeginmonthdates_to)]]
+            , auto.assign = FALSE # just return to the variable ( do not create an ENV )
+            )
+
+          }, warning = function(w) {
+               return('WARNING')
+          }, error = function(e) {
+               return('ERROR')
+          }, finally = function(f) {
+               NULL
+        })
+
+      }
+        
+# WMT
+# quoteDividendsgetQuote
+              # [,1]
+# 1990-03-19 0.00875
+# 1990-06-11 0.00875
+
+# simulate multiple dividends paid per month
+# str(rbind(quoteDividendsgetQuote,quoteDividendsgetQuote))
+# An 'xts' object on 1990-03-19/2013-12-04 containing:
+  # Data: num [1:192, 1] 0.00875 0.00875 0.00875 0.00875 0.00875
+  # Indexed by objects of class: [Date] TZ: UTC
+  # xts Attributes:
+ # NULL
+
+# quoteDividendsgetQuote <- rbind(quoteDividendsgetQuote,quoteDividendsgetQuote)
+# 1990-03-19 0.00875
+# 1990-03-19 0.00875
+        
+      # FINALLY: if a valid response ( 'got data' )
+      if(is.xts(quoteDividendsgetQuote)) {
+        print(paste0("  Found xts data of  ",firm_useful[firm_index]," at firm_index: ",firm_index, " of ",nrow(quoteDividendsgetQuote)," rows."))
+        # [1] "  Retr xts data of  AIRI at firm_index: 10 for the mo beginning 2013-12-01"
+
+        # empty dataframe: rbind to this dataframe to sent just ONE sql per TICKER
+        # <0 rows> (or 0-length row.names)
+        
+        # all dividends in a TICKER
+        quoteDividendsgetQuoteAllOfMonth_Mass_DF <- data.frame( 
+            TICKER                     = as.character() 
+          , EXCHANGE_TICKER            = as.character() 
+          , ThisMonth                  = as.character()
+          , ThisMonthDividend          = as.double()
+          , row.names = NULL
+          , stringsAsFactors = FALSE
+        )
+        
+        # Testing: WMT: March 1990 is index 3, June 1990 is 6
+        # Traverse over all of the months 
+        allbeginmonthdates_from_index <- 0
+        if ( length(allbeginmonthdates_from) > 0 ) {
+          for ( x in 1:length(allbeginmonthdates_from) ) {
+            allbeginmonthdates_from_index <- allbeginmonthdates_from_index + 1
+            
+            allbeginmonthdates_daterange <- paste0(gsub("-","",as.character(allbeginmonthdates_from[allbeginmonthdates_from_index])),"::",gsub("-","",as.character(allbeginmonthdates_to[[allbeginmonthdates_from_index]])))
+            # "19900101::19900131"
+            
+            # in THIS month, of all Monthly Days, on the LAST Yahoo Finance Day, if any xts data items are returned whatsoever
+            # note: avoid xts last '1 TIME' to avoid xts periodocity check error on ONE time element
+            if (  length(last(quoteDividendsgetQuote[allbeginmonthdates_daterange])) > 0   ) {
+              # data for that month     ... do SQL
+
+              # format the data into a dataframe, so eventually can UPSIZE to MySQL
+              
+              # all dividends in a TICKER's month
+              quoteDividendsgetQuoteAllOfMonth_DF <- data.frame( 
+                  TICKER                     = as.character() 
+                , EXCHANGE_TICKER            = as.character() 
+                , ThisMonth                  = as.character()
+                , ThisMonthDividend          = as.double()
+                , row.names = NULL
+                , stringsAsFactors = FALSE
+              )
+              
+              # get all dates and dividends of the month ( using 'all rows' ) 
+              ThisMonthDividendZ <- coredata(quoteDividendsgetQuote[,1,drop=FALSE][allbeginmonthdates_daterange,drop=FALSE])
+              
+              # go through all of the daily dividends and append them to the month dividends
+              ThisMonthDividendZ_index <- 0
+              if ( nrow(ThisMonthDividendZ) > 0 ) {
+                for ( y in 1:nrow(ThisMonthDividendZ) ) {
+                  ThisMonthDividendZ_index <- ThisMonthDividendZ_index + 1
+                  
+                  # used 'NORMAL' xts 'index' and 'data' extraction methods
+                  # just one dividend
+                  quoteDividendsgetQuoteOneOfMonth_DF <- NULL
+                  quoteDividendsgetQuoteOneOfMonth_DF <- data.frame( 
+                      TICKER = firm_useful[firm_index]
+                    , EXCHANGE_TICKER            = paste0(exchange_useful[firm_index],"_",firm_useful[firm_index]) # e.g. "NYSE_WMT" 
+                    , ThisMonth                  = sub("-","/",substr(allbeginmonthdates[allbeginmonthdates_from_index],1,7))   # e.g. "2013/06" 
+                    , ThisMonthDividend          = ThisMonthDividendZ[ThisMonthDividendZ_index,1,drop=FALSE]
+                    , row.names = NULL
+                    , stringsAsFactors = FALSE
+                  )
+
+                  # Actually append to the daily dividends to the monthly dividends
+                  quoteDividendsgetQuoteAllOfMonth_DF <- rbind(quoteDividendsgetQuoteAllOfMonth_DF,quoteDividendsgetQuoteOneOfMonth_DF)
+                  
+                }
+              }
+              
+              # just print NEED WIDER PRINT
+              # on testing
+              # wider output ( if I choose to print to the screen )
+              options(width = 255)
+              
+              # from the month divideds, actually append to the TICKER's Mass dataframe
+              quoteDividendsgetQuoteAllOfMonth_Mass_DF <- rbind(quoteDividendsgetQuoteAllOfMonth_Mass_DF,quoteDividendsgetQuoteAllOfMonth_DF)
+              
+            } else {
+              # no data for that month   ... do nothing
+            }
+
+          }
+        }
+        
+        # Done for that TICKER
+        
+        # OLD failing code: RSI error ( disk problem writing to TEMP directory ) 
+        # dbWriteTable(con, name = "quoteDividendsgetQuoteAllOfMonth_Mass_DF", value = quoteDividendsgetQuoteAllOfMonth_Mass_DF, row.names = FALSE)
+
+        # create a temp-like  MySQL table ( partition by ThisMonth values  )
+        Sys.sleep(0.01)
+        dbSendQuery(con,"
+          CREATE TABLE `quoteDividendsgetQuoteAllOfMonth_Mass_DF` (
+          `TICKER` varchar(64) COLLATE latin1_general_cs DEFAULT NULL,
+          `EXCHANGE_TICKER` varchar(64) COLLATE latin1_general_cs DEFAULT NULL,
+          `ThisMonth` varchar(64) COLLATE latin1_general_cs DEFAULT NULL,
+          `ThisMonthDividend` double DEFAULT NULL
+          ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_general_cs
+        ")
+        Sys.sleep(0.01)
+
+        # on MySQL this is created ( Note: database default is latin1_general_cs )
+        # CREATE TABLE `firmshistory_dividend_partition_thismonth` (
+        # `TICKER` varchar(64) COLLATE latin1_general_cs DEFAULT NULL,
+        # `EXCHANGE_TICKER` varchar(64) COLLATE latin1_general_cs DEFAULT NULL,
+        # `ThisMonth` varchar(64) COLLATE latin1_general_cs DEFAULT NULL,
+        # `ThisMonthDividend` double DEFAULT NULL
+        # ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_general_cs
+        
+        # OLD failing code: RSI error ( disk problem writing to TEMP directory ) 
+        # dbWriteTable(con, name = "quoteDividendsgetQuoteAllOfMonth_Mass_DF", value = quoteDividendsgetQuoteAllOfMonth_Mass_DF, row.names = FALSE)
+
+        # upsize to MySQL: INSERT into a MySQL database table  
+        # on production
+        
+        # traverse through that dataframe 
+        SQLStmt <- ""
+        quoteDividendsgetQuoteAllOfMonth_Mass_DF_index <- 0
+        if ( nrow(quoteDividendsgetQuoteAllOfMonth_Mass_DF)  > 0 ) {
+          for( z in 1:nrow(quoteDividendsgetQuoteAllOfMonth_Mass_DF) ) {
+            quoteDividendsgetQuoteAllOfMonth_Mass_DF_index <- quoteDividendsgetQuoteAllOfMonth_Mass_DF_index + 1
+            
+            # begin writing the ONE insert statement
+            SQLStmt <- "INSERT INTO advfn.quoteDividendsgetQuoteAllOfMonth_Mass_DF(TICKER, EXCHANGE_TICKER, ThisMonth, ThisMonthDividend) VALUES ("
+            
+            # column data
+            # first value - tick delimited
+            SQLStmt <- paste0(SQLStmt,"" ,"'",  quoteDividendsgetQuoteAllOfMonth_Mass_DF[quoteDividendsgetQuoteAllOfMonth_Mass_DF_index,'TICKER']          ,"'",",")
+            # ... other tick delimited values
+            SQLStmt <- paste0(SQLStmt,"'",  quoteDividendsgetQuoteAllOfMonth_Mass_DF[quoteDividendsgetQuoteAllOfMonth_Mass_DF_index,'EXCHANGE_TICKER'] ,"'",",")
+            SQLStmt <- paste0(SQLStmt,"'",  quoteDividendsgetQuoteAllOfMonth_Mass_DF[quoteDividendsgetQuoteAllOfMonth_Mass_DF_index,'ThisMonth']       ,"'",",")
+            # last is double that is not tick delimited,  and End of SQL statement
+            SQLStmt <- paste0(SQLStmt       ,quoteDividendsgetQuoteAllOfMonth_Mass_DF[quoteDividendsgetQuoteAllOfMonth_Mass_DF_index,'ThisMonthDividend']     ,    "" ,")")
+            
+            # actually Upsize to MySQL
+            Sys.sleep(0.01)
+            dbSendQuery(con,SQLStmt)
+            Sys.sleep(0.01)
+            
+          }
+
+        }
+        rm("SQLStmt")
+        
+        # Put into a partitioned MySQL table ( partition by ThisMonth values  )
+        # append to the MySQL partitioned table ( by ThisMonth ) firmshistory_dividend_partition_thismonth
+        Sys.sleep(0.01)
+        dbSendQuery(con,"INSERT INTO advfn.firmshistory_dividend_partition_thismonth SELECT * FROM advfn.quoteDividendsgetQuoteAllOfMonth_Mass_DF")
+        Sys.sleep(0.01)
+        
+        # http://dev.mysql.com/doc/refman/5.6/en/truncate-table.html
+        # Truncate operations drop and re-create the table, 
+        # which is much faster than deleting rows one by one, particularly for large tables.
+        # remove the 'now' useless data
+        # dbSendQuery(con,"TRUNCATE TABLE advfn.quoteDividendsgetQuoteAllOfMonth_Mass_DF")
+
+        # actually remove the 'now' useless table ( and data )
+        dbSendQuery(con,"DROP TABLE advfn.quoteDividendsgetQuoteAllOfMonth_Mass_DF")
+
+      }
+      
+      # break out of loop 
+      # on testing
+      # if ( firm_index == 10 ) {
+        # break
+      # }
+
+      if ( firm_index %% 100 == 0 ) {
+        print(paste(firm_index," completed.",sep=""))
+      }
+      
+      if ( firm_index %% 1000 == 0 ) {
+        print("Done with 1000 records.")
+      }
+    
+  }
+}
+Sys.time()
+
+# Yahoo seems happier with time delays
+
+# START 8:26:35 PM ON SUNDAY NIGHT
+#       8:34:13 PM ( 100ROWS ) ... EVERY 8 MINUTES 100 ROWS 
+#       6000 / 100 = 60 ... 60 * 8 MINUTES = 480 MINUTES = 8 HOURS
+# [1] "Examining ZZJJ at firm_index: 5864"
+# [1] "  RETRY xts data of  ZZJJ at firm_index: 5864"
+# > Sys.time()
+# [1] "2014-01-13 04:09:08 CST" ( APPROX 7.5 H )
+
+dbDisconnect(con)
+dbUnloadDriver(drv)
+
+rm("con","drv") 
+rm("quoteDividendsgetQuoteOneOfMonth_DF"
+  ,"quoteDividendsgetQuoteAllOfMonth_DF"
+  ,"quoteDividendsgetQuoteAllOfMonth_Mass_DF"
+  ,"allbeginmonthdates_daterange"
+) 
+
+# useful
+# SELECT COUNT(*) FROM advfn.firmshistory_dividend_partition_thismonth;
+# TRUNCATE TABLE advfn.firmshistory_dividend_partition_thismonth;
+  
+
+################ END OF EXECUTABLE AREA ###############
 
