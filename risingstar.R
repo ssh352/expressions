@@ -3004,10 +3004,14 @@ if ( length(firm_useful) > 0 ) {
 }
 Sys.time()
 
-# Yahoo seems happier with time delays
 # 3:46:50
 # [1] "Examining MA at firm_index: 4633"
 # [1] "  Found xts data of  MA at firm_index: 4633 of 1914 rows."
+
+# [1] "Examining ZZJJ at firm_index: 5864"
+# [1] "  RETRY xts data of  ZZJJ at firm_index: 5864"
+# > Sys.time()
+# [1] "2014-01-15 20:37:44 CST" 8:37:44 p.m.  1231 in 5 hours  ( would be a 25 hour total run)
 
 dbDisconnect(con)
 dbUnloadDriver(drv)
