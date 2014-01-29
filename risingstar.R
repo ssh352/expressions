@@ -5154,3 +5154,108 @@ PARTITION BY LIST COLUMNS(ThisMonth) (
 );
 
 ################ END EXECUTABLE AREA ########################
+
+
+
+
+#############################################
+
+-- BEGIN EXECUTABLE AREA --
+
+-- insert uk.advfn data into the intermediary verticle table partioned by ThisMonth
+
+-- CREATE TABLE `month_quality` (
+-- `ThisMonth` varchar(64) COLLATE latin1_general_cs DEFAULT NULL,
+-- `ReportType` varchar(64) COLLATE latin1_general_cs DEFAULT NULL,
+-- `ReportingIndicator` varchar(64) COLLATE latin1_general_cs DEFAULT NULL,
+-- `EXCHANGE_TICKER` varchar(64) COLLATE latin1_general_cs DEFAULT NULL,
+-- `Quality` varchar(64) COLLATE latin1_general_cs DEFAULT NULL,
+-- `QualityValue` varchar(64) COLLATE latin1_general_cs DEFAULT NULL,
+-- `Source` varchar(64) COLLATE latin1_general_cs DEFAULT NULL,
+-- `YearMonSource` varchar(64) COLLATE latin1_general_cs DEFAULT NULL,
+-- `DateOfExecutionOfSource` varchar(64) COLLATE latin1_general_cs DEFAULT NULL
+-- ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_general_cs
+-- PARTITION BY LIST  COLUMNS(ThisMonth)
+
+DELIMITER ;
+DROP PROCEDURE IF EXISTS advfn.`sp_some`;
+
+DELIMITER $$
+CREATE PROCEDURE sp_some()
+  MODIFIES SQL DATA
+BEGIN
+  DECLARE l_last_row_fetched INT;
+  DECLARE l_column_name         VARCHAR(64);
+  DECLARE l_column_time         VARCHAR(64);
+
+  -- +-------------+-------------+
+  -- | COLUMN_NAME | COLUMN_TIME |
+  -- +-------------+-------------+
+  -- | X1990_01    | 1990/01     |
+  -- | X1990_02    | 1990/02     |
+  
+  -- 288 rows
+  DECLARE c_cursor cursor FOR
+    SELECT COLUMN_NAME, REPLACE(REPLACE(COLUMN_NAME,'_','/'),'X','') "COLUMN_TIME"
+      FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE table_schema = 'advfn' AND
+            table_name = 'firmshistory_partition_rownombres' AND 
+            column_name LIKE 'X%'
+    ORDER BY 1;
+  -- debugging
+  -- AND column_name = 'X2013_04'
+    
+  DECLARE CONTINUE HANDLER FOR NOT FOUND SET l_last_row_fetched=1;
+  SET l_last_row_fetched=0;
+  
+
+    OPEN c_cursor;
+      cursor_loop:LOOP
+        FETCH c_cursor INTO l_column_name, l_column_time;
+      
+        IF l_last_row_fetched=1 THEN
+          LEAVE cursor_loop;
+        END IF;
+        
+        -- INSERT INTO month_quality
+        -- (ThisMonth, ReportType, ReportingIndicator, EXCHANGE_TICKER,
+        -- Quality, QualityValue,
+        -- Source, YearMonSource, DateOfExecutionOfSource
+        -- )
+        -- SELECT '2013/12','Q',NULL,EXCHANGE_TICKER,
+        --         rownombres, X2013_12,
+        --          'uk.advfn','2013/09','2013/10/10'
+        --  FROM firmshistory_partition_rownombres
+        
+        SET @l_source = CONCAT("
+        INSERT INTO month_quality
+        (ThisMonth, ReportType, ReportingIndicator, EXCHANGE_TICKER, 
+         Quality, QualityValue, 
+         Source, YearMonSource, DateOfExecutionOfSource
+         ) 
+           SELECT '",l_column_time,"','Q',NULL,EXCHANGE_TICKER,
+                   rownombres, ",l_column_name,",
+                   'uk.advfn','2013/09','2013/10/10'
+            FROM firmshistory_partition_rownombres");
+        -- debugging
+        -- WHERE EXCHANGE_TICKER = 'NYSE_WMT'
+        
+        SELECT @l_source;
+        
+        -- 90 seconds per each of 288 = 7.2 hours
+        PREPARE stmt1 FROM @l_source;
+        EXECUTE stmt1;
+        DEALLOCATE PREPARE stmt1;
+        
+      END LOOP cursor_loop;
+    CLOSE c_cursor;
+    SET l_last_row_fetched=0;
+
+END$$
+
+DELIMITER ;
+CALL sp_some();
+
+-- END EXECUTABLE AREA --
+
+#############################################
