@@ -3875,3 +3875,1286 @@ rm("quoteDividendsgetQuoteOneOfMonth_DF"
 
 ################ END OF EXECUTABLE AREA ###############
 
+
+################ BEGIN EXECUTABLE AREA #################### 
+                                                            
+# note: luckily: easy 'one to one' mapping of partition names to partition values
+
+# need useful intermediary table
+# JUST A CHANGE IN LITERAL FROM THE SOURCE CODE ABOVE
+                                                                                                                        
+create_table_month_quality <- "
+
+CREATE TABLE `month_quality` (
+  `ThisMonth` varchar(64) COLLATE latin1_general_cs DEFAULT NULL,
+  `ReportType` varchar(64) COLLATE latin1_general_cs DEFAULT NULL,
+  `ReportingIndicator` varchar(64) COLLATE latin1_general_cs DEFAULT NULL,
+  `EXCHANGE_TICKER` varchar(64) COLLATE latin1_general_cs DEFAULT NULL,
+  `Quality` varchar(64) COLLATE latin1_general_cs DEFAULT NULL,
+  `QualityValue` varchar(64) COLLATE latin1_general_cs DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_general_cs
+PARTITION BY LIST COLUMNS(ThisMonth) (
+
+"
+
+# need to generate the complete set of MySQL partition LIST partitions names
+allpartitionnames <- c()
+for ( i in 1990:2013 ) {
+  for ( j in 1:12 ) {
+    # of 0 through 9, pad with a leading zero
+    Xyyyy_mm <- paste0("X",i,"_", if ( j < 10 ) { paste0(0,j) } else { j })
+    allpartitionnames <- c(allpartitionnames,Xyyyy_mm)
+  }
+}
+rm("i","j","Xyyyy_mm")
+
+# need to generate the complete set of MySQL partition LIST partitions values
+allpartitionvalues <- c()
+for ( i in 1990:2013 ) {
+  for ( j in 1:12 ) {
+    # of 0 through 9, pad with a leading zero
+    yyyy_mm <- paste0(i,"/", if ( j < 10 ) { paste0(0,j) } else { j })
+    allpartitionvalues <- c(allpartitionvalues,yyyy_mm)
+  }
+}
+rm("i","j","yyyy_mm")
+
+
+partition_snippet <- ""
+allpartitionnames_index <- 0
+if ( length(allpartitionnames) > 0 ) {
+  for ( x in allpartitionnames ) {
+    allpartitionnames_index <- allpartitionnames_index + 1
+
+partition_snippet <- "
+  PARTITION 
+    `"
+    
+    create_table_month_quality <- paste0(create_table_month_quality
+       , partition_snippet, allpartitionnames[allpartitionnames_index],"`"
+       )
+    
+     partition_snippet <- "
+      VALUES IN ("
+    
+    create_table_month_quality <- paste0(create_table_month_quality
+       , partition_snippet
+       # FUTURE: if multiple values per list partition ( I could ) iterate through them
+       , paste0("'",allpartitionvalues[allpartitionnames_index],"'")
+       ,")"
+       ,ifelse( allpartitionnames_index == length(allpartitionnames),"" ,"," )
+       ,"
+"
+       )
+    
+  }
+  
+  # end of the MySQL statement ");"
+  partition_snippet <- "
+);
+"
+
+  create_table_month_quality <- paste0(
+    create_table_month_quality,
+    partition_snippet
+  )
+
+}
+
+rm("allpartitionnames","allpartitionvalues","partition_snippet")
+
+# easier to see
+writeLines(create_table_month_quality)
+
+# easier to see
+fileConn <- file("create_table_month_quality.out.txt")
+writeLines(create_table_month_quality,fileConn)
+close(fileConn)
+
+
+################ END EXECUTABLE AREA ####################
+
+
+
+################ BEGIN EXECUTABLE AREA #################
+
+# RESULTS OF ABOVE
+
+CREATE TABLE `month_quality` (
+  `ThisMonth` varchar(64) COLLATE latin1_general_cs DEFAULT NULL,
+  `ReportType` varchar(64) COLLATE latin1_general_cs DEFAULT NULL,
+  `ReportingIndicator` varchar(64) COLLATE latin1_general_cs DEFAULT NULL,
+  `EXCHANGE_TICKER` varchar(64) COLLATE latin1_general_cs DEFAULT NULL,
+  `Quality` varchar(64) COLLATE latin1_general_cs DEFAULT NULL,
+  `QualityValue` varchar(64) COLLATE latin1_general_cs DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_general_cs
+PARTITION BY LIST COLUMNS(ThisMonth) (
+
+
+  PARTITION 
+    `X1990_01`
+      VALUES IN ('1990/01'),
+
+  PARTITION 
+    `X1990_02`
+      VALUES IN ('1990/02'),
+
+  PARTITION 
+    `X1990_03`
+      VALUES IN ('1990/03'),
+
+  PARTITION 
+    `X1990_04`
+      VALUES IN ('1990/04'),
+
+  PARTITION 
+    `X1990_05`
+      VALUES IN ('1990/05'),
+
+  PARTITION 
+    `X1990_06`
+      VALUES IN ('1990/06'),
+
+  PARTITION 
+    `X1990_07`
+      VALUES IN ('1990/07'),
+
+  PARTITION 
+    `X1990_08`
+      VALUES IN ('1990/08'),
+
+  PARTITION 
+    `X1990_09`
+      VALUES IN ('1990/09'),
+
+  PARTITION 
+    `X1990_10`
+      VALUES IN ('1990/10'),
+
+  PARTITION 
+    `X1990_11`
+      VALUES IN ('1990/11'),
+
+  PARTITION 
+    `X1990_12`
+      VALUES IN ('1990/12'),
+
+  PARTITION 
+    `X1991_01`
+      VALUES IN ('1991/01'),
+
+  PARTITION 
+    `X1991_02`
+      VALUES IN ('1991/02'),
+
+  PARTITION 
+    `X1991_03`
+      VALUES IN ('1991/03'),
+
+  PARTITION 
+    `X1991_04`
+      VALUES IN ('1991/04'),
+
+  PARTITION 
+    `X1991_05`
+      VALUES IN ('1991/05'),
+
+  PARTITION 
+    `X1991_06`
+      VALUES IN ('1991/06'),
+
+  PARTITION 
+    `X1991_07`
+      VALUES IN ('1991/07'),
+
+  PARTITION 
+    `X1991_08`
+      VALUES IN ('1991/08'),
+
+  PARTITION 
+    `X1991_09`
+      VALUES IN ('1991/09'),
+
+  PARTITION 
+    `X1991_10`
+      VALUES IN ('1991/10'),
+
+  PARTITION 
+    `X1991_11`
+      VALUES IN ('1991/11'),
+
+  PARTITION 
+    `X1991_12`
+      VALUES IN ('1991/12'),
+
+  PARTITION 
+    `X1992_01`
+      VALUES IN ('1992/01'),
+
+  PARTITION 
+    `X1992_02`
+      VALUES IN ('1992/02'),
+
+  PARTITION 
+    `X1992_03`
+      VALUES IN ('1992/03'),
+
+  PARTITION 
+    `X1992_04`
+      VALUES IN ('1992/04'),
+
+  PARTITION 
+    `X1992_05`
+      VALUES IN ('1992/05'),
+
+  PARTITION 
+    `X1992_06`
+      VALUES IN ('1992/06'),
+
+  PARTITION 
+    `X1992_07`
+      VALUES IN ('1992/07'),
+
+  PARTITION 
+    `X1992_08`
+      VALUES IN ('1992/08'),
+
+  PARTITION 
+    `X1992_09`
+      VALUES IN ('1992/09'),
+
+  PARTITION 
+    `X1992_10`
+      VALUES IN ('1992/10'),
+
+  PARTITION 
+    `X1992_11`
+      VALUES IN ('1992/11'),
+
+  PARTITION 
+    `X1992_12`
+      VALUES IN ('1992/12'),
+
+  PARTITION 
+    `X1993_01`
+      VALUES IN ('1993/01'),
+
+  PARTITION 
+    `X1993_02`
+      VALUES IN ('1993/02'),
+
+  PARTITION 
+    `X1993_03`
+      VALUES IN ('1993/03'),
+
+  PARTITION 
+    `X1993_04`
+      VALUES IN ('1993/04'),
+
+  PARTITION 
+    `X1993_05`
+      VALUES IN ('1993/05'),
+
+  PARTITION 
+    `X1993_06`
+      VALUES IN ('1993/06'),
+
+  PARTITION 
+    `X1993_07`
+      VALUES IN ('1993/07'),
+
+  PARTITION 
+    `X1993_08`
+      VALUES IN ('1993/08'),
+
+  PARTITION 
+    `X1993_09`
+      VALUES IN ('1993/09'),
+
+  PARTITION 
+    `X1993_10`
+      VALUES IN ('1993/10'),
+
+  PARTITION 
+    `X1993_11`
+      VALUES IN ('1993/11'),
+
+  PARTITION 
+    `X1993_12`
+      VALUES IN ('1993/12'),
+
+  PARTITION 
+    `X1994_01`
+      VALUES IN ('1994/01'),
+
+  PARTITION 
+    `X1994_02`
+      VALUES IN ('1994/02'),
+
+  PARTITION 
+    `X1994_03`
+      VALUES IN ('1994/03'),
+
+  PARTITION 
+    `X1994_04`
+      VALUES IN ('1994/04'),
+
+  PARTITION 
+    `X1994_05`
+      VALUES IN ('1994/05'),
+
+  PARTITION 
+    `X1994_06`
+      VALUES IN ('1994/06'),
+
+  PARTITION 
+    `X1994_07`
+      VALUES IN ('1994/07'),
+
+  PARTITION 
+    `X1994_08`
+      VALUES IN ('1994/08'),
+
+  PARTITION 
+    `X1994_09`
+      VALUES IN ('1994/09'),
+
+  PARTITION 
+    `X1994_10`
+      VALUES IN ('1994/10'),
+
+  PARTITION 
+    `X1994_11`
+      VALUES IN ('1994/11'),
+
+  PARTITION 
+    `X1994_12`
+      VALUES IN ('1994/12'),
+
+  PARTITION 
+    `X1995_01`
+      VALUES IN ('1995/01'),
+
+  PARTITION 
+    `X1995_02`
+      VALUES IN ('1995/02'),
+
+  PARTITION 
+    `X1995_03`
+      VALUES IN ('1995/03'),
+
+  PARTITION 
+    `X1995_04`
+      VALUES IN ('1995/04'),
+
+  PARTITION 
+    `X1995_05`
+      VALUES IN ('1995/05'),
+
+  PARTITION 
+    `X1995_06`
+      VALUES IN ('1995/06'),
+
+  PARTITION 
+    `X1995_07`
+      VALUES IN ('1995/07'),
+
+  PARTITION 
+    `X1995_08`
+      VALUES IN ('1995/08'),
+
+  PARTITION 
+    `X1995_09`
+      VALUES IN ('1995/09'),
+
+  PARTITION 
+    `X1995_10`
+      VALUES IN ('1995/10'),
+
+  PARTITION 
+    `X1995_11`
+      VALUES IN ('1995/11'),
+
+  PARTITION 
+    `X1995_12`
+      VALUES IN ('1995/12'),
+
+  PARTITION 
+    `X1996_01`
+      VALUES IN ('1996/01'),
+
+  PARTITION 
+    `X1996_02`
+      VALUES IN ('1996/02'),
+
+  PARTITION 
+    `X1996_03`
+      VALUES IN ('1996/03'),
+
+  PARTITION 
+    `X1996_04`
+      VALUES IN ('1996/04'),
+
+  PARTITION 
+    `X1996_05`
+      VALUES IN ('1996/05'),
+
+  PARTITION 
+    `X1996_06`
+      VALUES IN ('1996/06'),
+
+  PARTITION 
+    `X1996_07`
+      VALUES IN ('1996/07'),
+
+  PARTITION 
+    `X1996_08`
+      VALUES IN ('1996/08'),
+
+  PARTITION 
+    `X1996_09`
+      VALUES IN ('1996/09'),
+
+  PARTITION 
+    `X1996_10`
+      VALUES IN ('1996/10'),
+
+  PARTITION 
+    `X1996_11`
+      VALUES IN ('1996/11'),
+
+  PARTITION 
+    `X1996_12`
+      VALUES IN ('1996/12'),
+
+  PARTITION 
+    `X1997_01`
+      VALUES IN ('1997/01'),
+
+  PARTITION 
+    `X1997_02`
+      VALUES IN ('1997/02'),
+
+  PARTITION 
+    `X1997_03`
+      VALUES IN ('1997/03'),
+
+  PARTITION 
+    `X1997_04`
+      VALUES IN ('1997/04'),
+
+  PARTITION 
+    `X1997_05`
+      VALUES IN ('1997/05'),
+
+  PARTITION 
+    `X1997_06`
+      VALUES IN ('1997/06'),
+
+  PARTITION 
+    `X1997_07`
+      VALUES IN ('1997/07'),
+
+  PARTITION 
+    `X1997_08`
+      VALUES IN ('1997/08'),
+
+  PARTITION 
+    `X1997_09`
+      VALUES IN ('1997/09'),
+
+  PARTITION 
+    `X1997_10`
+      VALUES IN ('1997/10'),
+
+  PARTITION 
+    `X1997_11`
+      VALUES IN ('1997/11'),
+
+  PARTITION 
+    `X1997_12`
+      VALUES IN ('1997/12'),
+
+  PARTITION 
+    `X1998_01`
+      VALUES IN ('1998/01'),
+
+  PARTITION 
+    `X1998_02`
+      VALUES IN ('1998/02'),
+
+  PARTITION 
+    `X1998_03`
+      VALUES IN ('1998/03'),
+
+  PARTITION 
+    `X1998_04`
+      VALUES IN ('1998/04'),
+
+  PARTITION 
+    `X1998_05`
+      VALUES IN ('1998/05'),
+
+  PARTITION 
+    `X1998_06`
+      VALUES IN ('1998/06'),
+
+  PARTITION 
+    `X1998_07`
+      VALUES IN ('1998/07'),
+
+  PARTITION 
+    `X1998_08`
+      VALUES IN ('1998/08'),
+
+  PARTITION 
+    `X1998_09`
+      VALUES IN ('1998/09'),
+
+  PARTITION 
+    `X1998_10`
+      VALUES IN ('1998/10'),
+
+  PARTITION 
+    `X1998_11`
+      VALUES IN ('1998/11'),
+
+  PARTITION 
+    `X1998_12`
+      VALUES IN ('1998/12'),
+
+  PARTITION 
+    `X1999_01`
+      VALUES IN ('1999/01'),
+
+  PARTITION 
+    `X1999_02`
+      VALUES IN ('1999/02'),
+
+  PARTITION 
+    `X1999_03`
+      VALUES IN ('1999/03'),
+
+  PARTITION 
+    `X1999_04`
+      VALUES IN ('1999/04'),
+
+  PARTITION 
+    `X1999_05`
+      VALUES IN ('1999/05'),
+
+  PARTITION 
+    `X1999_06`
+      VALUES IN ('1999/06'),
+
+  PARTITION 
+    `X1999_07`
+      VALUES IN ('1999/07'),
+
+  PARTITION 
+    `X1999_08`
+      VALUES IN ('1999/08'),
+
+  PARTITION 
+    `X1999_09`
+      VALUES IN ('1999/09'),
+
+  PARTITION 
+    `X1999_10`
+      VALUES IN ('1999/10'),
+
+  PARTITION 
+    `X1999_11`
+      VALUES IN ('1999/11'),
+
+  PARTITION 
+    `X1999_12`
+      VALUES IN ('1999/12'),
+
+  PARTITION 
+    `X2000_01`
+      VALUES IN ('2000/01'),
+
+  PARTITION 
+    `X2000_02`
+      VALUES IN ('2000/02'),
+
+  PARTITION 
+    `X2000_03`
+      VALUES IN ('2000/03'),
+
+  PARTITION 
+    `X2000_04`
+      VALUES IN ('2000/04'),
+
+  PARTITION 
+    `X2000_05`
+      VALUES IN ('2000/05'),
+
+  PARTITION 
+    `X2000_06`
+      VALUES IN ('2000/06'),
+
+  PARTITION 
+    `X2000_07`
+      VALUES IN ('2000/07'),
+
+  PARTITION 
+    `X2000_08`
+      VALUES IN ('2000/08'),
+
+  PARTITION 
+    `X2000_09`
+      VALUES IN ('2000/09'),
+
+  PARTITION 
+    `X2000_10`
+      VALUES IN ('2000/10'),
+
+  PARTITION 
+    `X2000_11`
+      VALUES IN ('2000/11'),
+
+  PARTITION 
+    `X2000_12`
+      VALUES IN ('2000/12'),
+
+  PARTITION 
+    `X2001_01`
+      VALUES IN ('2001/01'),
+
+  PARTITION 
+    `X2001_02`
+      VALUES IN ('2001/02'),
+
+  PARTITION 
+    `X2001_03`
+      VALUES IN ('2001/03'),
+
+  PARTITION 
+    `X2001_04`
+      VALUES IN ('2001/04'),
+
+  PARTITION 
+    `X2001_05`
+      VALUES IN ('2001/05'),
+
+  PARTITION 
+    `X2001_06`
+      VALUES IN ('2001/06'),
+
+  PARTITION 
+    `X2001_07`
+      VALUES IN ('2001/07'),
+
+  PARTITION 
+    `X2001_08`
+      VALUES IN ('2001/08'),
+
+  PARTITION 
+    `X2001_09`
+      VALUES IN ('2001/09'),
+
+  PARTITION 
+    `X2001_10`
+      VALUES IN ('2001/10'),
+
+  PARTITION 
+    `X2001_11`
+      VALUES IN ('2001/11'),
+
+  PARTITION 
+    `X2001_12`
+      VALUES IN ('2001/12'),
+
+  PARTITION 
+    `X2002_01`
+      VALUES IN ('2002/01'),
+
+  PARTITION 
+    `X2002_02`
+      VALUES IN ('2002/02'),
+
+  PARTITION 
+    `X2002_03`
+      VALUES IN ('2002/03'),
+
+  PARTITION 
+    `X2002_04`
+      VALUES IN ('2002/04'),
+
+  PARTITION 
+    `X2002_05`
+      VALUES IN ('2002/05'),
+
+  PARTITION 
+    `X2002_06`
+      VALUES IN ('2002/06'),
+
+  PARTITION 
+    `X2002_07`
+      VALUES IN ('2002/07'),
+
+  PARTITION 
+    `X2002_08`
+      VALUES IN ('2002/08'),
+
+  PARTITION 
+    `X2002_09`
+      VALUES IN ('2002/09'),
+
+  PARTITION 
+    `X2002_10`
+      VALUES IN ('2002/10'),
+
+  PARTITION 
+    `X2002_11`
+      VALUES IN ('2002/11'),
+
+  PARTITION 
+    `X2002_12`
+      VALUES IN ('2002/12'),
+
+  PARTITION 
+    `X2003_01`
+      VALUES IN ('2003/01'),
+
+  PARTITION 
+    `X2003_02`
+      VALUES IN ('2003/02'),
+
+  PARTITION 
+    `X2003_03`
+      VALUES IN ('2003/03'),
+
+  PARTITION 
+    `X2003_04`
+      VALUES IN ('2003/04'),
+
+  PARTITION 
+    `X2003_05`
+      VALUES IN ('2003/05'),
+
+  PARTITION 
+    `X2003_06`
+      VALUES IN ('2003/06'),
+
+  PARTITION 
+    `X2003_07`
+      VALUES IN ('2003/07'),
+
+  PARTITION 
+    `X2003_08`
+      VALUES IN ('2003/08'),
+
+  PARTITION 
+    `X2003_09`
+      VALUES IN ('2003/09'),
+
+  PARTITION 
+    `X2003_10`
+      VALUES IN ('2003/10'),
+
+  PARTITION 
+    `X2003_11`
+      VALUES IN ('2003/11'),
+
+  PARTITION 
+    `X2003_12`
+      VALUES IN ('2003/12'),
+
+  PARTITION 
+    `X2004_01`
+      VALUES IN ('2004/01'),
+
+  PARTITION 
+    `X2004_02`
+      VALUES IN ('2004/02'),
+
+  PARTITION 
+    `X2004_03`
+      VALUES IN ('2004/03'),
+
+  PARTITION 
+    `X2004_04`
+      VALUES IN ('2004/04'),
+
+  PARTITION 
+    `X2004_05`
+      VALUES IN ('2004/05'),
+
+  PARTITION 
+    `X2004_06`
+      VALUES IN ('2004/06'),
+
+  PARTITION 
+    `X2004_07`
+      VALUES IN ('2004/07'),
+
+  PARTITION 
+    `X2004_08`
+      VALUES IN ('2004/08'),
+
+  PARTITION 
+    `X2004_09`
+      VALUES IN ('2004/09'),
+
+  PARTITION 
+    `X2004_10`
+      VALUES IN ('2004/10'),
+
+  PARTITION 
+    `X2004_11`
+      VALUES IN ('2004/11'),
+
+  PARTITION 
+    `X2004_12`
+      VALUES IN ('2004/12'),
+
+  PARTITION 
+    `X2005_01`
+      VALUES IN ('2005/01'),
+
+  PARTITION 
+    `X2005_02`
+      VALUES IN ('2005/02'),
+
+  PARTITION 
+    `X2005_03`
+      VALUES IN ('2005/03'),
+
+  PARTITION 
+    `X2005_04`
+      VALUES IN ('2005/04'),
+
+  PARTITION 
+    `X2005_05`
+      VALUES IN ('2005/05'),
+
+  PARTITION 
+    `X2005_06`
+      VALUES IN ('2005/06'),
+
+  PARTITION 
+    `X2005_07`
+      VALUES IN ('2005/07'),
+
+  PARTITION 
+    `X2005_08`
+      VALUES IN ('2005/08'),
+
+  PARTITION 
+    `X2005_09`
+      VALUES IN ('2005/09'),
+
+  PARTITION 
+    `X2005_10`
+      VALUES IN ('2005/10'),
+
+  PARTITION 
+    `X2005_11`
+      VALUES IN ('2005/11'),
+
+  PARTITION 
+    `X2005_12`
+      VALUES IN ('2005/12'),
+
+  PARTITION 
+    `X2006_01`
+      VALUES IN ('2006/01'),
+
+  PARTITION 
+    `X2006_02`
+      VALUES IN ('2006/02'),
+
+  PARTITION 
+    `X2006_03`
+      VALUES IN ('2006/03'),
+
+  PARTITION 
+    `X2006_04`
+      VALUES IN ('2006/04'),
+
+  PARTITION 
+    `X2006_05`
+      VALUES IN ('2006/05'),
+
+  PARTITION 
+    `X2006_06`
+      VALUES IN ('2006/06'),
+
+  PARTITION 
+    `X2006_07`
+      VALUES IN ('2006/07'),
+
+  PARTITION 
+    `X2006_08`
+      VALUES IN ('2006/08'),
+
+  PARTITION 
+    `X2006_09`
+      VALUES IN ('2006/09'),
+
+  PARTITION 
+    `X2006_10`
+      VALUES IN ('2006/10'),
+
+  PARTITION 
+    `X2006_11`
+      VALUES IN ('2006/11'),
+
+  PARTITION 
+    `X2006_12`
+      VALUES IN ('2006/12'),
+
+  PARTITION 
+    `X2007_01`
+      VALUES IN ('2007/01'),
+
+  PARTITION 
+    `X2007_02`
+      VALUES IN ('2007/02'),
+
+  PARTITION 
+    `X2007_03`
+      VALUES IN ('2007/03'),
+
+  PARTITION 
+    `X2007_04`
+      VALUES IN ('2007/04'),
+
+  PARTITION 
+    `X2007_05`
+      VALUES IN ('2007/05'),
+
+  PARTITION 
+    `X2007_06`
+      VALUES IN ('2007/06'),
+
+  PARTITION 
+    `X2007_07`
+      VALUES IN ('2007/07'),
+
+  PARTITION 
+    `X2007_08`
+      VALUES IN ('2007/08'),
+
+  PARTITION 
+    `X2007_09`
+      VALUES IN ('2007/09'),
+
+  PARTITION 
+    `X2007_10`
+      VALUES IN ('2007/10'),
+
+  PARTITION 
+    `X2007_11`
+      VALUES IN ('2007/11'),
+
+  PARTITION 
+    `X2007_12`
+      VALUES IN ('2007/12'),
+
+  PARTITION 
+    `X2008_01`
+      VALUES IN ('2008/01'),
+
+  PARTITION 
+    `X2008_02`
+      VALUES IN ('2008/02'),
+
+  PARTITION 
+    `X2008_03`
+      VALUES IN ('2008/03'),
+
+  PARTITION 
+    `X2008_04`
+      VALUES IN ('2008/04'),
+
+  PARTITION 
+    `X2008_05`
+      VALUES IN ('2008/05'),
+
+  PARTITION 
+    `X2008_06`
+      VALUES IN ('2008/06'),
+
+  PARTITION 
+    `X2008_07`
+      VALUES IN ('2008/07'),
+
+  PARTITION 
+    `X2008_08`
+      VALUES IN ('2008/08'),
+
+  PARTITION 
+    `X2008_09`
+      VALUES IN ('2008/09'),
+
+  PARTITION 
+    `X2008_10`
+      VALUES IN ('2008/10'),
+
+  PARTITION 
+    `X2008_11`
+      VALUES IN ('2008/11'),
+
+  PARTITION 
+    `X2008_12`
+      VALUES IN ('2008/12'),
+
+  PARTITION 
+    `X2009_01`
+      VALUES IN ('2009/01'),
+
+  PARTITION 
+    `X2009_02`
+      VALUES IN ('2009/02'),
+
+  PARTITION 
+    `X2009_03`
+      VALUES IN ('2009/03'),
+
+  PARTITION 
+    `X2009_04`
+      VALUES IN ('2009/04'),
+
+  PARTITION 
+    `X2009_05`
+      VALUES IN ('2009/05'),
+
+  PARTITION 
+    `X2009_06`
+      VALUES IN ('2009/06'),
+
+  PARTITION 
+    `X2009_07`
+      VALUES IN ('2009/07'),
+
+  PARTITION 
+    `X2009_08`
+      VALUES IN ('2009/08'),
+
+  PARTITION 
+    `X2009_09`
+      VALUES IN ('2009/09'),
+
+  PARTITION 
+    `X2009_10`
+      VALUES IN ('2009/10'),
+
+  PARTITION 
+    `X2009_11`
+      VALUES IN ('2009/11'),
+
+  PARTITION 
+    `X2009_12`
+      VALUES IN ('2009/12'),
+
+  PARTITION 
+    `X2010_01`
+      VALUES IN ('2010/01'),
+
+  PARTITION 
+    `X2010_02`
+      VALUES IN ('2010/02'),
+
+  PARTITION 
+    `X2010_03`
+      VALUES IN ('2010/03'),
+
+  PARTITION 
+    `X2010_04`
+      VALUES IN ('2010/04'),
+
+  PARTITION 
+    `X2010_05`
+      VALUES IN ('2010/05'),
+
+  PARTITION 
+    `X2010_06`
+      VALUES IN ('2010/06'),
+
+  PARTITION 
+    `X2010_07`
+      VALUES IN ('2010/07'),
+
+  PARTITION 
+    `X2010_08`
+      VALUES IN ('2010/08'),
+
+  PARTITION 
+    `X2010_09`
+      VALUES IN ('2010/09'),
+
+  PARTITION 
+    `X2010_10`
+      VALUES IN ('2010/10'),
+
+  PARTITION 
+    `X2010_11`
+      VALUES IN ('2010/11'),
+
+  PARTITION 
+    `X2010_12`
+      VALUES IN ('2010/12'),
+
+  PARTITION 
+    `X2011_01`
+      VALUES IN ('2011/01'),
+
+  PARTITION 
+    `X2011_02`
+      VALUES IN ('2011/02'),
+
+  PARTITION 
+    `X2011_03`
+      VALUES IN ('2011/03'),
+
+  PARTITION 
+    `X2011_04`
+      VALUES IN ('2011/04'),
+
+  PARTITION 
+    `X2011_05`
+      VALUES IN ('2011/05'),
+
+  PARTITION 
+    `X2011_06`
+      VALUES IN ('2011/06'),
+
+  PARTITION 
+    `X2011_07`
+      VALUES IN ('2011/07'),
+
+  PARTITION 
+    `X2011_08`
+      VALUES IN ('2011/08'),
+
+  PARTITION 
+    `X2011_09`
+      VALUES IN ('2011/09'),
+
+  PARTITION 
+    `X2011_10`
+      VALUES IN ('2011/10'),
+
+  PARTITION 
+    `X2011_11`
+      VALUES IN ('2011/11'),
+
+  PARTITION 
+    `X2011_12`
+      VALUES IN ('2011/12'),
+
+  PARTITION 
+    `X2012_01`
+      VALUES IN ('2012/01'),
+
+  PARTITION 
+    `X2012_02`
+      VALUES IN ('2012/02'),
+
+  PARTITION 
+    `X2012_03`
+      VALUES IN ('2012/03'),
+
+  PARTITION 
+    `X2012_04`
+      VALUES IN ('2012/04'),
+
+  PARTITION 
+    `X2012_05`
+      VALUES IN ('2012/05'),
+
+  PARTITION 
+    `X2012_06`
+      VALUES IN ('2012/06'),
+
+  PARTITION 
+    `X2012_07`
+      VALUES IN ('2012/07'),
+
+  PARTITION 
+    `X2012_08`
+      VALUES IN ('2012/08'),
+
+  PARTITION 
+    `X2012_09`
+      VALUES IN ('2012/09'),
+
+  PARTITION 
+    `X2012_10`
+      VALUES IN ('2012/10'),
+
+  PARTITION 
+    `X2012_11`
+      VALUES IN ('2012/11'),
+
+  PARTITION 
+    `X2012_12`
+      VALUES IN ('2012/12'),
+
+  PARTITION 
+    `X2013_01`
+      VALUES IN ('2013/01'),
+
+  PARTITION 
+    `X2013_02`
+      VALUES IN ('2013/02'),
+
+  PARTITION 
+    `X2013_03`
+      VALUES IN ('2013/03'),
+
+  PARTITION 
+    `X2013_04`
+      VALUES IN ('2013/04'),
+
+  PARTITION 
+    `X2013_05`
+      VALUES IN ('2013/05'),
+
+  PARTITION 
+    `X2013_06`
+      VALUES IN ('2013/06'),
+
+  PARTITION 
+    `X2013_07`
+      VALUES IN ('2013/07'),
+
+  PARTITION 
+    `X2013_08`
+      VALUES IN ('2013/08'),
+
+  PARTITION 
+    `X2013_09`
+      VALUES IN ('2013/09'),
+
+  PARTITION 
+    `X2013_10`
+      VALUES IN ('2013/10'),
+
+  PARTITION 
+    `X2013_11`
+      VALUES IN ('2013/11'),
+
+  PARTITION 
+    `X2013_12`
+      VALUES IN ('2013/12')
+
+);
+
+################ END EXECUTABLE AREA #################
+
+
+
+
+
+
+
+
+
+
+
+
