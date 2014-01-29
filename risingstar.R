@@ -3891,7 +3891,10 @@ CREATE TABLE `month_quality` (
   `ReportingIndicator` varchar(64) COLLATE latin1_general_cs DEFAULT NULL,
   `EXCHANGE_TICKER` varchar(64) COLLATE latin1_general_cs DEFAULT NULL,
   `Quality` varchar(64) COLLATE latin1_general_cs DEFAULT NULL,
-  `QualityValue` varchar(64) COLLATE latin1_general_cs DEFAULT NULL
+  `QualityValue` varchar(64) COLLATE latin1_general_cs DEFAULT NULL,
+  `Source` varchar(64) COLLATE latin1_general_cs DEFAULT NULL,
+  `YearMonSource` varchar(64) COLLATE latin1_general_cs DEFAULT NULL,
+  `DateOfExecutionOfSource` varchar(64) COLLATE latin1_general_cs DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_general_cs
 PARTITION BY LIST COLUMNS(ThisMonth) (
 
@@ -3976,9 +3979,11 @@ close(fileConn)
 
 
 
-################ BEGIN EXECUTABLE AREA #################
 
-# RESULTS OF ABOVE
+################ BEGIN EXECUTABLE AREA ########################
+
+
+# OUTPUT FROM ABOVE
 
 CREATE TABLE `month_quality` (
   `ThisMonth` varchar(64) COLLATE latin1_general_cs DEFAULT NULL,
@@ -3986,7 +3991,10 @@ CREATE TABLE `month_quality` (
   `ReportingIndicator` varchar(64) COLLATE latin1_general_cs DEFAULT NULL,
   `EXCHANGE_TICKER` varchar(64) COLLATE latin1_general_cs DEFAULT NULL,
   `Quality` varchar(64) COLLATE latin1_general_cs DEFAULT NULL,
-  `QualityValue` varchar(64) COLLATE latin1_general_cs DEFAULT NULL
+  `QualityValue` varchar(64) COLLATE latin1_general_cs DEFAULT NULL,
+  `Source` varchar(64) COLLATE latin1_general_cs DEFAULT NULL,
+  `YearMonSource` varchar(64) COLLATE latin1_general_cs DEFAULT NULL,
+  `DateOfExecutionOfSource` varchar(64) COLLATE latin1_general_cs DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_general_cs
 PARTITION BY LIST COLUMNS(ThisMonth) (
 
@@ -5145,16 +5153,4 @@ PARTITION BY LIST COLUMNS(ThisMonth) (
 
 );
 
-################ END EXECUTABLE AREA #################
-
-
-
-
-
-
-
-
-
-
-
-
+################ END EXECUTABLE AREA ########################
