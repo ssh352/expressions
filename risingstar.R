@@ -3876,6 +3876,7 @@ rm("quoteDividendsgetQuoteOneOfMonth_DF"
 ################ END OF EXECUTABLE AREA ###############
 
 
+####### NEVER USED - WHEN FILLED ( WOULD HAVE ) FILLED MY HARD DRIVE 37G ( WOULD HAVE USED 186G of SPACE ) ###########
 ################ BEGIN EXECUTABLE AREA #################### 
                                                             
 # note: luckily: easy 'one to one' mapping of partition names to partition values
@@ -3979,7 +3980,7 @@ close(fileConn)
 
 
 
-
+####### NEVER USED - WHEN FILLED ( WOULD HAVE ) FILLED MY HARD DRIVE 37G ( WOULD HAVE USED 186G of SPACE ) ###########
 ################ BEGIN EXECUTABLE AREA ########################
 
 
@@ -5157,7 +5158,7 @@ PARTITION BY LIST COLUMNS(ThisMonth) (
 
 
 
-
+########## NEVER USED - FILLED MY HARD DRIVE 37G ( WOULD HAVE USED 186G of SPACE ) ###########
 #############################################
 
 -- BEGIN EXECUTABLE AREA --
@@ -5170,7 +5171,7 @@ PARTITION BY LIST COLUMNS(ThisMonth) (
 -- `ReportingIndicator` varchar(64) COLLATE latin1_general_cs DEFAULT NULL,
 -- `EXCHANGE_TICKER` varchar(64) COLLATE latin1_general_cs DEFAULT NULL,
 -- `Quality` varchar(64) COLLATE latin1_general_cs DEFAULT NULL,
--- `QualityValue` varchar(64) COLLATE latin1_general_cs DEFAULT NULL,
+-- `QualityValue` text COLLATE latin1_general_cs DEFAULT NULL,
 -- `Source` varchar(64) COLLATE latin1_general_cs DEFAULT NULL,
 -- `YearMonSource` varchar(64) COLLATE latin1_general_cs DEFAULT NULL,
 -- `DateOfExecutionOfSource` varchar(64) COLLATE latin1_general_cs DEFAULT NULL
