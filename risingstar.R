@@ -3892,7 +3892,7 @@ CREATE TABLE `month_quality` (
   `ReportingIndicator` varchar(64) COLLATE latin1_general_cs DEFAULT NULL,
   `EXCHANGE_TICKER` varchar(64) COLLATE latin1_general_cs DEFAULT NULL,
   `Quality` varchar(64) COLLATE latin1_general_cs DEFAULT NULL,
-  `QualityValue` varchar(64) COLLATE latin1_general_cs DEFAULT NULL,
+  `QualityValue` text COLLATE latin1_general_cs DEFAULT NULL,
   `Source` varchar(64) COLLATE latin1_general_cs DEFAULT NULL,
   `YearMonSource` varchar(64) COLLATE latin1_general_cs DEFAULT NULL,
   `DateOfExecutionOfSource` varchar(64) COLLATE latin1_general_cs DEFAULT NULL
@@ -3992,7 +3992,7 @@ CREATE TABLE `month_quality` (
   `ReportingIndicator` varchar(64) COLLATE latin1_general_cs DEFAULT NULL,
   `EXCHANGE_TICKER` varchar(64) COLLATE latin1_general_cs DEFAULT NULL,
   `Quality` varchar(64) COLLATE latin1_general_cs DEFAULT NULL,
-  `QualityValue` varchar(64) COLLATE latin1_general_cs DEFAULT NULL,
+  `QualityValue` text COLLATE latin1_general_cs DEFAULT NULL,
   `Source` varchar(64) COLLATE latin1_general_cs DEFAULT NULL,
   `YearMonSource` varchar(64) COLLATE latin1_general_cs DEFAULT NULL,
   `DateOfExecutionOfSource` varchar(64) COLLATE latin1_general_cs DEFAULT NULL
