@@ -6313,4 +6313,88 @@ ALTER TABLE advfn.firmshistory_thismonth_partition
 
 ############### END EXECUTABLE AREA ###################
  
+############ BEGIN HERE ###############
+
+## UPDATE firmshistory_thismonth_partition with end_of_month ticker Price Yahoo quote data
+
+--- prepare for the update
+
+ALTER TABLE advfn.firmshistory_quote_partition_thismonth
+  ADD INDEX fh_quote_partition_thismonth_thismonth_exchange_ticker_idx (ThisMonth,EXCHANGE_TICKER);
+
+-- about 90 seconds
+  
+--- prepare for the update
+ALTER TABLE advfn.firmshistory_thismonth_partition
+  ADD INDEX fh_thismonth_partition_thismonth_exchange_ticker_idx (ThisMonth,EXCHANGE_TICKER);
+
+-- about 120 seconds
+
+-- update firmshistory_thismonth_partition
+--   with the information of 
+--     ThisMonthLastDate
+--     ThisMonthLastClose
+--     ThisMonthLastAdjustedClose
+--       from irmshistory_quote_partition_thismonth
+
+-- start transaction or NOT ( still will stay ACID )
+-- and STILL only one transaction ( UPDATE )
+
+ START TRANSACTION;
+
+ UPDATE firmshistory_thismonth_partition fhm 
+  JOIN firmshistory_quote_partition_thismonth fhqm ON 
+    fhm.ThisMonth = fhqm.ThisMonth AND
+    fhm.EXCHANGE_TICKER = fhqm.EXCHANGE_TICKER
+      SET fhm.ThisMonthLastDate = fhqm.ThisMonthLastDate
+        , fhm.ThisMonthLastClose = fhqm.ThisMonthLastClose
+        , fhm.ThisMonthLastAdjustedClose = fhqm.ThisMonthLastAdjustedClose;
+        
+-- 2:28:22 MEM at 3.14G CPU bounce between 15% and 30%
+-- about 3 minutes before disk i/o started
+-- 2:32 MEM at 3.14G CPU bounce between 40% and 60%
+-- IF SELECTS PASS, TO NOT FORGET TO COMMIT
+-- 12 minutes
+-- Query OK, 789433 rows affected (11 min 36.64 sec)
+-- Rows matched: 789433  Changed: 789433  Warnings: 0
+        
+ SELECT COUNT(*) FROM 
+ firmshistory_thismonth_partition fhm 
+  JOIN firmshistory_quote_partition_thismonth fhqm ON 
+    fhm.ThisMonth = fhqm.ThisMonth AND
+    fhm.EXCHANGE_TICKER = fhqm.EXCHANGE_TICKER;
+    
+-- +----------+
+-- | COUNT(*) |
+-- +----------+
+-- |   789433 |
+-- +----------+
+-- 1 row in set (48.59 sec)
+    
+--  do not select everything
+    
+ SELECT fhm.ThisMonth, fhm.EXCHANGE_TICKER 
+ , fhm.ThisMonthLastDate
+ , fhm.ThisMonthLastClose
+ , fhm.ThisMonthLastAdjustedClose
+  FROM 
+ firmshistory_thismonth_partition fhm 
+  JOIN firmshistory_quote_partition_thismonth fhqm ON 
+    fhm.ThisMonth = fhqm.ThisMonth AND
+    fhm.EXCHANGE_TICKER IN ('NYSE_WMT','NASDAQ_MSFT') AND
+    fhm.EXCHANGE_TICKER = fhqm.EXCHANGE_TICKER;
+    
+-- suprising long ( but seems correct ) ( Rem: has to query every DATE partition )
+-- 576 rows in set (1 min 45.14 sec)
+  
+  COMMIT;
+  --DONE;
+  -- ROLLBACK;
+
+-- rerun query
+-- 576 rows in set (1 min 41.86 sec)
+-- again ( Rem: has to query every DATE partition )
+  
+########## END HERE ##########
+
  
