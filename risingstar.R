@@ -5260,3 +5260,235 @@ CALL sp_some();
 -- END EXECUTABLE AREA --
 
 #############################################
+
+
+
+############# BEGIN EXECUTBLE ( NEVER USED )##########
+
+# AN EXAMPLE STARTER CODE OF DOING A DIFFICULT
+# JOB OF MAKEING SOMETHING HORIZONTAL INTO SOMETHING VERTICLE
+
+# IT WILL DYNAMICALLY BUILD A 'CASE' STATEMENT
+
+--
+
+DELIMITER ;
+DROP PROCEDURE IF EXISTS advfn.`sp_emptycolumns`;
+
+DELIMITER $$
+CREATE PROCEDURE sp_emptycolumns()
+  MODIFIES SQL DATA
+BEGIN
+
+  DECLARE l_last_row_fetched INT;
+  DECLARE l_column_name         VARCHAR(64);
+  DECLARE l_column_time         VARCHAR(64);
+
+  -- 288 rows
+  -- need to create variables "SET @XYYY_MM = NULL" ( required for the CASE statement )
+  DECLARE c_cursor CURSOR FOR 
+    SELECT COLUMN_NAME, REPLACE(REPLACE(COLUMN_NAME,'_','/'),'X','') "COLUMN_TIME"
+      FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE table_schema = 'advfn' AND
+            table_name = 'firmshistory_partition_rownombres' AND 
+            column_name LIKE 'X%'
+    ORDER BY 1 DESC;
+  -- debugging
+  -- AND column_name = 'X2013_04'
+  
+  -- 288 rows
+  -- need to create CASE statement select_items
+  DECLARE b_cursor CURSOR FOR 
+  SELECT COLUMN_NAME, REPLACE(REPLACE(COLUMN_NAME,'_','/'),'X','') "COLUMN_TIME"
+    FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE table_schema = 'advfn' AND
+          table_name = 'firmshistory_partition_rownombres' AND 
+          column_name LIKE 'X%'
+  ORDER BY 1 DESC;
+    
+  -- find where the PARTITION ( quarterly_indicator ) columns are not null
+  DECLARE d_cursor CURSOR FOR 
+  SELECT COLUMN_NAME, REPLACE(REPLACE(COLUMN_NAME,'_','/'),'X','') "COLUMN_TIME"
+    FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE table_schema = 'advfn' AND
+          table_name = 'firmshistory_partition_rownombres' AND 
+          column_name LIKE 'X%'
+  ORDER BY 1 DESC;
+    
+    
+  DECLARE CONTINUE HANDLER FOR NOT FOUND SET l_last_row_fetched=1;
+  
+  SET SESSION group_concat_max_len = 10240;
+  
+  SET l_last_row_fetched=0;
+  
+    OPEN c_cursor;
+      cursor_loop:LOOP
+        FETCH c_cursor INTO l_column_name, l_column_time;
+      
+        IF l_last_row_fetched=1 THEN
+          LEAVE cursor_loop;
+        END IF;
+        
+        SET @l_source = CONCAT("SET @",l_column_name," = NULL");
+        -- debugging
+        -- WHERE EXCHANGE_TICKER = 'NYSE_WMT'
+        
+        -- just see output
+        -- SELECT @l_source;
+        -- +----------------------+
+        -- | @l_source            |
+        -- +----------------------+
+        -- | SET @X1990_01 = NULL |  last is SET @X2013_12 = NULL
+        -- +----------------------+
+        -- 1 row in set (0.06 sec)
+        
+        PREPARE stmt1 FROM @l_source;
+        EXECUTE stmt1;
+        DEALLOCATE PREPARE stmt1;
+        
+      END LOOP cursor_loop;
+    CLOSE c_cursor;
+    SET l_last_row_fetched=0;
+    
+  
+  SET @l_source = "SELECT";
+  SET l_last_row_fetched=0;
+  SET @l_selitemcollection = "";
+  SET @cursor_loop_index = 0;
+  OPEN b_cursor;
+  cursor_loop:LOOP
+      FETCH b_cursor INTO l_column_name, l_column_time;
+      
+      IF l_last_row_fetched=1 THEN
+        LEAVE cursor_loop;
+      END IF;
+      SET @cursor_loop_index = @cursor_loop_index + 1;
+      
+      SET @l_selitemcollection = CONCAT(@l_selitemcollection,"
+      CASE WHEN ",l_column_name," IS NOT NULL AND ",l_column_name," != '' THEN '",l_column_name,"' ELSE NULL END, ");
+      -- +---------------------------------------------------------------------------------+
+      -- | @l_selitem                                                                      |
+      -- +---------------------------------------------------------------------------------+
+      -- | CASE WHEN X2013_12 IS NOT NULL AND X2013_12 != '' THEN 'X2013_12' ELSE NULL END |
+      -- +---------------------------------------------------------------------------------+
+
+  END LOOP cursor_loop;
+  CLOSE b_cursor;
+  SET l_last_row_fetched=0;
+  
+  -- if at least one record returned
+  -- simple: just remove that last comma_space
+  IF @cursor_loop_index > 0 THEN
+    SET @l_selitemcollection = SUBSTRING(@l_selitemcollection, 1,CHAR_LENGTH(@l_selitemcollection) - 2 );
+  END IF;
+  
+  -- SELECT plus select list
+  SET @l_source = CONCAT(@l_source,@l_selitemcollection);
+  
+  -- print
+  -- SELECT @cursor_loop_index;
+  -- SELECT @l_source;
+  
+  -- SELECT
+  -- CASE WHEN X1990_02 IS NOT NULL AND X1990_02 != '' THEN 'X1990_02' ELSE NULL END,
+  -- CASE WHEN X1990_01 IS NOT NULL AND X1990_01 != '' THEN 'X1990_01' ELSE NULL END |
+  
+  SET @into_list = "";
+  SELECT GROUP_CONCAT(CONCAT("@",COLUMN_NAME) ORDER BY 1 DESC SEPARATOR ",") INTO @into_list
+    FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE table_schema = 'advfn' AND
+           table_name = 'firmshistory_partition_rownombres' AND 
+           column_name LIKE 'X%'
+  ORDER BY 1 DESC;
+
+  -- print
+  -- SELECT @into_list;
+  
+  SET @l_source = CONCAT(@l_source,"
+  INTO ",  @into_list);
+  
+  -- print
+  -- SELECT @l_source;
+  
+  SET @l_source = CONCAT(@l_source,"
+    FROM firmshistory_partition_rownombres PARTITION (quarterly_indicator ) 
+      WHERE EXCHANGE_TICKER IN ('NYSE_WMT')");
+  -- above: NEED and OUTER LOOP ( I will have to come back )
+  
+  -- print
+  -- SELECT @l_source;
+  
+  -- remove thee NULL columns
+  -- LEFT_OFF
+  
+  -- load @ user variables into the environment 
+  PREPARE stmt1 FROM @l_source;
+  EXECUTE stmt1;
+  DEALLOCATE PREPARE stmt1;
+  
+  -- @ user variables ARE loaded into the external environment ( not local scope confined )
+  -- mysql> SELECT @X2012_07;
+  -- +-----------+
+  -- | @X2012_07 |
+  -- +-----------+
+  -- | X2012_07  |
+  -- +-----------+
+  
+  -- SELECT @X2012_07;
+  
+  SET @l_source = " SELECT a.COLUMN_NAME FROM (
+      ";
+
+  SET l_last_row_fetched=0;
+  SET @cursor_loop_index = 0;
+
+  OPEN d_cursor;
+  cursor_loop:LOOP
+    FETCH d_cursor INTO l_column_name, l_column_time;
+    
+    IF l_last_row_fetched=1 THEN
+      LEAVE cursor_loop;
+    END IF;
+    SET @cursor_loop_index = @cursor_loop_index + 1;
+      
+      SET @l_source = CONCAT(@l_source,"SELECT @",l_column_name," AS COLUMN_NAME UNION ALL
+      ");
+      
+  END LOOP cursor_loop;
+  CLOSE d_cursor;
+  
+  SET l_last_row_fetched=0;
+  
+  -- if at least one record returned
+  -- simple: just remove that last UNION ALL
+  IF @cursor_loop_index > 0 THEN
+    SET @l_source = SUBSTRING(@l_source, 1,CHAR_LENGTH(@l_source) - 16 );
+  END IF;
+  
+  -- SELECT plus select list
+  SET @l_source = CONCAT(@l_source,"
+  ) a
+  WHERE a.COLUMN_NAME IS NOT NULL LIMIT 1");
+  
+  -- print
+  SELECT @l_source;
+  -- SELECT a.COLUMN_NAME FROM (
+  --       SELECT @X2013_12 AS COLUMN_NAME UNION ALL
+  --       SELECT @X2013_11 AS COLUMN_NAME UNION ALL
+  --       SELECT @X1990_02 AS COLUMN_NAME UNION ALL
+  --       SELECT @X1990_01 AS COLUMN_NAME
+  -- ) a
+  --   WHERE a.COLUMN_NAME IS NOT NULL LIMIT 1 
+  
+  
+END$$
+
+DELIMITER ;
+CALL sp_emptycolumns();
+
+-- END EXECUTABLE AREA --
+
+################ END EXECUTABLE ( NEVER USED )###########
+
+
