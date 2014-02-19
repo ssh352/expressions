@@ -6530,3 +6530,114 @@ ALTER TABLE firmshistory_thismonth_partition
 
 
 
+
+## started at 3:23:40
+### expected run time : 12 * 24 * 2.31 sec / 60 sec / min ... 11 MINUTES
+###   11 * 8 attributes = 88 minutes = 1 hour and 28 minutes
+############# BEGIN EXECUTION #########
+
+# put into firmshistory_thismonth_partition
+#   the rownombres attributes found in firmshistory_partition_rownombres
+
+DELIMITER ;
+DROP PROCEDURE IF EXISTS advfn.`annonproc`;
+
+DELIMITER $$
+CREATE PROCEDURE advfn.annonproc()
+  MODIFIES SQL DATA
+BEGIN
+  DECLARE l_last_row_fetched         INT;
+  DECLARE c_l_partition_name         VARCHAR(64);
+  DECLARE c_l_partition_description  LONGTEXT;
+  DECLARE d_l_partition_name         VARCHAR(64);
+  DECLARE d_l_partition_description  LONGTEXT;
+
+  DECLARE c_cursor cursor FOR
+    SELECT p.PARTITION_NAME, REPLACE(PARTITION_DESCRIPTION,"´","'") PARTITION_DESCRIPTION 
+      FROM INFORMATION_SCHEMA.PARTITIONS p  
+        WHERE
+          p.table_schema = 'advfn' AND 
+          p.table_name = 'firmshistory_partition_rownombres' AND
+          p.partition_name IN (
+             'quarter_end_date'
+            ,'total_common_shares_out'
+            ,'total_net_income'
+            ,'total_equity'
+            ,'total_revenue'
+            ,'earnings_period_indicator'
+            ,'quarterly_indicator'
+            ,'number_of_months_last_report_period'
+            ) ORDER BY p.partition_name;
+            -- debugging: 
+            -- 'total_common_shares_out'
+            -- ,'total_net_income'
+            -- ,'total_equity'
+  
+  
+  DECLARE d_cursor cursor FOR
+    SELECT p.PARTITION_NAME, REPLACE(PARTITION_DESCRIPTION,"´","'") PARTITION_DESCRIPTION
+      FROM INFORMATION_SCHEMA.PARTITIONS p  
+        WHERE
+          p.table_schema = 'advfn' AND 
+          p.table_name = 'firmshistory_thismonth_partition' AND
+          p.partition_name LIKE 'X%'
+    ORDER BY p.PARTITION_NAME DESC;
+      -- debugging: p.partition_name IN ('X1990_01','X2013_12','X2006_05')
+  
+  DECLARE CONTINUE HANDLER FOR NOT FOUND SET l_last_row_fetched=1;
+  SET l_last_row_fetched=0;
+  
+  OPEN c_cursor;
+  
+    c_cursor_loop:LOOP
+      FETCH c_cursor INTO c_l_partition_name, c_l_partition_description;
+    
+      IF l_last_row_fetched=1 THEN
+        LEAVE c_cursor_loop;
+      END IF;
+
+      OPEN d_cursor;
+        d_cursor_loop:LOOP
+          FETCH d_cursor INTO d_l_partition_name, d_l_partition_description;
+          
+          IF l_last_row_fetched=1 THEN
+            LEAVE d_cursor_loop;
+          END IF;
+          
+          -- WORK      
+          SET @l_source = CONCAT(
+          
+            "UPDATE firmshistory_thismonth_partition fhm 
+              JOIN firmshistory_partition_rownombres fhr ON 
+                fhr.rownombres IN (",c_l_partition_description,") AND 
+                fhm.ThisMonth IN (",d_l_partition_description,") AND 
+                fhr.EXCHANGE_TICKER = fhm.EXCHANGE_TICKER 
+                  SET fhm.",c_l_partition_name," = fhr.",d_l_partition_name," "
+          );
+          
+          SELECT @l_source;
+          
+          PREPARE stmt1 FROM @l_source;
+          EXECUTE stmt1;
+          DEALLOCATE PREPARE stmt1;
+          
+        END LOOP d_cursor_loop;
+      CLOSE d_cursor;  
+      SET l_last_row_fetched=0;
+      
+    END LOOP c_cursor_loop;
+
+  CLOSE c_cursor;
+  SET l_last_row_fetched=0;
+  
+END$$
+
+DELIMITER ;
+CALL annonproc();
+
+DELIMITER ;
+DROP PROCEDURE IF EXISTS advfn.`annonproc`;
+
+
+############# END EXECUTION #########
+
