@@ -6415,7 +6415,9 @@ ALTER TABLE firmshistory_dividend_partition_thismonth
 -- Query OK, 0 rows affected (1 min 4.03 sec)
 
 ########## END HERE ##########
-# SAVE ON GITHUB[ ]
+
+
+
 ####################### BEGIN PRODUCTION ######################## 
 
 # update firmshistory_thismonth_partition.SumThisMonthDividend
