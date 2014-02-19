@@ -6531,9 +6531,13 @@ ALTER TABLE firmshistory_thismonth_partition
 
 
 
-## started at 3:23:40
+### predicted
 ### expected run time : 12 * 24 * 2.31 sec / 60 sec / min ... 11 MINUTES
 ###   11 * 8 attributes = 88 minutes = 1 hour and 28 minutes
+
+### actual
+## started at 3:23:40 ( ended at 4:04:15 : 41 minutes )
+
 ############# BEGIN EXECUTION #########
 
 # put into firmshistory_thismonth_partition
