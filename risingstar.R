@@ -6415,5 +6415,93 @@ ALTER TABLE firmshistory_dividend_partition_thismonth
 -- Query OK, 0 rows affected (1 min 4.03 sec)
 
 ########## END HERE ##########
+# SAVE ON GITHUB[ ]
+####################### BEGIN PRODUCTION ######################## 
+
+# update firmshistory_thismonth_partition.SumThisMonthDividend
+# with cummulative monthly data 
+#   from firmshistory_dividend_partition_thismonth SUM( .ThisMonthDividend) 
+
+START TRANSACTION;
+
+-- testing
+SELECT fhm.ThisMonth, fhm.EXCHANGE_TICKER, fhm.SumThisMonthDividend
+      FROM firmshistory_thismonth_partition fhm
+        WHERE fhm.ThisMonth IN ('2012/04','2012/05','2012/06','2012/07','2012/08','2012/09'
+                               ,'2012/10','2012/11','2012/12','2013/01','2013/02','2013/03') AND
+              fhm.EXCHANGE_TICKER IN ('NYSE_WMT','NASDAQ_MSFT');
+
+-- 24 rows in set (0.73 sec)
+              
+-- testing
+-- SELECT COUNT(*) 
+-- SELECT fhm.ThisMonth, fhm.EXCHANGE_TICKER, fhm.SumThisMonthDividend
+--       FROM firmshistory_thismonth_partition fhm
+--         WHERE fhm.SumThisMonthDividend IS NOT NULL;
+
+# update firmshistory_thismonth_partition.SumThisMonthDividend
+# with cummulative monthly data 
+#   from firmshistory_dividend_partition_thismonth SUM( .ThisMonthDividend) 
+        
+UPDATE firmshistory_thismonth_partition fhm 
+  JOIN firmshistory_dividend_partition_thismonth fhdm ON 
+    fhm.ThisMonth = fhdm.ThisMonth AND
+    fhm.EXCHANGE_TICKER = fhdm.EXCHANGE_TICKER 
+      SET fhm.SumThisMonthDividend = 
+        (SELECT SUM(fhdm2.ThisMonthDividend) 
+          FROM firmshistory_dividend_partition_thismonth fhdm2
+          WHERE fhm.ThisMonth = fhdm2.ThisMonth AND
+                fhm.EXCHANGE_TICKER = fhdm2.EXCHANGE_TICKER 
+        GROUP BY fhdm2.ThisMonth, fhdm2.EXCHANGE_TICKER
+        );
+        
+-- began 12:53:10 p.m. -- 90 seconds about 2 firms and 12 months each
+-- high oscillating CPU 17% to 80%
+-- MEM ( PageFile ) holiding steady at 2.85
+-- est time to completion
+-- ( 4700 / 2 ) * ( 288 / 12 ) / ( 60 * 60 ) = 
+-- SELECT ( 4700 / 2 ) * ( 288 / 12 ) / ( 60 * 60 );
+-- Query OK, 116613 rows affected (5 min 10.36 sec)
+-- Rows matched: 116613  Changed: 116613  Warnings: 0
+
+-- testing
+SELECT fhm.ThisMonth, fhm.EXCHANGE_TICKER, fhm.SumThisMonthDividend
+      FROM firmshistory_thismonth_partition fhm
+        WHERE fhm.ThisMonth IN ('2012/04','2012/05','2012/06','2012/07','2012/08','2012/09'
+                               ,'2012/10','2012/11','2012/12','2013/01','2013/02','2013/03') AND
+              fhm.EXCHANGE_TICKER IN ('NYSE_WMT','NASDAQ_MSFT');
+
+-- 24 rows in set (0.58 sec)
+-- 
+              
+-- testing
+-- SELECT COUNT(*) 
+-- SELECT fhm.ThisMonth, fhm.EXCHANGE_TICKER, fhm.SumThisMonthDividend
+--       FROM firmshistory_thismonth_partition fhm
+--         WHERE fhm.SumThisMonthDividend IS NOT NULL;
+
+
+-- testing
+-- SELECT fhm.ThisMonth, fhm.EXCHANGE_TICKER, fhm.SumThisMonthDividend
+--       FROM firmshistory_thismonth_partition fhm
+--         WHERE 
+--               fhm.EXCHANGE_TICKER IN ('NYSE_WMT','NASDAQ_MSFT');
+
+-- 576 rows in set (32.27 sec)
+
+-- SELECT fhdm2.ThisMonth, fhdm2.EXCHANGE_TICKER, SUM(fhdm2.ThisMonthDividend) 
+--           FROM firmshistory_dividend_partition_thismonth fhdm2
+--           WHERE fhdm2.EXCHANGE_TICKER IN ('NYSE_WMT','NASDAQ_MSFT') AND
+--                 fhdm2.ThisMonth = fhdm2.ThisMonth AND
+--                 fhdm2.EXCHANGE_TICKER = fhdm2.EXCHANGE_TICKER 
+--         GROUP BY fhdm2.ThisMonth, fhdm2.EXCHANGE_TICKER;
+
+-- 136 rows in set (30.27 sec)
+
+-- ROLLBACK;
+COMMIT;
+
+####################### END PRODUCTION ########################
+
 
  
