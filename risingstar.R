@@ -6507,3 +6507,26 @@ COMMIT;
 
 
  
+
+##################### BEGIN #########################
+
+# to update firmshistory_thismonth_partition 
+# with attributes from firmshistory_partition_rownombres 
+# need a matching indexes
+
+ALTER TABLE firmshistory_partition_rownombres
+  ADD INDEX fh_partition_rownombres_rownombres_exchange_ticker_idx (rownombres,EXCHANGE_TICKER);
+-- very time consuming
+-- started 4:03 p.m.
+-- finished at 4:12 p.m.
+-- Query OK, 0 rows affected (9 min 22.98 sec)
+
+ALTER TABLE firmshistory_thismonth_partition
+  ADD INDEX fh_thismonth_partition_exchange_ticker_idx (EXCHANGE_TICKER);
+-- started at 4:18 p.m.
+-- Query OK, 0 rows affected (2 min 45.69 sec)
+  
+##################### END ###########################
+
+
+
