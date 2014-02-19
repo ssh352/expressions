@@ -6397,4 +6397,23 @@ ALTER TABLE advfn.firmshistory_thismonth_partition
   
 ########## END HERE ##########
 
+
+########## BEGIN HERE ##########
+
+# dividend updating supporting indexes needed
+
+--- prepare for the update
+
+ALTER TABLE advfn.firmshistory_thismonth_partition
+ ADD SumThisMonthDividend double DEFAULT NULL;
+
+-- Query OK, 0 rows affected (6 min 46.98 sec)
+
+ALTER TABLE firmshistory_dividend_partition_thismonth
+  ADD INDEX fh_dividend_partition_thismonth_idx (ThisMonth,EXCHANGE_TICKER);
+
+-- Query OK, 0 rows affected (1 min 4.03 sec)
+
+########## END HERE ##########
+
  
