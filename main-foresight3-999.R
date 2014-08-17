@@ -7,6 +7,8 @@ options(max.print=99999)
 options(scipen=255) # Try these = width
 options(sqldf.driver = "SQLite")
 
+library(Hmisc)
+
 library(testthat)
 
 library(tcltk)
@@ -27,7 +29,7 @@ setwd("N:\\MyVMWareSharedFolder\\foresight3\\R")
 # source( paste0(getwd(),"/sql.select.R"))
 # may override as.data.frame ( BE CAREFUL )
 
-source( paste0(getwd(),"/helpers.R"))
+source( paste0(getwd(),"/helpers-foresight3-999.R"))
 
 # IN YELLOW window2 only
 # library(testthat)
@@ -486,9 +488,14 @@ main_foresight3_999 <- function(pauseat=NULL) {
   UNIVERSE_NOT_NA <- filter(UNIVERSE_NOT_NA, is.na(PRCHG_13W) == FALSE)
   
   # ntile 'higher value' is 'higher ntile'
-  UNIVERSE_NOT_NA <- mutate(UNIVERSE_NOT_NA,PRCHG_13W_NTILE2 = as.numeric(
-    ntile(PRCHG_13W,2)
-  ))
+  
+  # UNIVERSE_NOT_NA <- mutate(UNIVERSE_NOT_NA,PRCHG_13W_NTILE2 = as.numeric(
+  #   ntile(PRCHG_13W,2)
+  # ))
+  
+  UNIVERSE_NOT_NA <- do(UNIVERSE_NOT_NA, 
+    hdntile(.,"PRCHG_13W", buckets = 2 ) 
+  ) 
   
   UNIVERSE_NOT_NA <- ungroup(UNIVERSE_NOT_NA) 
   
@@ -1930,15 +1937,59 @@ main_foresight3_999 <- function(pauseat=NULL) {
 }
 
 
-# TO_DO ( NOTE DONE YET ) : END OF DAY. "Put Up on GitHub" [ ] August 13, 2014
+# BEGIN SUNDAY
 
 
-# NEXT ( MAKE SURE PRICES AND SPLITS ARE HOPEFULLY SMOOTH )
+
+# higest: swap out 'ntile' with 'do(  hgquantile )'
+# [ ] big effort
+
+  # [X] DONE ( NOTE 669 observations returned instead of 668 )
+  # UNIVERSE_NOT_NA <- do(UNIVERSE_NOT_NA, 
+    # hdntile(.,"PRCHG_13W", buckets = 2 ) 
+  # ) 
+
+# BEGIN THURSDAY ( DAY OF LEAVE )
+  
+  # [ ] !!!! ***** SWAP OUT THE REMANDER ntile --> hdntile ****
+
+
+  
+# fix that report date + 'Add Periods' shift see TimeWarp
+# [ ]
+
+# style and conversion ( sqldf to work for me ) 
+# EASIER OUTPUT OF DATE                         [ ] MAY BE TOO CUMBERSOME
+# If you name the output column the same name as an input column which has "Date" class 
+# then it will correctly infer that the output is to be of class "Date" as well.
+#   "select max(sale_date) sale_date from test1"
+# http://code.google.com/p/sqldf/ FAQ #4
+
+# note ( right answer is returned as date)
+# sqldf(sprintf("select * from DF where a >= %d", Sys.Date() + 2))
+# 2009-08-01 2   
+# http://code.google.com/p/sqldf/ FAQ #4
+
 
 
 # CLEAN SOME CODE UP ( SIMPLIFY SOME 'REPEATS T FUNCTIONS' )
+# (1) eliminate duplicates [ ]
+# (2) repeating 'nite' tests [ ] 
+
 # INTEGRATE VJAYS ( CENTRALIZED DIRECTORY FUNCTION )
+# [ ] YYYY-MM-DD directories  ( also scan .txt for copyDirectory )
+
+# FILE STARTUP SPEED
+# [ ] if !file.exists(...) ... load file .... ( once only ) ... save file
     
+# TO_DO ( NOTE DONE YET ) : END OF DAY. "Put Up on GitHub" [X] August 13, 2014
+# main-foresight-999.R [ ] 
+# helpers.R rename   helpers-foresight-999.R [ ]    [ ] THIS ONE IS NEW
+    
+# END SUNDAY 
+    
+# SOON ( MAKE SURE PRICES AND SPLITS ARE HOPEFULLY SMOOTH ) ( SHORT TERM - JUST INSPECT AND ELIM )
+
     
 # START LOOKING AT (TO START) FED & PIGER & RANDOMFOREST
     
@@ -1948,8 +1999,42 @@ main_foresight3_999 <- function(pauseat=NULL) {
   #       ASSETS_Q1 & LIAB_Q1 are always large and positive
   #       ASSETS_Q1 - LIAB_Q1 = EQUITY_Q1(sometimes negative)
 
+# HIGHLY HIGHLY CONSIDER
+# Consider: custom ntile/rank,, hdntile hdrank using dplyr::do() and Hmisc::hdquantile 
+  
+  
+# Consider ( PE ratio FIX ) # MAY? MAKE A GOOD 'custom field in 'SI Pro' 'IN or OUT' = SHR_DQ1
+
+# EPS-Diluted Q1
+# Data Table Name: EPSD_Q1, Q2, Q3, Q4, Q5, Q6, Q7, Q8
+# fully diluted earnings from total operations 
+# A company will only report diluted earnings if it has potentially dilutive securities 
+#  therfore, need ... ifelse(!is.na(EPSD_Q1), EPSD_Q1, EPSCON_Q1)
+
+# = EARNOPS/AVE_DILUTED_SHARES
+
+# EPS-Continuing 
+# Data Table Name: EPSCON_Q1
+# dividing earnings from continuing operations by the average number of shares outstanding during the same period
+
+# = EARNOPS/AVE_COMMON_SHARES
+
+# ( 1.0 / ( EARNOPS/AVE_DILUTED_SHARES ) ) * EARNOPS/AVE_COMMON_SHARES = AVE_DILUTED_SHARES / AVE_COMMON_SHARES
+
+# Shares Average Q1
+# Data Table Name: SHR_AQ1
+# average number of shares of common stock outstanding 
+
+# = AVE_COMMON_SHARES
+
+# Therefore
+
+# AVE_DILUTED_SHARES / AVE_COMMON_SHARES * AVE_COMMON_SHARES = AVE_DILUTED_SHARES  = Andre Custom
+  
+  
+  
 # TOGGLE-ABLE
-# main_foresight3_999()
+# View(main_foresight3_999())
 # 
 # rm(list=ls(all.names=TRUE))
 # source('N:/MyVMWareSharedFolder/foresight3/R/main-foresight3-999.R', echo=TRUE)
