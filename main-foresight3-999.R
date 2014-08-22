@@ -1,5 +1,90 @@
 
      
+
+options(RepositoryStyle = "Installed")      # OR    "InstalledTest" OR "Installed" # OR "Dated"
+options(FileStoreStyle  = "Optimized" )  # OR    "NotOptimized " OR "Optimized" 
+# Optimized: ( will try to find fast loading binary  file if not found then load then save 'fast loading' )
+
+if(getOption("RepositoryStyle") == "InstalledTest")  {
+
+  options(AAIIBase = "N:/MyVMWareSharedFolder/ProfessionalTest") 
+  
+}
+
+if(getOption("RepositoryStyle") == "Installed")  {
+
+  options(AAIIBase = "N:/MyVMWareSharedFolder/Professional") 
+  
+}
+
+# default .dbf file locations
+
+options(AAIISIPro40PathFileNotOptim_SETUP =  paste0(getOption("AAIIBase"),"/Setup.dbf"))
+options(AAIISIPro40PathFile_SETUP         =  paste0(getOption("AAIISIPro40PathFileNotOptim_SETUP")))
+
+options(AAIISIPro40PathFileNotOptim_SI_CI =  paste0(getOption("AAIIBase"),"/Static/si_ci.dbf"))
+options(AAIISIPro40PathFile_SI_CI         =  paste0(getOption("AAIISIPro40PathFileNotOptim_SI_CI")))
+
+options(AAIISIPro40PathFileNotOptim_SI_MGDSC =  paste0(getOption("AAIIBase"),"/Static/SI_MGDSC.DBF"))
+options(AAIISIPro40PathFile_SI_MGDSC         =  paste0(getOption("AAIISIPro40PathFileNotOptim_SI_MGDSC")))
+
+options(AAIISIPro40PathFileNotOptim_SI_EXCHG =  paste0(getOption("AAIIBase"),"/Static/SI_EXCHG.DBF"))
+options(AAIISIPro40PathFile_SI_EXCHG         =  paste0(getOption("AAIISIPro40PathFileNotOptim_SI_EXCHG")))
+
+options(AAIISIPro40PathFileNotOptim_SI_PSD   =  paste0(getOption("AAIIBase"),"/Dbfs/si_psd.dbf"))
+options(AAIISIPro40PathFile_SI_PSD           =  paste0(getOption("AAIISIPro40PathFileNotOptim_SI_PSD")))
+
+options(AAIISIPro40PathFileNotOptim_SI_DATE  =  paste0(getOption("AAIIBase"),"/Static/si_date.dbf"))
+options(AAIISIPro40PathFile_SI_DATE          =  paste0(getOption("AAIISIPro40PathFileNotOptim_SI_DATE")))
+
+options(AAIISIPro40PathFileNotOptim_SI_ISQ   =  paste0(getOption("AAIIBase"),"/Static/si_isq.dbf"))
+options(AAIISIPro40PathFile_SI_ISQ           =  paste0(getOption("AAIISIPro40PathFileNotOptim_SI_ISQ")))
+
+options(AAIISIPro40PathFileNotOptim_SI_BSQ   =  paste0(getOption("AAIIBase"),"/Static/si_bsq.dbf"))
+options(AAIISIPro40PathFile_SI_BSQ           =  paste0(getOption("AAIISIPro40PathFileNotOptim_SI_BSQ")))
+
+options(AAIISIPro40PathFileNotOptim_SI_CFQ   =  paste0(getOption("AAIIBase"),"/Static/si_cfq.dbf"))
+options(AAIISIPro40PathFile_SI_CFQ           =  paste0(getOption("AAIISIPro40PathFileNotOptim_SI_CFQ")))
+
+options(AAIISIPro40PathFileNotOptim_SI_MLT   =  paste0(getOption("AAIIBase"),"/Dbfs/si_mlt.dbf"))
+options(AAIISIPro40PathFile_SI_MLT           =  paste0(getOption("AAIISIPro40PathFileNotOptim_SI_MLT")))
+ 
+# end of default .dbf file locations
+  
+if(getOption("FileStoreStyle") == "Optimized") {
+
+  options(AAIISIPro40PathFileOptim_SETUP =  paste0(getOption("AAIIBase"),"/SETUP.RData"))
+  options(AAIISIPro40PathFile_SETUP         =  paste0(getOption("AAIISIPro40PathFileOptim_SETUP")))
+
+  options(AAIISIPro40PathFileOptim_SI_CI =  paste0(getOption("AAIIBase"),"/Static/SI_CI.RData"))
+  options(AAIISIPro40PathFile_SI_CI         =  paste0(getOption("AAIISIPro40PathFileOptim_SI_CI")))
+
+  options(AAIISIPro40PathFileOptim_SI_MGDSC =  paste0(getOption("AAIIBase"),"/Static/SI_MGDSC.RData"))
+  options(AAIISIPro40PathFile_SI_MGDSC         =  paste0(getOption("AAIISIPro40PathFileOptim_SI_MGDSC")))
+
+  options(AAIISIPro40PathFileOptim_SI_EXCHG =  paste0(getOption("AAIIBase"),"/Static/SI_EXCHG.RData"))
+  options(AAIISIPro40PathFile_SI_EXCHG         =  paste0(getOption("AAIISIPro40PathFileOptim_SI_EXCHG")))
+
+  options(AAIISIPro40PathFileOptim_SI_PSD   =  paste0(getOption("AAIIBase"),"/Dbfs/SI_PSD.RData"))
+  options(AAIISIPro40PathFile_SI_PSD           =  paste0(getOption("AAIISIPro40PathFileOptim_SI_PSD")))
+
+  options(AAIISIPro40PathFileOptim_SI_DATE  =  paste0(getOption("AAIIBase"),"/Static/SI_DATE.RData"))
+  options(AAIISIPro40PathFile_SI_DATE          =  paste0(getOption("AAIISIPro40PathFileOptim_SI_DATE")))
+
+  options(AAIISIPro40PathFileOptim_SI_ISQ   =  paste0(getOption("AAIIBase"),"/Static/SI_ISQ.RData"))
+  options(AAIISIPro40PathFile_SI_ISQ           =  paste0(getOption("AAIISIPro40PathFileOptim_SI_ISQ")))
+
+  options(AAIISIPro40PathFileOptim_SI_BSQ   =  paste0(getOption("AAIIBase"),"/Static/SI_BSQ.RData"))
+  options(AAIISIPro40PathFile_SI_BSQ           =  paste0(getOption("AAIISIPro40PathFileOptim_SI_BSQ")))
+
+  options(AAIISIPro40PathFileOptim_SI_CFQ   =  paste0(getOption("AAIIBase"),"/Static/SI_CFQ.RData"))
+  options(AAIISIPro40PathFile_SI_CFQ           =  paste0(getOption("AAIISIPro40PathFileOptim_SI_CFQ")))
+
+  options(AAIISIPro40PathFileOptim_SI_MLT   =  paste0(getOption("AAIIBase"),"/Dbfs/SI_MLT.RData"))
+  options(AAIISIPro40PathFile_SI_MLT           =  paste0(getOption("AAIISIPro40PathFileOptim_SI_MLT")))
+ 
+}
+ 
  
 options(width = 255)     
 options(digits = 22) 
@@ -117,7 +202,20 @@ main_foresight3_999 <- function(pauseat=NULL) {
   # FM_FILE     SETUP   
   
   # SI Pro 4.0 setup
-  SETUP <<- suppressWarnings(suppressMessages(read.dbf(file="N:/MyVMWareSharedFolder/Professional/Setup.dbf", as.is = TRUE)))
+  
+   if(getOption("FileStoreStyle") == "Optimized") {
+    if( file.exists(getOption("AAIISIPro40PathFileOptim_SETUP"))) {
+      load(file = getOption("AAIISIPro40PathFileOptim_SETUP"))
+    } else {
+      # load file
+      SETUP <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SETUP"), as.is = TRUE)))
+      save("SETUP",file = getOption("AAIISIPro40PathFileOptim_SETUP"))
+    }
+  } else {
+    # load file
+    SETUP <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SETUP"), as.is = TRUE)))
+  }
+  
   
   SETUP_tbl_sqlite <- copy_to(dpsqllconn, SETUP, temporary = FALSE
     , indexes = list(
@@ -129,8 +227,20 @@ main_foresight3_999 <- function(pauseat=NULL) {
   # SI_CI ( TYPICALLY BIG: 7 thousand )
   #
   # company information 
-  SI_CI <<- suppressWarnings(suppressMessages(read.dbf(file="N:/MyVMWareSharedFolder/Professional/Static/si_ci.dbf", as.is = TRUE)))
-  
+
+   if(getOption("FileStoreStyle") == "Optimized") {
+    if( file.exists(getOption("AAIISIPro40PathFileOptim_SI_CI"))) {
+      load(file = getOption("AAIISIPro40PathFileOptim_SI_CI"))
+    } else {
+      # load file
+      SI_CI <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_CI"), as.is = TRUE)))
+      save("SI_CI",file = getOption("AAIISIPro40PathFileOptim_SI_CI"))
+    }
+  } else {
+    # load file
+    SI_CI <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_CI"), as.is = TRUE)))
+  }
+
     primary_key_dup <- SI_CI[duplicated(SI_CI[,'TICKER']),,drop=FALSE]
     new_df_no_duplicates <- SI_CI[!(SI_CI$TICKER %in% as.matrix(primary_key_dup)),,drop=FALSE]
     SI_CI <<- new_df_no_duplicates
@@ -152,12 +262,24 @@ main_foresight3_999 <- function(pauseat=NULL) {
   SI_CI <<- tbl_df(SI_CI)
 
   
-  
   # small LOOK-UP tables
   # read 'sectors and industries'     
   # SI_MGDSC.MG_CODE '2 char: industry'     
   # SI_MGDSC.MG_DESC '4 char' description'
-  SI_MGDSC <<- suppressWarnings(suppressMessages(read.dbf(file="N:/MyVMWareSharedFolder/Professional/Static/SI_MGDSC.DBF", as.is = TRUE)))
+  
+   if(getOption("FileStoreStyle") == "Optimized") {
+    if( file.exists(getOption("AAIISIPro40PathFileOptim_SI_MGDSC"))) {
+      load(file = getOption("AAIISIPro40PathFileOptim_SI_MGDSC"))
+    } else {
+      # load file
+      SI_MGDSC <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_MGDSC"), as.is = TRUE)))
+      save("SI_MGDSC",file = getOption("AAIISIPro40PathFileOptim_SI_MGDSC"))
+    }
+  } else {
+    # load file
+    SI_MGDSC <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_MGDSC"), as.is = TRUE)))
+  }
+
     primary_key_dup <- SI_MGDSC[duplicated(SI_MGDSC[,'MG_CODE']),,drop=FALSE]
     new_df_no_duplicates <- SI_MGDSC[!(SI_MGDSC$MG_CODE %in% as.matrix(primary_key_dup)),,drop=FALSE]
     SI_MGDSC <<- new_df_no_duplicates
@@ -178,7 +300,20 @@ main_foresight3_999 <- function(pauseat=NULL) {
   # SI_CI.IND_2_DIG = SI_MGDSC.MG_CODE
   
   # Major stock exchange information 'long descriptions'
-  SI_EXCHG <<- suppressWarnings(suppressMessages(read.dbf(file="N:/MyVMWareSharedFolder/Professional/Static/SI_EXCHG.DBF", as.is = TRUE)))
+  
+   if(getOption("FileStoreStyle") == "Optimized") {
+    if( file.exists(getOption("AAIISIPro40PathFileOptim_SI_EXCHG"))) {
+      load(file = getOption("AAIISIPro40PathFileOptim_SI_EXCHG"))
+    } else {
+      # load file
+      SI_EXCHG <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_EXCHG"), as.is = TRUE)))
+      save("SI_EXCHG",file = getOption("AAIISIPro40PathFileOptim_SI_EXCHG"))
+    }
+  } else {
+    # load file
+    SI_EXCHG <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_EXCHG"), as.is = TRUE)))
+  }
+  
     primary_key_dup <- SI_EXCHG[duplicated(SI_EXCHG[,'EXCHG_CODE']),,drop=FALSE]
     new_df_no_duplicates <- SI_EXCHG[!(SI_EXCHG$EXCHG_CODE %in% as.matrix(primary_key_dup)),,drop=FALSE]
     SI_EXCHG <<- new_df_no_duplicates
@@ -201,8 +336,21 @@ main_foresight3_999 <- function(pauseat=NULL) {
   # SI_CI.COMPANY_ID = SI_PSD.COMPANY_ID
   
   # Price and Share Staticsics - Market Capitalization
-  SI_PSD <<- suppressWarnings(suppressMessages(read.dbf(file="N:/MyVMWareSharedFolder/Professional/Dbfs/si_psd.dbf", as.is = TRUE)))
-    primary_key_dup <- SI_PSD[duplicated(SI_PSD[,'COMPANY_ID']),,drop=FALSE]
+  
+   if(getOption("FileStoreStyle") == "Optimized") {
+    if( file.exists(getOption("AAIISIPro40PathFileOptim_SI_PSD"))) {
+      load(file = getOption("AAIISIPro40PathFileOptim_SI_PSD"))
+    } else {
+      # load file
+      SI_PSD <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_PSD"), as.is = TRUE)))
+      save("SI_PSD",file = getOption("AAIISIPro40PathFileOptim_SI_PSD"))
+    }
+  } else {
+    # load file
+    SI_PSD <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_PSD"), as.is = TRUE)))
+  }
+
+  primary_key_dup <- SI_PSD[duplicated(SI_PSD[,'COMPANY_ID']),,drop=FALSE]
     new_df_no_duplicates <- SI_PSD[!(SI_PSD$COMPANY_ID %in% as.matrix(primary_key_dup)),,drop=FALSE]
     SI_PSD <<- new_df_no_duplicates
     rm(primary_key_dup,new_df_no_duplicates)
@@ -256,7 +404,20 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   
   # Dates and Periods - Ending date Q1
-  SI_DATE <<- suppressWarnings(suppressMessages(read.dbf(file="N:/MyVMWareSharedFolder/Professional/Static/si_date.dbf", as.is = TRUE)))
+  
+   if(getOption("FileStoreStyle") == "Optimized") {
+    if( file.exists(getOption("AAIISIPro40PathFileOptim_SI_DATE"))) {
+      load(file = getOption("AAIISIPro40PathFileOptim_SI_DATE"))
+    } else {
+      # load file
+      SI_DATE <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_DATE"), as.is = TRUE)))
+      save("SI_DATE",file = getOption("AAIISIPro40PathFileOptim_SI_DATE"))
+    }
+  } else {
+    # load file
+    SI_DATE <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_DATE"), as.is = TRUE)))
+  }
+
     primary_key_dup <- SI_DATE[duplicated(SI_DATE[,'COMPANY_ID']),,drop=FALSE]
     new_df_no_duplicates <- SI_DATE[!(SI_DATE$COMPANY_ID %in% as.matrix(primary_key_dup)),,drop=FALSE]
     SI_DATE <<- new_df_no_duplicates
@@ -292,7 +453,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
     SELECT STP.MONTHDATE AS MONTHDATEUNX, STP.WEEKDATE AS WEEKDATEUNX, STP.SPLITDATE AS SPLITDATEUNX, 
            CI.TICKER, CI.COMPANY, CI.COMPANY_ID, CI.SIC, CI.EXCHANGE, EXCHG.EXCHG_DESC 
          , CI.IND_2_DIG, MGDSC.MG_DESC, CI.COUNTRY, CI.ADR, DTE.PEREND_Q2 AS PERENDUNX_Q2, DTE.PEREND_Q1 AS PERENDUNX_Q1, DTE.PERLEN_Q1 AS PERLEN_Q1__integer, PERTYP_Q1 
-                           , PSD.MKTCAP, PSD.PRICE PRICE__numeric, PSD.SPLIT_DATE AS PSD_SPLITUNX_DATE, PSD.SPLIT_FACT AS SPLIT_FACT__numeric
+                           , PSD.MKTCAP AS MKTCAP__numeric, PSD.PRICE AS PRICE__numeric, PSD.SPLIT_DATE AS PSD_SPLITUNX_DATE, PSD.SPLIT_FACT AS SPLIT_FACT__numeric
                            FROM 
                            main.SETUP STP, 
                            main.SI_CI CI, main.SI_EXCHG EXCHG, main.SI_MGDSC MGDSC, main.SI_PSD PSD, main.SI_DATE DTE
@@ -537,9 +698,14 @@ main_foresight3_999 <- function(pauseat=NULL) {
   UNIVERSE_NOT_NA <- filter(UNIVERSE_NOT_NA, is.na(PRCHG_26W) == FALSE)
   
   # ntile 'higher value' is 'higher ntile'
-  UNIVERSE_NOT_NA <- mutate(UNIVERSE_NOT_NA,PRCHG_26W_NTILE2 = as.numeric(
-    ntile(PRCHG_26W,2)
-  ))
+  
+  # UNIVERSE_NOT_NA <- mutate(UNIVERSE_NOT_NA,PRCHG_26W_NTILE2 = as.numeric(
+  #   ntile(PRCHG_26W,2)
+  # ))
+  
+  UNIVERSE_NOT_NA <- do(UNIVERSE_NOT_NA, 
+    hdntile(.,"PRCHG_26W", buckets = 2 ) 
+  ) 
   
   UNIVERSE_NOT_NA <- ungroup(UNIVERSE_NOT_NA) 
   
@@ -550,22 +716,15 @@ main_foresight3_999 <- function(pauseat=NULL) {
   UNIVERSE <<- mutate(UNIVERSE, GROWTH_EXPOSE_PRCHG_26W_NTILE2_SRVVR = ifelse(PRCHG_26W_NTILE2 == 2, 1, 0)  )
   
   
-  
   # have an 'annual' 'EPS change' greater than zero (0)'
   # LAST of growth expose
-  
 
-  # 'not need 'relative' , need 'absolute 'higher is better )
-  # relative   -6 - ( -3 ) /    ( -3 )   = -3 / -3 =  1
-  # absolute   -6 - ( -3 ) / abs( -3 )   = -3 /  3 = -1 ( WANT THIS )
-  # ( ( EPS_Q1 + EPS_Q2 + EPS_Q3 + EPS_Q4 ) - ( EPS_Q5 + EPS_Q6 + EPS_Q7 + EPS_Q8 ) ) / abs( EPS_Q5 + EPS_Q6 + EPS_Q7 + EPS_Q8 ) * 100.0
-  
   # FIELD_NAME  EPS_Q1
   # FIELD_DESC  EPS Q1
   # DESCRIP     Income Statement - Quarterly
  	# FM_FILE     SI_ISQ
   
-  SI_ISQ <<- suppressWarnings(suppressMessages(read.dbf(file="N:/MyVMWareSharedFolder/Professional/Static/si_isq.dbf", as.is = TRUE)))
+  SI_ISQ <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_ISQ"), as.is = TRUE)))
   
     primary_key_dup <- SI_ISQ[duplicated(SI_ISQ[,'COMPANY_ID']),,drop=FALSE]
     new_df_no_duplicates <- SI_ISQ[!(SI_ISQ$COMPANY_ID %in% as.matrix(primary_key_dup)),,drop=FALSE]
@@ -613,39 +772,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   UNIVERSE <<- mutate(UNIVERSE, EPS_Q7 = as.numeric(EPS_Q7) )
   UNIVERSE <<- mutate(UNIVERSE, EPS_Q8 = as.numeric(EPS_Q8) )
   
-  UNIVERSE <<- mutate(UNIVERSE, GROWTH_EXPOSE_ANNUAL_EPS_CH_PCT_GROWTH = as.numeric(   
-    ( ( EPS_Q1 + EPS_Q2 + EPS_Q3 + EPS_Q4 ) - ( EPS_Q5 + EPS_Q6 + EPS_Q7 + EPS_Q8 ) ) / abs( EPS_Q5 + EPS_Q6 + EPS_Q7 + EPS_Q8 ) * 100.0
-  ) )
-  
-  UNIVERSE <<- mutate(UNIVERSE, GROWTH_EXPOSE_ANNUAL_EPS_CH_PCT_GROWTH_GR_THAN_0_SRVVR = ifelse(   
-    GROWTH_EXPOSE_ANNUAL_EPS_CH_PCT_GROWTH > 0.0, 1, 0
-  ) )
-  
-  # growth expose winners so far
-  
-  UNIVERSE <<- mutate(UNIVERSE, GROWTH_EXPOSE_SRVVR = 
-    ifelse(   
-              GROWTH_EXPOSE_PRCHG_13W_NTILE2_SRVVR                      == 1 & 
-              GROWTH_EXPOSE_PRCHG_26W_NTILE2_SRVVR                      == 1 & 
-              GROWTH_EXPOSE_ANNUAL_EPS_CH_PCT_GROWTH_GR_THAN_0_SRVVR    == 1 
-    , 1, 0
-    )
-  )
-  
-  # end growth expose
-  
-  # begin value expose
-  
-  # want only GROWTH_EXPOSE_SRVVR == 1
-  
-  UNIVERSE <<- data.table(UNIVERSE)
-  setkeyv(UNIVERSE,c("GROWTH_EXPOSE_SRVVR"))
-  UNIVERSE <<- UNIVERSE[GROWTH_EXPOSE_SRVVR==1]
-  UNIVERSE <<- as.data.frame(UNIVERSE, stringsAsFactors = FALSE)
-  
-  # begin financial composite ( defensive posture )
-  
-  SI_BSQ <<- suppressWarnings(suppressMessages(read.dbf(file="N:/MyVMWareSharedFolder/Professional/Static/si_bsq.dbf", as.is = TRUE)))
+  SI_BSQ <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_BSQ"), as.is = TRUE)))
   
   primary_key_dup <- SI_BSQ[duplicated(SI_BSQ[,'COMPANY_ID']),,drop=FALSE]
   new_df_no_duplicates <- SI_BSQ[!(SI_BSQ$COMPANY_ID %in% as.matrix(primary_key_dup)),,drop=FALSE]
@@ -661,7 +788,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   SI_BSQ <<- tbl_df(SI_BSQ)
   
 
-  SI_CFQ <<- suppressWarnings(suppressMessages(read.dbf(file="N:/MyVMWareSharedFolder/Professional/Static/si_cfq.dbf", as.is = TRUE)))
+  SI_CFQ <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_CFQ"), as.is = TRUE)))
   
   primary_key_dup <- SI_CFQ[duplicated(SI_CFQ[,'COMPANY_ID']),,drop=FALSE]
   new_df_no_duplicates <- SI_CFQ[!(SI_CFQ$COMPANY_ID %in% as.matrix(primary_key_dup)),,drop=FALSE]
@@ -697,13 +824,14 @@ main_foresight3_999 <- function(pauseat=NULL) {
   UNIVERSE <<- sqldf("SELECT UNIV.* 
                       , BSQ.LIAB_Q1 AS LIAB_Q1__numeric, BSQ.LIAB_Q2 AS LIAB_Q2__numeric                                  -- %change in debt ( and debt / equity ratio )
                       , BSQ.LIAB_Q3 AS LIAB_Q3__numeric, BSQ.LIAB_Q4 AS LIAB_Q4__numeric, BSQ.LIAB_Q5 AS LIAB_Q5__numeric -- %change in debt
-                      , BSQ.EQUITY_Q1 AS EQUITY_Q1__numeric                                                               -- debt / equity ratio
+                      , BSQ.EQUITY_Q1 AS EQUITY_Q1__numeric                                                               -- debt / equity ratio   -- book / price ratio
+                      , BSQ.GWI_Q1 AS GWI_Q1__numeric                                                                                              -- book / price ratio
                       , CFQ.TCF_Q1 AS TCF_Q1__numeric, CFQ.TCF_Q2 AS TCF_Q2__numeric, CFQ.TCF_Q3 AS TCF_Q3__numeric       -- cash flow from financing' / average assets
                       , CFQ.TCF_Q4 AS TCF_Q4__numeric, CFQ.TCF_Q5 AS TCF_Q5__numeric
                       , CFQ.TCF_Q6 AS TCF_Q6__numeric, CFQ.TCF_Q7 AS TCF_Q7__numeric, CFQ.TCF_Q8 AS TCF_Q8__numeric       -- earnings composite: percent change in NOA
                       , BSQ.ASSETS_Q1 AS ASSETS_Q1__numeric, BSQ.ASSETS_Q2 AS ASSETS_Q2__numeric                          -- cash flow from financing' / average assets
                       , BSQ.ASSETS_Q3 AS ASSETS_Q3__numeric, BSQ.ASSETS_Q4 AS ASSETS_Q4__numeric 
-                      , BSQ.ASSETS_Q5 AS ASSETS_Q5__numeric 
+                      , BSQ.ASSETS_Q5 AS ASSETS_Q5__numeric                                                               -- ( MAY MAY be used in CATA )
                       , CFQ.NCC_Q1 AS NCC_Q1__numeric, CFQ.NCC_Q2 AS NCC_Q2__numeric, CFQ.NCC_Q3 AS NCC_Q3__numeric       -- annual cash flow / debt 
                       , CFQ.NCC_Q4 AS NCC_Q4__numeric, CFQ.NCC_Q5 AS NCC_Q5__numeric
                                   FROM 
@@ -719,10 +847,67 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   
   
+  # have an 'annual' 'EPS change' greater than zero (0)'
+  # LAST of growth expose
+
+  # 'not need 'relative' , need 'absolute 'higher is better )
+  # relative   -6 - ( -3 ) /    ( -3 )   = -3 / -3 =  1
+  # absolute   -6 - ( -3 ) / abs( -3 )   = -3 /  3 = -1 ( WANT THIS )
+  # ( ( EPS_Q1 + EPS_Q2 + EPS_Q3 + EPS_Q4 ) - ( EPS_Q5 + EPS_Q6 + EPS_Q7 + EPS_Q8 + 0.0000001 ) ) / abs( EPS_Q5 + EPS_Q6 + EPS_Q7 + EPS_Q8 + 0.0000001 ) * 100.0 = GROWTH_EXPOSE_ANNUAL_EPS_CH_PCT_GROWTH
+  
+  # FIELD_NAME  EPS_Q1
+  # FIELD_DESC  EPS Q1
+  # DESCRIP     Income Statement - Quarterly
+ 	# FM_FILE     SI_ISQ
+  
+  # ALTERNATIVE ( if a company has small 'earnings' 
+  #   then a tiny insignificant increase in 'earnings' can produce a 
+  #   'bad logic' 'big swing' in ( NUM - DEN ) / abs(DEN + 0.0000001) * 100
+  # THEREFORE, I may want to weight something ( NOTE: end result approx: ( ( EPS_Q1 + EPS_Q2 + EPS_Q3 + EPS_Q4 ) - ( EPS_Q5 + EPS_Q6 + EPS_Q7 + EPS_Q8 + 0.0000001 ) ) / ( ASSETS_Q5 + 0.0000001 ) * 100.0 = GROWTH_EXPOSE_ANNUAL_EPS_CH_PCT_GROWTH
+  # ( ( EPS_Q1 + EPS_Q2 + EPS_Q3 + EPS_Q4 ) - ( EPS_Q5 + EPS_Q6 + EPS_Q7 + EPS_Q8 + 0.0000001 ) ) / abs( EPS_Q5 + EPS_Q6 + EPS_Q7 + EPS_Q8 + 0.0000001 )  * ( ( EPS_Q5 + EPS_Q6 + EPS_Q7 + EPS_Q8 + 0.0000001 ) / ( ASSETS_Q5 + 0.0000001 ) ) * 100.0 = GROWTH_EXPOSE_ANNUAL_EPS_CH_PCT_GROWTH
+  
+  # NOTE: THE ALTERNATIVE DOES NOT AFFECT ...
+  # have an 'annual' 'EPS change' greater than zero (0)'
+  # BUT IT MAKES ME 'feel better'
+  
+  UNIVERSE <<- mutate(UNIVERSE, GROWTH_EXPOSE_ANNUAL_EPS_CH_PCT_GROWTH = as.numeric(   
+    ( ( EPS_Q1 + EPS_Q2 + EPS_Q3 + EPS_Q4 ) - ( EPS_Q5 + EPS_Q6 + EPS_Q7 + EPS_Q8 + 0.0000001 ) ) / ( ASSETS_Q5 + 0.0000001 ) * 100.0
+  ) )
+  
+  UNIVERSE <<- mutate(UNIVERSE, GROWTH_EXPOSE_ANNUAL_EPS_CH_PCT_GROWTH_GR_THAN_0_SRVVR = ifelse(   
+    GROWTH_EXPOSE_ANNUAL_EPS_CH_PCT_GROWTH > 0.0, 1, 0
+  ) )
+  
+  # growth expose winners so far
+  
+  UNIVERSE <<- mutate(UNIVERSE, GROWTH_EXPOSE_SRVVR = 
+    ifelse(   
+              GROWTH_EXPOSE_PRCHG_13W_NTILE2_SRVVR                      == 1 & 
+              GROWTH_EXPOSE_PRCHG_26W_NTILE2_SRVVR                      == 1 & 
+              GROWTH_EXPOSE_ANNUAL_EPS_CH_PCT_GROWTH_GR_THAN_0_SRVVR    == 1 
+    , 1, 0
+    )
+  )
+  
+  # end growth expose
+  
+  # begin value expose
+  
+  # want only GROWTH_EXPOSE_SRVVR == 1
+  
+  UNIVERSE <<- data.table(UNIVERSE)
+  setkeyv(UNIVERSE,c("GROWTH_EXPOSE_SRVVR"))
+  UNIVERSE <<- UNIVERSE[GROWTH_EXPOSE_SRVVR==1]
+  UNIVERSE <<- as.data.frame(UNIVERSE, stringsAsFactors = FALSE)
+  
+  # begin financial composite ( defensive posture )
+  
+  
   # ( 1 of 4 )
   # begin - financial composite - % change in debt
   # # %change in debt ( balance sheet item ) from a year ago (Q5) to the last quarter (Q1)" 
   # debt(denominator) is always (zero or positive) ( but CAN BE small: + 0.0000001 ( ten cents ) )
+  
   # lower value is BETTER 
   
   # DD_FILE	SI_BSQ
@@ -737,24 +922,44 @@ main_foresight3_999 <- function(pauseat=NULL) {
   # 'absolute '%change in debt ( balance sheet item ) from a year ago (Q5) to the last quarter (Q1)'
   # ( LIAB_Q1 - LIAB_Q5 ) / abs(LIAB_Q5 + 0.0000001) * 100 = VAL_EXPOSE_FIN_CMPST_PCT_CH_DEBT
   
+  # NOTE: ( LIAB_ and ASSETS_ each are always positive AND  ( ASSETS_ - LIAB_ = 'equity'(some cases negative )
+  #  BUT: ( LIAB_ can be 'small'!! )
+  
+  # ALTERNATIVE ( if a company has small 'liab' 
+  #   then a tiny insignificant increase in 'liab' can produce a 
+  #   'bad logic' 'big swing' in ( LIAB_Q1 - LIAB_Q5 ) / abs(LIAB_Q5 + 0.0000001) * 100
+  # THEREFORE, I may want to weight something ( NOTE: end result approx:  ( LIAB_Q1 - LIAB_Q5 ) / ( ASSETS_Q5 + 0.0000001 ) * 100.0 = VAL_EXPOSE_FIN_CMPST_PCT_CH_DEBT
+  # ( LIAB_Q1 - LIAB_Q5 ) / abs(LIAB_Q5 + 0.0000001) * ( LIAB_Q5 / ASSETS_Q5 + 0.0000001 )  * 100.0 = VAL_EXPOSE_FIN_CMPST_PCT_CH_DEBT
+  
+  # Piotroski Price-to-Book Screen
+  # Financial Leverage
+  # Piotroski defined debt to total assets as 
+  # total long-term debt plus the current portion of long-term debt divided by average total assets. 
+  
   ## group_by MG_DESC  ( sector )
   # lower value is BETTER ' reverse of ntile'
   
   UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_FIN_CMPST_PCT_CH_DEBT = as.numeric(   
-    ( LIAB_Q1 - LIAB_Q5 ) / abs(LIAB_Q5 + 0.0000001) * 100.0
+    ( LIAB_Q1 - LIAB_Q5 ) / ( ASSETS_Q5 + 0.0000001 ) * 100.0
   ) )
 
   UNIVERSE_NOT_NA <- group_by(UNIVERSE,MG_DESC) 
   
   UNIVERSE_NOT_NA <- filter(UNIVERSE_NOT_NA, is.na(VAL_EXPOSE_FIN_CMPST_PCT_CH_DEBT) == FALSE)
 
-  UNIVERSE_NOT_NA <- mutate(UNIVERSE_NOT_NA,VAL_EXPOSE_FIN_CMPST_PCT_CH_DEBT_NTILE100 = as.numeric(
-    ntile((-1)*VAL_EXPOSE_FIN_CMPST_PCT_CH_DEBT,100)
-  ))
+  # UNIVERSE_NOT_NA <- mutate(UNIVERSE_NOT_NA,VAL_EXPOSE_FIN_CMPST_PCT_CH_DEBT_NTILE100 = as.numeric(
+  #   ntile((-1)*VAL_EXPOSE_FIN_CMPST_PCT_CH_DEBT,100)
+  # ))
+  
+  UNIVERSE_NOT_NA <- do(UNIVERSE_NOT_NA, 
+    hdntile(.,"VAL_EXPOSE_FIN_CMPST_PCT_CH_DEBT", posneg = -1 ) 
+  ) 
+
   
   UNIVERSE_NOT_NA <- ungroup(UNIVERSE_NOT_NA) 
   
   UNIVERSE <<- suppressMessages(left_join(UNIVERSE, UNIVERSE_NOT_NA)) # LEFT OUTER JOIN
+  
   
   # end - financial composite - % change in debt
   
@@ -778,6 +983,8 @@ main_foresight3_999 <- function(pauseat=NULL) {
   # crazy data received - eliminate an Inf
   # LIAB_Q1 / (EQUITY_Q1 + 0.0000001) = VAL_EXPOSE_FIN_CMPST_DEBT_TO_EQUITY 
   
+  # lower value is BETTER
+  
   UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_FIN_CMPST_DEBT_TO_EQUITY = as.numeric(   
     LIAB_Q1 / (EQUITY_Q1 + 0.0000001)
   ) )
@@ -786,9 +993,13 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   UNIVERSE_NOT_NA <- filter(UNIVERSE_NOT_NA, is.na(VAL_EXPOSE_FIN_CMPST_DEBT_TO_EQUITY) == FALSE)
   
-  UNIVERSE_NOT_NA <- mutate(UNIVERSE_NOT_NA,VAL_EXPOSE_FIN_CMPST_DEBT_TO_EQUITY_NTILE100 = as.numeric(
-    ntile((-1)*VAL_EXPOSE_FIN_CMPST_DEBT_TO_EQUITY,100)
-  ))
+  # UNIVERSE_NOT_NA <- mutate(UNIVERSE_NOT_NA,VAL_EXPOSE_FIN_CMPST_DEBT_TO_EQUITY_NTILE100 = as.numeric(
+  #   ntile((-1)*VAL_EXPOSE_FIN_CMPST_DEBT_TO_EQUITY,100)
+  # ))
+  
+ UNIVERSE_NOT_NA <- do(UNIVERSE_NOT_NA, 
+    hdntile(.,"VAL_EXPOSE_FIN_CMPST_DEBT_TO_EQUITY", posneg = -1 ) 
+  ) 
   
   UNIVERSE_NOT_NA <- ungroup(UNIVERSE_NOT_NA) 
   
@@ -828,13 +1039,15 @@ main_foresight3_999 <- function(pauseat=NULL) {
   # FM_FILE    SI_BSQ ( already have )
   
   # will NOT use ( but do SQL load TCF_Q1 and ASSETS_Q1 )
-  # ( TCF_Q2 + TCF_Q3 + TCF_Q4 + TCF_Q5 ) / ( ( ASSETS_Q2 + ASSETS_Q3 + ASSETS_Q4 + ASSETS_Q5 ) / 4.0 ) = VAL_EXPOSE_FIN_CMPST_EXTERNAL_FINANCING
+  # ( TCF_Q2 + TCF_Q3 + TCF_Q4 + TCF_Q5 ) / ( ( ASSETS_Q2 + ASSETS_Q3 + ASSETS_Q4 + ASSETS_Q5 + 0.0000001) / 4.0 ) = VAL_EXPOSE_FIN_CMPST_EXTERNAL_FINANCING
 
   # will use ( but do SQL load TCF_Q1 and ASSETS_Q1 ) BUT WILL USE 'AAII method of March 2014'
-  # ( TCF_Q1 + TCF_Q2 + TCF_Q3 + TCF_Q4) / ( ( ASSETS_Q1 + ASSETS_Q2 + ASSETS_Q3 + ASSETS_Q4 ) / 4.0 ) = VAL_EXPOSE_FIN_CMPST_EXTERNAL_FINANCING
+  # ( TCF_Q1 + TCF_Q2 + TCF_Q3 + TCF_Q4) / ( ( ASSETS_Q1 + ASSETS_Q2 + ASSETS_Q3 + ASSETS_Q4 + 0.0000001) / 4.0 ) = VAL_EXPOSE_FIN_CMPST_EXTERNAL_FINANCING
+  
+  # lower value is BETTER 
   
   UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_FIN_CMPST_EXTERNAL_FINANCING = as.numeric(   
-    ( TCF_Q1 + TCF_Q2 + TCF_Q3 + TCF_Q4) / ( ( ASSETS_Q1 + ASSETS_Q2 + ASSETS_Q3 + ASSETS_Q4 ) / 4.0 )
+    ( TCF_Q1 + TCF_Q2 + TCF_Q3 + TCF_Q4) / ( ( ASSETS_Q1 + ASSETS_Q2 + ASSETS_Q3 + ASSETS_Q4 + 0.0000001) / 4.0 )
   ) )
   
 
@@ -842,10 +1055,14 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   UNIVERSE_NOT_NA <- filter(UNIVERSE_NOT_NA, is.na(VAL_EXPOSE_FIN_CMPST_EXTERNAL_FINANCING) == FALSE)
 
-  UNIVERSE_NOT_NA <- mutate(UNIVERSE_NOT_NA,VAL_EXPOSE_FIN_CMPST_EXTERNAL_FINANCING_NTILE100 = as.numeric(
-    ntile((-1)*VAL_EXPOSE_FIN_CMPST_EXTERNAL_FINANCING,100)
-  ))
+  # UNIVERSE_NOT_NA <- mutate(UNIVERSE_NOT_NA,VAL_EXPOSE_FIN_CMPST_EXTERNAL_FINANCING_NTILE100 = as.numeric(
+  #   ntile((-1)*VAL_EXPOSE_FIN_CMPST_EXTERNAL_FINANCING,100)
+  # ))
   
+ UNIVERSE_NOT_NA <- do(UNIVERSE_NOT_NA, 
+    hdntile(.,"VAL_EXPOSE_FIN_CMPST_EXTERNAL_FINANCING", posneg = -1 ) 
+  ) 
+
   UNIVERSE_NOT_NA <- ungroup(UNIVERSE_NOT_NA) 
   
   UNIVERSE <<- suppressMessages(left_join(UNIVERSE, UNIVERSE_NOT_NA)) # LEFT OUTER JOIN
@@ -889,6 +1106,8 @@ main_foresight3_999 <- function(pauseat=NULL) {
   # will use ( but do SQL load NCC_Q1 and LIAB_Q1 )  BUT WILL USE 'AAII method of March 2014'
   # ( NCC_Q1 + NCC_Q2 + NCC_Q3 + NCC_Q4) / ( LIAB_Q1 + LIAB_Q2 + LIAB_Q3 + LIAB_Q4 + 0.0000001 ) = VAL_EXPOSE_FIN_CMPST_ANN_CSH_FLOW_OVER_DEBT
 
+  # higher value is BETTER 
+  
   UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_FIN_CMPST_ANN_CSH_FLOW_OVER_DEBT = as.numeric(   
     ( NCC_Q1 + NCC_Q2 + NCC_Q3 + NCC_Q4) / ( LIAB_Q1 + LIAB_Q2 + LIAB_Q3 + LIAB_Q4 + 0.0000001 ) 
   ) )
@@ -897,10 +1116,14 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   UNIVERSE_NOT_NA <- filter(UNIVERSE_NOT_NA, is.na(VAL_EXPOSE_FIN_CMPST_ANN_CSH_FLOW_OVER_DEBT) == FALSE)
   
-  UNIVERSE_NOT_NA <- mutate(UNIVERSE_NOT_NA,VAL_EXPOSE_FIN_CMPST_ANN_CSH_FLOW_OVER_DEBT_NTILE100 = as.numeric(
-    ntile(VAL_EXPOSE_FIN_CMPST_ANN_CSH_FLOW_OVER_DEBT,100)
-  ))
+  # UNIVERSE_NOT_NA <- mutate(UNIVERSE_NOT_NA,VAL_EXPOSE_FIN_CMPST_ANN_CSH_FLOW_OVER_DEBT_NTILE100 = as.numeric(
+  #   ntile(VAL_EXPOSE_FIN_CMPST_ANN_CSH_FLOW_OVER_DEBT,100)
+  # ))
   
+ UNIVERSE_NOT_NA <- do(UNIVERSE_NOT_NA, 
+    hdntile(.,"VAL_EXPOSE_FIN_CMPST_ANN_CSH_FLOW_OVER_DEBT") 
+  ) 
+
   UNIVERSE_NOT_NA <- ungroup(UNIVERSE_NOT_NA) 
   
   UNIVERSE <<- suppressMessages(left_join(UNIVERSE, UNIVERSE_NOT_NA)) # LEFT OUTER JOIN
@@ -944,10 +1167,14 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   UNIVERSE_NOT_NA <- filter(UNIVERSE_NOT_NA, is.na(VAL_EXPOSE_FIN_CMPST_SCORES_SUMM_REBAL) == FALSE)
   
-  UNIVERSE_NOT_NA <- mutate(UNIVERSE_NOT_NA,VAL_EXPOSE_FIN_CMPST_SCORES_SUMM_REBAL_NTILE100 = as.numeric(
-    ntile(VAL_EXPOSE_FIN_CMPST_SCORES_SUMM_REBAL,100)
-  ))
+  # UNIVERSE_NOT_NA <- mutate(UNIVERSE_NOT_NA,VAL_EXPOSE_FIN_CMPST_SCORES_SUMM_REBAL_NTILE100 = as.numeric(
+  #   ntile(VAL_EXPOSE_FIN_CMPST_SCORES_SUMM_REBAL,100)
+  # ))
   
+ UNIVERSE_NOT_NA <- do(UNIVERSE_NOT_NA, 
+    hdntile(.,"VAL_EXPOSE_FIN_CMPST_SCORES_SUMM_REBAL") 
+  ) 
+
   UNIVERSE <<- suppressMessages(left_join(UNIVERSE, UNIVERSE_NOT_NA)) # LEFT OUTER JOIN
   
   # end - financial composite - rebalance and scoring
@@ -1094,9 +1321,13 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   UNIVERSE_NOT_NA <- filter(UNIVERSE_NOT_NA, is.na(VAL_EXPOSE_EARN_CMPST_PCT_CH_IN_NOA) == FALSE)
 
-  UNIVERSE_NOT_NA <- mutate(UNIVERSE_NOT_NA,VAL_EXPOSE_EARN_CMPST_PCT_CH_IN_NOA_NTILE100 = as.numeric(
-    ntile(VAL_EXPOSE_EARN_CMPST_PCT_CH_IN_NOA,100)
-  ))
+  # UNIVERSE_NOT_NA <- mutate(UNIVERSE_NOT_NA,VAL_EXPOSE_EARN_CMPST_PCT_CH_IN_NOA_NTILE100 = as.numeric(
+  #   ntile(VAL_EXPOSE_EARN_CMPST_PCT_CH_IN_NOA,100)
+  # ))
+  
+  UNIVERSE_NOT_NA <- do(UNIVERSE_NOT_NA, 
+    hdntile(.,"VAL_EXPOSE_EARN_CMPST_PCT_CH_IN_NOA") 
+  ) 
   
   UNIVERSE_NOT_NA <- ungroup(UNIVERSE_NOT_NA) 
   
@@ -1125,6 +1356,13 @@ main_foresight3_999 <- function(pauseat=NULL) {
   # it will show up as an ***increase in the working capital***
   # slow collection may signal an underlying problem in the company's operations.
 
+  # Liquidity
+  # To judge liquidity, a company earns one point if 
+  # its current ratio at the end of its most recent fiscal year increased compared to the prior fiscal year. 
+  # Too high a ratio may point to 
+  #   unnecessary investment in current assets or 
+  #   failure to collect receivables or a bloated inventory, 
+  # all negatively affecting earnings.
   
   # FIELD_NAME  WORK_Q1 ( new column )
   # FIELD_DESC  Working Capital Q1
@@ -1148,25 +1386,36 @@ main_foresight3_999 <- function(pauseat=NULL) {
   # And 'since a 'change'
 
   # TATA 
+  # (  ( ( WORK_Q1 - CASH_Q1 ) / ( ASSETS_Q1 + 0.0000001 ) )  - ( ( WORK_Q5 - CASH_Q5 ) / ( ASSETS_Q1 + 0.0000001 ) )  ) / abs( ( ( WORK_Q5 - CASH_Q5 + 0.0000001 ) /  ( ASSETS_Q1 + 0.0000001 ) )  ) * 100.0  = VAL_EXPOSE_EARN_CMPST_TATA
+
+  # ALTERNATE 
+  # ( as 'working capital WORK_ goes up' LAIB_ seem to be fixed'? )
+  # I think that the  original way meant to use in the denominator: ASSETS_Q5 
+  # ( but I think that the way THAT would be written WORK_(up) / ASSETS_(up) : not as usefule as LIAB_(fixed) )
+  
   # (  ( ( WORK_Q1 - CASH_Q1 ) / ( LIAB_Q1 + 0.0000001 ) )  - ( ( WORK_Q5 - CASH_Q5 ) / ( LIAB_Q1 + 0.0000001 ) )  ) / abs( ( ( WORK_Q5 - CASH_Q5 + 0.0000001 ) /  ( LIAB_Q1 + 0.0000001 ) )  ) * 100.0  = VAL_EXPOSE_EARN_CMPST_TATA
 
   # lower value is better  (  uses % change in working capital ( BELOW ) )
 
-  # current assets(accounts receivable) increases then 'assets' increase
+  # current assets(accounts receivable) increases then 'assets' increase ( 'liabilites remains fixed' )
   # cash                                increases then 'assets' increase                                   
   # then just 'assets' in the denominator
   
   UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_EARN_CMPST_TATA = as.numeric(   
-    (  ( ( WORK_Q1 - CASH_Q1 ) / ( ASSETS_Q1 + 0.0000001 ) )  - ( ( WORK_Q5 - CASH_Q5 ) / ( ASSETS_Q1 + 0.0000001 ) )  ) / abs( ( ( WORK_Q5 - CASH_Q5 + 0.0000001 ) /  ( ASSETS_Q1 + 0.0000001 ) )  ) * 100.0 
+    (  ( ( WORK_Q1 - CASH_Q1 ) / ( LIAB_Q1 + 0.0000001 ) )  - ( ( WORK_Q5 - CASH_Q5 ) / ( LIAB_Q1 + 0.0000001 ) )  ) / abs( ( ( LIAB_Q5 - CASH_Q5 + 0.0000001 ) /  ( LIAB_Q1 + 0.0000001 ) )  ) * 100.0 
   ) )
 
   UNIVERSE_NOT_NA <- group_by(UNIVERSE,MG_DESC) 
   
   UNIVERSE_NOT_NA <- filter(UNIVERSE_NOT_NA, is.na(VAL_EXPOSE_EARN_CMPST_TATA) == FALSE)
 
-  UNIVERSE_NOT_NA <- mutate(UNIVERSE_NOT_NA,VAL_EXPOSE_EARN_CMPST_TATA_NTILE100 = as.numeric(
-    ntile((-1)*VAL_EXPOSE_EARN_CMPST_TATA,100)
-  ))
+  # UNIVERSE_NOT_NA <- mutate(UNIVERSE_NOT_NA,VAL_EXPOSE_EARN_CMPST_TATA_NTILE100 = as.numeric(
+  #    ntile((-1)*VAL_EXPOSE_EARN_CMPST_TATA,100)
+  # ))
+  
+ UNIVERSE_NOT_NA <- do(UNIVERSE_NOT_NA, 
+    hdntile(.,"VAL_EXPOSE_EARN_CMPST_TATA", posneg = -1) 
+  ) 
   
   UNIVERSE_NOT_NA <- ungroup(UNIVERSE_NOT_NA) 
   
@@ -1238,21 +1487,44 @@ main_foresight3_999 <- function(pauseat=NULL) {
   # CATA
   ##  OLD: (  ( AP_Q1 - AP_Q5 ) - ( AR_Q1 - AR_Q5 ) - ( TCO_Q1 + TCO_Q2 + TCO_Q3 + TCO_Q4 ) - ( TCI_Q1 + TCI_Q2 + TCI_Q3 + TCI_Q4 )  ) / ( LIAB_Q1 + 0.0000001 ) = VAL_EXPOSE_EARN_CMPST_CATA
 
+  # ALTERNATIVE
+  # SIPro 4.0 help
+  # Piotroski Price-to-Book Screen
+  # Return on Assets
+  # Piotroski defined return on assets (ROA) as 
+  # net income before extraordinary items for the fiscal year preceding the analysis 
+  #   divided by 
+  # total assets at the beginning of the fiscal year. 
+  # Stock Investor deviates by using net income after extraordinary items in its calculation
+  # Piotroski did not look for high levels, only a positive figure. ( MY MATH IS OPPOSITE )
+  # ALTERNATIVE : ( AP_Q1 - NETINC_Q1 - TCO_Q1  - NETINC_Q2 - TCO_Q2 - NETINC_Q3 - TCO_Q3 - NETINC_Q4 - TCO_Q4 ) / ( ASSETS_Q5 + 0.0000001 ) = VAL_EXPOSE_EARN_CMPST_CATA
+  
+  # USED
   # ( ( AP_Q1 - NETINC_Q1 - TCO_Q1  - NETINC_Q2 - TCO_Q2 - NETINC_Q3 - TCO_Q3 - NETINC_Q4 - TCO_Q4 ) - ( AP_Q5 - NETINC_Q5 - TCO_Q5  - NETINC_Q6 - TCO_Q6 - NETINC_Q7 - TCO_Q7 - NETINC_Q8 - TCO_Q8 ) ) / abs( AP_Q5 - NETINC_Q5 - TCO_Q5  - NETINC_Q6 - TCO_Q6 - NETINC_Q7 - TCO_Q7 - NETINC_Q8 - TCO_Q8 + 0.0000001 ) * 100  = VAL_EXPOSE_EARN_CMPST_CATA
+  
+  # HARD NOTE: ( DENOMINATOR + 0.0000001  ) : Removes R 'cut' function error: Error in View : 'breaks' are not unique ( using hdntile and ALTERNATIVE )
   
   # lower is better
 
-  UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_EARN_CMPST_CATA = as.numeric(   
-    ( ( AP_Q1 - EPSCON_Q1 - TCO_Q1  - EPSCON_Q2 - TCO_Q2 - EPSCON_Q3 - TCO_Q3 - EPSCON_Q4 - TCO_Q4 ) - ( AP_Q5 - EPSCON_Q5 - TCO_Q5  - EPSCON_Q6 - TCO_Q6 - EPSCON_Q7 - TCO_Q7 - EPSCON_Q8 - TCO_Q8 ) ) / abs( AP_Q5 - EPSCON_Q5 - TCO_Q5  - EPSCON_Q6 - TCO_Q6 - EPSCON_Q7 - TCO_Q7 - EPSCON_Q8 - TCO_Q8 + 0.0000001 ) * 100 
+  UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_EARN_CMPST_CATA = as.numeric(  
+    # USED  
+    # ( ( AP_Q1 - EPSCON_Q1 - TCO_Q1  - EPSCON_Q2 - TCO_Q2 - EPSCON_Q3 - TCO_Q3 - EPSCON_Q4 - TCO_Q4 ) - ( AP_Q5 - EPSCON_Q5 - TCO_Q5  - EPSCON_Q6 - TCO_Q6 - EPSCON_Q7 - TCO_Q7 - EPSCON_Q8 - TCO_Q8 ) ) / abs( AP_Q5 - EPSCON_Q5 - TCO_Q5  - EPSCON_Q6 - TCO_Q6 - EPSCON_Q7 - TCO_Q7 - EPSCON_Q8 - TCO_Q8 + 0.0000001 ) * 100 
+    # ALTERNATIVE
+    ( AP_Q1 - NETINC_Q1 - TCO_Q1  - NETINC_Q2 - TCO_Q2 - NETINC_Q3 - TCO_Q3 - NETINC_Q4 - TCO_Q4 ) / ( ASSETS_Q5 + 0.0000001 )
   ) )
   
   UNIVERSE_NOT_NA <- group_by(UNIVERSE,MG_DESC) 
   
   UNIVERSE_NOT_NA <- filter(UNIVERSE_NOT_NA, is.na(VAL_EXPOSE_EARN_CMPST_CATA) == FALSE)
 
-  UNIVERSE_NOT_NA <- mutate(UNIVERSE_NOT_NA,VAL_EXPOSE_EARN_CMPST_CATA_NTILE100 = as.numeric(
-    ntile((-1)*VAL_EXPOSE_EARN_CMPST_CATA,100)
-  ))
+  # UNIVERSE_NOT_NA <- mutate(UNIVERSE_NOT_NA,VAL_EXPOSE_EARN_CMPST_CATA_NTILE100 = as.numeric(
+    # Error in View : 'breaks' are not unique ( using ALTERNATIVE hdntile AND DENOMINATOR WITHOUT!! 0.0000001 )
+    # ntile((-1)*VAL_EXPOSE_EARN_CMPST_CATA,100)
+  # ))
+  
+  UNIVERSE_NOT_NA <- do(UNIVERSE_NOT_NA, 
+    hdntile(.,"VAL_EXPOSE_EARN_CMPST_CATA", posneg = -1) 
+  ) 
   
   UNIVERSE_NOT_NA <- ungroup(UNIVERSE_NOT_NA) 
   
@@ -1324,7 +1596,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   # View(UNIVERSE[,c("DEP_Q1","DEP_Q2","DEP_Q3","DEP_Q4","CE_Q1","CE_Q2","CE_Q3","CE_Q4","VAL_EXPOSE_EARN_CMPST_DPRCT_EXPND_TO_CAPT_EXPND","VAL_EXPOSE_EARN_CMPST_DPRCT_EXPND_TO_CAPT_EXPND_NTILE100")])
   # View(UNIVERSE[UNIVERSE$MG_DESC == "Financial",c("DEP_Q1","DEP_Q2","DEP_Q3","DEP_Q4","CE_Q1","CE_Q2","CE_Q3","CE_Q4","VAL_EXPOSE_EARN_CMPST_DPRCT_EXPND_TO_CAPT_EXPND","VAL_EXPOSE_EARN_CMPST_DPRCT_EXPND_TO_CAPT_EXPND_NTILE100")])
   
-  # higher value is better 
+  # higher value is better ( NOTE: Brown Book: This seems to be a 'social measure' )
 
   UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_EARN_CMPST_DPRCT_EXPND_TO_CAPT_EXPND = as.numeric(   
     ( DEP_Q1 + DEP_Q2 + DEP_Q3 + DEP_Q4 ) / ( CE_Q1 + CE_Q2 + CE_Q3 + CE_Q4 + 0.0000001 ) 
@@ -1334,16 +1606,19 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   UNIVERSE_NOT_NA <- filter(UNIVERSE_NOT_NA, is.na(VAL_EXPOSE_EARN_CMPST_DPRCT_EXPND_TO_CAPT_EXPND) == FALSE)
 
-  UNIVERSE_NOT_NA <- mutate(UNIVERSE_NOT_NA,VAL_EXPOSE_EARN_CMPST_DPRCT_EXPND_TO_CAPT_EXPND_NTILE100 = as.numeric(
-    ntile(VAL_EXPOSE_EARN_CMPST_DPRCT_EXPND_TO_CAPT_EXPND,100)
-  ))
+  # UNIVERSE_NOT_NA <- mutate(UNIVERSE_NOT_NA,VAL_EXPOSE_EARN_CMPST_DPRCT_EXPND_TO_CAPT_EXPND_NTILE100 = as.numeric(
+  #   ntile(VAL_EXPOSE_EARN_CMPST_DPRCT_EXPND_TO_CAPT_EXPND,100)
+  # ))
+  
+ UNIVERSE_NOT_NA <- do(UNIVERSE_NOT_NA, 
+    hdntile(.,"VAL_EXPOSE_EARN_CMPST_DPRCT_EXPND_TO_CAPT_EXPND") 
+  ) 
   
   UNIVERSE_NOT_NA <- ungroup(UNIVERSE_NOT_NA) 
   
   UNIVERSE <<- suppressMessages(left_join(UNIVERSE, UNIVERSE_NOT_NA)) # LEFT OUTER JOIN
 
   # end - depreciation expense to captital expenditures
-  
   
   # ( special_EARN of special_EARN )
   # begin - diff operating cash flow and net income and scales that figure to market cap
@@ -1352,6 +1627,12 @@ main_foresight3_999 <- function(pauseat=NULL) {
   # March 2014: SIPro 4.0: Earnings Composite: One Single Easiest Way
   # Difference between Operating Cash Flow and Net Income and scales the figure to Market Cap
 
+  # (similar to) SIPro 4.0 - Piotroski Price-to-Book Screen
+  # Operating Cash Flow
+  #   Piotroski awarded one point if a firm had positive operating cash flow. 
+  # Accrual Accounting Check - A point is awarded if 
+  #   cash from operations exceeded net income before extraordinary items.
+  
   # FIELD_NAME  TCO_Q1 
   # FIELD_DESC  Cash from operations Q1
   # DESCRIP     Cash Flow - Quarterly
@@ -1384,9 +1665,13 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   UNIVERSE_NOT_NA <- filter(UNIVERSE_NOT_NA, is.na(VAL_EXPOSE_EARN_CMPST_DIFF_OP_CSH_FLW_AND_NET_INC_SCALED_TO_MKTCAP) == FALSE)
 
-  UNIVERSE_NOT_NA <- mutate(UNIVERSE_NOT_NA,VAL_EXPOSE_EARN_CMPST_DIFF_OP_CSH_FLW_AND_NET_INC_SCALED_TO_MKTCAP_NTILE100 = as.numeric(
-    ntile(VAL_EXPOSE_EARN_CMPST_DIFF_OP_CSH_FLW_AND_NET_INC_SCALED_TO_MKTCAP,100)
-  ))
+  # UNIVERSE_NOT_NA <- mutate(UNIVERSE_NOT_NA,VAL_EXPOSE_EARN_CMPST_DIFF_OP_CSH_FLW_AND_NET_INC_SCALED_TO_MKTCAP_NTILE100 = as.numeric(
+  #   ntile(VAL_EXPOSE_EARN_CMPST_DIFF_OP_CSH_FLW_AND_NET_INC_SCALED_TO_MKTCAP,100)
+  # ))
+  
+ UNIVERSE_NOT_NA <- do(UNIVERSE_NOT_NA, 
+    hdntile(.,"VAL_EXPOSE_EARN_CMPST_DIFF_OP_CSH_FLW_AND_NET_INC_SCALED_TO_MKTCAP") 
+  ) 
   
   UNIVERSE_NOT_NA <- ungroup(UNIVERSE_NOT_NA) 
   
@@ -1429,9 +1714,13 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   UNIVERSE_NOT_NA <- filter(UNIVERSE_NOT_NA, is.na(VAL_EXPOSE_EARN_CMPST_SCORES_SUMM_REBAL) == FALSE)
   
-  UNIVERSE_NOT_NA <- mutate(UNIVERSE_NOT_NA,VAL_EXPOSE_EARN_CMPST_SCORES_SUMM_REBAL_NTILE100 = as.numeric(
-    ntile(VAL_EXPOSE_EARN_CMPST_SCORES_SUMM_REBAL,100)
-  ))
+  # UNIVERSE_NOT_NA <- mutate(UNIVERSE_NOT_NA,VAL_EXPOSE_EARN_CMPST_SCORES_SUMM_REBAL_NTILE100 = as.numeric(
+  #   ntile(VAL_EXPOSE_EARN_CMPST_SCORES_SUMM_REBAL,100)
+  # ))
+  
+ UNIVERSE_NOT_NA <- do(UNIVERSE_NOT_NA, 
+    hdntile(.,"VAL_EXPOSE_EARN_CMPST_SCORES_SUMM_REBAL") 
+  ) 
   
   UNIVERSE <<- suppressMessages(left_join(UNIVERSE, UNIVERSE_NOT_NA)) # LEFT OUTER JOIN
   
@@ -1443,9 +1732,9 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   # overwrite!! # note: above 'is.na' ... has already been done
   
-  UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_EARN_CMPST_SCORES_SUMM_REBAL_NTILE100 = as.numeric(
-    VAL_EXPOSE_EARN_CMPST_DIFF_OP_CSH_FLW_AND_NET_INC_SCALED_TO_MKTCAP_NTILE100
-  ))
+  # UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_EARN_CMPST_SCORES_SUMM_REBAL_NTILE100 = as.numeric(
+  #   VAL_EXPOSE_EARN_CMPST_DIFF_OP_CSH_FLW_AND_NET_INC_SCALED_TO_MKTCAP_NTILE100
+  # ))
   
   # end - IF DOING # ( special_EARN of special_EARN )
   
@@ -1460,7 +1749,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
 
 
   # Multiples
-  SI_MLT <<- suppressWarnings(suppressMessages(read.dbf(file="N:/MyVMWareSharedFolder/Professional/Dbfs/si_mlt.dbf", as.is = TRUE)))
+  SI_MLT <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_MLT"), as.is = TRUE)))
     primary_key_dup <- SI_MLT[duplicated(SI_MLT[,'COMPANY_ID']),,drop=FALSE]
     new_df_no_duplicates <- SI_MLT[!(SI_MLT$COMPANY_ID %in% as.matrix(primary_key_dup)),,drop=FALSE]
     SI_MLT <<- new_df_no_duplicates
@@ -1577,9 +1866,14 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   UNIVERSE_NOT_NA <- filter(UNIVERSE_NOT_NA, is.na(VAL_EXPOSE_VAL_TWO_CMPST_EARN_TO_PRICE_RATIO) == FALSE)
 
-  UNIVERSE_NOT_NA <- mutate(UNIVERSE_NOT_NA,VAL_EXPOSE_VAL_TWO_CMPST_EARN_TO_PRICE_RATIO_NTILE100 = as.numeric(
-    ntile(VAL_EXPOSE_VAL_TWO_CMPST_EARN_TO_PRICE_RATIO,100)
-  ))
+  # UNIVERSE_NOT_NA <- mutate(UNIVERSE_NOT_NA,VAL_EXPOSE_VAL_TWO_CMPST_EARN_TO_PRICE_RATIO_NTILE100 = as.numeric(
+  #  ntile(VAL_EXPOSE_VAL_TWO_CMPST_EARN_TO_PRICE_RATIO,100)
+  # ))
+  
+  UNIVERSE_NOT_NA <- do(UNIVERSE_NOT_NA, 
+    hdntile(.,"VAL_EXPOSE_VAL_TWO_CMPST_EARN_TO_PRICE_RATIO") 
+  ) 
+
   
   UNIVERSE_NOT_NA <- ungroup(UNIVERSE_NOT_NA) 
   
@@ -1608,9 +1902,13 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   UNIVERSE_NOT_NA <- filter(UNIVERSE_NOT_NA, is.na(VAL_EXPOSE_VAL_TWO_CMPST_SALES_TO_PRICE_RATIO) == FALSE)
 
-  UNIVERSE_NOT_NA <- mutate(UNIVERSE_NOT_NA,VAL_EXPOSE_VAL_TWO_CMPST_SALES_TO_PRICE_RATIO_NTILE100 = as.numeric(
-    ntile(VAL_EXPOSE_VAL_TWO_CMPST_SALES_TO_PRICE_RATIO,100)
-  ))
+  # UNIVERSE_NOT_NA <- mutate(UNIVERSE_NOT_NA,VAL_EXPOSE_VAL_TWO_CMPST_SALES_TO_PRICE_RATIO_NTILE100 = as.numeric(
+  #  ntile(VAL_EXPOSE_VAL_TWO_CMPST_SALES_TO_PRICE_RATIO,100)
+  # ))
+  
+ UNIVERSE_NOT_NA <- do(UNIVERSE_NOT_NA, 
+    hdntile(.,"VAL_EXPOSE_VAL_TWO_CMPST_SALES_TO_PRICE_RATIO") 
+  ) 
   
   UNIVERSE_NOT_NA <- ungroup(UNIVERSE_NOT_NA) 
   
@@ -1619,7 +1917,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   # end  - sales / price ratio 
       
   # ( 3 of 5 )
-  # begin - 'free cash flow' / price ratio ( price is always large and positive )
+  # begin - 'free cash flow' XOR 'book' / price ratio ( price is always large and positive )
   # higher is better 
    
   # 3 definitions and non seem to be the one that I am using
@@ -1653,25 +1951,100 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   # higher is better 
   
-  # ( FCFPS_Q1 + FCFPS_Q2 + FCFPS_Q3 + FCFPS_Q4  ) / PRICE = VAL_EXPOSE_VAL_TWO_CMPST_FCFPS_TO_PRICE_RATIO
+  # ( FCFPS_Q1 + FCFPS_Q2 + FCFPS_Q3 + FCFPS_Q4  ) / PRICE = VAL_EXPOSE_VAL_TWO_CMPST_FCFPS_XOR_BOOK_TO_PRCE_RATIO
   
-  UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_VAL_TWO_CMPST_FCFPS_TO_PRICE_RATIO = as.numeric(   
+  UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_VAL_TWO_CMPST_FCFPS_XOR_BOOK_TO_PRCE_RATIO = as.numeric(   
     ( FCFPS_Q1 + FCFPS_Q2 + FCFPS_Q3 + FCFPS_Q4  ) / PRICE 
   ) )
   
   UNIVERSE_NOT_NA <- group_by(UNIVERSE,MG_DESC) 
   
-  UNIVERSE_NOT_NA <- filter(UNIVERSE_NOT_NA, is.na(VAL_EXPOSE_VAL_TWO_CMPST_FCFPS_TO_PRICE_RATIO) == FALSE)
+  UNIVERSE_NOT_NA <- filter(UNIVERSE_NOT_NA, is.na(VAL_EXPOSE_VAL_TWO_CMPST_FCFPS_XOR_BOOK_TO_PRCE_RATIO) == FALSE)
 
-  UNIVERSE_NOT_NA <- mutate(UNIVERSE_NOT_NA,VAL_EXPOSE_VAL_TWO_CMPST_FCFPS_TO_PRICE_RATIO_NTILE100 = as.numeric(
-    ntile(VAL_EXPOSE_VAL_TWO_CMPST_FCFPS_TO_PRICE_RATIO,100)
-  ))
+  # UNIVERSE_NOT_NA <- mutate(UNIVERSE_NOT_NA,VAL_EXPOSE_VAL_TWO_CMPST_FCFPS_XOR_BOOK_TO_PRCE_RATIO_NTILE100 = as.numeric(
+  #   ntile(VAL_EXPOSE_VAL_TWO_CMPST_FCFPS_XOR_BOOK_TO_PRCE_RATIO,100)
+  # ))
   
+  UNIVERSE_NOT_NA <- do(UNIVERSE_NOT_NA, 
+    hdntile(.,"VAL_EXPOSE_VAL_TWO_CMPST_FCFPS_XOR_BOOK_TO_PRCE_RATIO") 
+  ) 
+
   UNIVERSE_NOT_NA <- ungroup(UNIVERSE_NOT_NA) 
   
   UNIVERSE <<- suppressMessages(left_join(UNIVERSE, UNIVERSE_NOT_NA)) # LEFT OUTER JOIN
   
-  # end  - 'free cash flow' / price ratio 
+
+  ### IMPORTANT ###
+  # 'only non-financial companies use sales / price' ( just _NTILE 'NA out" the "Financial" companies )
+  UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_VAL_TWO_CMPST_FCFPS_XOR_BOOK_TO_PRCE_RATIO_NTILE100 = ifelse(MG_DESC == "Financial", NA, VAL_EXPOSE_VAL_TWO_CMPST_FCFPS_XOR_BOOK_TO_PRCE_RATIO_NTILE100 ) )
+
+  ### IMPORTANT ###
+  ### INSTEAD 'financial companies use 'book / price'
+  
+  # OShaughnessy2012 p 165 used instead of Book "Common Equity Liquidating Value"
+  # AAII April 2014 p 18: Selecting a Validation Method to Determine a Stocks Worth
+
+  # Johnson, Robinson, and Horan 
+  # "Book - Commonly used for Financial companies"
+
+  # higher is better 
+  
+  # Equity (common) Q1, Q2, Q3, Q4, Q5, Q6, Q7, Q8
+  # Data Table Name: EQUITY_Q1, Q2, Q3, Q4, Q5, Q6, Q7, Q8
+  # Data Category: Balance Sheet - Quarterly
+  # Field Type: Dollars in millions (0.0 to 999999.9)
+  # Percent Rank: No
+  # Industry/Sector Median: No
+   
+  # Common stock equity is the total equity minus preferred stock and redeemable preferred stock. 
+  # This is also known as book value.
+
+  # Goodwill and intangibles Q1, Q2, Q3, Q4, Q5, Q6, Q7, Q8  ( Brown Book )
+  # Data Table Name: GWI_Q1, Q2, Q3, Q4, Q5, Q6, Q7, Q8
+  # Data Category: Balance Sheet - Quarterly
+  # Field Type: Dollars in millions (0.0 to 999999.9)
+  # Percent Rank: No
+  # Industry/Sector Median: No
+  
+  # ( NOTE: THIS NUMBER CAN TIPICALLY BE 25% OF equity or more ) ( FOR NOW I WILL NOT USE IT )
+  # When intangible assets and goodwill are explicitly excluded, 
+  # the metric is often specified to be "tangible book value".[4]
+  # http://en.wikipedia.org/wiki/Book_value
+  # ( EQUITY_Q1 - GWI_Q1 ) / PRICE
+  
+  # higher is better 
+  
+  # EQUITY_Q1 / PRICE = VAL_EXPOSE_VAL_TWO_CMPST_FCFPS_XOR_BOOK_TO_PRCE_RATIO
+
+  UNIVERSE_NOT_NA <- group_by(UNIVERSE,MG_DESC) 
+  
+  UNIVERSE_NOT_NA <- filter(UNIVERSE_NOT_NA, is.na(VAL_EXPOSE_VAL_TWO_CMPST_FCFPS_XOR_BOOK_TO_PRCE_RATIO) == FALSE)
+  
+  UNIVERSE_NOT_NA <- filter(UNIVERSE_NOT_NA,       MG_DESC == "Financial"                                          )
+
+  # since still kept for 'non-Financial' just re-calculate(re-overwrite)  on top of 'Financial'
+  
+  UNIVERSE_NOT_NA <- mutate(UNIVERSE_NOT_NA, VAL_EXPOSE_VAL_TWO_CMPST_FCFPS_XOR_BOOK_TO_PRCE_RATIO = as.numeric(   
+    EQUITY_Q1 / PRICE 
+  ) )
+  
+  # since still kept for 'non-Financial' just re-calculate(re-overwrite)  on top of 'Financial'
+  
+  # UNIVERSE_NOT_NA <- mutate(UNIVERSE_NOT_NA,VAL_EXPOSE_VAL_TWO_CMPST_FCFPS_XOR_BOOK_TO_PRCE_RATIO_NTILE100 = as.numeric(
+  #   ntile(VAL_EXPOSE_VAL_TWO_CMPST_FCFPS_XOR_BOOK_TO_PRCE_RATIO,100)
+  # ))
+  
+  UNIVERSE_NOT_NA <- do(UNIVERSE_NOT_NA, 
+    hdntile(.,"VAL_EXPOSE_VAL_TWO_CMPST_FCFPS_XOR_BOOK_TO_PRCE_RATIO") 
+  ) 
+
+  UNIVERSE_NOT_NA <- ungroup(UNIVERSE_NOT_NA) 
+  
+  UNIVERSE <<- suppressMessages(left_join(UNIVERSE, UNIVERSE_NOT_NA)) # LEFT OUTER JOIN
+  
+  # end  - 'free cash flow' XOR 'book' / price ratio 
+      
+      
       
   # ( 4 of 5 ) ( meant to do over 4 quarters )
   # begin - EBITDA / 'enterprise value' ratio ( 'enterprise value' (hopefully) is often large and positive )
@@ -1721,6 +2094,8 @@ main_foresight3_999 <- function(pauseat=NULL) {
   # View(UNIVERSE[,c("EBIT_Q1","EBIT_Q2","EBIT_Q3","EBIT_Q4","ENTVAL_Q1","VAL_EXPOSE_VAL_TWO_CMPST_EBITDA_TO_ENTVAL_RATIO","VAL_EXPOSE_VAL_TWO_CMPST_EBITDA_TO_ENTVAL_RATIO_NTILE100")])
   # View(UNIVERSE[UNIVERSE$MG_DESC == "Financial",c("EBIT_Q1","EBIT_Q2","EBIT_Q3","EBIT_Q4","ENTVAL_Q1","VAL_EXPOSE_VAL_TWO_CMPST_EBITDA_TO_ENTVAL_RATIO","VAL_EXPOSE_VAL_TWO_CMPST_EBITDA_TO_ENTVAL_RATIO_NTILE100")])
   
+  # higher is better 
+  
   UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_VAL_TWO_CMPST_EBITDA_TO_ENTVAL_RATIO = as.numeric(   
     (  EBIT_Q1 + EBIT_Q2 + EBIT_Q3 + EBIT_Q4 + ifelse(!is.na(DEP_CF_Q1) == TRUE, DEP_CF_Q1, 0.0 ) + ifelse(!is.na(DEP_CF_Q2) == TRUE, DEP_CF_Q2, 0.0 ) + ifelse(!is.na(DEP_CF_Q3) == TRUE, DEP_CF_Q3, 0.0 ) + ifelse(!is.na(DEP_CF_Q4) == TRUE, DEP_CF_Q4, 0.0 ) ) / ENTVAL_Q1 
   ) )
@@ -1729,9 +2104,13 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   UNIVERSE_NOT_NA <- filter(UNIVERSE_NOT_NA, is.na(VAL_EXPOSE_VAL_TWO_CMPST_EBITDA_TO_ENTVAL_RATIO) == FALSE)
 
-  UNIVERSE_NOT_NA <- mutate(UNIVERSE_NOT_NA,VAL_EXPOSE_VAL_TWO_CMPST_EBITDA_TO_ENTVAL_RATIO_NTILE100 = as.numeric(
-    ntile(VAL_EXPOSE_VAL_TWO_CMPST_EBITDA_TO_ENTVAL_RATIO,100)
-  ))
+  # UNIVERSE_NOT_NA <- mutate(UNIVERSE_NOT_NA,VAL_EXPOSE_VAL_TWO_CMPST_EBITDA_TO_ENTVAL_RATIO_NTILE100 = as.numeric(
+  #    ntile(VAL_EXPOSE_VAL_TWO_CMPST_EBITDA_TO_ENTVAL_RATIO,100)
+  # ))
+  
+  UNIVERSE_NOT_NA <- do(UNIVERSE_NOT_NA, 
+    hdntile(.,"VAL_EXPOSE_VAL_TWO_CMPST_EBITDA_TO_ENTVAL_RATIO") 
+  ) 
   
   UNIVERSE_NOT_NA <- ungroup(UNIVERSE_NOT_NA) 
   
@@ -1753,6 +2132,15 @@ main_foresight3_999 <- function(pauseat=NULL) {
     #    Dividend, indicated - cumulative per-share dividend a company expects to pay over the next four quarters. 
     #                          Typically calculated by multiplying the latest per-share dividend paid by four.
   # and shows what percentage of total cash the company is paying out to shareholders,
+ 
+  #### SI Pro 4.0
+  #### Dividend, indicated - multiplying the latest per-share dividend paid by four
+      
+  # Shareholder Yield
+  # OShaugnnessy p 225
+  # Percentage of total cash the company is paying out to its shareholders
+  #   either in the form of a cash dividend or
+  #   as expended cash to re-purchase its shares on the open market  
       
   # FIELD_NAME  SHY
   # FIELD_DESC  Shareholder Yield
@@ -1773,9 +2161,13 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   UNIVERSE_NOT_NA <- filter(UNIVERSE_NOT_NA, is.na(VAL_EXPOSE_VAL_TWO_CMPST_SHY_YIELD) == FALSE)
 
-  UNIVERSE_NOT_NA <- mutate(UNIVERSE_NOT_NA,VAL_EXPOSE_VAL_TWO_CMPST_SHY_YIELD_NTILE100 = as.numeric(
-    ntile(VAL_EXPOSE_VAL_TWO_CMPST_SHY_YIELD,100)
-  ))
+  # UNIVERSE_NOT_NA <- mutate(UNIVERSE_NOT_NA,VAL_EXPOSE_VAL_TWO_CMPST_SHY_YIELD_NTILE100 = as.numeric(
+  #   ntile(VAL_EXPOSE_VAL_TWO_CMPST_SHY_YIELD,100)
+  # ))
+  
+  UNIVERSE_NOT_NA <- do(UNIVERSE_NOT_NA, 
+    hdntile(.,"VAL_EXPOSE_VAL_TWO_CMPST_SHY_YIELD") 
+  ) 
   
   UNIVERSE_NOT_NA <- ungroup(UNIVERSE_NOT_NA) 
   
@@ -1790,21 +2182,21 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   # count up of non-NA ntiles
   UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_VAL_TWO_CMPST_UNIQUE_SCORES_CNT = as.numeric(
-    ifelse( !is.na(VAL_EXPOSE_VAL_TWO_CMPST_EARN_TO_PRICE_RATIO_NTILE100)    == TRUE, 1.0, 0.0) +
-    ifelse( !is.na(VAL_EXPOSE_VAL_TWO_CMPST_SALES_TO_PRICE_RATIO_NTILE100)   == TRUE, 1.0, 0.0) + 
-    ifelse( !is.na(VAL_EXPOSE_VAL_TWO_CMPST_FCFPS_TO_PRICE_RATIO_NTILE100)   == TRUE, 1.0, 0.0) +
-    ifelse( !is.na(VAL_EXPOSE_VAL_TWO_CMPST_EBITDA_TO_ENTVAL_RATIO_NTILE100) == TRUE, 1.0, 0.0) +
-    ifelse( !is.na(VAL_EXPOSE_VAL_TWO_CMPST_SHY_YIELD_NTILE100)              == TRUE, 1.0, 0.0)  
+    ifelse( !is.na(VAL_EXPOSE_VAL_TWO_CMPST_EARN_TO_PRICE_RATIO_NTILE100)                      == TRUE, 1.0, 0.0) +
+    ifelse( !is.na(VAL_EXPOSE_VAL_TWO_CMPST_SALES_TO_PRICE_RATIO_NTILE100)                     == TRUE, 1.0, 0.0) + 
+    ifelse( !is.na(VAL_EXPOSE_VAL_TWO_CMPST_FCFPS_XOR_BOOK_TO_PRCE_RATIO_NTILE100)             == TRUE, 1.0, 0.0) +
+    ifelse( !is.na(VAL_EXPOSE_VAL_TWO_CMPST_EBITDA_TO_ENTVAL_RATIO_NTILE100)                   == TRUE, 1.0, 0.0) +
+    ifelse( !is.na(VAL_EXPOSE_VAL_TWO_CMPST_SHY_YIELD_NTILE100)                                == TRUE, 1.0, 0.0)  
   ))
   
   # minimum two factors are required
   UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_VAL_TWO_CMPST_SCORES_SUMM = as.numeric(
     ifelse( VAL_EXPOSE_VAL_TWO_CMPST_UNIQUE_SCORES_CNT >= 3.0, 
-      ifelse( !is.na(VAL_EXPOSE_VAL_TWO_CMPST_EARN_TO_PRICE_RATIO_NTILE100)    == TRUE, VAL_EXPOSE_VAL_TWO_CMPST_EARN_TO_PRICE_RATIO_NTILE100,    0.0) +
-      ifelse( !is.na(VAL_EXPOSE_VAL_TWO_CMPST_SALES_TO_PRICE_RATIO_NTILE100)   == TRUE, VAL_EXPOSE_VAL_TWO_CMPST_SALES_TO_PRICE_RATIO_NTILE100,   0.0) + 
-      ifelse( !is.na(VAL_EXPOSE_VAL_TWO_CMPST_FCFPS_TO_PRICE_RATIO_NTILE100)   == TRUE, VAL_EXPOSE_VAL_TWO_CMPST_FCFPS_TO_PRICE_RATIO_NTILE100,   0.0) +
-      ifelse( !is.na(VAL_EXPOSE_VAL_TWO_CMPST_EBITDA_TO_ENTVAL_RATIO_NTILE100) == TRUE, VAL_EXPOSE_VAL_TWO_CMPST_EBITDA_TO_ENTVAL_RATIO_NTILE100, 0.0) +
-      ifelse( !is.na(VAL_EXPOSE_VAL_TWO_CMPST_SHY_YIELD_NTILE100)              == TRUE, VAL_EXPOSE_VAL_TWO_CMPST_SHY_YIELD_NTILE100,              0.0) 
+      ifelse( !is.na(VAL_EXPOSE_VAL_TWO_CMPST_EARN_TO_PRICE_RATIO_NTILE100)                      == TRUE, VAL_EXPOSE_VAL_TWO_CMPST_EARN_TO_PRICE_RATIO_NTILE100,    0.0) +
+      ifelse( !is.na(VAL_EXPOSE_VAL_TWO_CMPST_SALES_TO_PRICE_RATIO_NTILE100)                     == TRUE, VAL_EXPOSE_VAL_TWO_CMPST_SALES_TO_PRICE_RATIO_NTILE100,   0.0) + 
+      ifelse( !is.na(VAL_EXPOSE_VAL_TWO_CMPST_FCFPS_XOR_BOOK_TO_PRCE_RATIO_NTILE100)             == TRUE, VAL_EXPOSE_VAL_TWO_CMPST_FCFPS_XOR_BOOK_TO_PRCE_RATIO_NTILE100,   0.0) +
+      ifelse( !is.na(VAL_EXPOSE_VAL_TWO_CMPST_EBITDA_TO_ENTVAL_RATIO_NTILE100)                   == TRUE, VAL_EXPOSE_VAL_TWO_CMPST_EBITDA_TO_ENTVAL_RATIO_NTILE100, 0.0) +
+      ifelse( !is.na(VAL_EXPOSE_VAL_TWO_CMPST_SHY_YIELD_NTILE100)                                == TRUE, VAL_EXPOSE_VAL_TWO_CMPST_SHY_YIELD_NTILE100,              0.0) 
     , NA) 
   ))
   
@@ -1819,9 +2211,13 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   UNIVERSE_NOT_NA <- filter(UNIVERSE_NOT_NA, is.na(VAL_EXPOSE_VAL_TWO_CMPST_SCORES_SUMM_REBAL) == FALSE)
   
-  UNIVERSE_NOT_NA <- mutate(UNIVERSE_NOT_NA,VAL_EXPOSE_VAL_TWO_CMPST_SCORES_SUMM_REBAL_NTILE100 = as.numeric(
-    ntile(VAL_EXPOSE_VAL_TWO_CMPST_SCORES_SUMM_REBAL,100)
-  ))
+  # UNIVERSE_NOT_NA <- mutate(UNIVERSE_NOT_NA,VAL_EXPOSE_VAL_TWO_CMPST_SCORES_SUMM_REBAL_NTILE100 = as.numeric(
+  #   ntile(VAL_EXPOSE_VAL_TWO_CMPST_SCORES_SUMM_REBAL,100)
+  # ))
+  
+  UNIVERSE_NOT_NA <- do(UNIVERSE_NOT_NA, 
+    hdntile(.,"VAL_EXPOSE_VAL_TWO_CMPST_SCORES_SUMM_REBAL") 
+  ) 
   
   UNIVERSE <<- suppressMessages(left_join(UNIVERSE, UNIVERSE_NOT_NA)) # LEFT OUTER JOIN
                       
@@ -1845,6 +2241,8 @@ main_foresight3_999 <- function(pauseat=NULL) {
   #                               WINNERS25
    
   # need a median   
+  
+  # higher value is BETTER 
    
   # VAL_EXPOSE_FIN_CMPST_SCORES_SUMM_REBAL_NTILE100 + VAL_EXPOSE_EARN_CMPST_SCORES_SUMM_REBAL_NTILE100 + VAL_EXPOSE_VAL_TWO_CMPST_SCORES_SUMM_REBAL_NTILE100 = VAL_EXPOSE_ALL_CMBND_CMPST_SCORES_SUMM_REBAL_NTILE100_SUMM 
 
@@ -1856,9 +2254,15 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   UNIVERSE_NOT_NA <- filter(UNIVERSE_NOT_NA, is.na(VAL_EXPOSE_ALL_CMBND_CMPST_SCORES_SUMM_REBAL_NTILE100_SUMM ) == FALSE)
 
-  UNIVERSE_NOT_NA <- mutate(UNIVERSE_NOT_NA,VAL_EXPOSE_ALL_CMBND_CMPST_SCORES_SUMM_REBAL_NTILE100_SUMM_NTILE2 = as.numeric(
-    ntile(VAL_EXPOSE_ALL_CMBND_CMPST_SCORES_SUMM_REBAL_NTILE100_SUMM ,2)
-  ))
+  # UNIVERSE_NOT_NA <- mutate(UNIVERSE_NOT_NA,VAL_EXPOSE_ALL_CMBND_CMPST_SCORES_SUMM_REBAL_NTILE100_SUMM_NTILE2 = as.numeric(
+  #   ntile(VAL_EXPOSE_ALL_CMBND_CMPST_SCORES_SUMM_REBAL_NTILE100_SUMM ,2)
+  # ))
+  
+ UNIVERSE_NOT_NA <- do(UNIVERSE_NOT_NA, 
+    hdntile(.,"VAL_EXPOSE_ALL_CMBND_CMPST_SCORES_SUMM_REBAL_NTILE100_SUMM", buckets = 2) 
+  ) 
+  
+  # A LEFT_OFF ( FIX hdrank 'NOT LOOSE ITS GROUPING WHEN A PARAMETER IS SET' )
   
   UNIVERSE <<- suppressMessages(left_join(UNIVERSE, UNIVERSE_NOT_NA)) # LEFT OUTER JOIN
 
@@ -1951,9 +2355,12 @@ main_foresight3_999 <- function(pauseat=NULL) {
 
 # BEGIN THURSDAY ( DAY OF LEAVE )
   
+  # [ ] MISSING 'unit test for "posneg = -1"' but super highly unlikely to fail
+  
   # [ ] !!!! ***** SWAP OUT THE REMANDER ntile --> hdntile ****
 
-
+   # [ ] ADJUST (PROGRAM) hdntile/ndrank SO "casecount" IS AN OPTION (ndrank WOULD like)
+   # [ ] [ALSO  ADD trunc(a/b) + 1 option (hdrank CASE)
   
 # fix that report date + 'Add Periods' shift see TimeWarp
 # [ ]
@@ -1990,7 +2397,11 @@ main_foresight3_999 <- function(pauseat=NULL) {
     
 # SOON ( MAKE SURE PRICES AND SPLITS ARE HOPEFULLY SMOOTH ) ( SHORT TERM - JUST INSPECT AND ELIM )
 
-    
+# [ ]
+# RARE DATA CASE: FAR FUTURE: NOT A PRIORITY
+# percent ch in debt ( STILL NEAR ZERO PROBLEMS?: need some weight with assets - liabilies = equity? )
+# weight START OF THOUGHT: abs( (assets - liabilites)/assets )   -> 1 good    -> 0 bad   ->  "> 1" very bad
+
 # START LOOKING AT (TO START) FED & PIGER & RANDOMFOREST
     
 # NEXT, REVIEW THAT "YELLOW FOLDER" CLEAN_UP/CENTRALIZE 'SOME' REPEATING CODE
@@ -2024,6 +2435,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
 # Shares Average Q1
 # Data Table Name: SHR_AQ1
 # average number of shares of common stock outstanding 
+#   This is the number of shares issued minus the shares held in treasury (Redeemable shares?-Co buyable back from issuer)?.
 
 # = AVE_COMMON_SHARES
 
