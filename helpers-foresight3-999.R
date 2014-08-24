@@ -1,25 +1,38 @@
 
 
 
+
+
+
 # posneg - higher values ... higher ntiles
 hdntile  <- function(  x  = NULL                     # required: 'subset (grouped)'  dataframe
                        , measurecol = NULL             # required:  measure column name string 
-                       , buckets = 100                  # divisions integer
+                       , buckets = 100                  # divisions integer OR "NROW_distinct_measurecol" OR "NROW_distinct_measurecol_or_max100" strings
                        , posneg = 1                     # 1  - higher values = higher measure, -1 - higher values lower measure  integer
                        , new_suffix_type = "functmeas"  # new column suffix typically 'functmeas' _NTILE100 string                        , mutually exclusive of ( new_suffix_name, new_word_explicit_name )
                        , new_suffix_expl_name = NULL    # explicity name the suffix e.g. "_MYNTILEGREAT" string                          , mutually exclusive of ( new_suffix_type, new_word_explicit_name )
                        , new_word_explicit_name = NULL  # explicity name the the entire new column e.g. "MYQUANTILEGREAT_OF_TODAY" string , mutually exclusive of ( new_suffix_type, new_suffix_name )
                        , monopolyhdntile  = "buckets"    # if only one firm, how does it compare against itself? 
-                       # NA - hdquantile default                  literal NA
-                       # "buckets" - use buckets hdntile default  string
-                       # "bucketsDIVtwo" use trunc(buckets/2)     string
-                       # 1,2,50,100 or any hard coded             literal integer
-                       , measurename = "NTILE"           # name the 'funct' part of 'functmeas' ( of 'measurecol'_functmeas' )
-                       , ...                             # other parameters passed to base::cut.default and Hmisc::hdquantile                  
+                         # NA - hdquantile default                  literal NA
+                         # "buckets" - use buckets hdntile default  string
+                         # "bucketsDIVtwo" use trunc(buckets/2)     string
+                         # 1,2,50,100 or any hard coded             literal integer
+                       , measurename = "NTILE"           # name the 'funct' part of 'functmeas' ( of 'measurecol'_functmeas' )            
 ) {
+  
   
   require(Hmisc)
   require(dplyr)
+  
+  # desire sequential integers
+  
+  if(buckets == "NROW_distinct_measurecol") {
+    buckets <- as.integer(length(unique( x[,measurecol] )))
+  }
+  
+  if(buckets == "NROW_distinct_measurecol_or_max100") {
+    buckets <- min( as.integer(length(unique( x[,measurecol] ))), 100L )
+  }
   
   newcolname <- ""
   
@@ -38,7 +51,7 @@ hdntile  <- function(  x  = NULL                     # required: 'subset (groupe
   }
   
   # calculate
-  
+
   x[[newcolname]] <-  cut((as.numeric(posneg))*x[[measurecol]], hdquantile((as.numeric(posneg))*x[[measurecol]], seq(0, 1, as.numeric(1.0/as.numeric(buckets))) , na.rm = TRUE ), labels=FALSE , include.lowest=T) 
   
   # pass-through  ( will be NA - hdquantile default )
@@ -74,13 +87,14 @@ hdntile  <- function(  x  = NULL                     # required: 'subset (groupe
 
 
 
+
 # posneg   higher values ... lower hdrank 
 
 hdrank  <- function(  x  = NULL                      # required: 'subset (grouped)'  dataframe
                       , measurecol = NULL              # required:  measure column name string 
-                      , buckets = 100                  # divisions integer
+                      , buckets = 100                  # divisions integer OR "NROW_distinct_measurecol" OR "NROW_distinct_measurecol_or_max100" strings
                       , posneg = -1                    # 1  - higher values = higher measure, -1 - higher values lower measure  integer
-                      , new_suffix_type = "functmeas"  # new column suffix typically 'functmeas' _NTILE100 string                        , mutually exclusive of ( new_suffix_name, new_word_explicit_name )
+                      , new_suffix_type = "functmeas"  # new column suffix typically 'functmeas' _RANK100 string                        , mutually exclusive of ( new_suffix_name, new_word_explicit_name )
                       , new_suffix_expl_name = NULL    # explicity name the suffix e.g. "_MYNTILEGREAT" string                          , mutually exclusive of ( new_suffix_type, new_word_explicit_name )
                       , new_word_explicit_name = NULL  # explicity name the the entire new column e.g. "MYQUANTILEGREAT_OF_TODAY" string , mutually exclusive of ( new_suffix_type, new_suffix_name )
                       , monopolyhdntile  = 1           # if only one firm, how does it compare against itself? 
@@ -88,12 +102,11 @@ hdrank  <- function(  x  = NULL                      # required: 'subset (groupe
                                                           # "buckets" - use buckets                   string
                                                           # "bucketsDIVtwo" use trunc(buckets/2)      string
                                                           #  1 (  hdrank default  ), 2,50, 100 or any hard coded  literal integer                      
-                      , measurename = "RANK"            # name the 'funct' part of 'functmeas' ( of 'measurecol'_functmeas' )
-                      , ...                             # other parameters passed to hdntile and base::cut.default and Hmisc::hdquantile                  
+                      , measurename = "RANK"            # name the 'funct' part of 'functmeas' ( of 'measurecol'_functmeas' )               
 ) {
   
   hdntile(            
-    x  = x                      
+      x  = x                      
     , measurecol = measurecol              
     , buckets = buckets                  
     , posneg = posneg                   
@@ -101,8 +114,7 @@ hdrank  <- function(  x  = NULL                      # required: 'subset (groupe
     , new_suffix_expl_name = new_suffix_expl_name    
     , new_word_explicit_name = new_word_explicit_name 
     , monopolyhdntile  = monopolyhdntile 
-    , measurename = measurename          
-    , ...                                                
+    , measurename = measurename                                                      
   )
   
 }
