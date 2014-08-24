@@ -1,4 +1,6 @@
 
+
+
 ################################ begin of hdnile work ###########################
 
 
@@ -7,22 +9,32 @@
 # posneg - higher values ... higher ntiles
 hdntile  <- function(  x  = NULL                     # required: 'subset (grouped)'  dataframe
                        , measurecol = NULL             # required:  measure column name string 
-                       , buckets = 100                  # divisions integer
+                       , buckets = 100                  # divisions integer OR "NROW_distinct_measurecol" OR "NROW_distinct_measurecol_or_max100" strings
                        , posneg = 1                     # 1  - higher values = higher measure, -1 - higher values lower measure  integer
                        , new_suffix_type = "functmeas"  # new column suffix typically 'functmeas' _NTILE100 string                        , mutually exclusive of ( new_suffix_name, new_word_explicit_name )
                        , new_suffix_expl_name = NULL    # explicity name the suffix e.g. "_MYNTILEGREAT" string                          , mutually exclusive of ( new_suffix_type, new_word_explicit_name )
                        , new_word_explicit_name = NULL  # explicity name the the entire new column e.g. "MYQUANTILEGREAT_OF_TODAY" string , mutually exclusive of ( new_suffix_type, new_suffix_name )
                        , monopolyhdntile  = "buckets"    # if only one firm, how does it compare against itself? 
-                       # NA - hdquantile default                  literal NA
-                       # "buckets" - use buckets hdntile default  string
-                       # "bucketsDIVtwo" use trunc(buckets/2)     string
-                       # 1,2,50,100 or any hard coded             literal integer
-                       , measurename = "NTILE"           # name the 'funct' part of 'functmeas' ( of 'measurecol'_functmeas' )
-                       , ...                             # other parameters passed to base::cut.default and Hmisc::hdquantile                  
+                         # NA - hdquantile default                  literal NA
+                         # "buckets" - use buckets hdntile default  string
+                         # "bucketsDIVtwo" use trunc(buckets/2)     string
+                         # 1,2,50,100 or any hard coded             literal integer
+                       , measurename = "NTILE"           # name the 'funct' part of 'functmeas' ( of 'measurecol'_functmeas' )            
 ) {
+  
   
   require(Hmisc)
   require(dplyr)
+  
+  # desire sequential integers
+  
+  if(buckets == "NROW_distinct_measurecol") {
+    buckets <- as.integer(length(unique( x[,measurecol] )))
+  }
+  
+  if(buckets == "NROW_distinct_measurecol_or_max100") {
+    buckets <- min( as.integer(length(unique( x[,measurecol] ))), 100L )
+  }
   
   newcolname <- ""
   
@@ -41,7 +53,7 @@ hdntile  <- function(  x  = NULL                     # required: 'subset (groupe
   }
   
   # calculate
-  
+
   x[[newcolname]] <-  cut((as.numeric(posneg))*x[[measurecol]], hdquantile((as.numeric(posneg))*x[[measurecol]], seq(0, 1, as.numeric(1.0/as.numeric(buckets))) , na.rm = TRUE ), labels=FALSE , include.lowest=T) 
   
   # pass-through  ( will be NA - hdquantile default )
@@ -109,6 +121,7 @@ houseID year price price_NTILE100
 4       B    4    14             59
 5       C    5    15             76
 6       C    6    16            100
+
 
 df[4,"price"] <- NA
 
@@ -333,7 +346,6 @@ houseID year price price_NTILE100
 5       C    5    15              1
 6       C    6    16            100
 
-
 # test grouped - buckets
 
 > do(df_g, hdntile(.,"price", buckets = 2) )
@@ -381,9 +393,9 @@ houseID year price MYQUANTILEGREAT_OF_TODAY
 
 hdrank  <- function(  x  = NULL                      # required: 'subset (grouped)'  dataframe
                       , measurecol = NULL              # required:  measure column name string 
-                      , buckets = 100                  # divisions integer
+                      , buckets = 100                  # divisions integer OR "NROW_distinct_measurecol" OR "NROW_distinct_measurecol_or_max100" strings
                       , posneg = -1                    # 1  - higher values = higher measure, -1 - higher values lower measure  integer
-                      , new_suffix_type = "functmeas"  # new column suffix typically 'functmeas' _NTILE100 string                        , mutually exclusive of ( new_suffix_name, new_word_explicit_name )
+                      , new_suffix_type = "functmeas"  # new column suffix typically 'functmeas' _RANK100 string                        , mutually exclusive of ( new_suffix_name, new_word_explicit_name )
                       , new_suffix_expl_name = NULL    # explicity name the suffix e.g. "_MYNTILEGREAT" string                          , mutually exclusive of ( new_suffix_type, new_word_explicit_name )
                       , new_word_explicit_name = NULL  # explicity name the the entire new column e.g. "MYQUANTILEGREAT_OF_TODAY" string , mutually exclusive of ( new_suffix_type, new_suffix_name )
                       , monopolyhdntile  = 1           # if only one firm, how does it compare against itself? 
@@ -391,12 +403,11 @@ hdrank  <- function(  x  = NULL                      # required: 'subset (groupe
                                                           # "buckets" - use buckets                   string
                                                           # "bucketsDIVtwo" use trunc(buckets/2)      string
                                                           #  1 (  hdrank default  ), 2,50, 100 or any hard coded  literal integer                      
-                      , measurename = "RANK"            # name the 'funct' part of 'functmeas' ( of 'measurecol'_functmeas' )
-                      , ...                             # other parameters passed to hdntile and base::cut.default and Hmisc::hdquantile                  
+                      , measurename = "RANK"            # name the 'funct' part of 'functmeas' ( of 'measurecol'_functmeas' )               
 ) {
   
   hdntile(            
-    x  = x                      
+      x  = x                      
     , measurecol = measurecol              
     , buckets = buckets                  
     , posneg = posneg                   
@@ -404,8 +415,7 @@ hdrank  <- function(  x  = NULL                      # required: 'subset (groupe
     , new_suffix_expl_name = new_suffix_expl_name    
     , new_word_explicit_name = new_word_explicit_name 
     , monopolyhdntile  = monopolyhdntile 
-    , measurename = measurename          
-    , ...                                                
+    , measurename = measurename                                                      
   )
   
 }
@@ -426,6 +436,8 @@ hdrank  <- function(  x  = NULL                      # required: 'subset (groupe
 
 # tested grouped
 
+library(dplyr)
+library(Hmisc)
 
 df <- data.frame(
   houseID = c("A","B","A","B","A","B")
@@ -434,13 +446,11 @@ df <- data.frame(
   , stringsAsFactors = FALSE
 )
 
-> df_g  <- group_by(df, houseID)
+df_g  <- group_by(df, houseID)
 
 
-> do(df_g, hdrank(.,"price") )
+do(df_g, hdrank(.,"price") )       
 
-Source: local data frame [6 x 4]
-Groups: houseID
 
 houseID year price price_RANK100
 1       A    1    11           100
@@ -449,9 +459,120 @@ houseID year price price_RANK100
 4       B    2    12           100
 5       B    4    14            50
 6       B    6    16             1
->
+
+
+do(df_g, hdntile(.,"price") ) 
+  
+  houseID year price price_NTILE100
+1       A    1    11              1
+2       A    3    13             50
+3       A    5    15            100
+4       B    2    12              1
+5       B    4    14             50
+6       B    6    16            100
+  
+############# end hdrank test ##########################
   
   
+# NOTE: DID NOT DO "do(df_g, hdntile(.,"price", na.rm = FALSE) )" 
+#   because in RESULT 2 of 3 values became NA ( hdquantile? other? bug or what? ) 
+# : ... not worth my time ( my program is already written to circumvent NAs )
+# if need to tell others ... tell in 'help' or a 'vignettte'
+# HARD NOTED [x]  
   
-  ############# end hdrank test ##########################
+# eliminate ... s ( FOR NOW ) more trouble than they are worth
+# DONE [X]
+  
+
+############  begin "NROW_distinct_measurecol"  "NROW_distinct_measurecol_or_max100"  ###########
+
+
+df <- data.frame(
+  houseID = c("A","B","A","B","A","B")
+  , year   = 1:6
+  , price  = 11:16
+  , stringsAsFactors = FALSE
+)
+
+df_g  <- group_by(df, houseID)
+
+> df
+  houseID year price
+1       A    1    11
+2       B    2    12
+3       A    3    13
+4       B    4    14
+5       A    5    15
+6       B    6    16
+
+# buckets = "NROW_distinct_measurecol"
+
+do(df_g, hdntile(.,"price", buckets = "NROW_distinct_measurecol" ) ) 
+
+  houseID year price price_NTILE3
+1       A    1    11            1
+2       A    3    13            2
+3       A    5    15            3
+4       B    2    12            1
+5       B    4    14            2
+6       B    6    16            3
+
+
+### 
+
+
+do(df_g, hdrank(.,"price", buckets = "NROW_distinct_measurecol" )) 
+
+  houseID year price price_RANK3
+1       A    1    11           3
+2       A    3    13           2
+3       A    5    15           1
+4       B    2    12           3
+5       B    4    14           2
+6       B    6    16           1
+
+ OR "NROW_distinct_measurecol_or_max100" strings
+
+  if(buckets == "NROW_distinct_measurecol") {
+    buckets <- as.integer(length(unique( x[,measurecol] )))
+  }
+
+  
+# buckets = "NROW_distinct_measurecol_or_max100" strings
+  
+# ########### SPECIAL ############# swap out source code replace 100L with 2L )
+
+do(df_g, hdntile(.,"price", buckets = "NROW_distinct_measurecol_or_max100" ) ) 
+
+  houseID year price price_NTILE2
+1       A    1    11            1
+2       A    3    13            1
+3       A    5    15            2
+4       B    2    12            1
+5       B    4    14            1
+6       B    6    16            2
+
+
+do(df_g, hdrank(.,"price", buckets = "NROW_distinct_measurecol_or_max100" )) 
+
+
+  houseID year price price_RANK2
+1       A    1    11           2
+2       A    3    13           1
+3       A    5    15           1
+4       B    2    12           2
+5       B    4    14           1
+6       B    6    16           1
+
+
+
+# ########### SPECIAL ############# swap out source code replace 2L with 100L )
+
+
+############  begin "NROW_distinct_measurecol"  "NROW_distinct_measurecol_or_max100"  ###########
+
+# decided not do do a HARDCODE hdpercentilerank  ( TO COMPLICATED AS IS IT IS )
+  
+  
+############# end hdrank test ##########################
 
