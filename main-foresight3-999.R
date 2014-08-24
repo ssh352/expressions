@@ -2,7 +2,7 @@
      
 
 options(RepositoryStyle = "Installed")      # OR    "InstalledTest" OR "Installed" # OR "Dated"
-options(FileStoreStyle  = "Optimized" )  # OR    "NotOptimized " OR "Optimized" 
+options(FileStoreStyle  = "Optimized" )     # OR    "NotOptimized " OR "Optimized" 
 # Optimized: ( will try to find fast loading binary  file if not found then load then save 'fast loading' )
 
 if(getOption("RepositoryStyle") == "InstalledTest")  {
@@ -723,9 +723,20 @@ main_foresight3_999 <- function(pauseat=NULL) {
   # FIELD_DESC  EPS Q1
   # DESCRIP     Income Statement - Quarterly
  	# FM_FILE     SI_ISQ
-  
-  SI_ISQ <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_ISQ"), as.is = TRUE)))
-  
+
+   if(getOption("FileStoreStyle") == "Optimized") {
+    if( file.exists(getOption("AAIISIPro40PathFileOptim_SI_ISQ"))) {
+      load(file = getOption("AAIISIPro40PathFileOptim_SI_ISQ"))
+    } else {
+      # load file
+      SI_ISQ <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_ISQ"), as.is = TRUE)))
+      save("SI_ISQ",file = getOption("AAIISIPro40PathFileOptim_SI_ISQ"))
+    }
+  } else {
+    # load file
+    SI_ISQ <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_ISQ"), as.is = TRUE)))
+  }
+
     primary_key_dup <- SI_ISQ[duplicated(SI_ISQ[,'COMPANY_ID']),,drop=FALSE]
     new_df_no_duplicates <- SI_ISQ[!(SI_ISQ$COMPANY_ID %in% as.matrix(primary_key_dup)),,drop=FALSE]
     SI_ISQ <<- new_df_no_duplicates
@@ -771,8 +782,20 @@ main_foresight3_999 <- function(pauseat=NULL) {
   UNIVERSE <<- mutate(UNIVERSE, EPS_Q6 = as.numeric(EPS_Q6) )
   UNIVERSE <<- mutate(UNIVERSE, EPS_Q7 = as.numeric(EPS_Q7) )
   UNIVERSE <<- mutate(UNIVERSE, EPS_Q8 = as.numeric(EPS_Q8) )
-  
-  SI_BSQ <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_BSQ"), as.is = TRUE)))
+
+
+   if(getOption("FileStoreStyle") == "Optimized") {
+    if( file.exists(getOption("AAIISIPro40PathFileOptim_SI_BSQ"))) {
+      load(file = getOption("AAIISIPro40PathFileOptim_SI_BSQ"))
+    } else {
+      # load file
+      SI_BSQ <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_BSQ"), as.is = TRUE)))
+      save("SI_BSQ",file = getOption("AAIISIPro40PathFileOptim_SI_BSQ"))
+    }
+  } else {
+    # load file
+    SI_BSQ <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_BSQ"), as.is = TRUE)))
+  }
   
   primary_key_dup <- SI_BSQ[duplicated(SI_BSQ[,'COMPANY_ID']),,drop=FALSE]
   new_df_no_duplicates <- SI_BSQ[!(SI_BSQ$COMPANY_ID %in% as.matrix(primary_key_dup)),,drop=FALSE]
@@ -788,7 +811,18 @@ main_foresight3_999 <- function(pauseat=NULL) {
   SI_BSQ <<- tbl_df(SI_BSQ)
   
 
-  SI_CFQ <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_CFQ"), as.is = TRUE)))
+   if(getOption("FileStoreStyle") == "Optimized") {
+    if( file.exists(getOption("AAIISIPro40PathFileOptim_SI_CFQ"))) {
+      load(file = getOption("AAIISIPro40PathFileOptim_SI_CFQ"))
+    } else {
+      # load file
+      SI_CFQ <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_CFQ"), as.is = TRUE)))
+      save("SI_CFQ",file = getOption("AAIISIPro40PathFileOptim_SI_CFQ"))
+    }
+  } else {
+    # load file
+    SI_CFQ <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_CFQ"), as.is = TRUE)))
+  }
   
   primary_key_dup <- SI_CFQ[duplicated(SI_CFQ[,'COMPANY_ID']),,drop=FALSE]
   new_df_no_duplicates <- SI_CFQ[!(SI_CFQ$COMPANY_ID %in% as.matrix(primary_key_dup)),,drop=FALSE]
@@ -1185,6 +1219,27 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   # begin earnings composite ( defensive posture )
 
+  # OShaughnessy Earnings Composite
+  # --------------------------------
+  # AAII JOURNAL > October 2013
+  # Read Comments (43)
+  # STOCK STRATEGIES
+  # “What Works”: Key New Findings on Stock Selection
+  # by James O'Shaughnessy
+    # http://www.aaii.com/files/journal/OSAMdisclosures.pdf **** ( LEFT_OFF: FINE TUNE YETAGAIN ?? ) ****
+      # Definitions of Earnings Quality Factors
+        # Total Accruals to Total Asset
+        # Current Accruals to Total
+  # http://www.aaii.com/journal/article/what-works-key-new-findings-on-stock-selection
+
+  # OShaughnessy Value Blend ( Seen: August 2014 )
+    # O’Shaughnessy Value Blend 
+    # ( RENAMED? FROM O’Shaughnessy Asset Management’s (OSAM) value composite ) *
+    # http://www.osam.com/value_blend.aspx
+  # http://www.osam.com/strategies.aspx
+
+  
+  # see END of 'earnings composite'
   # ( If I were to use a 'single measure for the earnings composite ...')
   # March 2014 custom: Difference between "Operating Cash Flow" and "Net Income" 
   #                                   and scaled to "MarketCap"
@@ -1234,6 +1289,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
                       , CFQ.CE_Q3 AS CE_Q3__numeric, CFQ.CE_Q4 AS CE_Q4__numeric, CFQ.CE_Q5 AS CE_Q5__numeric -- depreciation expense to captital expenditures 
                       , ISQ.NETINC_Q1 AS NETINC_Q1__numeric, ISQ.NETINC_Q2 AS NETINC_Q2__numeric                                            -- Difference between Operating Cash Flow and Net Income and scales the figure to Market Cap 
                       , ISQ.NETINC_Q3 AS NETINC_Q3__numeric, ISQ.NETINC_Q4 AS NETINC_Q4__numeric, ISQ.NETINC_Q5 AS NETINC_Q5__numeric       -- Difference between Operating Cash Flow and Net Income and scales the figure to Market Cap 
+                      , ISQ.NETINC_Q6 AS NETINC_Q6__numeric, ISQ.NETINC_Q7 AS NETINC_Q7__numeric, ISQ.NETINC_Q8 AS NETINC_Q8__numeric       -- Difference between Operating Cash Flow and Net Income and scales the figure to Market Cap 
                                   FROM 
                                    main.UNIVERSE UNIV, main.SI_BSQ BSQ, main.SI_CFQ CFQ, main.SI_ISQ ISQ WHERE 
                                    UNIV.COMPANY_ID = BSQ.COMPANY_ID AND
@@ -1386,14 +1442,14 @@ main_foresight3_999 <- function(pauseat=NULL) {
   # And 'since a 'change'
 
   # TATA 
-  # (  ( ( WORK_Q1 - CASH_Q1 ) / ( ASSETS_Q1 + 0.0000001 ) )  - ( ( WORK_Q5 - CASH_Q5 ) / ( ASSETS_Q1 + 0.0000001 ) )  ) / abs( ( ( WORK_Q5 - CASH_Q5 + 0.0000001 ) /  ( ASSETS_Q1 + 0.0000001 ) )  ) * 100.0  = VAL_EXPOSE_EARN_CMPST_TATA
+  # (  ( ( WORK_Q1 - CASH_Q1 ) / ( ASSETS_Q1 + 0.0000001 ) )  - ( ( WORK_Q5 - CASH_Q5 ) / ( ASSETS_Q5 + 0.0000001 ) )  ) / abs( ( ( WORK_Q5 - CASH_Q5 + 0.0000001 ) /  ( ASSETS_Q5 + 0.0000001 ) )  ) * 100.0  = VAL_EXPOSE_EARN_CMPST_TATA
 
   # ALTERNATE 
   # ( as 'working capital WORK_ goes up' LAIB_ seem to be fixed'? )
   # I think that the  original way meant to use in the denominator: ASSETS_Q5 
   # ( but I think that the way THAT would be written WORK_(up) / ASSETS_(up) : not as usefule as LIAB_(fixed) )
   
-  # (  ( ( WORK_Q1 - CASH_Q1 ) / ( LIAB_Q1 + 0.0000001 ) )  - ( ( WORK_Q5 - CASH_Q5 ) / ( LIAB_Q1 + 0.0000001 ) )  ) / abs( ( ( WORK_Q5 - CASH_Q5 + 0.0000001 ) /  ( LIAB_Q1 + 0.0000001 ) )  ) * 100.0  = VAL_EXPOSE_EARN_CMPST_TATA
+  # (  ( ( WORK_Q1 - CASH_Q1 ) / ( LIAB_Q1 + 0.0000001 ) )  - ( ( WORK_Q5 - CASH_Q5 ) / ( LIAB_Q5 + 0.0000001 ) )  ) / abs( ( ( WORK_Q5 - CASH_Q5 + 0.0000001 ) /  ( LIAB_Q5 + 0.0000001 ) )  ) * 100.0  = VAL_EXPOSE_EARN_CMPST_TATA
 
   # lower value is better  (  uses % change in working capital ( BELOW ) )
 
@@ -1402,7 +1458,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   # then just 'assets' in the denominator
   
   UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_EARN_CMPST_TATA = as.numeric(   
-    (  ( ( WORK_Q1 - CASH_Q1 ) / ( LIAB_Q1 + 0.0000001 ) )  - ( ( WORK_Q5 - CASH_Q5 ) / ( LIAB_Q1 + 0.0000001 ) )  ) / abs( ( ( LIAB_Q5 - CASH_Q5 + 0.0000001 ) /  ( LIAB_Q1 + 0.0000001 ) )  ) * 100.0 
+    (  ( ( WORK_Q1 - CASH_Q1 ) / ( ASSETS_Q1 + 0.0000001 ) )  - ( ( WORK_Q5 - CASH_Q5 ) / ( ASSETS_Q5 + 0.0000001 ) )  ) / abs( ( ( LIAB_Q5 - CASH_Q5 + 0.0000001 ) /  ( ASSETS_Q5 + 0.0000001 ) )  ) * 100.0 
   ) )
 
   UNIVERSE_NOT_NA <- group_by(UNIVERSE,MG_DESC) 
@@ -1499,18 +1555,26 @@ main_foresight3_999 <- function(pauseat=NULL) {
   # Piotroski did not look for high levels, only a positive figure. ( MY MATH IS OPPOSITE )
   # ALTERNATIVE : ( AP_Q1 - NETINC_Q1 - TCO_Q1  - NETINC_Q2 - TCO_Q2 - NETINC_Q3 - TCO_Q3 - NETINC_Q4 - TCO_Q4 ) / ( ASSETS_Q5 + 0.0000001 ) = VAL_EXPOSE_EARN_CMPST_CATA
   
-  # USED
+  # POSSIBLE IF A 'trend' 
   # ( ( AP_Q1 - NETINC_Q1 - TCO_Q1  - NETINC_Q2 - TCO_Q2 - NETINC_Q3 - TCO_Q3 - NETINC_Q4 - TCO_Q4 ) - ( AP_Q5 - NETINC_Q5 - TCO_Q5  - NETINC_Q6 - TCO_Q6 - NETINC_Q7 - TCO_Q7 - NETINC_Q8 - TCO_Q8 ) ) / abs( AP_Q5 - NETINC_Q5 - TCO_Q5  - NETINC_Q6 - TCO_Q6 - NETINC_Q7 - TCO_Q7 - NETINC_Q8 - TCO_Q8 + 0.0000001 ) * 100  = VAL_EXPOSE_EARN_CMPST_CATA
+  
+  # POSSILBLE IF A 'ratio'
+  # ( AP_Q1 - NETINC_Q1 - TCO_Q1  - NETINC_Q2 - TCO_Q2 - NETINC_Q3 - TCO_Q3 - NETINC_Q4 - TCO_Q4 ) / ( ASSETS_Q5 + 0.0000001 )
+  
+   # Therefore, 'trend' and 'ratio'
+   # OSAMdisclosure.pdf "size and direction"
+   # POSSIBLE IF A 'trend' and a 'ratio'
+   # ( ( ( AP_Q1 - NETINC_Q1 - TCO_Q1  - NETINC_Q2 - TCO_Q2 - NETINC_Q3 - TCO_Q3 - NETINC_Q4 - TCO_Q4 ) / ( ASSETS_Q1 + 0.0000001 ) )   - ( ( AP_Q5 - NETINC_Q5 - TCO_Q5  - NETINC_Q6 - TCO_Q6 - NETINC_Q7 - TCO_Q7 - NETINC_Q8 - TCO_Q8 ) / ( ASSETS_Q5 + 0.0000001 ) ) ) /  abs( ( AP_Q5 - NETINC_Q5 - TCO_Q5  - NETINC_Q6 - TCO_Q6 - NETINC_Q7 - TCO_Q7 - NETINC_Q8 - TCO_Q8 ) / ( ASSETS_Q5 + 0.0000001 ) )
+ 
   
   # HARD NOTE: ( DENOMINATOR + 0.0000001  ) : Removes R 'cut' function error: Error in View : 'breaks' are not unique ( using hdntile and ALTERNATIVE )
   
   # lower is better
 
+ 
   UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_EARN_CMPST_CATA = as.numeric(  
     # USED  
-    # ( ( AP_Q1 - EPSCON_Q1 - TCO_Q1  - EPSCON_Q2 - TCO_Q2 - EPSCON_Q3 - TCO_Q3 - EPSCON_Q4 - TCO_Q4 ) - ( AP_Q5 - EPSCON_Q5 - TCO_Q5  - EPSCON_Q6 - TCO_Q6 - EPSCON_Q7 - TCO_Q7 - EPSCON_Q8 - TCO_Q8 ) ) / abs( AP_Q5 - EPSCON_Q5 - TCO_Q5  - EPSCON_Q6 - TCO_Q6 - EPSCON_Q7 - TCO_Q7 - EPSCON_Q8 - TCO_Q8 + 0.0000001 ) * 100 
-    # ALTERNATIVE
-    ( AP_Q1 - NETINC_Q1 - TCO_Q1  - NETINC_Q2 - TCO_Q2 - NETINC_Q3 - TCO_Q3 - NETINC_Q4 - TCO_Q4 ) / ( ASSETS_Q5 + 0.0000001 )
+    ( ( ( AP_Q1 - NETINC_Q1 - TCO_Q1  - NETINC_Q2 - TCO_Q2 - NETINC_Q3 - TCO_Q3 - NETINC_Q4 - TCO_Q4 + 0.0000001 ) / ( ASSETS_Q1 + 0.0000001 ) )   - ( ( AP_Q5 - NETINC_Q5 - TCO_Q5  - NETINC_Q6 - TCO_Q6 - NETINC_Q7 - TCO_Q7 - NETINC_Q8 - TCO_Q8 + 0.0000001 ) / ( ASSETS_Q5 + 0.0000001 ) ) ) /  abs( ( AP_Q5 - NETINC_Q5 - TCO_Q5  - NETINC_Q6 - TCO_Q6 - NETINC_Q7 - TCO_Q7 - NETINC_Q8 - TCO_Q8 + 0.0000001 ) / ( ASSETS_Q5 + 0.0000001 ) )
   ) )
   
   UNIVERSE_NOT_NA <- group_by(UNIVERSE,MG_DESC) 
@@ -1747,9 +1811,24 @@ main_foresight3_999 <- function(pauseat=NULL) {
   # begin value_two composite ( offensive posture ) 
 
 
-
   # Multiples
-  SI_MLT <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_MLT"), as.is = TRUE)))
+  
+   if(getOption("FileStoreStyle") == "Optimized") {
+    if( file.exists(getOption("AAIISIPro40PathFileOptim_SI_MLT"))) {
+      load(file = getOption("AAIISIPro40PathFileOptim_SI_MLT"))
+    } else {
+      # load file
+      SI_MLT <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_MLT"), as.is = TRUE)))
+      save("SI_MLT",file = getOption("AAIISIPro40PathFileOptim_SI_MLT"))
+    }
+  } else {
+    # load file
+    SI_MLT <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_MLT"), as.is = TRUE)))
+  }
+
+  # SI_MLT <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_MLT"), as.is = TRUE)))
+  
+  
     primary_key_dup <- SI_MLT[duplicated(SI_MLT[,'COMPANY_ID']),,drop=FALSE]
     new_df_no_duplicates <- SI_MLT[!(SI_MLT$COMPANY_ID %in% as.matrix(primary_key_dup)),,drop=FALSE]
     SI_MLT <<- new_df_no_duplicates
@@ -2278,8 +2357,8 @@ main_foresight3_999 <- function(pauseat=NULL) {
   #                               TOP25
   
   # "Who is ranked number 1?" 
-  # ( lower 'ranks' are higher 'values' )
-  #  rank(desc(VAL_EXPOSE_VAL_TWO_CMPST_SCORES_SUMM_REBAL_NTILE100), ties.method = "min" ) = VAL_EXPOSE_ALL_CMBND_CMPST_VAL_TWO_CMPST_SCORES_TOPN
+  # ( lower 'ranks' are higher 'values' )  
+  # too many ties on _SUMM_REBAL_NTILE100 ( 600 - 700 total )  instead do _SUMM_REBAL and _SUMM_REBAL_NTILE100_SUMM
   
   UNIVERSE_NOT_NA <- UNIVERSE
   
@@ -2287,14 +2366,22 @@ main_foresight3_999 <- function(pauseat=NULL) {
 
   UNIVERSE_NOT_NA <- filter(UNIVERSE_NOT_NA,       VAL_EXPOSE_ALL_CMBND_CMPST_SCORES_SUMM_REBAL_NTILE100_SUMM_NTILE2    == 2     )
   
-  UNIVERSE_NOT_NA <- filter(UNIVERSE_NOT_NA, is.na(VAL_EXPOSE_VAL_TWO_CMPST_SCORES_SUMM_REBAL_NTILE100 )                == FALSE) 
+  UNIVERSE_NOT_NA <- filter(UNIVERSE_NOT_NA, is.na(VAL_EXPOSE_VAL_TWO_CMPST_SCORES_SUMM_REBAL )                     == FALSE) 
+  
+  UNIVERSE_NOT_NA <- filter(UNIVERSE_NOT_NA, is.na(VAL_EXPOSE_ALL_CMBND_CMPST_SCORES_SUMM_REBAL_NTILE100_SUMM )     == FALSE) 
+  
+  UNIVERSE_NOT_NA <- arrange(UNIVERSE_NOT_NA
+    , desc(VAL_EXPOSE_VAL_TWO_CMPST_SCORES_SUMM_REBAL) 
+    , desc(VAL_EXPOSE_ALL_CMBND_CMPST_SCORES_SUMM_REBAL_NTILE100_SUMM)
+  )
 
   UNIVERSE_NOT_NA <- mutate(UNIVERSE_NOT_NA,VAL_EXPOSE_ALL_CMBND_CMPST_VAL_TWO_CMPST_SCORES_TOPN = as.numeric(
-    rank(desc(VAL_EXPOSE_VAL_TWO_CMPST_SCORES_SUMM_REBAL_NTILE100), ties.method = "min" ) 
+    1:NROW(UNIVERSE_NOT_NA)
   ))
-  
+
   UNIVERSE <<- suppressMessages(left_join(UNIVERSE, UNIVERSE_NOT_NA)) # LEFT OUTER JOIN
  
+
 
   # 2012 p. 569
   # Buy the 25 stocks with the 'best Value Composite Two' scores
