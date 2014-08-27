@@ -576,3 +576,125 @@ do(df_g, hdrank(.,"price", buckets = "NROW_distinct_measurecol_or_max100" ))
   
 ############# end hdrank test ##########################
 
+
+
+########### BEGIN as.no_worse_than_NA WORK ############
+
+as.no_worse_than_NA <- function(x) {
+    
+  # NO JOB!
+  # x <- ifelse(!is.na(x),
+  #   x
+  #   , NA
+  # )
+  
+  # specials
+  
+  x <- ifelse(!is.na(x) &  !is.infinite(x),
+    x
+    , NA
+  )
+  
+  x <- ifelse(!is.na(x)  &  !is.nan(x),
+    x
+    , NA
+  )
+  
+}
+  
+################ END as.no_worse_than_NA WORK ##########
+  
+################ BEGIN TEST as.no_worse_than_NA WORK ############
+  
+library(dplyr)
+  
+df <- data.frame(
+  houseID = c("A","A","B","B","C","C")
+  , year   = 1:6
+  , price  = 11:16
+  , stringsAsFactors = FALSE
+)
+
+df[1,"price"] <- NA
+
+df[3,"price"] <- -Inf
+
+df[5,"price"] <- NaN
+
+mutate(df, price_new = as.no_worse_than_NA(price) )
+
+> mutate(df, price_new = as.no_worse_than_NA(price) )
+  houseID year price price_new
+1       A    1    NA        NA
+2       A    2    12        12
+3       B    3  -Inf        NA
+4       B    4    14        14
+5       C    5   NaN        NA
+6       C    6    16        16
+
+################ END TEST as.no_worse_than_NA WORK ##########
+
+
+############## BEGIN CODE eliminate_all_duplicates #############
+    
+# NOT
+    
+eliminate_all_duplicates <- function( df_name, key_to_fix_name ) {
+
+    # R language 'get out of jail free card.'
+
+    eval(parse(text=paste0("
+    
+      key_dup              <- ",df_name,"[duplicated(",df_name,"[,'",key_to_fix_name,"']),,drop=FALSE]
+      new_df_no_duplicates <- ",df_name,"[!(",df_name,"$",key_to_fix_name," %in% as.matrix(key_dup)),,drop=FALSE]
+    
+    ")))
+
+}
+
+############## END CODE eliminate_all_duplicates #############
+
+
+############## BEGIN TEST eliminate_all_duplicates #############
+
+
+
+# > mydf
+  # houseID year price
+# 1       A    1    11
+# 2       A    2    12
+# 3       B    3    12
+# 4       B    4    14
+# 5       C    5    15
+# 6       C    6    15
+
+
+mymain <- function() {
+
+  mydf <<- data.frame(
+  houseID = c("A","A","B","B","C","C")
+  , year   = 1:6
+  , price  = c(11,12,12,14,15,15)
+  , stringsAsFactors = FALSE
+  )
+  
+  
+  mydf <<- mydf # ( OTHER PROGRAMS THAT USE THIS ) 
+                # wierd performance bug ( program runs faster than can it access its variables )
+  mydf <<- eliminate_all_duplicates( "mydf", "price" ) 
+  
+}
+
+mymain()
+
+
+> mydf
+  houseID year price
+1       A    1    11
+4       B    4    14
+
+############## END TEST eliminate_all_duplicates #############
+
+
+
+
