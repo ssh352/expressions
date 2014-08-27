@@ -120,8 +120,42 @@ hdrank  <- function(  x  = NULL                      # required: 'subset (groupe
 }
 
 
+as.no_worse_than_NA <- function(x) {
+    
+  # NO JOB!
+  # x <- ifelse(!is.na(x),
+  #   x
+  #   , NA
+  # )
+  
+  # specials
+  
+  x <- ifelse(!is.na(x) &  !is.infinite(x),
+    x
+    , NA
+  )
+  
+  x <- ifelse(!is.na(x)  &  !is.nan(x),
+    x
+    , NA
+  )
+  
+}
 
 
+
+eliminate_all_duplicates <- function( df_name, key_to_fix_name ) {
+
+    # R language 'get out of jail free card.'
+
+    eval(parse(text=paste0("
+    
+      key_dup              <- ",df_name,"[duplicated(",df_name,"[,'",key_to_fix_name,"']),,drop=FALSE]
+      new_df_no_duplicates <- ",df_name,"[!(",df_name,"$",key_to_fix_name," %in% as.matrix(key_dup)),,drop=FALSE]
+    
+    ")))
+
+}
 
 
 
