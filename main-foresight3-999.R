@@ -241,15 +241,18 @@ main_foresight3_999 <- function(pauseat=NULL) {
     SI_CI <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_CI"), as.is = TRUE)))
   }
 
-    primary_key_dup <- SI_CI[duplicated(SI_CI[,'TICKER']),,drop=FALSE]
-    new_df_no_duplicates <- SI_CI[!(SI_CI$TICKER %in% as.matrix(primary_key_dup)),,drop=FALSE]
-    SI_CI <<- new_df_no_duplicates
+    # primary_key_dup <- SI_CI[duplicated(SI_CI[,'TICKER']),,drop=FALSE]
+    # new_df_no_duplicates <- SI_CI[!(SI_CI$TICKER %in% as.matrix(primary_key_dup)),,drop=FALSE]
+    # SI_CI <<- new_df_no_duplicates
   
-    primary_key_dup <- SI_CI[duplicated(SI_CI[,'COMPANY_ID']),,drop=FALSE]
-    new_df_no_duplicates <- SI_CI[!(SI_CI$COMPANY_ID %in% as.matrix(primary_key_dup)),,drop=FALSE]
-    SI_CI <<- new_df_no_duplicates
+    # primary_key_dup <- SI_CI[duplicated(SI_CI[,'COMPANY_ID']),,drop=FALSE]
+    # new_df_no_duplicates <- SI_CI[!(SI_CI$COMPANY_ID %in% as.matrix(primary_key_dup)),,drop=FALSE]
+    # SI_CI <<- new_df_no_duplicates
   
-    rm(primary_key_dup,new_df_no_duplicates)
+    # rm(primary_key_dup,new_df_no_duplicates)
+ 
+    SI_CI <<- SI_CI # wierd performance bug ( program runs faster than can it access its variables )
+    SI_CI <<- eliminate_all_duplicates( "SI_CI", "COMPANY_ID" ) 
   
   SI_CI_tbl_sqlite <- copy_to(dpsqllconn, SI_CI, temporary = FALSE
     , indexes = list(
@@ -280,10 +283,13 @@ main_foresight3_999 <- function(pauseat=NULL) {
     SI_MGDSC <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_MGDSC"), as.is = TRUE)))
   }
 
-    primary_key_dup <- SI_MGDSC[duplicated(SI_MGDSC[,'MG_CODE']),,drop=FALSE]
-    new_df_no_duplicates <- SI_MGDSC[!(SI_MGDSC$MG_CODE %in% as.matrix(primary_key_dup)),,drop=FALSE]
-    SI_MGDSC <<- new_df_no_duplicates
-    rm(primary_key_dup,new_df_no_duplicates)
+    # primary_key_dup <- SI_MGDSC[duplicated(SI_MGDSC[,'MG_CODE']),,drop=FALSE]
+    # new_df_no_duplicates <- SI_MGDSC[!(SI_MGDSC$MG_CODE %in% as.matrix(primary_key_dup)),,drop=FALSE]
+    # SI_MGDSC <<- new_df_no_duplicates
+    # rm(primary_key_dup,new_df_no_duplicates)
+  
+    SI_MGDSC <<- SI_MGDSC # wierd performance bug ( program runs faster than can it access its variables )
+    SI_MGDSC <<- eliminate_all_duplicates( "SI_MGDSC", "MG_CODE" ) 
   
   SI_MGDSC_tbl_sqlite <- copy_to(dpsqllconn, SI_MGDSC, temporary = FALSE
     , indexes = list(
@@ -314,10 +320,13 @@ main_foresight3_999 <- function(pauseat=NULL) {
     SI_EXCHG <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_EXCHG"), as.is = TRUE)))
   }
   
-    primary_key_dup <- SI_EXCHG[duplicated(SI_EXCHG[,'EXCHG_CODE']),,drop=FALSE]
-    new_df_no_duplicates <- SI_EXCHG[!(SI_EXCHG$EXCHG_CODE %in% as.matrix(primary_key_dup)),,drop=FALSE]
-    SI_EXCHG <<- new_df_no_duplicates
-    rm(primary_key_dup,new_df_no_duplicates)
+    # primary_key_dup <- SI_EXCHG[duplicated(SI_EXCHG[,'EXCHG_CODE']),,drop=FALSE]
+    # new_df_no_duplicates <- SI_EXCHG[!(SI_EXCHG$EXCHG_CODE %in% as.matrix(primary_key_dup)),,drop=FALSE]
+    # SI_EXCHG <<- new_df_no_duplicates
+    # rm(primary_key_dup,new_df_no_duplicates)
+  
+    SI_EXCHG <<- SI_EXCHG # wierd performance bug ( program runs faster than can it access its variables )
+    SI_EXCHG <<- eliminate_all_duplicates( "SI_EXCHG", "EXCHG_CODE" ) 
   
   SI_EXCHG_tbl_sqlite <- copy_to(dpsqllconn, SI_EXCHG, temporary = FALSE
     , indexes = list(
@@ -350,10 +359,13 @@ main_foresight3_999 <- function(pauseat=NULL) {
     SI_PSD <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_PSD"), as.is = TRUE)))
   }
 
-  primary_key_dup <- SI_PSD[duplicated(SI_PSD[,'COMPANY_ID']),,drop=FALSE]
-    new_df_no_duplicates <- SI_PSD[!(SI_PSD$COMPANY_ID %in% as.matrix(primary_key_dup)),,drop=FALSE]
-    SI_PSD <<- new_df_no_duplicates
-    rm(primary_key_dup,new_df_no_duplicates)
+    # primary_key_dup <- SI_PSD[duplicated(SI_PSD[,'COMPANY_ID']),,drop=FALSE]
+    # new_df_no_duplicates <- SI_PSD[!(SI_PSD$COMPANY_ID %in% as.matrix(primary_key_dup)),,drop=FALSE]
+    # SI_PSD <<- new_df_no_duplicates
+    # rm(primary_key_dup,new_df_no_duplicates)
+  
+    SI_PSD <<- SI_PSD # wierd performance bug ( program runs faster than can it access its variables )
+    SI_PSD <<- eliminate_all_duplicates( "SI_PSD", "COMPANY_ID" ) 
   
     # all math must be numeric
     SI_PSD <<- mutate(SI_PSD, MKTCAP = as.numeric(MKTCAP) )
@@ -418,10 +430,13 @@ main_foresight3_999 <- function(pauseat=NULL) {
     SI_DATE <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_DATE"), as.is = TRUE)))
   }
 
-    primary_key_dup <- SI_DATE[duplicated(SI_DATE[,'COMPANY_ID']),,drop=FALSE]
-    new_df_no_duplicates <- SI_DATE[!(SI_DATE$COMPANY_ID %in% as.matrix(primary_key_dup)),,drop=FALSE]
-    SI_DATE <<- new_df_no_duplicates
-    rm(primary_key_dup,new_df_no_duplicates)
+    # primary_key_dup <- SI_DATE[duplicated(SI_DATE[,'COMPANY_ID']),,drop=FALSE]
+    # new_df_no_duplicates <- SI_DATE[!(SI_DATE$COMPANY_ID %in% as.matrix(primary_key_dup)),,drop=FALSE]
+    # SI_DATE <<- new_df_no_duplicates
+    # rm(primary_key_dup,new_df_no_duplicates)
+  
+    SI_DATE <<- SI_DATE # wierd performance bug ( program runs faster than can it access its variables )
+    SI_DATE <<- eliminate_all_duplicates( "SI_DATE", "COMPANY_ID" ) 
   
   SI_DATE_tbl_sqlite <- copy_to(dpsqllconn, SI_DATE, temporary = FALSE
     , indexes = list(
@@ -642,7 +657,9 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   
   # all math must be numeric
-  UNIVERSE <<- mutate(UNIVERSE, PRCHG_13W = as.numeric(PRCHG_13W) )
+  UNIVERSE <<- mutate(UNIVERSE, PRCHG_13W = as.numeric(as.no_worse_than_NA(
+    PRCHG_13W
+  ) ) )
   
   UNIVERSE_NOT_NA <- group_by(UNIVERSE,MG_DESC) 
   
@@ -691,7 +708,9 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   
   # all math must be numeric
-  UNIVERSE <<- mutate(UNIVERSE, PRCHG_26W = as.numeric(PRCHG_26W) )
+  UNIVERSE <<- mutate(UNIVERSE, PRCHG_26W = as.numeric(as.no_worse_than_NA(
+    PRCHG_26W
+  ) ) )
   
   UNIVERSE_NOT_NA <- group_by(UNIVERSE,MG_DESC) 
   
@@ -737,11 +756,13 @@ main_foresight3_999 <- function(pauseat=NULL) {
     SI_ISQ <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_ISQ"), as.is = TRUE)))
   }
 
-    primary_key_dup <- SI_ISQ[duplicated(SI_ISQ[,'COMPANY_ID']),,drop=FALSE]
-    new_df_no_duplicates <- SI_ISQ[!(SI_ISQ$COMPANY_ID %in% as.matrix(primary_key_dup)),,drop=FALSE]
-    SI_ISQ <<- new_df_no_duplicates
+    # primary_key_dup <- SI_ISQ[duplicated(SI_ISQ[,'COMPANY_ID']),,drop=FALSE]
+    # new_df_no_duplicates <- SI_ISQ[!(SI_ISQ$COMPANY_ID %in% as.matrix(primary_key_dup)),,drop=FALSE]
+    # SI_ISQ <<- new_df_no_duplicates
+    # rm(primary_key_dup,new_df_no_duplicates)
   
-    rm(primary_key_dup,new_df_no_duplicates)
+    SI_ISQ <<- SI_ISQ # wierd performance bug ( program runs faster than can it access its variables )
+    SI_ISQ <<- eliminate_all_duplicates( "SI_ISQ", "COMPANY_ID" ) 
   
   SI_ISQ_tbl_sqlite <- copy_to(dpsqllconn, SI_ISQ, temporary = FALSE
     , indexes = list(
@@ -797,11 +818,13 @@ main_foresight3_999 <- function(pauseat=NULL) {
     SI_BSQ <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_BSQ"), as.is = TRUE)))
   }
   
-  primary_key_dup <- SI_BSQ[duplicated(SI_BSQ[,'COMPANY_ID']),,drop=FALSE]
-  new_df_no_duplicates <- SI_BSQ[!(SI_BSQ$COMPANY_ID %in% as.matrix(primary_key_dup)),,drop=FALSE]
-  SI_BSQ <<- new_df_no_duplicates
+  # primary_key_dup <- SI_BSQ[duplicated(SI_BSQ[,'COMPANY_ID']),,drop=FALSE]
+  # new_df_no_duplicates <- SI_BSQ[!(SI_BSQ$COMPANY_ID %in% as.matrix(primary_key_dup)),,drop=FALSE]
+  # SI_BSQ <<- new_df_no_duplicates
+  # rm(primary_key_dup,new_df_no_duplicates)
   
-  rm(primary_key_dup,new_df_no_duplicates)
+  SI_BSQ <<- SI_BSQ # wierd performance bug ( program runs faster than can it access its variables )
+  SI_BSQ <<- eliminate_all_duplicates( "SI_BSQ", "COMPANY_ID" ) 
   
   SI_BSQ_tbl_sqlite <- copy_to(dpsqllconn, SI_BSQ, temporary = FALSE
                                , indexes = list(
@@ -827,8 +850,10 @@ main_foresight3_999 <- function(pauseat=NULL) {
   primary_key_dup <- SI_CFQ[duplicated(SI_CFQ[,'COMPANY_ID']),,drop=FALSE]
   new_df_no_duplicates <- SI_CFQ[!(SI_CFQ$COMPANY_ID %in% as.matrix(primary_key_dup)),,drop=FALSE]
   SI_CFQ <<- new_df_no_duplicates
-  
   rm(primary_key_dup,new_df_no_duplicates)
+  
+  SI_CFQ <<- SI_CFQ # wierd performance bug ( program runs faster than can it access its variables )
+  SI_CFQ <<- eliminate_all_duplicates( "SI_CFQ", "COMPANY_ID" ) 
   
   SI_CFQ_tbl_sqlite <- copy_to(dpsqllconn, SI_CFQ, temporary = FALSE
                                , indexes = list(
@@ -904,9 +929,12 @@ main_foresight3_999 <- function(pauseat=NULL) {
   # have an 'annual' 'EPS change' greater than zero (0)'
   # BUT IT MAKES ME 'feel better'
   
-  UNIVERSE <<- mutate(UNIVERSE, GROWTH_EXPOSE_ANNUAL_EPS_CH_PCT_GROWTH = as.numeric(   
-    ( ( EPS_Q1 + EPS_Q2 + EPS_Q3 + EPS_Q4 ) - ( EPS_Q5 + EPS_Q6 + EPS_Q7 + EPS_Q8 + 0.0000001 ) ) / ( ASSETS_Q5 + 0.0000001 ) * 100.0
-  ) )
+  # DOES NOT BREAK
+  #  ( ( EPS_Q1 + EPS_Q2 + EPS_Q3 + EPS_Q4 ) - ( EPS_Q5 + EPS_Q6 + EPS_Q7 + EPS_Q8 + 0.0000001 ) ) / ( ASSETS_Q5 + 0.0000001 ) * 100.0
+  
+  UNIVERSE <<- mutate(UNIVERSE, GROWTH_EXPOSE_ANNUAL_EPS_CH_PCT_GROWTH = as.numeric(as.no_worse_than_NA( 
+    ( ( EPS_Q1 + EPS_Q2 + EPS_Q3 + EPS_Q4 ) - ( EPS_Q5 + EPS_Q6 + EPS_Q7 + EPS_Q8  ) ) / ( ASSETS_Q5  ) * 100.0
+  ) ) )
   
   UNIVERSE <<- mutate(UNIVERSE, GROWTH_EXPOSE_ANNUAL_EPS_CH_PCT_GROWTH_GR_THAN_0_SRVVR = ifelse(   
     GROWTH_EXPOSE_ANNUAL_EPS_CH_PCT_GROWTH > 0.0, 1, 0
@@ -973,9 +1001,12 @@ main_foresight3_999 <- function(pauseat=NULL) {
   ## group_by MG_DESC  ( sector )
   # lower value is BETTER ' reverse of ntile'
   
-  UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_FIN_CMPST_PCT_CH_DEBT = as.numeric(   
-    ( LIAB_Q1 - LIAB_Q5 ) / ( ASSETS_Q5 + 0.0000001 ) * 100.0
-  ) )
+  # DOES NOT BREAK
+  # ( LIAB_Q1 - LIAB_Q5 ) / ( ASSETS_Q5 + 0.0000001 ) * 100.0
+  
+  UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_FIN_CMPST_PCT_CH_DEBT = as.numeric(as.no_worse_than_NA(   
+    ( LIAB_Q1 - LIAB_Q5 ) / ( ASSETS_Q5 ) * 100.0
+  ) ) )
 
   UNIVERSE_NOT_NA <- group_by(UNIVERSE,MG_DESC) 
   
@@ -1019,9 +1050,12 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   # lower value is BETTER
   
-  UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_FIN_CMPST_DEBT_TO_EQUITY = as.numeric(   
+  # DOES NOT BREAK
+  # LIAB_Q1 / (EQUITY_Q1 + 0.0000001)
+  
+  UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_FIN_CMPST_DEBT_TO_EQUITY = as.numeric(as.no_worse_than_NA(   
     LIAB_Q1 / (EQUITY_Q1 + 0.0000001)
-  ) )
+  ) ) )
   
   UNIVERSE_NOT_NA <- group_by(UNIVERSE,MG_DESC) 
   
@@ -1080,9 +1114,12 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   # lower value is BETTER 
   
-  UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_FIN_CMPST_EXTERNAL_FINANCING = as.numeric(   
+  # DOES NOT BREAK 
+  # ( TCF_Q1 + TCF_Q2 + TCF_Q3 + TCF_Q4) / ( ( ASSETS_Q1 + ASSETS_Q2 + ASSETS_Q3 + ASSETS_Q4 + 0.0000001) / 4.0 )
+  
+  UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_FIN_CMPST_EXTERNAL_FINANCING = as.numeric(as.no_worse_than_NA(   
     ( TCF_Q1 + TCF_Q2 + TCF_Q3 + TCF_Q4) / ( ( ASSETS_Q1 + ASSETS_Q2 + ASSETS_Q3 + ASSETS_Q4 + 0.0000001) / 4.0 )
-  ) )
+  ) ) )
   
 
   UNIVERSE_NOT_NA <- group_by(UNIVERSE,MG_DESC) 
@@ -1142,9 +1179,12 @@ main_foresight3_999 <- function(pauseat=NULL) {
 
   # higher value is BETTER 
   
-  UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_FIN_CMPST_ANN_CSH_FLOW_OVER_DEBT = as.numeric(   
-    ( NCC_Q1 + NCC_Q2 + NCC_Q3 + NCC_Q4) / ( LIAB_Q1 + LIAB_Q2 + LIAB_Q3 + LIAB_Q4 + 0.0000001 ) 
-  ) )
+  # DOES NOT BREAK
+  # ( NCC_Q1 + NCC_Q2 + NCC_Q3 + NCC_Q4) / ( LIAB_Q1 + LIAB_Q2 + LIAB_Q3 + LIAB_Q4 + 0.0000001 ) 
+  
+  UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_FIN_CMPST_ANN_CSH_FLOW_OVER_DEBT = as.numeric(as.no_worse_than_NA(   
+    ( NCC_Q1 + NCC_Q2 + NCC_Q3 + NCC_Q4) / ( LIAB_Q1 + LIAB_Q2 + LIAB_Q3 + LIAB_Q4  ) 
+  ) ) )
   
   UNIVERSE_NOT_NA <- group_by(UNIVERSE,MG_DESC) 
   
@@ -1224,7 +1264,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   # AAII JOURNAL > October 2013
   # Read Comments (43)
   # STOCK STRATEGIES
-  # “What Works”: Key New Findings on Stock Selection
+  # ?What Works?: Key New Findings on Stock Selection
   # by James O'Shaughnessy
     # http://www.aaii.com/files/journal/OSAMdisclosures.pdf **** ( LEFT_OFF: FINE TUNE YETAGAIN ?? ) ****
       # Definitions of Earnings Quality Factors
@@ -1233,8 +1273,8 @@ main_foresight3_999 <- function(pauseat=NULL) {
   # http://www.aaii.com/journal/article/what-works-key-new-findings-on-stock-selection
 
   # OShaughnessy Value Blend ( Seen: August 2014 )
-    # O’Shaughnessy Value Blend 
-    # ( RENAMED? FROM O’Shaughnessy Asset Management’s (OSAM) value composite ) *
+    # O?Shaughnessy Value Blend 
+    # ( RENAMED? FROM O?Shaughnessy Asset Management?s (OSAM) value composite ) *
     # http://www.osam.com/value_blend.aspx
   # http://www.osam.com/strategies.aspx
 
@@ -1369,9 +1409,12 @@ main_foresight3_999 <- function(pauseat=NULL) {
 
   # about 75% will make an NTILE ( the culprit: some data is missing from the first quarter )
   
-  UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_EARN_CMPST_PCT_CH_IN_NOA = as.numeric(   
-    ( ( ( TCO_Q1 + TCO_Q2 + TCO_Q3 + TCO_Q4 ) - ( TCF_Q1 + TCF_Q2 + TCF_Q3 + TCF_Q4 )  - ( TCI_Q1 + TCI_Q2 + TCI_Q3 + TCI_Q4  ) ) - ( ( TCO_Q5 + TCO_Q6 + TCO_Q7 + TCO_Q8 ) - ( TCF_Q5 + TCF_Q6 + TCF_Q7 + TCF_Q8 )  - ( TCI_Q5 + TCI_Q6 + TCI_Q7 + TCI_Q8  ) ) ) / abs( ( TCO_Q5 + TCO_Q6 + TCO_Q7 + TCO_Q8 ) - ( TCF_Q5 + TCF_Q6 + TCF_Q7 + TCF_Q8 )  - ( TCI_Q5 + TCI_Q6 + TCI_Q7 + TCI_Q8  ) + 0.0000001 ) * 100 
-  ) )
+  # DOES NOT BREAK
+  #  ( ( ( TCO_Q1 + TCO_Q2 + TCO_Q3 + TCO_Q4 ) - ( TCF_Q1 + TCF_Q2 + TCF_Q3 + TCF_Q4 )  - ( TCI_Q1 + TCI_Q2 + TCI_Q3 + TCI_Q4  ) ) - ( ( TCO_Q5 + TCO_Q6 + TCO_Q7 + TCO_Q8 ) - ( TCF_Q5 + TCF_Q6 + TCF_Q7 + TCF_Q8 )  - ( TCI_Q5 + TCI_Q6 + TCI_Q7 + TCI_Q8  ) ) ) / abs( ( TCO_Q5 + TCO_Q6 + TCO_Q7 + TCO_Q8 ) - ( TCF_Q5 + TCF_Q6 + TCF_Q7 + TCF_Q8 )  - ( TCI_Q5 + TCI_Q6 + TCI_Q7 + TCI_Q8  ) + 0.0000001 ) * 100 
+  
+  UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_EARN_CMPST_PCT_CH_IN_NOA = as.numeric(as.no_worse_than_NA(   
+    ( ( ( TCO_Q1 + TCO_Q2 + TCO_Q3 + TCO_Q4 ) - ( TCF_Q1 + TCF_Q2 + TCF_Q3 + TCF_Q4 )  - ( TCI_Q1 + TCI_Q2 + TCI_Q3 + TCI_Q4  ) ) - ( ( TCO_Q5 + TCO_Q6 + TCO_Q7 + TCO_Q8 ) - ( TCF_Q5 + TCF_Q6 + TCF_Q7 + TCF_Q8 )  - ( TCI_Q5 + TCI_Q6 + TCI_Q7 + TCI_Q8  ) ) ) / abs( ( TCO_Q5 + TCO_Q6 + TCO_Q7 + TCO_Q8 ) - ( TCF_Q5 + TCF_Q6 + TCF_Q7 + TCF_Q8 )  - ( TCI_Q5 + TCI_Q6 + TCI_Q7 + TCI_Q8  )  ) * 100 
+  ) ) )
 
   UNIVERSE_NOT_NA <- group_by(UNIVERSE,MG_DESC) 
   
@@ -1457,9 +1500,12 @@ main_foresight3_999 <- function(pauseat=NULL) {
   # cash                                increases then 'assets' increase                                   
   # then just 'assets' in the denominator
   
-  UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_EARN_CMPST_TATA = as.numeric(   
-    (  ( ( WORK_Q1 - CASH_Q1 ) / ( ASSETS_Q1 + 0.0000001 ) )  - ( ( WORK_Q5 - CASH_Q5 ) / ( ASSETS_Q5 + 0.0000001 ) )  ) / abs( ( ( LIAB_Q5 - CASH_Q5 + 0.0000001 ) /  ( ASSETS_Q5 + 0.0000001 ) )  ) * 100.0 
-  ) )
+  # DOES NOT BREAK
+  # (  ( ( WORK_Q1 - CASH_Q1 ) / ( ASSETS_Q1 + 0.0000001 ) )  - ( ( WORK_Q5 - CASH_Q5 ) / ( ASSETS_Q5 + 0.0000001 ) )  ) / abs( ( ( LIAB_Q5 - CASH_Q5 + 0.0000001 ) /  ( ASSETS_Q5 + 0.0000001 ) )  ) * 100.0 
+  
+  UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_EARN_CMPST_TATA = as.numeric(as.no_worse_than_NA(   
+    (  ( ( WORK_Q1 - CASH_Q1 ) / ( ASSETS_Q1  ) )  - ( ( WORK_Q5 - CASH_Q5 ) / ( ASSETS_Q5  ) )  ) / abs( ( ( LIAB_Q5 - CASH_Q5  ) /  ( ASSETS_Q5  ) )  ) * 100.0 
+  ) ) )
 
   UNIVERSE_NOT_NA <- group_by(UNIVERSE,MG_DESC) 
   
@@ -1571,11 +1617,16 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   # lower is better
 
+  # DOES NOT BREAK FORM ( COMMON )
+  #  ( ( ( AP_Q1 - NETINC_Q1 - TCO_Q1  - NETINC_Q2 - TCO_Q2 - NETINC_Q3 - TCO_Q3 - NETINC_Q4 - TCO_Q4 + 0.0000001 ) / ( ASSETS_Q1 + 0.0000001 ) )   - ( ( AP_Q5 - NETINC_Q5 - TCO_Q5  - NETINC_Q6 - TCO_Q6 - NETINC_Q7 - TCO_Q7 - NETINC_Q8 - TCO_Q8 + 0.0000001 ) / ( ASSETS_Q5 + 0.0000001 ) ) ) /  abs( ( AP_Q5 - NETINC_Q5 - TCO_Q5  - NETINC_Q6 - TCO_Q6 - NETINC_Q7 - TCO_Q7 - NETINC_Q8 - TCO_Q8 + 0.0000001 ) / ( ASSETS_Q5 + 0.0000001 ) )
  
-  UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_EARN_CMPST_CATA = as.numeric(  
-    # USED  
-    ( ( ( AP_Q1 - NETINC_Q1 - TCO_Q1  - NETINC_Q2 - TCO_Q2 - NETINC_Q3 - TCO_Q3 - NETINC_Q4 - TCO_Q4 + 0.0000001 ) / ( ASSETS_Q1 + 0.0000001 ) )   - ( ( AP_Q5 - NETINC_Q5 - TCO_Q5  - NETINC_Q6 - TCO_Q6 - NETINC_Q7 - TCO_Q7 - NETINC_Q8 - TCO_Q8 + 0.0000001 ) / ( ASSETS_Q5 + 0.0000001 ) ) ) /  abs( ( AP_Q5 - NETINC_Q5 - TCO_Q5  - NETINC_Q6 - TCO_Q6 - NETINC_Q7 - TCO_Q7 - NETINC_Q8 - TCO_Q8 + 0.0000001 ) / ( ASSETS_Q5 + 0.0000001 ) )
-  ) )
+  # DOES     BREAK FORM
+  #  ( ( ( AP_Q1 - NETINC_Q1 - TCO_Q1  - NETINC_Q2 - TCO_Q2 - NETINC_Q3 - TCO_Q3 - NETINC_Q4 - TCO_Q4             ) / ( ASSETS_Q1             ) )   - ( ( AP_Q5 - NETINC_Q5 - TCO_Q5  - NETINC_Q6 - TCO_Q6 - NETINC_Q7 - TCO_Q7 - NETINC_Q8 - TCO_Q8             ) / ( ASSETS_Q5              ) ) ) /  abs( ( AP_Q5 - NETINC_Q5 - TCO_Q5  - NETINC_Q6 - TCO_Q6 - NETINC_Q7 - TCO_Q7 - NETINC_Q8 - TCO_Q8            ) / ( ASSETS_Q5             ) )
+ 
+  UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_EARN_CMPST_CATA = as.numeric(as.no_worse_than_NA(
+      # USED  
+    ( ( ( AP_Q1 - NETINC_Q1 - TCO_Q1  - NETINC_Q2 - TCO_Q2 - NETINC_Q3 - TCO_Q3 - NETINC_Q4 - TCO_Q4             ) / ( ASSETS_Q1             ) )   - ( ( AP_Q5 - NETINC_Q5 - TCO_Q5  - NETINC_Q6 - TCO_Q6 - NETINC_Q7 - TCO_Q7 - NETINC_Q8 - TCO_Q8             ) / ( ASSETS_Q5              ) ) ) /  abs( ( AP_Q5 - NETINC_Q5 - TCO_Q5  - NETINC_Q6 - TCO_Q6 - NETINC_Q7 - TCO_Q7 - NETINC_Q8 - TCO_Q8            ) / ( ASSETS_Q5             ) )
+  ) ) )
   
   UNIVERSE_NOT_NA <- group_by(UNIVERSE,MG_DESC) 
   
@@ -1662,9 +1713,12 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   # higher value is better ( NOTE: Brown Book: This seems to be a 'social measure' )
 
-  UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_EARN_CMPST_DPRCT_EXPND_TO_CAPT_EXPND = as.numeric(   
-    ( DEP_Q1 + DEP_Q2 + DEP_Q3 + DEP_Q4 ) / ( CE_Q1 + CE_Q2 + CE_Q3 + CE_Q4 + 0.0000001 ) 
-  ) )
+  # Does NOT BREAK
+  # ( DEP_Q1 + DEP_Q2 + DEP_Q3 + DEP_Q4 ) / ( CE_Q1 + CE_Q2 + CE_Q3 + CE_Q4 + 0.0000001 ) 
+  
+  UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_EARN_CMPST_DPRCT_EXPND_TO_CAPT_EXPND = as.numeric(as.no_worse_than_NA(   
+    ( DEP_Q1 + DEP_Q2 + DEP_Q3 + DEP_Q4 ) / ( CE_Q1 + CE_Q2 + CE_Q3 + CE_Q4  ) 
+  ) ) )
   
   UNIVERSE_NOT_NA <- group_by(UNIVERSE,MG_DESC) 
   
@@ -1721,9 +1775,10 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   # ( ( TCO_Q1 - NETINC_Q1 ) + ( TCO_Q2 - NETINC_Q2 ) + ( TCO_Q3 - NETINC_Q3 ) + ( TCO_Q4 - NETINC_Q4 ) ) / MKTCAP = VAL_EXPOSE_EARN_CMPST_DIFF_OP_CSH_FLW_AND_NET_INC_SCALED_TO_MKTCAP
 
-  UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_EARN_CMPST_DIFF_OP_CSH_FLW_AND_NET_INC_SCALED_TO_MKTCAP = as.numeric(   
+  
+  UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_EARN_CMPST_DIFF_OP_CSH_FLW_AND_NET_INC_SCALED_TO_MKTCAP = as.numeric(as.no_worse_than_NA(   
     ( ( TCO_Q1 - NETINC_Q1 ) + ( TCO_Q2 - NETINC_Q2 ) + ( TCO_Q3 - NETINC_Q3 ) + ( TCO_Q4 - NETINC_Q4 ) ) / MKTCAP
-  ) )
+  ) ) )
   
   UNIVERSE_NOT_NA <- group_by(UNIVERSE,MG_DESC) 
   
@@ -1828,13 +1883,14 @@ main_foresight3_999 <- function(pauseat=NULL) {
 
   # SI_MLT <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_MLT"), as.is = TRUE)))
   
+    # primary_key_dup <- SI_MLT[duplicated(SI_MLT[,'COMPANY_ID']),,drop=FALSE]
+    # new_df_no_duplicates <- SI_MLT[!(SI_MLT$COMPANY_ID %in% as.matrix(primary_key_dup)),,drop=FALSE]
+    # SI_MLT <<- new_df_no_duplicates
+    # rm(primary_key_dup,new_df_no_duplicates)
   
-    primary_key_dup <- SI_MLT[duplicated(SI_MLT[,'COMPANY_ID']),,drop=FALSE]
-    new_df_no_duplicates <- SI_MLT[!(SI_MLT$COMPANY_ID %in% as.matrix(primary_key_dup)),,drop=FALSE]
-    SI_MLT <<- new_df_no_duplicates
-    rm(primary_key_dup,new_df_no_duplicates)
+  SI_MLT <<- SI_MLT # wierd performance bug ( program runs faster than can it access its variables )
+  SI_MLT <<- eliminate_all_duplicates( "SI_MLT", "COMPANY_ID" ) 
   
-
   SI_MLT_tbl_sqlite <- copy_to(dpsqllconn, SI_MLT, temporary = FALSE
     , indexes = list(
         c("COMPANY_ID")
@@ -1937,9 +1993,9 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   # ( EPSDC_Q1 + EPSDC_Q2 + EPSDC_Q3 + EPSDC_Q4  ) / PRICE = VAL_EXPOSE_VAL_TWO_CMPST_EARN_TO_PRICE_RATIO
   
-  UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_VAL_TWO_CMPST_EARN_TO_PRICE_RATIO = as.numeric(   
+  UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_VAL_TWO_CMPST_EARN_TO_PRICE_RATIO = as.numeric(as.no_worse_than_NA(  
     ( EPSDC_Q1 + EPSDC_Q2 + EPSDC_Q3 + EPSDC_Q4  ) / PRICE 
-  ) )
+  ) ) )
   
   UNIVERSE_NOT_NA <- group_by(UNIVERSE,MG_DESC) 
   
@@ -1953,7 +2009,6 @@ main_foresight3_999 <- function(pauseat=NULL) {
     hdntile(.,"VAL_EXPOSE_VAL_TWO_CMPST_EARN_TO_PRICE_RATIO") 
   ) 
 
-  
   UNIVERSE_NOT_NA <- ungroup(UNIVERSE_NOT_NA) 
   
   UNIVERSE <<- suppressMessages(left_join(UNIVERSE, UNIVERSE_NOT_NA)) # LEFT OUTER JOIN
@@ -1973,9 +2028,9 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   # ( SALES_Q1 + SALES_Q2 + SALES_Q3 + SALES_Q4  ) / PRICE = VAL_EXPOSE_VAL_TWO_CMPST_SALES_TO_PRICE_RATIO
   
-  UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_VAL_TWO_CMPST_SALES_TO_PRICE_RATIO = as.numeric(   
+  UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_VAL_TWO_CMPST_SALES_TO_PRICE_RATIO = as.numeric(as.no_worse_than_NA(   
     ( SALES_Q1 + SALES_Q2 + SALES_Q3 + SALES_Q4  ) / PRICE 
-  ) )
+  ) ) )
   
   UNIVERSE_NOT_NA <- group_by(UNIVERSE,MG_DESC) 
   
@@ -2032,9 +2087,9 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   # ( FCFPS_Q1 + FCFPS_Q2 + FCFPS_Q3 + FCFPS_Q4  ) / PRICE = VAL_EXPOSE_VAL_TWO_CMPST_FCFPS_XOR_BOOK_TO_PRCE_RATIO
   
-  UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_VAL_TWO_CMPST_FCFPS_XOR_BOOK_TO_PRCE_RATIO = as.numeric(   
+  UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_VAL_TWO_CMPST_FCFPS_XOR_BOOK_TO_PRCE_RATIO = as.numeric(as.no_worse_than_NA( 
     ( FCFPS_Q1 + FCFPS_Q2 + FCFPS_Q3 + FCFPS_Q4  ) / PRICE 
-  ) )
+  ) ) )
   
   UNIVERSE_NOT_NA <- group_by(UNIVERSE,MG_DESC) 
   
@@ -2103,9 +2158,9 @@ main_foresight3_999 <- function(pauseat=NULL) {
 
   # since still kept for 'non-Financial' just re-calculate(re-overwrite)  on top of 'Financial'
   
-  UNIVERSE_NOT_NA <- mutate(UNIVERSE_NOT_NA, VAL_EXPOSE_VAL_TWO_CMPST_FCFPS_XOR_BOOK_TO_PRCE_RATIO = as.numeric(   
+  UNIVERSE_NOT_NA <- mutate(UNIVERSE_NOT_NA, VAL_EXPOSE_VAL_TWO_CMPST_FCFPS_XOR_BOOK_TO_PRCE_RATIO = as.numeric(as.no_worse_than_NA(   
     EQUITY_Q1 / PRICE 
-  ) )
+  ) ) )
   
   # since still kept for 'non-Financial' just re-calculate(re-overwrite)  on top of 'Financial'
   
@@ -2175,9 +2230,9 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   # higher is better 
   
-  UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_VAL_TWO_CMPST_EBITDA_TO_ENTVAL_RATIO = as.numeric(   
+  UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_VAL_TWO_CMPST_EBITDA_TO_ENTVAL_RATIO = as.numeric(as.no_worse_than_NA(   
     (  EBIT_Q1 + EBIT_Q2 + EBIT_Q3 + EBIT_Q4 + ifelse(!is.na(DEP_CF_Q1) == TRUE, DEP_CF_Q1, 0.0 ) + ifelse(!is.na(DEP_CF_Q2) == TRUE, DEP_CF_Q2, 0.0 ) + ifelse(!is.na(DEP_CF_Q3) == TRUE, DEP_CF_Q3, 0.0 ) + ifelse(!is.na(DEP_CF_Q4) == TRUE, DEP_CF_Q4, 0.0 ) ) / ENTVAL_Q1 
-  ) )
+  ) ) )
   
   UNIVERSE_NOT_NA <- group_by(UNIVERSE,MG_DESC) 
   
@@ -2232,9 +2287,9 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   # SHY = VAL_EXPOSE_VAL_TWO_CMPST_SHY_YIELD
   
-  UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_VAL_TWO_CMPST_SHY_YIELD = as.numeric(   
+  UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_VAL_TWO_CMPST_SHY_YIELD = as.numeric(as.no_worse_than_NA(   
     SHY
-  ) )
+  ) ) )
   
   UNIVERSE_NOT_NA <- group_by(UNIVERSE,MG_DESC) 
   
