@@ -1,5 +1,6 @@
 
-     
+ 
+# HARD NOTE: dplyr IS FROM github NOT FROM CRAN ( should make no difference )
 
 options(RepositoryStyle = "Installed")      # OR    "InstalledTest" OR "Installed" # OR "Dated"
 options(FileStoreStyle  = "Optimized" )     # OR    "NotOptimized " OR "Optimized" 
@@ -480,9 +481,9 @@ main_foresight3_999 <- function(pauseat=NULL) {
                            "  , connection = dpsqllconn$con, method="name__class")
   
   # preserve the original ordering
-  UNIVERSE[,"ORIG_ORDER"]   <<- 1:NROW(UNIVERSE) # str() - shows integer , Rstudio GUI shows numeric
-
-
+  
+  # UNIVERSE[,"ORIG_ORDER"]   <<- 1:NROW(UNIVERSE) # str() - shows integer , Rstudio GUI shows numeric
+  UNIVERSE <<- mutate(UNIVERSE, ORIG_ORDER = 1:NROW(UNIVERSE) )
   
   # 0.4 seconds - a work in progress
   # library(compiler)
@@ -502,29 +503,20 @@ main_foresight3_999 <- function(pauseat=NULL) {
   # ymd_hms(c("2013-01-24 16:00:00.880-0400")) 
   # [1] "2013-01-24 20:00:00 UTC"
   
-  # lineprof & shine 0.4 ...> 0.16 BETTER
-  
-                                                                          # renamed column, already loaded as num                                    # sqldf I MADE this NUMERIC
-  UNIVERSE[,"MONTHDATEDT"]       <<- as.character(ymd_hms(c("1970-01-01 16:00:00.880-0400")) + days(UNIVERSE[,"MONTHDATEUNX"]))
+  # lineprof & shine RE-FUTURE TO TEST PERFORMANCE
+   
 
-                                                                          # renamed column, already loaded as num                                    # sqldf I MADE this NUMERIC
-  UNIVERSE[,"WEEKDATEDT"]       <<- as.character(ymd_hms(c("1970-01-01 16:00:00.880-0400")) + days(UNIVERSE[,"WEEKDATEUNX"]))
-
-                                                                            # renamed column, already loaded as num                                    # sqldf I MADE this NUMERIC
-  UNIVERSE[,"SPLITDATEDT"]       <<- as.character(ymd_hms(c("1970-01-01 16:00:00.880-0400")) + days(UNIVERSE[,"SPLITDATEUNX"]))
-
-
-                                                                          # renamed column, already loaded as num                                    # sqldf I MADE this NUMERIC
-  UNIVERSE[,"PERENDDT_Q2"]       <<- as.character(ymd_hms(c("1970-01-01 16:00:00.880-0400")) + days(UNIVERSE[,"PERENDUNX_Q2"]))
-
-  
-  
-                                                                          # renamed column, already loaded as num                                    # sqldf I MADE this NUMERIC
-  UNIVERSE[,"PERENDDT_Q1"]       <<- as.character(ymd_hms(c("1970-01-01 16:00:00.880-0400")) + days(UNIVERSE[,"PERENDUNX_Q1"]))
-  
-  UNIVERSE[,"PSD_SPLITDT_DATE"]  <<- as.character(ymd_hms(c("1970-01-01 16:00:00.880-0400")) + days(UNIVERSE[,"PSD_SPLITUNX_DATE"]))
+  UNIVERSE <<- mutate(UNIVERSE, 
+                                                                     # ##UNX: renamed column, already loaded as num    
+      MONTHDATEDT = as.character(ymd_hms(c("1970-01-01 16:00:00.880-0400")) + days(MONTHDATEUNX))  # sqldf I MADE this NUMERIC                                                     
+    , WEEKDATEDT  = as.character(ymd_hms(c("1970-01-01 16:00:00.880-0400")) + days(WEEKDATEUNX))                                                                            
+    , SPLITDATEDT = as.character(ymd_hms(c("1970-01-01 16:00:00.880-0400")) + days(SPLITDATEUNX))                                                                 
+    , PERENDDT_Q2 = as.character(ymd_hms(c("1970-01-01 16:00:00.880-0400")) + days(PERENDUNX_Q2))                                                        
+    , PERENDDT_Q1 = as.character(ymd_hms(c("1970-01-01 16:00:00.880-0400")) + days(PERENDUNX_Q1))
+    , PSD_SPLITDT_DATE = as.character(ymd_hms(c("1970-01-01 16:00:00.880-0400")) + days(PSD_SPLITUNX_DATE))
+  )
  
-  
+
   
   
   # library(compiler)
@@ -648,10 +640,10 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   UNIVERSE <<- tbl_df(UNIVERSE)
   
-  UNIVERSE <<- sqldf("SELECT UNIV.*, PSD.PRCHG_13W FROM 
+  UNIVERSE <<- sqldf("SELECT UNIV.*, PSD.PRCHG_13W AS PRCHG_13W__numeric FROM 
                                    main.UNIVERSE UNIV, main.SI_PSD PSD WHERE 
                                    UNIV.COMPANY_ID = PSD.COMPANY_ID 
-                                   ", connection = dpsqllconn$con)
+                                   ", connection = dpsqllconn$con, method="name__class")
   
   UNIVERSE <<- tbl_df(UNIVERSE)
   
@@ -699,10 +691,10 @@ main_foresight3_999 <- function(pauseat=NULL) {
     )
   )
   
-  UNIVERSE <<- sqldf("SELECT UNIV.*, PSD.PRCHG_26W FROM 
+  UNIVERSE <<- sqldf("SELECT UNIV.*, PSD.PRCHG_26W AS PRCHG_26W__numeric FROM 
                                    main.UNIVERSE UNIV, main.SI_PSD PSD WHERE 
                                    UNIV.COMPANY_ID = PSD.COMPANY_ID 
-                                   ", connection = dpsqllconn$con)
+                                   ", connection = dpsqllconn$con, method="name__class")
   
   UNIVERSE <<- tbl_df(UNIVERSE)
   
@@ -785,25 +777,15 @@ main_foresight3_999 <- function(pauseat=NULL) {
     )
   )
   
-  UNIVERSE <<- sqldf("SELECT UNIV.*, ISQ.EPS_Q1, ISQ.EPS_Q2, ISQ.EPS_Q3, ISQ.EPS_Q4, -- comment
-                                      ISQ.EPS_Q5, ISQ.EPS_Q6, ISQ.EPS_Q7, ISQ.EPS_Q8 
+  UNIVERSE <<- sqldf("SELECT UNIV.*, ISQ.EPS_Q1 AS EPS_Q1__numeric, ISQ.EPS_Q2 AS EPS_Q2__numeric, ISQ.EPS_Q3 AS EPS_Q3__numeric, ISQ.EPS_Q4 AS EPS_Q4__numeric, -- comment
+                                      ISQ.EPS_Q5 AS EPS_Q5__numeric, ISQ.EPS_Q6 AS EPS_Q6__numeric, ISQ.EPS_Q7 AS EPS_Q7__numeric, ISQ.EPS_Q8 AS EPS_Q8__numeric
                                   FROM 
                                    main.UNIVERSE UNIV, main.SI_ISQ ISQ WHERE 
                                    UNIV.COMPANY_ID = ISQ.COMPANY_ID 
-                                   ", connection = dpsqllconn$con)
+                                   ", connection = dpsqllconn$con, method="name__class")
   
   UNIVERSE <<- tbl_df(UNIVERSE)
   
-  # all math must be numeric
-  UNIVERSE <<- mutate(UNIVERSE, EPS_Q1 = as.numeric(EPS_Q1) )
-  UNIVERSE <<- mutate(UNIVERSE, EPS_Q2 = as.numeric(EPS_Q2) )
-  UNIVERSE <<- mutate(UNIVERSE, EPS_Q3 = as.numeric(EPS_Q3) )
-  UNIVERSE <<- mutate(UNIVERSE, EPS_Q4 = as.numeric(EPS_Q4) )
-  UNIVERSE <<- mutate(UNIVERSE, EPS_Q5 = as.numeric(EPS_Q5) )
-  UNIVERSE <<- mutate(UNIVERSE, EPS_Q6 = as.numeric(EPS_Q6) )
-  UNIVERSE <<- mutate(UNIVERSE, EPS_Q7 = as.numeric(EPS_Q7) )
-  UNIVERSE <<- mutate(UNIVERSE, EPS_Q8 = as.numeric(EPS_Q8) )
-
 
    if(getOption("FileStoreStyle") == "Optimized") {
     if( file.exists(getOption("AAIISIPro40PathFileOptim_SI_BSQ"))) {
@@ -847,10 +829,10 @@ main_foresight3_999 <- function(pauseat=NULL) {
     SI_CFQ <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_CFQ"), as.is = TRUE)))
   }
   
-  primary_key_dup <- SI_CFQ[duplicated(SI_CFQ[,'COMPANY_ID']),,drop=FALSE]
-  new_df_no_duplicates <- SI_CFQ[!(SI_CFQ$COMPANY_ID %in% as.matrix(primary_key_dup)),,drop=FALSE]
-  SI_CFQ <<- new_df_no_duplicates
-  rm(primary_key_dup,new_df_no_duplicates)
+  # primary_key_dup <- SI_CFQ[duplicated(SI_CFQ[,'COMPANY_ID']),,drop=FALSE]
+  # new_df_no_duplicates <- SI_CFQ[!(SI_CFQ$COMPANY_ID %in% as.matrix(primary_key_dup)),,drop=FALSE]
+  # SI_CFQ <<- new_df_no_duplicates
+  # rm(primary_key_dup,new_df_no_duplicates)
   
   SI_CFQ <<- SI_CFQ # wierd performance bug ( program runs faster than can it access its variables )
   SI_CFQ <<- eliminate_all_duplicates( "SI_CFQ", "COMPANY_ID" ) 
@@ -905,6 +887,125 @@ main_foresight3_999 <- function(pauseat=NULL) {
   # end joins
   
   
+  # begin joins
+  
+  sqldf("DROP TABLE main.UNIVERSE", connection = dpsqllconn$con)
+  
+  # strip off
+  UNIVERSE <<- as.data.frame(UNIVERSE)
+  UNIVERSE_tbl_sqlite <- copy_to(dpsqllconn, UNIVERSE, temporary = FALSE
+                                 , indexes = list(
+                                   #    c("TICKER")
+                                   # ,  
+                                   c("COMPANY_ID")
+                                   # ,  c("ORIG_ORDER")
+                                   
+                                 )
+  )
+  
+  
+  UNIVERSE <<- sqldf("SELECT UNIV.* 
+                      , CFQ.TCO_Q1 AS TCO_Q1__numeric, CFQ.TCO_Q2 AS TCO_Q2__numeric                                -- percent change in net operationg assets ( NOA ) AND current accruals to total assets ( CATA ) 
+                      , CFQ.TCO_Q3 AS TCO_Q3__numeric, CFQ.TCO_Q4 AS TCO_Q4__numeric, CFQ.TCO_Q5 AS TCO_Q5__numeric -- percent change in net operationg assets ( NOA ) AND current accruals to total assets ( CATA ) 
+                      , CFQ.TCO_Q6 AS TCO_Q6__numeric, CFQ.TCO_Q7 AS TCO_Q7__numeric, CFQ.TCO_Q8 AS TCO_Q8__numeric -- percent change in net operationg assets ( NOA ) AND current accruals to total assets ( CATA )
+                      , BSQ.WORK_Q1 AS WORK_Q1__numeric, BSQ.WORK_Q2 AS WORK_Q2__numeric                                  -- total accruals over total assets ( TATA ) 
+                      , BSQ.WORK_Q3 AS WORK_Q3__numeric, BSQ.WORK_Q4 AS WORK_Q4__numeric, BSQ.WORK_Q5 AS WORK_Q5__numeric -- total accruals over total assets ( TATA )  
+                      , BSQ.CASH_Q1 AS CASH_Q1__numeric, BSQ.CASH_Q2 AS CASH_Q2__numeric                                  -- total accruals over total assets ( TATA ) 
+                      , BSQ.CASH_Q3 AS CASH_Q3__numeric, BSQ.CASH_Q4 AS CASH_Q4__numeric, BSQ.CASH_Q5 AS CASH_Q5__numeric -- total accruals over total assets ( TATA ) 
+                      , BSQ.AP_Q1 AS AP_Q1__numeric, BSQ.AP_Q2 AS AP_Q2__numeric                              -- current accruals to total assets ( CATA )
+                      , BSQ.AP_Q3 AS AP_Q3__numeric, BSQ.AP_Q4 AS AP_Q4__numeric, BSQ.AP_Q5 AS AP_Q5__numeric -- current accruals to total assets ( CATA )
+                      , BSQ.AP_Q6 AS AP_Q6__numeric, BSQ.AP_Q7 AS AP_Q7__numeric, BSQ.AP_Q8 AS AP_Q8__numeric -- current accruals to total assets ( CATA )
+                      , BSQ.AR_Q1 AS AR_Q1__numeric, BSQ.AR_Q2 AS AR_Q2__numeric                              -- OLD: current accruals to total assets ( CATA )
+                      , BSQ.AR_Q3 AS AR_Q3__numeric, BSQ.AR_Q4 AS AR_Q4__numeric, BSQ.AR_Q5 AS AR_Q5__numeric -- OLD: current accruals to total assets ( CATA )
+                      , ISQ.EPSCON_Q1 AS EPSCON_Q1__numeric, ISQ.EPSCON_Q2 AS EPSCON_Q2__numeric                                      -- current accruals to total assets ( CATA ) 
+                      , ISQ.EPSCON_Q3 AS EPSCON_Q3__numeric, ISQ.EPSCON_Q4 AS EPSCON_Q4__numeric, ISQ.EPSCON_Q5 AS EPSCON_Q5__numeric -- current accruals to total assets ( CATA ) 
+                      , ISQ.EPSCON_Q6 AS EPSCON_Q6__numeric, ISQ.EPSCON_Q7 AS EPSCON_Q7__numeric, ISQ.EPSCON_Q8 AS EPSCON_Q8__numeric -- current accruals to total assets ( CATA ) 
+                      , ISQ.EPSDC_Q1 AS EPSDC_Q1__numeric, ISQ.EPSDC_Q2 AS EPSDC_Q2__numeric                                    -- EPS-Diluted Cont - Used in DILUTION_MULT_ 
+                      , ISQ.EPSDC_Q3 AS EPSDC_Q3__numeric, ISQ.EPSDC_Q4 AS EPSDC_Q4__numeric, ISQ.EPSDC_Q5 AS EPSDC_Q5__numeric -- EPS-Diluted Cont - Used in DILUTION_MULT_
+                      , ISQ.EPSDC_Q6 AS EPSDC_Q6__numeric, ISQ.EPSDC_Q7 AS EPSDC_Q7__numeric, ISQ.EPSDC_Q8 AS EPSDC_Q8__numeric -- EPS-Diluted Cont - Used in DILUTION_MULT_
+                      , CFQ.TCI_Q1 AS TCI_Q1__numeric, CFQ.TCI_Q2 AS TCI_Q2__numeric                                -- percent change in net operationg assets ( NOA ) AND current accruals to total assets ( CATA ) 
+                      , CFQ.TCI_Q3 AS TCI_Q3__numeric, CFQ.TCI_Q4 AS TCI_Q4__numeric, CFQ.TCI_Q5 AS TCI_Q5__numeric -- percent change in net operationg assets ( NOA ) AND current accruals to total assets ( CATA ) 
+                      , CFQ.TCI_Q6 AS TCI_Q6__numeric, CFQ.TCI_Q7 AS TCI_Q7__numeric, CFQ.TCI_Q8 AS TCI_Q8__numeric -- percent change in net operationg assets ( NOA ) 
+                      , ISQ.DEP_Q1 AS DEP_Q1__numeric, ISQ.DEP_Q2 AS DEP_Q2__numeric                                      -- depreciation  expense to captital expenditures 
+                      , ISQ.DEP_Q3 AS DEP_Q3__numeric, ISQ.DEP_Q4 AS DEP_Q4__numeric, ISQ.DEP_Q5 AS DEP_Q5__numeric       -- depreciation  expense to captital expenditures 
+                      , CFQ.DEP_CF_Q1 AS DEP_CF_Q1__numeric, CFQ.DEP_CF_Q2 AS DEP_CF_Q2__numeric                                            -- SIPro 4.0: EBITDA = EBIT + Depreciation and Amortization 
+                      , CFQ.DEP_CF_Q3 AS DEP_CF_Q3__numeric, CFQ.DEP_CF_Q4 AS DEP_CF_Q4__numeric, CFQ.DEP_CF_Q5 AS DEP_CF_Q5__numeric       -- SIPro 4.0: EBITDA = EBIT + Depreciation and Amortization 
+                      , CFQ.CE_Q1 AS CE_Q1__numeric, CFQ.CE_Q2 AS CE_Q2__numeric                              -- depreciation expense to captital expenditures 
+                      , CFQ.CE_Q3 AS CE_Q3__numeric, CFQ.CE_Q4 AS CE_Q4__numeric, CFQ.CE_Q5 AS CE_Q5__numeric -- depreciation expense to captital expenditures 
+                      , ISQ.NETINC_Q1 AS NETINC_Q1__numeric, ISQ.NETINC_Q2 AS NETINC_Q2__numeric                                            -- Difference between Operating Cash Flow and Net Income and scales the figure to Market Cap 
+                      , ISQ.NETINC_Q3 AS NETINC_Q3__numeric, ISQ.NETINC_Q4 AS NETINC_Q4__numeric, ISQ.NETINC_Q5 AS NETINC_Q5__numeric       -- Difference between Operating Cash Flow and Net Income and scales the figure to Market Cap 
+                      , ISQ.NETINC_Q6 AS NETINC_Q6__numeric, ISQ.NETINC_Q7 AS NETINC_Q7__numeric, ISQ.NETINC_Q8 AS NETINC_Q8__numeric       -- Difference between Operating Cash Flow and Net Income and scales the figure to Market Cap 
+                                  FROM 
+                                   main.UNIVERSE UNIV, main.SI_BSQ BSQ, main.SI_CFQ CFQ, main.SI_ISQ ISQ WHERE 
+                                   UNIV.COMPANY_ID = BSQ.COMPANY_ID AND
+                                   UNIV.COMPANY_ID = CFQ.COMPANY_ID AND
+                                   UNIV.COMPANY_ID = ISQ.COMPANY_ID 
+                                   ", connection = dpsqllconn$con, method="name__class")
+  
+  UNIVERSE <<- tbl_df(UNIVERSE)
+
+  # end joins
+
+
+  ##############
+  
+  # 'diluation multiple' = commonEPSOPS/share // dilutedEPSOPS/share ... >= 1.0
+  
+  # possibly used with LIAB_Q1 ( or ( common ) Shares Average Q1 SHR_AQ1 ) for some usefulness
+  # TO BE INVESTIGATED [ ] : READ THE BROWN BOOK ( BUT DEFINITELY DO )!!!
+  
+  # Consider ( PE ratio FIX ) # MAY? MAKE A GOOD 'custom field in 'SI Pro' 'IN or OUT' = SHR_DQ1
+
+  # EPS-Diluted Continuing  Q1
+  # Data Table Name: , Q2, Q3, Q4, Q5, Q6, Q7, Q8
+  # fully diluted earnings from continuing operations 
+  # A company will only report diluted earnings if it has potentially dilutive securities 
+  #  therfore, need ... ifelse(!is.na(EPSDC_Q1), EPSDC_Q1, EPSCON_Q1)
+  # ISQ
+
+  # = EARNOPS/AVE_DILUTED_SHARES
+
+  # EPS-Continuing 
+  # Data Table Name: EPSCON_Q1
+  # dividing earnings from continuing operations by the average number of shares outstanding during the same period
+  # ISQ
+
+  # = EARNOPS/AVE_COMMON_SHARES
+
+  # ( 1.0 / ( EARNOPS/AVE_DILUTED_SHARES ) ) * EARNOPS/AVE_COMMON_SHARES = AVE_DILUTED_SHARES / AVE_COMMON_SHARES
+
+  # Shares Average Q1
+  # Data Table Name: SHR_AQ1
+  # average number of shares of common stock outstanding 
+  #   This is the number of shares issued minus the shares held in treasury (Redeemable shares?-Co buyable back from issuer)?.
+  # PSD
+
+  # = AVE_COMMON_SHARES
+
+  # Therefore
+
+  # AVE_DILUTED_SHARES / AVE_COMMON_SHARES * AVE_COMMON_SHARES = AVE_DILUTED_SHARES  = Andre Custom
+  
+  # DD_FILE	   SI_ISQ
+  # FIELD_NAME EPSDC_Q1
+  # FIELD_TYPE C
+  # FIELD_DESC EPS-Diluted Continuing Q1
+  # DESCRIP    Income Statement - Quarterly
+  # FM_FILE    SI_ISQ
+  
+  UNIVERSE <<- mutate(UNIVERSE,                                   
+      DILUTION_MULT_Q1 =ifelse( !is.na(EPSCON_Q1) == TRUE & !is.na(EPSDC_Q1) == TRUE , as.numeric(EPSCON_Q1/EPSDC_Q1), 1.0)
+    , DILUTION_MULT_Q2 =ifelse( !is.na(EPSCON_Q2) == TRUE & !is.na(EPSDC_Q2) == TRUE , as.numeric(EPSCON_Q2/EPSDC_Q2), 1.0)                                                                         
+    , DILUTION_MULT_Q3 =ifelse( !is.na(EPSCON_Q3) == TRUE & !is.na(EPSDC_Q3) == TRUE , as.numeric(EPSCON_Q3/EPSDC_Q3), 1.0)                                                              
+    , DILUTION_MULT_Q4 =ifelse( !is.na(EPSCON_Q4) == TRUE & !is.na(EPSDC_Q4) == TRUE , as.numeric(EPSCON_Q4/EPSDC_Q4), 1.0)                                          
+    , DILUTION_MULT_Q5 =ifelse( !is.na(EPSCON_Q5) == TRUE & !is.na(EPSDC_Q5) == TRUE , as.numeric(EPSCON_Q5/EPSDC_Q5), 1.0)
+    , DILUTION_MULT_Q6 =ifelse( !is.na(EPSCON_Q6) == TRUE & !is.na(EPSDC_Q6) == TRUE , as.numeric(EPSCON_Q6/EPSDC_Q6), 1.0)
+    , DILUTION_MULT_Q7 =ifelse( !is.na(EPSCON_Q7) == TRUE & !is.na(EPSDC_Q7) == TRUE , as.numeric(EPSCON_Q7/EPSDC_Q7), 1.0)
+    , DILUTION_MULT_Q8 =ifelse( !is.na(EPSCON_Q8) == TRUE & !is.na(EPSDC_Q8) == TRUE , as.numeric(EPSCON_Q8/EPSDC_Q8), 1.0)
+  )
+
+  ################
+  
   
   # have an 'annual' 'EPS change' greater than zero (0)'
   # LAST of growth expose
@@ -957,10 +1058,12 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   # want only GROWTH_EXPOSE_SRVVR == 1
   
-  UNIVERSE <<- data.table(UNIVERSE)
-  setkeyv(UNIVERSE,c("GROWTH_EXPOSE_SRVVR"))
-  UNIVERSE <<- UNIVERSE[GROWTH_EXPOSE_SRVVR==1]
-  UNIVERSE <<- as.data.frame(UNIVERSE, stringsAsFactors = FALSE)
+  # UNIVERSE <<- data.table(UNIVERSE)
+  # setkeyv(UNIVERSE,c("GROWTH_EXPOSE_SRVVR"))
+  # UNIVERSE <<- UNIVERSE[GROWTH_EXPOSE_SRVVR==1]
+  # UNIVERSE <<- as.data.frame(UNIVERSE, stringsAsFactors = FALSE)
+  
+  UNIVERSE <<- filter(UNIVERSE, GROWTH_EXPOSE_SRVVR == 1)
   
   # begin financial composite ( defensive posture )
   
@@ -1285,61 +1388,6 @@ main_foresight3_999 <- function(pauseat=NULL) {
   #                                   and scaled to "MarketCap"
   
   
-  # begin joins
-  
-  sqldf("DROP TABLE main.UNIVERSE", connection = dpsqllconn$con)
-  
-  # strip off
-  UNIVERSE <<- as.data.frame(UNIVERSE)
-  UNIVERSE_tbl_sqlite <- copy_to(dpsqllconn, UNIVERSE, temporary = FALSE
-                                 , indexes = list(
-                                   #    c("TICKER")
-                                   # ,  
-                                   c("COMPANY_ID")
-                                   # ,  c("ORIG_ORDER")
-                                   
-                                 )
-  )
-  
-  
-  UNIVERSE <<- sqldf("SELECT UNIV.* 
-                      , CFQ.TCO_Q1 AS TCO_Q1__numeric, CFQ.TCO_Q2 AS TCO_Q2__numeric                                -- percent change in net operationg assets ( NOA ) AND current accruals to total assets ( CATA ) 
-                      , CFQ.TCO_Q3 AS TCO_Q3__numeric, CFQ.TCO_Q4 AS TCO_Q4__numeric, CFQ.TCO_Q5 AS TCO_Q5__numeric -- percent change in net operationg assets ( NOA ) AND current accruals to total assets ( CATA ) 
-                      , CFQ.TCO_Q6 AS TCO_Q6__numeric, CFQ.TCO_Q7 AS TCO_Q7__numeric, CFQ.TCO_Q8 AS TCO_Q8__numeric -- percent change in net operationg assets ( NOA ) AND current accruals to total assets ( CATA )
-                      , BSQ.WORK_Q1 AS WORK_Q1__numeric, BSQ.WORK_Q2 AS WORK_Q2__numeric                                  -- total accruals over total assets ( TATA ) 
-                      , BSQ.WORK_Q3 AS WORK_Q3__numeric, BSQ.WORK_Q4 AS WORK_Q4__numeric, BSQ.WORK_Q5 AS WORK_Q5__numeric -- total accruals over total assets ( TATA )  
-                      , BSQ.CASH_Q1 AS CASH_Q1__numeric, BSQ.CASH_Q2 AS CASH_Q2__numeric                                  -- total accruals over total assets ( TATA ) 
-                      , BSQ.CASH_Q3 AS CASH_Q3__numeric, BSQ.CASH_Q4 AS CASH_Q4__numeric, BSQ.CASH_Q5 AS CASH_Q5__numeric -- total accruals over total assets ( TATA ) 
-                      , BSQ.AP_Q1 AS AP_Q1__numeric, BSQ.AP_Q2 AS AP_Q2__numeric                              -- current accruals to total assets ( CATA )
-                      , BSQ.AP_Q3 AS AP_Q3__numeric, BSQ.AP_Q4 AS AP_Q4__numeric, BSQ.AP_Q5 AS AP_Q5__numeric -- current accruals to total assets ( CATA )
-                      , BSQ.AP_Q6 AS AP_Q6__numeric, BSQ.AP_Q7 AS AP_Q7__numeric, BSQ.AP_Q8 AS AP_Q8__numeric -- current accruals to total assets ( CATA )
-                      , BSQ.AR_Q1 AS AR_Q1__numeric, BSQ.AR_Q2 AS AR_Q2__numeric                              -- OLD: current accruals to total assets ( CATA )
-                      , BSQ.AR_Q3 AS AR_Q3__numeric, BSQ.AR_Q4 AS AR_Q4__numeric, BSQ.AR_Q5 AS AR_Q5__numeric -- OLD: current accruals to total assets ( CATA )
-                      , ISQ.EPSCON_Q1 AS EPSCON_Q1__numeric, ISQ.EPSCON_Q2 AS EPSCON_Q2__numeric                                      -- current accruals to total assets ( CATA ) 
-                      , ISQ.EPSCON_Q3 AS EPSCON_Q3__numeric, ISQ.EPSCON_Q4 AS EPSCON_Q4__numeric, ISQ.EPSCON_Q5 AS EPSCON_Q5__numeric -- current accruals to total assets ( CATA ) 
-                      , ISQ.EPSCON_Q6 AS EPSCON_Q6__numeric, ISQ.EPSCON_Q7 AS EPSCON_Q7__numeric, ISQ.EPSCON_Q8 AS EPSCON_Q8__numeric -- current accruals to total assets ( CATA ) 
-                      , CFQ.TCI_Q1 AS TCI_Q1__numeric, CFQ.TCI_Q2 AS TCI_Q2__numeric                                -- percent change in net operationg assets ( NOA ) AND current accruals to total assets ( CATA ) 
-                      , CFQ.TCI_Q3 AS TCI_Q3__numeric, CFQ.TCI_Q4 AS TCI_Q4__numeric, CFQ.TCI_Q5 AS TCI_Q5__numeric -- percent change in net operationg assets ( NOA ) AND current accruals to total assets ( CATA ) 
-                      , CFQ.TCI_Q6 AS TCI_Q6__numeric, CFQ.TCI_Q7 AS TCI_Q7__numeric, CFQ.TCI_Q8 AS TCI_Q8__numeric -- percent change in net operationg assets ( NOA ) 
-                      , ISQ.DEP_Q1 AS DEP_Q1__numeric, ISQ.DEP_Q2 AS DEP_Q2__numeric                                      -- depreciation  expense to captital expenditures 
-                      , ISQ.DEP_Q3 AS DEP_Q3__numeric, ISQ.DEP_Q4 AS DEP_Q4__numeric, ISQ.DEP_Q5 AS DEP_Q5__numeric       -- depreciation  expense to captital expenditures 
-                      , CFQ.DEP_CF_Q1 AS DEP_CF_Q1__numeric, CFQ.DEP_CF_Q2 AS DEP_CF_Q2__numeric                                            -- SIPro 4.0: EBITDA = EBIT + Depreciation and Amortization 
-                      , CFQ.DEP_CF_Q3 AS DEP_CF_Q3__numeric, CFQ.DEP_CF_Q4 AS DEP_CF_Q4__numeric, CFQ.DEP_CF_Q5 AS DEP_CF_Q5__numeric       -- SIPro 4.0: EBITDA = EBIT + Depreciation and Amortization 
-                      , CFQ.CE_Q1 AS CE_Q1__numeric, CFQ.CE_Q2 AS CE_Q2__numeric                              -- depreciation expense to captital expenditures 
-                      , CFQ.CE_Q3 AS CE_Q3__numeric, CFQ.CE_Q4 AS CE_Q4__numeric, CFQ.CE_Q5 AS CE_Q5__numeric -- depreciation expense to captital expenditures 
-                      , ISQ.NETINC_Q1 AS NETINC_Q1__numeric, ISQ.NETINC_Q2 AS NETINC_Q2__numeric                                            -- Difference between Operating Cash Flow and Net Income and scales the figure to Market Cap 
-                      , ISQ.NETINC_Q3 AS NETINC_Q3__numeric, ISQ.NETINC_Q4 AS NETINC_Q4__numeric, ISQ.NETINC_Q5 AS NETINC_Q5__numeric       -- Difference between Operating Cash Flow and Net Income and scales the figure to Market Cap 
-                      , ISQ.NETINC_Q6 AS NETINC_Q6__numeric, ISQ.NETINC_Q7 AS NETINC_Q7__numeric, ISQ.NETINC_Q8 AS NETINC_Q8__numeric       -- Difference between Operating Cash Flow and Net Income and scales the figure to Market Cap 
-                                  FROM 
-                                   main.UNIVERSE UNIV, main.SI_BSQ BSQ, main.SI_CFQ CFQ, main.SI_ISQ ISQ WHERE 
-                                   UNIV.COMPANY_ID = BSQ.COMPANY_ID AND
-                                   UNIV.COMPANY_ID = CFQ.COMPANY_ID AND
-                                   UNIV.COMPANY_ID = ISQ.COMPANY_ID 
-                                   ", connection = dpsqllconn$con, method="name__class")
-  
-  UNIVERSE <<- tbl_df(UNIVERSE)
-
-  # end joins
   
   
   # ( 1 of 4 )
@@ -2334,7 +2382,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
     , NA) 
   ))
   
-  # four factors total possible
+  # five factors total possible
   UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_VAL_TWO_CMPST_SCORES_SUMM_REBAL = as.numeric(
      VAL_EXPOSE_VAL_TWO_CMPST_SCORES_SUMM * 5.0 / VAL_EXPOSE_VAL_TWO_CMPST_UNIQUE_SCORES_CNT
   ))
@@ -2417,14 +2465,24 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   UNIVERSE_NOT_NA <- UNIVERSE
   
-  UNIVERSE_NOT_NA <- filter(UNIVERSE_NOT_NA, is.na(VAL_EXPOSE_ALL_CMBND_CMPST_SCORES_SUMM_REBAL_NTILE100_SUMM_NTILE2 )  == FALSE)
+  # UNIVERSE_NOT_NA <- filter(UNIVERSE_NOT_NA, is.na(VAL_EXPOSE_ALL_CMBND_CMPST_SCORES_SUMM_REBAL_NTILE100_SUMM_NTILE2 )  == FALSE)
 
-  UNIVERSE_NOT_NA <- filter(UNIVERSE_NOT_NA,       VAL_EXPOSE_ALL_CMBND_CMPST_SCORES_SUMM_REBAL_NTILE100_SUMM_NTILE2    == 2     )
+  # UNIVERSE_NOT_NA <- filter(UNIVERSE_NOT_NA,       VAL_EXPOSE_ALL_CMBND_CMPST_SCORES_SUMM_REBAL_NTILE100_SUMM_NTILE2    == 2     )
   
-  UNIVERSE_NOT_NA <- filter(UNIVERSE_NOT_NA, is.na(VAL_EXPOSE_VAL_TWO_CMPST_SCORES_SUMM_REBAL )                     == FALSE) 
+  # UNIVERSE_NOT_NA <- filter(UNIVERSE_NOT_NA, is.na(VAL_EXPOSE_VAL_TWO_CMPST_SCORES_SUMM_REBAL )                     == FALSE) 
   
-  UNIVERSE_NOT_NA <- filter(UNIVERSE_NOT_NA, is.na(VAL_EXPOSE_ALL_CMBND_CMPST_SCORES_SUMM_REBAL_NTILE100_SUMM )     == FALSE) 
+  # UNIVERSE_NOT_NA <- filter(UNIVERSE_NOT_NA, is.na(VAL_EXPOSE_ALL_CMBND_CMPST_SCORES_SUMM_REBAL_NTILE100_SUMM )     == FALSE) 
   
+  
+  # Note: I was too in a hurry to finish the program ( may be 'too much NA removals': need to review ( someday ) )
+  
+  UNIVERSE_NOT_NA <- filter(UNIVERSE_NOT_NA, 
+      is.na(VAL_EXPOSE_ALL_CMBND_CMPST_SCORES_SUMM_REBAL_NTILE100_SUMM_NTILE2)  == FALSE
+    ,       VAL_EXPOSE_ALL_CMBND_CMPST_SCORES_SUMM_REBAL_NTILE100_SUMM_NTILE2   == 2 
+    , is.na(VAL_EXPOSE_VAL_TWO_CMPST_SCORES_SUMM_REBAL )                        == FALSE
+    , is.na(VAL_EXPOSE_ALL_CMBND_CMPST_SCORES_SUMM_REBAL_NTILE100_SUMM )        == FALSE
+  )
+
   UNIVERSE_NOT_NA <- arrange(UNIVERSE_NOT_NA
     , desc(VAL_EXPOSE_VAL_TWO_CMPST_SCORES_SUMM_REBAL) 
     , desc(VAL_EXPOSE_ALL_CMBND_CMPST_SCORES_SUMM_REBAL_NTILE100_SUMM)
@@ -2499,7 +2557,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   # [ ] MISSING 'unit test for "posneg = -1"' but super highly unlikely to fail
   
-  # [ ] !!!! ***** SWAP OUT THE REMANDER ntile --> hdntile ****
+  # [x] !!!! ***** SWAP OUT THE REMANDER ntile --> hdntile ****
 
    # [ ] ADJUST (PROGRAM) hdntile/ndrank SO "casecount" IS AN OPTION (ndrank WOULD like)
    # [ ] [ALSO  ADD trunc(a/b) + 1 option (hdrank CASE)
@@ -2520,16 +2578,15 @@ main_foresight3_999 <- function(pauseat=NULL) {
 # http://code.google.com/p/sqldf/ FAQ #4
 
 
-
 # CLEAN SOME CODE UP ( SIMPLIFY SOME 'REPEATS T FUNCTIONS' )
-# (1) eliminate duplicates [ ]
+# (1) eliminate duplicates [x]
 # (2) repeating 'nite' tests [ ] 
 
 # INTEGRATE VJAYS ( CENTRALIZED DIRECTORY FUNCTION )
 # [ ] YYYY-MM-DD directories  ( also scan .txt for copyDirectory )
 
 # FILE STARTUP SPEED
-# [ ] if !file.exists(...) ... load file .... ( once only ) ... save file
+# [x if !file.exists(...) ... load file .... ( once only ) ... save file
     
 # TO_DO ( NOTE DONE YET ) : END OF DAY. "Put Up on GitHub" [X] August 13, 2014
 # main-foresight-999.R [ ] 
@@ -2538,6 +2595,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
 # END SUNDAY 
     
 # SOON ( MAKE SURE PRICES AND SPLITS ARE HOPEFULLY SMOOTH ) ( SHORT TERM - JUST INSPECT AND ELIM )
+# YES - AAPL 7 TO 1 SPLIT CORRECTLY [X]
 
 # [ ]
 # RARE DATA CASE: FAR FUTURE: NOT A PRIORITY
@@ -2552,40 +2610,6 @@ main_foresight3_999 <- function(pauseat=NULL) {
   #       ASSETS_Q1 & LIAB_Q1 are always large and positive
   #       ASSETS_Q1 - LIAB_Q1 = EQUITY_Q1(sometimes negative)
 
-# HIGHLY HIGHLY CONSIDER
-# Consider: custom ntile/rank,, hdntile hdrank using dplyr::do() and Hmisc::hdquantile 
-  
-  
-# Consider ( PE ratio FIX ) # MAY? MAKE A GOOD 'custom field in 'SI Pro' 'IN or OUT' = SHR_DQ1
-
-# EPS-Diluted Q1
-# Data Table Name: EPSD_Q1, Q2, Q3, Q4, Q5, Q6, Q7, Q8
-# fully diluted earnings from total operations 
-# A company will only report diluted earnings if it has potentially dilutive securities 
-#  therfore, need ... ifelse(!is.na(EPSD_Q1), EPSD_Q1, EPSCON_Q1)
-
-# = EARNOPS/AVE_DILUTED_SHARES
-
-# EPS-Continuing 
-# Data Table Name: EPSCON_Q1
-# dividing earnings from continuing operations by the average number of shares outstanding during the same period
-
-# = EARNOPS/AVE_COMMON_SHARES
-
-# ( 1.0 / ( EARNOPS/AVE_DILUTED_SHARES ) ) * EARNOPS/AVE_COMMON_SHARES = AVE_DILUTED_SHARES / AVE_COMMON_SHARES
-
-# Shares Average Q1
-# Data Table Name: SHR_AQ1
-# average number of shares of common stock outstanding 
-#   This is the number of shares issued minus the shares held in treasury (Redeemable shares?-Co buyable back from issuer)?.
-
-# = AVE_COMMON_SHARES
-
-# Therefore
-
-# AVE_DILUTED_SHARES / AVE_COMMON_SHARES * AVE_COMMON_SHARES = AVE_DILUTED_SHARES  = Andre Custom
-  
-  
   
 # TOGGLE-ABLE
 # View(main_foresight3_999())
