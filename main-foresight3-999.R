@@ -35,6 +35,9 @@ options(AAIISIPro40PathFile_SI_EXCHG         =  paste0(getOption("AAIISIPro40Pat
 options(AAIISIPro40PathFileNotOptim_SI_PSD   =  paste0(getOption("AAIIBase"),"/Dbfs/si_psd.dbf"))
 options(AAIISIPro40PathFile_SI_PSD           =  paste0(getOption("AAIISIPro40PathFileNotOptim_SI_PSD")))
 
+options(AAIISIPro40PathFileNotOptim_SI_PSDC   =  paste0(getOption("AAIIBase"),"/Dbfs/si_psdc.dbf"))
+options(AAIISIPro40PathFile_SI_PSDC           =  paste0(getOption("AAIISIPro40PathFileNotOptim_SI_PSDC")))
+
 options(AAIISIPro40PathFileNotOptim_SI_DATE  =  paste0(getOption("AAIIBase"),"/Static/si_date.dbf"))
 options(AAIISIPro40PathFile_SI_DATE          =  paste0(getOption("AAIISIPro40PathFileNotOptim_SI_DATE")))
 
@@ -69,6 +72,9 @@ if(getOption("FileStoreStyle") == "Optimized") {
   options(AAIISIPro40PathFileOptim_SI_PSD   =  paste0(getOption("AAIIBase"),"/Dbfs/SI_PSD.RData"))
   options(AAIISIPro40PathFile_SI_PSD           =  paste0(getOption("AAIISIPro40PathFileOptim_SI_PSD")))
 
+  options(AAIISIPro40PathFileOptim_SI_PSDC   =  paste0(getOption("AAIIBase"),"/Dbfs/SI_PSDC.RData"))
+  options(AAIISIPro40PathFile_SI_PSDC           =  paste0(getOption("AAIISIPro40PathFileOptim_SI_PSDC")))
+  
   options(AAIISIPro40PathFileOptim_SI_DATE  =  paste0(getOption("AAIIBase"),"/Static/SI_DATE.RData"))
   options(AAIISIPro40PathFile_SI_DATE          =  paste0(getOption("AAIISIPro40PathFileOptim_SI_DATE")))
 
@@ -109,6 +115,8 @@ library(dplyr)
 library(data.table)
 
 library(foreign)
+
+library(TTR)
 
 setwd("N:\\MyVMWareSharedFolder\\foresight3\\R")
 
@@ -360,16 +368,16 @@ main_foresight3_999 <- function(pauseat=NULL) {
     SI_PSD <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_PSD"), as.is = TRUE)))
   }
 
-    # primary_key_dup <- SI_PSD[duplicated(SI_PSD[,'COMPANY_ID']),,drop=FALSE]
-    # new_df_no_duplicates <- SI_PSD[!(SI_PSD$COMPANY_ID %in% as.matrix(primary_key_dup)),,drop=FALSE]
-    # SI_PSD <<- new_df_no_duplicates
-    # rm(primary_key_dup,new_df_no_duplicates)
-  
-    SI_PSD <<- SI_PSD # wierd performance bug ( program runs faster than can it access its variables )
-    SI_PSD <<- eliminate_all_duplicates( "SI_PSD", "COMPANY_ID" ) 
-  
-    # all math must be numeric
-    SI_PSD <<- mutate(SI_PSD, MKTCAP = as.numeric(MKTCAP) )
+  # primary_key_dup <- SI_PSD[duplicated(SI_PSD[,'COMPANY_ID']),,drop=FALSE]
+  # new_df_no_duplicates <- SI_PSD[!(SI_PSD$COMPANY_ID %in% as.matrix(primary_key_dup)),,drop=FALSE]
+  # SI_PSD <<- new_df_no_duplicates
+  # rm(primary_key_dup,new_df_no_duplicates)
+
+  SI_PSD <<- SI_PSD # wierd performance bug ( program runs faster than can it access its variables )
+  SI_PSD <<- eliminate_all_duplicates( "SI_PSD", "COMPANY_ID" ) 
+
+  # all math must be numeric
+  SI_PSD <<- mutate(SI_PSD, MKTCAP = as.numeric(MKTCAP) )
   
   SI_PSD_tbl_sqlite <- copy_to(dpsqllconn, SI_PSD, temporary = FALSE
     , indexes = list(
@@ -414,6 +422,45 @@ main_foresight3_999 <- function(pauseat=NULL) {
   # FIELD_DESC  Split Factor
   # DESCRIP     Price and Share Statistics
   # FM_FILE     SI_PSD
+  
+
+  # Prices - Dates (Close) Price-Date M001-M120
+
+   if(getOption("FileStoreStyle") == "Optimized") {
+    if( file.exists(getOption("AAIISIPro40PathFileOptim_SI_PSDC"))) {
+      load(file = getOption("AAIISIPro40PathFileOptim_SI_PSDC"))
+    } else {
+      # load file
+      SI_PSDC <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_PSDC"), as.is = TRUE)))
+      save("SI_PSDC",file = getOption("AAIISIPro40PathFileOptim_SI_PSDC"))
+    }
+  } else {
+    # load file
+    SI_PSDC <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_PSDC"), as.is = TRUE)))
+  }
+
+  # primary_key_dup <- SI_PSDC[duplicated(SI_PSDC[,'COMPANY_ID']),,drop=FALSE]
+  # new_df_no_duplicates <- SI_PSDC[!(SI_PSDC$COMPANY_ID %in% as.matrix(primary_key_dup)),,drop=FALSE]
+  # SI_PSDC <<- new_df_no_duplicates
+  # rm(primary_key_dup,new_df_no_duplicates)
+
+  SI_PSDC <<- SI_PSDC # wierd performance bug ( program runs faster than can it access its variables )
+  SI_PSDC <<- eliminate_all_duplicates( "SI_PSDC", "COMPANY_ID" ) 
+
+  SI_PSDC_tbl_sqlite <- copy_to(dpsqllconn, SI_PSDC, temporary = FALSE
+    , indexes = list(
+        c("COMPANY_ID")
+    )
+  )
+  
+  SI_PSDC <<- tbl_df(SI_PSDC)
+  
+  # DD_FILE     SI_PSDC
+  # FIELD_NAME  PRICE_M001
+  # FIELD_TYPE  C
+  # FIELD_DESC  Price M001
+  # DESCRIP     Prices - Monthly Close
+  # FM_FILE     SI_PSDC 
   
   
   # Dates and Periods - Ending date Q1
@@ -469,14 +516,18 @@ main_foresight3_999 <- function(pauseat=NULL) {
     SELECT STP.MONTHDATE AS MONTHDATEUNX, STP.WEEKDATE AS WEEKDATEUNX, STP.SPLITDATE AS SPLITDATEUNX, 
            CI.TICKER, CI.COMPANY, CI.COMPANY_ID, CI.SIC, CI.EXCHANGE, EXCHG.EXCHG_DESC 
          , CI.IND_2_DIG, MGDSC.MG_DESC, CI.COUNTRY, CI.ADR, DTE.PEREND_Q2 AS PERENDUNX_Q2, DTE.PEREND_Q1 AS PERENDUNX_Q1, DTE.PERLEN_Q1 AS PERLEN_Q1__integer, PERTYP_Q1 
-                           , PSD.MKTCAP AS MKTCAP__numeric, PSD.PRICE AS PRICE__numeric, PSD.SPLIT_DATE AS PSD_SPLITUNX_DATE, PSD.SPLIT_FACT AS SPLIT_FACT__numeric
+                           , PSD.MKTCAP AS MKTCAP__numeric, PSD.PRICE AS PRICE__numeric, PSD.SPLIT_DATE AS PSD_SPLITUNX_DATE, PSD.SPLIT_FACT AS SPLIT_FACT__numeric 
+                           , PSDC.PRICE_M011 AS PRICE_M011__numeric, PSDC.PRICE_M010 AS PRICE_M010__numeric, PSDC.PRICE_M009 AS PRICE_M009__numeric, PSDC.PRICE_M008 AS PRICE_M008__numeric 
+                           , PSDC.PRICE_M007 AS PRICE_M007__numeric, PSDC.PRICE_M006 AS PRICE_M006__numeric, PSDC.PRICE_M005 AS PRICE_M005__numeric, PSDC.PRICE_M004 AS PRICE_M004__numeric 
+                           , PSDC.PRICE_M003 AS PRICE_M003__numeric, PSDC.PRICE_M002 AS PRICE_M002__numeric, PSDC.PRICE_M001 AS PRICE_M001__numeric  
                            FROM 
                            main.SETUP STP, 
-                           main.SI_CI CI, main.SI_EXCHG EXCHG, main.SI_MGDSC MGDSC, main.SI_PSD PSD, main.SI_DATE DTE
+                           main.SI_CI CI, main.SI_EXCHG EXCHG, main.SI_MGDSC MGDSC, main.SI_PSD PSD, main.SI_DATE DTE, main.SI_PSDC PSDC
                            WHERE CI.EXCHANGE = EXCHG.EXCHG_CODE AND 
                            CI.IND_2_DIG = MGDSC.MG_CODE AND 
                            CI.COMPANY_ID = PSD.COMPANY_ID AND 
-                           CI.COMPANY_ID = DTE.COMPANY_ID 
+                           CI.COMPANY_ID = DTE.COMPANY_ID AND
+                           CI.COMPANY_ID = PSDC.COMPANY_ID 
   ORDER BY MKTCAP DESC 
                            "  , connection = dpsqllconn$con, method="name__class")
   
@@ -516,8 +567,6 @@ main_foresight3_999 <- function(pauseat=NULL) {
     , PSD_SPLITDT_DATE = as.character(ymd_hms(c("1970-01-01 16:00:00.880-0400")) + days(PSD_SPLITUNX_DATE))
   )
  
-
-  
   
   # library(compiler)
   # addboth <-function(a,b) a + b
@@ -588,6 +637,11 @@ main_foresight3_999 <- function(pauseat=NULL) {
  
  
 
+ 
+ 
+ 
+  # end of compute the SMA price per sector ( weighted by sector element 'last known market cap' )
+
 
     # 'all stocks' universe
   
@@ -614,6 +668,138 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
 
   # end elimintate un-investibles ( keep investibles) ( All Stocks)
+  
+
+  # caluclate after 3000 chosen
+  # compute the SMA price per sector ( weighted by sector element 'last known market cap' )
+
+  # 2008 book Stocks for the Long Run 5/E: The Definitive Guide to 
+  # Financial Market Returns & Long-Term Investment Strategies, 
+  # Jeremy Siegel investigates the use of the 200-day SMA in timing the Dow Jones Industrial Average 
+  # (DJIA) from 1886 to 2006. His test bought the DJIA when it closed at least 1 percent above the 
+  # 200-day moving average, and sold the DJIA and invested in Treasury bills when it closed 
+  # at least 1 percent below the 200-day moving average.
+  
+  # A_Quantative_Approach_to_Tactical_Asset_Allocation(2006)(2009)(2013)(Faber)_Ryan_Article_Example_blotter_quantstrat.pdf
+  # Relative_Strength_Strategies_for_Investing(2013)(Faber).pdf
+  
+  # # SIPro Adjusts splits for me: I just need PRICE_M001 
+  # S&P 500 index is .. cap-weighted
+  # components are weighted according to the total market value of their outstanding shares.
+  # http://en.wikipedia.org/wiki/Capitalization-weighted_index
+
+  # not fully-correct ( but 'maybe' good enough)
+  # I would have to know the 'per month market capitalization
+  # that is, #_shares_outstanding_at_the end_of_that_month
+  # I could/may use Q# MKTCAP_ Q1, and locf ( last observation carried forward for a better approx
+  # TTR::SMA
+  # stats::weighted.mean
+ 
+  UNIVERSE_NOT_NA <- group_by(UNIVERSE,MG_DESC) 
+
+  UNIVERSE_NOT_NA <- filter(UNIVERSE_NOT_NA, 
+      is.na(MKTCAP)      == FALSE
+    , is.na(PRICE)       == FALSE
+    , is.na(PRICE_M011)  == FALSE
+    , is.na(PRICE_M010)  == FALSE
+    , is.na(PRICE_M009)  == FALSE
+    , is.na(PRICE_M008)  == FALSE
+    , is.na(PRICE_M007)  == FALSE
+    , is.na(PRICE_M006)  == FALSE
+    , is.na(PRICE_M005)  == FALSE
+    , is.na(PRICE_M004)  == FALSE
+    , is.na(PRICE_M003)  == FALSE
+    , is.na(PRICE_M002)  == FALSE
+    , is.na(PRICE_M001)  == FALSE
+  )
+ 
+ 
+  UNIVERSE_NOT_NA <- mutate(UNIVERSE_NOT_NA, PRICE_M001_TO_M011_NO_NA = as.numeric(  
+    1.0
+  ))
+ 
+  UNIVERSE_NOT_NA <- mutate(UNIVERSE_NOT_NA, PRICE_WGHT_MEAN_SMA_10_M_SECTOR = as.numeric(SMA(c(
+                                           weighted.mean(PRICE_M011, MKTCAP), 
+       weighted.mean(PRICE_M010, MKTCAP),  weighted.mean(PRICE_M009, MKTCAP), 
+       weighted.mean(PRICE_M008, MKTCAP),  weighted.mean(PRICE_M007, MKTCAP), 
+       weighted.mean(PRICE_M006, MKTCAP),  weighted.mean(PRICE_M005, MKTCAP), 
+       weighted.mean(PRICE_M004, MKTCAP),  weighted.mean(PRICE_M003, MKTCAP), 
+       weighted.mean(PRICE_M002, MKTCAP),  weighted.mean(PRICE_M001, MKTCAP) 
+     ), 10)[11]
+  ))
+  
+  UNIVERSE_NOT_NA <- mutate(UNIVERSE_NOT_NA, PRICE_WGHT_MEAN_SECTOR = as.numeric(
+    weighted.mean(PRICE, MKTCAP) 
+  ))
+  
+  UNIVERSE_NOT_NA <- mutate(UNIVERSE_NOT_NA, PRICE_WGHT_MEAN_SMA_10_M_SECTOR_SVVR = as.numeric(
+    ifelse( PRICE_WGHT_MEAN_SECTOR > PRICE_WGHT_MEAN_SMA_10_M_SECTOR , 1.0, 0.0 )
+  ))
+  
+  UNIVERSE_NOT_NA <- ungroup(UNIVERSE_NOT_NA) 
+  
+  UNIVERSE <<- suppressMessages(left_join(UNIVERSE, UNIVERSE_NOT_NA)) # LEFT OUTER JOIN
+
+  # View(data.frame(UNIVERSE)[,c("MG_DESC","PRICE_M001_TO_M011_NO_NA","PRICE_WGHT_MEAN_SECTOR","PRICE_WGHT_MEAN_SMA_10_M_SECTOR","PRICE_WGHT_MEAN_SMA_10_M_SECTOR_SVVR")])
+  
+  # update companies with missing sector MA information
+  
+  # begin SQL
+  
+  sqldf("DROP TABLE main.UNIVERSE", connection = dpsqllconn$con)
+
+  # strip off
+  UNIVERSE <<- as.data.frame(UNIVERSE)
+  UNIVERSE_tbl_sqlite <- copy_to(dpsqllconn, UNIVERSE, temporary = FALSE
+    , indexes = list(
+   #    c("TICKER")
+   # ,  
+        c("COMPANY_ID")
+   # ,  c("ORIG_ORDER")
+      
+    )
+  )
+  
+  UNIVERSE <<- tbl_df(UNIVERSE)
+  
+  sqldf("
+    CREATE TABLE LOOKUP AS 
+    SELECT DISTINCT 
+          SMA.MG_DESC 
+        , SMA.PRICE_WGHT_MEAN_SECTOR 
+        , SMA.PRICE_WGHT_MEAN_SMA_10_M_SECTOR 
+        , SMA.PRICE_WGHT_MEAN_SMA_10_M_SECTOR_SVVR 
+        FROM main.UNIVERSE SMA WHERE SMA.PRICE_WGHT_MEAN_SECTOR IS NOT NULL 
+  ", connection = dpsqllconn$con
+  )
+
+  # update NA cells ( actually all cells ) using other cells that do not contain NA ( from the lookup table )
+  sqldf("
+      UPDATE main.UNIVERSE 
+          SET PRICE_WGHT_MEAN_SECTOR               = ( SELECT PRICE_WGHT_MEAN_SECTOR               FROM main.LOOKUP WHERE MG_DESC = main.UNIVERSE.MG_DESC), 
+              PRICE_WGHT_MEAN_SMA_10_M_SECTOR      = ( SELECT PRICE_WGHT_MEAN_SMA_10_M_SECTOR      FROM main.LOOKUP WHERE MG_DESC = main.UNIVERSE.MG_DESC), 
+              PRICE_WGHT_MEAN_SMA_10_M_SECTOR_SVVR = ( SELECT PRICE_WGHT_MEAN_SMA_10_M_SECTOR_SVVR FROM main.LOOKUP WHERE MG_DESC = main.UNIVERSE.MG_DESC)        
+    ", connection = dpsqllconn$con
+  )
+
+  sqldf("
+    DROP TABLE main.LOOKUP 
+  ", connection = dpsqllconn$con 
+  )
+  
+  
+  UNIVERSE <<- sqldf("SELECT UNIV.* FROM main.UNIVERSE UNIV 
+                                   ", connection = dpsqllconn$con, method="name__class")
+  
+  UNIVERSE <<- tbl_df(UNIVERSE)
+  
+  
+  # end SQL
+  
+  # end of compute the SMA price per sector ( weighted by sector element 'last known market cap' )
+  
+
+  
   
   
   # begin growth expose 
@@ -2511,7 +2697,9 @@ main_foresight3_999 <- function(pauseat=NULL) {
             , VAL_TWO_CMPST_SUMM_REBAL_NTILE100   = VAL_EXPOSE_VAL_TWO_CMPST_SCORES_SUMM_REBAL_NTILE100
             , ALL_CMBND_NTILE100_SUMM             = VAL_EXPOSE_ALL_CMBND_CMPST_SCORES_SUMM_REBAL_NTILE100_SUMM
             , ALL_CMBND_SUMM_NTILE2               = VAL_EXPOSE_ALL_CMBND_CMPST_SCORES_SUMM_REBAL_NTILE100_SUMM_NTILE2
-
+            , SCT_MN_PRCE_10M_SMA      = PRICE_WGHT_MEAN_SMA_10_M_SECTOR
+            , SCT_MN_PRCE              = PRICE_WGHT_MEAN_SECTOR
+            , SCT_MN_PRCE_10M_SMA_SVVR = PRICE_WGHT_MEAN_SMA_10_M_SECTOR_SVVR
           ) 
           
 
@@ -2523,9 +2711,10 @@ main_foresight3_999 <- function(pauseat=NULL) {
   , desc(ALL_CMBND_NTILE100_SUMM)
   )[,c( 
   "MONTHDATEDT", "WEEKDATEDT","SPLITDATEDT", 
-  "TICKER","COMPANY","MG_DESC","MKTCAP","PSD_SPLITDT_DATE","SPLIT_FACT","PERENDDT_Q2", "PERLEN_Q1", "PERTYP_Q1", "PERENDDT_Q1"
+  "TICKER","COMPANY","MG_DESC","SCT_MN_PRCE_10M_SMA_SVVR","MKTCAP","PSD_SPLITDT_DATE","SPLIT_FACT","PERENDDT_Q2", "PERLEN_Q1", "PERTYP_Q1", "PERENDDT_Q1"
   # ,"PERENDDT_Q0" ( NOT USEFUL )
-  ,"VAL_TWO_CMPST_SUMM_REBAL_NTILE100", "VAL_EXPOSE_VAL_TWO_CMPST_SCORES_SUMM_REBAL", "ALL_CMBND_NTILE100_SUMM","ALL_CMBND_SUMM_NTILE2","VAL_EXPOSE_ALL_CMBND_CMPST_VAL_TWO_CMPST_SCORES_TOPN")
+  ,"VAL_TWO_CMPST_SUMM_REBAL_NTILE100", "VAL_EXPOSE_VAL_TWO_CMPST_SCORES_SUMM_REBAL", "ALL_CMBND_NTILE100_SUMM","ALL_CMBND_SUMM_NTILE2","VAL_EXPOSE_ALL_CMBND_CMPST_VAL_TWO_CMPST_SCORES_TOPN"
+  ,"SCT_MN_PRCE_10M_SMA","SCT_MN_PRCE")
     ]
         
         
