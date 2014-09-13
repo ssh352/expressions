@@ -14,7 +14,7 @@ if(getOption("RepositoryStyle") == "InstalledTest")  {
 
 if(getOption("RepositoryStyle") == "Installed")  {
 
-  options(AAIIBase = "N:/MyVMWareSharedFolder/Professional") 
+  options(AAIIBase = "N:/MyVMWareSharedFolder/Professional140912") 
   
 }
 
@@ -694,7 +694,34 @@ main_foresight3_999 <- function(pauseat=NULL) {
   # I could/may use Q# MKTCAP_ Q1, and locf ( last observation carried forward for a better approx
   # TTR::SMA
   # stats::weighted.mean
- 
+  
+  #  Berkshire Hathaway BRK.A cuases my Financial Sector moving average to be above 10,000
+  #  500 financial companies of 3000
+  
+  # dbGetQuery(conn = dpsqllconn$con, "SELECT MG_DESC, TICKER, MKTCAP, PRICE  FROM UNIVMA WHERE MG_DESC = 'Financial' ORDER BY PRICE DESC")
+        # MG_DESC TICKER                     MKTCAP                        PRICE
+  # 1   Financial  BRK.A 337727.4000000000232830644 205635.000000000000000000000
+  # 2   Financial    MKL   8936.5000000000000000000    639.649999999999977262632
+  # 3   Financial    WTM   3881.3000000000001818989    632.059999999999945430318
+  # 4   Financial      Y   6977.6999999999998181011    426.180000000000006821210
+
+  # ...
+  # dbGetQuery(conn = dpsqllconn$con, "SELECT MG_DESC, TICKER, MKTCAP, PRICE  FROM UNIVMA WHERE MG_DESC = 'Financial' ORDER BY MKTCAP DESC")
+
+  # dbGetQuery(conn = dpsqllconn$con, "SELECT MG_DESC, TICKER, MKTCAP, PRICE  FROM UNIVMA WHERE MG_DESC = 'Financial' ORDER BY MKTCAP DESC")
+        # MG_DESC TICKER                     MKTCAP                        PRICE
+  # 1   Financial  BRK.A 337727.4000000000232830644 205635.000000000000000000000
+  # 2   Financial    WFC 269895.0000000000000000000     51.700000000000002842171
+  # 3   Financial    JPM 225789.7000000000116415322     60.030000000000001136868
+  # 4   Financial    BAC 176561.2999999999883584678     16.789999999999999147349
+  # 5   Financial      C 158804.2999999999883584678     52.380000000000002557954
+
+  #  O SHAUNNESSY NO-NON NORMAL DISTRIBUTION 'NO-BURN RULE' ( USE QUANTILES INSTEAD OF AVERAGES )
+  #  I SUSPECT THAT A 'MOVING MEDIAN' MAY BE BETTER ( I WOULD HAVE TO QUANSTRAT BACKTEST THAT )
+  #  I WOULD HAVE TO RESEARCH THIS LATER
+
+  # JUST ELIMINATE Berkshire Hathaway BRK.A
+
   UNIVERSE_NOT_NA <- group_by(UNIVERSE,MG_DESC) 
 
   UNIVERSE_NOT_NA <- filter(UNIVERSE_NOT_NA, 
@@ -711,6 +738,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
     , is.na(PRICE_M003)  == FALSE
     , is.na(PRICE_M002)  == FALSE
     , is.na(PRICE_M001)  == FALSE
+    ,       TICKER       != 'BRK.A'
   )
  
  
@@ -718,6 +746,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
     1.0
   ))
  
+  # FUTURE ( COULD/SHOULD/WOULD USE THIS FOR TRENDY DATA ) 
   UNIVERSE_NOT_NA <- mutate(UNIVERSE_NOT_NA, PRICE_WGHT_MEAN_SMA_10_M_SECTOR = as.numeric(SMA(c(
                                            weighted.mean(PRICE_M011, MKTCAP), 
        weighted.mean(PRICE_M010, MKTCAP),  weighted.mean(PRICE_M009, MKTCAP), 
@@ -773,6 +802,10 @@ main_foresight3_999 <- function(pauseat=NULL) {
   ", connection = dpsqllconn$con
   )
 
+  # doing this '2 part way' becauuse 
+  #   SQLite' correlated subquery update is not working ( or I can not figure it out )
+  #   ( but I do not care . . . 'good enough' )
+  # TO_DO FIX [ ] only 'where-in' the cells that I need to UPDATE
   # update NA cells ( actually all cells ) using other cells that do not contain NA ( from the lookup table )
   sqldf("
       UPDATE main.UNIVERSE 
@@ -912,6 +945,31 @@ main_foresight3_999 <- function(pauseat=NULL) {
   # surviVor of '6-month price appreciation greater than the universal 'All stocks' median (UNIVERSE)'
   UNIVERSE <<- mutate(UNIVERSE, GROWTH_EXPOSE_PRCHG_26W_NTILE2_SRVVR = ifelse(PRCHG_26W_NTILE2 == 2, 1, 0)  )
   
+
+  # Dividend-Ex Date
+  # Data Table Name: DIVNQXDT
+  # Data Category: Income Statement – Quarterly
+  # Field Type: Date (MM/DD/YYYY)
+
+  # DD_FILE     SI_ISQ
+  # FIELD_NAME  DIVNQXDT
+  # FIELD_TYPE  D
+  # FIELD_DESC  Dividend-Ex Date
+  # DESCRIP     Income Statement - Quarterly
+  # FM_FILE     SI_ISQ
+
+  # Dividend-Pmt Date
+  # Data Table Name: DIVNQPDT
+  # Data Category: Income Statement – Quarterly
+  # Field Type: Date (MM/DD/YYYY)
+
+  # DD_FILE     SI_ISQ
+  # FIELD_NAME  DIVNQPDT
+  # FIELD_TYPE  D
+  # FIELD_DESC  Dividend-Pmt Date
+  # DESCRIP     Income Statement - Quarterly
+  # FM_FILE     SI_ISQ
+  
   
   # have an 'annual' 'EPS change' greater than zero (0)'
   # LAST of growth expose
@@ -964,7 +1022,8 @@ main_foresight3_999 <- function(pauseat=NULL) {
   )
   
   UNIVERSE <<- sqldf("SELECT UNIV.*, ISQ.EPS_Q1 AS EPS_Q1__numeric, ISQ.EPS_Q2 AS EPS_Q2__numeric, ISQ.EPS_Q3 AS EPS_Q3__numeric, ISQ.EPS_Q4 AS EPS_Q4__numeric, -- comment
-                                      ISQ.EPS_Q5 AS EPS_Q5__numeric, ISQ.EPS_Q6 AS EPS_Q6__numeric, ISQ.EPS_Q7 AS EPS_Q7__numeric, ISQ.EPS_Q8 AS EPS_Q8__numeric
+                                      ISQ.EPS_Q5 AS EPS_Q5__numeric, ISQ.EPS_Q6 AS EPS_Q6__numeric, ISQ.EPS_Q7 AS EPS_Q7__numeric, ISQ.EPS_Q8 AS EPS_Q8__numeric, 
+                                      ISQ.DIVNQXDT AS DIVNQXDTUNX  , ISQ.DIVNQPDT AS DIVNQPDTUNX 
                                   FROM 
                                    main.UNIVERSE UNIV, main.SI_ISQ ISQ WHERE 
                                    UNIV.COMPANY_ID = ISQ.COMPANY_ID 
@@ -1179,17 +1238,33 @@ main_foresight3_999 <- function(pauseat=NULL) {
   # DESCRIP    Income Statement - Quarterly
   # FM_FILE    SI_ISQ
   
+# SEEMS SIGNIFICANT ( some as high as 20%)  DILUTION_MULT_ 
+# ( STRANGE NO CHANGE FROM QUARTER TO QUARTER )
+  
   UNIVERSE <<- mutate(UNIVERSE,                                   
-      DILUTION_MULT_Q1 =ifelse( !is.na(EPSCON_Q1) == TRUE & !is.na(EPSDC_Q1) == TRUE , as.numeric(EPSCON_Q1/EPSDC_Q1), 1.0)
-    , DILUTION_MULT_Q2 =ifelse( !is.na(EPSCON_Q2) == TRUE & !is.na(EPSDC_Q2) == TRUE , as.numeric(EPSCON_Q2/EPSDC_Q2), 1.0)                                                                         
-    , DILUTION_MULT_Q3 =ifelse( !is.na(EPSCON_Q3) == TRUE & !is.na(EPSDC_Q3) == TRUE , as.numeric(EPSCON_Q3/EPSDC_Q3), 1.0)                                                              
-    , DILUTION_MULT_Q4 =ifelse( !is.na(EPSCON_Q4) == TRUE & !is.na(EPSDC_Q4) == TRUE , as.numeric(EPSCON_Q4/EPSDC_Q4), 1.0)                                          
-    , DILUTION_MULT_Q5 =ifelse( !is.na(EPSCON_Q5) == TRUE & !is.na(EPSDC_Q5) == TRUE , as.numeric(EPSCON_Q5/EPSDC_Q5), 1.0)
-    , DILUTION_MULT_Q6 =ifelse( !is.na(EPSCON_Q6) == TRUE & !is.na(EPSDC_Q6) == TRUE , as.numeric(EPSCON_Q6/EPSDC_Q6), 1.0)
-    , DILUTION_MULT_Q7 =ifelse( !is.na(EPSCON_Q7) == TRUE & !is.na(EPSDC_Q7) == TRUE , as.numeric(EPSCON_Q7/EPSDC_Q7), 1.0)
-    , DILUTION_MULT_Q8 =ifelse( !is.na(EPSCON_Q8) == TRUE & !is.na(EPSDC_Q8) == TRUE , as.numeric(EPSCON_Q8/EPSDC_Q8), 1.0)
+      DILUTION_MULT_Q1 =ifelse( !is.na(EPSCON_Q1) == TRUE & !is.na(EPSDC_Q1) == TRUE  & EPSCON_Q1 != 0.0 & EPSDC_Q1 != 0.0, as.numeric(EPSCON_Q1/EPSDC_Q1), 1.0)
+    , DILUTION_MULT_Q2 =ifelse( !is.na(EPSCON_Q2) == TRUE & !is.na(EPSDC_Q2) == TRUE  & EPSCON_Q2 != 0.0 & EPSDC_Q2 != 0.0, as.numeric(EPSCON_Q2/EPSDC_Q2), 1.0)                                                                         
+    , DILUTION_MULT_Q3 =ifelse( !is.na(EPSCON_Q3) == TRUE & !is.na(EPSDC_Q3) == TRUE  & EPSCON_Q3 != 0.0 & EPSDC_Q3 != 0.0, as.numeric(EPSCON_Q3/EPSDC_Q3), 1.0)                                                              
+    , DILUTION_MULT_Q4 =ifelse( !is.na(EPSCON_Q4) == TRUE & !is.na(EPSDC_Q4) == TRUE  & EPSCON_Q4 != 0.0 & EPSDC_Q4 != 0.0, as.numeric(EPSCON_Q4/EPSDC_Q4), 1.0)                                          
+    , DILUTION_MULT_Q5 =ifelse( !is.na(EPSCON_Q5) == TRUE & !is.na(EPSDC_Q5) == TRUE  & EPSCON_Q5 != 0.0 & EPSDC_Q5 != 0.0, as.numeric(EPSCON_Q5/EPSDC_Q5), 1.0)
+    , DILUTION_MULT_Q6 =ifelse( !is.na(EPSCON_Q6) == TRUE & !is.na(EPSDC_Q6) == TRUE  & EPSCON_Q6 != 0.0 & EPSDC_Q6 != 0.0, as.numeric(EPSCON_Q6/EPSDC_Q6), 1.0)
+    , DILUTION_MULT_Q7 =ifelse( !is.na(EPSCON_Q7) == TRUE & !is.na(EPSDC_Q7) == TRUE  & EPSCON_Q7 != 0.0 & EPSDC_Q7 != 0.0, as.numeric(EPSCON_Q7/EPSDC_Q7), 1.0)
+    , DILUTION_MULT_Q8 =ifelse( !is.na(EPSCON_Q8) == TRUE & !is.na(EPSDC_Q8) == TRUE  & EPSCON_Q8 != 0.0 & EPSDC_Q8 != 0.0, as.numeric(EPSCON_Q8/EPSDC_Q8), 1.0)
   )
 
+  # SO I DO NOT ACCIDENTALLY 'BUY A STOCK' AT THE WRONG TIME
+
+  # Dividend-Ex Date
+  # Data Table Name: DIVNQXDT
+
+  # Dividend-Pmt Date
+  # Data Table Name: DIVNQPDT
+  
+   UNIVERSE <<- mutate(UNIVERSE,                                                                                                               
+      DIVNQXDT = as.character(ymd_hms(c("1970-01-01 16:00:00.880-0400")) + days(DIVNQXDTUNX))                                                        
+    , DIVNQPDT = as.character(ymd_hms(c("1970-01-01 16:00:00.880-0400")) + days(DIVNQPDTUNX))
+  )
+  
   ################
   
   
@@ -2223,12 +2298,12 @@ main_foresight3_999 <- function(pauseat=NULL) {
   # Field Type: Dollars per share (0.01 to 99999.99)
   # For NYSE, AMEX, and NASDAQ-traded companies, the Price is the closing price for the date of the program update release. 
 
-  # higher is better 
+  # higher is better ( already Diluted! )
   
   # ( EPSDC_Q1 + EPSDC_Q2 + EPSDC_Q3 + EPSDC_Q4  ) / PRICE = VAL_EXPOSE_VAL_TWO_CMPST_EARN_TO_PRICE_RATIO
   
   UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_VAL_TWO_CMPST_EARN_TO_PRICE_RATIO = as.numeric(as.no_worse_than_NA(  
-    ( EPSDC_Q1 + EPSDC_Q2 + EPSDC_Q3 + EPSDC_Q4  ) / PRICE 
+    ( EPSDC_Q1  + EPSDC_Q2  + EPSDC_Q3  + EPSDC_Q4  ) / PRICE 
   ) ) )
   
   UNIVERSE_NOT_NA <- group_by(UNIVERSE,MG_DESC) 
@@ -2258,12 +2333,12 @@ main_foresight3_999 <- function(pauseat=NULL) {
   #	DESCRIP     Income Statement - Quarterly
   #	FM_FILE	SI_ISQ
   
-  # higher is better 
+  # higher is better ( Andre put in dilutions )
   
   # ( SALES_Q1 + SALES_Q2 + SALES_Q3 + SALES_Q4  ) / PRICE = VAL_EXPOSE_VAL_TWO_CMPST_SALES_TO_PRICE_RATIO
   
   UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_VAL_TWO_CMPST_SALES_TO_PRICE_RATIO = as.numeric(as.no_worse_than_NA(   
-    ( SALES_Q1 + SALES_Q2 + SALES_Q3 + SALES_Q4  ) / PRICE 
+    ( SALES_Q1  * ( 1.0 / DILUTION_MULT_Q1 ) + SALES_Q2  * ( 1.0 / DILUTION_MULT_Q2 ) + SALES_Q3  * ( 1.0 / DILUTION_MULT_Q3 ) + SALES_Q4  * ( 1.0 / DILUTION_MULT_Q4 )  ) / PRICE 
   ) ) )
   
   UNIVERSE_NOT_NA <- group_by(UNIVERSE,MG_DESC) 
@@ -2317,12 +2392,12 @@ main_foresight3_999 <- function(pauseat=NULL) {
 
   # MANUAL CALCULATION 
   
-  # higher is better 
+  # higher is better ( Andre dilution is included )
   
   # ( FCFPS_Q1 + FCFPS_Q2 + FCFPS_Q3 + FCFPS_Q4  ) / PRICE = VAL_EXPOSE_VAL_TWO_CMPST_FCFPS_XOR_BOOK_TO_PRCE_RATIO
   
   UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_VAL_TWO_CMPST_FCFPS_XOR_BOOK_TO_PRCE_RATIO = as.numeric(as.no_worse_than_NA( 
-    ( FCFPS_Q1 + FCFPS_Q2 + FCFPS_Q3 + FCFPS_Q4  ) / PRICE 
+    ( FCFPS_Q1  * ( 1.0 / DILUTION_MULT_Q1 ) + FCFPS_Q2  * ( 1.0 / DILUTION_MULT_Q2 ) + FCFPS_Q3  * ( 1.0 / DILUTION_MULT_Q3 ) + FCFPS_Q4  * ( 1.0 / DILUTION_MULT_Q4 )  ) / PRICE 
   ) ) )
   
   UNIVERSE_NOT_NA <- group_by(UNIVERSE,MG_DESC) 
@@ -2380,7 +2455,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   # http://en.wikipedia.org/wiki/Book_value
   # ( EQUITY_Q1 - GWI_Q1 ) / PRICE
   
-  # higher is better 
+  # higher is better ( Andre dilution is included )
   
   # EQUITY_Q1 / PRICE = VAL_EXPOSE_VAL_TWO_CMPST_FCFPS_XOR_BOOK_TO_PRCE_RATIO
 
@@ -2393,7 +2468,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   # since still kept for 'non-Financial' just re-calculate(re-overwrite)  on top of 'Financial'
   
   UNIVERSE_NOT_NA <- mutate(UNIVERSE_NOT_NA, VAL_EXPOSE_VAL_TWO_CMPST_FCFPS_XOR_BOOK_TO_PRCE_RATIO = as.numeric(as.no_worse_than_NA(   
-    EQUITY_Q1 / PRICE 
+    EQUITY_Q1 * ( 1.0 / DILUTION_MULT_Q1 ) / PRICE 
   ) ) )
   
   # since still kept for 'non-Financial' just re-calculate(re-overwrite)  on top of 'Financial'
@@ -2462,10 +2537,15 @@ main_foresight3_999 <- function(pauseat=NULL) {
   # View(UNIVERSE[,c("EBIT_Q1","EBIT_Q2","EBIT_Q3","EBIT_Q4","ENTVAL_Q1","VAL_EXPOSE_VAL_TWO_CMPST_EBITDA_TO_ENTVAL_RATIO","VAL_EXPOSE_VAL_TWO_CMPST_EBITDA_TO_ENTVAL_RATIO_NTILE100")])
   # View(UNIVERSE[UNIVERSE$MG_DESC == "Financial",c("EBIT_Q1","EBIT_Q2","EBIT_Q3","EBIT_Q4","ENTVAL_Q1","VAL_EXPOSE_VAL_TWO_CMPST_EBITDA_TO_ENTVAL_RATIO","VAL_EXPOSE_VAL_TWO_CMPST_EBITDA_TO_ENTVAL_RATIO_NTILE100")])
   
-  # higher is better 
+  # higher is better ( Andre added dilutions )
   
   UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_VAL_TWO_CMPST_EBITDA_TO_ENTVAL_RATIO = as.numeric(as.no_worse_than_NA(   
-    (  EBIT_Q1 + EBIT_Q2 + EBIT_Q3 + EBIT_Q4 + ifelse(!is.na(DEP_CF_Q1) == TRUE, DEP_CF_Q1, 0.0 ) + ifelse(!is.na(DEP_CF_Q2) == TRUE, DEP_CF_Q2, 0.0 ) + ifelse(!is.na(DEP_CF_Q3) == TRUE, DEP_CF_Q3, 0.0 ) + ifelse(!is.na(DEP_CF_Q4) == TRUE, DEP_CF_Q4, 0.0 ) ) / ENTVAL_Q1 
+    (  EBIT_Q1 * ( 1.0 / DILUTION_MULT_Q1 ) + EBIT_Q2 * ( 1.0 / DILUTION_MULT_Q2 ) + 
+       EBIT_Q3 * ( 1.0 / DILUTION_MULT_Q3 ) + EBIT_Q4 * ( 1.0 / DILUTION_MULT_Q4 ) + 
+      ifelse(!is.na(DEP_CF_Q1) == TRUE, DEP_CF_Q1 * ( 1.0 / DILUTION_MULT_Q1 ) , 0.0 ) + 
+      ifelse(!is.na(DEP_CF_Q2) == TRUE, DEP_CF_Q2 * ( 1.0 / DILUTION_MULT_Q2 ) , 0.0 ) + 
+      ifelse(!is.na(DEP_CF_Q3) == TRUE, DEP_CF_Q3 * ( 1.0 / DILUTION_MULT_Q3 ) , 0.0 ) + 
+      ifelse(!is.na(DEP_CF_Q4) == TRUE, DEP_CF_Q4 * ( 1.0 / DILUTION_MULT_Q4 ) , 0.0 ) ) / ENTVAL_Q1 
   ) ) )
   
   UNIVERSE_NOT_NA <- group_by(UNIVERSE,MG_DESC) 
@@ -2517,12 +2597,12 @@ main_foresight3_999 <- function(pauseat=NULL) {
       
   # SINCE (NON-QUARTER cyclical, I will use their AUTOMATIC )
       
-  # higher is better 
+  # higher is better ( Andre added dilutions )
   
   # SHY = VAL_EXPOSE_VAL_TWO_CMPST_SHY_YIELD
   
   UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_VAL_TWO_CMPST_SHY_YIELD = as.numeric(as.no_worse_than_NA(   
-    SHY
+    SHY  * ( 1.0 / DILUTION_MULT_Q1 ) 
   ) ) )
   
   UNIVERSE_NOT_NA <- group_by(UNIVERSE,MG_DESC) 
@@ -2711,7 +2791,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   , desc(ALL_CMBND_NTILE100_SUMM)
   )[,c( 
   "MONTHDATEDT", "WEEKDATEDT","SPLITDATEDT", 
-  "TICKER","COMPANY","MG_DESC","SCT_MN_PRCE_10M_SMA_SVVR","MKTCAP","PSD_SPLITDT_DATE","SPLIT_FACT","PERENDDT_Q2", "PERLEN_Q1", "PERTYP_Q1", "PERENDDT_Q1"
+  "TICKER","COMPANY","DIVNQXDT","DIVNQPDT","MG_DESC","SCT_MN_PRCE_10M_SMA_SVVR","MKTCAP","PSD_SPLITDT_DATE","SPLIT_FACT","PERENDDT_Q2", "PERLEN_Q1", "PERTYP_Q1", "PERENDDT_Q1"
   # ,"PERENDDT_Q0" ( NOT USEFUL )
   ,"VAL_TWO_CMPST_SUMM_REBAL_NTILE100", "VAL_EXPOSE_VAL_TWO_CMPST_SCORES_SUMM_REBAL", "ALL_CMBND_NTILE100_SUMM","ALL_CMBND_SUMM_NTILE2","VAL_EXPOSE_ALL_CMBND_CMPST_VAL_TWO_CMPST_SCORES_TOPN"
   ,"SCT_MN_PRCE_10M_SMA","SCT_MN_PRCE")
@@ -2735,7 +2815,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
 
 
 # higest: swap out 'ntile' with 'do(  hgquantile )'
-# [ ] big effort
+# [x] big effort
 
   # [X] DONE ( NOTE 669 observations returned instead of 668 )
   # UNIVERSE_NOT_NA <- do(UNIVERSE_NOT_NA, 
@@ -2745,13 +2825,14 @@ main_foresight3_999 <- function(pauseat=NULL) {
 # BEGIN THURSDAY ( DAY OF LEAVE )
   
   # [ ] MISSING 'unit test for "posneg = -1"' but super highly unlikely to fail
+  #     ( note: all hdntile [ ] needs testhat testing )
   
   # [x] !!!! ***** SWAP OUT THE REMANDER ntile --> hdntile ****
 
    # [ ] ADJUST (PROGRAM) hdntile/ndrank SO "casecount" IS AN OPTION (ndrank WOULD like)
-   # [ ] [ALSO  ADD trunc(a/b) + 1 option (hdrank CASE)
+   # [-] [ALSO  ADD trunc(a/b) + 1 option (hdrank CASE)
   
-# fix that report date + 'Add Periods' shift see TimeWarp
+# fix that report date + 'Add Periods' shift see TimeWarp ( if I go back to future end_of_Q preduction )
 # [ ]
 
 # style and conversion ( sqldf to work for me ) 
@@ -2769,17 +2850,21 @@ main_foresight3_999 <- function(pauseat=NULL) {
 
 # CLEAN SOME CODE UP ( SIMPLIFY SOME 'REPEATS T FUNCTIONS' )
 # (1) eliminate duplicates [x]
-# (2) repeating 'nite' tests [ ] 
+# (2) repeating 'nite' tests [x] 
 
 # INTEGRATE VJAYS ( CENTRALIZED DIRECTORY FUNCTION )
 # [ ] YYYY-MM-DD directories  ( also scan .txt for copyDirectory )
 
 # FILE STARTUP SPEED
-# [x if !file.exists(...) ... load file .... ( once only ) ... save file
+# [x] if !file.exists(...) ... load file .... ( once only ) ... save file
+    
+# [ ] of top 600 SOME MISSING 'not there yet date' ( maybe a lower LONGER term thing )
+#       [ ]--- quantmod: 'Google Finance' ( is it there )
+#       [ ]    XML and EDGAR(fed gov), ( is it there? )    
     
 # TO_DO ( NOTE DONE YET ) : END OF DAY. "Put Up on GitHub" [X] August 13, 2014
 # main-foresight-999.R [ ] 
-# helpers.R rename   helpers-foresight-999.R [ ]    [ ] THIS ONE IS NEW
+# helpers.R rename   helpers-foresight-999.R [x]    [ ] THIS ONE IS NEW
     
 # END SUNDAY 
     
