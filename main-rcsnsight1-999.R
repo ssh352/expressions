@@ -27,7 +27,10 @@
 
 # tO be useful I need the source ( if I am debugging within a PACKAGE )
 # options(error = recover)
-options(error = NULL)
+# options(error = NULL)
+# options(error = dump.frames)
+# NEXT time I get an error without a line # ( maybe? this can help )
+options(error = browser)
 
 options(width = 255)     
 options(digits = 22) 
@@ -93,20 +96,27 @@ setwd("N:\\MyVMWareSharedFolder\\rcsnsight1\\R")
 
 # IN YELLOW window2 only
 # library(testthat)
-# auto_test("./R", "./tests/testthat") 
+# auto_test("./R", "./tests/testthat")  
 
 
 
-symbol_close_lag_k_periods <- function(symbol,new_symbol_name, llagk = c(1)) {  
+symbol_OHLC_lag_k_periods <- function(symbol,new_symbol_name, llagk = c(1), qmOHLC = "Cl") {  
    require(quantmod)
-   if (is.null(symbol))          stop("symbol_close_lag_k_periods is missing symbol") 
-   if (is.null(new_symbol_name)) stop("symbol_close_lag_k_periods is missing new_symbol_name") 
+   if (is.null(symbol))          stop("symbol_OHLC_lag_k_periods is missing symbol") 
+   if (is.null(new_symbol_name)) stop("symbol_OHLC_lag_k_periods is missing new_symbol_name") 
     # Lag(Cl(eval(parse(text=symbol))[,c(paste0(symbol,".",OHLCi))]),k=llagk) -> L; paste0(symbol,".",OHLCi,".","Lag",".",c(llagk)) -> colnames(L); L 
-      Lag(Cl(symbol),k=llagk) -> L; paste0(new_symbol_name,".Close.Lag.",c(llagk)) -> colnames(L); L 
+      if ( !any(qmOHLC %in% c("Cl","Lowz"))) stop ( "symbol_OHLC_lag_k_periods qmOHLC should be Cl or Lowz")
+      if ( qmOHLC == "Lowz") {
+        Lag(Lo(symbol),k=llagk) -> L; paste0(new_symbol_name,".MinOf.Lag.",c(llagk)) -> colnames(L)
+      } 
+      if ( qmOHLC == "Cl") { 
+        Lag(Cl(symbol),k=llagk) -> L; paste0(new_symbol_name,".EndOf.Lag.",c(llagk)) -> colnames(L)
+      }
+      L
 }
 # KEEP - testing
-# first( symbol_close_lag_k_periods(IBM , "IBM"    )  , 6 )
-# first( symbol_close_lag_k_periods(GSPC,"GSPC",1:2)  , 6 )
+# first( symbol_OHLC_lag_k_periods(IBM , "IBM"    )  , 6 )
+# first( symbol_OHLC_lag_k_periods(GSPC,"GSPC",1:2)  , 6 )
 
 
 
@@ -132,20 +142,20 @@ main_rcsnsight1_999 <- function(pauseat=NULL) {
 
   # require(foreign)
 
-  
-  # fix quantmod::has.Cl so it only looks for the STOCK.Close ( not my appended .Lag. columns )
-  assignInNamespace(x="has.Cl", value= 
-    function (x, which = FALSE) {
-      colAttr <- attr(x, "Cl")
-      if (!is.null(colAttr))
-        return(if (which) colAttr else TRUE)
-      loc <- grep(".*\\.Close$", colnames(x), ignore.case = TRUE) # ORIGINAL was just "Close"
-      if (!identical(loc, integer(0))) {
-        return(if (which) loc else TRUE)
-      }
-        else FALSE
-      }
-  , ns=asNamespace("quantmod") )
+  # # DECIDED - to have my columns to be named 'EndOf' 
+  # # fix quantmod::has.Cl so it only looks for the STOCK.Close ( not my appended .Lag. columns )
+  # assignInNamespace(x="has.Cl", value= 
+    # function (x, which = FALSE) {
+      # colAttr <- attr(x, "Cl")
+      # if (!is.null(colAttr))
+        # return(if (which) colAttr else TRUE)
+      # loc <- grep(".*\\.Close$", colnames(x), ignore.case = TRUE) # ORIGINAL was just "Close"
+      # if (!identical(loc, integer(0))) {
+        # return(if (which) loc else TRUE)
+      # }
+        # else FALSE
+      # }
+  # , ns=asNamespace("quantmod") )
   
   # required quantmod will now load
   require(quantstrat)  # calls required functions ( IN USE )
@@ -382,7 +392,9 @@ main_rcsnsight1_999 <- function(pauseat=NULL) {
     x <- to.monthly(x,indexAt='lastof',drop.time=TRUE) # faber.R
     x <- x[paste0(substr(initDate,1,7),'::')]
     indexFormat(x) <- '%Y-%m-%d'
-    x <- x[,"x.Close"] # remove quantmod o/h/l 
+    # benchmark specific: I actually want the low ( different from non-benchmarks )
+    x <- x[,c("x.Low","x.Close")] # remove quantmod o/h
+    x[,"x.Low"]   <- as.numeric(x[,"x.Low"])   # garantee numeric
     x[,"x.Close"] <- as.numeric(x[,"x.Close"]) # garantee numeric
     colnames(x)<-gsub("x",symbol,colnames(x))
     assign(symbol,x)
@@ -476,7 +488,10 @@ main_rcsnsight1_999 <- function(pauseat=NULL) {
     rm("x","symbols","symbol")
   }
 
-  # NEXT: SAVE ON GITHUB [ ] ( FORGOT LAST TIME)     ( FRI NIGHT PLAY )
+  # Applied Mutlivariate Statical Analysis 6th ( Blue Book ) Johnson and Wichern p. 635
+  # logit - DUMPED - 'postive 0 to 100 is just the prob itself;  ( 0 TO 100 ) USE hdquantile TO HELP
+  
+  # NEXT: SAVE ON GITHUB [x] ( FORGOT LAST TIME)     ( FRI NIGHT PLAY )
   #        DEEPLY CONSIDER ( DATA MINING BOOK ... use ? Next, 'Next(Next(',Lag, Delt, Cl put into quantmod::model* function
   #          quantmod: Lag, Next( and cbind ), and Delt
   # NEXT: PUT 'REST OF 3 SYMBOLS UP ON POSTGRE [ ]
@@ -484,7 +499,7 @@ main_rcsnsight1_999 <- function(pauseat=NULL) {
   #     works(tested): SELECT * FROM "GSPC" NATURAL JOIN "GSPC2"
   
   # *** TO START **** 
-  # [ Database-ize: https://r-forge.r-project.org/scm/viewvc.php/pkg/TSdata/vignettes/Guide.Stex?view=markup&root=tsdbi ??? ]
+  # Database-ize: https://r-forge.r-project.org/scm/viewvc.php/pkg/TSdata/vignettes/Guide.Stex?view=markup&root=tsdbi ??? ]
   # [x] TRIED library(TSdbi) and library(TSsql) # POSTGRE specific failures 
   # LATER [ ] quandmod getSymbols re-try style tryCatch
   # SOON ABOVE [ ] need a logit() 'green book'to convert 'recession probabilites in to better numbers
@@ -508,7 +523,7 @@ main_rcsnsight1_999 <- function(pauseat=NULL) {
   # Bernard Bool Book / Sornette Book(fed behavior) / AAII survey ( and other s)
   # that Random Forest pdf article 'stock minus 'bond'' ( as indicator )
   
-  # consider DEEPLY faber 8-mo(10-mo) per sector moving averages ( SEE foresight CODE [ ] )
+  # [ ] consider DEEPLY faber 8-mo(10-mo) per sector moving averages ( SEE foresight CODE [x] )
   
   # OECD ( 3 month lag )  VERIFIED NEW!      USARECM: FIX : SUBTRACT OFF ONE DAY [x]
 
@@ -532,32 +547,56 @@ main_rcsnsight1_999 <- function(pauseat=NULL) {
     rm("x","symbols","symbol")
   }
   
-  # left join - complains about 'left join meant for 2' 'localtime is not UTC' 
+  # left join .External("mergeXts"? - complains about 'left join meant for 2' 'localtime is not UTC' 
   suppressWarnings(merge(GSPC,USRECM,RECPROUSM156N,USARECM,join='left',tz="UTC")) -> GALAXY_L  
 
+  # TOO EARLY - have to do below anyways
   # keep complete.cases ( zoo::na.trim is equivalent )
-  na.trim(GALAXY_L[,!(colnames(GALAXY_L) %in% "tz")])  -> GALAXY_L 
+  # na.trim(GALAXY_L[,!(colnames(GALAXY_L) %in% "tz")])  -> GALAXY_L 
   
-  # the benchmark - outer
-  symbol_close_lag_k_periods(GSPC,"GSPC",1:2)                       -> GSPC_LAGS 
+  # the benchmark merge.xts? - outer
+  symbol_OHLC_lag_k_periods(GSPC,"GSPC",0:1, qmOHLC = "Lowz")           -> GSPC_LAGS_LOW 
+  suppressWarnings(merge(GALAXY_L,GSPC_LAGS_LOW,join='outer',tz='UTC')) -> GALAXY_L 
+  symbol_OHLC_lag_k_periods(GSPC,"GSPC",0:1)                        -> GSPC_LAGS 
   suppressWarnings(merge(GALAXY_L,GSPC_LAGS,join='outer',tz='UTC')) -> GALAXY_L 
+
+  
   
   # all others ( not the benchmark )
-  symbol_close_lag_k_periods(USRECM,"USRECM",1:2)                     -> USRECM_LAGS 
+  symbol_OHLC_lag_k_periods(USRECM,"USRECM",0:1)                      -> USRECM_LAGS 
   suppressWarnings(merge(GALAXY_L,USRECM_LAGS,join='outer',tz='UTC')) -> GALAXY_L
-  symbol_close_lag_k_periods(RECPROUSM156N,"RECPROUSM156N",1:2)              -> RECPROUSM156N_LAGS 
+  symbol_OHLC_lag_k_periods(RECPROUSM156N,"RECPROUSM156N",0:1)               -> RECPROUSM156N_LAGS 
   suppressWarnings(merge(GALAXY_L,RECPROUSM156N_LAGS,join='outer',tz='UTC')) -> GALAXY_L
-  symbol_close_lag_k_periods(USARECM,"USARECM",1:2)                    -> USARECM_LAGS 
+  symbol_OHLC_lag_k_periods(USARECM,"USARECM",0:1)                     -> USARECM_LAGS 
   suppressWarnings(merge(GALAXY_L,USARECM_LAGS,join='outer',tz='UTC')) -> GALAXY_L
   
-  # remove those uselss 'tz.#' columns
+  # remove those uselss 'tz.#' columns ( aesthetics )
   # will leave just "tz" behind
   GALAXY_L[,!grepl("tz.",colnames(GALAXY_L))] -> GALAXY_L
   
+  # remove those .Close ( and .Low ) columns
+  # so not to break quantmod::Cl()
+  GALAXY_L[,!grepl(".Close",colnames(GALAXY_L))] -> GALAXY_L
+  GALAXY_L[,!grepl(".Low",colnames(GALAXY_L))] -> GALAXY_L
+  
+  
   # AGAIN remove the 'extra records that have crept in because of the 
+  #  should ACTUALLY be removed after each 'merge' ( currenly does not break anything )
   # 'outer' join to the benchmark
   # keep complete.cases ( zoo::na.trim is equivalent )
   na.trim(GALAXY_L[,!(colnames(GALAXY_L) %in% "tz")])  -> GALAXY_L 
+  
+  # KEEP
+  # if I want to just work with a SAMPLE
+  #   as in 'pointless having everything: as sample of 300 as good as 3000' 
+  #      'to much memory' OR 'get the same results' after 300'
+  # GALAXY_L[sample(1:NROW(GALAXY_L),300,replace=FALSE),] -> GALAXY_L
+  
+  # make sure I look at current result of long running results 'on the fly'
+  capture.output(print(paste0(as.character(Sys.Date())))
+    , file = "./tests/main-rcsnsight1-999_runRESULTS.txt"
+    , append=TRUE
+  )
   
   the_end_debug_bookmark_here <- 1
   
