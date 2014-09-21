@@ -14,7 +14,7 @@ if(getOption("RepositoryStyle") == "InstalledTest")  {
 
 if(getOption("RepositoryStyle") == "Installed")  {
 
-  options(AAIIBase = "N:/MyVMWareSharedFolder/Professional140912") 
+  options(AAIIBase = "N:/MyVMWareSharedFolder/Professional140919") 
   
 }
 
@@ -99,24 +99,57 @@ options(max.print=99999)
 options(scipen=255) # Try these = width
 options(sqldf.driver = "SQLite")
 
-library(Hmisc)
+# library(Hmisc)
 
-library(testthat)
+# library(testthat)
 
-library(tcltk)
-library(Rgraphviz)
+# library(tcltk)
+# library(Rgraphviz)
 
-library(sqldf)
+# library(sqldf)
 
-library(lubridate)
+# library(lubridate)
 
-library(plyr)
-library(dplyr)
-library(data.table)
+# library(plyr)
+# library(dplyr)
+# library(data.table)
 
-library(foreign)
+# library(foreign)
 
-library(TTR)
+# library(TTR)
+
+get_from_disk <- function(fnombre) { 
+   
+  require(foreign)
+ 
+  if(is.null(fnombre) ) stop ("fnombre file name is missing")
+ 
+  if(getOption("FileStoreStyle") == "Optimized") {
+    # NOTE: file.access: case INsenstive ( better built for Windows )
+    if( file.access(getOption(paste0("AAIISIPro40PathFileOptim_",fnombre)), mode = 0) == 0) {
+      load(file = getOption(paste0("AAIISIPro40PathFileOptim_",fnombre)), envir = environment(), verbose = TRUE)
+      # load file ( assign - only takes a string)
+      assign("fnombre_data",eval(parse(text=fnombre)))
+      # SHOULD ACTUALLY DO rm(list = c(fnombre))
+    } else {
+      # load file ( assign - only takes a string)
+      assign(fnombre,suppressWarnings(suppressMessages(read.dbf(file=getOption(paste0("AAIISIPro40PathFileNotOptim_",fnombre)), as.is = TRUE))))     
+      save(list = c(fnombre),file = getOption(paste0("AAIISIPro40PathFileOptim_",fnombre)),envir = environment())
+      assign("fnombre_data",eval(parse(text=fnombre)))
+    }
+  } else {
+    # load file
+    fnombre_data <- suppressWarnings(suppressMessages(read.dbf(file=getOption(paste0("AAIISIPro40PathFileNotOptim_",fnombre)), as.is = TRUE)))
+  }
+  return(fnombre_data)
+ 
+}
+
+# SETUP <<- get_from_disk("SETUP")
+#  BUT: REPLACE IN CODE SETUP <<- 
+#                    TO SETUP <- 
+
+
 
 setwd("N:\\MyVMWareSharedFolder\\foresight3\\R")
 
@@ -134,6 +167,26 @@ main_foresight3_999 <- function(pauseat=NULL) {
 
 
   # if(pauseat=="HERE") {}
+  
+  require(Hmisc)
+
+  require(testthat)
+
+  require(tcltk)
+  require(Rgraphviz)
+
+  require(sqldf)
+
+  require(lubridate)
+
+  require(plyr)
+  require(dplyr)
+  require(data.table)
+
+  require(foreign)
+
+  require(TTR)
+  
 
   # if( Sys.getenv("ISRTESTING") == "TRUE") { if(NROW(PAYLOAD) == 7000) print(paste0("","")) }
 
@@ -212,19 +265,22 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   # SI Pro 4.0 setup
   
-   if(getOption("FileStoreStyle") == "Optimized") {
-    if( file.exists(getOption("AAIISIPro40PathFileOptim_SETUP"))) {
-      load(file = getOption("AAIISIPro40PathFileOptim_SETUP"))
-    } else {
-      # load file
-      SETUP <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SETUP"), as.is = TRUE)))
-      save("SETUP",file = getOption("AAIISIPro40PathFileOptim_SETUP"))
-    }
-  } else {
-    # load file
-    SETUP <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SETUP"), as.is = TRUE)))
-  }
+   # if(getOption("FileStoreStyle") == "Optimized") {
+    # if( file.exists(getOption("AAIISIPro40PathFileOptim_SETUP"))) {
+      # load(file = getOption("AAIISIPro40PathFileOptim_SETUP"))
+    # } else {
+      # # load file
+      # SETUP <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SETUP"), as.is = TRUE)))
+      # save("SETUP",file = getOption("AAIISIPro40PathFileOptim_SETUP"))
+    # }
+  # } else {
+    # # load file
+    # SETUP <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SETUP"), as.is = TRUE)))
+  # }
   
+  SETUP <<- get_from_disk("SETUP")
+  #  BUT: REPLACE IN CODE SETUP <<- 
+  #                    TO SETUP <- 
   
   SETUP_tbl_sqlite <- copy_to(dpsqllconn, SETUP, temporary = FALSE
     , indexes = list(
@@ -250,6 +306,8 @@ main_foresight3_999 <- function(pauseat=NULL) {
     SI_CI <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_CI"), as.is = TRUE)))
   }
 
+
+  
     # primary_key_dup <- SI_CI[duplicated(SI_CI[,'TICKER']),,drop=FALSE]
     # new_df_no_duplicates <- SI_CI[!(SI_CI$TICKER %in% as.matrix(primary_key_dup)),,drop=FALSE]
     # SI_CI <<- new_df_no_duplicates
@@ -386,6 +444,32 @@ main_foresight3_999 <- function(pauseat=NULL) {
   )
   
   SI_PSD <<- tbl_df(SI_PSD)
+
+  # 4–4–5 calendar
+  # he 4–4–5 calendar is a method of managing accounting periods. 
+  # It is a common calendar structure for some industries such as retail, manufacturing and parking industry.
+
+  # The 4–4–5 calendar divides a year into 4 quarters. 
+  # Each quarter has 13 weeks, which are grouped into 
+   # two 4-week "months" and 
+   # one 5-week "month". 
+  # The grouping of 13 weeks may also be set up as 5–4–4 weeks or 4–5–4 weeks, 
+  # but the 4–4–5 seems to be the most common arrangement.
+
+  # you can still compare a period to the same period in the prior year
+
+  # end date of the period is always the same day of the week
+
+    # BUT
+    # has 364 days (7 days * 52 weeks), so that 
+    # approximately every 5.6 years there will be a 53-week year, 
+    # which can make year-on-year comparison difficult. ( NEEDS OPTIMISTIC ADJUSTMENT ( 365.0/364.0 (X)OR 366.0/364.0 )
+
+  # VARIANTS: Last Saturday of the month at fiscal year end
+  # VARIANTS: Saturday nearest the end of month
+
+  # http://en.wikipedia.org/wiki/4%E2%80%934%E2%80%935_calendar
+
 
   # FIELD_NAME  PEREND_Q1 (str(UNIVERSE) shows loaded "num" )
   # FIELD_TYPE  D
@@ -948,7 +1032,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
 
   # Dividend-Ex Date
   # Data Table Name: DIVNQXDT
-  # Data Category: Income Statement – Quarterly
+  # Data Category: Income Statement ? Quarterly
   # Field Type: Date (MM/DD/YYYY)
 
   # DD_FILE     SI_ISQ
@@ -960,7 +1044,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
 
   # Dividend-Pmt Date
   # Data Table Name: DIVNQPDT
-  # Data Category: Income Statement – Quarterly
+  # Data Category: Income Statement ? Quarterly
   # Field Type: Date (MM/DD/YYYY)
 
   # DD_FILE     SI_ISQ
@@ -2796,7 +2880,9 @@ main_foresight3_999 <- function(pauseat=NULL) {
   ,"VAL_TWO_CMPST_SUMM_REBAL_NTILE100", "VAL_EXPOSE_VAL_TWO_CMPST_SCORES_SUMM_REBAL", "ALL_CMBND_NTILE100_SUMM","ALL_CMBND_SUMM_NTILE2","VAL_EXPOSE_ALL_CMBND_CMPST_VAL_TWO_CMPST_SCORES_TOPN"
   ,"SCT_MN_PRCE_10M_SMA","SCT_MN_PRCE")
     ]
-        
+          
+  the_end_debug_bookmark_here <- 1
+  
         
   return(UNIVERSE_FMA)
 
