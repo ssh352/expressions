@@ -30,7 +30,7 @@
 # options(error = NULL)
 # options(error = dump.frames)
 # NEXT time I get an error without a line # ( maybe? this can help )
-options(error = browser)
+# options(error = browser)
 
 options(width = 255)     
 options(digits = 22) 
@@ -118,6 +118,172 @@ symbol_OHLC_lag_k_periods <- function(symbol,new_symbol_name, llagk = c(1), qmOH
 # first( symbol_OHLC_lag_k_periods(IBM , "IBM"    )  , 6 )
 # first( symbol_OHLC_lag_k_periods(GSPC,"GSPC",1:2)  , 6 )
 
+
+pct_chnge <- function(xtsdata, col_0 = "", col_1 = "") {
+  
+  # subset of data
+  xtsdata[,c(col_0,col_1)] -> xtsdata_subset
+  # calculate the metric    
+  (xtsdata_subset[,col_0] - xtsdata_subset[,col_1] ) / abs(xtsdata_subset[,col_1] + 0.0000001) -> xts_data_interest_new
+  # rename the new column - grab those numbers at the end   
+  ( last(gregexpr("\\.",col_0)[[1]]) + 1 ) -> col_0_extract_start_pos
+  nchar(col_0)                              -> col_0_extract_stop_pos
+  substr(col_0,start=col_0_extract_start_pos, stop=col_0_extract_stop_pos) -> col_0_nbr_suffix
+  # rename the new column - grab those numbers at the end   
+  ( last(gregexpr("\\.",col_1)[[1]]) + 1 ) -> col_1_extract_start_pos
+  nchar(col_1)                              -> col_1_extract_stop_pos
+  substr(col_1,start=col_1_extract_start_pos, stop=col_1_extract_stop_pos) -> col_1_nbr_suffix
+  # actual new column name
+  paste0(col_0,".PctChnge.",col_0_nbr_suffix,".",col_1_nbr_suffix) -> colnames(xts_data_interest_new)
+  return(xts_data_interest_new) 
+ 
+}
+
+  # # how I would call it
+
+  # pct_chnge(GALAXY_L,"RECPROUSM156N.EndOf.Lag.0","RECPROUSM156N.EndOf.Lag.1") -> GALAXY_L_CHNGES 
+  # # ...: one or more xts objects, or objects coercible to class xts
+  # suppressWarnings(merge(GALAXY_L,GALAXY_L_CHNGES,join='outer',tz='UTC')) -> GALAXY_L
+
+# # OLD
+# pct_chnge_pct_chnge <- function(xtsdata, col_01 = "", col_12 = "") {
+  
+  # # subset of data
+  # xtsdata[,c(col_01,col_12)] -> xtsdata_subset
+  # # calculate the metric    
+  # (xtsdata_subset[,col_01] - xtsdata_subset[,col_12] ) / abs(xtsdata_subset[,col_12] + 0.0000001) -> xts_data_interest_new
+  # # rename the new column - grab those numbers at the end   
+  # ( first(last(gregexpr("\\.",col_01)[[1]],2)) + 1 ) -> col_01_extract_start_pos
+  # nchar(col_01)                              -> col_01_extract_stop_pos
+  # substr(col_01,start=col_01_extract_start_pos, stop=col_01_extract_stop_pos) -> col_01_nbr_suffix
+  # # rename the new column - grab those numbers at the end   
+  # ( first(last(gregexpr("\\.",col_12)[[1]],2)) + 1 ) -> col_12_extract_start_pos
+  # nchar(col_12)                              -> col_12_extract_stop_pos
+  # substr(col_12,start=col_12_extract_start_pos, stop=col_12_extract_stop_pos) -> col_12_nbr_suffix
+  # # actual new column name
+  # paste0(col_01,".PctChngePctChnge.",col_01_nbr_suffix,".",col_12_nbr_suffix) -> colnames(xts_data_interest_new)
+  # return(xts_data_interest_new) 
+  
+# }
+
+
+pct_chnge_pct_chnge <- function(xtsdata, col_0 = "", col_1 = "") {
+  # subset of data
+  xtsdata[,c(col_0,col_1)] -> xtsdata_subset
+  # calculate the metric    
+  (xtsdata_subset[,col_0] - xtsdata_subset[,col_1] ) / abs(xtsdata_subset[,col_1] + 0.0000001) -> xts_data_interest_new
+  # find the number of soltutions
+  n_matches <- length(gregexpr("\\.[0-9]?[0-9]",col_0)[[1]])
+  # get the left argument: from its end; the second number position
+  fst_end_number_pos <- gregexpr("\\.[0-9]?[0-9]",col_0)[[1]][(n_matches-1)] 
+  # get its range including the period
+  fst_end_number_pos_lngth <- attr(gregexpr("\\.[0-9]?[0-9]",col_0)[[1]],"match.length")[(n_matches-1)] 
+  # get the right argument: from its end; the first number position
+  snd_end_number_pos <- gregexpr("\\.[0-9]?[0-9]",col_1)[[1]][(n_matches  )] 
+  # get its range including the period
+  snd_end_number_pos_lngth <- attr(gregexpr("\\.[0-9]?[0-9]",col_1)[[1]],"match.length")[(n_matches  )]  
+  # get the left arg: actual number; mo
+  fst_end_number <- substr(col_0, fst_end_number_pos + 1 , fst_end_number_pos + 1 + fst_end_number_pos_lngth - 2) 
+  # get the right arg: actual number; mo
+  snd_end_number <- substr(col_1, snd_end_number_pos + 1 , snd_end_number_pos + 1 + snd_end_number_pos_lngth - 2) 
+  # get the 'base name': get the beginnin of the col_0 name up to the end of the first number
+  fst_begin_number <- gregexpr("\\.[0-9]?[0-9]",col_0)[[1]][(1)] - 1  + attr(gregexpr("\\.[0-9]?[0-9]",col_0)[[1]],"match.length")[(1)] 
+  # the actual 'base name'
+  fst_begin <- substr(col_0, 1, fst_begin_number )
+  # the actual new full column name ( including the base name )
+  col_new <- paste0(fst_begin,".PctChngePctChnge.", fst_end_number, ".", snd_end_number)
+  # give the new data column a new string name
+  paste0(col_new) -> colnames(xts_data_interest_new)
+  # return that new data column ( with its new name )
+  return(xts_data_interest_new) 
+}
+
+
+  # # how I would call it
+  # pct_chnge_pct_chnge(GALAXY_L,"RECPROUSM156N.EndOf.Lag.0.PctChnge.0.1","RECPROUSM156N.EndOf.Lag.1.PctChnge.1.2") -> GALAXY_L_CHNGES 
+
+pct_chnge_pct_chnge_pct_chnge <- function(xtsdata, col_0 = "", col_1 = "") {
+  # subset of data
+  xtsdata[,c(col_0,col_1)] -> xtsdata_subset
+  # calculate the metric    
+  (xtsdata_subset[,col_0] - xtsdata_subset[,col_1] ) / abs(xtsdata_subset[,col_1] + 0.0000001) -> xts_data_interest_new
+  # find the number of soltutions
+  n_matches <- length(gregexpr("\\.[0-9]?[0-9]",col_0)[[1]])
+  # get the left argument: from its end; the second number position
+  fst_end_number_pos <- gregexpr("\\.[0-9]?[0-9]",col_0)[[1]][(n_matches-1)] 
+  # get its range including the period
+  fst_end_number_pos_lngth <- attr(gregexpr("\\.[0-9]?[0-9]",col_0)[[1]],"match.length")[(n_matches-1)] 
+  # get the right argument: from its end; the first number position
+  snd_end_number_pos <- gregexpr("\\.[0-9]?[0-9]",col_1)[[1]][(n_matches  )] 
+  # get its range including the period
+  snd_end_number_pos_lngth <- attr(gregexpr("\\.[0-9]?[0-9]",col_1)[[1]],"match.length")[(n_matches  )]  
+  # get the left arg: actual number; mo
+  fst_end_number <- substr(col_0, fst_end_number_pos + 1 , fst_end_number_pos + 1 + fst_end_number_pos_lngth - 2) 
+  # get the right arg: actual number; mo
+  snd_end_number <- substr(col_1, snd_end_number_pos + 1 , snd_end_number_pos + 1 + snd_end_number_pos_lngth - 2) 
+  # get the 'base name': get the beginnin of the col_0 name up to the end of the first number
+  fst_begin_number <- gregexpr("\\.[0-9]?[0-9]",col_0)[[1]][(1)] - 1  + attr(gregexpr("\\.[0-9]?[0-9]",col_0)[[1]],"match.length")[(1)] 
+  # the actual 'base name'
+  fst_begin <- substr(col_0, 1, fst_begin_number )
+  # the actual new full column name ( including the base name )
+  col_new <- paste0(fst_begin,".PctChngePctChngePctChnge.", fst_end_number, ".", snd_end_number)
+  # give the new data column a new string name
+  paste0(col_new) -> colnames(xts_data_interest_new)
+  # return that new data column ( with its new name )
+  return(xts_data_interest_new) 
+}
+
+
+
+pct_chnge_pct_chnge_pct_chnge_pct_chnge <- function(xtsdata, col_0 = "", col_1 = "") {
+  # subset of data
+  xtsdata[,c(col_0,col_1)] -> xtsdata_subset
+  # calculate the metric    
+  (xtsdata_subset[,col_0] - xtsdata_subset[,col_1] ) / abs(xtsdata_subset[,col_1] + 0.0000001) -> xts_data_interest_new
+  # find the number of soltutions
+  n_matches <- length(gregexpr("\\.[0-9]?[0-9]",col_0)[[1]])
+  # get the left argument: from its end; the second number position
+  fst_end_number_pos <- gregexpr("\\.[0-9]?[0-9]",col_0)[[1]][(n_matches-1)] 
+  # get its range including the period
+  fst_end_number_pos_lngth <- attr(gregexpr("\\.[0-9]?[0-9]",col_0)[[1]],"match.length")[(n_matches-1)] 
+  # get the right argument: from its end; the first number position
+  snd_end_number_pos <- gregexpr("\\.[0-9]?[0-9]",col_1)[[1]][(n_matches  )] 
+  # get its range including the period
+  snd_end_number_pos_lngth <- attr(gregexpr("\\.[0-9]?[0-9]",col_1)[[1]],"match.length")[(n_matches  )]  
+  # get the left arg: actual number; mo
+  fst_end_number <- substr(col_0, fst_end_number_pos + 1 , fst_end_number_pos + 1 + fst_end_number_pos_lngth - 2) 
+  # get the right arg: actual number; mo
+  snd_end_number <- substr(col_1, snd_end_number_pos + 1 , snd_end_number_pos + 1 + snd_end_number_pos_lngth - 2) 
+  # get the 'base name': get the beginnin of the col_0 name up to the end of the first number
+  fst_begin_number <- gregexpr("\\.[0-9]?[0-9]",col_0)[[1]][(1)] - 1  + attr(gregexpr("\\.[0-9]?[0-9]",col_0)[[1]],"match.length")[(1)] 
+  # the actual 'base name'
+  fst_begin <- substr(col_0, 1, fst_begin_number )
+  # the actual new full column name ( including the base name )
+  col_new <- paste0(fst_begin,".PctChngePctChngePctChngePctChnge.", fst_end_number, ".", snd_end_number)
+  # give the new data column a new string name
+  paste0(col_new) -> colnames(xts_data_interest_new)
+  # return that new data column ( with its new name )
+  return(xts_data_interest_new) 
+}
+
+
+# get rid of that "tz" column
+# must 'not be lexical' ( I THINK? NO - CAN BE LEXICAL. MAYBE )
+mergge <- function(..., all = TRUE, fill = NA, suffixes = NULL, join = "outer",
+                          retside = TRUE, retclass = "xts", tzone = NULL, drop = NULL,
+                          check.names = NULL) {
+
+  require(xts)
+ 
+  merge(..., all = all, fill = fill, suffixes = suffixes, join = join,
+                            retside = retside, retclass = retclass, tzone = tzone, drop = drop,
+                            check.names = check.names) -> merge_result
+                            
+  merge_result[,!grepl("^tz$",colnames(merge_result))] -> merge_result
+  
+                            
+  return(merge_result)
+}
 
 
 
@@ -548,43 +714,96 @@ main_rcsnsight1_999 <- function(pauseat=NULL) {
   }
   
   # left join .External("mergeXts"? - complains about 'left join meant for 2' 'localtime is not UTC' 
-  suppressWarnings(merge(GSPC,USRECM,RECPROUSM156N,USARECM,join='left',tz="UTC")) -> GALAXY_L  
-
+  suppressWarnings(mergge(GSPC,USRECM,RECPROUSM156N,USARECM,join='left',tz="UTC")) -> GALAXY_L   
+  
   # TOO EARLY - have to do below anyways
   # keep complete.cases ( zoo::na.trim is equivalent )
   # na.trim(GALAXY_L[,!(colnames(GALAXY_L) %in% "tz")])  -> GALAXY_L 
   
   # the benchmark merge.xts? - outer
-  symbol_OHLC_lag_k_periods(GSPC,"GSPC",0:1, qmOHLC = "Lowz")           -> GSPC_LAGS_LOW 
-  suppressWarnings(merge(GALAXY_L,GSPC_LAGS_LOW,join='outer',tz='UTC')) -> GALAXY_L 
+  symbol_OHLC_lag_k_periods(GSPC,"GSPC",0:5, qmOHLC = "Lowz")           -> GSPC_LAGS_LOW 
+  suppressWarnings(mergge(GALAXY_L,GSPC_LAGS_LOW,join='outer',tz='UTC')) -> GALAXY_L 
   symbol_OHLC_lag_k_periods(GSPC,"GSPC",0:1)                        -> GSPC_LAGS 
-  suppressWarnings(merge(GALAXY_L,GSPC_LAGS,join='outer',tz='UTC')) -> GALAXY_L 
+  suppressWarnings(mergge(GALAXY_L,GSPC_LAGS,join='outer',tz='UTC')) -> GALAXY_L 
 
-  
-  
+  # Generated
+  # GSPC.MinOf.Lag.0 GSPC.MinOf.Lag.1 GSPC.MinOf.Lag.2 
+  # GSPC.MinOf.Lag.3 GSPC.MinOf.Lag.4 GSPC.MinOf.Lag.5
+
+
   # all others ( not the benchmark )
   symbol_OHLC_lag_k_periods(USRECM,"USRECM",0:1)                      -> USRECM_LAGS 
-  suppressWarnings(merge(GALAXY_L,USRECM_LAGS,join='outer',tz='UTC')) -> GALAXY_L
-  symbol_OHLC_lag_k_periods(RECPROUSM156N,"RECPROUSM156N",0:1)               -> RECPROUSM156N_LAGS 
-  suppressWarnings(merge(GALAXY_L,RECPROUSM156N_LAGS,join='outer',tz='UTC')) -> GALAXY_L
+  suppressWarnings(mergge(GALAXY_L,USRECM_LAGS,join='outer',tz='UTC')) -> GALAXY_L
+  symbol_OHLC_lag_k_periods(RECPROUSM156N,"RECPROUSM156N",0:11)               -> RECPROUSM156N_LAGS 
+  suppressWarnings(mergge(GALAXY_L,RECPROUSM156N_LAGS,join='outer',tz='UTC')) -> GALAXY_L
   symbol_OHLC_lag_k_periods(USARECM,"USARECM",0:1)                     -> USARECM_LAGS 
-  suppressWarnings(merge(GALAXY_L,USARECM_LAGS,join='outer',tz='UTC')) -> GALAXY_L
-  
-  # remove those uselss 'tz.#' columns ( aesthetics )
-  # will leave just "tz" behind
-  GALAXY_L[,!grepl("tz.",colnames(GALAXY_L))] -> GALAXY_L
+  suppressWarnings(mergge(GALAXY_L,USARECM_LAGS,join='outer',tz='UTC')) -> GALAXY_L
   
   # remove those .Close ( and .Low ) columns
   # so not to break quantmod::Cl()
   GALAXY_L[,!grepl(".Close",colnames(GALAXY_L))] -> GALAXY_L
-  GALAXY_L[,!grepl(".Low",colnames(GALAXY_L))] -> GALAXY_L
+  GALAXY_L[,!grepl(".Low",colnames(GALAXY_L))]   -> GALAXY_L
+  
+
+
+  suppressWarnings(mergge(GALAXY_L
+    ,  pct_chnge(GALAXY_L,"RECPROUSM156N.EndOf.Lag.0","RECPROUSM156N.EndOf.Lag.1") 
+    ,  pct_chnge(GALAXY_L,"RECPROUSM156N.EndOf.Lag.1","RECPROUSM156N.EndOf.Lag.2") 
+    ,  pct_chnge(GALAXY_L,"RECPROUSM156N.EndOf.Lag.2","RECPROUSM156N.EndOf.Lag.3") 
+    ,  pct_chnge(GALAXY_L,"RECPROUSM156N.EndOf.Lag.3","RECPROUSM156N.EndOf.Lag.4") 
+    ,  pct_chnge(GALAXY_L,"RECPROUSM156N.EndOf.Lag.4","RECPROUSM156N.EndOf.Lag.5")
+    ,  pct_chnge(GALAXY_L,"RECPROUSM156N.EndOf.Lag.5","RECPROUSM156N.EndOf.Lag.6")
+    ,  pct_chnge(GALAXY_L,"RECPROUSM156N.EndOf.Lag.6","RECPROUSM156N.EndOf.Lag.7")
+    ,  pct_chnge(GALAXY_L,"RECPROUSM156N.EndOf.Lag.7","RECPROUSM156N.EndOf.Lag.8")
+    ,  pct_chnge(GALAXY_L,"RECPROUSM156N.EndOf.Lag.8","RECPROUSM156N.EndOf.Lag.9") 
+    ,  pct_chnge(GALAXY_L,"RECPROUSM156N.EndOf.Lag.9","RECPROUSM156N.EndOf.Lag.10") 
+    ,  pct_chnge(GALAXY_L,"RECPROUSM156N.EndOf.Lag.10","RECPROUSM156N.EndOf.Lag.11") 
+  ,join='outer',tz='UTC')) -> GALAXY_L
+  
+  # will generate
+  # "RECPROUSM156N.EndOf.Lag.0.PctChnge.1.2"
+  # "RECPROUSM156N.EndOf.Lag.2.PctChnge.2.3"
+  
+  # # OLD
+  # suppressWarnings(mergge(GALAXY_L
+    # ,  pct_chnge_pct_chnge(GALAXY_L,"RECPROUSM156N.EndOf.Lag.0.PctChnge.0.1","RECPROUSM156N.EndOf.Lag.1.PctChnge.1.2")
+  # ,join='outer',tz='UTC')) -> GALAXY_L
+  
+  suppressWarnings(mergge(GALAXY_L
+    ,  pct_chnge_pct_chnge(GALAXY_L,"RECPROUSM156N.EndOf.Lag.3.PctChnge.3.4" ,"RECPROUSM156N.EndOf.Lag.4.PctChnge.4.5")
+    ,  pct_chnge_pct_chnge(GALAXY_L,"RECPROUSM156N.EndOf.Lag.5.PctChnge.5.6" ,"RECPROUSM156N.EndOf.Lag.6.PctChnge.6.7")
+    ,  pct_chnge_pct_chnge(GALAXY_L,"RECPROUSM156N.EndOf.Lag.7.PctChnge.7.8" ,"RECPROUSM156N.EndOf.Lag.8.PctChnge.8.9")
+    ,  pct_chnge_pct_chnge(GALAXY_L,"RECPROUSM156N.EndOf.Lag.9.PctChnge.9.10","RECPROUSM156N.EndOf.Lag.10.PctChnge.10.11")
+  ,join='outer',tz='UTC')) -> GALAXY_L
+  
+  # generates output
+  # "RECPROUSM156N.EndOf.Lag.7.PctChngePctChnge.7.9"
+  # "RECPROUSM156N.EndOf.Lag.9.PctChngePctChnge.9.11"
+  
+  suppressWarnings(mergge(GALAXY_L
+  ,  pct_chnge_pct_chnge_pct_chnge(GALAXY_L,"RECPROUSM156N.EndOf.Lag.3.PctChngePctChnge.3.5","RECPROUSM156N.EndOf.Lag.5.PctChngePctChnge.5.7")
+  ,  pct_chnge_pct_chnge_pct_chnge(GALAXY_L,"RECPROUSM156N.EndOf.Lag.7.PctChngePctChnge.7.9","RECPROUSM156N.EndOf.Lag.9.PctChngePctChnge.9.11")
+  ,join='outer',tz='UTC')) -> GALAXY_L
+  
+  # generates
+  # RECPROUSM156N.EndOf.Lag.3.PctChngePctChngePctChnge.3.7  
+  # RECPROUSM156N.EndOf.Lag.7.PctChngePctChngePctChnge.7.11
+  
+  suppressWarnings(mergge(GALAXY_L
+  ,  pct_chnge_pct_chnge_pct_chnge_pct_chnge(GALAXY_L,"RECPROUSM156N.EndOf.Lag.3.PctChngePctChngePctChnge.3.7","RECPROUSM156N.EndOf.Lag.7.PctChngePctChngePctChnge.7.11")
+  ,join='outer',tz='UTC')) -> GALAXY_L
+  
+  
+  # remove those uselss 'tz.#' columns ( aesthetics )
+  # will leave just "tz" behind ( NOTE: SHOULD! remove "tz" from GALAXY_L just after each merge )
+  # GALAXY_L[,!grepl("tz.",colnames(GALAXY_L))] -> GALAXY_L
   
   
   # AGAIN remove the 'extra records that have crept in because of the 
   #  should ACTUALLY be removed after each 'merge' ( currenly does not break anything )
   # 'outer' join to the benchmark
   # keep complete.cases ( zoo::na.trim is equivalent )
-  na.trim(GALAXY_L[,!(colnames(GALAXY_L) %in% "tz")])  -> GALAXY_L 
+  # na.trim(GALAXY_L[,!(colnames(GALAXY_L) %in% "tz")])  -> GALAXY_L 
   
   # KEEP
   # if I want to just work with a SAMPLE
@@ -592,11 +811,14 @@ main_rcsnsight1_999 <- function(pauseat=NULL) {
   #      'to much memory' OR 'get the same results' after 300'
   # GALAXY_L[sample(1:NROW(GALAXY_L),300,replace=FALSE),] -> GALAXY_L
   
+  # KEEP
   # make sure I look at current result of long running results 'on the fly'
-  capture.output(print(paste0(as.character(Sys.Date())))
-    , file = "./tests/main-rcsnsight1-999_runRESULTS.txt"
-    , append=TRUE
-  )
+  # capture.output(print(paste0(as.character(Sys.Date())))
+    # , file = "./tests/main-rcsnsight1-999_runRESULTS.txt"  
+    # , append=TRUE
+  # )
+  
+  save(GALAXY_L, file = "GALAXY_L_0_4.RData")
   
   the_end_debug_bookmark_here <- 1
   
@@ -633,7 +855,10 @@ main_rcsnsight1_999 <- function(pauseat=NULL) {
 # source('N:/MyVMWareSharedFolder/rcsnsight1/R/main-rcsnsight1-999.R', echo=TRUE)
 # main_rcsnsight1_999()
 # View
-# 
+# View(last(GALAXY_L,10))
+
+# save(GALAXY_L, file = "GALAXY_L_0_4.RData")
+# save(GALAXY_L, file = "GALAXY_L_0_4.RData")
 
 # testing: WAY 1 ( will re-load all the libraries each time )
 # rcsnsight1\R\tests\testthat>R --file=test-main-rcsnsight1-999.R
@@ -658,4 +883,5 @@ main_rcsnsight1_999 <- function(pauseat=NULL) {
 # > library(lineprof)
 # > xsaved <- lineprof(main_rcsnsight1_999(), torture = FALSE) # not memory ( USE THIS )
 # > shine(xsaved)
+
 
