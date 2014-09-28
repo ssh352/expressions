@@ -14,7 +14,7 @@ if(getOption("RepositoryStyle") == "InstalledTest")  {
 
 if(getOption("RepositoryStyle") == "Installed")  {
 
-  options(AAIIBase = "N:/MyVMWareSharedFolder/Professional140919") 
+  options(AAIIBase = "N:/MyVMWareSharedFolder/Professional140926") 
   
 }
 
@@ -118,45 +118,7 @@ options(sqldf.driver = "SQLite")
 
 # library(TTR)
 
-get_from_disk <- function(fnombre) { 
-   
-  require(foreign)
- 
-  if(is.null(fnombre) ) stop ("fnombre file name is missing")
- 
-  if(getOption("FileStoreStyle") == "Optimized") {
-    # NOTE: file.access: case INsenstive ( better built for Windows )
-    if( file.access(getOption(paste0("AAIISIPro40PathFileOptim_",fnombre)), mode = 0) == 0) {
-      load(file = getOption(paste0("AAIISIPro40PathFileOptim_",fnombre)), envir = environment(), verbose = TRUE)
-      # load file ( assign - only takes a string)
-      assign("fnombre_data",eval(parse(text=fnombre)))
-      # SHOULD ACTUALLY DO rm(list = c(fnombre))
-    } else {
-      # load file ( assign - only takes a string)
-      assign(fnombre,suppressWarnings(suppressMessages(read.dbf(file=getOption(paste0("AAIISIPro40PathFileNotOptim_",fnombre)), as.is = TRUE))))     
-      save(list = c(fnombre),file = getOption(paste0("AAIISIPro40PathFileOptim_",fnombre)),envir = environment())
-      assign("fnombre_data",eval(parse(text=fnombre)))
-    }
-  } else {
-    # load file
-    fnombre_data <- suppressWarnings(suppressMessages(read.dbf(file=getOption(paste0("AAIISIPro40PathFileNotOptim_",fnombre)), as.is = TRUE)))
-  }
-  return(fnombre_data)
- 
-}
 
-# SETUP <<- get_from_disk("SETUP")
-#  BUT: REPLACE IN CODE SETUP <<- 
-#                    TO SETUP <- 
-
-
-
-setwd("N:\\MyVMWareSharedFolder\\foresight3\\R")
-
-# source( paste0(getwd(),"/sql.select.R"))
-# may override as.data.frame ( BE CAREFUL )
-
-source( paste0(getwd(),"/helpers-foresight3-999.R"))
 
 # IN YELLOW window2 only
 # library(testthat)
@@ -165,6 +127,14 @@ source( paste0(getwd(),"/helpers-foresight3-999.R"))
 
 main_foresight3_999 <- function(pauseat=NULL) {
 
+  oldwd <- getwd()
+  # "current working directory of the R process"
+  setwd("N:\\MyVMWareSharedFolder\\foresight3\\R") 
+
+  # slight less 'SAFE' rstudio debugSource will no longer parse these functions
+  # source( paste0(getwd(),"/sql.select.R"))
+  # may override as.data.frame ( BE CAREFUL )
+  source( paste0(getwd(),"/helpers-foresight3-999.R"), local = TRUE) # do not load into .Global
 
   # if(pauseat=="HERE") {}
   
@@ -270,56 +240,56 @@ main_foresight3_999 <- function(pauseat=NULL) {
       # load(file = getOption("AAIISIPro40PathFileOptim_SETUP"))
     # } else {
       # # load file
-      # SETUP <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SETUP"), as.is = TRUE)))
+      # SETUP <- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SETUP"), as.is = TRUE)))
       # save("SETUP",file = getOption("AAIISIPro40PathFileOptim_SETUP"))
     # }
   # } else {
     # # load file
-    # SETUP <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SETUP"), as.is = TRUE)))
+    # SETUP <- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SETUP"), as.is = TRUE)))
   # }
   
-  SETUP <<- get_from_disk("SETUP")
-  #  BUT: REPLACE IN CODE SETUP <<- 
+  SETUP <- get_from_disk("SETUP")
+  #  BUT: REPLACE IN CODE SETUP <- 
   #                    TO SETUP <- 
   
   SETUP_tbl_sqlite <- copy_to(dpsqllconn, SETUP, temporary = FALSE
     , indexes = list(
     )
   )
-  SETUP <<- tbl_df(SETUP)
+  SETUP <- tbl_df(SETUP)
   
   
   # SI_CI ( TYPICALLY BIG: 7 thousand )
   #
   # company information 
 
-   if(getOption("FileStoreStyle") == "Optimized") {
-    if( file.exists(getOption("AAIISIPro40PathFileOptim_SI_CI"))) {
-      load(file = getOption("AAIISIPro40PathFileOptim_SI_CI"))
-    } else {
-      # load file
-      SI_CI <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_CI"), as.is = TRUE)))
-      save("SI_CI",file = getOption("AAIISIPro40PathFileOptim_SI_CI"))
-    }
-  } else {
-    # load file
-    SI_CI <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_CI"), as.is = TRUE)))
-  }
+   # if(getOption("FileStoreStyle") == "Optimized") {
+    # if( file.exists(getOption("AAIISIPro40PathFileOptim_SI_CI"))) {
+      # load(file = getOption("AAIISIPro40PathFileOptim_SI_CI"))
+    # } else {
+      # # load file
+      # SI_CI <- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_CI"), as.is = TRUE)))
+      # save("SI_CI",file = getOption("AAIISIPro40PathFileOptim_SI_CI"))
+    # }
+  # } else {
+    # # load file
+    # SI_CI <- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_CI"), as.is = TRUE)))
+  # }
 
-
+  SI_CI <- get_from_disk("SI_CI")
   
     # primary_key_dup <- SI_CI[duplicated(SI_CI[,'TICKER']),,drop=FALSE]
     # new_df_no_duplicates <- SI_CI[!(SI_CI$TICKER %in% as.matrix(primary_key_dup)),,drop=FALSE]
-    # SI_CI <<- new_df_no_duplicates
+    # SI_CI <- new_df_no_duplicates
   
     # primary_key_dup <- SI_CI[duplicated(SI_CI[,'COMPANY_ID']),,drop=FALSE]
     # new_df_no_duplicates <- SI_CI[!(SI_CI$COMPANY_ID %in% as.matrix(primary_key_dup)),,drop=FALSE]
-    # SI_CI <<- new_df_no_duplicates
+    # SI_CI <- new_df_no_duplicates
   
     # rm(primary_key_dup,new_df_no_duplicates)
  
-    SI_CI <<- SI_CI # wierd performance bug ( program runs faster than can it access its variables )
-    SI_CI <<- eliminate_all_duplicates( "SI_CI", "COMPANY_ID" ) 
+    SI_CI <- SI_CI # wierd performance bug ( program runs faster than can it access its variables )
+    SI_CI <- eliminate_all_duplicates( SI_CI, "COMPANY_ID" ) 
   
   SI_CI_tbl_sqlite <- copy_to(dpsqllconn, SI_CI, temporary = FALSE
     , indexes = list(
@@ -329,7 +299,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
       , c("IND_2_DIG") # see UNIVERSE
     )
   )
-  SI_CI <<- tbl_df(SI_CI)
+  SI_CI <- tbl_df(SI_CI)
 
   
   # small LOOK-UP tables
@@ -337,26 +307,28 @@ main_foresight3_999 <- function(pauseat=NULL) {
   # SI_MGDSC.MG_CODE '2 char: industry'     
   # SI_MGDSC.MG_DESC '4 char' description'
   
-   if(getOption("FileStoreStyle") == "Optimized") {
-    if( file.exists(getOption("AAIISIPro40PathFileOptim_SI_MGDSC"))) {
-      load(file = getOption("AAIISIPro40PathFileOptim_SI_MGDSC"))
-    } else {
-      # load file
-      SI_MGDSC <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_MGDSC"), as.is = TRUE)))
-      save("SI_MGDSC",file = getOption("AAIISIPro40PathFileOptim_SI_MGDSC"))
-    }
-  } else {
-    # load file
-    SI_MGDSC <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_MGDSC"), as.is = TRUE)))
-  }
+   # if(getOption("FileStoreStyle") == "Optimized") {
+    # if( file.exists(getOption("AAIISIPro40PathFileOptim_SI_MGDSC"))) {
+      # load(file = getOption("AAIISIPro40PathFileOptim_SI_MGDSC"))
+    # } else {
+      # # load file
+      # SI_MGDSC <- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_MGDSC"), as.is = TRUE)))
+      # save("SI_MGDSC",file = getOption("AAIISIPro40PathFileOptim_SI_MGDSC"))
+    # }
+  # } else {
+    # # load file
+    # SI_MGDSC <- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_MGDSC"), as.is = TRUE)))
+  # }
 
+  SI_MGDSC <- get_from_disk("SI_MGDSC")
+  
     # primary_key_dup <- SI_MGDSC[duplicated(SI_MGDSC[,'MG_CODE']),,drop=FALSE]
     # new_df_no_duplicates <- SI_MGDSC[!(SI_MGDSC$MG_CODE %in% as.matrix(primary_key_dup)),,drop=FALSE]
-    # SI_MGDSC <<- new_df_no_duplicates
+    # SI_MGDSC <- new_df_no_duplicates
     # rm(primary_key_dup,new_df_no_duplicates)
   
-    SI_MGDSC <<- SI_MGDSC # wierd performance bug ( program runs faster than can it access its variables )
-    SI_MGDSC <<- eliminate_all_duplicates( "SI_MGDSC", "MG_CODE" ) 
+    SI_MGDSC <- SI_MGDSC # wierd performance bug ( program runs faster than can it access its variables )
+    SI_MGDSC <- eliminate_all_duplicates( SI_MGDSC, "MG_CODE" ) 
   
   SI_MGDSC_tbl_sqlite <- copy_to(dpsqllconn, SI_MGDSC, temporary = FALSE
     , indexes = list(
@@ -364,7 +336,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
     )
   )
   
-  SI_MGDSC <<- tbl_df(SI_MGDSC)
+  SI_MGDSC <- tbl_df(SI_MGDSC)
 
   # SI_EXCHG.EXCHG_DESC
   #
@@ -374,26 +346,28 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   # Major stock exchange information 'long descriptions'
   
-   if(getOption("FileStoreStyle") == "Optimized") {
-    if( file.exists(getOption("AAIISIPro40PathFileOptim_SI_EXCHG"))) {
-      load(file = getOption("AAIISIPro40PathFileOptim_SI_EXCHG"))
-    } else {
-      # load file
-      SI_EXCHG <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_EXCHG"), as.is = TRUE)))
-      save("SI_EXCHG",file = getOption("AAIISIPro40PathFileOptim_SI_EXCHG"))
-    }
-  } else {
-    # load file
-    SI_EXCHG <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_EXCHG"), as.is = TRUE)))
-  }
+   # if(getOption("FileStoreStyle") == "Optimized") {
+    # if( file.exists(getOption("AAIISIPro40PathFileOptim_SI_EXCHG"))) {
+      # load(file = getOption("AAIISIPro40PathFileOptim_SI_EXCHG"))
+    # } else {
+      # # load file
+      # SI_EXCHG <- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_EXCHG"), as.is = TRUE)))
+      # save("SI_EXCHG",file = getOption("AAIISIPro40PathFileOptim_SI_EXCHG"))
+    # }
+  # } else {
+    # # load file
+    # SI_EXCHG <- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_EXCHG"), as.is = TRUE)))
+  # }
+  
+  SI_EXCHG <- get_from_disk("SI_EXCHG")
   
     # primary_key_dup <- SI_EXCHG[duplicated(SI_EXCHG[,'EXCHG_CODE']),,drop=FALSE]
     # new_df_no_duplicates <- SI_EXCHG[!(SI_EXCHG$EXCHG_CODE %in% as.matrix(primary_key_dup)),,drop=FALSE]
-    # SI_EXCHG <<- new_df_no_duplicates
+    # SI_EXCHG <- new_df_no_duplicates
     # rm(primary_key_dup,new_df_no_duplicates)
   
-    SI_EXCHG <<- SI_EXCHG # wierd performance bug ( program runs faster than can it access its variables )
-    SI_EXCHG <<- eliminate_all_duplicates( "SI_EXCHG", "EXCHG_CODE" ) 
+    SI_EXCHG <- SI_EXCHG # wierd performance bug ( program runs faster than can it access its variables )
+    SI_EXCHG <- eliminate_all_duplicates( SI_EXCHG, "EXCHG_CODE" ) 
   
   SI_EXCHG_tbl_sqlite <- copy_to(dpsqllconn, SI_EXCHG, temporary = FALSE
     , indexes = list(
@@ -401,7 +375,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
     )
   )
   
-  SI_EXCHG <<- tbl_df(SI_EXCHG)
+  SI_EXCHG <- tbl_df(SI_EXCHG)
 
 
   # SI_PSD.MKTCAP
@@ -413,29 +387,31 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   # Price and Share Staticsics - Market Capitalization
   
-   if(getOption("FileStoreStyle") == "Optimized") {
-    if( file.exists(getOption("AAIISIPro40PathFileOptim_SI_PSD"))) {
-      load(file = getOption("AAIISIPro40PathFileOptim_SI_PSD"))
-    } else {
-      # load file
-      SI_PSD <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_PSD"), as.is = TRUE)))
-      save("SI_PSD",file = getOption("AAIISIPro40PathFileOptim_SI_PSD"))
-    }
-  } else {
-    # load file
-    SI_PSD <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_PSD"), as.is = TRUE)))
-  }
+   # if(getOption("FileStoreStyle") == "Optimized") {
+    # if( file.exists(getOption("AAIISIPro40PathFileOptim_SI_PSD"))) {
+      # load(file = getOption("AAIISIPro40PathFileOptim_SI_PSD"))
+    # } else {
+      # # load file
+      # SI_PSD <- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_PSD"), as.is = TRUE)))
+      # save("SI_PSD",file = getOption("AAIISIPro40PathFileOptim_SI_PSD"))
+    # }
+  # } else {
+    # # load file
+    # SI_PSD <- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_PSD"), as.is = TRUE)))
+  # }
 
+  SI_PSD <- get_from_disk("SI_PSD")
+  
   # primary_key_dup <- SI_PSD[duplicated(SI_PSD[,'COMPANY_ID']),,drop=FALSE]
   # new_df_no_duplicates <- SI_PSD[!(SI_PSD$COMPANY_ID %in% as.matrix(primary_key_dup)),,drop=FALSE]
-  # SI_PSD <<- new_df_no_duplicates
+  # SI_PSD <- new_df_no_duplicates
   # rm(primary_key_dup,new_df_no_duplicates)
 
-  SI_PSD <<- SI_PSD # wierd performance bug ( program runs faster than can it access its variables )
-  SI_PSD <<- eliminate_all_duplicates( "SI_PSD", "COMPANY_ID" ) 
+  SI_PSD <- SI_PSD # wierd performance bug ( program runs faster than can it access its variables )
+  SI_PSD <- eliminate_all_duplicates( SI_PSD, "COMPANY_ID" ) 
 
   # all math must be numeric
-  SI_PSD <<- mutate(SI_PSD, MKTCAP = as.numeric(MKTCAP) )
+  SI_PSD <- mutate(SI_PSD, MKTCAP = as.numeric(MKTCAP) )
   
   SI_PSD_tbl_sqlite <- copy_to(dpsqllconn, SI_PSD, temporary = FALSE
     , indexes = list(
@@ -443,7 +419,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
     )
   )
   
-  SI_PSD <<- tbl_df(SI_PSD)
+  SI_PSD <- tbl_df(SI_PSD)
 
   # 4–4–5 calendar
   # he 4–4–5 calendar is a method of managing accounting periods. 
@@ -510,26 +486,28 @@ main_foresight3_999 <- function(pauseat=NULL) {
 
   # Prices - Dates (Close) Price-Date M001-M120
 
-   if(getOption("FileStoreStyle") == "Optimized") {
-    if( file.exists(getOption("AAIISIPro40PathFileOptim_SI_PSDC"))) {
-      load(file = getOption("AAIISIPro40PathFileOptim_SI_PSDC"))
-    } else {
-      # load file
-      SI_PSDC <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_PSDC"), as.is = TRUE)))
-      save("SI_PSDC",file = getOption("AAIISIPro40PathFileOptim_SI_PSDC"))
-    }
-  } else {
-    # load file
-    SI_PSDC <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_PSDC"), as.is = TRUE)))
-  }
+   # if(getOption("FileStoreStyle") == "Optimized") {
+    # if( file.exists(getOption("AAIISIPro40PathFileOptim_SI_PSDC"))) {
+      # load(file = getOption("AAIISIPro40PathFileOptim_SI_PSDC"))
+    # } else {
+      # # load file
+      # SI_PSDC <- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_PSDC"), as.is = TRUE)))
+      # save("SI_PSDC",file = getOption("AAIISIPro40PathFileOptim_SI_PSDC"))
+    # }
+  # } else {
+    # # load file
+    # SI_PSDC <- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_PSDC"), as.is = TRUE)))
+  # }
 
+  SI_PSDC <- get_from_disk("SI_PSDC")
+  
   # primary_key_dup <- SI_PSDC[duplicated(SI_PSDC[,'COMPANY_ID']),,drop=FALSE]
   # new_df_no_duplicates <- SI_PSDC[!(SI_PSDC$COMPANY_ID %in% as.matrix(primary_key_dup)),,drop=FALSE]
-  # SI_PSDC <<- new_df_no_duplicates
+  # SI_PSDC <- new_df_no_duplicates
   # rm(primary_key_dup,new_df_no_duplicates)
 
-  SI_PSDC <<- SI_PSDC # wierd performance bug ( program runs faster than can it access its variables )
-  SI_PSDC <<- eliminate_all_duplicates( "SI_PSDC", "COMPANY_ID" ) 
+  SI_PSDC <- SI_PSDC # wierd performance bug ( program runs faster than can it access its variables )
+  SI_PSDC <- eliminate_all_duplicates( SI_PSDC, "COMPANY_ID" ) 
 
   SI_PSDC_tbl_sqlite <- copy_to(dpsqllconn, SI_PSDC, temporary = FALSE
     , indexes = list(
@@ -537,7 +515,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
     )
   )
   
-  SI_PSDC <<- tbl_df(SI_PSDC)
+  SI_PSDC <- tbl_df(SI_PSDC)
   
   # DD_FILE     SI_PSDC
   # FIELD_NAME  PRICE_M001
@@ -549,26 +527,28 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   # Dates and Periods - Ending date Q1
   
-   if(getOption("FileStoreStyle") == "Optimized") {
-    if( file.exists(getOption("AAIISIPro40PathFileOptim_SI_DATE"))) {
-      load(file = getOption("AAIISIPro40PathFileOptim_SI_DATE"))
-    } else {
-      # load file
-      SI_DATE <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_DATE"), as.is = TRUE)))
-      save("SI_DATE",file = getOption("AAIISIPro40PathFileOptim_SI_DATE"))
-    }
-  } else {
-    # load file
-    SI_DATE <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_DATE"), as.is = TRUE)))
-  }
+   # if(getOption("FileStoreStyle") == "Optimized") {
+    # if( file.exists(getOption("AAIISIPro40PathFileOptim_SI_DATE"))) {
+      # load(file = getOption("AAIISIPro40PathFileOptim_SI_DATE"))
+    # } else {
+      # # load file
+      # SI_DATE <- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_DATE"), as.is = TRUE)))
+      # save("SI_DATE",file = getOption("AAIISIPro40PathFileOptim_SI_DATE"))
+    # }
+  # } else {
+    # # load file
+    # SI_DATE <- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_DATE"), as.is = TRUE)))
+  # }
 
+  SI_DATE <- get_from_disk("SI_DATE")
+  
     # primary_key_dup <- SI_DATE[duplicated(SI_DATE[,'COMPANY_ID']),,drop=FALSE]
     # new_df_no_duplicates <- SI_DATE[!(SI_DATE$COMPANY_ID %in% as.matrix(primary_key_dup)),,drop=FALSE]
-    # SI_DATE <<- new_df_no_duplicates
+    # SI_DATE <- new_df_no_duplicates
     # rm(primary_key_dup,new_df_no_duplicates)
   
-    SI_DATE <<- SI_DATE # wierd performance bug ( program runs faster than can it access its variables )
-    SI_DATE <<- eliminate_all_duplicates( "SI_DATE", "COMPANY_ID" ) 
+    SI_DATE <- SI_DATE # wierd performance bug ( program runs faster than can it access its variables )
+    SI_DATE <- eliminate_all_duplicates( SI_DATE, "COMPANY_ID" ) 
   
   SI_DATE_tbl_sqlite <- copy_to(dpsqllconn, SI_DATE, temporary = FALSE
     , indexes = list(
@@ -576,7 +556,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
     )
   )
   
-  SI_DATE <<- tbl_df(SI_DATE)
+  SI_DATE <- tbl_df(SI_DATE)
 
   mydate <- function(numdate) { as.character(dates(numdate)) }
   
@@ -596,7 +576,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
            # -- STP.MONTHDATE AS MONTHDATEUNX, STP.WEEKDATE AS WEEKDATEUNX, STP.SPLITDATE AS SPLITDATEUNX, 
            # -- main.SETUP STP, 
   
-  UNIVERSE <<- sqldf(" 
+  UNIVERSE <- sqldf(" 
     SELECT STP.MONTHDATE AS MONTHDATEUNX, STP.WEEKDATE AS WEEKDATEUNX, STP.SPLITDATE AS SPLITDATEUNX, 
            CI.TICKER, CI.COMPANY, CI.COMPANY_ID, CI.SIC, CI.EXCHANGE, EXCHG.EXCHG_DESC 
          , CI.IND_2_DIG, MGDSC.MG_DESC, CI.COUNTRY, CI.ADR, DTE.PEREND_Q2 AS PERENDUNX_Q2, DTE.PEREND_Q1 AS PERENDUNX_Q1, DTE.PERLEN_Q1 AS PERLEN_Q1__integer, PERTYP_Q1 
@@ -617,14 +597,14 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   # preserve the original ordering
   
-  # UNIVERSE[,"ORIG_ORDER"]   <<- 1:NROW(UNIVERSE) # str() - shows integer , Rstudio GUI shows numeric
-  UNIVERSE <<- mutate(UNIVERSE, ORIG_ORDER = 1:NROW(UNIVERSE) )
+  # UNIVERSE[,"ORIG_ORDER"]   <- 1:NROW(UNIVERSE) # str() - shows integer , Rstudio GUI shows numeric
+  UNIVERSE <- mutate(UNIVERSE, ORIG_ORDER = 1:NROW(UNIVERSE) )
   
   # 0.4 seconds - a work in progress
   # library(compiler)
   # lubridate:::add_period_to_date
   # add_period_to_date_comp <- cmpfun(lubridate:::add_period_to_date)
-  # UNIVERSE[,"PERENDDT_Q1"]  <<- as.character( add_period_to_date_comp( dmy("1/1/1970",tz = "EST"), days(UNIVERSE[,"PERENDUNX_Q1"]) ))
+  # UNIVERSE[,"PERENDDT_Q1"]  <- as.character( add_period_to_date_comp( dmy("1/1/1970",tz = "EST"), days(UNIVERSE[,"PERENDUNX_Q1"]) ))
   # Error in as.POSIXlt.numeric(date) : 'origin' must be supplied 
   
   
@@ -641,7 +621,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   # lineprof & shine RE-FUTURE TO TEST PERFORMANCE
    
 
-  UNIVERSE <<- mutate(UNIVERSE, 
+  UNIVERSE <- mutate(UNIVERSE, 
                                                                      # ##UNX: renamed column, already loaded as num    
       MONTHDATEDT = as.character(ymd_hms(c("1970-01-01 16:00:00.880-0400")) + days(MONTHDATEUNX))  # sqldf I MADE this NUMERIC                                                     
     , WEEKDATEDT  = as.character(ymd_hms(c("1970-01-01 16:00:00.880-0400")) + days(WEEKDATEUNX))                                                                            
@@ -655,15 +635,15 @@ main_foresight3_999 <- function(pauseat=NULL) {
   # library(compiler)
   # addboth <-function(a,b) a + b
   # addboth_comp <- cmpfun(addboth)
-  # UNIVERSE[,"PERENDDT_Q1"]  <<- as.character(addboth_comp(dmy("1/1/1970",tz = "EST"),days(UNIVERSE[,"PERENDUNX_Q1"])))
+  # UNIVERSE[,"PERENDDT_Q1"]  <- as.character(addboth_comp(dmy("1/1/1970",tz = "EST"),days(UNIVERSE[,"PERENDUNX_Q1"])))
   
   # this PERENDDT_Q0 ( almost future) is not useful ( I am removing )
   ## not NA
-  # UNIVERSE[,"PERENDDT_Q0"]  <<- as.character(dmy("1/1/1970",tz = "EST") + days(UNIVERSE[,"PERENDUNX_Q1"])  ) 
+  # UNIVERSE[,"PERENDDT_Q0"]  <- as.character(dmy("1/1/1970",tz = "EST") + days(UNIVERSE[,"PERENDUNX_Q1"])  ) 
   
   ## months
   
-  # UNIVERSE[,"PERENDDT_Q0"]  <<- ifelse(UNIVERSE[,"PERTYP_Q1"] == "M",
+  # UNIVERSE[,"PERENDDT_Q0"]  <- ifelse(UNIVERSE[,"PERTYP_Q1"] == "M",
     # ifelse(is.na(as.character(dmy("1/1/1970",tz = "EST") - days(0) + days(UNIVERSE[,"PERENDUNX_Q1"]) + months(UNIVERSE[,"PERLEN_Q1"]))),
                  # as.character(dmy("1/1/1970",tz = "EST") - days(1) + days(UNIVERSE[,"PERENDUNX_Q1"]) + months(UNIVERSE[,"PERLEN_Q1"]))
     # ,
@@ -672,7 +652,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   # , UNIVERSE[,"PERENDDT_Q0"]
   # )
 
-  # UNIVERSE[,"PERENDDT_Q0"]  <<- ifelse(UNIVERSE[,"PERTYP_Q1"] == "M" & is.na(UNIVERSE[,"PERENDDT_Q0"]),
+  # UNIVERSE[,"PERENDDT_Q0"]  <- ifelse(UNIVERSE[,"PERTYP_Q1"] == "M" & is.na(UNIVERSE[,"PERENDDT_Q0"]),
     # ifelse(is.na(as.character(dmy("1/1/1970",tz = "EST") - days(1) + days(UNIVERSE[,"PERENDUNX_Q1"]) + months(UNIVERSE[,"PERLEN_Q1"]))),
                  # as.character(dmy("1/1/1970",tz = "EST") - days(2) + days(UNIVERSE[,"PERENDUNX_Q1"]) + months(UNIVERSE[,"PERLEN_Q1"]))
     # ,
@@ -681,7 +661,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   # , UNIVERSE[,"PERENDDT_Q0"]
   # )
 
-  # UNIVERSE[,"PERENDDT_Q0"]  <<- ifelse(UNIVERSE[,"PERTYP_Q1"] == "M" & is.na(UNIVERSE[,"PERENDDT_Q0"]),
+  # UNIVERSE[,"PERENDDT_Q0"]  <- ifelse(UNIVERSE[,"PERTYP_Q1"] == "M" & is.na(UNIVERSE[,"PERENDDT_Q0"]),
     # ifelse(is.na(as.character(dmy("1/1/1970",tz = "EST") - days(2) + days(UNIVERSE[,"PERENDUNX_Q1"]) + months(UNIVERSE[,"PERLEN_Q1"]))),
                  # as.character(dmy("1/1/1970",tz = "EST") - days(3) + days(UNIVERSE[,"PERENDUNX_Q1"]) + months(UNIVERSE[,"PERLEN_Q1"]))
     # ,
@@ -692,7 +672,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
 
   ## weeks
   
-  # UNIVERSE[,"PERENDDT_Q0"]  <<- ifelse(UNIVERSE[,"PERTYP_Q1"] == "W",
+  # UNIVERSE[,"PERENDDT_Q0"]  <- ifelse(UNIVERSE[,"PERTYP_Q1"] == "W",
     # ifelse(is.na(as.character(dmy("1/1/1970",tz = "EST") - days(0) + days(UNIVERSE[,"PERENDUNX_Q1"]) + weeks(UNIVERSE[,"PERLEN_Q1"]))),
                  # as.character(dmy("1/1/1970",tz = "EST") - days(1) + days(UNIVERSE[,"PERENDUNX_Q1"]) + weeks(UNIVERSE[,"PERLEN_Q1"]))
     # ,
@@ -701,7 +681,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   # , UNIVERSE[,"PERENDDT_Q0"]
   # )
 
-  # UNIVERSE[,"PERENDDT_Q0"]  <<- ifelse(UNIVERSE[,"PERTYP_Q1"] == "W" & is.na(UNIVERSE[,"PERENDDT_Q0"]),
+  # UNIVERSE[,"PERENDDT_Q0"]  <- ifelse(UNIVERSE[,"PERTYP_Q1"] == "W" & is.na(UNIVERSE[,"PERENDDT_Q0"]),
     # ifelse(is.na(as.character(dmy("1/1/1970",tz = "EST") - days(1) + days(UNIVERSE[,"PERENDUNX_Q1"]) + weeks(UNIVERSE[,"PERLEN_Q1"]))),
                  # as.character(dmy("1/1/1970",tz = "EST") - days(2) + days(UNIVERSE[,"PERENDUNX_Q1"]) + weeks(UNIVERSE[,"PERLEN_Q1"]))
     # ,
@@ -710,7 +690,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   # , UNIVERSE[,"PERENDDT_Q0"]
   # )
 
-  # UNIVERSE[,"PERENDDT_Q0"]  <<- ifelse(UNIVERSE[,"PERTYP_Q1"] == "W" & is.na(UNIVERSE[,"PERENDDT_Q0"]),
+  # UNIVERSE[,"PERENDDT_Q0"]  <- ifelse(UNIVERSE[,"PERTYP_Q1"] == "W" & is.na(UNIVERSE[,"PERENDDT_Q0"]),
     # ifelse(is.na(as.character(dmy("1/1/1970",tz = "EST") - days(2) + days(UNIVERSE[,"PERENDUNX_Q1"]) + weeks(UNIVERSE[,"PERLEN_Q1"]))),
                  # as.character(dmy("1/1/1970",tz = "EST") - days(3) + days(UNIVERSE[,"PERENDUNX_Q1"]) + weeks(UNIVERSE[,"PERLEN_Q1"]))
     # ,
@@ -734,21 +714,21 @@ main_foresight3_999 <- function(pauseat=NULL) {
 
   # NOT dplyrized YET
   # strip off
-  # UNIVERSE <<- as.data.frame(UNIVERSE)
+  # UNIVERSE <- as.data.frame(UNIVERSE)
   UNIVERSE_tbl_sqlite <- copy_to(dpsqllconn, UNIVERSE, temporary = FALSE
     , indexes = list(
         c("ADR","MKTCAP","COUNTRY","EXCHG_DESC")
     )
   )
   
-  UNIVERSE  <<- sqldf("SELECT * FROM main.UNIVERSE UNIV WHERE 
+  UNIVERSE  <- sqldf("SELECT * FROM main.UNIVERSE UNIV WHERE 
                            UNIV.ADR == 0 AND 
                            UNIV.MKTCAP > 220.0 AND 
                            UNIV.COUNTRY == 'United States' AND 
                            UNIV.EXCHG_DESC NOT IN ('Over the counter') 
                            ", connection = dpsqllconn$con)
   
-  UNIVERSE <<- tbl_df(UNIVERSE)
+  UNIVERSE <- tbl_df(UNIVERSE)
   
 
   # end elimintate un-investibles ( keep investibles) ( All Stocks)
@@ -851,7 +831,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   UNIVERSE_NOT_NA <- ungroup(UNIVERSE_NOT_NA) 
   
-  UNIVERSE <<- suppressMessages(left_join(UNIVERSE, UNIVERSE_NOT_NA)) # LEFT OUTER JOIN
+  UNIVERSE <- suppressMessages(left_join(UNIVERSE, UNIVERSE_NOT_NA)) # LEFT OUTER JOIN
 
   # View(data.frame(UNIVERSE)[,c("MG_DESC","PRICE_M001_TO_M011_NO_NA","PRICE_WGHT_MEAN_SECTOR","PRICE_WGHT_MEAN_SMA_10_M_SECTOR","PRICE_WGHT_MEAN_SMA_10_M_SECTOR_SVVR")])
   
@@ -862,7 +842,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   sqldf("DROP TABLE main.UNIVERSE", connection = dpsqllconn$con)
 
   # strip off
-  UNIVERSE <<- as.data.frame(UNIVERSE)
+  UNIVERSE <- as.data.frame(UNIVERSE)
   UNIVERSE_tbl_sqlite <- copy_to(dpsqllconn, UNIVERSE, temporary = FALSE
     , indexes = list(
    #    c("TICKER")
@@ -873,7 +853,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
     )
   )
   
-  UNIVERSE <<- tbl_df(UNIVERSE)
+  UNIVERSE <- tbl_df(UNIVERSE)
   
   sqldf("
     CREATE TABLE LOOKUP AS 
@@ -905,10 +885,10 @@ main_foresight3_999 <- function(pauseat=NULL) {
   )
   
   
-  UNIVERSE <<- sqldf("SELECT UNIV.* FROM main.UNIVERSE UNIV 
+  UNIVERSE <- sqldf("SELECT UNIV.* FROM main.UNIVERSE UNIV 
                                    ", connection = dpsqllconn$con, method="name__class")
   
-  UNIVERSE <<- tbl_df(UNIVERSE)
+  UNIVERSE <- tbl_df(UNIVERSE)
   
   
   # end SQL
@@ -930,7 +910,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   sqldf("DROP TABLE main.UNIVERSE", connection = dpsqllconn$con)
 
   # strip off
-  UNIVERSE <<- as.data.frame(UNIVERSE)
+  UNIVERSE <- as.data.frame(UNIVERSE)
   UNIVERSE_tbl_sqlite <- copy_to(dpsqllconn, UNIVERSE, temporary = FALSE
     , indexes = list(
    #    c("TICKER")
@@ -941,18 +921,18 @@ main_foresight3_999 <- function(pauseat=NULL) {
     )
   )
   
-  UNIVERSE <<- tbl_df(UNIVERSE)
+  UNIVERSE <- tbl_df(UNIVERSE)
   
-  UNIVERSE <<- sqldf("SELECT UNIV.*, PSD.PRCHG_13W AS PRCHG_13W__numeric FROM 
+  UNIVERSE <- sqldf("SELECT UNIV.*, PSD.PRCHG_13W AS PRCHG_13W__numeric FROM 
                                    main.UNIVERSE UNIV, main.SI_PSD PSD WHERE 
                                    UNIV.COMPANY_ID = PSD.COMPANY_ID 
                                    ", connection = dpsqllconn$con, method="name__class")
   
-  UNIVERSE <<- tbl_df(UNIVERSE)
+  UNIVERSE <- tbl_df(UNIVERSE)
   
   
   # all math must be numeric
-  UNIVERSE <<- mutate(UNIVERSE, PRCHG_13W = as.numeric(as.no_worse_than_NA(
+  UNIVERSE <- mutate(UNIVERSE, PRCHG_13W = as.numeric(as.no_worse_than_NA(
     PRCHG_13W
   ) ) )
   
@@ -972,11 +952,11 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   UNIVERSE_NOT_NA <- ungroup(UNIVERSE_NOT_NA) 
   
-  UNIVERSE <<- suppressMessages(left_join(UNIVERSE, UNIVERSE_NOT_NA)) # LEFT OUTER JOIN
+  UNIVERSE <- suppressMessages(left_join(UNIVERSE, UNIVERSE_NOT_NA)) # LEFT OUTER JOIN
   
   
   # surviVor of '3-month price appreciation greater than the universal 'All stocks' median (UNIVERSE)'
-  UNIVERSE <<- mutate(UNIVERSE, GROWTH_EXPOSE_PRCHG_13W_NTILE2_SRVVR = ifelse(PRCHG_13W_NTILE2 == 2, 1, 0)  )
+  UNIVERSE <- mutate(UNIVERSE, GROWTH_EXPOSE_PRCHG_13W_NTILE2_SRVVR = ifelse(PRCHG_13W_NTILE2 == 2, 1, 0)  )
   
   # require 6-month price appreciation greater than the universal median (ALLSTOCKS)
   # from SI_PSD  add back PRCHG_26W
@@ -984,7 +964,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   sqldf("DROP TABLE main.UNIVERSE", connection = dpsqllconn$con)
 
   # strip off
-  UNIVERSE <<- as.data.frame(UNIVERSE)
+  UNIVERSE <- as.data.frame(UNIVERSE)
   UNIVERSE_tbl_sqlite <- copy_to(dpsqllconn, UNIVERSE, temporary = FALSE
     , indexes = list(
         c("TICKER")
@@ -994,16 +974,16 @@ main_foresight3_999 <- function(pauseat=NULL) {
     )
   )
   
-  UNIVERSE <<- sqldf("SELECT UNIV.*, PSD.PRCHG_26W AS PRCHG_26W__numeric FROM 
+  UNIVERSE <- sqldf("SELECT UNIV.*, PSD.PRCHG_26W AS PRCHG_26W__numeric FROM 
                                    main.UNIVERSE UNIV, main.SI_PSD PSD WHERE 
                                    UNIV.COMPANY_ID = PSD.COMPANY_ID 
                                    ", connection = dpsqllconn$con, method="name__class")
   
-  UNIVERSE <<- tbl_df(UNIVERSE)
+  UNIVERSE <- tbl_df(UNIVERSE)
   
   
   # all math must be numeric
-  UNIVERSE <<- mutate(UNIVERSE, PRCHG_26W = as.numeric(as.no_worse_than_NA(
+  UNIVERSE <- mutate(UNIVERSE, PRCHG_26W = as.numeric(as.no_worse_than_NA(
     PRCHG_26W
   ) ) )
   
@@ -1023,11 +1003,11 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   UNIVERSE_NOT_NA <- ungroup(UNIVERSE_NOT_NA) 
   
-  UNIVERSE <<- suppressMessages(left_join(UNIVERSE, UNIVERSE_NOT_NA)) # LEFT OUTER JOIN
+  UNIVERSE <- suppressMessages(left_join(UNIVERSE, UNIVERSE_NOT_NA)) # LEFT OUTER JOIN
   
   
   # surviVor of '6-month price appreciation greater than the universal 'All stocks' median (UNIVERSE)'
-  UNIVERSE <<- mutate(UNIVERSE, GROWTH_EXPOSE_PRCHG_26W_NTILE2_SRVVR = ifelse(PRCHG_26W_NTILE2 == 2, 1, 0)  )
+  UNIVERSE <- mutate(UNIVERSE, GROWTH_EXPOSE_PRCHG_26W_NTILE2_SRVVR = ifelse(PRCHG_26W_NTILE2 == 2, 1, 0)  )
   
 
   # Dividend-Ex Date
@@ -1063,38 +1043,40 @@ main_foresight3_999 <- function(pauseat=NULL) {
   # DESCRIP     Income Statement - Quarterly
  	# FM_FILE     SI_ISQ
 
-   if(getOption("FileStoreStyle") == "Optimized") {
-    if( file.exists(getOption("AAIISIPro40PathFileOptim_SI_ISQ"))) {
-      load(file = getOption("AAIISIPro40PathFileOptim_SI_ISQ"))
-    } else {
-      # load file
-      SI_ISQ <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_ISQ"), as.is = TRUE)))
-      save("SI_ISQ",file = getOption("AAIISIPro40PathFileOptim_SI_ISQ"))
-    }
-  } else {
-    # load file
-    SI_ISQ <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_ISQ"), as.is = TRUE)))
-  }
+   # if(getOption("FileStoreStyle") == "Optimized") {
+    # if( file.exists(getOption("AAIISIPro40PathFileOptim_SI_ISQ"))) {
+      # load(file = getOption("AAIISIPro40PathFileOptim_SI_ISQ"))
+    # } else {
+      # # load file
+      # SI_ISQ <- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_ISQ"), as.is = TRUE)))
+      # save("SI_ISQ",file = getOption("AAIISIPro40PathFileOptim_SI_ISQ"))
+    # }
+  # } else {
+    # # load file
+    # SI_ISQ <- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_ISQ"), as.is = TRUE)))
+  # }
 
+    SI_ISQ <- get_from_disk("SI_ISQ")
+  
     # primary_key_dup <- SI_ISQ[duplicated(SI_ISQ[,'COMPANY_ID']),,drop=FALSE]
     # new_df_no_duplicates <- SI_ISQ[!(SI_ISQ$COMPANY_ID %in% as.matrix(primary_key_dup)),,drop=FALSE]
-    # SI_ISQ <<- new_df_no_duplicates
+    # SI_ISQ <- new_df_no_duplicates
     # rm(primary_key_dup,new_df_no_duplicates)
   
-    SI_ISQ <<- SI_ISQ # wierd performance bug ( program runs faster than can it access its variables )
-    SI_ISQ <<- eliminate_all_duplicates( "SI_ISQ", "COMPANY_ID" ) 
+    SI_ISQ <- SI_ISQ # wierd performance bug ( program runs faster than can it access its variables )
+    SI_ISQ <- eliminate_all_duplicates( SI_ISQ, "COMPANY_ID" ) 
   
   SI_ISQ_tbl_sqlite <- copy_to(dpsqllconn, SI_ISQ, temporary = FALSE
     , indexes = list(
         c("COMPANY_ID")
     )
   )
-  SI_ISQ <<- tbl_df(SI_ISQ)
+  SI_ISQ <- tbl_df(SI_ISQ)
 
   sqldf("DROP TABLE main.UNIVERSE", connection = dpsqllconn$con)
 
   # strip off
-  UNIVERSE <<- as.data.frame(UNIVERSE)
+  UNIVERSE <- as.data.frame(UNIVERSE)
   UNIVERSE_tbl_sqlite <- copy_to(dpsqllconn, UNIVERSE, temporary = FALSE
     , indexes = list(
    #    c("TICKER")
@@ -1105,7 +1087,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
     )
   )
   
-  UNIVERSE <<- sqldf("SELECT UNIV.*, ISQ.EPS_Q1 AS EPS_Q1__numeric, ISQ.EPS_Q2 AS EPS_Q2__numeric, ISQ.EPS_Q3 AS EPS_Q3__numeric, ISQ.EPS_Q4 AS EPS_Q4__numeric, -- comment
+  UNIVERSE <- sqldf("SELECT UNIV.*, ISQ.EPS_Q1 AS EPS_Q1__numeric, ISQ.EPS_Q2 AS EPS_Q2__numeric, ISQ.EPS_Q3 AS EPS_Q3__numeric, ISQ.EPS_Q4 AS EPS_Q4__numeric, -- comment
                                       ISQ.EPS_Q5 AS EPS_Q5__numeric, ISQ.EPS_Q6 AS EPS_Q6__numeric, ISQ.EPS_Q7 AS EPS_Q7__numeric, ISQ.EPS_Q8 AS EPS_Q8__numeric, 
                                       ISQ.DIVNQXDT AS DIVNQXDTUNX  , ISQ.DIVNQPDT AS DIVNQPDTUNX 
                                   FROM 
@@ -1113,65 +1095,69 @@ main_foresight3_999 <- function(pauseat=NULL) {
                                    UNIV.COMPANY_ID = ISQ.COMPANY_ID 
                                    ", connection = dpsqllconn$con, method="name__class")
   
-  UNIVERSE <<- tbl_df(UNIVERSE)
+  UNIVERSE <- tbl_df(UNIVERSE)
   
 
-   if(getOption("FileStoreStyle") == "Optimized") {
-    if( file.exists(getOption("AAIISIPro40PathFileOptim_SI_BSQ"))) {
-      load(file = getOption("AAIISIPro40PathFileOptim_SI_BSQ"))
-    } else {
-      # load file
-      SI_BSQ <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_BSQ"), as.is = TRUE)))
-      save("SI_BSQ",file = getOption("AAIISIPro40PathFileOptim_SI_BSQ"))
-    }
-  } else {
-    # load file
-    SI_BSQ <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_BSQ"), as.is = TRUE)))
-  }
+   # if(getOption("FileStoreStyle") == "Optimized") {
+    # if( file.exists(getOption("AAIISIPro40PathFileOptim_SI_BSQ"))) {
+      # load(file = getOption("AAIISIPro40PathFileOptim_SI_BSQ"))
+    # } else {
+      # # load file
+      # SI_BSQ <- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_BSQ"), as.is = TRUE)))
+      # save("SI_BSQ",file = getOption("AAIISIPro40PathFileOptim_SI_BSQ"))
+    # }
+  # } else {
+    # # load file
+    # SI_BSQ <- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_BSQ"), as.is = TRUE)))
+  # }
+  
+  SI_BSQ <- get_from_disk("SI_BSQ")
   
   # primary_key_dup <- SI_BSQ[duplicated(SI_BSQ[,'COMPANY_ID']),,drop=FALSE]
   # new_df_no_duplicates <- SI_BSQ[!(SI_BSQ$COMPANY_ID %in% as.matrix(primary_key_dup)),,drop=FALSE]
-  # SI_BSQ <<- new_df_no_duplicates
+  # SI_BSQ <- new_df_no_duplicates
   # rm(primary_key_dup,new_df_no_duplicates)
   
-  SI_BSQ <<- SI_BSQ # wierd performance bug ( program runs faster than can it access its variables )
-  SI_BSQ <<- eliminate_all_duplicates( "SI_BSQ", "COMPANY_ID" ) 
+  SI_BSQ <- SI_BSQ # wierd performance bug ( program runs faster than can it access its variables )
+  SI_BSQ <- eliminate_all_duplicates( SI_BSQ, "COMPANY_ID" ) 
   
   SI_BSQ_tbl_sqlite <- copy_to(dpsqllconn, SI_BSQ, temporary = FALSE
                                , indexes = list(
                                  c("COMPANY_ID")
                                )
   )
-  SI_BSQ <<- tbl_df(SI_BSQ)
+  SI_BSQ <- tbl_df(SI_BSQ)
   
 
-   if(getOption("FileStoreStyle") == "Optimized") {
-    if( file.exists(getOption("AAIISIPro40PathFileOptim_SI_CFQ"))) {
-      load(file = getOption("AAIISIPro40PathFileOptim_SI_CFQ"))
-    } else {
-      # load file
-      SI_CFQ <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_CFQ"), as.is = TRUE)))
-      save("SI_CFQ",file = getOption("AAIISIPro40PathFileOptim_SI_CFQ"))
-    }
-  } else {
-    # load file
-    SI_CFQ <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_CFQ"), as.is = TRUE)))
-  }
+   # if(getOption("FileStoreStyle") == "Optimized") {
+    # if( file.exists(getOption("AAIISIPro40PathFileOptim_SI_CFQ"))) {
+      # load(file = getOption("AAIISIPro40PathFileOptim_SI_CFQ"))
+    # } else {
+      # # load file
+      # SI_CFQ <- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_CFQ"), as.is = TRUE)))
+      # save("SI_CFQ",file = getOption("AAIISIPro40PathFileOptim_SI_CFQ"))
+    # }
+  # } else {
+    # # load file
+    # SI_CFQ <- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_CFQ"), as.is = TRUE)))
+  # }
+  
+  SI_CFQ <- get_from_disk("SI_CFQ")
   
   # primary_key_dup <- SI_CFQ[duplicated(SI_CFQ[,'COMPANY_ID']),,drop=FALSE]
   # new_df_no_duplicates <- SI_CFQ[!(SI_CFQ$COMPANY_ID %in% as.matrix(primary_key_dup)),,drop=FALSE]
-  # SI_CFQ <<- new_df_no_duplicates
+  # SI_CFQ <- new_df_no_duplicates
   # rm(primary_key_dup,new_df_no_duplicates)
   
-  SI_CFQ <<- SI_CFQ # wierd performance bug ( program runs faster than can it access its variables )
-  SI_CFQ <<- eliminate_all_duplicates( "SI_CFQ", "COMPANY_ID" ) 
+  SI_CFQ <- SI_CFQ # wierd performance bug ( program runs faster than can it access its variables )
+  SI_CFQ <- eliminate_all_duplicates( SI_CFQ, "COMPANY_ID" ) 
   
   SI_CFQ_tbl_sqlite <- copy_to(dpsqllconn, SI_CFQ, temporary = FALSE
                                , indexes = list(
                                  c("COMPANY_ID") 
                                )
   )
-  SI_CFQ <<- tbl_df(SI_CFQ)
+  SI_CFQ <- tbl_df(SI_CFQ)
   
   
   # begin joins
@@ -1179,7 +1165,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   sqldf("DROP TABLE main.UNIVERSE", connection = dpsqllconn$con)
   
   # strip off
-  UNIVERSE <<- as.data.frame(UNIVERSE)
+  UNIVERSE <- as.data.frame(UNIVERSE)
   UNIVERSE_tbl_sqlite <- copy_to(dpsqllconn, UNIVERSE, temporary = FALSE
                                  , indexes = list(
                                    #    c("TICKER")
@@ -1191,7 +1177,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   )
   
   
-  UNIVERSE <<- sqldf("SELECT UNIV.* 
+  UNIVERSE <- sqldf("SELECT UNIV.* 
                       , BSQ.LIAB_Q1 AS LIAB_Q1__numeric, BSQ.LIAB_Q2 AS LIAB_Q2__numeric                                  -- %change in debt ( and debt / equity ratio )
                       , BSQ.LIAB_Q3 AS LIAB_Q3__numeric, BSQ.LIAB_Q4 AS LIAB_Q4__numeric, BSQ.LIAB_Q5 AS LIAB_Q5__numeric -- %change in debt
                       , BSQ.EQUITY_Q1 AS EQUITY_Q1__numeric                                                               -- debt / equity ratio   -- book / price ratio
@@ -1210,7 +1196,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
                                    UNIV.COMPANY_ID = CFQ.COMPANY_ID 
                                    ", connection = dpsqllconn$con, method="name__class")
   
-  UNIVERSE <<- tbl_df(UNIVERSE)
+  UNIVERSE <- tbl_df(UNIVERSE)
   
   
   # end joins
@@ -1221,7 +1207,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   sqldf("DROP TABLE main.UNIVERSE", connection = dpsqllconn$con)
   
   # strip off
-  UNIVERSE <<- as.data.frame(UNIVERSE)
+  UNIVERSE <- as.data.frame(UNIVERSE)
   UNIVERSE_tbl_sqlite <- copy_to(dpsqllconn, UNIVERSE, temporary = FALSE
                                  , indexes = list(
                                    #    c("TICKER")
@@ -1233,7 +1219,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   )
   
   
-  UNIVERSE <<- sqldf("SELECT UNIV.* 
+  UNIVERSE <- sqldf("SELECT UNIV.* 
                       , CFQ.TCO_Q1 AS TCO_Q1__numeric, CFQ.TCO_Q2 AS TCO_Q2__numeric                                -- percent change in net operationg assets ( NOA ) AND current accruals to total assets ( CATA ) 
                       , CFQ.TCO_Q3 AS TCO_Q3__numeric, CFQ.TCO_Q4 AS TCO_Q4__numeric, CFQ.TCO_Q5 AS TCO_Q5__numeric -- percent change in net operationg assets ( NOA ) AND current accruals to total assets ( CATA ) 
                       , CFQ.TCO_Q6 AS TCO_Q6__numeric, CFQ.TCO_Q7 AS TCO_Q7__numeric, CFQ.TCO_Q8 AS TCO_Q8__numeric -- percent change in net operationg assets ( NOA ) AND current accruals to total assets ( CATA )
@@ -1271,7 +1257,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
                                    UNIV.COMPANY_ID = ISQ.COMPANY_ID 
                                    ", connection = dpsqllconn$con, method="name__class")
   
-  UNIVERSE <<- tbl_df(UNIVERSE)
+  UNIVERSE <- tbl_df(UNIVERSE)
 
   # end joins
 
@@ -1325,7 +1311,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
 # SEEMS SIGNIFICANT ( some as high as 20%)  DILUTION_MULT_ 
 # ( STRANGE NO CHANGE FROM QUARTER TO QUARTER )
   
-  UNIVERSE <<- mutate(UNIVERSE,                                   
+  UNIVERSE <- mutate(UNIVERSE,                                   
       DILUTION_MULT_Q1 =ifelse( !is.na(EPSCON_Q1) == TRUE & !is.na(EPSDC_Q1) == TRUE  & EPSCON_Q1 != 0.0 & EPSDC_Q1 != 0.0, as.numeric(EPSCON_Q1/EPSDC_Q1), 1.0)
     , DILUTION_MULT_Q2 =ifelse( !is.na(EPSCON_Q2) == TRUE & !is.na(EPSDC_Q2) == TRUE  & EPSCON_Q2 != 0.0 & EPSDC_Q2 != 0.0, as.numeric(EPSCON_Q2/EPSDC_Q2), 1.0)                                                                         
     , DILUTION_MULT_Q3 =ifelse( !is.na(EPSCON_Q3) == TRUE & !is.na(EPSDC_Q3) == TRUE  & EPSCON_Q3 != 0.0 & EPSDC_Q3 != 0.0, as.numeric(EPSCON_Q3/EPSDC_Q3), 1.0)                                                              
@@ -1344,7 +1330,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   # Dividend-Pmt Date
   # Data Table Name: DIVNQPDT
   
-   UNIVERSE <<- mutate(UNIVERSE,                                                                                                               
+   UNIVERSE <- mutate(UNIVERSE,                                                                                                               
       DIVNQXDT = as.character(ymd_hms(c("1970-01-01 16:00:00.880-0400")) + days(DIVNQXDTUNX))                                                        
     , DIVNQPDT = as.character(ymd_hms(c("1970-01-01 16:00:00.880-0400")) + days(DIVNQPDTUNX))
   )
@@ -1378,17 +1364,17 @@ main_foresight3_999 <- function(pauseat=NULL) {
   # DOES NOT BREAK
   #  ( ( EPS_Q1 + EPS_Q2 + EPS_Q3 + EPS_Q4 ) - ( EPS_Q5 + EPS_Q6 + EPS_Q7 + EPS_Q8 + 0.0000001 ) ) / ( ASSETS_Q5 + 0.0000001 ) * 100.0
   
-  UNIVERSE <<- mutate(UNIVERSE, GROWTH_EXPOSE_ANNUAL_EPS_CH_PCT_GROWTH = as.numeric(as.no_worse_than_NA( 
+  UNIVERSE <- mutate(UNIVERSE, GROWTH_EXPOSE_ANNUAL_EPS_CH_PCT_GROWTH = as.numeric(as.no_worse_than_NA( 
     ( ( EPS_Q1 + EPS_Q2 + EPS_Q3 + EPS_Q4 ) - ( EPS_Q5 + EPS_Q6 + EPS_Q7 + EPS_Q8  ) ) / ( ASSETS_Q5  ) * 100.0
   ) ) )
   
-  UNIVERSE <<- mutate(UNIVERSE, GROWTH_EXPOSE_ANNUAL_EPS_CH_PCT_GROWTH_GR_THAN_0_SRVVR = ifelse(   
+  UNIVERSE <- mutate(UNIVERSE, GROWTH_EXPOSE_ANNUAL_EPS_CH_PCT_GROWTH_GR_THAN_0_SRVVR = ifelse(   
     GROWTH_EXPOSE_ANNUAL_EPS_CH_PCT_GROWTH > 0.0, 1, 0
   ) )
   
   # growth expose winners so far
   
-  UNIVERSE <<- mutate(UNIVERSE, GROWTH_EXPOSE_SRVVR = 
+  UNIVERSE <- mutate(UNIVERSE, GROWTH_EXPOSE_SRVVR = 
     ifelse(   
               GROWTH_EXPOSE_PRCHG_13W_NTILE2_SRVVR                      == 1 & 
               GROWTH_EXPOSE_PRCHG_26W_NTILE2_SRVVR                      == 1 & 
@@ -1403,12 +1389,12 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   # want only GROWTH_EXPOSE_SRVVR == 1
   
-  # UNIVERSE <<- data.table(UNIVERSE)
+  # UNIVERSE <- data.table(UNIVERSE)
   # setkeyv(UNIVERSE,c("GROWTH_EXPOSE_SRVVR"))
-  # UNIVERSE <<- UNIVERSE[GROWTH_EXPOSE_SRVVR==1]
-  # UNIVERSE <<- as.data.frame(UNIVERSE, stringsAsFactors = FALSE)
+  # UNIVERSE <- UNIVERSE[GROWTH_EXPOSE_SRVVR==1]
+  # UNIVERSE <- as.data.frame(UNIVERSE, stringsAsFactors = FALSE)
   
-  UNIVERSE <<- filter(UNIVERSE, GROWTH_EXPOSE_SRVVR == 1)
+  UNIVERSE <- filter(UNIVERSE, GROWTH_EXPOSE_SRVVR == 1)
   
   # begin financial composite ( defensive posture )
   
@@ -1452,7 +1438,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   # DOES NOT BREAK
   # ( LIAB_Q1 - LIAB_Q5 ) / ( ASSETS_Q5 + 0.0000001 ) * 100.0
   
-  UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_FIN_CMPST_PCT_CH_DEBT = as.numeric(as.no_worse_than_NA(   
+  UNIVERSE <- mutate(UNIVERSE, VAL_EXPOSE_FIN_CMPST_PCT_CH_DEBT = as.numeric(as.no_worse_than_NA(   
     ( LIAB_Q1 - LIAB_Q5 ) / ( ASSETS_Q5 ) * 100.0
   ) ) )
 
@@ -1471,7 +1457,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   UNIVERSE_NOT_NA <- ungroup(UNIVERSE_NOT_NA) 
   
-  UNIVERSE <<- suppressMessages(left_join(UNIVERSE, UNIVERSE_NOT_NA)) # LEFT OUTER JOIN
+  UNIVERSE <- suppressMessages(left_join(UNIVERSE, UNIVERSE_NOT_NA)) # LEFT OUTER JOIN
   
   
   # end - financial composite - % change in debt
@@ -1501,7 +1487,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   # DOES NOT BREAK
   # LIAB_Q1 / (EQUITY_Q1 + 0.0000001)
   
-  UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_FIN_CMPST_DEBT_TO_EQUITY = as.numeric(as.no_worse_than_NA(   
+  UNIVERSE <- mutate(UNIVERSE, VAL_EXPOSE_FIN_CMPST_DEBT_TO_EQUITY = as.numeric(as.no_worse_than_NA(   
     LIAB_Q1 / (EQUITY_Q1 + 0.0000001)
   ) ) )
   
@@ -1519,7 +1505,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   UNIVERSE_NOT_NA <- ungroup(UNIVERSE_NOT_NA) 
   
-  UNIVERSE <<- suppressMessages(left_join(UNIVERSE, UNIVERSE_NOT_NA)) # LEFT OUTER JOIN
+  UNIVERSE <- suppressMessages(left_join(UNIVERSE, UNIVERSE_NOT_NA)) # LEFT OUTER JOIN
   
   # end - financial composite - debt to equity ratio
   
@@ -1565,7 +1551,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   # DOES NOT BREAK 
   # ( TCF_Q1 + TCF_Q2 + TCF_Q3 + TCF_Q4) / ( ( ASSETS_Q1 + ASSETS_Q2 + ASSETS_Q3 + ASSETS_Q4 + 0.0000001) / 4.0 )
   
-  UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_FIN_CMPST_EXTERNAL_FINANCING = as.numeric(as.no_worse_than_NA(   
+  UNIVERSE <- mutate(UNIVERSE, VAL_EXPOSE_FIN_CMPST_EXTERNAL_FINANCING = as.numeric(as.no_worse_than_NA(   
     ( TCF_Q1 + TCF_Q2 + TCF_Q3 + TCF_Q4) / ( ( ASSETS_Q1 + ASSETS_Q2 + ASSETS_Q3 + ASSETS_Q4 + 0.0000001) / 4.0 )
   ) ) )
   
@@ -1584,7 +1570,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
 
   UNIVERSE_NOT_NA <- ungroup(UNIVERSE_NOT_NA) 
   
-  UNIVERSE <<- suppressMessages(left_join(UNIVERSE, UNIVERSE_NOT_NA)) # LEFT OUTER JOIN
+  UNIVERSE <- suppressMessages(left_join(UNIVERSE, UNIVERSE_NOT_NA)) # LEFT OUTER JOIN
   
   # edit(sqldf("SELECT TICKER, MG_DESC, VAL_EXPOSE_FIN_CMPST_EXTERNAL_FINANCING, VAL_EXPOSE_FIN_CMPST_EXTERNAL_FINANCING_NTILE100 
                 # FROM UNIVERSE 
@@ -1630,7 +1616,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   # DOES NOT BREAK
   # ( NCC_Q1 + NCC_Q2 + NCC_Q3 + NCC_Q4) / ( LIAB_Q1 + LIAB_Q2 + LIAB_Q3 + LIAB_Q4 + 0.0000001 ) 
   
-  UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_FIN_CMPST_ANN_CSH_FLOW_OVER_DEBT = as.numeric(as.no_worse_than_NA(   
+  UNIVERSE <- mutate(UNIVERSE, VAL_EXPOSE_FIN_CMPST_ANN_CSH_FLOW_OVER_DEBT = as.numeric(as.no_worse_than_NA(   
     ( NCC_Q1 + NCC_Q2 + NCC_Q3 + NCC_Q4) / ( LIAB_Q1 + LIAB_Q2 + LIAB_Q3 + LIAB_Q4  ) 
   ) ) )
   
@@ -1648,11 +1634,11 @@ main_foresight3_999 <- function(pauseat=NULL) {
 
   UNIVERSE_NOT_NA <- ungroup(UNIVERSE_NOT_NA) 
   
-  UNIVERSE <<- suppressMessages(left_join(UNIVERSE, UNIVERSE_NOT_NA)) # LEFT OUTER JOIN
+  UNIVERSE <- suppressMessages(left_join(UNIVERSE, UNIVERSE_NOT_NA)) # LEFT OUTER JOIN
 
   ### IMPORTANT ###
   # 'only non-financial companies use THIS' ( just _NTILE 'NA out" the "Financial" companies )
-  UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_FIN_CMPST_ANN_CSH_FLOW_OVER_DEBT_NTILE100 = ifelse(MG_DESC == "Financial", NA, VAL_EXPOSE_FIN_CMPST_ANN_CSH_FLOW_OVER_DEBT_NTILE100)  )
+  UNIVERSE <- mutate(UNIVERSE, VAL_EXPOSE_FIN_CMPST_ANN_CSH_FLOW_OVER_DEBT_NTILE100 = ifelse(MG_DESC == "Financial", NA, VAL_EXPOSE_FIN_CMPST_ANN_CSH_FLOW_OVER_DEBT_NTILE100)  )
   
   # end - financial composite - annual cash flow / debt 
   
@@ -1661,7 +1647,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   # 2012 book: if NA, then assign 50 (of ntile 100 ) ( seems to unfairly punish companies for slow/non-exist reporting?)
   
   # count up of non-NA ntiles
-  UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_FIN_CMPST_UNIQUE_SCORES_CNT = as.numeric(
+  UNIVERSE <- mutate(UNIVERSE, VAL_EXPOSE_FIN_CMPST_UNIQUE_SCORES_CNT = as.numeric(
     ifelse( !is.na(VAL_EXPOSE_FIN_CMPST_PCT_CH_DEBT_NTILE100)            == TRUE, 1.0, 0.0) +
     ifelse( !is.na(VAL_EXPOSE_FIN_CMPST_DEBT_TO_EQUITY_NTILE100)         == TRUE, 1.0, 0.0) + 
     ifelse( !is.na(VAL_EXPOSE_FIN_CMPST_EXTERNAL_FINANCING_NTILE100)     == TRUE, 1.0, 0.0) +
@@ -1669,7 +1655,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   ))
   
   # minimum two factors are required
-  UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_FIN_CMPST_SCORES_SUMM = as.numeric(
+  UNIVERSE <- mutate(UNIVERSE, VAL_EXPOSE_FIN_CMPST_SCORES_SUMM = as.numeric(
     ifelse( VAL_EXPOSE_FIN_CMPST_UNIQUE_SCORES_CNT >= 2.0, 
       ifelse( !is.na(VAL_EXPOSE_FIN_CMPST_PCT_CH_DEBT_NTILE100)            == TRUE, VAL_EXPOSE_FIN_CMPST_PCT_CH_DEBT_NTILE100,            0.0) +
       ifelse( !is.na(VAL_EXPOSE_FIN_CMPST_DEBT_TO_EQUITY_NTILE100)         == TRUE, VAL_EXPOSE_FIN_CMPST_DEBT_TO_EQUITY_NTILE100,         0.0) + 
@@ -1679,7 +1665,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   ))
   
   # four factors total possible
-  UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_FIN_CMPST_SCORES_SUMM_REBAL = as.numeric(
+  UNIVERSE <- mutate(UNIVERSE, VAL_EXPOSE_FIN_CMPST_SCORES_SUMM_REBAL = as.numeric(
      VAL_EXPOSE_FIN_CMPST_SCORES_SUMM * 4.0 / VAL_EXPOSE_FIN_CMPST_UNIQUE_SCORES_CNT
   ))
   
@@ -1697,7 +1683,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
     hdntile(.,"VAL_EXPOSE_FIN_CMPST_SCORES_SUMM_REBAL") 
   ) 
 
-  UNIVERSE <<- suppressMessages(left_join(UNIVERSE, UNIVERSE_NOT_NA)) # LEFT OUTER JOIN
+  UNIVERSE <- suppressMessages(left_join(UNIVERSE, UNIVERSE_NOT_NA)) # LEFT OUTER JOIN
   
   # end - financial composite - rebalance and scoring
   
@@ -1805,7 +1791,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   # DOES NOT BREAK
   #  ( ( ( TCO_Q1 + TCO_Q2 + TCO_Q3 + TCO_Q4 ) - ( TCF_Q1 + TCF_Q2 + TCF_Q3 + TCF_Q4 )  - ( TCI_Q1 + TCI_Q2 + TCI_Q3 + TCI_Q4  ) ) - ( ( TCO_Q5 + TCO_Q6 + TCO_Q7 + TCO_Q8 ) - ( TCF_Q5 + TCF_Q6 + TCF_Q7 + TCF_Q8 )  - ( TCI_Q5 + TCI_Q6 + TCI_Q7 + TCI_Q8  ) ) ) / abs( ( TCO_Q5 + TCO_Q6 + TCO_Q7 + TCO_Q8 ) - ( TCF_Q5 + TCF_Q6 + TCF_Q7 + TCF_Q8 )  - ( TCI_Q5 + TCI_Q6 + TCI_Q7 + TCI_Q8  ) + 0.0000001 ) * 100 
   
-  UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_EARN_CMPST_PCT_CH_IN_NOA = as.numeric(as.no_worse_than_NA(   
+  UNIVERSE <- mutate(UNIVERSE, VAL_EXPOSE_EARN_CMPST_PCT_CH_IN_NOA = as.numeric(as.no_worse_than_NA(   
     ( ( ( TCO_Q1 + TCO_Q2 + TCO_Q3 + TCO_Q4 ) - ( TCF_Q1 + TCF_Q2 + TCF_Q3 + TCF_Q4 )  - ( TCI_Q1 + TCI_Q2 + TCI_Q3 + TCI_Q4  ) ) - ( ( TCO_Q5 + TCO_Q6 + TCO_Q7 + TCO_Q8 ) - ( TCF_Q5 + TCF_Q6 + TCF_Q7 + TCF_Q8 )  - ( TCI_Q5 + TCI_Q6 + TCI_Q7 + TCI_Q8  ) ) ) / abs( ( TCO_Q5 + TCO_Q6 + TCO_Q7 + TCO_Q8 ) - ( TCF_Q5 + TCF_Q6 + TCF_Q7 + TCF_Q8 )  - ( TCI_Q5 + TCI_Q6 + TCI_Q7 + TCI_Q8  )  ) * 100 
   ) ) )
 
@@ -1823,7 +1809,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   UNIVERSE_NOT_NA <- ungroup(UNIVERSE_NOT_NA) 
   
-  UNIVERSE <<- suppressMessages(left_join(UNIVERSE, UNIVERSE_NOT_NA)) # LEFT OUTER JOIN
+  UNIVERSE <- suppressMessages(left_join(UNIVERSE, UNIVERSE_NOT_NA)) # LEFT OUTER JOIN
   
   
   # end - percent change in net operationg assets ( NOA )
@@ -1896,7 +1882,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   # DOES NOT BREAK
   # (  ( ( WORK_Q1 - CASH_Q1 ) / ( ASSETS_Q1 + 0.0000001 ) )  - ( ( WORK_Q5 - CASH_Q5 ) / ( ASSETS_Q5 + 0.0000001 ) )  ) / abs( ( ( LIAB_Q5 - CASH_Q5 + 0.0000001 ) /  ( ASSETS_Q5 + 0.0000001 ) )  ) * 100.0 
   
-  UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_EARN_CMPST_TATA = as.numeric(as.no_worse_than_NA(   
+  UNIVERSE <- mutate(UNIVERSE, VAL_EXPOSE_EARN_CMPST_TATA = as.numeric(as.no_worse_than_NA(   
     (  ( ( WORK_Q1 - CASH_Q1 ) / ( ASSETS_Q1  ) )  - ( ( WORK_Q5 - CASH_Q5 ) / ( ASSETS_Q5  ) )  ) / abs( ( ( LIAB_Q5 - CASH_Q5  ) /  ( ASSETS_Q5  ) )  ) * 100.0 
   ) ) )
 
@@ -1914,7 +1900,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   UNIVERSE_NOT_NA <- ungroup(UNIVERSE_NOT_NA) 
   
-  UNIVERSE <<- suppressMessages(left_join(UNIVERSE, UNIVERSE_NOT_NA)) # LEFT OUTER JOIN
+  UNIVERSE <- suppressMessages(left_join(UNIVERSE, UNIVERSE_NOT_NA)) # LEFT OUTER JOIN
 
   # end - total accruals over total assets ( TATA ) 
 
@@ -2016,7 +2002,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   # DOES     BREAK FORM
   #  ( ( ( AP_Q1 - NETINC_Q1 - TCO_Q1  - NETINC_Q2 - TCO_Q2 - NETINC_Q3 - TCO_Q3 - NETINC_Q4 - TCO_Q4             ) / ( ASSETS_Q1             ) )   - ( ( AP_Q5 - NETINC_Q5 - TCO_Q5  - NETINC_Q6 - TCO_Q6 - NETINC_Q7 - TCO_Q7 - NETINC_Q8 - TCO_Q8             ) / ( ASSETS_Q5              ) ) ) /  abs( ( AP_Q5 - NETINC_Q5 - TCO_Q5  - NETINC_Q6 - TCO_Q6 - NETINC_Q7 - TCO_Q7 - NETINC_Q8 - TCO_Q8            ) / ( ASSETS_Q5             ) )
  
-  UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_EARN_CMPST_CATA = as.numeric(as.no_worse_than_NA(
+  UNIVERSE <- mutate(UNIVERSE, VAL_EXPOSE_EARN_CMPST_CATA = as.numeric(as.no_worse_than_NA(
       # USED  
     ( ( ( AP_Q1 - NETINC_Q1 - TCO_Q1  - NETINC_Q2 - TCO_Q2 - NETINC_Q3 - TCO_Q3 - NETINC_Q4 - TCO_Q4             ) / ( ASSETS_Q1             ) )   - ( ( AP_Q5 - NETINC_Q5 - TCO_Q5  - NETINC_Q6 - TCO_Q6 - NETINC_Q7 - TCO_Q7 - NETINC_Q8 - TCO_Q8             ) / ( ASSETS_Q5              ) ) ) /  abs( ( AP_Q5 - NETINC_Q5 - TCO_Q5  - NETINC_Q6 - TCO_Q6 - NETINC_Q7 - TCO_Q7 - NETINC_Q8 - TCO_Q8            ) / ( ASSETS_Q5             ) )
   ) ) )
@@ -2036,7 +2022,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   UNIVERSE_NOT_NA <- ungroup(UNIVERSE_NOT_NA) 
   
-  UNIVERSE <<- suppressMessages(left_join(UNIVERSE, UNIVERSE_NOT_NA)) # LEFT OUTER JOIN
+  UNIVERSE <- suppressMessages(left_join(UNIVERSE, UNIVERSE_NOT_NA)) # LEFT OUTER JOIN
   
   
   # end - current accruals to total assets ( CATA )
@@ -2109,7 +2095,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   # Does NOT BREAK
   # ( DEP_Q1 + DEP_Q2 + DEP_Q3 + DEP_Q4 ) / ( CE_Q1 + CE_Q2 + CE_Q3 + CE_Q4 + 0.0000001 ) 
   
-  UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_EARN_CMPST_DPRCT_EXPND_TO_CAPT_EXPND = as.numeric(as.no_worse_than_NA(   
+  UNIVERSE <- mutate(UNIVERSE, VAL_EXPOSE_EARN_CMPST_DPRCT_EXPND_TO_CAPT_EXPND = as.numeric(as.no_worse_than_NA(   
     ( DEP_Q1 + DEP_Q2 + DEP_Q3 + DEP_Q4 ) / ( CE_Q1 + CE_Q2 + CE_Q3 + CE_Q4  ) 
   ) ) )
   
@@ -2127,7 +2113,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   UNIVERSE_NOT_NA <- ungroup(UNIVERSE_NOT_NA) 
   
-  UNIVERSE <<- suppressMessages(left_join(UNIVERSE, UNIVERSE_NOT_NA)) # LEFT OUTER JOIN
+  UNIVERSE <- suppressMessages(left_join(UNIVERSE, UNIVERSE_NOT_NA)) # LEFT OUTER JOIN
 
   # end - depreciation expense to captital expenditures
   
@@ -2169,7 +2155,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   # ( ( TCO_Q1 - NETINC_Q1 ) + ( TCO_Q2 - NETINC_Q2 ) + ( TCO_Q3 - NETINC_Q3 ) + ( TCO_Q4 - NETINC_Q4 ) ) / MKTCAP = VAL_EXPOSE_EARN_CMPST_DIFF_OP_CSH_FLW_AND_NET_INC_SCALED_TO_MKTCAP
 
   
-  UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_EARN_CMPST_DIFF_OP_CSH_FLW_AND_NET_INC_SCALED_TO_MKTCAP = as.numeric(as.no_worse_than_NA(   
+  UNIVERSE <- mutate(UNIVERSE, VAL_EXPOSE_EARN_CMPST_DIFF_OP_CSH_FLW_AND_NET_INC_SCALED_TO_MKTCAP = as.numeric(as.no_worse_than_NA(   
     ( ( TCO_Q1 - NETINC_Q1 ) + ( TCO_Q2 - NETINC_Q2 ) + ( TCO_Q3 - NETINC_Q3 ) + ( TCO_Q4 - NETINC_Q4 ) ) / MKTCAP
   ) ) )
   
@@ -2187,7 +2173,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   UNIVERSE_NOT_NA <- ungroup(UNIVERSE_NOT_NA) 
   
-  UNIVERSE <<- suppressMessages(left_join(UNIVERSE, UNIVERSE_NOT_NA)) # LEFT OUTER JOIN
+  UNIVERSE <- suppressMessages(left_join(UNIVERSE, UNIVERSE_NOT_NA)) # LEFT OUTER JOIN
 
   # end - diff operating cash flow and net income and scales that figure to market cap
   
@@ -2198,7 +2184,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   # 2012 book: if NA, then assign 50 (of ntile 100 ) ( seems to unfairly punish companies for slow/non-exist reporting?)
   
   # count up of non-NA ntiles
-  UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_EARN_CMPST_UNIQUE_SCORES_CNT = as.numeric(
+  UNIVERSE <- mutate(UNIVERSE, VAL_EXPOSE_EARN_CMPST_UNIQUE_SCORES_CNT = as.numeric(
     ifelse( !is.na(VAL_EXPOSE_EARN_CMPST_PCT_CH_IN_NOA_NTILE100)             == TRUE, 1.0, 0.0) +
     ifelse( !is.na(VAL_EXPOSE_EARN_CMPST_TATA_NTILE100)                      == TRUE, 1.0, 0.0) + 
     ifelse( !is.na(VAL_EXPOSE_EARN_CMPST_CATA_NTILE100)                      == TRUE, 1.0, 0.0) +
@@ -2206,7 +2192,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   ))
   
   # minimum two factors are required
-  UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_EARN_CMPST_SCORES_SUMM = as.numeric(
+  UNIVERSE <- mutate(UNIVERSE, VAL_EXPOSE_EARN_CMPST_SCORES_SUMM = as.numeric(
     ifelse( VAL_EXPOSE_EARN_CMPST_UNIQUE_SCORES_CNT >= 2.0, 
       ifelse( !is.na(VAL_EXPOSE_EARN_CMPST_PCT_CH_IN_NOA_NTILE100)             == TRUE, VAL_EXPOSE_EARN_CMPST_PCT_CH_IN_NOA_NTILE100,             0.0) +
       ifelse( !is.na(VAL_EXPOSE_EARN_CMPST_TATA_NTILE100)                      == TRUE, VAL_EXPOSE_EARN_CMPST_TATA_NTILE100,                      0.0) + 
@@ -2216,7 +2202,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   ))
   
   # four factors total possible
-  UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_EARN_CMPST_SCORES_SUMM_REBAL = as.numeric(
+  UNIVERSE <- mutate(UNIVERSE, VAL_EXPOSE_EARN_CMPST_SCORES_SUMM_REBAL = as.numeric(
      VAL_EXPOSE_EARN_CMPST_SCORES_SUMM * 4.0 / VAL_EXPOSE_EARN_CMPST_UNIQUE_SCORES_CNT
   ))
   
@@ -2234,7 +2220,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
     hdntile(.,"VAL_EXPOSE_EARN_CMPST_SCORES_SUMM_REBAL") 
   ) 
   
-  UNIVERSE <<- suppressMessages(left_join(UNIVERSE, UNIVERSE_NOT_NA)) # LEFT OUTER JOIN
+  UNIVERSE <- suppressMessages(left_join(UNIVERSE, UNIVERSE_NOT_NA)) # LEFT OUTER JOIN
   
 
   # begin - IF DOING # ( special_EARN of special_EARN )
@@ -2244,7 +2230,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   # overwrite!! # note: above 'is.na' ... has already been done
   
-  # UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_EARN_CMPST_SCORES_SUMM_REBAL_NTILE100 = as.numeric(
+  # UNIVERSE <- mutate(UNIVERSE, VAL_EXPOSE_EARN_CMPST_SCORES_SUMM_REBAL_NTILE100 = as.numeric(
   #   VAL_EXPOSE_EARN_CMPST_DIFF_OP_CSH_FLW_AND_NET_INC_SCALED_TO_MKTCAP_NTILE100
   # ))
   
@@ -2261,28 +2247,28 @@ main_foresight3_999 <- function(pauseat=NULL) {
 
   # Multiples
   
-   if(getOption("FileStoreStyle") == "Optimized") {
-    if( file.exists(getOption("AAIISIPro40PathFileOptim_SI_MLT"))) {
-      load(file = getOption("AAIISIPro40PathFileOptim_SI_MLT"))
-    } else {
-      # load file
-      SI_MLT <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_MLT"), as.is = TRUE)))
-      save("SI_MLT",file = getOption("AAIISIPro40PathFileOptim_SI_MLT"))
-    }
-  } else {
-    # load file
-    SI_MLT <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_MLT"), as.is = TRUE)))
-  }
+   # if(getOption("FileStoreStyle") == "Optimized") {
+    # if( file.exists(getOption("AAIISIPro40PathFileOptim_SI_MLT"))) {
+      # load(file = getOption("AAIISIPro40PathFileOptim_SI_MLT"))
+    # } else {
+      # # load file
+      # SI_MLT <- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_MLT"), as.is = TRUE)))
+      # save("SI_MLT",file = getOption("AAIISIPro40PathFileOptim_SI_MLT"))
+    # }
+  # } else {
+    # # load file
+    # SI_MLT <- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_MLT"), as.is = TRUE)))
+  # }
 
-  # SI_MLT <<- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_MLT"), as.is = TRUE)))
+  SI_MLT <- get_from_disk("SI_MLT")
   
     # primary_key_dup <- SI_MLT[duplicated(SI_MLT[,'COMPANY_ID']),,drop=FALSE]
     # new_df_no_duplicates <- SI_MLT[!(SI_MLT$COMPANY_ID %in% as.matrix(primary_key_dup)),,drop=FALSE]
-    # SI_MLT <<- new_df_no_duplicates
+    # SI_MLT <- new_df_no_duplicates
     # rm(primary_key_dup,new_df_no_duplicates)
   
-  SI_MLT <<- SI_MLT # wierd performance bug ( program runs faster than can it access its variables )
-  SI_MLT <<- eliminate_all_duplicates( "SI_MLT", "COMPANY_ID" ) 
+  SI_MLT <- SI_MLT # wierd performance bug ( program runs faster than can it access its variables )
+  SI_MLT <- eliminate_all_duplicates( SI_MLT, "COMPANY_ID" ) 
   
   SI_MLT_tbl_sqlite <- copy_to(dpsqllconn, SI_MLT, temporary = FALSE
     , indexes = list(
@@ -2290,7 +2276,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
     )
   )
   
-  SI_MLT <<- tbl_df(SI_MLT)
+  SI_MLT <- tbl_df(SI_MLT)
 
 
   # begin joins
@@ -2298,7 +2284,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   sqldf("DROP TABLE main.UNIVERSE", connection = dpsqllconn$con)
   
   # strip off
-  UNIVERSE <<- as.data.frame(UNIVERSE)
+  UNIVERSE <- as.data.frame(UNIVERSE)
   UNIVERSE_tbl_sqlite <- copy_to(dpsqllconn, UNIVERSE, temporary = FALSE
                                  , indexes = list(
                                    #    c("TICKER")
@@ -2311,7 +2297,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
 
 
 
-  UNIVERSE <<- sqldf("SELECT UNIV.* 
+  UNIVERSE <- sqldf("SELECT UNIV.* 
                       , ISQ.EPSDC_Q1 AS EPSDC_Q1__numeric, ISQ.EPSDC_Q2 AS EPSDC_Q2__numeric                                    -- earnings / price ratio
                       , ISQ.EPSDC_Q3 AS EPSDC_Q3__numeric, ISQ.EPSDC_Q4 AS EPSDC_Q4__numeric, ISQ.EPSDC_Q5 AS EPSDC_Q5__numeric -- earnings / price ratio
                       , ISQ.SALES_Q1 AS SALES_Q1__numeric, ISQ.SALES_Q2 AS SALES_Q2__numeric                                    -- sales / price ratio
@@ -2332,7 +2318,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
                                    UNIV.COMPANY_ID = MLT.COMPANY_ID 
                                    ", connection = dpsqllconn$con, method="name__class")
   
-  UNIVERSE <<- tbl_df(UNIVERSE)
+  UNIVERSE <- tbl_df(UNIVERSE)
 
   # end joins
   
@@ -2386,7 +2372,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   # ( EPSDC_Q1 + EPSDC_Q2 + EPSDC_Q3 + EPSDC_Q4  ) / PRICE = VAL_EXPOSE_VAL_TWO_CMPST_EARN_TO_PRICE_RATIO
   
-  UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_VAL_TWO_CMPST_EARN_TO_PRICE_RATIO = as.numeric(as.no_worse_than_NA(  
+  UNIVERSE <- mutate(UNIVERSE, VAL_EXPOSE_VAL_TWO_CMPST_EARN_TO_PRICE_RATIO = as.numeric(as.no_worse_than_NA(  
     ( EPSDC_Q1  + EPSDC_Q2  + EPSDC_Q3  + EPSDC_Q4  ) / PRICE 
   ) ) )
   
@@ -2404,7 +2390,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
 
   UNIVERSE_NOT_NA <- ungroup(UNIVERSE_NOT_NA) 
   
-  UNIVERSE <<- suppressMessages(left_join(UNIVERSE, UNIVERSE_NOT_NA)) # LEFT OUTER JOIN
+  UNIVERSE <- suppressMessages(left_join(UNIVERSE, UNIVERSE_NOT_NA)) # LEFT OUTER JOIN
   
   # end  - earnings / price ratio 
       
@@ -2421,7 +2407,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   # ( SALES_Q1 + SALES_Q2 + SALES_Q3 + SALES_Q4  ) / PRICE = VAL_EXPOSE_VAL_TWO_CMPST_SALES_TO_PRICE_RATIO
   
-  UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_VAL_TWO_CMPST_SALES_TO_PRICE_RATIO = as.numeric(as.no_worse_than_NA(   
+  UNIVERSE <- mutate(UNIVERSE, VAL_EXPOSE_VAL_TWO_CMPST_SALES_TO_PRICE_RATIO = as.numeric(as.no_worse_than_NA(   
     ( SALES_Q1  * ( 1.0 / DILUTION_MULT_Q1 ) + SALES_Q2  * ( 1.0 / DILUTION_MULT_Q2 ) + SALES_Q3  * ( 1.0 / DILUTION_MULT_Q3 ) + SALES_Q4  * ( 1.0 / DILUTION_MULT_Q4 )  ) / PRICE 
   ) ) )
   
@@ -2439,7 +2425,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   UNIVERSE_NOT_NA <- ungroup(UNIVERSE_NOT_NA) 
   
-  UNIVERSE <<- suppressMessages(left_join(UNIVERSE, UNIVERSE_NOT_NA)) # LEFT OUTER JOIN
+  UNIVERSE <- suppressMessages(left_join(UNIVERSE, UNIVERSE_NOT_NA)) # LEFT OUTER JOIN
       
   # end  - sales / price ratio 
       
@@ -2480,7 +2466,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   # ( FCFPS_Q1 + FCFPS_Q2 + FCFPS_Q3 + FCFPS_Q4  ) / PRICE = VAL_EXPOSE_VAL_TWO_CMPST_FCFPS_XOR_BOOK_TO_PRCE_RATIO
   
-  UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_VAL_TWO_CMPST_FCFPS_XOR_BOOK_TO_PRCE_RATIO = as.numeric(as.no_worse_than_NA( 
+  UNIVERSE <- mutate(UNIVERSE, VAL_EXPOSE_VAL_TWO_CMPST_FCFPS_XOR_BOOK_TO_PRCE_RATIO = as.numeric(as.no_worse_than_NA( 
     ( FCFPS_Q1  * ( 1.0 / DILUTION_MULT_Q1 ) + FCFPS_Q2  * ( 1.0 / DILUTION_MULT_Q2 ) + FCFPS_Q3  * ( 1.0 / DILUTION_MULT_Q3 ) + FCFPS_Q4  * ( 1.0 / DILUTION_MULT_Q4 )  ) / PRICE 
   ) ) )
   
@@ -2498,12 +2484,12 @@ main_foresight3_999 <- function(pauseat=NULL) {
 
   UNIVERSE_NOT_NA <- ungroup(UNIVERSE_NOT_NA) 
   
-  UNIVERSE <<- suppressMessages(left_join(UNIVERSE, UNIVERSE_NOT_NA)) # LEFT OUTER JOIN
+  UNIVERSE <- suppressMessages(left_join(UNIVERSE, UNIVERSE_NOT_NA)) # LEFT OUTER JOIN
   
 
   ### IMPORTANT ###
   # 'only non-financial companies use sales / price' ( just _NTILE 'NA out" the "Financial" companies )
-  UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_VAL_TWO_CMPST_FCFPS_XOR_BOOK_TO_PRCE_RATIO_NTILE100 = ifelse(MG_DESC == "Financial", NA, VAL_EXPOSE_VAL_TWO_CMPST_FCFPS_XOR_BOOK_TO_PRCE_RATIO_NTILE100 ) )
+  UNIVERSE <- mutate(UNIVERSE, VAL_EXPOSE_VAL_TWO_CMPST_FCFPS_XOR_BOOK_TO_PRCE_RATIO_NTILE100 = ifelse(MG_DESC == "Financial", NA, VAL_EXPOSE_VAL_TWO_CMPST_FCFPS_XOR_BOOK_TO_PRCE_RATIO_NTILE100 ) )
 
   ### IMPORTANT ###
   ### INSTEAD 'financial companies use 'book / price'
@@ -2567,7 +2553,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
 
   UNIVERSE_NOT_NA <- ungroup(UNIVERSE_NOT_NA) 
   
-  UNIVERSE <<- suppressMessages(left_join(UNIVERSE, UNIVERSE_NOT_NA)) # LEFT OUTER JOIN
+  UNIVERSE <- suppressMessages(left_join(UNIVERSE, UNIVERSE_NOT_NA)) # LEFT OUTER JOIN
   
   # end  - 'free cash flow' XOR 'book' / price ratio 
       
@@ -2623,7 +2609,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   # higher is better ( Andre added dilutions )
   
-  UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_VAL_TWO_CMPST_EBITDA_TO_ENTVAL_RATIO = as.numeric(as.no_worse_than_NA(   
+  UNIVERSE <- mutate(UNIVERSE, VAL_EXPOSE_VAL_TWO_CMPST_EBITDA_TO_ENTVAL_RATIO = as.numeric(as.no_worse_than_NA(   
     (  EBIT_Q1 * ( 1.0 / DILUTION_MULT_Q1 ) + EBIT_Q2 * ( 1.0 / DILUTION_MULT_Q2 ) + 
        EBIT_Q3 * ( 1.0 / DILUTION_MULT_Q3 ) + EBIT_Q4 * ( 1.0 / DILUTION_MULT_Q4 ) + 
       ifelse(!is.na(DEP_CF_Q1) == TRUE, DEP_CF_Q1 * ( 1.0 / DILUTION_MULT_Q1 ) , 0.0 ) + 
@@ -2646,7 +2632,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   UNIVERSE_NOT_NA <- ungroup(UNIVERSE_NOT_NA) 
   
-  UNIVERSE <<- suppressMessages(left_join(UNIVERSE, UNIVERSE_NOT_NA)) # LEFT OUTER JOIN
+  UNIVERSE <- suppressMessages(left_join(UNIVERSE, UNIVERSE_NOT_NA)) # LEFT OUTER JOIN
       
   # end  - EBITDA / 'enterprise value' 
       
@@ -2685,7 +2671,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   # SHY = VAL_EXPOSE_VAL_TWO_CMPST_SHY_YIELD
   
-  UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_VAL_TWO_CMPST_SHY_YIELD = as.numeric(as.no_worse_than_NA(   
+  UNIVERSE <- mutate(UNIVERSE, VAL_EXPOSE_VAL_TWO_CMPST_SHY_YIELD = as.numeric(as.no_worse_than_NA(   
     SHY  * ( 1.0 / DILUTION_MULT_Q1 ) 
   ) ) )
   
@@ -2703,7 +2689,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   UNIVERSE_NOT_NA <- ungroup(UNIVERSE_NOT_NA) 
   
-  UNIVERSE <<- suppressMessages(left_join(UNIVERSE, UNIVERSE_NOT_NA)) # LEFT OUTER JOIN
+  UNIVERSE <- suppressMessages(left_join(UNIVERSE, UNIVERSE_NOT_NA)) # LEFT OUTER JOIN
 
   # end  - shareholder yield
       
@@ -2713,7 +2699,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   # 2012 book: if NA, then assign 50 (of ntile 100 ) ( seems to unfairly punish companies for slow/non-exist reporting?)
   
   # count up of non-NA ntiles
-  UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_VAL_TWO_CMPST_UNIQUE_SCORES_CNT = as.numeric(
+  UNIVERSE <- mutate(UNIVERSE, VAL_EXPOSE_VAL_TWO_CMPST_UNIQUE_SCORES_CNT = as.numeric(
     ifelse( !is.na(VAL_EXPOSE_VAL_TWO_CMPST_EARN_TO_PRICE_RATIO_NTILE100)                      == TRUE, 1.0, 0.0) +
     ifelse( !is.na(VAL_EXPOSE_VAL_TWO_CMPST_SALES_TO_PRICE_RATIO_NTILE100)                     == TRUE, 1.0, 0.0) + 
     ifelse( !is.na(VAL_EXPOSE_VAL_TWO_CMPST_FCFPS_XOR_BOOK_TO_PRCE_RATIO_NTILE100)             == TRUE, 1.0, 0.0) +
@@ -2722,7 +2708,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   ))
   
   # minimum two factors are required
-  UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_VAL_TWO_CMPST_SCORES_SUMM = as.numeric(
+  UNIVERSE <- mutate(UNIVERSE, VAL_EXPOSE_VAL_TWO_CMPST_SCORES_SUMM = as.numeric(
     ifelse( VAL_EXPOSE_VAL_TWO_CMPST_UNIQUE_SCORES_CNT >= 3.0, 
       ifelse( !is.na(VAL_EXPOSE_VAL_TWO_CMPST_EARN_TO_PRICE_RATIO_NTILE100)                      == TRUE, VAL_EXPOSE_VAL_TWO_CMPST_EARN_TO_PRICE_RATIO_NTILE100,    0.0) +
       ifelse( !is.na(VAL_EXPOSE_VAL_TWO_CMPST_SALES_TO_PRICE_RATIO_NTILE100)                     == TRUE, VAL_EXPOSE_VAL_TWO_CMPST_SALES_TO_PRICE_RATIO_NTILE100,   0.0) + 
@@ -2733,7 +2719,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   ))
   
   # five factors total possible
-  UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_VAL_TWO_CMPST_SCORES_SUMM_REBAL = as.numeric(
+  UNIVERSE <- mutate(UNIVERSE, VAL_EXPOSE_VAL_TWO_CMPST_SCORES_SUMM_REBAL = as.numeric(
      VAL_EXPOSE_VAL_TWO_CMPST_SCORES_SUMM * 5.0 / VAL_EXPOSE_VAL_TWO_CMPST_UNIQUE_SCORES_CNT
   ))
                       
@@ -2751,7 +2737,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
     hdntile(.,"VAL_EXPOSE_VAL_TWO_CMPST_SCORES_SUMM_REBAL") 
   ) 
   
-  UNIVERSE <<- suppressMessages(left_join(UNIVERSE, UNIVERSE_NOT_NA)) # LEFT OUTER JOIN
+  UNIVERSE <- suppressMessages(left_join(UNIVERSE, UNIVERSE_NOT_NA)) # LEFT OUTER JOIN
                       
   # end value_two_composite
   
@@ -2778,7 +2764,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
    
   # VAL_EXPOSE_FIN_CMPST_SCORES_SUMM_REBAL_NTILE100 + VAL_EXPOSE_EARN_CMPST_SCORES_SUMM_REBAL_NTILE100 + VAL_EXPOSE_VAL_TWO_CMPST_SCORES_SUMM_REBAL_NTILE100 = VAL_EXPOSE_ALL_CMBND_CMPST_SCORES_SUMM_REBAL_NTILE100_SUMM 
 
-  UNIVERSE <<- mutate(UNIVERSE, VAL_EXPOSE_ALL_CMBND_CMPST_SCORES_SUMM_REBAL_NTILE100_SUMM  = as.numeric(   
+  UNIVERSE <- mutate(UNIVERSE, VAL_EXPOSE_ALL_CMBND_CMPST_SCORES_SUMM_REBAL_NTILE100_SUMM  = as.numeric(   
     VAL_EXPOSE_FIN_CMPST_SCORES_SUMM_REBAL_NTILE100 + VAL_EXPOSE_EARN_CMPST_SCORES_SUMM_REBAL_NTILE100 + VAL_EXPOSE_VAL_TWO_CMPST_SCORES_SUMM_REBAL_NTILE100
   ) )
   
@@ -2796,7 +2782,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   # A LEFT_OFF ( FIX hdrank 'NOT LOOSE ITS GROUPING WHEN A PARAMETER IS SET' )
   
-  UNIVERSE <<- suppressMessages(left_join(UNIVERSE, UNIVERSE_NOT_NA)) # LEFT OUTER JOIN
+  UNIVERSE <- suppressMessages(left_join(UNIVERSE, UNIVERSE_NOT_NA)) # LEFT OUTER JOIN
 
   # 2012 p. 569 - must be in the 'upper 50%' of the combined composites of
   #               FIN, EARN, VAL_TWO_
@@ -2842,7 +2828,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
     1:NROW(UNIVERSE_NOT_NA)
   ))
 
-  UNIVERSE <<- suppressMessages(left_join(UNIVERSE, UNIVERSE_NOT_NA)) # LEFT OUTER JOIN
+  UNIVERSE <- suppressMessages(left_join(UNIVERSE, UNIVERSE_NOT_NA)) # LEFT OUTER JOIN
  
 
 
@@ -2881,8 +2867,11 @@ main_foresight3_999 <- function(pauseat=NULL) {
   ,"SCT_MN_PRCE_10M_SMA","SCT_MN_PRCE")
     ]
           
+  setwd(oldwd)
+
   the_end_debug_bookmark_here <- 1
   
+  # View(UNIVERSE_FMA)
         
   return(UNIVERSE_FMA)
 
@@ -2981,3 +2970,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
 # View(main_foresight3_999())
 # as.matrix(UNIVERSE[558:569,172:173])
 # View(UNIVERSE[UNIVERSE$MG_DESC == "Financial",c(8:8,88:92,104:105)])
+
+
+# LEFT_OFF: put *options* functions in main [ ]
+# LEFT_OFF: RETURN from main list of  InvestmentLookAhead and   PriceMovingAverage ( per sector matrice) [ ]
