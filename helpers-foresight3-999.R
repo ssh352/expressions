@@ -1,9 +1,5 @@
 
 
-
-
-
-
 # posneg - higher values ... higher ntiles
 hdntile  <- function(  x  = NULL                     # required: 'subset (grouped)'  dataframe
                        , measurecol = NULL             # required:  measure column name string 
@@ -144,19 +140,46 @@ as.no_worse_than_NA <- function(x) {
 
 
 
-eliminate_all_duplicates <- function( df_name, key_to_fix_name ) {
+eliminate_all_duplicates <- function( df_itself, key_to_fix_name ) {
 
     # R language 'get out of jail free card.'
 
     eval(parse(text=paste0("
     
-      key_dup              <- ",df_name,"[duplicated(",df_name,"[,'",key_to_fix_name,"']),,drop=FALSE]
-      new_df_no_duplicates <- ",df_name,"[!(",df_name,"$",key_to_fix_name," %in% as.matrix(key_dup)),,drop=FALSE]
+      key_dup              <- df_itself[duplicated(df_itself[,'",key_to_fix_name,"']),,drop=FALSE]
+      new_df_no_duplicates <- df_itself[!(df_itself$",key_to_fix_name," %in% as.matrix(key_dup)),,drop=FALSE]
     
     ")))
 
 }
 
+
+get_from_disk <- function(fnombre) { 
+   
+  require(foreign)
+ 
+  if(is.null(fnombre) ) stop ("fnombre file name is missing")
+ 
+  if(getOption("FileStoreStyle") == "Optimized") {
+    # NOTE: file.access: case INsenstive ( better built for Windows )
+    if( file.access(getOption(paste0("AAIISIPro40PathFileOptim_",fnombre)), mode = 0) == 0) {
+      load(file = getOption(paste0("AAIISIPro40PathFileOptim_",fnombre)), envir = environment()) # , verbose = TRUE ... Loading objects:
+      # load file ( assign - only takes a string)
+      assign("fnombre_data",eval(parse(text=fnombre)))
+      # SHOULD ACTUALLY DO rm(list = c(fnombre))
+    } else {
+      # load file ( assign - only takes a string)
+      assign(fnombre,suppressWarnings(suppressMessages(read.dbf(file=getOption(paste0("AAIISIPro40PathFileNotOptim_",fnombre)), as.is = TRUE))))     
+      save(list = c(fnombre),file = getOption(paste0("AAIISIPro40PathFileOptim_",fnombre)),envir = environment())
+      assign("fnombre_data",eval(parse(text=fnombre)))
+    }
+  } else {
+    # load file
+    fnombre_data <- suppressWarnings(suppressMessages(read.dbf(file=getOption(paste0("AAIISIPro40PathFileNotOptim_",fnombre)), as.is = TRUE)))
+  }
+  return(fnombre_data)
+ 
+}
 
 
 browseAAIISIPrometa <- function(searchstring = NULL ) {
@@ -172,12 +195,12 @@ browseAAIISIPrometa <- function(searchstring = NULL ) {
   sqldf(drv = "SQLite") 
   
   # read the data dictionary DATADICT 
-  DATADICT <<- tbl_df(suppressWarnings(suppressMessages(read.dbf(file="N:/MyVMWareSharedFolder/Professional/Datadict/datadict.dbf", as.is = TRUE))))         
-  DATADICT <<- tbl_df(suppressWarnings(sqldf("SELECT * FROM DATADICT")))
+  DATADICT <- tbl_df(suppressWarnings(suppressMessages(read.dbf(file="N:/MyVMWareSharedFolder/Professional140926/Datadict/datadict.dbf", as.is = TRUE))))         
+  DATADICT <- tbl_df(suppressWarnings(sqldf("SELECT * FROM DATADICT")))
   
   # read the file master FILEMAST 
-  FILEMAST <<- tbl_df(suppressWarnings(suppressMessages(read.dbf(file="N:/MyVMWareSharedFolder/Professional/Datadict/filemast.dbf", as.is = TRUE))))                                           
-  FILEMAST <<- tbl_df(suppressWarnings(sqldf("SELECT * FROM FILEMAST")))
+  FILEMAST <- tbl_df(suppressWarnings(suppressMessages(read.dbf(file="N:/MyVMWareSharedFolder/Professional140926/Datadict/filemast.dbf", as.is = TRUE))))                                           
+  FILEMAST <- tbl_df(suppressWarnings(sqldf("SELECT * FROM FILEMAST")))
 
   
   META_FIELD_DESC <- tbl_df(sqldf(paste0("SELECT DD.FILE DD_FILE, FIELD_NUM, FIELD_NAME, FIELD_TYPE , FIELD_DESC, DESCRIP, FM.FILE  FM_FILE, DIRECTORY 
@@ -192,7 +215,11 @@ browseAAIISIPrometa <- function(searchstring = NULL ) {
   # end connection
   sqldf(drv = "SQLite") 
 
-  META_FIELD_DESC <<- t(META_FIELD_DESC)
+  META_FIELD_DESC <- t(META_FIELD_DESC)
+  
+  the_end_debug_bookmark_here <- 1
+  
+  # View(META_FIELD_DESC)
   
 }
 # browseAAIISIPrometa("PRCHG_13W") # best deal
