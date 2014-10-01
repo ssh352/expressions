@@ -119,6 +119,42 @@ symbol_OHLC_lag_k_periods <- function(symbol,new_symbol_name, llagk = c(1), qmOH
 # first( symbol_OHLC_lag_k_periods(GSPC,"GSPC",1:2)  , 6 )
 
 
+
+symbol_OHLC_range_k_periods <- function(symbol,new_symbol_name, llagk = c(1), qmOHLC = "Cl", llagk_zone_back = 0 ) {  
+   require(quantmod)
+   if (is.null(symbol))          stop("symbol_OHLC_range_k_periods is missing symbol") 
+   if (is.null(new_symbol_name)) stop("symbol_OHLC_range_k_periods is missing new_symbol_name") 
+      if ( !any(qmOHLC %in% c("Cl","Lowz"))) stop ( "symbol_OHLC_range_k_periods qmOHLC should be Cl or Lowz")
+      if ( qmOHLC == "Lowz") {
+        for( i in llagk) {
+          # only one column is retured: the Lowz across lags
+          # NOTE: if llagk is NOT ( a 'one sep' sequence of integers') then the 'naming of the column would break
+          apply(Lag(Lo(symbol),(min(llagk)+i):(min(llagk)+i+llagk_zone_back)), MARGIN = 1, min ) -> L ; as.xts(L) -> L ; paste0(new_symbol_name,".MinOf.Lag.",(min(llagk)+i),".RangeLwz.", (min(llagk)+i),".",(min(llagk)+i+llagk_zone_back) )  -> colnames(L)
+          if (i !=  (min(llagk))  ) {
+            suppressWarnings(mergge(BULK_L, L, join='outer',tz='UTC')) -> BULK_L
+          } else {
+            L -> BULK_L
+          }
+        }
+      } 
+      # here for consistency ( if nothing else )  "Cl"  ".EndOf.Lag." ".RangeClz."
+      if ( qmOHLC == "Cl") {
+        for( i in llagk) {
+          # only one column is retured: the Lowz across lags
+          # NOTE: if llagk is NOT ( a 'one sep' sequence of integers') then the 'naming of the column would break
+          apply(Lag(Cl(symbol),(min(llagk)+i):(min(llagk)+i+llagk_zone_back)), MARGIN = 1, min ) -> L ; as.xts(L) -> L ; paste0(new_symbol_name,".EndOf.Lag.",(min(llagk)+i),".RangeClz.", (min(llagk)+i),".",(min(llagk)+i+llagk_zone_back) )  -> colnames(L)
+          if (i !=  (min(llagk))  ) {
+            suppressWarnings(mergge(BULK_L, L, join='outer',tz='UTC')) -> BULK_L
+          } else {
+            L -> BULK_L
+          }
+        }
+      } 
+      BULK_L
+}
+
+
+
 pct_chnge <- function(xtsdata, col_0 = "", col_1 = "") {
   
   # subset of data
@@ -739,6 +775,12 @@ main_rcsnsight1_999 <- function(pauseat=NULL) {
   symbol_OHLC_lag_k_periods(USARECM,"USARECM",0:1)                     -> USARECM_LAGS 
   suppressWarnings(mergge(GALAXY_L,USARECM_LAGS,join='outer',tz='UTC')) -> GALAXY_L
   
+  # NEW WORK IN PROGRESS
+  # the benchmark merge.xts? - outer
+  symbol_OHLC_range_k_periods(GSPC,"GSPC",0:1, qmOHLC = "Lowz", llagk_zone_back = 3)  -> GSPC_RANGE_LOWZ 
+  suppressWarnings(mergge(GALAXY_L,GSPC_RANGE_LOWZ ,join='outer',tz='UTC'))           -> GALAXY_L 
+  
+  
   # remove those .Close ( and .Low ) columns
   # so not to break quantmod::Cl()
   GALAXY_L[,!grepl(".Close",colnames(GALAXY_L))] -> GALAXY_L
@@ -821,6 +863,7 @@ main_rcsnsight1_999 <- function(pauseat=NULL) {
   save(GALAXY_L, file = "GALAXY_L_0_4.RData")
   
   the_end_debug_bookmark_here <- 1
+  # View(last(GALAXY_L,10))
   
   # dbDisconnect(contspgr)
   ## dbDisconnect(condbpgr)
@@ -883,5 +926,13 @@ main_rcsnsight1_999 <- function(pauseat=NULL) {
 # > library(lineprof)
 # > xsaved <- lineprof(main_rcsnsight1_999(), torture = FALSE) # not memory ( USE THIS )
 # > shine(xsaved)
+
+# MOVING MINIMUM DONE [x] quantmod::lag, apply, and min
+# NEXT: need hdquantiles [ ] ( THIS WILL BE *ROOT* TICKERS: GSPCQ8 'higher is 'relatively/logically' better ) 
+# Harrell-Davis hdquantile [ ] ( OR SOMETING ELSE  ( tis::colQuantiles ) )
+# [ need YET MORE 'caret' practice on randomForest [ ] ]
+
+
+
 
 
