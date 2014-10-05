@@ -1,96 +1,6 @@
 
  
 # HARD NOTE: dplyr IS FROM github NOT FROM CRAN ( should make no difference )
-
-options(RepositoryStyle = "Installed")      # OR    "InstalledTest" OR "Installed" # OR "Dated"
-options(FileStoreStyle  = "Optimized" )     # OR    "NotOptimized " OR "Optimized" 
-# Optimized: ( will try to find fast loading binary  file if not found then load then save 'fast loading' )
-
-if(getOption("RepositoryStyle") == "InstalledTest")  {
-
-  options(AAIIBase = "N:/MyVMWareSharedFolder/ProfessionalTest") 
-  
-}
-
-if(getOption("RepositoryStyle") == "Installed")  {
-
-  options(AAIIBase = "N:/MyVMWareSharedFolder/Professional140926") 
-  
-}
-
-# default .dbf file locations
-
-options(AAIISIPro40PathFileNotOptim_SETUP =  paste0(getOption("AAIIBase"),"/Setup.dbf"))
-options(AAIISIPro40PathFile_SETUP         =  paste0(getOption("AAIISIPro40PathFileNotOptim_SETUP")))
-
-options(AAIISIPro40PathFileNotOptim_SI_CI =  paste0(getOption("AAIIBase"),"/Static/si_ci.dbf"))
-options(AAIISIPro40PathFile_SI_CI         =  paste0(getOption("AAIISIPro40PathFileNotOptim_SI_CI")))
-
-options(AAIISIPro40PathFileNotOptim_SI_MGDSC =  paste0(getOption("AAIIBase"),"/Static/SI_MGDSC.DBF"))
-options(AAIISIPro40PathFile_SI_MGDSC         =  paste0(getOption("AAIISIPro40PathFileNotOptim_SI_MGDSC")))
-
-options(AAIISIPro40PathFileNotOptim_SI_EXCHG =  paste0(getOption("AAIIBase"),"/Static/SI_EXCHG.DBF"))
-options(AAIISIPro40PathFile_SI_EXCHG         =  paste0(getOption("AAIISIPro40PathFileNotOptim_SI_EXCHG")))
-
-options(AAIISIPro40PathFileNotOptim_SI_PSD   =  paste0(getOption("AAIIBase"),"/Dbfs/si_psd.dbf"))
-options(AAIISIPro40PathFile_SI_PSD           =  paste0(getOption("AAIISIPro40PathFileNotOptim_SI_PSD")))
-
-options(AAIISIPro40PathFileNotOptim_SI_PSDC   =  paste0(getOption("AAIIBase"),"/Dbfs/si_psdc.dbf"))
-options(AAIISIPro40PathFile_SI_PSDC           =  paste0(getOption("AAIISIPro40PathFileNotOptim_SI_PSDC")))
-
-options(AAIISIPro40PathFileNotOptim_SI_DATE  =  paste0(getOption("AAIIBase"),"/Static/si_date.dbf"))
-options(AAIISIPro40PathFile_SI_DATE          =  paste0(getOption("AAIISIPro40PathFileNotOptim_SI_DATE")))
-
-options(AAIISIPro40PathFileNotOptim_SI_ISQ   =  paste0(getOption("AAIIBase"),"/Static/si_isq.dbf"))
-options(AAIISIPro40PathFile_SI_ISQ           =  paste0(getOption("AAIISIPro40PathFileNotOptim_SI_ISQ")))
-
-options(AAIISIPro40PathFileNotOptim_SI_BSQ   =  paste0(getOption("AAIIBase"),"/Static/si_bsq.dbf"))
-options(AAIISIPro40PathFile_SI_BSQ           =  paste0(getOption("AAIISIPro40PathFileNotOptim_SI_BSQ")))
-
-options(AAIISIPro40PathFileNotOptim_SI_CFQ   =  paste0(getOption("AAIIBase"),"/Static/si_cfq.dbf"))
-options(AAIISIPro40PathFile_SI_CFQ           =  paste0(getOption("AAIISIPro40PathFileNotOptim_SI_CFQ")))
-
-options(AAIISIPro40PathFileNotOptim_SI_MLT   =  paste0(getOption("AAIIBase"),"/Dbfs/si_mlt.dbf"))
-options(AAIISIPro40PathFile_SI_MLT           =  paste0(getOption("AAIISIPro40PathFileNotOptim_SI_MLT")))
- 
-# end of default .dbf file locations
-  
-if(getOption("FileStoreStyle") == "Optimized") {
-
-  options(AAIISIPro40PathFileOptim_SETUP =  paste0(getOption("AAIIBase"),"/SETUP.RData"))
-  options(AAIISIPro40PathFile_SETUP         =  paste0(getOption("AAIISIPro40PathFileOptim_SETUP")))
-
-  options(AAIISIPro40PathFileOptim_SI_CI =  paste0(getOption("AAIIBase"),"/Static/SI_CI.RData"))
-  options(AAIISIPro40PathFile_SI_CI         =  paste0(getOption("AAIISIPro40PathFileOptim_SI_CI")))
-
-  options(AAIISIPro40PathFileOptim_SI_MGDSC =  paste0(getOption("AAIIBase"),"/Static/SI_MGDSC.RData"))
-  options(AAIISIPro40PathFile_SI_MGDSC         =  paste0(getOption("AAIISIPro40PathFileOptim_SI_MGDSC")))
-
-  options(AAIISIPro40PathFileOptim_SI_EXCHG =  paste0(getOption("AAIIBase"),"/Static/SI_EXCHG.RData"))
-  options(AAIISIPro40PathFile_SI_EXCHG         =  paste0(getOption("AAIISIPro40PathFileOptim_SI_EXCHG")))
-
-  options(AAIISIPro40PathFileOptim_SI_PSD   =  paste0(getOption("AAIIBase"),"/Dbfs/SI_PSD.RData"))
-  options(AAIISIPro40PathFile_SI_PSD           =  paste0(getOption("AAIISIPro40PathFileOptim_SI_PSD")))
-
-  options(AAIISIPro40PathFileOptim_SI_PSDC   =  paste0(getOption("AAIIBase"),"/Dbfs/SI_PSDC.RData"))
-  options(AAIISIPro40PathFile_SI_PSDC           =  paste0(getOption("AAIISIPro40PathFileOptim_SI_PSDC")))
-  
-  options(AAIISIPro40PathFileOptim_SI_DATE  =  paste0(getOption("AAIIBase"),"/Static/SI_DATE.RData"))
-  options(AAIISIPro40PathFile_SI_DATE          =  paste0(getOption("AAIISIPro40PathFileOptim_SI_DATE")))
-
-  options(AAIISIPro40PathFileOptim_SI_ISQ   =  paste0(getOption("AAIIBase"),"/Static/SI_ISQ.RData"))
-  options(AAIISIPro40PathFile_SI_ISQ           =  paste0(getOption("AAIISIPro40PathFileOptim_SI_ISQ")))
-
-  options(AAIISIPro40PathFileOptim_SI_BSQ   =  paste0(getOption("AAIIBase"),"/Static/SI_BSQ.RData"))
-  options(AAIISIPro40PathFile_SI_BSQ           =  paste0(getOption("AAIISIPro40PathFileOptim_SI_BSQ")))
-
-  options(AAIISIPro40PathFileOptim_SI_CFQ   =  paste0(getOption("AAIIBase"),"/Static/SI_CFQ.RData"))
-  options(AAIISIPro40PathFile_SI_CFQ           =  paste0(getOption("AAIISIPro40PathFileOptim_SI_CFQ")))
-
-  options(AAIISIPro40PathFileOptim_SI_MLT   =  paste0(getOption("AAIIBase"),"/Dbfs/SI_MLT.RData"))
-  options(AAIISIPro40PathFile_SI_MLT           =  paste0(getOption("AAIISIPro40PathFileOptim_SI_MLT")))
- 
-}
  
  
 options(width = 255)     
@@ -136,7 +46,208 @@ main_foresight3_999 <- function(pauseat=NULL) {
   # may override as.data.frame ( BE CAREFUL )
   source( paste0(getwd(),"/helpers-foresight3-999.R"), local = TRUE) # do not load into .Global
 
+  # Check if R is running in RStudio
+  # http://stackoverflow.com/questions/12389158/check-if-r-is-running-in-rstudio
+
+  # UNFORTUNATLY LOADS INTO THE PARENT/GLOBAL ENVIRONMENT
+  # if (!any(search() %in% "tools:rstudio")) {
+    # source( paste0(getwd(),"/helpers-foresight3-999.R"), local = TRUE) # do not load into .Global
+  # } else { 
+    # debugSource(paste0(getwd(),"/helpers-foresight3-999.R"), echo=TRUE) 
+  # }
+
+
+  
   # if(pauseat=="HERE") {}
+
+
+  OPTIONLIST <- initLocalOptions()
+  
+#   options(RepositoryStyle = "Installed")      # OR    "InstalledTest" OR "Installed" # OR "Dated"
+#   options(FileStoreStyle  = "Optimized" )     # OR    "NotOptimized " OR "Optimized" 
+  # Optimized: ( will try to find fast loading binary  file if not found then load then save 'fast loading' )
+  
+  OPTIONLIST <- 
+  localoptions( RepositoryStyle = "Installed"
+              , FileStoreStyle  = "Optimized"
+  , optionlist = OPTIONLIST)
+  
+#   if(getOption("RepositoryStyle") == "InstalledTest")  {
+#     
+#     options(AAIIBase = "N:/MyVMWareSharedFolder/ProfessionalTest") 
+#     
+#   }
+#   
+#   if(getOption("RepositoryStyle") == "Installed")  {
+#     
+#     options(AAIIBase = "N:/MyVMWareSharedFolder/Professional140930") 
+#     
+#   }
+  
+
+  
+  if(getLocalOption("RepositoryStyle", optionlist = OPTIONLIST) == "InstalledTest")  {
+    
+    OPTIONLIST <- localoptions(AAIIBase = "N:/MyVMWareSharedFolder/ProfessionalTest", optionlist = OPTIONLIST)
+    
+  }
+  
+  if(getLocalOption("RepositoryStyle", optionlist = OPTIONLIST) == "Installed")  {
+    
+    OPTIONLIST <- localoptions(AAIIBase = "N:/MyVMWareSharedFolder/Professional140930", optionlist = OPTIONLIST)
+    
+  }
+  
+#   # default .dbf file locations
+#   
+#   options(AAIISIPro40PathFileNotOptim_SETUP =  paste0(getOption("AAIIBase"),"/Setup.dbf"))
+#   options(AAIISIPro40PathFile_SETUP         =  paste0(getOption("AAIISIPro40PathFileNotOptim_SETUP")))
+#   
+#   options(AAIISIPro40PathFileNotOptim_SI_CI =  paste0(getOption("AAIIBase"),"/Static/si_ci.dbf"))
+#   options(AAIISIPro40PathFile_SI_CI         =  paste0(getOption("AAIISIPro40PathFileNotOptim_SI_CI")))
+#   
+#   options(AAIISIPro40PathFileNotOptim_SI_MGDSC =  paste0(getOption("AAIIBase"),"/Static/SI_MGDSC.DBF"))
+#   options(AAIISIPro40PathFile_SI_MGDSC         =  paste0(getOption("AAIISIPro40PathFileNotOptim_SI_MGDSC")))
+#   
+#   options(AAIISIPro40PathFileNotOptim_SI_EXCHG =  paste0(getOption("AAIIBase"),"/Static/SI_EXCHG.DBF"))
+#   options(AAIISIPro40PathFile_SI_EXCHG         =  paste0(getOption("AAIISIPro40PathFileNotOptim_SI_EXCHG")))
+#   
+#   options(AAIISIPro40PathFileNotOptim_SI_PSD   =  paste0(getOption("AAIIBase"),"/Dbfs/si_psd.dbf"))
+#   options(AAIISIPro40PathFile_SI_PSD           =  paste0(getOption("AAIISIPro40PathFileNotOptim_SI_PSD")))
+#   
+#   options(AAIISIPro40PathFileNotOptim_SI_PSDC   =  paste0(getOption("AAIIBase"),"/Dbfs/si_psdc.dbf"))
+#   options(AAIISIPro40PathFile_SI_PSDC           =  paste0(getOption("AAIISIPro40PathFileNotOptim_SI_PSDC")))
+#   
+#   options(AAIISIPro40PathFileNotOptim_SI_DATE  =  paste0(getOption("AAIIBase"),"/Static/si_date.dbf"))
+#   options(AAIISIPro40PathFile_SI_DATE          =  paste0(getOption("AAIISIPro40PathFileNotOptim_SI_DATE")))
+#   
+#   options(AAIISIPro40PathFileNotOptim_SI_ISQ   =  paste0(getOption("AAIIBase"),"/Static/si_isq.dbf"))
+#   options(AAIISIPro40PathFile_SI_ISQ           =  paste0(getOption("AAIISIPro40PathFileNotOptim_SI_ISQ")))
+#   
+#   options(AAIISIPro40PathFileNotOptim_SI_BSQ   =  paste0(getOption("AAIIBase"),"/Static/si_bsq.dbf"))
+#   options(AAIISIPro40PathFile_SI_BSQ           =  paste0(getOption("AAIISIPro40PathFileNotOptim_SI_BSQ")))
+#   
+#   options(AAIISIPro40PathFileNotOptim_SI_CFQ   =  paste0(getOption("AAIIBase"),"/Static/si_cfq.dbf"))
+#   options(AAIISIPro40PathFile_SI_CFQ           =  paste0(getOption("AAIISIPro40PathFileNotOptim_SI_CFQ")))
+#   
+#   options(AAIISIPro40PathFileNotOptim_SI_MLT   =  paste0(getOption("AAIIBase"),"/Dbfs/si_mlt.dbf"))
+#   options(AAIISIPro40PathFile_SI_MLT           =  paste0(getOption("AAIISIPro40PathFileNotOptim_SI_MLT")))
+#   
+#   # end of default .dbf file locations
+#   
+#   if(getOption("FileStoreStyle") == "Optimized") {
+#     
+#     options(AAIISIPro40PathFileOptim_SETUP =  paste0(getOption("AAIIBase"),"/SETUP.RData"))
+#     options(AAIISIPro40PathFile_SETUP         =  paste0(getOption("AAIISIPro40PathFileOptim_SETUP")))
+#     
+#     options(AAIISIPro40PathFileOptim_SI_CI =  paste0(getOption("AAIIBase"),"/Static/SI_CI.RData"))
+#     options(AAIISIPro40PathFile_SI_CI         =  paste0(getOption("AAIISIPro40PathFileOptim_SI_CI")))
+#     
+#     options(AAIISIPro40PathFileOptim_SI_MGDSC =  paste0(getOption("AAIIBase"),"/Static/SI_MGDSC.RData"))
+#     options(AAIISIPro40PathFile_SI_MGDSC         =  paste0(getOption("AAIISIPro40PathFileOptim_SI_MGDSC")))
+#     
+#     options(AAIISIPro40PathFileOptim_SI_EXCHG =  paste0(getOption("AAIIBase"),"/Static/SI_EXCHG.RData"))
+#     options(AAIISIPro40PathFile_SI_EXCHG         =  paste0(getOption("AAIISIPro40PathFileOptim_SI_EXCHG")))
+#     
+#     options(AAIISIPro40PathFileOptim_SI_PSD   =  paste0(getOption("AAIIBase"),"/Dbfs/SI_PSD.RData"))
+#     options(AAIISIPro40PathFile_SI_PSD           =  paste0(getOption("AAIISIPro40PathFileOptim_SI_PSD")))
+#     
+#     options(AAIISIPro40PathFileOptim_SI_PSDC   =  paste0(getOption("AAIIBase"),"/Dbfs/SI_PSDC.RData"))
+#     options(AAIISIPro40PathFile_SI_PSDC           =  paste0(getOption("AAIISIPro40PathFileOptim_SI_PSDC")))
+#     
+#     options(AAIISIPro40PathFileOptim_SI_DATE  =  paste0(getOption("AAIIBase"),"/Static/SI_DATE.RData"))
+#     options(AAIISIPro40PathFile_SI_DATE          =  paste0(getOption("AAIISIPro40PathFileOptim_SI_DATE")))
+#     
+#     options(AAIISIPro40PathFileOptim_SI_ISQ   =  paste0(getOption("AAIIBase"),"/Static/SI_ISQ.RData"))
+#     options(AAIISIPro40PathFile_SI_ISQ           =  paste0(getOption("AAIISIPro40PathFileOptim_SI_ISQ")))
+#     
+#     options(AAIISIPro40PathFileOptim_SI_BSQ   =  paste0(getOption("AAIIBase"),"/Static/SI_BSQ.RData"))
+#     options(AAIISIPro40PathFile_SI_BSQ           =  paste0(getOption("AAIISIPro40PathFileOptim_SI_BSQ")))
+#     
+#     options(AAIISIPro40PathFileOptim_SI_CFQ   =  paste0(getOption("AAIIBase"),"/Static/SI_CFQ.RData"))
+#     options(AAIISIPro40PathFile_SI_CFQ           =  paste0(getOption("AAIISIPro40PathFileOptim_SI_CFQ")))
+#     
+#     options(AAIISIPro40PathFileOptim_SI_MLT   =  paste0(getOption("AAIIBase"),"/Dbfs/SI_MLT.RData"))
+#     options(AAIISIPro40PathFile_SI_MLT           =  paste0(getOption("AAIISIPro40PathFileOptim_SI_MLT")))
+#     
+#   }
+#   
+  
+  # default .dbf file locations
+  
+  OPTIONLIST <- localoptions(AAIISIPro40PathFileNotOptim_SETUP =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/Setup.dbf"), optionlist = OPTIONLIST)
+  OPTIONLIST <- localoptions(AAIISIPro40PathFile_SETUP         =  paste0(getLocalOption("AAIISIPro40PathFileNotOptim_SETUP", optionlist = OPTIONLIST)), optionlist = OPTIONLIST)
+  
+  OPTIONLIST <- localoptions(AAIISIPro40PathFileNotOptim_SI_CI =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/Static/si_ci.dbf"), optionlist = OPTIONLIST)
+  OPTIONLIST <- localoptions(AAIISIPro40PathFile_SI_CI         =  paste0(getLocalOption("AAIISIPro40PathFileNotOptim_SI_CI", optionlist = OPTIONLIST)), optionlist = OPTIONLIST)
+  
+  OPTIONLIST <- localoptions(AAIISIPro40PathFileNotOptim_SI_MGDSC =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/Static/SI_MGDSC.DBF"), optionlist = OPTIONLIST)
+  OPTIONLIST <- localoptions(AAIISIPro40PathFile_SI_MGDSC         =  paste0(getLocalOption("AAIISIPro40PathFileNotOptim_SI_MGDSC", optionlist = OPTIONLIST)), optionlist = OPTIONLIST)
+  
+  OPTIONLIST <- localoptions(AAIISIPro40PathFileNotOptim_SI_EXCHG =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/Static/SI_EXCHG.DBF"), optionlist = OPTIONLIST)
+  OPTIONLIST <- localoptions(AAIISIPro40PathFile_SI_EXCHG         =  paste0(getLocalOption("AAIISIPro40PathFileNotOptim_SI_EXCHG", optionlist = OPTIONLIST)), optionlist = OPTIONLIST)
+  
+  OPTIONLIST <- localoptions(AAIISIPro40PathFileNotOptim_SI_PSD   =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/Dbfs/si_psd.dbf"), optionlist = OPTIONLIST)
+  OPTIONLIST <- localoptions(AAIISIPro40PathFile_SI_PSD           =  paste0(getLocalOption("AAIISIPro40PathFileNotOptim_SI_PSD", optionlist = OPTIONLIST)), optionlist = OPTIONLIST)
+  
+  OPTIONLIST <- localoptions(AAIISIPro40PathFileNotOptim_SI_PSDC   =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/Dbfs/si_psdc.dbf"), optionlist = OPTIONLIST)
+  OPTIONLIST <- localoptions(AAIISIPro40PathFile_SI_PSDC           =  paste0(getLocalOption("AAIISIPro40PathFileNotOptim_SI_PSDC", optionlist = OPTIONLIST)), optionlist = OPTIONLIST)
+  
+  OPTIONLIST <- localoptions(AAIISIPro40PathFileNotOptim_SI_DATE  =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/Static/si_date.dbf"), optionlist = OPTIONLIST)
+  OPTIONLIST <- localoptions(AAIISIPro40PathFile_SI_DATE          =  paste0(getLocalOption("AAIISIPro40PathFileNotOptim_SI_DATE", optionlist = OPTIONLIST)), optionlist = OPTIONLIST)
+  
+  OPTIONLIST <- localoptions(AAIISIPro40PathFileNotOptim_SI_ISQ   =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/Static/si_isq.dbf"), optionlist = OPTIONLIST)
+  OPTIONLIST <- localoptions(AAIISIPro40PathFile_SI_ISQ           =  paste0(getLocalOption("AAIISIPro40PathFileNotOptim_SI_ISQ", optionlist = OPTIONLIST)), optionlist = OPTIONLIST)
+  
+  OPTIONLIST <- localoptions(AAIISIPro40PathFileNotOptim_SI_BSQ   =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/Static/si_bsq.dbf"), optionlist = OPTIONLIST)
+  OPTIONLIST <- localoptions(AAIISIPro40PathFile_SI_BSQ           =  paste0(getLocalOption("AAIISIPro40PathFileNotOptim_SI_BSQ", optionlist = OPTIONLIST)), optionlist = OPTIONLIST)
+  
+  OPTIONLIST <- localoptions(AAIISIPro40PathFileNotOptim_SI_CFQ   =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/Static/si_cfq.dbf"), optionlist = OPTIONLIST)
+  OPTIONLIST <- localoptions(AAIISIPro40PathFile_SI_CFQ           =  paste0(getLocalOption("AAIISIPro40PathFileNotOptim_SI_CFQ", optionlist = OPTIONLIST)), optionlist = OPTIONLIST)
+  
+  OPTIONLIST <- localoptions(AAIISIPro40PathFileNotOptim_SI_MLT   =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/Dbfs/si_mlt.dbf"), optionlist = OPTIONLIST)
+  OPTIONLIST <- localoptions(AAIISIPro40PathFile_SI_MLT           =  paste0(getLocalOption("AAIISIPro40PathFileNotOptim_SI_MLT", optionlist = OPTIONLIST)), optionlist = OPTIONLIST)
+  
+  # end of default .dbf file locations
+  
+  if(getLocalOption("FileStoreStyle", optionlist = OPTIONLIST) == "Optimized") {
+    
+    OPTIONLIST <- localoptions(AAIISIPro40PathFileOptim_SETUP =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/SETUP.RData"), optionlist = OPTIONLIST)
+    OPTIONLIST <- localoptions(AAIISIPro40PathFile_SETUP         =  paste0(getLocalOption("AAIISIPro40PathFileOptim_SETUP", optionlist = OPTIONLIST)), optionlist = OPTIONLIST)
+    
+    OPTIONLIST <- localoptions(AAIISIPro40PathFileOptim_SI_CI =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/Static/SI_CI.RData"), optionlist = OPTIONLIST)
+    OPTIONLIST <- localoptions(AAIISIPro40PathFile_SI_CI         =  paste0(getLocalOption("AAIISIPro40PathFileOptim_SI_CI", optionlist = OPTIONLIST)), optionlist = OPTIONLIST)
+    
+    OPTIONLIST <- localoptions(AAIISIPro40PathFileOptim_SI_MGDSC =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/Static/SI_MGDSC.RData"), optionlist = OPTIONLIST)
+    OPTIONLIST <- localoptions(AAIISIPro40PathFile_SI_MGDSC         =  paste0(getLocalOption("AAIISIPro40PathFileOptim_SI_MGDSC", optionlist = OPTIONLIST)), optionlist = OPTIONLIST)
+    
+    OPTIONLIST <- localoptions(AAIISIPro40PathFileOptim_SI_EXCHG =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/Static/SI_EXCHG.RData"), optionlist = OPTIONLIST)
+    OPTIONLIST <- localoptions(AAIISIPro40PathFile_SI_EXCHG         =  paste0(getLocalOption("AAIISIPro40PathFileOptim_SI_EXCHG", optionlist = OPTIONLIST)), optionlist = OPTIONLIST)
+    
+    OPTIONLIST <- localoptions(AAIISIPro40PathFileOptim_SI_PSD   =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/Dbfs/SI_PSD.RData"), optionlist = OPTIONLIST)
+    OPTIONLIST <- localoptions(AAIISIPro40PathFile_SI_PSD           =  paste0(getLocalOption("AAIISIPro40PathFileOptim_SI_PSD", optionlist = OPTIONLIST)), optionlist = OPTIONLIST)
+    
+    OPTIONLIST <- localoptions(AAIISIPro40PathFileOptim_SI_PSDC   =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/Dbfs/SI_PSDC.RData"), optionlist = OPTIONLIST)
+    OPTIONLIST <- localoptions(AAIISIPro40PathFile_SI_PSDC           =  paste0(getLocalOption("AAIISIPro40PathFileOptim_SI_PSDC", optionlist = OPTIONLIST)), optionlist = OPTIONLIST)
+    
+    OPTIONLIST <- localoptions(AAIISIPro40PathFileOptim_SI_DATE  =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/Static/SI_DATE.RData"), optionlist = OPTIONLIST)
+    OPTIONLIST <- localoptions(AAIISIPro40PathFile_SI_DATE          =  paste0(getLocalOption("AAIISIPro40PathFileOptim_SI_DATE", optionlist = OPTIONLIST)), optionlist = OPTIONLIST)
+    
+    OPTIONLIST <- localoptions(AAIISIPro40PathFileOptim_SI_ISQ   =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/Static/SI_ISQ.RData"), optionlist = OPTIONLIST)
+    OPTIONLIST <- localoptions(AAIISIPro40PathFile_SI_ISQ           =  paste0(getLocalOption("AAIISIPro40PathFileOptim_SI_ISQ", optionlist = OPTIONLIST)), optionlist = OPTIONLIST)
+    
+    OPTIONLIST <- localoptions(AAIISIPro40PathFileOptim_SI_BSQ   =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/Static/SI_BSQ.RData"), optionlist = OPTIONLIST)
+    OPTIONLIST <- localoptions(AAIISIPro40PathFile_SI_BSQ           =  paste0(getLocalOption("AAIISIPro40PathFileOptim_SI_BSQ", optionlist = OPTIONLIST)), optionlist = OPTIONLIST)
+    
+    OPTIONLIST <- localoptions(AAIISIPro40PathFileOptim_SI_CFQ   =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/Static/SI_CFQ.RData"), optionlist = OPTIONLIST)
+    OPTIONLIST <- localoptions(AAIISIPro40PathFile_SI_CFQ           =  paste0(getLocalOption("AAIISIPro40PathFileOptim_SI_CFQ", optionlist = OPTIONLIST)), optionlist = OPTIONLIST)
+    
+    OPTIONLIST <- localoptions(AAIISIPro40PathFileOptim_SI_MLT   =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/Dbfs/SI_MLT.RData"), optionlist = OPTIONLIST)
+    OPTIONLIST <- localoptions(AAIISIPro40PathFile_SI_MLT           =  paste0(getLocalOption("AAIISIPro40PathFileOptim_SI_MLT", optionlist = OPTIONLIST)), optionlist = OPTIONLIST)
+    
+  }
+  
+
   
   require(Hmisc)
 
@@ -248,7 +359,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
     # SETUP <- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SETUP"), as.is = TRUE)))
   # }
   
-  SETUP <- get_from_disk("SETUP")
+  SETUP <- get_from_disk("SETUP", filesoptionlist = OPTIONLIST)
   #  BUT: REPLACE IN CODE SETUP <- 
   #                    TO SETUP <- 
   
@@ -276,7 +387,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
     # SI_CI <- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_CI"), as.is = TRUE)))
   # }
 
-  SI_CI <- get_from_disk("SI_CI")
+  SI_CI <- get_from_disk("SI_CI", filesoptionlist = OPTIONLIST)
   
     # primary_key_dup <- SI_CI[duplicated(SI_CI[,'TICKER']),,drop=FALSE]
     # new_df_no_duplicates <- SI_CI[!(SI_CI$TICKER %in% as.matrix(primary_key_dup)),,drop=FALSE]
@@ -320,7 +431,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
     # SI_MGDSC <- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_MGDSC"), as.is = TRUE)))
   # }
 
-  SI_MGDSC <- get_from_disk("SI_MGDSC")
+  SI_MGDSC <- get_from_disk("SI_MGDSC", filesoptionlist = OPTIONLIST)
   
     # primary_key_dup <- SI_MGDSC[duplicated(SI_MGDSC[,'MG_CODE']),,drop=FALSE]
     # new_df_no_duplicates <- SI_MGDSC[!(SI_MGDSC$MG_CODE %in% as.matrix(primary_key_dup)),,drop=FALSE]
@@ -359,7 +470,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
     # SI_EXCHG <- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_EXCHG"), as.is = TRUE)))
   # }
   
-  SI_EXCHG <- get_from_disk("SI_EXCHG")
+  SI_EXCHG <- get_from_disk("SI_EXCHG", filesoptionlist = OPTIONLIST)
   
     # primary_key_dup <- SI_EXCHG[duplicated(SI_EXCHG[,'EXCHG_CODE']),,drop=FALSE]
     # new_df_no_duplicates <- SI_EXCHG[!(SI_EXCHG$EXCHG_CODE %in% as.matrix(primary_key_dup)),,drop=FALSE]
@@ -400,7 +511,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
     # SI_PSD <- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_PSD"), as.is = TRUE)))
   # }
 
-  SI_PSD <- get_from_disk("SI_PSD")
+  SI_PSD <- get_from_disk("SI_PSD", filesoptionlist = OPTIONLIST)
   
   # primary_key_dup <- SI_PSD[duplicated(SI_PSD[,'COMPANY_ID']),,drop=FALSE]
   # new_df_no_duplicates <- SI_PSD[!(SI_PSD$COMPANY_ID %in% as.matrix(primary_key_dup)),,drop=FALSE]
@@ -499,7 +610,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
     # SI_PSDC <- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_PSDC"), as.is = TRUE)))
   # }
 
-  SI_PSDC <- get_from_disk("SI_PSDC")
+  SI_PSDC <- get_from_disk("SI_PSDC", filesoptionlist = OPTIONLIST)
   
   # primary_key_dup <- SI_PSDC[duplicated(SI_PSDC[,'COMPANY_ID']),,drop=FALSE]
   # new_df_no_duplicates <- SI_PSDC[!(SI_PSDC$COMPANY_ID %in% as.matrix(primary_key_dup)),,drop=FALSE]
@@ -540,7 +651,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
     # SI_DATE <- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_DATE"), as.is = TRUE)))
   # }
 
-  SI_DATE <- get_from_disk("SI_DATE")
+  SI_DATE <- get_from_disk("SI_DATE", filesoptionlist = OPTIONLIST)
   
     # primary_key_dup <- SI_DATE[duplicated(SI_DATE[,'COMPANY_ID']),,drop=FALSE]
     # new_df_no_duplicates <- SI_DATE[!(SI_DATE$COMPANY_ID %in% as.matrix(primary_key_dup)),,drop=FALSE]
@@ -1056,7 +1167,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
     # SI_ISQ <- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_ISQ"), as.is = TRUE)))
   # }
 
-    SI_ISQ <- get_from_disk("SI_ISQ")
+    SI_ISQ <- get_from_disk("SI_ISQ", filesoptionlist = OPTIONLIST)
   
     # primary_key_dup <- SI_ISQ[duplicated(SI_ISQ[,'COMPANY_ID']),,drop=FALSE]
     # new_df_no_duplicates <- SI_ISQ[!(SI_ISQ$COMPANY_ID %in% as.matrix(primary_key_dup)),,drop=FALSE]
@@ -1111,7 +1222,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
     # SI_BSQ <- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_BSQ"), as.is = TRUE)))
   # }
   
-  SI_BSQ <- get_from_disk("SI_BSQ")
+  SI_BSQ <- get_from_disk("SI_BSQ", filesoptionlist = OPTIONLIST)
   
   # primary_key_dup <- SI_BSQ[duplicated(SI_BSQ[,'COMPANY_ID']),,drop=FALSE]
   # new_df_no_duplicates <- SI_BSQ[!(SI_BSQ$COMPANY_ID %in% as.matrix(primary_key_dup)),,drop=FALSE]
@@ -1142,7 +1253,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
     # SI_CFQ <- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_CFQ"), as.is = TRUE)))
   # }
   
-  SI_CFQ <- get_from_disk("SI_CFQ")
+  SI_CFQ <- get_from_disk("SI_CFQ", filesoptionlist = OPTIONLIST)
   
   # primary_key_dup <- SI_CFQ[duplicated(SI_CFQ[,'COMPANY_ID']),,drop=FALSE]
   # new_df_no_duplicates <- SI_CFQ[!(SI_CFQ$COMPANY_ID %in% as.matrix(primary_key_dup)),,drop=FALSE]
@@ -2260,7 +2371,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
     # SI_MLT <- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_MLT"), as.is = TRUE)))
   # }
 
-  SI_MLT <- get_from_disk("SI_MLT")
+  SI_MLT <- get_from_disk("SI_MLT", filesoptionlist = OPTIONLIST)
   
     # primary_key_dup <- SI_MLT[duplicated(SI_MLT[,'COMPANY_ID']),,drop=FALSE]
     # new_df_no_duplicates <- SI_MLT[!(SI_MLT$COMPANY_ID %in% as.matrix(primary_key_dup)),,drop=FALSE]
@@ -2972,5 +3083,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
 # View(UNIVERSE[UNIVERSE$MG_DESC == "Financial",c(8:8,88:92,104:105)])
 
 
-# LEFT_OFF: put *options* functions in main [ ]
-# LEFT_OFF: RETURN from main list of  InvestmentLookAhead and   PriceMovingAverage ( per sector matrice) [ ]
+# LEFT_OFF: put *localoptions* functions in main [ ]
+# LEFT_OFF: RETURN from main 'list of' (1) InvestmentLookAhead and (2) PriceMovingAverage ( per sector matrice) [ ]
+
+
