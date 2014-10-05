@@ -1,5 +1,9 @@
 
 
+
+
+
+
 # posneg - higher values ... higher ntiles
 hdntile  <- function(  x  = NULL                     # required: 'subset (grouped)'  dataframe
                        , measurecol = NULL             # required:  measure column name string 
@@ -154,32 +158,78 @@ eliminate_all_duplicates <- function( df_itself, key_to_fix_name ) {
 }
 
 
-get_from_disk <- function(fnombre) { 
+get_from_disk <- function(fnombre, filesoptionlist) { 
    
   require(foreign)
  
-  if(is.null(fnombre) ) stop ("fnombre file name is missing")
+  if(is.null(fnombre) )         stop ("fnombre file name      is missing")
+  if(is.null(filesoptionlist) ) stop ("filesoptionlist        is missing")
  
-  if(getOption("FileStoreStyle") == "Optimized") {
+  
+  if(getLocalOption("FileStoreStyle", optionlist = filesoptionlist) == "Optimized") {
     # NOTE: file.access: case INsenstive ( better built for Windows )
-    if( file.access(getOption(paste0("AAIISIPro40PathFileOptim_",fnombre)), mode = 0) == 0) {
-      load(file = getOption(paste0("AAIISIPro40PathFileOptim_",fnombre)), envir = environment()) # , verbose = TRUE ... Loading objects:
+    if( file.access(getLocalOption(paste0("AAIISIPro40PathFileOptim_",fnombre), optionlist = filesoptionlist), mode = 0) == 0) {
+      load(file = getLocalOption(paste0("AAIISIPro40PathFileOptim_",fnombre), optionlist = filesoptionlist), envir = environment()) # , verbose = TRUE ... Loading objects:
       # load file ( assign - only takes a string)
       assign("fnombre_data",eval(parse(text=fnombre)))
       # SHOULD ACTUALLY DO rm(list = c(fnombre))
     } else {
       # load file ( assign - only takes a string)
-      assign(fnombre,suppressWarnings(suppressMessages(read.dbf(file=getOption(paste0("AAIISIPro40PathFileNotOptim_",fnombre)), as.is = TRUE))))     
-      save(list = c(fnombre),file = getOption(paste0("AAIISIPro40PathFileOptim_",fnombre)),envir = environment())
+      assign(fnombre,suppressWarnings(suppressMessages(read.dbf(file=getLocalOption(paste0("AAIISIPro40PathFileNotOptim_",fnombre), optionlist = filesoptionlist), as.is = TRUE))))     
+      save(list = c(fnombre),file = getLocalOption(paste0("AAIISIPro40PathFileOptim_",fnombre), optionlist = filesoptionlist),envir = environment())
       assign("fnombre_data",eval(parse(text=fnombre)))
     }
   } else {
     # load file
-    fnombre_data <- suppressWarnings(suppressMessages(read.dbf(file=getOption(paste0("AAIISIPro40PathFileNotOptim_",fnombre)), as.is = TRUE)))
+    fnombre_data <- suppressWarnings(suppressMessages(read.dbf(file=getLocalOption(paste0("AAIISIPro40PathFileNotOptim_",fnombre), optionlist = filesoptionlist), as.is = TRUE)))
   }
   return(fnombre_data)
+  
  
 }
+
+
+
+initLocalOptions <- function() {
+  return(list())
+}
+
+# assign local options 
+localoptions <- function(..., optionlist) {
+  
+  if(is.null(optionlist)) stop("optionlist is NULL")
+
+  # the item name is not ""
+  (names(as.list(substitute(list(...)))[-1L]) !=  "")     -> dots_have_values
+  list(...)[dots_have_values]                             -> dots_parameters_values
+  
+  # assign where 'item name is not ""'
+  for (var in names(dots_parameters_values)) {
+    list(...)[[var]] -> optionlist[[var]]
+  }
+  
+  return(optionlist)
+}
+# OPTIONLIST <- localoptions(Temperature = 85, season = "Fall", optionlist = OPTIONLIST)
+
+
+# retrieve local options
+getLocalOption <- function(x, default = NULL, optionlist) {
+  
+  # get from the passthough parameter
+  if(is.null(x))          stop("option is NULL")
+  if(is.null(optionlist)) stop("optionlist is NULL")
+
+  # to test ( maybe 'exists()' is a better test?)
+  if(is.null(optionlist[[x]])) {
+    default -> optionlist[[x]] 
+  } 
+  
+  return(optionlist[[x]])
+  
+}
+# MyTemperature <- getLocalOption("Temperature", optionlist = OPTIONLIST)
+
 
 
 browseAAIISIPrometa <- function(searchstring = NULL ) {
