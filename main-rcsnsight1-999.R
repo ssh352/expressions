@@ -120,39 +120,50 @@ symbol_OHLC_lag_k_periods <- function(symbol,new_symbol_name, llagk = c(1), qmOH
 
 
 
-symbol_OHLC_range_k_periods <- function(symbol,new_symbol_name, llagk = c(1), qmOHLC = "Cl", llagk_zone_back = 0 ) {  
-   require(quantmod)
-   if (is.null(symbol))          stop("symbol_OHLC_range_k_periods is missing symbol") 
-   if (is.null(new_symbol_name)) stop("symbol_OHLC_range_k_periods is missing new_symbol_name") 
-      if ( !any(qmOHLC %in% c("Cl","Lowz"))) stop ( "symbol_OHLC_range_k_periods qmOHLC should be Cl or Lowz")
-      if ( qmOHLC == "Lowz") {
-        for( i in llagk) {
-          # only one column is retured: the Lowz across lags
-          # NOTE: if llagk is NOT ( a 'one sep' sequence of integers') then the 'naming of the column would break
-          apply(Lag(Lo(symbol),(min(llagk)+i):(min(llagk)+i+llagk_zone_back)), MARGIN = 1, min ) -> L ; as.xts(L) -> L ; paste0(new_symbol_name,".MinOf.Lag.",(min(llagk)+i),".RangeLwz.", (min(llagk)+i),".",(min(llagk)+i+llagk_zone_back) )  -> colnames(L)
-          if (i !=  (min(llagk))  ) {
-            suppressWarnings(mergge(BULK_L, L, join='outer',tz='UTC')) -> BULK_L
-          } else {
-            L -> BULK_L
-          }
-        }
-      } 
-      # here for consistency ( if nothing else )  "Cl"  ".EndOf.Lag." ".RangeClz."
-      if ( qmOHLC == "Cl") {
-        for( i in llagk) {
-          # only one column is retured: the Lowz across lags
-          # NOTE: if llagk is NOT ( a 'one sep' sequence of integers') then the 'naming of the column would break
-          apply(Lag(Cl(symbol),(min(llagk)+i):(min(llagk)+i+llagk_zone_back)), MARGIN = 1, min ) -> L ; as.xts(L) -> L ; paste0(new_symbol_name,".EndOf.Lag.",(min(llagk)+i),".RangeClz.", (min(llagk)+i),".",(min(llagk)+i+llagk_zone_back) )  -> colnames(L)
-          if (i !=  (min(llagk))  ) {
-            suppressWarnings(mergge(BULK_L, L, join='outer',tz='UTC')) -> BULK_L
-          } else {
-            L -> BULK_L
-          }
-        }
-      } 
-      BULK_L
+symbol_OHLC_range_k_periods <- function(symbol,new_symbol_name, llagk = c(1), qmOHLC, llagk_zone_back = 0, findthat, findthat_name, findthat_range_name ) {  
+  require(quantmod)
+  if (is.null(symbol))          stop("symbol_OHLC_range_k_periods is missing symbol") 
+  if (is.null(new_symbol_name)) stop("symbol_OHLC_range_k_periods is missing new_symbol_name") 
+  # if ( !any(qmOHLC %in% c("Cl","Lowz"))) stop ( "symbol_OHLC_range_k_periods qmOHLC should be Cl or Lowz")
+  if( length(llagk) > 0 ) {
+    for( i in 1:length(llagk) )  {
+      # only one column is retured: the Lowz across lags
+      # NOTE: if llagk is NOT ( a 'one sep' sequence of integers') then the 'naming of the column would break
+      apply(Lag(eval(parse(text=paste0(qmOHLC,"(symbol)"))),(llagk[i]):(llagk[i]+llagk_zone_back)), MARGIN = 1, eval(parse(text=findthat)) ) -> L ; xts( L, as.Date(names(L), tz = "UTC") )  -> L ; paste0(new_symbol_name,".",findthat_name,".Lag.",(llagk[i]),".",findthat_range_name,".", (llagk[i]),".",(llagk[i]+llagk_zone_back) )  -> colnames(L)
+      if ( i == 1 ) {
+        L -> BULK_L
+      } else {
+        suppressWarnings(mergge(BULK_L, L, join='outer',tz='UTC')) -> BULK_L
+      }
+    }
+  }
+  return(BULK_L)
 }
 
+
+
+max_drawdown_pct_chnge <- function(xtsdata, col_0 = "", col_1 = "") {
+  # subset of data
+  xtsdata[,c(col_0,col_1)] -> xtsdata_subset
+  # calculate the metric    
+  (xtsdata_subset[,col_0] - xtsdata_subset[,col_1] ) / abs(xtsdata_subset[,col_1] + 0.0000001) -> xts_data_interest_new
+  # rename the new column - grab those numbers at the end   
+  ( last(gregexpr("\\.",col_0)[[1]],2) + 1 )[1]      -> col_0_extract_start_pos
+  ( last(gregexpr("\\.",col_0)[[1]],2) + 0 )[2] - 1  -> col_0_extract_stop_pos
+  substr(col_0,start=col_0_extract_start_pos, stop=col_0_extract_stop_pos) -> col_0_nbr_suffix
+  # rename the new column - grab those numbers at the end   
+  ( last(gregexpr("\\.",col_1)[[1]]) + 1 ) -> col_1_extract_start_pos
+  nchar(col_1)                              -> col_1_extract_stop_pos
+  substr(col_1,start=col_1_extract_start_pos, stop=col_1_extract_stop_pos) -> col_1_nbr_suffix
+  # remove the ticker from col_1 ( since it is already in col_0 )
+  col_1 -> col_1_new_base
+  ( first(gregexpr("\\.",col_1_new_base)[[1]]) + 1 )            -> col_1_new_base_extract_start_pos
+  nchar(col_1_new_base)                                          -> col_1_new_base_extract_stop_pos
+  substr(col_1_new_base,start=col_1_new_base_extract_start_pos, stop=col_1_new_base_extract_stop_pos) -> col_1_new_base
+  # actual new column name
+  paste0(col_0,".",col_1_new_base,".PctChnge.",col_0_nbr_suffix,".",col_1_nbr_suffix) -> colnames(xts_data_interest_new)
+  return(xts_data_interest_new) 
+}
 
 
 pct_chnge <- function(xtsdata, col_0 = "", col_1 = "") {
@@ -603,7 +614,9 @@ main_rcsnsight1_999 <- function(pauseat=NULL) {
     save("GSPC",file = paste0(getwd(),"/GSPC.Rdata"))
     rm("x","symbols","symbol")
   }
-
+  # GSPC.Low
+  # GSPC.Close
+  
   L_GSPC <- cbind( 1:NROW(GSPC),rev(1:NROW(GSPC)) ,as.numeric(index(GSPC)), coredata(GSPC))
   colnames(L_GSPC)[c(1,2,3)] <- c("NROW_IDX","REV_NROW_IDX","UNXDTE") # SHOULD KEEP JUST ONE!!
   colnames(L_GSPC)<-gsub("\\.","_",colnames(L_GSPC))
@@ -646,7 +659,7 @@ main_rcsnsight1_999 <- function(pauseat=NULL) {
    # $ GSPC_Close  : num  17.3 18 18.8 17.7 17.8 ...
   
   
-  # NBER ( 3 month lag ) VERIFIED NEW!  USRECMFIX : FIX : SUBTRACT OFF ONE DAY [x]
+  # NBER ( x3x 4 month lag )  VERIFIED NEW!  USRECMFIX : FIX : SUBTRACT OFF ONE DAY [x]
   
   if( file.exists(paste0(getwd(),"/USRECM.Rdata"))){
     load(file = paste0(getwd(),"/USRECM.Rdata"))
@@ -667,6 +680,7 @@ main_rcsnsight1_999 <- function(pauseat=NULL) {
     save("USRECM",file = paste0(getwd(),"/USRECM.Rdata"))
     rm("x","symbols","symbol")
   }
+  # USRECM.Close
   
   # Chauvet/Piger ( 3 month lag )    RECPROUSM156N: FIX : SUBTRACT OFF ONE DAY [x]
  
@@ -689,7 +703,8 @@ main_rcsnsight1_999 <- function(pauseat=NULL) {
     save("RECPROUSM156N",file = paste0(getwd(),"/RECPROUSM156N.Rdata"))
     rm("x","symbols","symbol")
   }
-
+  # RECPROUSM156N.Close
+  
   # Applied Mutlivariate Statical Analysis 6th ( Blue Book ) Johnson and Wichern p. 635
   # logit - DUMPED - 'postive 0 to 100 is just the prob itself;  ( 0 TO 100 ) USE hdquantile TO HELP
   
@@ -727,7 +742,7 @@ main_rcsnsight1_999 <- function(pauseat=NULL) {
   
   # [ ] consider DEEPLY faber 8-mo(10-mo) per sector moving averages ( SEE foresight CODE [x] )
   
-  # OECD ( 3 month lag )  VERIFIED NEW!      USARECM: FIX : SUBTRACT OFF ONE DAY [x]
+  # OECD ( x3x 4 month lag )  VERIFIED NEW!      USARECM: FIX : SUBTRACT OFF ONE DAY [x]
 
    if( file.exists(paste0(getwd(),"/USARECM.Rdata"))){
     load(file = paste0(getwd(),"/USARECM.Rdata"))
@@ -748,6 +763,7 @@ main_rcsnsight1_999 <- function(pauseat=NULL) {
     save("USARECM",file = paste0(getwd(),"/USARECM.Rdata"))
     rm("x","symbols","symbol")
   }
+  # USARECM.Close
   
   # left join .External("mergeXts"? - complains about 'left join meant for 2' 'localtime is not UTC' 
   suppressWarnings(mergge(GSPC,USRECM,RECPROUSM156N,USARECM,join='left',tz="UTC")) -> GALAXY_L   
@@ -756,43 +772,128 @@ main_rcsnsight1_999 <- function(pauseat=NULL) {
   # keep complete.cases ( zoo::na.trim is equivalent )
   # na.trim(GALAXY_L[,!(colnames(GALAXY_L) %in% "tz")])  -> GALAXY_L 
   
-  # the benchmark merge.xts? - outer
-  symbol_OHLC_lag_k_periods(GSPC,"GSPC",0:5, qmOHLC = "Lowz")           -> GSPC_LAGS_LOW 
-  suppressWarnings(mergge(GALAXY_L,GSPC_LAGS_LOW,join='outer',tz='UTC')) -> GALAXY_L 
-  symbol_OHLC_lag_k_periods(GSPC,"GSPC",0:1)                        -> GSPC_LAGS 
+  # CURRENTLY DO NOT CHANGE THE 'ORDER OF COLUMN GENERATION'
+  
+  # the benchmark
+  
+  # regular end of month closes for the benchmark
+  symbol_OHLC_lag_k_periods(GSPC,"GSPC",0:6)                         -> GSPC_LAGS 
   suppressWarnings(mergge(GALAXY_L,GSPC_LAGS,join='outer',tz='UTC')) -> GALAXY_L 
-
+  
   # Generated
-  # GSPC.MinOf.Lag.0 GSPC.MinOf.Lag.1 GSPC.MinOf.Lag.2 
-  # GSPC.MinOf.Lag.3 GSPC.MinOf.Lag.4 GSPC.MinOf.Lag.5
-
+  # GSPC.EndOf.Lag.0  ... GSPC.EndOf.Lag.6
+  
+  # the 'lowest daily found in a day in that month'
+  symbol_OHLC_lag_k_periods(GSPC,"GSPC",0:5, qmOHLC = "Lowz")            -> GSPC_LAGS_LOW 
+  suppressWarnings(mergge(GALAXY_L,GSPC_LAGS_LOW,join='outer',tz='UTC')) -> GALAXY_L 
+  
+  # Generated
+  # GSPC.MinOf.Lag.0 ... GSPC.MinOf.Lag.5
 
   # all others ( not the benchmark )
-  symbol_OHLC_lag_k_periods(USRECM,"USRECM",0:1)                      -> USRECM_LAGS 
+  
+  # COME BACK NEED THESE LAGS HERE
+  
+  # NBER: 4 month lag ( TO BE DONE [X] ) # old 0:1 ( NOW: 2 month ave, pred 1-6)
+  symbol_OHLC_lag_k_periods(USRECM,"USRECM",5:11)                      -> USRECM_LAGS 
   suppressWarnings(mergge(GALAXY_L,USRECM_LAGS,join='outer',tz='UTC')) -> GALAXY_L
-  symbol_OHLC_lag_k_periods(RECPROUSM156N,"RECPROUSM156N",0:11)               -> RECPROUSM156N_LAGS 
+  
+  # Generated
+  # USRECM.EndOf.Lag.5 ... USRECM.EndOf.Lag.11
+  
+  # Chavet Piger 3 month lag 
+  # ( maybe a 'safe 4 month lag' ( currenlty using 3 month lag ) old: 0:11 
+  # ( TO HAVE: 2 month ave, change, changechange, changechangechange, changechangechangechange 
+  # 2 month ave    4:10   
+  # pred 1: changechangechangechange 4:12
+  # pred 6: changechangechangechange 9:17  therefore  4:17
+  # ( TO BE DONE - IN PROGRESS [ ] )
+  symbol_OHLC_lag_k_periods(RECPROUSM156N,"RECPROUSM156N",4:12)               -> RECPROUSM156N_LAGS 
   suppressWarnings(mergge(GALAXY_L,RECPROUSM156N_LAGS,join='outer',tz='UTC')) -> GALAXY_L
-  symbol_OHLC_lag_k_periods(USARECM,"USARECM",0:1)                     -> USARECM_LAGS 
-  suppressWarnings(mergge(GALAXY_L,USARECM_LAGS,join='outer',tz='UTC')) -> GALAXY_L
   
-  # NEW WORK IN PROGRESS
-  # the benchmark merge.xts? - outer
-  symbol_OHLC_range_k_periods(GSPC,"GSPC",0:1, qmOHLC = "Lowz", llagk_zone_back = 3)  -> GSPC_RANGE_LOWZ 
-  suppressWarnings(mergge(GALAXY_L,GSPC_RANGE_LOWZ ,join='outer',tz='UTC'))           -> GALAXY_L 
+  # Generated
+  # RECPROUSM156N.EndOf.Lag.4 ... RECPROUSM156N.EndOf.Lag.17
   
+  # OECD 4 month lag ( TO BE DONE [X] ) # old 0:1 ( NOW: 2 month ave, pred 1-6)
+  symbol_OHLC_lag_k_periods(USARECM,"USARECM",5:11)                      -> USARECM_LAGS 
+  suppressWarnings(mergge(GALAXY_L,USARECM_LAGS,join='outer',tz='UTC'))  -> GALAXY_L
   
+  # Generated
+  # USARECM.EndOf.Lag.5 ... USARECM.EndOf.Lag.11
+  
+  # Need the 'min ever seen' over the zone 'llagk_zone_back'
+  # the benchmark merge.xts? - outer ( old: 0:2 ) ( TO BE DONE [ ] )
+  
+
+  
+  # symbol_OHLC_range_k_periods(GSPC,"GSPC",0:0
+    # , qmOHLC = "Lo", llagk_zone_back = 0
+    # , findthat = "min", findthat_name = "MinOf", findthat_range_name = "RangeLwz" )  -> GSPC_RANGE_LOWZ 
+  # suppressWarnings(mergge(GALAXY_L,GSPC_RANGE_LOWZ ,join='outer',tz='UTC'))          -> GALAXY_L 
+  
+  # columns input:  ( GSPC Lag(Lo(GSPC) )
+  
+  suppressWarnings(mergge(GALAXY_L 
+    , symbol_OHLC_range_k_periods(GSPC,"GSPC",0:0, qmOHLC = "Lo", llagk_zone_back = 0, findthat = "min", findthat_name = "MinOf", findthat_range_name = "RangeLwz" )
+    , symbol_OHLC_range_k_periods(GSPC,"GSPC",0:0, qmOHLC = "Lo", llagk_zone_back = 1, findthat = "min", findthat_name = "MinOf", findthat_range_name = "RangeLwz" )
+    , symbol_OHLC_range_k_periods(GSPC,"GSPC",0:0, qmOHLC = "Lo", llagk_zone_back = 2, findthat = "min", findthat_name = "MinOf", findthat_range_name = "RangeLwz" )
+    , symbol_OHLC_range_k_periods(GSPC,"GSPC",0:0, qmOHLC = "Lo", llagk_zone_back = 3, findthat = "min", findthat_name = "MinOf", findthat_range_name = "RangeLwz" )
+    , symbol_OHLC_range_k_periods(GSPC,"GSPC",0:0, qmOHLC = "Lo", llagk_zone_back = 4, findthat = "min", findthat_name = "MinOf", findthat_range_name = "RangeLwz" )
+    , symbol_OHLC_range_k_periods(GSPC,"GSPC",0:0, qmOHLC = "Lo", llagk_zone_back = 5, findthat = "min", findthat_name = "MinOf", findthat_range_name = "RangeLwz" )
+  ,join='outer',tz='UTC'))  -> GALAXY_L 
+  
+  # Generated
+  # GSPC.MinOf.Lag.0.RangeLwz.0.0 ... GSPC.MinOf.Lag.0.RangeLwz.0.5 ( NEXT [ ] DIVE IN ABOVE: AND NEED COLUMN INPUTS )
+  
+  # Need the average at the 'point' minus 2 months ( range )  
+  
+  symbol_OHLC_range_k_periods(RECPROUSM156N,"RECPROUSM156N",4:9
+    , qmOHLC = "Cl", llagk_zone_back = 1
+    , findthat = "mean", findthat_name = "AveOf", findthat_range_name = "RangeAvgz" )   -> RECPROUSM156N_RANGE_AVGZ 
+  suppressWarnings(mergge(GALAXY_L,RECPROUSM156N_RANGE_AVGZ ,join='outer',tz='UTC'))    -> GALAXY_L 
+
+  # Generated
+  # RECPROUSM156N.AveOf.Lag.4.RangeAvgz.4.5  RECPROUSM156N.AveOf.Lag.9.RangeAvgz.9.10
+  
+  symbol_OHLC_range_k_periods(USRECM,"USRECM",5:10
+    , qmOHLC = "Cl", llagk_zone_back = 1
+    , findthat = "mean", findthat_name = "AveOf", findthat_range_name = "RangeAvgz" )   -> USRECM_RANGE_AVGZ
+  suppressWarnings(mergge(GALAXY_L,USRECM_RANGE_AVGZ ,join='outer',tz='UTC'))           -> GALAXY_L 
+  
+  # Generated
+  # USRECM.AveOf.Lag.5.RangeAvgz.5.6         USRECM.AveOf.Lag.10.RangeAvgz.10.11
+  
+  symbol_OHLC_range_k_periods(USARECM,"USARECM",5:10
+    , qmOHLC = "Cl", llagk_zone_back = 1
+    , findthat = "mean", findthat_name = "AveOf", findthat_range_name = "RangeAvgz" )   -> USARECM_RANGE_AVGZ
+  suppressWarnings(mergge(GALAXY_L,USARECM_RANGE_AVGZ ,join='outer',tz='UTC'))          -> GALAXY_L 
+  
+  # Generated
+  # USARECM.AveOf.Lag.5.RangeAvgz.5.6        USARECM.AveOf.Lag.10.RangeAvgz.10.11
+  
+  # need maximum drawdown
+  suppressWarnings(mergge(GALAXY_L
+    ,  max_drawdown_pct_chnge(GALAXY_L,"GSPC.MinOf.Lag.0.RangeLwz.0.0","GSPC.EndOf.Lag.1") 
+    ,  max_drawdown_pct_chnge(GALAXY_L,"GSPC.MinOf.Lag.0.RangeLwz.0.1","GSPC.EndOf.Lag.2") 
+    ,  max_drawdown_pct_chnge(GALAXY_L,"GSPC.MinOf.Lag.0.RangeLwz.0.2","GSPC.EndOf.Lag.3") 
+    ,  max_drawdown_pct_chnge(GALAXY_L,"GSPC.MinOf.Lag.0.RangeLwz.0.3","GSPC.EndOf.Lag.4") 
+    ,  max_drawdown_pct_chnge(GALAXY_L,"GSPC.MinOf.Lag.0.RangeLwz.0.4","GSPC.EndOf.Lag.5") 
+    ,  max_drawdown_pct_chnge(GALAXY_L,"GSPC.MinOf.Lag.0.RangeLwz.0.5","GSPC.EndOf.Lag.6") 
+  ,join='outer',tz='UTC')) -> GALAXY_L
+
+  # OUTPUT 'maximum drawdown pct change' 
+  # of the minimum of the range of months 0,1,2 compared to th end of lag 3
+  # Generated
+  # 
+  
+  # ( Note: Later may want to keep 'and "articial Open"' for quantstrat
   # remove those .Close ( and .Low ) columns
   # so not to break quantmod::Cl()
   GALAXY_L[,!grepl(".Close",colnames(GALAXY_L))] -> GALAXY_L
   GALAXY_L[,!grepl(".Low",colnames(GALAXY_L))]   -> GALAXY_L
   
-
-
+  # currently - just predict 1 # ( LEFT_OFF: RE-VERIFY UPWARDS [ ] )
   suppressWarnings(mergge(GALAXY_L
-    ,  pct_chnge(GALAXY_L,"RECPROUSM156N.EndOf.Lag.0","RECPROUSM156N.EndOf.Lag.1") 
-    ,  pct_chnge(GALAXY_L,"RECPROUSM156N.EndOf.Lag.1","RECPROUSM156N.EndOf.Lag.2") 
-    ,  pct_chnge(GALAXY_L,"RECPROUSM156N.EndOf.Lag.2","RECPROUSM156N.EndOf.Lag.3") 
-    ,  pct_chnge(GALAXY_L,"RECPROUSM156N.EndOf.Lag.3","RECPROUSM156N.EndOf.Lag.4") 
     ,  pct_chnge(GALAXY_L,"RECPROUSM156N.EndOf.Lag.4","RECPROUSM156N.EndOf.Lag.5")
     ,  pct_chnge(GALAXY_L,"RECPROUSM156N.EndOf.Lag.5","RECPROUSM156N.EndOf.Lag.6")
     ,  pct_chnge(GALAXY_L,"RECPROUSM156N.EndOf.Lag.6","RECPROUSM156N.EndOf.Lag.7")
@@ -800,41 +901,45 @@ main_rcsnsight1_999 <- function(pauseat=NULL) {
     ,  pct_chnge(GALAXY_L,"RECPROUSM156N.EndOf.Lag.8","RECPROUSM156N.EndOf.Lag.9") 
     ,  pct_chnge(GALAXY_L,"RECPROUSM156N.EndOf.Lag.9","RECPROUSM156N.EndOf.Lag.10") 
     ,  pct_chnge(GALAXY_L,"RECPROUSM156N.EndOf.Lag.10","RECPROUSM156N.EndOf.Lag.11") 
+    ,  pct_chnge(GALAXY_L,"RECPROUSM156N.EndOf.Lag.11","RECPROUSM156N.EndOf.Lag.12") 
   ,join='outer',tz='UTC')) -> GALAXY_L
   
-  # will generate
-  # "RECPROUSM156N.EndOf.Lag.0.PctChnge.1.2"
-  # "RECPROUSM156N.EndOf.Lag.2.PctChnge.2.3"
+  # Generated
+  # "RECPROUSM156N.EndOf.Lag.4.PctChnge.4.5" ... "RECPROUSM156N.EndOf.Lag.11.PctChnge.11.12"
+  
   
   # # OLD
   # suppressWarnings(mergge(GALAXY_L
     # ,  pct_chnge_pct_chnge(GALAXY_L,"RECPROUSM156N.EndOf.Lag.0.PctChnge.0.1","RECPROUSM156N.EndOf.Lag.1.PctChnge.1.2")
   # ,join='outer',tz='UTC')) -> GALAXY_L
   
+  # currently - just predict 1
   suppressWarnings(mergge(GALAXY_L
-    ,  pct_chnge_pct_chnge(GALAXY_L,"RECPROUSM156N.EndOf.Lag.3.PctChnge.3.4" ,"RECPROUSM156N.EndOf.Lag.4.PctChnge.4.5")
-    ,  pct_chnge_pct_chnge(GALAXY_L,"RECPROUSM156N.EndOf.Lag.5.PctChnge.5.6" ,"RECPROUSM156N.EndOf.Lag.6.PctChnge.6.7")
-    ,  pct_chnge_pct_chnge(GALAXY_L,"RECPROUSM156N.EndOf.Lag.7.PctChnge.7.8" ,"RECPROUSM156N.EndOf.Lag.8.PctChnge.8.9")
-    ,  pct_chnge_pct_chnge(GALAXY_L,"RECPROUSM156N.EndOf.Lag.9.PctChnge.9.10","RECPROUSM156N.EndOf.Lag.10.PctChnge.10.11")
+    ,  pct_chnge_pct_chnge(GALAXY_L, "RECPROUSM156N.EndOf.Lag.4.PctChnge.4.5","RECPROUSM156N.EndOf.Lag.5.PctChnge.5.6")
+    ,  pct_chnge_pct_chnge(GALAXY_L, "RECPROUSM156N.EndOf.Lag.6.PctChnge.6.7","RECPROUSM156N.EndOf.Lag.7.PctChnge.7.8")
+    ,  pct_chnge_pct_chnge(GALAXY_L, "RECPROUSM156N.EndOf.Lag.8.PctChnge.8.9","RECPROUSM156N.EndOf.Lag.9.PctChnge.9.10")
+    ,  pct_chnge_pct_chnge(GALAXY_L, "RECPROUSM156N.EndOf.Lag.10.PctChnge.10.11","RECPROUSM156N.EndOf.Lag.11.PctChnge.11.12")
   ,join='outer',tz='UTC')) -> GALAXY_L
   
   # generates output
-  # "RECPROUSM156N.EndOf.Lag.7.PctChngePctChnge.7.9"
-  # "RECPROUSM156N.EndOf.Lag.9.PctChngePctChnge.9.11"
+  # RECPROUSM156N.EndOf.Lag.4.PctChngePctChnge.4.6  ... RECPROUSM156N.EndOf.Lag.10.PctChngePctChnge.10.12
   
+  # currently - just predict 1
   suppressWarnings(mergge(GALAXY_L
-  ,  pct_chnge_pct_chnge_pct_chnge(GALAXY_L,"RECPROUSM156N.EndOf.Lag.3.PctChngePctChnge.3.5","RECPROUSM156N.EndOf.Lag.5.PctChngePctChnge.5.7")
-  ,  pct_chnge_pct_chnge_pct_chnge(GALAXY_L,"RECPROUSM156N.EndOf.Lag.7.PctChngePctChnge.7.9","RECPROUSM156N.EndOf.Lag.9.PctChngePctChnge.9.11")
+  ,  pct_chnge_pct_chnge_pct_chnge(GALAXY_L,"RECPROUSM156N.EndOf.Lag.4.PctChngePctChnge.4.6","RECPROUSM156N.EndOf.Lag.6.PctChngePctChnge.6.8")
+  ,  pct_chnge_pct_chnge_pct_chnge(GALAXY_L,"RECPROUSM156N.EndOf.Lag.8.PctChngePctChnge.8.10","RECPROUSM156N.EndOf.Lag.10.PctChngePctChnge.10.12")
   ,join='outer',tz='UTC')) -> GALAXY_L
   
-  # generates
-  # RECPROUSM156N.EndOf.Lag.3.PctChngePctChngePctChnge.3.7  
-  # RECPROUSM156N.EndOf.Lag.7.PctChngePctChngePctChnge.7.11
-  
+  # Generates exactly 
+  # RECPROUSM156N.EndOf.Lag.4.PctChngePctChngePctChnge.4.8  RECPROUSM156N.EndOf.Lag.8.PctChngePctChngePctChnge.8.12
+
+  # currently - just predict 1
   suppressWarnings(mergge(GALAXY_L
-  ,  pct_chnge_pct_chnge_pct_chnge_pct_chnge(GALAXY_L,"RECPROUSM156N.EndOf.Lag.3.PctChngePctChngePctChnge.3.7","RECPROUSM156N.EndOf.Lag.7.PctChngePctChngePctChnge.7.11")
+  ,  pct_chnge_pct_chnge_pct_chnge_pct_chnge(GALAXY_L,"RECPROUSM156N.EndOf.Lag.4.PctChngePctChngePctChnge.4.8","RECPROUSM156N.EndOf.Lag.8.PctChngePctChngePctChnge.8.12")
   ,join='outer',tz='UTC')) -> GALAXY_L
   
+  # Generates exactly 
+  # RECPROUSM156N.EndOf.Lag.4.PctChngePctChngePctChngePctChnge.4.12
   
   # remove those uselss 'tz.#' columns ( aesthetics )
   # will leave just "tz" behind ( NOTE: SHOULD! remove "tz" from GALAXY_L just after each merge )
@@ -927,10 +1032,44 @@ main_rcsnsight1_999 <- function(pauseat=NULL) {
 # > xsaved <- lineprof(main_rcsnsight1_999(), torture = FALSE) # not memory ( USE THIS )
 # > shine(xsaved)
 
-# MOVING MINIMUM DONE [x] quantmod::lag, apply, and min
-# NEXT: need hdquantiles [ ] ( THIS WILL BE *ROOT* TICKERS: GSPCQ8 'higher is 'relatively/logically' better ) 
-# Harrell-Davis hdquantile [ ] ( OR SOMETING ELSE  ( tis::colQuantiles ) )
-# [ need YET MORE 'caret' practice on randomForest [ ] ]
+# MOVING MINIMUM (almost) DONE [x] quantmod::lag, apply, and min
+
+# [3/4] FIX 3 4 4 ( only Chavet/Piger lags 3 months ) ( just a 'comment' for right now )
+
+# [X] FIX lapply -> as.xts ( WRONG DEFAULT DATE TIME Posix#, SHOULD BE DATE )
+# [X] VERIFY [x] min_over_range ARE correct_numbers
+
+# [X] AVE(like_min) over the LAST 2 [X] Chauvet/Piger %  [FUTURE] OECD 1/0  [FUTURE] NBER 1/0  
+# AFTER SLEEP
+# [X] CSPC (1,2,3,4,5,6)  %change max drawdown (maxdraw(GSPC)-Cl(GSCPC))/abs(CSPC)
+# [X] slightly redone: remove second ticker
+
+# LEFT_OFF
+# NEXT: NEED STRUCTURES ( OR PRINTED ZONES ) TO GENERATE 6 OUTCOME 1 MO 2MO ... 6MO ( of maxdrawdawn )
+# [X] SOME THINKING IS REQUIRED ( fixed RANGE bug )
+# LEFT_OFF
+# worst drawdown the next 6 mo
+# GSPC                  lag 0 through 6  ( outcome )
+# RECESSION INDICATORS:           lag 9(9-10 min ranges)   ... PIGER
+# RECESSION INDICATORS:           lag 10(10-11 min ranges) ... NBER OECD
+
+# *** worst drawdown the next 5 mo ( SHIFT ALL NUMBER TO THE LEFT BY 1 UNIT ) ***
+
+# NEXT TIME ( have what I need for a 1 month ahead prediction)
+# piger lag 3, back 2 month average
+# piger lag 3, back 2 month change
+# NBER  lag 4, back 2 month average
+# OECD  lag 4, back 2 month change
+
+# NEXT TIME, ... pick columns [ ] ... formuala: if not too difficult [ ]
+# send to librar(caret) [ ] xor/or librar(randomForest) [ ]
+
+# MAYBE LATER: NEXT: need hdquantiles [ ] ( THIS WILL BE *ROOT* TICKERS: GSPCQ8 'higher is 'relatively/logically' better ) 
+# MAYBE LATER: Harrell-Davis hdquantile [ ] ( OR SOMETING ELSE  ( tis::colQuantiles ) )
+
+# MAYBE LATER: [ ] 8 quantiles of ( CSPC (1,2,3,4,5,6)  %change max drawdown maxdraw(GSPC)-Cl(GSCPC)/abs(CSPC) )  
+
+# MAYBE LATER: [ need YET MORE 'caret' practice on randomForest [ IN PROGRESS] ]
 
 
 
