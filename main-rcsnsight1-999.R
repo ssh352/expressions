@@ -393,6 +393,8 @@ main_rcsnsight1_999 <- function(pauseat=NULL) {
   # require(TScompare)
   # require(tfplot)
   
+  require(caret)
+  
   setwd("N:\\MyVMWareSharedFolder\\rcsnsight1\\R")
 
 
@@ -886,7 +888,7 @@ main_rcsnsight1_999 <- function(pauseat=NULL) {
   # Generated
   # 
   
-  # ( Note: Later may want to keep 'and "articial Open"' for quantstrat
+  # ( Note: Later may want to keep 'and create an "articial Open"' for quantstrat )
   # remove those .Close ( and .Low ) columns
   # so not to break quantmod::Cl()
   GALAXY_L[,!grepl(".Close",colnames(GALAXY_L))] -> GALAXY_L
@@ -965,8 +967,354 @@ main_rcsnsight1_999 <- function(pauseat=NULL) {
     # , append=TRUE
   # )
   
+ # ROUND 1 - one month prediction 
+ # one month prediction - data
+  #             RESPONSE
+  #               PREDICTORS
+  # GALAXY_L[, c("GSPC.MinOf.Lag.0.RangeLwz.0.0.EndOf.Lag.1.PctChnge.0.1"   # caret prefers the first col to be the outcome
+                # , "RECPROUSM156N.EndOf.Lag.4", "RECPROUSM156N.EndOf.Lag.5"
+                  # , "RECPROUSM156N.AveOf.Lag.4.RangeAvgz.4.5"
+                  # , "RECPROUSM156N.EndOf.Lag.4.PctChnge.4.5"
+                # , "USRECM.EndOf.Lag.5", "USRECM.EndOf.Lag.6"
+                  # , "USRECM.AveOf.Lag.5.RangeAvgz.5.6"
+                # , "USARECM.EndOf.Lag.5", "USARECM.EndOf.Lag.6"
+                  # , "USARECM.AveOf.Lag.5.RangeAvgz.5.6"
+              # )] -> GALAXY_L   # NOTE: SHOULD JUST ( SEARCH AND REPLACE ON THE DOT.NUMBER PREDICTORS -> 2 month look ahead )
+                  
+ # ROUND 2 - one month prediction 
+ # one month prediction - data
+  #             RESPONSE
+  #               PREDICTORS
+  GALAXY_L[, c("GSPC.MinOf.Lag.0.RangeLwz.0.0.EndOf.Lag.1.PctChnge.0.1"   # caret prefers the first col to be the outcome
+                , "RECPROUSM156N.EndOf.Lag.4"
+                  , "RECPROUSM156N.EndOf.Lag.4.PctChnge.4.5"
+                    , "RECPROUSM156N.EndOf.Lag.4.PctChngePctChnge.4.6"
+                      , "RECPROUSM156N.EndOf.Lag.4.PctChngePctChngePctChnge.4.8"
+                        , "RECPROUSM156N.EndOf.Lag.4.PctChngePctChngePctChngePctChnge.4.12"
+              )] -> GALAXY_L   
+
+  
+    
+    
+  # VERY LAST STEP
+  # ABOVE be sure A HAVE managed NA's
+  # be SURE this is what I want
+  # zoo::na.trim
+  na.trim(GALAXY_L) -> GALAXY_L 
+ 
+  # ALTERNATIVE ( weaker )
+  # In general, the functions in the caret package assume that there are no missing values in the
+  # data or that these values have been handled via imputation or other means.
+  # 2008 pdf 12
+  # > apropos("impu")
+  # [1] "rfImpute" ( rfImpute package:randomForest )
+  # > ? rfImpute
+       # Impute missing values in predictor data using proximity from ( SO 'PROXIMIY' useful? )
+       # randomForest.
+
+       # The algorithm starts by imputing 'NA's using 'na.roughfix'.  Then
+       # 'randomForest' [with proximity=TRUE(non-default)] is called with the completed data. 
+
+       # Value:
+         # A data frame or matrix containing the completed data matrix 
+         # ( NOTE: I would have to RE-SAVE the *new* matrix, then re-run through caret )
+    # ? na.roughfix ( weak ) AND  Andy Liaw ONLY
+ 
+  # Building_Predictive_Models_in_R_Using_the_caret_package(1startarticle)(Kuhn)(2008).pdf page and pdf 5 ( of 26 pages )
+
+  # stats::cor
+  # tendancy to move 'up and down together'
+  # each predictor is weakly correlated with the response
+  # but most all predictors seem to be highly correlated with each other
+  # RECPROUSM156N.AveOf.Lag.4.RangeAvgz.4.5 and RECPROUSM156N.EndOf.Lag.4.PctChnge.4.5 ARE 'weakly' correlated with each other
+  # View(cor(coredata(GALAXY_L)))
+  
+  # x: A correlation matrix
+  #   Value: A vector of indices denoting the columns to remove.
+  # findCorrelation(x, cutoff = .90, verbose = FALSE) # .90 is HIGH CORRELATION ALLOWED ( many variables kept )
+  # ( do not remove my outcome )
+
+  # 0.95 it chose to remove [1:3] 7 3 10
+  # RECPROUSM156N.AveOf.Lag.4.RangeAvgz.4.5 USRECM.AveOf.Lag.5.RangeAvgz.5.6  USARECM.AveOf.Lag.5.RangeAvgz.5.6
+
+  # 0.90 ( default) it chose to remove int [1:6] 7 3 5 2 10 9 
+  # RECPROUSM156N.AveOf.Lag.4.RangeAvgz.4.5 USRECM.AveOf.Lag.5.RangeAvgz.5.6  USARECM.AveOf.Lag.5.RangeAvgz.5.6
+  # added 5, 2, 9
+  # USRECM.EndOf.Lag.5 RECPROUSM156N.EndOf.Lag.5 USARECM.EndOf.Lag.6
+
+  # BUT Note: Linoff and B; perform math within the correlations
+  # O'Shannessy           ; quantiles
+  # Perhaps I will do: hdntile(RECPROUSM156N*AVG*,8) + hdntile(USRECM*AVG*,8) + hdntile(USARECM*AVG*,8) ... hdquantile(combined) -> one good indicator
+  # #                        OR JUST KEEP THE 'binary ones USREC + USAREC: and 'ADD THEM UP' = new predictor 
+  
+  # I will stick with 0.95 ( Perhaps Temporary )
+  
+  cor(coredata(GALAXY_L)[,-1*c(1),drop=FALSE])                        -> GALAXY_L_Corr_matrix
+  findCorrelation(GALAXY_L_Corr_matrix, cutoff = .95, verbose = FALSE) -> GALAXY_L_highCorr_colnames_vector
+  # # just keep one per list item: 1st in list item is the violator
+  # # findLinearCombos(coredata(GALAXY_L)[,-1*c(1),drop=FALSE])
+  # xts - eliminate columns
+  GALAXY_L[,-1*(GALAXY_L_highCorr_colnames_vector + 1)] -> GALAXY_L
+ 
+  # Gentle learning set
+ 
+  # ( 37 SLIDES )
+  # caret_Package_A_Unifed_Interface_for_Predictive_Models(201402)(Kuhn).pdf
+  
+  # A Short Introduction to the caret Package ( AUG 2014 - JUST 10 PAGES )
+  # http://cran.r-project.org/web/packages/caret/vignettes/caret.pdf
+  
+  set.seed(1) 
+  # p = 0.5 ( default )  ( p: the percentage of data that goes to training  )
+  # These random 0-dates are no longer good for xts ... now need matrix
+  # createTimeSlices : may have been good; but I started without doing IT this way
+  createDataPartition(coredata(GALAXY_L[,1,drop=FALSE]), p = .50, list = FALSE) -> GALAXY_L_inTrainingSet_rowid_vector 
+  
+  # xts would have semi-random dates ... no longer good to me ... matrix
+  coredata(GALAXY_L[ GALAXY_L_inTrainingSet_rowid_vector,,drop = FALSE])  -> GALAXY_L_Train
+  coredata(GALAXY_L[-GALAXY_L_inTrainingSet_rowid_vector,,drop = FALSE ]) -> GALAXY_L_Test
+  
+  # preProcess - I DID MY OWN
+  # method = c("center", "scale"), 
+                # thresh = 0.95,
+                # pcaComp = NULL,
+  # BUT HEAVY "pca" ORIENTATED    
+  #                               method = "pca" pdf 6  method generates values with column names "PC1", "PC2"
+  # ? preProcess # also read:     Building_Predictive_Models_in_R_Using_the_caret_package(1startarticle)(Kuhn)(2008).pdf
+  
+  # next 'trainControl'
+  # http://topepo.github.io/caret/training.html
+  # I BELIEVE? Brieman liked 10-fold: number = 10.  WHY 10 repeats? 
+  
+  #'twoClassSummary' computes sensitivity, specificity and the area
+  #   under the ROC curve. To use this function, the 'classProbs'
+  #   argument of 'trainControl' should be 'TRUE'.
+  # ? twoClassSummary
+  
+  # caret_Package_A_Unifed_Interface_for_Predictive_Models(201402)(Kuhn).pdf
+  
+  trainControl(## 10-fold CV
+    method = "repeatedcv"  # randomForest ( could have been: 'oob' )
+    , number = 10, # ? trainControl ( "repeatedcv" default seems to be '10' anyways )
+     ## repeated ten times    
+    , repeats = 1 # CHANGE FROM 10 ( OR 5 ) DOWN TO 1 ( speed )
+    # summaryFunction = defaultSummary
+      # ( caret.pdf): = twoClassSummary. The latter will compute measures specific to two-class problems, 
+      # such as the area under the ROC curve, the sensitivity and specificity
+    # A list of options to pass to 'preProcess'
+    # , preProcOptions = list(thresh = 0.95, ICAcomp = 3, k = 5),   
+       # http://cran.r-project.org/web/packages/caret/vignettes/caret.pdf
+       # compute measures specific to two ԣlass
+       # problems, such as the area under the ROC curve, the sensitivity and specificity
+       # SINCE I AM DOING 'regression' ( FOR NOW ) ( and not a classifiction ( SPECIFICALLY '2-class' CLASSIFICATION )
+       # , classProbs = TRUE, summaryFunction = twoClassSummary
+    , allowParallel = FALSE # ( I do not have a parallel setup ( and parallel is not so great on Windows )
+  ) -> GALAXY_L_fitControl
+  
+  
+  # train :function has the following arguments
+    # ... : the three dots can be used to pass additional arguments to the functions listed in Table 1.
+  # table1: 
+    # Random forests rf(THISONE) randomForest mtry
+  # Building_Predictive_Models_in_R_Using_the_caret_package(1startarticle)(Kuhn)(2008).pdf pdf 6 and pdf 8 (table 1)
+  
+  #  'train' ( default : method = "rf" )
+  # http://topepo.github.io/caret/Random_Forest.html
+  # Random Forest
+  # method = 'rf'
+  # Type: Classification, Regression
+  # Tuning Parameters: mtry (#Randomly Selected Predictors)
+  
+  # y: a numeric or factor vector containing the outcome for each
+          # sample.
+  
+  # 2008 pdf
+  # y: a numeric or factor vector of outcomes. The function determines the type of problem
+    # (classifcation or regression) from the type of the response given in this argument.
+
+  train( x = GALAXY_L_Train[,-1*c(1),drop=FALSE], y = GALAXY_L_Train[,1,drop=FALSE]
+    , trControl = GALAXY_L_fitControl
+    # , method = "gbm",                       GOOD TRAIN, TERRIBLE TEST
+    , method = "rf" # default (DID NOT WORK) TERRIBLE TRAIN, TERRIBLE TEST
+    , verbose = FALSE
+    # tuneGrid = NULL ( "rf" default?! )
+    # tuneGrid = grid # grid <- expand.grid()     # Note: "rf": Tuning Parameters: mtry (#Randomly Selected Predictors)
+    #  2008 pdf pdf 10: seems if I EXPLICITY define a tuneGrid, then it DOES NOT use TuneLength
+    
+    # TuneLength ?: By default, train uses a minimal search grid: 3 values for each tuning parameter. 
+    # ...: arguments passed to the classification or regression routine (such as 'randomForest'). 
+    #      Errors will occur if values for tuning parameters are passed here.
+    
+  ) -> GALAXY_L_FitterTune
+  
+  # NOTE: Heavy "Value" output
+  
+  # the optimal"model is selected ( 2008 pdf - 8 )
+  # print(GALAXY_L_FitterTune$finalModel)
+ 
+
+  #####################
+ 
+  # ? update.train ...
+  
+  ## S3 method for class 'train'
+  
+  # update(object, param = NULL, ...)
+    # param: a data frame or named list of all tuning parameters
+    # ...: not currently used
+    # Value:
+       # a new 'train' object
+       
+  ####################
+ 
+ 
+  # 'predict' ( use some *statitics* on a date from the past ...  )
+ 
+  # caret_Package_A_Unifed_Interface_for_Predictive_Models(201402)(Kuhn).pdf
+  # Prediction and Performance Assessment ( slide 27 of 37 )
+  
+  # ? predict.randomForest
+  
+  # > randomForest:::predict.randomForest
+
+  # library(randomForest) predict.randomForest
+       ## S3 method for class 'randomForest'
+     # predict(object, newdata, type="response",
+       # norm.votes=TRUE, predict.all=FALSE, proximity=FALSE, nodes=FALSE,
+       # cutoff, ...)
+
+  ##   newdata ?  ? predict.randomForest
+   #     (Note: If not given, the out-of-bag prediction in 'object' is returned.
+ 
+   # predict.all 
+       # Should the predictions of all trees be kept?
+
+ # Value:
+ # If 'object$type' is 'regression', a vector of predicted values is
+ # returned.  If 'predict.all=TRUE', then the returned object is a
+ # list of two components: 'aggregate', which is the vector of
+ # predicted values by the forest, and 'individual', which is a
+ # matrix where each column contains prediction by a tree in the
+ # forest.
+ 
+ # if I need to make an xts  ( NOTE ( xts1 - xts2 )/ abs(xts1) MATH DOES/(SHOULD) work
+ # 
+ # index(GALAXY_L)[GALAXY_L_inTrainingSet_rowid_vector]
+ # with Y
+ # coredata(GALAXY_L[GALAXY_L_inTrainingSet_rowid_vector])
+ # without Y
+ # coredata(GALAXY_L[GALAXY_L_inTrainingSet_rowid_vector,-1*c(1)])
+ 
+  # FORM 1 ( 2008 pdf 13)  GALAXY_L_FitterTune$finalModel
+  # FORM 2                 GALAXY_L_FitterTune
+  # 2008 note: train/test:Descr is the 'matrix of predictors'
+  #            train/test:Class is the 'long vector of the outcome'
+ 
+  # ONLY ? extractPrediction DOCS
+  ## S3 method for class 'list'
+  # predict(object, ...)   # SEE ? predict !!!!
+ 
+  # For 'predict.list', a list results. Each element is produced by
+  #     'predict.train'. ( just below ...)
+ 
+  ## S3 method for class 'train' ( classification "raw" or "prob", for the number/class predictions)
+  # predict(object, newdata = NULL, type = "raw", na.action = na.omit, ...)
+ 
+  # 2008 : he never stores the output for anything
+  GALAXY_L_Predict_Test_vector <- predict(GALAXY_L_FitterTune, newdata = GALAXY_L_Test[,-1*c(1),drop=FALSE]) 
+  
+  #   If *want* to compare the outcomes of multiple models 2008 pdf - 13
+  #   R> models <- list(svm = svmFit, gbm = gbmFit)
+  #   R> testPred <- predict(models, newdata = testDescr)
+  #   R> lapply(testPred, function(x) x[1:5]) # FIRST FIVE
+  #   $svm
+  #   [1] mutagen nonmutagen nonmutagen nonmutagen mutagen
+  #   Levels: mutagen nonmutagen
+  #   $gbm
+  #   [1] mutagen mutagen mutagen nonmutagen mutagen
+  #   Levels: mutagen nonmutagen
+
+  ### ###
+ 
+  # ? extractPrediction  ? extractProb ? 2008 pdf 13
+  # obtain predictions NOTE: 'model' SHOULD!/must be a list
+  # pre-required of ? extractPrediction
+  #'fitBest = FALSE'
+  # returnData =TRUE 
+  # trainControl(. . ., returnData = TRUE(required and default)  
+  #                    selectionFunction = "best"(???)) ? trainControl
+ 
+  extractPrediction(models = list(GFitterTuneITEM1 = GALAXY_L_FitterTune)
+    , testX = GALAXY_L_Test[,-1*c(1),drop=FALSE]
+    , testY = GALAXY_L_Test[, 1     ,drop=FALSE]
+  ) -> GALAXY_L_Test_predValues 
+ 
+  # ? extractPrediction: un-named list, the values of 'object' will be "Object1" ... "Object2" and so on
+  # 2008 13  : data type (i.e., training, test or unknown). 
+  #  UNKNOWN??? unkown? : if unkX (w/wo unkOnly ) is used? ( SEE EXAMPLE: BOTTOM OF ? plotObsVsPred )
+  # NOTE: output is sorted "Training" before "Test"
+ 
+  # dataType == "Test" ?? what data has not been run through "train()" ??? ( 2008 pdf 13)
+ 
+  #  str(GALAXY_L_Test_predValues) 
+  #  'data.frame':  553 obs. of  5 variables:
+  #  $ obs     : num  -0.0696 -0.0548 -0.0392 -0.0502 -0.0553 ...
+  #  $ pred    : num  -0.0519 -0.0493 -0.0342 -0.0451 -0.0468 ...
+  #  $ model   : Factor w/ 1 level "rf": 1 1 1 1 1 1 1 1 1 1 ...
+  #  $ dataType: Factor w/ 2 levels "Test","Training": 2 2 2 2 2 2 2 2 2 2 ...
+  #  $ object  : Factor w/ 1 level "GFitterTuneITEM1": 1 1 1 1 1 1 1 1 1 1 ...
+   
+  # subset of interest  2008 pdf 14 ( base::subset )
+ 
+  subset(GALAXY_L_Test_predValues, dataType == "Test"
+  ) -> GALAXY_L_Test_predValues_DataType_Test
+ 
+  # kept: dataType: Factor w/ 2 levels "Test","Training 
+  # AS PART OF the str() definition
+
+ 
+  # ? extractPrediction 
+  # objects can then be passes to 
+  #'plotObsVsPred' 
+  # plotClassProbs' 2008 pdf 14: plotClassProbs(testProbs). 
+  #   # 2008 pdf   : classification models, the function plotClassProbs function
+  
+  # ? extractPrediction   
+  # plotObsVsPred(object, equalRanges = TRUE, ...)
+  #   object (preferably from the function 'extractPrediction'
+  # For factor outcomes, a dotplot plot is produced
+  #  ...: parameters to pass to 'xyplot' or 'dotplot', such as 'auto.key'
+ 
+  # ? plotObsVsPred
+  # with dataType == "Test" data on graphic ( default )
+ 
+  graphics_bookmark_here <- 1
+ 
+  # rm(list=ls(all.names=TRUE))
+  # debugSource('N:/MyVMWareSharedFolder/rcsnsight1/R/main-rcsnsight1-999.R', echo=TRUE)
+  # main_rcsnsight1_999()
+ 
+  # rf and ( RECPROUSM156N with pct_changes )
+  # disappointingly miss a 15 percent drawdown and a 30 percent drawdown
+  # nature of 'randomForest' elminating THAT which does NOT matter ???
+  # FIX: work in 'smaller zone' e.g. ( +- a few months of a recession)
+ 
+  plotObsVsPred(GALAXY_L_Test_predValues) 
+ # click on zoom
+  # Browse[2]> plotObsVsPred(GALAXY_L_Test_predValues)
+  
+  # plotObsVsPred(GALAXY_L_Test_predValues_DataType_Test)
+  # Browse[2]> plotObsVsPred(GALAXY_L_Test_predValues_DataType_Test)
+ 
+ #############
+ 
+ ## comparisons 'model .v.s. model - resamples ( see my caret .txt notes )
+ 
+ ###############
+ 
   save(GALAXY_L, file = "GALAXY_L_0_4.RData")
   
+  # main_rcsnsight1_999()
   the_end_debug_bookmark_here <- 1
   # View(last(GALAXY_L,10))
   
@@ -1071,7 +1419,38 @@ main_rcsnsight1_999 <- function(pauseat=NULL) {
 
 # MAYBE LATER: [ need YET MORE 'caret' practice on randomForest [ IN PROGRESS] ]
 
+# SAVE TO GITHUB!! ASAP [ ]
 
+# VERIFY MY DATA IS CORRECT ( YES - AGAIN ) [ ]
+# CHANGE PREDICT TEST TO 80 % [ ]  
+#  HOW WELL PREDICT? GALAXY_L_Predict_vector[1,,drop=FALSE] - GALAXY_L_Test[1,,drop=FALSE] [ ]
+### HIGEST - LEFT_OFF_ COMPARE
+  # ADD 'NOTSMART' COLUMN 'UNXDATE'  SO I CAN 'sqdf SQL JOIN or xts/zoo merge  ACROSS OR ( OTHER ) [ ] )
+# ADD IN hdntile/hdquantile [ ] : See the Ave + Ave + Ave problem
 
+# 'variable importance' ? [ ]
+# ( WHAT CAN I KEEP OR ELIMATATE ( IN ADDITION TO CORRELATION: DOES 'PRINCIPAL COMPONENTS HELP? )
+# NOTE: Most correleated Ave + Ave + Ave ( see ABOVE: should hdntile ( SUM ndntile(EACH) ) = new predictor
+#                        OR JUST KEEP THE 'binary ones USREC + USAREC: and 'ADD THEM UP' = new predictor
+# 'findLinearCombos() [ ] My Ave problem'
+
+# Another possibilty 
+# if USARECM always covers USAREC ( or I FORCE to cover ) then 
+#   the case of 0 + 1 never exists and 1 + 1 = 2 has TRUE value
+
+# NEED 2 ... 6 month LOOK AHEADS ( HIGH LEFT_OFF: STICK IN CODE ) [ ] SOME THINKING IS REQUIRED
+
+# need zoo:rollapply to fix/replace pct_change [ ]
+### rcsnsight(2)?
+# zoo::rollapply() and quantmod ClCl() Cl() and Recall() could SOLVE my 'Change Problems'
+###
+
+# Possibly WRONG data ( my input is for RECESSION ( not MARKET_CRASH_FROM_HISTERIA )
+# Probally need to add some some "consumer sentiment surveys instead", manufacture survey, VIX
+# Possibly need a model that can do outliers well ( see my pdf on 'randomForest and lasso' )
+
+# 201402 pdf ( JUST REPLACED 'method = "rf"' WITH method = "gbm" )
+# method = "gbm" TERRIBLE TRAIN, TERRIBLE TEST 
+# method = "rf" GOOD TRAIN, TERRIBLE TEST
 
 
