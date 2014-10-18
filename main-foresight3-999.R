@@ -94,7 +94,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   if(getLocalOption("RepositoryStyle", optionlist = OPTIONLIST) == "Installed")  {
     
-    OPTIONLIST <- localoptions(AAIIBase = "N:/MyVMWareSharedFolder/Professional140930", optionlist = OPTIONLIST)
+    OPTIONLIST <- localoptions(AAIIBase = "N:/MyVMWareSharedFolder/Professional141017", optionlist = OPTIONLIST)
     
   }
   
@@ -532,16 +532,16 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   SI_PSD <- tbl_df(SI_PSD)
 
-  # 4–4–5 calendar
-  # he 4–4–5 calendar is a method of managing accounting periods. 
+  # 4â4â5 calendar
+  # he 4â4â5 calendar is a method of managing accounting periods. 
   # It is a common calendar structure for some industries such as retail, manufacturing and parking industry.
 
-  # The 4–4–5 calendar divides a year into 4 quarters. 
+  # The 4â4â5 calendar divides a year into 4 quarters. 
   # Each quarter has 13 weeks, which are grouped into 
    # two 4-week "months" and 
    # one 5-week "month". 
-  # The grouping of 13 weeks may also be set up as 5–4–4 weeks or 4–5–4 weeks, 
-  # but the 4–4–5 seems to be the most common arrangement.
+  # The grouping of 13 weeks may also be set up as 5â4â4 weeks or 4â5â4 weeks, 
+  # but the 4â4â5 seems to be the most common arrangement.
 
   # you can still compare a period to the same period in the prior year
 
@@ -692,6 +692,9 @@ main_foresight3_999 <- function(pauseat=NULL) {
            CI.TICKER, CI.COMPANY, CI.COMPANY_ID, CI.SIC, CI.EXCHANGE, EXCHG.EXCHG_DESC 
          , CI.IND_2_DIG, MGDSC.MG_DESC, CI.COUNTRY, CI.ADR, DTE.PEREND_Q2 AS PERENDUNX_Q2, DTE.PEREND_Q1 AS PERENDUNX_Q1, DTE.PERLEN_Q1 AS PERLEN_Q1__integer, PERTYP_Q1 
                            , PSD.MKTCAP AS MKTCAP__numeric, PSD.PRICE AS PRICE__numeric, PSD.SPLIT_DATE AS PSD_SPLITUNX_DATE, PSD.SPLIT_FACT AS SPLIT_FACT__numeric 
+                           , PSDC.PRICE_M023 AS PRICE_M023__numeric, PSDC.PRICE_M022 AS PRICE_M022__numeric, PSDC.PRICE_M021 AS PRICE_M021__numeric, PSDC.PRICE_M020 AS PRICE_M020__numeric
+                           , PSDC.PRICE_M019 AS PRICE_M019__numeric, PSDC.PRICE_M018 AS PRICE_M018__numeric, PSDC.PRICE_M017 AS PRICE_M017__numeric, PSDC.PRICE_M016 AS PRICE_M016__numeric
+                           , PSDC.PRICE_M015 AS PRICE_M015__numeric, PSDC.PRICE_M014 AS PRICE_M014__numeric, PSDC.PRICE_M013 AS PRICE_M013__numeric, PSDC.PRICE_M012 AS PRICE_M012__numeric 
                            , PSDC.PRICE_M011 AS PRICE_M011__numeric, PSDC.PRICE_M010 AS PRICE_M010__numeric, PSDC.PRICE_M009 AS PRICE_M009__numeric, PSDC.PRICE_M008 AS PRICE_M008__numeric 
                            , PSDC.PRICE_M007 AS PRICE_M007__numeric, PSDC.PRICE_M006 AS PRICE_M006__numeric, PSDC.PRICE_M005 AS PRICE_M005__numeric, PSDC.PRICE_M004 AS PRICE_M004__numeric 
                            , PSDC.PRICE_M003 AS PRICE_M003__numeric, PSDC.PRICE_M002 AS PRICE_M002__numeric, PSDC.PRICE_M001 AS PRICE_M001__numeric  
@@ -844,6 +847,9 @@ main_foresight3_999 <- function(pauseat=NULL) {
 
   # end elimintate un-investibles ( keep investibles) ( All Stocks)
   
+  
+  ###########################################################################################
+  ################  VISUALLY SEE THE 10-M MA AT LAST KNOWN MONTH END ########################
 
   # caluclate after 3000 chosen
   # compute the SMA price per sector ( weighted by sector element 'last known market cap' )
@@ -899,10 +905,23 @@ main_foresight3_999 <- function(pauseat=NULL) {
 
   UNIVERSE_NOT_NA <- group_by(UNIVERSE,MG_DESC) 
 
-  UNIVERSE_NOT_NA <- filter(UNIVERSE_NOT_NA, 
+  # NOTE IF I ADD MORE OR LESS is.na THEN OUTPUTS WILL SIGHTLY CHANGE
+  UNIVERSE_NOT_NA <- filter(UNIVERSE_NOT_NA, # NOTE IF I ADD MORE is.na THE OUTPUTS WILL SIGHTLY CHANGE
       is.na(MKTCAP)      == FALSE
     , is.na(PRICE)       == FALSE
-    , is.na(PRICE_M011)  == FALSE
+    # , is.na(PRICE_M023)  == FALSE
+    # , is.na(PRICE_M022)  == FALSE
+    # , is.na(PRICE_M021)  == FALSE
+    # , is.na(PRICE_M020)  == FALSE
+    # , is.na(PRICE_M019)  == FALSE
+    # , is.na(PRICE_M018)  == FALSE
+    # , is.na(PRICE_M017)  == FALSE
+    # , is.na(PRICE_M016)  == FALSE
+    # , is.na(PRICE_M015)  == FALSE
+    # , is.na(PRICE_M014)  == FALSE
+    # , is.na(PRICE_M013)  == FALSE
+    # , is.na(PRICE_M012)  == FALSE
+    # , is.na(PRICE_M011)  == FALSE
     , is.na(PRICE_M010)  == FALSE
     , is.na(PRICE_M009)  == FALSE
     , is.na(PRICE_M008)  == FALSE
@@ -923,13 +942,13 @@ main_foresight3_999 <- function(pauseat=NULL) {
  
   # FUTURE ( COULD/SHOULD/WOULD USE THIS FOR TRENDY DATA ) 
   UNIVERSE_NOT_NA <- mutate(UNIVERSE_NOT_NA, PRICE_WGHT_MEAN_SMA_10_M_SECTOR = as.numeric(SMA(c(
-                                           weighted.mean(PRICE_M011, MKTCAP), 
+                                       #    weighted.mean(PRICE_M011, MKTCAP), 
        weighted.mean(PRICE_M010, MKTCAP),  weighted.mean(PRICE_M009, MKTCAP), 
        weighted.mean(PRICE_M008, MKTCAP),  weighted.mean(PRICE_M007, MKTCAP), 
        weighted.mean(PRICE_M006, MKTCAP),  weighted.mean(PRICE_M005, MKTCAP), 
        weighted.mean(PRICE_M004, MKTCAP),  weighted.mean(PRICE_M003, MKTCAP), 
        weighted.mean(PRICE_M002, MKTCAP),  weighted.mean(PRICE_M001, MKTCAP) 
-     ), 10)[11]
+     ), 10)[10]
   ))
   
   UNIVERSE_NOT_NA <- mutate(UNIVERSE_NOT_NA, PRICE_WGHT_MEAN_SECTOR = as.numeric(
@@ -946,6 +965,128 @@ main_foresight3_999 <- function(pauseat=NULL) {
 
   # View(data.frame(UNIVERSE)[,c("MG_DESC","PRICE_M001_TO_M011_NO_NA","PRICE_WGHT_MEAN_SECTOR","PRICE_WGHT_MEAN_SMA_10_M_SECTOR","PRICE_WGHT_MEAN_SMA_10_M_SECTOR_SVVR")])
   
+  # OUTPUT IS RETURNED TO UNIVERSE_FMA[,c("SCT_MN_PRCE_10M_SMA","SCT_MN_PRCE")]
+  
+  ######## END OF VISUALLY SEE THE 10-M MA AT LAST KNOWN MONTH END ############
+  #############################################################################
+
+  
+  #############################################################################
+  ################  VISUALLY SEE THE 10-M MA PER MONTH ########################
+
+  PRICE_WGHT_MEAN_UNIVERSE_NOT_NA  <- 
+    UNIVERSE[,c("MG_DESC", "MKTCAP", "PRICE", "TICKER"
+      , "PRICE_M001", "PRICE_M002", "PRICE_M003"
+      , "PRICE_M004", "PRICE_M005", "PRICE_M006" 
+      , "PRICE_M007", "PRICE_M008", "PRICE_M009"
+      , "PRICE_M010", "PRICE_M011", "PRICE_M012"
+      , "PRICE_M013", "PRICE_M014", "PRICE_M015"
+      , "PRICE_M016", "PRICE_M017", "PRICE_M018"
+      , "PRICE_M019"                                                  
+  ),drop=FALSE] 
+  # 023 ( actually)
+                                                                        # "MG_DESC", "MKTCAP", "PRICE", "TICKER"
+  PRICE_WGHT_MEAN_UNIVERSE_NOT_NA  <- PRICE_WGHT_MEAN_UNIVERSE_NOT_NA[,c(1,2,3,4, rev(5:length(colnames(PRICE_WGHT_MEAN_UNIVERSE_NOT_NA)))) ]  
+
+  PRICE_WGHT_MEAN_UNIVERSE_NOT_NA  <- group_by(PRICE_WGHT_MEAN_UNIVERSE_NOT_NA,MG_DESC)
+
+  # NOTE IF I ADD MORE OR LESS is.na THEN OUTPUTS WILL SIGHTLY CHANGE
+  PRICE_WGHT_MEAN_UNIVERSE_NOT_NA <- filter(PRICE_WGHT_MEAN_UNIVERSE_NOT_NA, 
+      is.na(MKTCAP)      == FALSE
+    , is.na(PRICE)       == FALSE
+    ,       TICKER       != 'BRK.A'
+  #     , is.na(PRICE_M023)  == FALSE
+  #     , is.na(PRICE_M022)  == FALSE
+  #     , is.na(PRICE_M021)  == FALSE
+  #     , is.na(PRICE_M020)  == FALSE
+    , is.na(PRICE_M019)  == FALSE
+    , is.na(PRICE_M018)  == FALSE
+    , is.na(PRICE_M017)  == FALSE
+    , is.na(PRICE_M016)  == FALSE
+    , is.na(PRICE_M015)  == FALSE
+    , is.na(PRICE_M014)  == FALSE
+    , is.na(PRICE_M013)  == FALSE
+    , is.na(PRICE_M012)  == FALSE
+    , is.na(PRICE_M011)  == FALSE
+    , is.na(PRICE_M010)  == FALSE
+    , is.na(PRICE_M009)  == FALSE
+    , is.na(PRICE_M008)  == FALSE
+    , is.na(PRICE_M007)  == FALSE
+    , is.na(PRICE_M006)  == FALSE
+    , is.na(PRICE_M005)  == FALSE
+    , is.na(PRICE_M004)  == FALSE
+    , is.na(PRICE_M003)  == FALSE
+    , is.na(PRICE_M002)  == FALSE
+    , is.na(PRICE_M001)  == FALSE
+
+  )
+
+  wght_mn_price_grid_do <- function(x) {
+    
+    data.frame( 
+                                                             weighted.mean(x[["PRICE_M019"]], x[["MKTCAP"]]),
+           weighted.mean(x[["PRICE_M018"]], x[["MKTCAP"]]),  weighted.mean(x[["PRICE_M017"]], x[["MKTCAP"]]), 
+           weighted.mean(x[["PRICE_M016"]], x[["MKTCAP"]]),  weighted.mean(x[["PRICE_M015"]], x[["MKTCAP"]]), 
+           weighted.mean(x[["PRICE_M014"]], x[["MKTCAP"]]),  weighted.mean(x[["PRICE_M013"]], x[["MKTCAP"]]), 
+           weighted.mean(x[["PRICE_M012"]], x[["MKTCAP"]]),  weighted.mean(x[["PRICE_M011"]], x[["MKTCAP"]]), 
+           weighted.mean(x[["PRICE_M010"]], x[["MKTCAP"]]),  weighted.mean(x[["PRICE_M009"]], x[["MKTCAP"]]), 
+           weighted.mean(x[["PRICE_M008"]], x[["MKTCAP"]]),  weighted.mean(x[["PRICE_M007"]], x[["MKTCAP"]]), 
+           weighted.mean(x[["PRICE_M006"]], x[["MKTCAP"]]),  weighted.mean(x[["PRICE_M005"]], x[["MKTCAP"]]), 
+           weighted.mean(x[["PRICE_M004"]], x[["MKTCAP"]]),  weighted.mean(x[["PRICE_M003"]], x[["MKTCAP"]]), 
+           weighted.mean(x[["PRICE_M002"]], x[["MKTCAP"]]),  weighted.mean(x[["PRICE_M001"]], x[["MKTCAP"]])
+    ) -> weighted.means_price_mo_sequence # JUST ONE LONG RECORD
+
+    c(     
+                             "WGHT_MN_PRICE_M019", 
+      "WGHT_MN_PRICE_M018",  "WGHT_MN_PRICE_M017",
+      "WGHT_MN_PRICE_M016",  "WGHT_MN_PRICE_M015",
+      "WGHT_MN_PRICE_M014",  "WGHT_MN_PRICE_M013",
+      "WGHT_MN_PRICE_M012",  "WGHT_MN_PRICE_M011", 
+      "WGHT_MN_PRICE_M010",  "WGHT_MN_PRICE_M009",
+      "WGHT_MN_PRICE_M008",  "WGHT_MN_PRICE_M007",
+      "WGHT_MN_PRICE_M006",  "WGHT_MN_PRICE_M005",
+      "WGHT_MN_PRICE_M004",  "WGHT_MN_PRICE_M003",       
+      "WGHT_MN_PRICE_M002",  "WGHT_MN_PRICE_M001"
+    ) -> colnames(weighted.means_price_mo_sequence)
+    
+    data.frame( WGHT_MN_PRICE = weighted.mean(x[["PRICE"]], x[["MKTCAP"]]))  -> weighted.means_price_now
+    
+    c("WGHT_MN_PRICE") -> colnames(weighted.means_price_now)
+
+    data.frame(as.list( SMA(t(as.matrix(weighted.means_price_mo_sequence)),10))) -> weighted.means_price_mo_sequence_sma_10
+
+    paste0("PRICE_SMA_10_AT_M",19:1) -> colnames(weighted.means_price_mo_sequence_sma_10)
+    
+    cbind(  weighted.means_price_mo_sequence_sma_10  , weighted.means_price_now , x[["MG_DESC"]][1] ) -> y
+
+    c("MG_DESC") -> colnames(y)[length(y)]
+    
+    # get rid of excess NA columns for MA that I do not have enough data
+    y[,-1*c(1:(19 - 10))] -> y
+    
+    return(y)
+
+  }
+
+  WGHT_MN_PRICE_GRID <- suppressWarnings(do(PRICE_WGHT_MEAN_UNIVERSE_NOT_NA, wght_mn_price_grid_do(.))) 
+  
+  # In rbind_all(out[[1]]) : Unequal factor levels: coercing to character    
+  # http://stackoverflow.com/questions/24609112/how-to-convert-a-list-of-lists-to-a-dataframe-non-identical-lists
+  
+  # new variable
+  # View(WGHT_MN_PRICE_GRID)
+
+  PRICE_WGHT_MEAN_UNIVERSE_NOT_NA <- ungroup(PRICE_WGHT_MEAN_UNIVERSE_NOT_NA) 
+  rm(PRICE_WGHT_MEAN_UNIVERSE_NOT_NA)
+    
+  WGHT_MN_PRICE_GRID <- ungroup(WGHT_MN_PRICE_GRID) 
+  
+  # OUTPUT IS RETURNED TO    WGHT_MN_PRICE_GRID
+    
+  ############### END OF VISUALLY SEE THE 10-M MA PER MONTH ###################
+  #############################################################################
+
+
   # update companies with missing sector MA information
   
   # begin SQL
@@ -2980,11 +3121,21 @@ main_foresight3_999 <- function(pauseat=NULL) {
           
   setwd(oldwd)
 
-  the_end_debug_bookmark_here <- 1
   
+
+  the_end_debug_bookmark_here <- 1
+  # rm(list=ls(all.names=TRUE))
+  # source('N:/MyVMWareSharedFolder/foresight3/R/main-foresight3-999.R', echo=TRUE)
+
   # View(UNIVERSE_FMA)
-        
-  return(UNIVERSE_FMA)
+  # View(WGHT_MN_PRICE_GRID)
+
+  # list( UNIVERSE_FMA = UNIVERSE_FMA, WGHT_MN_PRICE_GRID = WGHT_MN_PRICE_GRID )
+
+  ##  View(main_foresight3_999())
+
+  return(list( UNIVERSE_FMA = UNIVERSE_FMA, WGHT_MN_PRICE_GRID = WGHT_MN_PRICE_GRID ))      
+  # return(UNIVERSE_FMA)
 
   # end of feb,may,aug,nov :buy 4 stocks
   #        other months    :buy 2 stocks
@@ -3019,7 +3170,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
    # [-] [ALSO  ADD trunc(a/b) + 1 option (hdrank CASE)
   
 # fix that report date + 'Add Periods' shift see TimeWarp ( if I go back to future end_of_Q preduction )
-# [ ]
+# [ ] ( PROB - NOT WORK THE EFFORT )
 
 # style and conversion ( sqldf to work for me ) 
 # EASIER OUTPUT OF DATE                         [ ] MAY BE TOO CUMBERSOME
@@ -3039,7 +3190,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
 # (2) repeating 'nite' tests [x] 
 
 # INTEGRATE VJAYS ( CENTRALIZED DIRECTORY FUNCTION )
-# [ ] YYYY-MM-DD directories  ( also scan .txt for copyDirectory )
+# [ ] YYYY-MM-DD directories  ( also scan .txt for copyDirectory ) ( IIF - I DO "REAL" BACKTESTING )
 
 # FILE STARTUP SPEED
 # [x] if !file.exists(...) ... load file .... ( once only ) ... save file
@@ -3058,7 +3209,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
 # YES - AAPL 7 TO 1 SPLIT CORRECTLY [X]
 
 # [ ]
-# RARE DATA CASE: FAR FUTURE: NOT A PRIORITY
+#   RARE DATA CASE: FAR FUTURE: NOT A PRIORITY
 # percent ch in debt ( STILL NEAR ZERO PROBLEMS?: need some weight with assets - liabilies = equity? )
 # weight START OF THOUGHT: abs( (assets - liabilites)/assets )   -> 1 good    -> 0 bad   ->  "> 1" very bad
 
@@ -3071,19 +3222,8 @@ main_foresight3_999 <- function(pauseat=NULL) {
   #       ASSETS_Q1 - LIAB_Q1 = EQUITY_Q1(sometimes negative)
 
   
-# TOGGLE-ABLE
-# View(main_foresight3_999())
-# 
 # rm(list=ls(all.names=TRUE))
 # source('N:/MyVMWareSharedFolder/foresight3/R/main-foresight3-999.R', echo=TRUE)
-# colnames(UNIVERSE)
-# View(UNIVERSE[,98:length(UNIVERSE)])
-# View(main_foresight3_999())
-# as.matrix(UNIVERSE[558:569,172:173])
-# View(UNIVERSE[UNIVERSE$MG_DESC == "Financial",c(8:8,88:92,104:105)])
 
-
-# LEFT_OFF: put *localoptions* functions in main [ ]
-# LEFT_OFF: RETURN from main 'list of' (1) InvestmentLookAhead and (2) PriceMovingAverage ( per sector matrice) [ ]
 
 
