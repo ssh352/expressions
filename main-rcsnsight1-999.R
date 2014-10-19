@@ -36,7 +36,7 @@ options(width = 255)
 options(digits = 22) 
 options(max.print=99999)
 options(scipen=255) # Try these = width
-options(sqldf.driver = "PostgreSQL") ### OLD SQLite"
+## options(sqldf.driver = "PostgreSQL") ### OLD SQLite"
 
 # options(TSrepresentation="xts")
 
@@ -334,7 +334,7 @@ mergge <- function(..., all = TRUE, fill = NA, suffixes = NULL, join = "outer",
 
 
 
-main_rcsnsight1_999 <- function(pauseat=NULL) {
+main_rcsnsight1_999 <- function(THESEED = 1) {
 
   # require(Hmisc)  # NOT USED YET ( BUT WILL BE SOON )
 
@@ -564,13 +564,13 @@ main_rcsnsight1_999 <- function(pauseat=NULL) {
   # Browse[2]> TSput( z, contspgr)
     # Error in realPanel(con, panel) : panel must be specified
   
-  dppgrconn <- src_postgres(
-       dbname   = "ets"
-    ,  user     = "Administrator"
-    ,  password = "postgre"
-    ,  host     = "localhost"
-    ,  port     = 5432 
-  )
+  #   dppgrconn <- src_postgres(
+  #        dbname   = "ets"
+  #     ,  user     = "Administrator"
+  #     ,  password = "postgre"
+  #     ,  host     = "localhost"
+  #     ,  port     = 5432 
+  #   )
   
   
   # MINE DIFFERENT ( HARD CODED : earliest of USRECM )
@@ -625,7 +625,7 @@ main_rcsnsight1_999 <- function(pauseat=NULL) {
   L_GSPC <- tbl_dt( L_GSPC )
   # str(L_GSPC)
   # rowse[2]> str(L_GSPC)
-  # Classes ‘tbl_dt’, ‘tbl’, ‘data.table’ and 'data.frame':	775 obs. of  4 variables:
+  # Classes â€˜tbl_dtâ€™, â€˜tblâ€™, â€˜data.tableâ€™ and 'data.frame':	775 obs. of  4 variables:
    # $ NROW_IDX    : num  1 2 3 4 5 6 7 8 9 10 ...
    # $ REV_NROW_IDX: num  775 774 773 772 771 770 769 768 767 766 ...
    # $ UNXDTE      : num  -7216 -7186 -7155 -7125 -7094 ...
@@ -639,15 +639,15 @@ main_rcsnsight1_999 <- function(pauseat=NULL) {
 
   # sqldf - works - 
   # because I am not selecting/ins/upt/del from/on the table
-  suppressWarnings(suppressMessages(sqldf('DROP TABLE IF EXISTS "GSPC"', connection = dppgrconn$con)))
-
-  GSPC_tbl_postgres <- copy_to(dppgrconn, df = L_GSPC , name = "GSPC", temporary = FALSE
-    , indexes = list(
-          "NROW_IDX"
-        , "REV_NROW_IDX"
-        , "UNXDTE"
-      )
-  )
+  #   suppressWarnings(suppressMessages(sqldf('DROP TABLE IF EXISTS "GSPC"', connection = dppgrconn$con)))
+  # 
+  #   GSPC_tbl_postgres <- copy_to(dppgrconn, df = L_GSPC , name = "GSPC", temporary = FALSE
+  #     , indexes = list(
+  #           "NROW_IDX"
+  #         , "REV_NROW_IDX"
+  #         , "UNXDTE"
+  #       )
+  #   )
 
   # May? have to put a slight Pause here before the query?
 
@@ -1049,13 +1049,72 @@ main_rcsnsight1_999 <- function(pauseat=NULL) {
   
   # I will stick with 0.95 ( Perhaps Temporary )
   
-  cor(coredata(GALAXY_L)[,-1*c(1),drop=FALSE])                        -> GALAXY_L_Corr_matrix
+  ###### IF I JUST WANT TO WORK WITH SMALL DATA
+  ### # is my 'data bad' # -0.10 28 obs in 553 ( ROUGHLY 24 IN 500 ) ( -0.07444 56 observations in 56 )
+  data.frame(GALAXY_L) -> GALAXY_L_df 
+  conn <- sqldf(drv = "SQLite")
+  # artificial small data
+    # GALAXY_L_df <- sqldf("select * from GALAXY_L_df where GSPC_MinOf_Lag_0_RangeLwz_0_0_EndOf_Lag_1_PctChnge_0_1 < -0.07444", connection = conn, row.names = TRUE)
+  # the real deal big data
+     GALAXY_L_df <- sqldf("select * from GALAXY_L_df where GSPC_MinOf_Lag_0_RangeLwz_0_0_EndOf_Lag_1_PctChnge_0_1 < 99999.9", connection = conn, row.names = TRUE)
+  conn <- NULL
+  xts(GALAXY_L_df, as.Date(row.names(GALAXY_L_df), tz = "UTC" )) -> GALAXY_L
+  rm(GALAXY_L_df)
+  ###
+  #####
+ 
+  # NOTE: sqldf over SQLite  changed "." to "_"
+ 
+  ## Default S3 method:
+  #  confusionMatrix(data, reference, positive = NULL, 
+  #                  dnn = c("Prediction", "Reference"), 
+  #                  prevalence = NULL, ...)
+  #  
+  #  reference: a factor of classes to be used as the true results
+  #  
+  #  positive: an optional character string for the factor level that
+  #  corresponds to a "positive" result (if that makes sense for
+  #                                      your data). If there are only two factor levels, the first
+  #  level will be used as the "positive" result.
+  #  
+  #  > ? confusionMatrix
+  #  
+  #  library(balance)
+  #  ubBalance
+  #  Y the response variable of the unbalanced dataset. It must be a 
+  #  binary factor 
+  #  where the 
+  #    majority class is coded as 0 and the minority as 1.
+  #  http://cran.r-project.org/web/packages/unbalanced/unbalanced.pdf
+ 
+  # means: labels=(c(1,0)) # (first factor, second factor) # ( dput CODED AS 1L,2L )
+ 
+  # Try to setup for classification ( could be twoClassSummary ) 
+  #
+  # as.matrix(within(data.frame(coredata(GALAXY_L)),{ # xts  # SMALL SAMPLE I USED -0.10
+  within(data.frame(coredata(GALAXY_L)),{
+   factor(ifelse( GSPC_MinOf_Lag_0_RangeLwz_0_0_EndOf_Lag_1_PctChnge_0_1 < -0.05,
+           1L, 
+           2L), levels = c(1L,2L),labels=c("one","two")) -> GSPC_MinOf_Lag_0_RangeLwz_0_0_EndOf_Lag_1_PctChnge_0_1
+  } 
+  ) -> GALAXY_L
+  # )) -> coredata(GALAXY_L) # xts ( ALSO remove as.factor() PLEASE )
+ 
+  # HARD NOTE: FOR library(balance) I WILL HAVE TO RECODE "one" as "1" and "zero" as "0"
+  #       THEN FOR library(caret)   I WILL HAVE TO RECODE BACK "1" as "one" and "zero" as "0"
+ 
+  # xts case 
+  # cor(coredata(GALAXY_L)[,-1*c(1),drop=FALSE])                          -> GALAXY_L_Corr_matrix
+  # non-xts case
+  cor(GALAXY_L[,-1*c(1),drop=FALSE])                                    -> GALAXY_L_Corr_matrix
   findCorrelation(GALAXY_L_Corr_matrix, cutoff = .95, verbose = FALSE) -> GALAXY_L_highCorr_colnames_vector
   # # just keep one per list item: 1st in list item is the violator
   # # findLinearCombos(coredata(GALAXY_L)[,-1*c(1),drop=FALSE])
   # xts - eliminate columns
   GALAXY_L[,-1*(GALAXY_L_highCorr_colnames_vector + 1)] -> GALAXY_L
  
+
+  
   # Gentle learning set
  
   # ( 37 SLIDES )
@@ -1064,11 +1123,15 @@ main_rcsnsight1_999 <- function(pauseat=NULL) {
   # A Short Introduction to the caret Package ( AUG 2014 - JUST 10 PAGES )
   # http://cran.r-project.org/web/packages/caret/vignettes/caret.pdf
   
-  set.seed(1) 
+  rm(".Random.seed")
+  set.seed(THESEED) 
   # p = 0.5 ( default )  ( p: the percentage of data that goes to training  )
   # These random 0-dates are no longer good for xts ... now need matrix
   # createTimeSlices : may have been good; but I started without doing IT this way
-  createDataPartition(coredata(GALAXY_L[,1,drop=FALSE]), p = .50, list = FALSE) -> GALAXY_L_inTrainingSet_rowid_vector 
+  # xts case
+  # createDataPartition(coredata(GALAXY_L[,1,drop=FALSE]), p = .50, list = FALSE) -> GALAXY_L_inTrainingSet_rowid_vector 
+  # non-xts case
+  createDataPartition(unlist(GALAXY_L[,1,drop=FALSE]), p = .50, list = FALSE) -> GALAXY_L_inTrainingSet_rowid_vector
   
   # xts would have semi-random dates ... no longer good to me ... matrix
   coredata(GALAXY_L[ GALAXY_L_inTrainingSet_rowid_vector,,drop = FALSE])  -> GALAXY_L_Train
@@ -1095,23 +1158,25 @@ main_rcsnsight1_999 <- function(pauseat=NULL) {
   
   trainControl(## 10-fold CV
     method = "repeatedcv"  # randomForest ( could have been: 'oob' )
-    , number = 10, # ? trainControl ( "repeatedcv" default seems to be '10' anyways )
+    , number = 10, # ? trainControl ( "repeatedcv" default seems to be '10' anyways ) # QUICK 5
      ## repeated ten times    
-    , repeats = 1 # CHANGE FROM 10 ( OR 5 ) DOWN TO 1 ( speed )
-    # summaryFunction = defaultSummary
+    , repeats = 3 # CHANGE FROM 10 ( OR 5 ) DOWN TO 1 ( speed )                      # QUICK 1
+    # , summaryFunction = defaultSummary
+    , classProbs = TRUE                 # classification
+    , summaryFunction = twoClassSummary # classification ( sp case ) TRYING
       # ( caret.pdf): = twoClassSummary. The latter will compute measures specific to two-class problems, 
       # such as the area under the ROC curve, the sensitivity and specificity
     # A list of options to pass to 'preProcess'
     # , preProcOptions = list(thresh = 0.95, ICAcomp = 3, k = 5),   
        # http://cran.r-project.org/web/packages/caret/vignettes/caret.pdf
-       # compute measures specific to two ԣlass
+       # compute measures specific to two “class
        # problems, such as the area under the ROC curve, the sensitivity and specificity
        # SINCE I AM DOING 'regression' ( FOR NOW ) ( and not a classifiction ( SPECIFICALLY '2-class' CLASSIFICATION )
        # , classProbs = TRUE, summaryFunction = twoClassSummary
     , allowParallel = FALSE # ( I do not have a parallel setup ( and parallel is not so great on Windows )
   ) -> GALAXY_L_fitControl
   
-  
+ 
   # train :function has the following arguments
     # ... : the three dots can be used to pass additional arguments to the functions listed in Table 1.
   # table1: 
@@ -1132,10 +1197,29 @@ main_rcsnsight1_999 <- function(pauseat=NULL) {
   # y: a numeric or factor vector of outcomes. The function determines the type of problem
     # (classifcation or regression) from the type of the response given in this argument.
 
-  train( x = GALAXY_L_Train[,-1*c(1),drop=FALSE], y = GALAXY_L_Train[,1,drop=FALSE]
+  # predict() # ( from TRAIN )
+  # Error in `[.data.frame`(out, , obsLevels, drop = FALSE) : 
+  #  undefined columns selected 
+  # In addition: Warning message:
+  #  In train.default(x = GALAXY_L_Train[, -1 * c(1), drop = FALSE],  :
+  #                     At least one of the class levels are not valid R variables names; 
+  #                   This may cause errors if class probabilities are generated 
+  #                   because the variables names will be converted to: X1, X0
+   
+  train( x = GALAXY_L_Train[,-1*c(1),drop=FALSE] 
+    # xts case
+    # , y = GALAXY_L_Train[,1,drop=FALSE]
+    # non-xts case                                         ( 2 classes; also twoClassSummary )               
+    , y = { unlist(GALAXY_L_Train[,1,drop=FALSE]) -> TEMP; NULL -> attr(TEMP, "names"); TEMP } # ;c("one","two") -> levels(TEMP) # ALREADY CARRIED
     , trControl = GALAXY_L_fitControl
-    # , method = "gbm",                       GOOD TRAIN, TERRIBLE TEST
-    , method = "rf" # default (DID NOT WORK) TERRIBLE TRAIN, TERRIBLE TEST
+    # , method = "gbm" # GOOD TRAIN, TERRIBLE TEST ( NO GOOD FOR SMALL MODELS)
+      # tuneGrid <- gbm_grid_smalldata <- expand.grid( shrinkage=0.1, interaction.depth=3, n.trees=150)
+      # The dataset size is too small or subsampling rate is too large: nTrain*bag.fraction <= n.minobsinnode
+      #   tough here
+      #     http://cran.r-project.org/web/packages/gbm/gbm.pdf
+  # , method = "rf" # default (DID NOT WORK) TERRIBLE TRAIN, TERRIBLE TEST
+    , method = "C5.0" # ( switch to classification only)
+    , metric = "ROC" # classification ( stop printing that annoying: The metric "Accuracy" was not in the result set. ROC will be used instead.)
     , verbose = FALSE
     # tuneGrid = NULL ( "rf" default?! )
     # tuneGrid = grid # grid <- expand.grid()     # Note: "rf": Tuning Parameters: mtry (#Randomly Selected Predictors)
@@ -1147,6 +1231,26 @@ main_rcsnsight1_999 <- function(pauseat=NULL) {
     
   ) -> GALAXY_L_FitterTune
   
+  # (possibly of intest)
+  #  GALAXY_L_FitterTune
+  #    $ bestTune
+  #  
+  #  GALAXY_L_FitterTune
+  #    $ control
+  #    $ control
+  #    $ call 
+  #    $ problemType
+  #    $ tuneValue
+ 
+ 
+ 
+  pausepoint <- 1
+ 
+  # on its 'call' ( classification: 2 classes )
+  # randomForest 4.6-10
+  # Type rfNews() to see new features/changes/bug fixes.
+  # note: only 2 unique complexity parameters in default grid. Truncating the grid to 2 .
+ 
   # NOTE: Heavy "Value" output
   
   # the optimal"model is selected ( 2008 pdf - 8 )
@@ -1189,21 +1293,21 @@ main_rcsnsight1_999 <- function(pauseat=NULL) {
    # predict.all 
        # Should the predictions of all trees be kept?
 
- # Value:
- # If 'object$type' is 'regression', a vector of predicted values is
- # returned.  If 'predict.all=TRUE', then the returned object is a
- # list of two components: 'aggregate', which is the vector of
- # predicted values by the forest, and 'individual', which is a
- # matrix where each column contains prediction by a tree in the
- # forest.
- 
- # if I need to make an xts  ( NOTE ( xts1 - xts2 )/ abs(xts1) MATH DOES/(SHOULD) work
- # 
- # index(GALAXY_L)[GALAXY_L_inTrainingSet_rowid_vector]
- # with Y
- # coredata(GALAXY_L[GALAXY_L_inTrainingSet_rowid_vector])
- # without Y
- # coredata(GALAXY_L[GALAXY_L_inTrainingSet_rowid_vector,-1*c(1)])
+   # Value:
+   # If 'object$type' is 'regression', a vector of predicted values is
+   # returned.  If 'predict.all=TRUE', then the returned object is a
+   # list of two components: 'aggregate', which is the vector of
+   # predicted values by the forest, and 'individual', which is a
+   # matrix where each column contains prediction by a tree in the
+   # forest.
+   
+   # if I need to make an xts  ( NOTE ( xts1 - xts2 )/ abs(xts1) MATH DOES/(SHOULD) work
+   # 
+   # index(GALAXY_L)[GALAXY_L_inTrainingSet_rowid_vector]
+   # with Y
+   # coredata(GALAXY_L[GALAXY_L_inTrainingSet_rowid_vector])
+   # without Y
+   # coredata(GALAXY_L[GALAXY_L_inTrainingSet_rowid_vector,-1*c(1)])
  
   # FORM 1 ( 2008 pdf 13)  GALAXY_L_FitterTune$finalModel
   # FORM 2                 GALAXY_L_FitterTune
@@ -1220,9 +1324,16 @@ main_rcsnsight1_999 <- function(pauseat=NULL) {
   ## S3 method for class 'train' ( classification "raw" or "prob", for the number/class predictions)
   # predict(object, newdata = NULL, type = "raw", na.action = na.omit, ...)
  
+  pausepoint <- 1
+ 
+ 
+ 
   # 2008 : he never stores the output for anything
   GALAXY_L_Predict_Test_vector <- predict(GALAXY_L_FitterTune, newdata = GALAXY_L_Test[,-1*c(1),drop=FALSE]) 
   
+  # non-xts case classification
+  GALAXY_L_Predict_Test_vector_Probs <- predict(GALAXY_L_FitterTune, newdata = GALAXY_L_Test[,-1*c(1),drop=FALSE], type = "prob") 
+ 
   #   If *want* to compare the outcomes of multiple models 2008 pdf - 13
   #   R> models <- list(svm = svmFit, gbm = gbmFit)
   #   R> testPred <- predict(models, newdata = testDescr)
@@ -1244,10 +1355,25 @@ main_rcsnsight1_999 <- function(pauseat=NULL) {
   # trainControl(. . ., returnData = TRUE(required and default)  
   #                    selectionFunction = "best"(???)) ? trainControl
  
+  pausepoint <- 1
+ 
   extractPrediction(models = list(GFitterTuneITEM1 = GALAXY_L_FitterTune)
     , testX = GALAXY_L_Test[,-1*c(1),drop=FALSE]
-    , testY = GALAXY_L_Test[, 1     ,drop=FALSE]
+    # xts case
+    # , testY = GALAXY_L_Test[, 1     ,drop=FALSE]
+    # non-xts case                                         ( 2 classes; also twoClassSummary ) 
+    , testY = { unlist(GALAXY_L_Test[,1,drop=FALSE]) -> TEMP; NULL -> attr(TEMP, "names"); TEMP } # ;c("one","two") -> levels(TEMP) # ALREADY CARRIED
   ) -> GALAXY_L_Test_predValues 
+ 
+  # only xts case    classification
+  extractProb(models = list(GFitterTuneITEM1 = GALAXY_L_FitterTune)
+    , testX = GALAXY_L_Test[,-1*c(1),drop=FALSE]
+    # xts case
+    # , testY = GALAXY_L_Test[, 1     ,drop=FALSE]
+    # non-xts case                                         ( 2 classes; also twoClassSummary ) 
+    , testY = { unlist(GALAXY_L_Test[,1,drop=FALSE]) -> TEMP; NULL -> attr(TEMP, "names"); TEMP } # ;c("one","two") -> levels(TEMP) # ALREADY CARRIED
+  ) -> GALAXY_L_Test_probValues 
+ 
  
   # ? extractPrediction: un-named list, the values of 'object' will be "Object1" ... "Object2" and so on
   # 2008 13  : data type (i.e., training, test or unknown). 
@@ -1269,6 +1395,10 @@ main_rcsnsight1_999 <- function(pauseat=NULL) {
   subset(GALAXY_L_Test_predValues, dataType == "Test"
   ) -> GALAXY_L_Test_predValues_DataType_Test
  
+  # xts only case    classification
+  subset(GALAXY_L_Test_probValues, dataType == "Test"
+  ) -> GALAXY_L_Test_probValues_DataType_Test
+ 
   # kept: dataType: Factor w/ 2 levels "Test","Training 
   # AS PART OF the str() definition
 
@@ -1288,7 +1418,7 @@ main_rcsnsight1_999 <- function(pauseat=NULL) {
   # ? plotObsVsPred
   # with dataType == "Test" data on graphic ( default )
  
-  graphics_bookmark_here <- 1
+  ## graphics_bookmark_here <- 1
  
   # rm(list=ls(all.names=TRUE))
   # debugSource('N:/MyVMWareSharedFolder/rcsnsight1/R/main-rcsnsight1-999.R', echo=TRUE)
@@ -1299,12 +1429,106 @@ main_rcsnsight1_999 <- function(pauseat=NULL) {
   # nature of 'randomForest' elminating THAT which does NOT matter ???
   # FIX: work in 'smaller zone' e.g. ( +- a few months of a recession)
  
-  plotObsVsPred(GALAXY_L_Test_predValues) 
- # click on zoom
-  # Browse[2]> plotObsVsPred(GALAXY_L_Test_predValues)
+  #### really? xts case ( regression case )
+  ### plotObsVsPred(GALAXY_L_Test_predValues) 
+ 
+  # seems useless in 
+  # # non-xts case  classification   ( 2 classes )
+
+  # just Type == "Test"
+  # xts case
+  # Browse[2]> View(sqldf("select obs, pred, (pred - obs) as abs_less_worse from GALAXY_L_Test_predValues_DataType_Test order by obs" , drv = "RSQLite" ))
+ 
+  # click on zoom
+  # Browse[2]> plotObsVsPred(GALAXY_L_Test_predValues) # All?
+  # Browse[2]> plotObsVsPred(GALAXY_L_Test_predValues_DataType_Test) # just my Test
   
   # plotObsVsPred(GALAXY_L_Test_predValues_DataType_Test)
   # Browse[2]> plotObsVsPred(GALAXY_L_Test_predValues_DataType_Test)
+ 
+  ##  classification only zone ##
+  
+  # none seem useful  # classification only
+  # plotClassProbs(GALAXY_L_Test_probValues_DataType_Test)
+  # plotClassProbs(GALAXY_L_Test_probValues_DataType_Test, useObjects = TRUE) # in this case ( SAME )
+  # plotClassProbs(GALAXY_L_Test_probValues_DataType_Test,useObjects = TRUE, plotType = "densityplot", auto.key = list(columns = 2))
+  
+  # 2008 Kuhn 6. Characterizing performance
+  
+  # For classifcation models, the functions 
+  #  sensitivity(), 
+  #    sensitivity is defined as the 
+  #    proportion of positive results ( which were actually positive )
+  #    out of the number of samples 
+  #    ? caret::sensitivity
+  #  specificity(),
+  #  posPredValue() and 
+  #  negPredValue() can be used to characterize performance where there are
+  #  two classes. By default, the first level of the outcome factor is used to define the positive"
+  #  result, although this can be changed. 
+  # ( I currently have '< -0.10' as first level AND"c("one","two") -> levels"  I may want to change this
+  
+  graphics_bookmark_here_again <- 1
+  
+  ## Default S3 method:
+  #  confusionMatrix(data, reference, positive = NULL, 
+  #                  dnn = c("Prediction", "Reference"), 
+  #                  prevalence = NULL, ...)
+  #  
+  #  reference: a factor of classes to be used as the true results
+  #  
+  #  positive: an optional character string for the factor level that
+  #  corresponds to a "positive" result (if that makes sense for
+  #                                      your data). If there are only two factor levels, the first
+  #  level will be used as the "positive" result.
+  #  
+  #  > ? confusionMatrix
+  #  
+  #  library(balance)
+  #    majority class is coded as 0 and the minority as 1.
+  #  http://cran.r-project.org/web/packages/unbalanced/unbalanced.pdf
+  
+  # means: levels=c("one","zero") OR 'levels=c(1,0),labels=("one","zero") 
+  # (first factor, second factor) # ( dput CODED AS 1L,2L )
+ 
+  print("Percent Correct predictions ...")
+  print(with(GALAXY_L_Test_predValues_DataType_Test,{ sum(pred == obs) }) / NROW(GALAXY_L_Test_predValues_DataType_Test))
+
+  # cross validation 10,5    C5.0
+  # maybe an expected output?
+  #            Reference
+  #  Prediction one two
+  #  one   7  14
+  #  two  54 201
+  #  
+  #  Accuracy : 0.753623188405797    
+ 
+  # SEE HERE ON HOW TO READ A CONFUSION MATRIX
+  # ? caret::sensitivity
+ 
+  # non-xts case classification ONLY  
+  print(confusionMatrix(GALAXY_L_Test_predValues_DataType_Test$pred, GALAXY_L_Test_predValues_DataType_Test$obs))
+  
+  # data.frame(GALAXY_L_Test_predValues_DataType_Test) -> GALAXY_L_Test_predValues_DataType_Test_df 
+  #   conn <- sqldf(drv = "SQLite")
+  #   sqldf("select * from GALAXY_L_Test_predValues_DataType_Test", connection = conn, row.names = TRUE)
+  #   sqldf(
+  #     "select *  
+  #        from main.GALAXY_L_Test_predValues_DataType_Test 
+  #          where obs = 'one'"
+  #   , connection = conn, row.names = TRUE)
+  #   conn <- NULL
+ 
+  # xts case ( would have to convert back to an xts)
+  # xts(GALAXY_L_Test_predValues_DataType_Test, as.Date(row.names(GALAXY_L_Test_predValues_DataType_Test), tz = "UTC" )) -> GALAXY_L_Test_predValues_DataType_Test
+
+  
+  # 
+  # 'Positive' Class : . . . 
+  #  Accuracy : 0.945652173913044  # Therefore 95% failure to predict using "rf" and 577 samples
+  #  Accuracy : 0.285714285714286  # Therefore 29% failure to predict using "rf" and 57  samples
+ 
+  ##  end of classification only zone ## LEFT_OFF
  
  #############
  
@@ -1322,7 +1546,7 @@ main_rcsnsight1_999 <- function(pauseat=NULL) {
   ## dbDisconnect(condbpgr)
   # dbDisconnect(contssqll)
   ## dbDisconnect(condbsqll)
-  dbDisconnect(dppgrconn$con)
+  ### dbDisconnect(dppgrconn$con)
   # be clean ( if nothing else )
   dbDisconnect(dpsqllconn$con)
   
@@ -1453,4 +1677,29 @@ main_rcsnsight1_999 <- function(pauseat=NULL) {
 # method = "gbm" TERRIBLE TRAIN, TERRIBLE TEST 
 # method = "rf" GOOD TRAIN, TERRIBLE TEST
 
+# instead of graphs need sqldf() where graph output would be
 
+# POSSIBL HELP : since ONLY FEW crashes: REPEAT DATA 10x + slight sample WIGGLE ( TRY TO GET MORE OUTLIERS )
+# OR INCREASE THE NUMBER OF observations EXPONENTIALLY of those THAT are within 0 to 30 percent
+#   at least 'half my data in 'recession territory' ( VIDEO: Khun; unbalanced data in his book )
+# OR 'elimnate all cases below a threashold of 5%'!
+# http://skillport.books24x7.com/assetviewer.aspx?bookid=46441&chunkid=684472601&noteMenuToggle=0&leftMenuState=1
+
+# generate a new "SMOTEd" data set that addresses the class unbalance problem. ( classification )
+# http://www.rdocumentation.org/packages/DMwR/functions/SMOTE
+# Torgo, L. (2010) Data Mining using R: learning with case studies
+  # 4.4.2.1 The Class Imbalance Problem pdf 224
+  # The general idea of this method is to artificially generate new examples of the minority
+  # class using the nearest neighbors of these cases. Furthermore, the majority
+  # class examples are also under-sampled, leading to a more balanced dataset.
+  # BOOK_Data_Mining_with_R_Learning_with_Case_Studies_(2011)_(Torgo)_quantmod_specifyModel_buildModel_modelData_randomForest(130)_package_DMwR_GOOD_FREE.pdf
+
+# pick the 20 worst months over the last 46 years and just try to predict those
+# more (social import) variables 
+#    importance, fscaret (feature selection)
+# and library(caretEnsemble) - run many!
+
+# SEE *LEFT_OFF* IN THE SOURCE CODE
+# * TRY A [ ]"gbm"/[ ]"C5.0" LOWER/RAISE THOSE PARAMETERS 
+# [ ] Change Prediction Criteria to 2-mo ave/3-mo ave ... 6-mo ave
+# [ ] Put all 3 factors in there and run throu "pca" and "isa"(sp)
