@@ -395,6 +395,8 @@ main_rcsnsight1_999 <- function(THESEED = 1) {
   
   require(caret)
   
+  require(unbalanced)
+  
   setwd("N:\\MyVMWareSharedFolder\\rcsnsight1\\R")
 
 
@@ -985,18 +987,67 @@ main_rcsnsight1_999 <- function(THESEED = 1) {
  # one month prediction - data
   #             RESPONSE
   #               PREDICTORS
-  GALAXY_L[, c("GSPC.MinOf.Lag.0.RangeLwz.0.0.EndOf.Lag.1.PctChnge.0.1"   # caret prefers the first col to be the outcome
-                , "RECPROUSM156N.EndOf.Lag.4"
-                  , "RECPROUSM156N.EndOf.Lag.4.PctChnge.4.5"
-                    , "RECPROUSM156N.EndOf.Lag.4.PctChngePctChnge.4.6"
-                      , "RECPROUSM156N.EndOf.Lag.4.PctChngePctChngePctChnge.4.8"
-                        , "RECPROUSM156N.EndOf.Lag.4.PctChngePctChngePctChngePctChnge.4.12"
-              )] -> GALAXY_L   
+  # GALAXY_L[, c("GSPC.MinOf.Lag.0.RangeLwz.0.0.EndOf.Lag.1.PctChnge.0.1"   # caret prefers the first col to be the outcome
+                # , "RECPROUSM156N.EndOf.Lag.4"
+                  # , "RECPROUSM156N.EndOf.Lag.4.PctChnge.4.5"
+                    # , "RECPROUSM156N.EndOf.Lag.4.PctChngePctChnge.4.6"
+                      # , "RECPROUSM156N.EndOf.Lag.4.PctChngePctChngePctChnge.4.8"
+                        # , "RECPROUSM156N.EndOf.Lag.4.PctChngePctChngePctChngePctChnge.4.12"
+              # )] -> GALAXY_L   
 
-  
+  # one mo pred
+  # TargetObservation < -0.05
+  # C5.0
+            # Reference
+  # Prediction one two
+         # one   7  14
+         # two  54 201
     
+  # GALAXY_L[, c("GSPC.MinOf.Lag.0.RangeLwz.0.0.EndOf.Lag.1.PctChnge.0.1"   # caret prefers the first col to be the outcome
+                # , "RECPROUSM156N.EndOf.Lag.4"
+                  # , "RECPROUSM156N.AveOf.Lag.4.RangeAvgz.4.5"
+              # )] -> GALAXY_L  
     
-  # VERY LAST STEP
+  # one mo pred
+  # TargetObservation < -0.05
+  # rf
+
+            # Reference
+  # Prediction one two
+         # one  10  14
+         # two  52 204
+ 
+  GALAXY_L[, c("GSPC.MinOf.Lag.0.RangeLwz.0.2.EndOf.Lag.3.PctChnge.0.3"   # caret prefers the first col to be the outcome
+                , "RECPROUSM156N.EndOf.Lag.6"
+                  , "RECPROUSM156N.AveOf.Lag.6.RangeAvgz.6.7"
+              )] -> GALAXY_L  
+             
+  # three mo pred
+  # TargetObservation < -0.05
+ 
+  # rf
+              
+            # Reference
+  # Prediction one two
+         # one  32  36
+         # two  83 128
+ 
+  # C5.0
+
+            # Reference
+  # Prediction one two
+         # one  48  48
+         # two  67 116
+
+  # gbm
+
+            # Reference
+  # Prediction one two
+         # one  37  38
+         # two  78 126
+ 
+ 
+  # VERY LAST STEP 
   # ABOVE be sure A HAVE managed NA's
   # be SURE this is what I want
   # zoo::na.trim
@@ -1049,14 +1100,19 @@ main_rcsnsight1_999 <- function(THESEED = 1) {
   
   # I will stick with 0.95 ( Perhaps Temporary )
   
+  print("Possibly correlated observation and predictors columns")
+  print(data.frame(colnames(GALAXY_L)))
+  
+  colnames(GALAXY_L)[1] <- "TargetObservation"
+  
   ###### IF I JUST WANT TO WORK WITH SMALL DATA
   ### # is my 'data bad' # -0.10 28 obs in 553 ( ROUGHLY 24 IN 500 ) ( -0.07444 56 observations in 56 )
   data.frame(GALAXY_L) -> GALAXY_L_df 
   conn <- sqldf(drv = "SQLite")
   # artificial small data
-    # GALAXY_L_df <- sqldf("select * from GALAXY_L_df where GSPC_MinOf_Lag_0_RangeLwz_0_0_EndOf_Lag_1_PctChnge_0_1 < -0.07444", connection = conn, row.names = TRUE)
+    # GALAXY_L_df <- sqldf("select * from GALAXY_L_df where TargetObservation < -0.07444", connection = conn, row.names = TRUE)
   # the real deal big data
-     GALAXY_L_df <- sqldf("select * from GALAXY_L_df where GSPC_MinOf_Lag_0_RangeLwz_0_0_EndOf_Lag_1_PctChnge_0_1 < 99999.9", connection = conn, row.names = TRUE)
+     GALAXY_L_df <- sqldf("select * from GALAXY_L_df where TargetObservation < 99999.9", connection = conn, row.names = TRUE)
   conn <- NULL
   xts(GALAXY_L_df, as.Date(row.names(GALAXY_L_df), tz = "UTC" )) -> GALAXY_L
   rm(GALAXY_L_df)
@@ -1093,28 +1149,73 @@ main_rcsnsight1_999 <- function(THESEED = 1) {
   #
   # as.matrix(within(data.frame(coredata(GALAXY_L)),{ # xts  # SMALL SAMPLE I USED -0.10
   within(data.frame(coredata(GALAXY_L)),{
-   factor(ifelse( GSPC_MinOf_Lag_0_RangeLwz_0_0_EndOf_Lag_1_PctChnge_0_1 < -0.05,
+   factor(ifelse( TargetObservation < -0.05,
            1L, 
-           2L), levels = c(1L,2L),labels=c("one","two")) -> GSPC_MinOf_Lag_0_RangeLwz_0_0_EndOf_Lag_1_PctChnge_0_1
+           2L), levels = c(1L,2L),labels=c("one","two")) -> TargetObservation
   } 
   ) -> GALAXY_L
   # )) -> coredata(GALAXY_L) # xts ( ALSO remove as.factor() PLEASE )
  
-  # HARD NOTE: FOR library(balance) I WILL HAVE TO RECODE "one" as "1" and "zero" as "0"
-  #       THEN FOR library(caret)   I WILL HAVE TO RECODE BACK "1" as "one" and "zero" as "0"
+  # HARD NOTE: FOR library(unbalanced) I WILL HAVE TO RECODE "one" as "1" and "zero" as "0"
+  #       THEN FOR library(caret)           I WILL HAVE TO RECODE BACK "1" as "one" and "two" as "0"
+ 
+  # classification only 
+  # unbalanced to 'more' BALANCED zone ON /OFF 
+ 
+  # ? ubSMOTE ? ubBalance
+  # library(unbalanced) # data(ubIonosphere) $ Class: Factor w/ 2 levels "0","1"
+  # data   $ Class: Factor w/ 2 levels "0","1"
+   
+  within(data.frame(coredata(GALAXY_L)),{
+    factor(ifelse( TargetObservation != "one",
+                  0L, 
+                  1L), levels = c(0L,1L)) -> TargetObservation
+  } 
+  ) -> GALAXY_L #  GALAXY_L$TargetObservation : Factor w/ 2 levels "0","1": 2 1
+ 
+  # ? ubSMOTE ? ubBalance
+  ubBalance(X = GALAXY_L[,-1*c(1),drop=FALSE], Y = unlist(GALAXY_L[,1,drop=FALSE])
+    , type="ubSMOTE") -> GALAXY_L_ubSMOTE
+ 
+ # from 577 to 1610 obs. of  2 variables
+ # Browse[2]> table(GALAXY_L_ubSMOTE$Y  )
+ # 0   1 
+ # 920 690 
+ 
+  cbind(GALAXY_L_ubSMOTE$Y,GALAXY_L_ubSMOTE$X) -> GALAXY_L
+  "TargetObservation" -> colnames(GALAXY_L)[1] #  GALAXY_L$TargetObservation: Factor w/ 2 levels "0","1": 1 2 2 1 
+ 
+  # now change the labels back to the values: "one" (minority),"two" (majority)
+  # TO DO
+ 
+   within(data.frame(coredata(GALAXY_L)),{  # LEFT_OFF
+     factor(ifelse( TargetObservation == 1L,
+                    1L, 
+                    2L), levels = c(1L,2L),labels=c("one","two")) -> TargetObservation
+   } 
+   ) -> GALAXY_L #  GALAXY_L$TargetObservation : Factor w/ 2 levels 
+   
+  bookmarkhere <- 1;
+ 
+  # end of 'unbalanced to 'more' BALANCED zone ON /OFF'
+  
+  ## CORRELATION removal zone ON / OFF
  
   # xts case 
   # cor(coredata(GALAXY_L)[,-1*c(1),drop=FALSE])                          -> GALAXY_L_Corr_matrix
   # non-xts case
-  cor(GALAXY_L[,-1*c(1),drop=FALSE])                                    -> GALAXY_L_Corr_matrix
-  findCorrelation(GALAXY_L_Corr_matrix, cutoff = .95, verbose = FALSE) -> GALAXY_L_highCorr_colnames_vector
+  ###cor(GALAXY_L[,-1*c(1),drop=FALSE])                                   -> GALAXY_L_Corr_matrix
+  ###findCorrelation(GALAXY_L_Corr_matrix, cutoff = .95, verbose = FALSE) -> GALAXY_L_highCorr_colnames_vector
   # # just keep one per list item: 1st in list item is the violator
   # # findLinearCombos(coredata(GALAXY_L)[,-1*c(1),drop=FALSE])
   # xts - eliminate columns
-  GALAXY_L[,-1*(GALAXY_L_highCorr_colnames_vector + 1)] -> GALAXY_L
- 
+  ###GALAXY_L[,-1*(GALAXY_L_highCorr_colnames_vector + 1)] -> GALAXY_L
 
+  ###print("Should be UN-correlated observation and predictors columns")
+  ###print(data.frame(colnames(GALAXY_L)))
   
+ ## END OF CORRELATION removal zone ON / OFF
+ 
   # Gentle learning set
  
   # ( 37 SLIDES )
@@ -1123,7 +1224,7 @@ main_rcsnsight1_999 <- function(THESEED = 1) {
   # A Short Introduction to the caret Package ( AUG 2014 - JUST 10 PAGES )
   # http://cran.r-project.org/web/packages/caret/vignettes/caret.pdf
   
-  rm(".Random.seed")
+  if(exists(".Random.seed", envir = .GlobalEnv)) rm(".Random.seed",envir=.GlobalEnv)
   set.seed(THESEED) 
   # p = 0.5 ( default )  ( p: the percentage of data that goes to training  )
   # These random 0-dates are no longer good for xts ... now need matrix
@@ -1131,7 +1232,7 @@ main_rcsnsight1_999 <- function(THESEED = 1) {
   # xts case
   # createDataPartition(coredata(GALAXY_L[,1,drop=FALSE]), p = .50, list = FALSE) -> GALAXY_L_inTrainingSet_rowid_vector 
   # non-xts case
-  createDataPartition(unlist(GALAXY_L[,1,drop=FALSE]), p = .50, list = FALSE) -> GALAXY_L_inTrainingSet_rowid_vector
+  createDataPartition(unlist(GALAXY_L[,1,drop=FALSE]), p = 0.50, list = FALSE) -> GALAXY_L_inTrainingSet_rowid_vector
   
   # xts would have semi-random dates ... no longer good to me ... matrix
   coredata(GALAXY_L[ GALAXY_L_inTrainingSet_rowid_vector,,drop = FALSE])  -> GALAXY_L_Train
@@ -1144,6 +1245,62 @@ main_rcsnsight1_999 <- function(THESEED = 1) {
   # BUT HEAVY "pca" ORIENTATED    
   #                               method = "pca" pdf 6  method generates values with column names "PC1", "PC2"
   # ? preProcess # also read:     Building_Predictive_Models_in_R_Using_the_caret_package(1startarticle)(Kuhn)(2008).pdf
+  
+  
+  # ( seems very little effect (if not worse)? )
+  # **Preprocess zone (if any)** #
+  
+  procValues <- preProcess(GALAXY_L_Train[,-1*c(1),drop=FALSE]
+  # , method =  c("pca")
+    # , thresh = 90
+    # , pcaComp = 2
+    , method =  c("ica")
+    # fastICA::fastICA(x, ...); argument "n.comp" is missing, with no default
+    # n.comp number of components to be extracted
+      , n.comp = 2
+    # http://cran.r-project.org/web/packages/fastICA/fastICA.pdf
+  )
+  # Use the predict methods to do the adjustments ( LEFT_OFF ) AFTER BREAK
+  GALAXY_L_trainScaled <- predict(procValues, GALAXY_L_Train[,-1*c(1),drop=FALSE])
+  cbind(GALAXY_L_Train[,1,drop=FALSE],GALAXY_L_trainScaled) -> GALAXY_L_Train
+  
+  #  "pca"
+  # GALAXY_L_trainScaled
+  # 'data.frame':  279 obs. of  2 variables:
+  # $ PC1: num  -0.582 -0.591 -0.59 -0.545 -0.284 ...
+  # $ PC2: num  0.00143 -0.0039 -0.00443 -0.01162 -0.08386 ..
+
+  # "ica"
+  # colnames.GALAXY_L_Train.
+  # 1        TargetObservation
+  # 2                     ICA1
+  # 3                     ICA2
+ 
+  # "pca"
+  # GALAXY_L_Train
+  # 'data.frame':  279 obs. of  3 variables:
+  #   $ TargetObservation: Factor w/ 2 levels "one","two": 1 1 1 1 1 1 1 1 1 1 ...
+  # $ PC1              : num  -0.582 -0.591 -0.59 -0.545 -0.284 ...
+  # $ PC2              : num  0.00143 -0.0039 -0.00443 -0.01162 -0.08386 ...
+
+  GALAXY_L_testScaled  <- predict(procValues, GALAXY_L_Test[,-1*c(1),drop=FALSE])
+  cbind(GALAXY_L_Test[,1,drop=FALSE],GALAXY_L_testScaled) -> GALAXY_L_Test
+  
+  print("After preProcess; new (ifany) 'processed' predictors columns")
+  print(data.frame(colnames(GALAXY_L_Train)))
+  
+  # "pca"
+  # colnames.GALAXY_L_Train.
+  # 1        TargetObservation
+  # 2                      PC1
+  # 3                      PC2
+
+
+  # caret_Package_A_Unifed_Interface_for_Predictive_Models(201402)(Kuhn).pdf pdf 9
+  # Building_Predictive_Models_in_R_Using_the_caret_package(1startarticle)(Kuhn)(2008)_DEEPER_INSTRUCTIONS.pdf pdf 5
+  # ? preProcess
+  
+  # **End of Preprocess zone (if any)** #
   
   # next 'trainControl'
   # http://topepo.github.io/caret/training.html
@@ -1160,7 +1317,7 @@ main_rcsnsight1_999 <- function(THESEED = 1) {
     method = "repeatedcv"  # randomForest ( could have been: 'oob' )
     , number = 10, # ? trainControl ( "repeatedcv" default seems to be '10' anyways ) # QUICK 5
      ## repeated ten times    
-    , repeats = 3 # CHANGE FROM 10 ( OR 5 ) DOWN TO 1 ( speed )                      # QUICK 1
+    , repeats = 1 # CHANGE FROM 10 ( OR 5 ) DOWN TO 1 ( speed )                      # QUICK 1
     # , summaryFunction = defaultSummary
     , classProbs = TRUE                 # classification
     , summaryFunction = twoClassSummary # classification ( sp case ) TRYING
@@ -1212,7 +1369,7 @@ main_rcsnsight1_999 <- function(THESEED = 1) {
     # non-xts case                                         ( 2 classes; also twoClassSummary )               
     , y = { unlist(GALAXY_L_Train[,1,drop=FALSE]) -> TEMP; NULL -> attr(TEMP, "names"); TEMP } # ;c("one","two") -> levels(TEMP) # ALREADY CARRIED
     , trControl = GALAXY_L_fitControl
-    # , method = "gbm" # GOOD TRAIN, TERRIBLE TEST ( NO GOOD FOR SMALL MODELS)
+  # , method = "gbm" # GOOD TRAIN, TERRIBLE TEST ( NO GOOD FOR SMALL MODELS)
       # tuneGrid <- gbm_grid_smalldata <- expand.grid( shrinkage=0.1, interaction.depth=3, n.trees=150)
       # The dataset size is too small or subsampling rate is too large: nTrain*bag.fraction <= n.minobsinnode
       #   tough here
@@ -1220,7 +1377,7 @@ main_rcsnsight1_999 <- function(THESEED = 1) {
   # , method = "rf" # default (DID NOT WORK) TERRIBLE TRAIN, TERRIBLE TEST
     , method = "C5.0" # ( switch to classification only)
     , metric = "ROC" # classification ( stop printing that annoying: The metric "Accuracy" was not in the result set. ROC will be used instead.)
-    , verbose = FALSE
+    , verbose = TRUE # default anyway?
     # tuneGrid = NULL ( "rf" default?! )
     # tuneGrid = grid # grid <- expand.grid()     # Note: "rf": Tuning Parameters: mtry (#Randomly Selected Predictors)
     #  2008 pdf pdf 10: seems if I EXPLICITY define a tuneGrid, then it DOES NOT use TuneLength
@@ -1231,16 +1388,19 @@ main_rcsnsight1_999 <- function(THESEED = 1) {
     
   ) -> GALAXY_L_FitterTune
   
+ 
+  print(GALAXY_L_FitterTune$finalModel)
+ 
   # (possibly of intest)
   #  GALAXY_L_FitterTune
   #    $ bestTune
   #  
   #  GALAXY_L_FitterTune
   #    $ control
-  #    $ control
-  #    $ call 
-  #    $ problemType
-  #    $ tuneValue
+  #    ? $ control
+  #      $ call 
+  #    ? $ problemType
+  #    ? $ tuneValue
  
  
  
@@ -1365,15 +1525,18 @@ main_rcsnsight1_999 <- function(THESEED = 1) {
     , testY = { unlist(GALAXY_L_Test[,1,drop=FALSE]) -> TEMP; NULL -> attr(TEMP, "names"); TEMP } # ;c("one","two") -> levels(TEMP) # ALREADY CARRIED
   ) -> GALAXY_L_Test_predValues 
  
-  # only xts case    classification
-  extractProb(models = list(GFitterTuneITEM1 = GALAXY_L_FitterTune)
-    , testX = GALAXY_L_Test[,-1*c(1),drop=FALSE]
-    # xts case
-    # , testY = GALAXY_L_Test[, 1     ,drop=FALSE]
-    # non-xts case                                         ( 2 classes; also twoClassSummary ) 
-    , testY = { unlist(GALAXY_L_Test[,1,drop=FALSE]) -> TEMP; NULL -> attr(TEMP, "names"); TEMP } # ;c("one","two") -> levels(TEMP) # ALREADY CARRIED
-  ) -> GALAXY_L_Test_probValues 
- 
+  # only non-xts case    classification
+  # caret? S-logic ( of the observation, require at least 2 predictors)
+  # otherwise: error ( and others? ) gbm: Error in 1:cCols : argument of length 0
+  if (length(colnames(GALAXY_L_Test[,-1*c(1),drop=FALSE])) > 1) {
+    extractProb(models = list(GFitterTuneITEM1 = GALAXY_L_FitterTune)
+      , testX = GALAXY_L_Test[,-1*c(1),drop=FALSE]
+      # xts case
+      # , testY = GALAXY_L_Test[, 1     ,drop=FALSE]
+      # non-xts case                                         ( 2 classes; also twoClassSummary ) 
+      , testY = { unlist(GALAXY_L_Test[,1,drop=FALSE]) -> TEMP; NULL -> attr(TEMP, "names"); TEMP } # ;c("one","two") -> levels(TEMP) # ALREADY CARRIED
+    ) -> GALAXY_L_Test_probValues 
+  }
  
   # ? extractPrediction: un-named list, the values of 'object' will be "Object1" ... "Object2" and so on
   # 2008 13  : data type (i.e., training, test or unknown). 
@@ -1395,9 +1558,14 @@ main_rcsnsight1_999 <- function(THESEED = 1) {
   subset(GALAXY_L_Test_predValues, dataType == "Test"
   ) -> GALAXY_L_Test_predValues_DataType_Test
  
-  # xts only case    classification
-  subset(GALAXY_L_Test_probValues, dataType == "Test"
-  ) -> GALAXY_L_Test_probValues_DataType_Test
+
+  # only non-xts case    classification
+  # caret? S-logic ( of the observation, require at least 2 predictors)
+  # otherwise: error ( and others? ) gbm: Error in 1:cCols : argument of length 0
+  if (length(colnames(GALAXY_L_Test[,-1*c(1),drop=FALSE])) > 1) {
+    subset(GALAXY_L_Test_probValues, dataType == "Test"
+    ) -> GALAXY_L_Test_probValues_DataType_Test
+  }
  
   # kept: dataType: Factor w/ 2 levels "Test","Training 
   # AS PART OF the str() definition
@@ -1449,9 +1617,17 @@ main_rcsnsight1_999 <- function(THESEED = 1) {
   ##  classification only zone ##
   
   # none seem useful  # classification only
-  # plotClassProbs(GALAXY_L_Test_probValues_DataType_Test)
-  # plotClassProbs(GALAXY_L_Test_probValues_DataType_Test, useObjects = TRUE) # in this case ( SAME )
-  # plotClassProbs(GALAXY_L_Test_probValues_DataType_Test,useObjects = TRUE, plotType = "densityplot", auto.key = list(columns = 2))
+  
+  
+  
+  # only non-xts case    classification
+  # caret? S-logic ( of the observation, require at least 2 predictors)
+  # otherwise: error ( and others? ) gbm: Error in 1:cCols : argument of length 0
+  # if (length(colnames(GALAXY_L_Test[,-1*c(1),drop=FALSE])) > 2) {
+    # plotClassProbs(GALAXY_L_Test_probValues_DataType_Test)
+    # plotClassProbs(GALAXY_L_Test_probValues_DataType_Test, useObjects = TRUE) # in this case ( SAME )
+    # plotClassProbs(GALAXY_L_Test_probValues_DataType_Test,useObjects = TRUE, plotType = "densityplot", auto.key = list(columns = 2))
+  # }
   
   # 2008 Kuhn 6. Characterizing performance
   
@@ -1491,6 +1667,7 @@ main_rcsnsight1_999 <- function(THESEED = 1) {
   # means: levels=c("one","zero") OR 'levels=c(1,0),labels=("one","zero") 
   # (first factor, second factor) # ( dput CODED AS 1L,2L )
  
+
   print("Percent Correct predictions ...")
   print(with(GALAXY_L_Test_predValues_DataType_Test,{ sum(pred == obs) }) / NROW(GALAXY_L_Test_predValues_DataType_Test))
 
