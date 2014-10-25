@@ -532,16 +532,16 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   SI_PSD <- tbl_df(SI_PSD)
 
-  # 4â4â5 calendar
-  # he 4â4â5 calendar is a method of managing accounting periods. 
+  # 4–4–5 calendar
+  # he 4–4–5 calendar is a method of managing accounting periods. 
   # It is a common calendar structure for some industries such as retail, manufacturing and parking industry.
 
-  # The 4â4â5 calendar divides a year into 4 quarters. 
+  # The 4–4–5 calendar divides a year into 4 quarters. 
   # Each quarter has 13 weeks, which are grouped into 
    # two 4-week "months" and 
    # one 5-week "month". 
-  # The grouping of 13 weeks may also be set up as 5â4â4 weeks or 4â5â4 weeks, 
-  # but the 4â4â5 seems to be the most common arrangement.
+  # The grouping of 13 weeks may also be set up as 5–4–4 weeks or 4–5–4 weeks, 
+  # but the 4–4–5 seems to be the most common arrangement.
 
   # you can still compare a period to the same period in the prior year
 
@@ -1339,9 +1339,11 @@ main_foresight3_999 <- function(pauseat=NULL) {
     )
   )
   
-  UNIVERSE <- sqldf("SELECT UNIV.*, ISQ.EPS_Q1 AS EPS_Q1__numeric, ISQ.EPS_Q2 AS EPS_Q2__numeric, ISQ.EPS_Q3 AS EPS_Q3__numeric, ISQ.EPS_Q4 AS EPS_Q4__numeric, -- comment
-                                      ISQ.EPS_Q5 AS EPS_Q5__numeric, ISQ.EPS_Q6 AS EPS_Q6__numeric, ISQ.EPS_Q7 AS EPS_Q7__numeric, ISQ.EPS_Q8 AS EPS_Q8__numeric, 
-                                      ISQ.DIVNQXDT AS DIVNQXDTUNX  , ISQ.DIVNQPDT AS DIVNQPDTUNX 
+  UNIVERSE <- sqldf("SELECT UNIV.*, ISQ.EPS_Q1 AS EPS_Q1__numeric, ISQ.EPS_Q2 AS EPS_Q2__numeric, ISQ.EPS_Q3 AS EPS_Q3__numeric, ISQ.EPS_Q4 AS EPS_Q4__numeric,         -- comment
+                                    ISQ.EPS_Q5 AS EPS_Q5__numeric, ISQ.EPS_Q6 AS EPS_Q6__numeric, ISQ.EPS_Q7 AS EPS_Q7__numeric, ISQ.EPS_Q8 AS EPS_Q8__numeric, 
+                                    ISQ.EPSD_Q1 AS EPSD_Q1__numeric, ISQ.EPSD_Q2 AS EPSD_Q2__numeric, ISQ.EPSD_Q3 AS EPSD_Q3__numeric, ISQ.EPSD_Q4 AS EPSD_Q4__numeric, -- comment
+                                    ISQ.EPSD_Q5 AS EPSD_Q5__numeric, ISQ.EPSD_Q6 AS EPSD_Q6__numeric, ISQ.EPSD_Q7 AS EPSD_Q7__numeric, ISQ.EPSD_Q8 AS EPSD_Q8__numeric, 
+                                    ISQ.DIVNQXDT AS DIVNQXDTUNX, ISQ.DIVNQPDT AS DIVNQPDTUNX 
                                   FROM 
                                    main.UNIVERSE UNIV, main.SI_ISQ ISQ WHERE 
                                    UNIV.COMPANY_ID = ISQ.COMPANY_ID 
@@ -2620,12 +2622,27 @@ main_foresight3_999 <- function(pauseat=NULL) {
   # Field Type: Dollars per share (0.01 to 99999.99)
   # For NYSE, AMEX, and NASDAQ-traded companies, the Price is the closing price for the date of the program update release. 
 
+  ### CORRECTED OCT 24, 2014 ###
+  # EPS-Diluted Q1, Q2, Q3, Q4, Q5, Q6, Q7, Q8
+  # Data Table Name: EPSD_Q1, Q2, Q3, Q4, Q5, Q6, Q7, Q8
+  # Data Category: Income Statement - Quarterly
+  # Field Type: Dollars per share
+  # The amount of fully diluted earnings from total operations reported by a company for ( see WALMART sheet )
+  # each of the last eight fiscal quarters.
+  # Stock Investor Pro 4.0 Help
+
+  # FIELD_NAME  EPSD_Q1
+  # FIELD_TYPE  C
+  # FIELD_DESC  EPS-Diluted Q1
+  # DESCRIP Income Statement - Quarterly
+  # FM_FILE SI_ISQ
+  
   # higher is better ( already Diluted! )
   
   # ( EPSDC_Q1 + EPSDC_Q2 + EPSDC_Q3 + EPSDC_Q4  ) / PRICE = VAL_EXPOSE_VAL_TWO_CMPST_EARN_TO_PRICE_RATIO
   
   UNIVERSE <- mutate(UNIVERSE, VAL_EXPOSE_VAL_TWO_CMPST_EARN_TO_PRICE_RATIO = as.numeric(as.no_worse_than_NA(  
-    ( EPSDC_Q1  + EPSDC_Q2  + EPSDC_Q3  + EPSDC_Q4  ) / PRICE 
+    ( EPSD_Q1  + EPSD_Q2  + EPSD_Q3  + EPSD_Q4  ) / PRICE
   ) ) )
   
   UNIVERSE_NOT_NA <- group_by(UNIVERSE,MG_DESC) 
