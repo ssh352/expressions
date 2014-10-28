@@ -98,81 +98,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
     
   }
   
-#   # default .dbf file locations
-#   
-#   options(AAIISIPro40PathFileNotOptim_SETUP =  paste0(getOption("AAIIBase"),"/Setup.dbf"))
-#   options(AAIISIPro40PathFile_SETUP         =  paste0(getOption("AAIISIPro40PathFileNotOptim_SETUP")))
-#   
-#   options(AAIISIPro40PathFileNotOptim_SI_CI =  paste0(getOption("AAIIBase"),"/Static/si_ci.dbf"))
-#   options(AAIISIPro40PathFile_SI_CI         =  paste0(getOption("AAIISIPro40PathFileNotOptim_SI_CI")))
-#   
-#   options(AAIISIPro40PathFileNotOptim_SI_MGDSC =  paste0(getOption("AAIIBase"),"/Static/SI_MGDSC.DBF"))
-#   options(AAIISIPro40PathFile_SI_MGDSC         =  paste0(getOption("AAIISIPro40PathFileNotOptim_SI_MGDSC")))
-#   
-#   options(AAIISIPro40PathFileNotOptim_SI_EXCHG =  paste0(getOption("AAIIBase"),"/Static/SI_EXCHG.DBF"))
-#   options(AAIISIPro40PathFile_SI_EXCHG         =  paste0(getOption("AAIISIPro40PathFileNotOptim_SI_EXCHG")))
-#   
-#   options(AAIISIPro40PathFileNotOptim_SI_PSD   =  paste0(getOption("AAIIBase"),"/Dbfs/si_psd.dbf"))
-#   options(AAIISIPro40PathFile_SI_PSD           =  paste0(getOption("AAIISIPro40PathFileNotOptim_SI_PSD")))
-#   
-#   options(AAIISIPro40PathFileNotOptim_SI_PSDC   =  paste0(getOption("AAIIBase"),"/Dbfs/si_psdc.dbf"))
-#   options(AAIISIPro40PathFile_SI_PSDC           =  paste0(getOption("AAIISIPro40PathFileNotOptim_SI_PSDC")))
-#   
-#   options(AAIISIPro40PathFileNotOptim_SI_DATE  =  paste0(getOption("AAIIBase"),"/Static/si_date.dbf"))
-#   options(AAIISIPro40PathFile_SI_DATE          =  paste0(getOption("AAIISIPro40PathFileNotOptim_SI_DATE")))
-#   
-#   options(AAIISIPro40PathFileNotOptim_SI_ISQ   =  paste0(getOption("AAIIBase"),"/Static/si_isq.dbf"))
-#   options(AAIISIPro40PathFile_SI_ISQ           =  paste0(getOption("AAIISIPro40PathFileNotOptim_SI_ISQ")))
-#   
-#   options(AAIISIPro40PathFileNotOptim_SI_BSQ   =  paste0(getOption("AAIIBase"),"/Static/si_bsq.dbf"))
-#   options(AAIISIPro40PathFile_SI_BSQ           =  paste0(getOption("AAIISIPro40PathFileNotOptim_SI_BSQ")))
-#   
-#   options(AAIISIPro40PathFileNotOptim_SI_CFQ   =  paste0(getOption("AAIIBase"),"/Static/si_cfq.dbf"))
-#   options(AAIISIPro40PathFile_SI_CFQ           =  paste0(getOption("AAIISIPro40PathFileNotOptim_SI_CFQ")))
-#   
-#   options(AAIISIPro40PathFileNotOptim_SI_MLT   =  paste0(getOption("AAIIBase"),"/Dbfs/si_mlt.dbf"))
-#   options(AAIISIPro40PathFile_SI_MLT           =  paste0(getOption("AAIISIPro40PathFileNotOptim_SI_MLT")))
-#   
-#   # end of default .dbf file locations
-#   
-#   if(getOption("FileStoreStyle") == "Optimized") {
-#     
-#     options(AAIISIPro40PathFileOptim_SETUP =  paste0(getOption("AAIIBase"),"/SETUP.RData"))
-#     options(AAIISIPro40PathFile_SETUP         =  paste0(getOption("AAIISIPro40PathFileOptim_SETUP")))
-#     
-#     options(AAIISIPro40PathFileOptim_SI_CI =  paste0(getOption("AAIIBase"),"/Static/SI_CI.RData"))
-#     options(AAIISIPro40PathFile_SI_CI         =  paste0(getOption("AAIISIPro40PathFileOptim_SI_CI")))
-#     
-#     options(AAIISIPro40PathFileOptim_SI_MGDSC =  paste0(getOption("AAIIBase"),"/Static/SI_MGDSC.RData"))
-#     options(AAIISIPro40PathFile_SI_MGDSC         =  paste0(getOption("AAIISIPro40PathFileOptim_SI_MGDSC")))
-#     
-#     options(AAIISIPro40PathFileOptim_SI_EXCHG =  paste0(getOption("AAIIBase"),"/Static/SI_EXCHG.RData"))
-#     options(AAIISIPro40PathFile_SI_EXCHG         =  paste0(getOption("AAIISIPro40PathFileOptim_SI_EXCHG")))
-#     
-#     options(AAIISIPro40PathFileOptim_SI_PSD   =  paste0(getOption("AAIIBase"),"/Dbfs/SI_PSD.RData"))
-#     options(AAIISIPro40PathFile_SI_PSD           =  paste0(getOption("AAIISIPro40PathFileOptim_SI_PSD")))
-#     
-#     options(AAIISIPro40PathFileOptim_SI_PSDC   =  paste0(getOption("AAIIBase"),"/Dbfs/SI_PSDC.RData"))
-#     options(AAIISIPro40PathFile_SI_PSDC           =  paste0(getOption("AAIISIPro40PathFileOptim_SI_PSDC")))
-#     
-#     options(AAIISIPro40PathFileOptim_SI_DATE  =  paste0(getOption("AAIIBase"),"/Static/SI_DATE.RData"))
-#     options(AAIISIPro40PathFile_SI_DATE          =  paste0(getOption("AAIISIPro40PathFileOptim_SI_DATE")))
-#     
-#     options(AAIISIPro40PathFileOptim_SI_ISQ   =  paste0(getOption("AAIIBase"),"/Static/SI_ISQ.RData"))
-#     options(AAIISIPro40PathFile_SI_ISQ           =  paste0(getOption("AAIISIPro40PathFileOptim_SI_ISQ")))
-#     
-#     options(AAIISIPro40PathFileOptim_SI_BSQ   =  paste0(getOption("AAIIBase"),"/Static/SI_BSQ.RData"))
-#     options(AAIISIPro40PathFile_SI_BSQ           =  paste0(getOption("AAIISIPro40PathFileOptim_SI_BSQ")))
-#     
-#     options(AAIISIPro40PathFileOptim_SI_CFQ   =  paste0(getOption("AAIIBase"),"/Static/SI_CFQ.RData"))
-#     options(AAIISIPro40PathFile_SI_CFQ           =  paste0(getOption("AAIISIPro40PathFileOptim_SI_CFQ")))
-#     
-#     options(AAIISIPro40PathFileOptim_SI_MLT   =  paste0(getOption("AAIIBase"),"/Dbfs/SI_MLT.RData"))
-#     options(AAIISIPro40PathFile_SI_MLT           =  paste0(getOption("AAIISIPro40PathFileOptim_SI_MLT")))
-#     
-#   }
-#   
-  
+
   # default .dbf file locations
   
   OPTIONLIST <- localoptions(AAIISIPro40PathFileNotOptim_SETUP =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/Setup.dbf"), optionlist = OPTIONLIST)
@@ -190,6 +116,10 @@ main_foresight3_999 <- function(pauseat=NULL) {
   OPTIONLIST <- localoptions(AAIISIPro40PathFileNotOptim_SI_PSD   =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/Dbfs/si_psd.dbf"), optionlist = OPTIONLIST)
   OPTIONLIST <- localoptions(AAIISIPro40PathFile_SI_PSD           =  paste0(getLocalOption("AAIISIPro40PathFileNotOptim_SI_PSD", optionlist = OPTIONLIST)), optionlist = OPTIONLIST)
   
+  # NEW_KID 
+  OPTIONLIST <- localoptions(AAIISIPro40PathFileNotOptim_SI_PSDD  =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/Dbfs/si_psdd.dbf"), optionlist = OPTIONLIST)
+  OPTIONLIST <- localoptions(AAIISIPro40PathFile_SI_PSDD          =  paste0(getLocalOption("AAIISIPro40PathFileNotOptim_SI_PSDD", optionlist = OPTIONLIST)), optionlist = OPTIONLIST)
+
   OPTIONLIST <- localoptions(AAIISIPro40PathFileNotOptim_SI_PSDC   =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/Dbfs/si_psdc.dbf"), optionlist = OPTIONLIST)
   OPTIONLIST <- localoptions(AAIISIPro40PathFile_SI_PSDC           =  paste0(getLocalOption("AAIISIPro40PathFileNotOptim_SI_PSDC", optionlist = OPTIONLIST)), optionlist = OPTIONLIST)
   
@@ -227,6 +157,10 @@ main_foresight3_999 <- function(pauseat=NULL) {
     OPTIONLIST <- localoptions(AAIISIPro40PathFileOptim_SI_PSD   =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/Dbfs/SI_PSD.RData"), optionlist = OPTIONLIST)
     OPTIONLIST <- localoptions(AAIISIPro40PathFile_SI_PSD           =  paste0(getLocalOption("AAIISIPro40PathFileOptim_SI_PSD", optionlist = OPTIONLIST)), optionlist = OPTIONLIST)
     
+    # NEW_KID ( POTENTIAL: BUT DO I USE )
+    OPTIONLIST <- localoptions(AAIISIPro40PathFileOptim_SI_PSDD =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/Dbfs/SI_PSDD.RData"), optionlist = OPTIONLIST)
+    OPTIONLIST <- localoptions(AAIISIPro40PathFile_SI_PSDD          =  paste0(getLocalOption("AAIISIPro40PathFileOptim_SI_PSDD", optionlist = OPTIONLIST)), optionlist = OPTIONLIST)
+
     OPTIONLIST <- localoptions(AAIISIPro40PathFileOptim_SI_PSDC   =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/Dbfs/SI_PSDC.RData"), optionlist = OPTIONLIST)
     OPTIONLIST <- localoptions(AAIISIPro40PathFile_SI_PSDC           =  paste0(getLocalOption("AAIISIPro40PathFileOptim_SI_PSDC", optionlist = OPTIONLIST)), optionlist = OPTIONLIST)
     
@@ -594,7 +528,22 @@ main_foresight3_999 <- function(pauseat=NULL) {
   # DESCRIP     Price and Share Statistics
   # FM_FILE     SI_PSD
   
+  # NEW_KID
+  
+  SI_PSDD <- get_from_disk("SI_PSDD", filesoptionlist = OPTIONLIST)
+  
+  # SI_PSDD <- SI_PSDD 
+  SI_PSDD <- eliminate_all_duplicates( SI_PSDD, "COMPANY_ID" ) 
 
+  SI_PSDD_tbl_sqlite <- copy_to(dpsqllconn, SI_PSDD, temporary = FALSE
+    , indexes = list(
+        c("COMPANY_ID")
+    )
+  )
+  
+  SI_PSDD <- tbl_df(SI_PSDD)
+  
+  
   # Prices - Dates (Close) Price-Date M001-M120
 
    # if(getOption("FileStoreStyle") == "Optimized") {
@@ -690,7 +639,10 @@ main_foresight3_999 <- function(pauseat=NULL) {
   UNIVERSE <- sqldf(" 
     SELECT STP.MONTHDATE AS MONTHDATEUNX, STP.WEEKDATE AS WEEKDATEUNX, STP.SPLITDATE AS SPLITDATEUNX, 
            CI.TICKER, CI.COMPANY, CI.COMPANY_ID, CI.SIC, CI.EXCHANGE, EXCHG.EXCHG_DESC 
-         , CI.IND_2_DIG, MGDSC.MG_DESC, CI.COUNTRY, CI.ADR, DTE.PEREND_Q2 AS PERENDUNX_Q2, DTE.PEREND_Q1 AS PERENDUNX_Q1, DTE.PERLEN_Q1 AS PERLEN_Q1__integer, PERTYP_Q1 
+         , CI.IND_2_DIG, MGDSC.MG_DESC, CI.COUNTRY, CI.ADR 
+                           , DTE.PEREND_Q1 AS PERENDUNX_Q1, DTE.PEREND_Q2 AS PERENDUNX_Q2, DTE.PEREND_Q3 AS PERENDUNX_Q3, DTE.PEREND_Q4 AS PERENDUNX_Q4 
+                           , DTE.PEREND_Q5 AS PERENDUNX_Q5, DTE.PEREND_Q6 AS PERENDUNX_Q6, DTE.PEREND_Q7 AS PERENDUNX_Q7, DTE.PEREND_Q8 AS PERENDUNX_Q8 
+                           , DTE.PERLEN_Q1 AS PERLEN_Q1__integer, PERTYP_Q1 
                            , PSD.MKTCAP AS MKTCAP__numeric, PSD.PRICE AS PRICE__numeric, PSD.SPLIT_DATE AS PSD_SPLITUNX_DATE, PSD.SPLIT_FACT AS SPLIT_FACT__numeric 
                            , PSDC.PRICE_M023 AS PRICE_M023__numeric, PSDC.PRICE_M022 AS PRICE_M022__numeric, PSDC.PRICE_M021 AS PRICE_M021__numeric, PSDC.PRICE_M020 AS PRICE_M020__numeric
                            , PSDC.PRICE_M019 AS PRICE_M019__numeric, PSDC.PRICE_M018 AS PRICE_M018__numeric, PSDC.PRICE_M017 AS PRICE_M017__numeric, PSDC.PRICE_M016 AS PRICE_M016__numeric
@@ -698,15 +650,22 @@ main_foresight3_999 <- function(pauseat=NULL) {
                            , PSDC.PRICE_M011 AS PRICE_M011__numeric, PSDC.PRICE_M010 AS PRICE_M010__numeric, PSDC.PRICE_M009 AS PRICE_M009__numeric, PSDC.PRICE_M008 AS PRICE_M008__numeric 
                            , PSDC.PRICE_M007 AS PRICE_M007__numeric, PSDC.PRICE_M006 AS PRICE_M006__numeric, PSDC.PRICE_M005 AS PRICE_M005__numeric, PSDC.PRICE_M004 AS PRICE_M004__numeric 
                            , PSDC.PRICE_M003 AS PRICE_M003__numeric, PSDC.PRICE_M002 AS PRICE_M002__numeric, PSDC.PRICE_M001 AS PRICE_M001__numeric  
+                            , PRICEDM001 AS PRICEDM001UNX, PRICEDM002 AS PRICEDM002UNX, PRICEDM003 AS PRICEDM003UNX, PRICEDM004 AS PRICEDM004UNX 
+                            , PRICEDM005 AS PRICEDM005UNX, PRICEDM006 AS PRICEDM006UNX, PRICEDM007 AS PRICEDM007UNX, PRICEDM008 AS PRICEDM008UNX 
+                            , PRICEDM009 AS PRICEDM009UNX, PRICEDM010 AS PRICEDM010UNX, PRICEDM011 AS PRICEDM011UNX, PRICEDM012 AS PRICEDM012UNX 
+                            , PRICEDM013 AS PRICEDM013UNX, PRICEDM014 AS PRICEDM014UNX, PRICEDM015 AS PRICEDM015UNX, PRICEDM016 AS PRICEDM016UNX 
+                          ,SHR_AQ1 AS SHR_AQ1__numeric, SHR_AQ2 AS SHR_AQ2__numeric, SHR_AQ3 AS SHR_AQ3__numeric, SHR_AQ4 AS SHR_AQ4__numeric 
+                          ,SHR_AQ5 AS SHR_AQ5__numeric, SHR_AQ6 AS SHR_AQ6__numeric, SHR_AQ7 AS SHR_AQ7__numeric, SHR_AQ8 AS SHR_AQ8__numeric 
                            FROM 
                            main.SETUP STP, 
-                           main.SI_CI CI, main.SI_EXCHG EXCHG, main.SI_MGDSC MGDSC, main.SI_PSD PSD, main.SI_DATE DTE, main.SI_PSDC PSDC
+                           main.SI_CI CI, main.SI_EXCHG EXCHG, main.SI_MGDSC MGDSC, main.SI_PSD PSD, main.SI_DATE DTE, main.SI_PSDC PSDC, main.SI_PSDD PSDD
                            WHERE CI.EXCHANGE = EXCHG.EXCHG_CODE AND 
                            CI.IND_2_DIG = MGDSC.MG_CODE AND 
                            CI.COMPANY_ID = PSD.COMPANY_ID AND 
                            CI.COMPANY_ID = DTE.COMPANY_ID AND
-                           CI.COMPANY_ID = PSDC.COMPANY_ID 
-  ORDER BY MKTCAP DESC 
+                           CI.COMPANY_ID = PSDC.COMPANY_ID AND
+                           CI.COMPANY_ID = PSDD.COMPANY_ID 
+    ORDER BY MKTCAP DESC 
                            "  , connection = dpsqllconn$con, method="name__class")
   
   # preserve the original ordering
@@ -1086,6 +1045,166 @@ main_foresight3_999 <- function(pauseat=NULL) {
   ############### END OF VISUALLY SEE THE 10-M MA PER MONTH ###################
   #############################################################################
 
+
+  #############################################################################
+  ################  VISUALLY SEE THE RETURN_PER_DOLLAR ########################
+                                      
+  # TO_DO [ ] END: NEED TO 'REALLY' MAKE 'NA' ... complete.cases, zoo::na.trim
+
+
+  # TO_DO [ ] END: NEED TO 'REALLY' MAKE 'NA' ... complete.cases, zoo::na.trim
+
+  RET_DOLLAR_PRICE_UNIVERSE_NOT_NA <- 
+  UNIVERSE[,c("MG_DESC", "MKTCAP", "PRICE", "TICKER" 
+              , "PRICEDM001UNX", "PRICEDM002UNX", "PRICEDM003UNX"  # 
+              , "PRICEDM004UNX", "PRICEDM005UNX", "PRICEDM006UNX" 
+              , "PRICEDM007UNX", "PRICEDM008UNX", "PRICEDM009UNX"
+              , "PRICEDM010UNX", "PRICEDM011UNX", "PRICEDM012UNX"
+              , "PRICEDM013UNX", "PRICEDM014UNX", "PRICEDM015UNX"
+              , "PRICEDM016UNX"   
+              , "PRICE_M001", "PRICE_M002", "PRICE_M003"        # PRICE_M001__numeric
+              , "PRICE_M004", "PRICE_M005", "PRICE_M006" 
+              , "PRICE_M007", "PRICE_M008", "PRICE_M009"
+              , "PRICE_M010", "PRICE_M011", "PRICE_M012"
+              , "PRICE_M013", "PRICE_M014", "PRICE_M015"
+              , "PRICE_M016"   
+              , "PERENDUNX_Q1", "PERENDUNX_Q2", "PERENDUNX_Q3"  # PERENDUNX_Q1
+              , "PERENDUNX_Q4", "PERENDUNX_Q5", "PERENDUNX_Q6" 
+              , "PERENDUNX_Q7", "PERENDUNX_Q8"  
+              , "SHR_AQ1", "SHR_AQ2", "SHR_AQ3"                 # SHR_AQ1__numeric         
+              , "SHR_AQ4", "SHR_AQ5", "SHR_AQ6" 
+              , "SHR_AQ7", "SHR_AQ8"                                
+  ),drop=FALSE] 
+              
+  RET_DOLLAR_PRICE_UNIVERSE_NOT_NA  <- group_by(RET_DOLLAR_PRICE_UNIVERSE_NOT_NA,MG_DESC)
+             
+  # TO_DO [ ] END: NEED TO 'REALLY' MAKE 'NA' ... complete.cases, zoo::na.trim
+             
+  # RET_DOLLAR_PRICE_UNIVERSE_NOT_NA <- filter(RET_DOLLAR_PRICE_UNIVERSE_NOT_NA, 
+  # )  
+             
+  ret_dollar_price_grid_do <- function(x) {
+
+    PRIZED  <- 
+      x[,c("TICKER"
+        , "PRICEDM001UNX", "PRICEDM002UNX", "PRICEDM003UNX"  # AS PRICEDM001UNX
+        , "PRICEDM004UNX", "PRICEDM005UNX", "PRICEDM006UNX" 
+        , "PRICEDM007UNX", "PRICEDM008UNX", "PRICEDM009UNX"
+        , "PRICEDM010UNX", "PRICEDM011UNX", "PRICEDM012UNX"
+        , "PRICEDM013UNX", "PRICEDM014UNX", "PRICEDM015UNX"
+        , "PRICEDM016UNX"                                               
+    ),drop=FALSE] 
+    
+    PRIZED[,1]  -> row.names(PRIZED)
+    PRIZED[,-1] -> PRIZED
+    PRIZED[,rev(1:length(colnames(PRIZED)))] -> PRIZED 
+    t(PRIZED) -> PRIZED
+    
+    # keep useful
+    apply(PRIZED, MARGIN = 1, FUN = max , na.rm = TRUE)  -> PRIZED_INDEX_NAMED_VECTOR
+    
+    # SM - static  month
+    # DQ - dymanic quarter
+    
+    # add index
+    cbind( 16:1, PRIZED ) -> PRIZED
+    c("INDEXSM") -> dimnames(PRIZED)[[2]][1]
+    
+    as.character(ymd(c("1970-01-01")) + days(PRIZED_INDEX_NAMED_VECTOR)) -> rownames(PRIZED)
+    as.xts(PRIZED) -> PRIZED
+    
+    PERENDUNX  <- 
+      x[,c("TICKER"
+           , "PERENDUNX_Q1", "PERENDUNX_Q2", "PERENDUNX_Q3"  # PERENDUNX_Q1
+           , "PERENDUNX_Q4", "PERENDUNX_Q5", "PERENDUNX_Q6" 
+           , "PERENDUNX_Q7", "PERENDUNX_Q8"                                
+      ),drop=FALSE] 
+    
+    PERENDUNX[,1]  -> row.names(PERENDUNX)
+    PERENDUNX[,-1] -> PERENDUNX
+    PERENDUNX[,rev(1:length(colnames(PERENDUNX)))] -> PERENDUNX 
+    t(PERENDUNX) -> PERENDUNX
+
+    # add index
+    cbind( 8:1, PERENDUNX ) -> PERENDUNX
+    c("INDEXDQ") -> dimnames(PERENDUNX)[[2]][1]
+    
+    PRIZE  <- 
+      x[,c("TICKER" 
+        , "PRICE_M001", "PRICE_M002", "PRICE_M003"  # PRICE_M001__numeric
+        , "PRICE_M004", "PRICE_M005", "PRICE_M006" 
+        , "PRICE_M007", "PRICE_M008", "PRICE_M009"
+        , "PRICE_M010", "PRICE_M011", "PRICE_M012"
+        , "PRICE_M013", "PRICE_M014", "PRICE_M015"
+        , "PRICE_M016"                                               
+    ),drop=FALSE] 
+
+    PRIZE[,1]  -> row.names(PRIZE)
+    PRIZE[,-1] -> PRIZE
+    PRIZE[,rev(1:length(colnames(PRIZE)))] -> PRIZE 
+    t(PRIZE) -> PRIZE
+    
+    # add index
+    cbind( 16:1, PRIZE ) -> PRIZE
+    c("INDEXSM") -> dimnames(PRIZE)[[2]][1]    
+
+                                             # from far above
+    as.character(ymd(c("1970-01-01")) + days(PRIZED_INDEX_NAMED_VECTOR)) -> rownames(PRIZE)
+    as.xts(PRIZE) -> PRIZE
+    
+    SHR_AQ  <- 
+      x[,c("TICKER" 
+        , "SHR_AQ1", "SHR_AQ2", "SHR_AQ3"
+        , "SHR_AQ4", "SHR_AQ5", "SHR_AQ6" 
+        , "SHR_AQ7", "SHR_AQ8"                                
+    ),drop=FALSE] 
+  
+    SHR_AQ[,1]  -> row.names(SHR_AQ)
+    SHR_AQ[,-1] -> SHR_AQ
+    SHR_AQ[,rev(1:length(colnames(SHR_AQ)))] -> SHR_AQ 
+    t(SHR_AQ) -> SHR_AQ
+    
+    # add index
+    cbind( 8:1, SHR_AQ ) -> SHR_AQ
+    c("INDEXDQ") -> dimnames(SHR_AQ)[[2]][1]  
+    
+    print("LEFT_OFF line 1171")
+  
+    # xts TICKERS...across(7000 of them) - coredata
+    # dates down left: ( xts::to.monthlthy) 
+    #                  (  as.character(ymd_hms(c("1970-01-01 16:00:00.880-0400")) + days(. . . UNX))- index
+
+    # tools
+    # t()
+    # xts.to.monthly(PRICEDM001)     -> row.names -> xts( , index(.))
+    # xts.to.monthly(PEREND_Q(1...8)
+    # xts::merge()
+    # zoo::na.locf, apply, zoo::rollapply, Recall
+  
+    # some logic like
+    # if ( PEREND_Q1  <=  PRICE_DATE  )                   EPSD_Q1 * SHR_AQ1 * ( 1.0 /  DILUTION_MULT_Q1 ) / PRICE_DATE -> M000_RET_PER_DOLLAR
+    # if ( PEREND_Q2  <=  PRICEDM001  <=  PEREND_Q1  )    EPSD_Q2 * SHR_AQ2 * ( 1.0 /  DILUTION_MULT_Q2 ) / PRICE_M001 -> M001_RET_PER_DOLLAR
+  
+    return(x)
+
+  }
+
+  RET_DOLLAR_PRICE_GRID <- suppressWarnings(do(RET_DOLLAR_PRICE_UNIVERSE_NOT_NA, ret_dollar_price_grid_do(.))) 
+
+  RET_DOLLAR_PRICE_UNIVERSE_NOT_NA <- ungroup(RET_DOLLAR_PRICE_UNIVERSE_NOT_NA) 
+  rm(RET_DOLLAR_PRICE_UNIVERSE_NOT_NA)
+    
+  RET_DOLLAR_PRICE_GRID <- ungroup(RET_DOLLAR_PRICE_GRID) 
+  
+  # OUTPUT IS RETURNED TO    RET_DOLLAR_PRICE_GRID
+             
+  bookmarkhere <- 1
+                    
+  ################  VISUALLY SEE THE RETURN_PER_DOLLAR ########################
+  #############################################################################
+ 
+ 
+  
 
   # update companies with missing sector MA information
   
@@ -3242,5 +3361,6 @@ main_foresight3_999 <- function(pauseat=NULL) {
 # rm(list=ls(all.names=TRUE))
 # source('N:/MyVMWareSharedFolder/foresight3/R/main-foresight3-999.R', echo=TRUE)
 
-
+# [ ] LEFT_OFF ret_dollar_price_grid_do() ... need to create those xts OBJECTS
+# [ ] SAVE TO github
 
