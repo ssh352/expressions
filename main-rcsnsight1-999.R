@@ -1375,17 +1375,19 @@ main_rcsnsight1_999 <- function(THESEED = 1) {
       #   tough here
       #     http://cran.r-project.org/web/packages/gbm/gbm.pdf
   # , method = "rf" # default (DID NOT WORK) TERRIBLE TRAIN, TERRIBLE TEST
-    , method = "C5.0" # ( switch to classification only)
+    , method = "gbm" # "C5.0" # ( switch to classification only)
     , metric = "ROC" # classification ( stop printing that annoying: The metric "Accuracy" was not in the result set. ROC will be used instead.)
-    , verbose = TRUE # default anyway?
+    , verbose = FALSE # gbm TOO MUCH # default is TRUE? anyway?
     # tuneGrid = NULL ( "rf" default?! )
     # tuneGrid = grid # grid <- expand.grid()     # Note: "rf": Tuning Parameters: mtry (#Randomly Selected Predictors)
+    # , tuneGrid = expand.grid( trials = 7, model = 'tree', winnow = TRUE ) # C5.0
+      , tuneGrid = expand.grid(interaction.depth = seq(1, 7, by = 2),n.trees = seq(100, 1000, by = 50),shrinkage = c(0.01, 0.1)) # gbm
     #  2008 pdf pdf 10: seems if I EXPLICITY define a tuneGrid, then it DOES NOT use TuneLength
     
     # TuneLength ?: By default, train uses a minimal search grid: 3 values for each tuning parameter. 
     # ...: arguments passed to the classification or regression routine (such as 'randomForest'). 
     #      Errors will occur if values for tuning parameters are passed here.
-    
+    # , control = C5.0Control(earlyStopping = FALSE) # C5.0
   ) -> GALAXY_L_FitterTune
   
  
@@ -1877,6 +1879,64 @@ main_rcsnsight1_999 <- function(THESEED = 1) {
 # and library(caretEnsemble) - run many!
 
 # SEE *LEFT_OFF* IN THE SOURCE CODE
-# * TRY A [ ]"gbm"/[ ]"C5.0" LOWER/RAISE THOSE PARAMETERS 
-# [ ] Change Prediction Criteria to 2-mo ave/3-mo ave ... 6-mo ave
-# [ ] Put all 3 factors in there and run throu "pca" and "isa"(sp)
+# * TRY A [X]"gbm"/[ ]"C5.0" LOWER/RAISE THOSE PARAMETERS 
+# [X] Change Prediction Criteria to 2-mo ave/3-mo ave ... 6-mo ave
+# [X] Put all 3 factors in there and run throu "pca" and "isa"(sp)
+
+# (wed Oct 22)
+# Updated: 2014-09-12 11:33 AM CDT
+# 2014-03-01
+
+  # http://research.stlouisfed.org/fred2/data/UMCSENT.txt
+  # Last Updated:        2014-09-12 11:33 AM CDT
+  # Notes:               At the request of the source, the data is delayed by 6 months.
+
+# http://research.stlouisfed.org/fred2/series/UMCSENT/
+
+# The most recent value is not shown due to an agreement with the source. 
+# To obtain historical data prior to January 1978, 
+# please see FRED data series UMCSENT1. 
+# Copyright, 2014, Survey Research Center, University of Michigan. Reprinted with permission. 
+
+  # Late 1952
+  # http://research.stlouisfed.org/fred2/data/UMCSENT1.txt
+
+# http://alfred.stlouisfed.org/series?seid=UMCSENT
+
+# Thomson Reuters announced on 8 July 2013 that is was suspending its early release practice
+# http://en.wikipedia.org/wiki/University_of_Michigan_Consumer_Sentiment_Index
+
+# Surveys of Consumers
+# http://www.sca.isr.umich.edu/fetchdoc.php?docid=24774
+
+# BUT WHERE CAN I GET THE DATA NOW!!
+# Michigan Consumer Sentiment at Highest Level Since July 2007
+# October 17, 2014
+# by Doug Short
+# http://www.advisorperspectives.com/dshort/updates/Michigan-Consumer-Sentiment-Index.php
+
+# How To Read The Michigan Consumer Sentiment Index 
+# http://www.investopedia.com/articles/general/092713/how-read-michigan-consumer-sentiment-index.asp
+
+# Consumers: Thomson Reuters/University of Michigan
+   # Announcements
+   # The October 2014 Preliminary Index of Consumer Sentiment is: 86.4 
+# http://www.sca.isr.umich.edu/.
+
+  # Data newer than six months is only available to survey sponsors. ( DISAPPOINING )
+  # http://www.sca.isr.umich.edu/data-archive/mine.php
+
+# http://www.investopedia.com/articles/general/092713/how-read-michigan-consumer-sentiment-index.asp
+
+
+# Economic
+# Last Update: 17-Oct-14 10:11 ET
+# Mich Sentiment
+# http://www.briefing.com/investor/calendars/economic/releases/mich.htm
+
+# [ ]does library(qmao) have it? getEconomicCalendarBriefing
+# 
+# https://github.com/gsee/qmao/blob/master/R/getCalendar.R
+
+# [ ] caretensemlble ?
+# [ ] fscaret ?
