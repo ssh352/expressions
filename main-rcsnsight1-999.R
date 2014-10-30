@@ -769,6 +769,119 @@ main_rcsnsight1_999 <- function(THESEED = 1) {
   }
   # USARECM.Close
   
+  # Michigan Sentiment ( A WORK IN PROGRESS )
+  #     
+  # FRED getSymbols("UMCSENT1" ... 1952-11-01 ... 1977-11-01 # EVERY 3 MONTHS 
+  # http://research.stlouisfed.org/fred2/series/UMCSENT1/
+
+   if( file.exists(paste0(getwd(),"/UMCSENT1.Rdata"))){
+    load(file = paste0(getwd(),"/UMCSENT1.Rdata"))
+  } else {
+    suppressWarnings(suppressMessages(getSymbols("UMCSENT1",from=initDateSafelyBackOneMo, src = "FRED", index.class=c("POSIXt","POSIXct") )))
+    # UMCSENT1 <- UMCSENT1[paste0(substr(initDate,1,7),'::')]
+    symbols <- c("UMCSENT1")
+    symbol <- symbols
+    x <- get(symbol)
+    index(x) <- dateWarp(date=index(x),spec=-1,by="days") # subtract off one day
+    x <- to.monthly(x,indexAt='lastof',drop.time=TRUE)  # NOT USED: indexAt='yearmon'  # quantmod
+    x <- x[paste0(substr(initDate,1,7),'::')]
+    indexFormat(x)<-'%Y-%m-%d'
+    x <- x[,"x.Close"] # remove quantmod o/h/l 
+    x[,"x.Close"] <- as.numeric(x[,"x.Close"]) # garantee numeric
+    colnames(x)<-gsub("x",symbol,colnames(x))
+    assign(symbol,x)
+    save("UMCSENT1",file = paste0(getwd(),"/UMCSENT1.Rdata"))
+    rm("x","symbols","symbol")
+  }
+  # UMCSENT1.Close
+
+  # http://research.stlouisfed.org/fred2/data/UMCSENT1.txt
+  # DATE        VALUE
+  # 1952-11-01   86.2
+  # 1953-02-01   90.7
+  # 1953-08-01   80.8
+  
+  # Browse[2]> first( UMCSENT1,3)
+  #                   UMCSENT1.Close
+  # 1952-10-31 86.20000000000000284217
+  # 1953-01-31 90.70000000000000284217
+  # 1953-07-31 80.79999999999999715783
+  
+  # FRED getSymbols("UMCSENT"  ... 1978-01-01 ... 2014-03-01
+  # http://research.stlouisfed.org/fred2/series/UMCSENT/
+
+   if( file.exists(paste0(getwd(),"/UMCSENT.Rdata"))){
+    load(file = paste0(getwd(),"/UMCSENT.Rdata"))
+  } else {
+    suppressWarnings(suppressMessages(getSymbols("UMCSENT",from=initDateSafelyBackOneMo, src = "FRED", index.class=c("POSIXt","POSIXct") )))
+    # UMCSENT <- UMCSENT[paste0(substr(initDate,1,7),'::')]
+    symbols <- c("UMCSENT")
+    symbol <- symbols
+    x <- get(symbol)
+    index(x) <- dateWarp(date=index(x),spec=-1,by="days") # subtract off one day
+    x <- to.monthly(x,indexAt='lastof',drop.time=TRUE)  # NOT USED: indexAt='yearmon'  # quantmod
+    x <- x[paste0(substr(initDate,1,7),'::')]
+    indexFormat(x)<-'%Y-%m-%d'
+    x <- x[,"x.Close"] # remove quantmod o/h/l 
+    x[,"x.Close"] <- as.numeric(x[,"x.Close"]) # garantee numeric
+    colnames(x)<-gsub("x",symbol,colnames(x))
+    assign(symbol,x)
+    save("UMCSENT",file = paste0(getwd(),"/UMCSENT.Rdata"))
+    rm("x","symbols","symbol")
+  }
+  # UMCSENT.Close
+
+  # http://research.stlouisfed.org/fred2/data/UMCSENT.txt
+  # DATE        VALUE
+  # 1978-01-01   83.7
+  # 1978-02-01   84.3
+  # 1978-03-01   78.8
+  
+  # Browse[2]> first( UMCSENT,3)
+  #                    UMCSENT.Close
+  # 1977-12-31 83.70000000000000284217
+  # 1978-01-31 84.29999999999999715783
+  # 1978-02-28 78.79999999999999715783
+
+  # AsMuchAsPossible ( the old 'up to 1977' series )
+  c("UMCSENTAMAP.Close") -> colnames(UMCSENT1)[1]
+  c("UMCSENTAMAP.Close") -> colnames(UMCSENT )[1]
+  # apropos("bind") ? rbind.xts # Implemented in C
+  rbind(UMCSENT1,UMCSENT) -> UMCSENTAMAP
+  c("UMCSENT1.Close") -> colnames(UMCSENT1)[1]
+  c("UMCSENT.Close")  -> colnames(UMCSENT )[1]
+  
+  # I want the 'index of the outcome'
+  suppressWarnings(mergge(GSPC,UMCSENTAMAP,join='left',tz="UTC")) -> UMCSENTAMAP
+  
+  # keep just the last column: "UMCSENTAMAP.Close"
+  UMCSENTAMAP[,NCOL(UMCSENTAMAP),drop=FALSE] -> UMCSENTAMAP
+  
+  # prepare for imputation
+  # still have to trim the bottom(early)(left) 
+  # ( GSPC starts earlier, earliest UMSENT is not until 1952-10-31 )
+  # (                      late NA messup imputation?!
+  # zoo::na.trim
+  na.trim(UMCSENTAMAP, sides=c("both")) -> UMCSENTAMAP
+  # 1952-10-31 ... 7 months back == 2014-02-28
+  # "UMCSENTAMAP.Close"
+  
+  # LEFT_OFF **ACTUAL IMPUTATION ***
+  
+  # impute UMCSENT1 intermediate months 'weighted of some kind of impute
+
+  # "Michigan Sentiment - Final" Economic Calender 
+  # NEED briefing.com
+  # library(qmao)
+  # df1 <- getEconomicCalendar(from='YYY-MM-DD', to='YYYY-MM-DD') # form makes the source: briefing.com
+  # subset(df1, Statistic == "Michigan Sentiment - Final")
+  # NEED 2 MONTHS BACK ( THIS MONTH 'IN' AND 'LAST MONTH BACK TO THE 1ST')
+  # NEED 8 MONTHS BACK
+
+  # NEED 
+  # minus('7 MONTHS BACK'-'2 MONTHS BACK') + '2 MONTHS BACK
+  
+  
   # left join .External("mergeXts"? - complains about 'left join meant for 2' 'localtime is not UTC' 
   suppressWarnings(mergge(GSPC,USRECM,RECPROUSM156N,USARECM,join='left',tz="UTC")) -> GALAXY_L   
   
