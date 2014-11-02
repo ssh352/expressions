@@ -346,6 +346,7 @@ main_rcsnsight1_999 <- function(THESEED = 1) {
   require(sqldf)
 
   # require(lubridate) # NOT
+  require(Holidays)
   require(TimeWarp)
 
   # require(plyr) # NOT USED
@@ -371,8 +372,11 @@ main_rcsnsight1_999 <- function(THESEED = 1) {
   # , ns=asNamespace("quantmod") )
   
   # required quantmod will now load
-  require(quantstrat)  # calls required functions ( IN USE )
-  require(TimeWarp)
+  require(quantstrat)  # calls required functions ( IN USE ) ???
+  
+  require(qmao) # get information from briefing.com
+
+
   # require(qmao)  # alignSymbols  # Deletes rows that not all Symbols have in common
 
   # require(qmao)      # NOT USED YET ( IF EVER )
@@ -395,7 +399,8 @@ main_rcsnsight1_999 <- function(THESEED = 1) {
   
   require(caret)
   
-  require(unbalanced)
+  ## ended up not using
+  ## require(unbalanced)
   
   setwd("N:\\MyVMWareSharedFolder\\rcsnsight1\\R")
 
@@ -810,7 +815,7 @@ main_rcsnsight1_999 <- function(THESEED = 1) {
   # FRED getSymbols("UMCSENT"  ... 1978-01-01 ... 2014-03-01
   # http://research.stlouisfed.org/fred2/series/UMCSENT/
 
-   if( file.exists(paste0(getwd(),"/UMCSENT.Rdata"))){
+  if( file.exists(paste0(getwd(),"/UMCSENT.Rdata"))){
     load(file = paste0(getwd(),"/UMCSENT.Rdata"))
   } else {
     suppressWarnings(suppressMessages(getSymbols("UMCSENT",from=initDateSafelyBackOneMo, src = "FRED", index.class=c("POSIXt","POSIXct") )))
@@ -843,6 +848,8 @@ main_rcsnsight1_999 <- function(THESEED = 1) {
   # 1978-01-31 84.29999999999999715783
   # 1978-02-28 78.79999999999999715783
 
+  # combine (rbind the 'pre-1978 series(1)' with theh post-'pre-1978 series()')
+  
   # AsMuchAsPossible ( the old 'up to 1977' series )
   c("UMCSENTAMAP.Close") -> colnames(UMCSENT1)[1]
   c("UMCSENTAMAP.Close") -> colnames(UMCSENT )[1]
@@ -864,13 +871,73 @@ main_rcsnsight1_999 <- function(THESEED = 1) {
   # zoo::na.trim
   na.trim(UMCSENTAMAP, sides=c("both")) -> UMCSENTAMAP
   # 1952-10-31 ... 7 months back == 2014-02-28
-  # "UMCSENTAMAP.Close"
+  # "UMCSENTAMAP.Close" 
   
-  # LEFT_OFF **ACTUAL IMPUTATION ***
+  # impute UMCSENT1('pre-1978 series(1)') intermediate months: some kind of impute
   
-  # impute UMCSENT1 intermediate months 'weighted of some kind of impute
+  # want all GSPC entries ( and for UMCSENTAMAP imputation: trim the early and late )
+  na.trim(suppressWarnings(mergge(GSPC[,"GSPC.Close"],UMCSENTAMAP,join='left',tz="UTC")) , sides=c("both")) -> UMCSENTAMAP_IMPUTED
+  
+  # BEGIN zoo 'linear approximation interpolation'
+  # replaced by linear interpolation via 'approx' ( ? zoo:::na.approx.zoo ) # VERY RIGHT ANSWER
+  # simple testing: works better than  ( ? zoo:::na.spline.zoo ) # WRONG ANSWER
+  
+  # I only CARE about
+  UMCSENTAMAP_IMPUTED[,"UMCSENTAMAP.Close"] -> UMCSENTAMAP_IMPUTED
+  
+  # 'Doug Short Method'
+  # zoo:::na.approx.zoo 
+  # zoo:::na.approx.default
+  #   LATER ( IF I CARE FOR SOME CONTROL )
+  #   n: If 'xout' is not specified, interpolation takes place at 'n'
+  #           equally spaced points spanning the interval ['min(x)','max(x)'].
+  
+  #   method: specifies the interpolation method to be used.  Choices are '"linear"'(default) or '"constant"'.
+  #     .Call(C_ApproxTest, x, y, method, f)
+  
+  # CORRECT ANSWER!!
+  na.approx(UMCSENTAMAP_IMPUTED) -> UMCSENTAMAP_IMPUTED
+  
+  # done with imputation
+  UMCSENTAMAP_IMPUTED -> UMCSENTAMAP
+  
+  ## JUNK AREA
+  # replace NA missing values with something useful
+  # I do not want "GSPC.Close" in my math
+  # UMCSENTAMAP_IMPUTED[,"UMCSENTAMAP.Close"] -> UMCSENTAMAP_IMPUTED
+  # realized xts::lag 'probabally not the 'correct direction' .. did not continue trying or experimenting
+  # lag(UMCSENTAMAP_IMPUTED, k = 1)  -> UMCSENTAMAP_IMPUTED[,"UMCSENTAMAP.Close.lag_1"]
+  # lead 1
+  # lag(UMCSENTAMAP_IMPUTED, k = -1) -> UMCSENTAMAP_IMPUTED[,"UMCSENTAMAP.Close.lead_1"]
+  ## END OF JUNK AREA
 
-  # "Michigan Sentiment - Final" Economic Calender 
+  # require(imputation) TRY - wrong direction
+  
+  # wrong answers: ( DOES NOT KNOW THAT THIS IS IS A 'TIME SERIES')
+  # forever - never finished
+  # invisible(gbmImpute(coredata(UMCSENTAMAP_IMPUTED), max.iters = 2, cv.fold = 2, n.trees = 100, verbose = T) -> result) # forever ... never
+  
+  # wrong answer ( DOES NOT KNOW THAT THIS IS IS A 'TIME SERIES')
+  # quicks: seems like caret likes '5' wRONG ANSWER ( '2' is also the wrong answer)
+  # invisible(kNNImpute(coredata(UMCSENTAMAP_IMPUTED), k = 5, verbose = FALSE) -> result) 
+  
+  # wrong answer ( DOES NOT KNOW THAT THIS IS IS A 'TIME SERIES')
+  # invisible(meanImpute(coredata(UMCSENTAMAP_IMPUTED)) -> result) 
+  
+  # result$x[,"UMCSENTAMAP.Close"] -> UMCSENTAMAP_IMPUTED[,"UMCSENTAMAP.Close"]
+  # View(  result )
+  
+  # just keep UMCSENTAMAP.Close"  
+  # UMCSENTAMAP_IMPUTED[,"UMCSENTAMAP.Close"] -> UMCSENTAMAP_IMPUTED
+  
+  # rm(result)
+  # end of require(imputation) TRY - wrong direction
+  
+  bookmarkhere <- 1
+  
+  # later ... big mergge ... SPC,USRECM,RECPROUSM156N,USARECM, UMCSENTAMAP_IMPUTED
+  
+  # "Michigan Sentiment - Final" Economic Calender
   # NEED briefing.com
   # library(qmao)
   # df1 <- getEconomicCalendar(from='YYY-MM-DD', to='YYYY-MM-DD') # form makes the source: briefing.com
@@ -882,6 +949,138 @@ main_rcsnsight1_999 <- function(THESEED = 1) {
   # minus('7 MONTHS BACK'-'2 MONTHS BACK') + '2 MONTHS BACK
   
   
+  ## require(timeDate)
+
+  
+  # now
+  as.character(Sys.Date()) -> RecentNow
+  
+  # of last month its first day 
+  as.character(as.Date(timeFirstDayInMonth(dateWarp(date=RecentNow,spec=-1,by="months")))) -> RecentFirst 
+  
+  # of last month its first day the day before
+  dateWarp(date=RecentFirst,spec=-1,by="days") -> RecentFirstDayBefore 
+  
+  # ( of last month its first day the day before ) seven months before ... its first day
+  as.character(as.Date(timeFirstDayInMonth(dateWarp(date=RecentFirstDayBefore,spec=-8,by="months")))) -> MediumFirstDay 
+  
+  if( file.exists(paste0(getwd(),"/BRIEFINGCALMEDIUM.Rdata"))){
+    load(file = paste0(getwd(),"/BRIEFINGCALMEDIUM.Rdata"))
+  } else {
+    print("Beginning ... Running .. getEconomicCalendar ...")
+    getEconomicCalendar(from=MediumFirstDay, to=RecentFirstDayBefore) -> BRIEFINGCALMEDIUM
+    print("Done ... Running .. getEconomicCalendar ...")
+    save("BRIEFINGCALMEDIUM",file = paste0(getwd(),"/BRIEFINGCALMEDIUM.Rdata"))
+  }
+  
+  subset(
+    BRIEFINGCALMEDIUM
+    , Statistic == "Michigan Sentiment - Final"
+  ) -> UMCSENTMEDIUM
+  
+  if( file.exists(paste0(getwd(),"/BRIEFINGCALRECENT.Rdata"))){
+    load(file = paste0(getwd(),"/BRIEFINGCALRECENT.Rdata"))
+  } else {
+    print("Beginning ... Running .. getEconomicCalendar ...")
+    getEconomicCalendar(from=RecentFirst, to=RecentNow) -> BRIEFINGCALRECENT
+    print("Done ... Running .. getEconomicCalendar ...")
+    save("BRIEFINGCALRECENT",file = paste0(getwd(),"/BRIEFINGCALRECENT.Rdata"))
+  }
+  
+  subset(
+    BRIEFINGCALRECENT
+    , Statistic == "Michigan Sentiment - Final"
+  ) -> UMCSENTRECENT
+  
+  
+  as.character(as.Date(UMCSENTMEDIUM$Time))        -> row.names(UMCSENTMEDIUM)     
+  as.numeric(UMCSENTMEDIUM$Actual)                 -> UMCSENTMEDIUM[,"x"]
+  UMCSENTMEDIUM[,"x",drop=FALSE]                   -> UMCSENTMEDIUM
+  x <- as.xts(UMCSENTMEDIUM,tzone = "UTC")
+  
+  x <- to.monthly(x,indexAt='lastof',drop.time=TRUE) 
+  x <- x[paste0(substr(initDate,1,7),'::')]
+  indexFormat(x)<-'%Y-%m-%d'
+  x <- x[,"x.Close"] # remove quantmod o/h/l 
+  colnames(x)<-gsub("x","UMCSENTMEDIUM",colnames(x))
+  x -> UMCSENTMEDIUM
+  rm(x)
+  
+  
+  as.character(as.Date(UMCSENTRECENT$Time))        -> row.names(UMCSENTRECENT)     
+  as.numeric(UMCSENTRECENT$Actual)                 -> UMCSENTRECENT[,"x"]
+  UMCSENTRECENT[,"x",drop=FALSE]                   -> UMCSENTRECENT
+  x <- as.xts(UMCSENTRECENT,tzone = "UTC")
+  
+  x <- to.monthly(x,indexAt='lastof',drop.time=TRUE) 
+  x <- x[paste0(substr(initDate,1,7),'::')]
+  indexFormat(x)<-'%Y-%m-%d'
+  x <- x[,"x.Close"] # remove quantmod o/h/l 
+  colnames(x)<-gsub("x","UMCSENTRECENT",colnames(x))
+  x -> UMCSENTRECENT
+  rm(x)
+  
+  
+  bookmarkhere <- 1
+  
+  
+  # combine the "Michigan Sentiment - Final" AMAP
+  #    with the "Michigan Sentiment - Final" MEDIUM and
+  #    with the "Michigan Sentiment - Final" RECENT
+  
+  c("UMCSENTAMAP.Close") -> colnames(UMCSENTMEDIUM)[1]
+  # apropos("bind") ? rbind.xts # Implemented in C
+  rbind(UMCSENTAMAP,UMCSENTMEDIUM) -> UMCSENTAMAP
+  # Typically duplicates are eliminated
+  # fix it up by taking last in each set of duplicates
+  # zoo FAQ
+  aggregate(UMCSENTAMAP, identity, tail, 1) -> UMCSENTAMAP
+  # return to be an xts, fix lost column name
+  xts(UMCSENTAMAP) -> UMCSENTAMAP; c("UMCSENTAMAP.Close") ->colnames(UMCSENTAMAP)
+  c("UMCSENTMEDIUM.Close") -> colnames(UMCSENTMEDIUM)[1]
+  
+  # I want the 'index of the outcome'
+  suppressWarnings(mergge(GSPC,UMCSENTAMAP,join='left',tz="UTC")) -> UMCSENTAMAP
+  
+  # keep just the last column: "UMCSENTAMAP.Close"
+  UMCSENTAMAP[,NCOL(UMCSENTAMAP),drop=FALSE] -> UMCSENTAMAP
+  
+  
+  c("UMCSENTAMAP.Close") -> colnames(UMCSENTRECENT)[1]
+  # apropos("bind") ? rbind.xts # Implemented in C
+  rbind(UMCSENTAMAP,UMCSENTRECENT) -> UMCSENTAMAP
+  # Typically duplicates are eliminated
+  # fix it up by taking last in each set of duplicates
+  # zoo FAQ
+  aggregate(UMCSENTAMAP, identity, tail, 1) -> UMCSENTAMAP
+  # return to be an xts, fix lost column name
+  xts(UMCSENTAMAP) -> UMCSENTAMAP; c("UMCSENTAMAP.Close") ->colnames(UMCSENTAMAP)
+  c("UMCSENTRECENT.Close") -> colnames(UMCSENTRECENT)[1]
+  
+  # I want the 'index of the outcome'
+  suppressWarnings(mergge(GSPC,UMCSENTAMAP,join='left',tz="UTC")) -> UMCSENTAMAP
+  
+  # keep just the last column: "UMCSENTAMAP.Close"
+  UMCSENTAMAP[,NCOL(UMCSENTAMAP),drop=FALSE] -> UMCSENTAMAP
+  
+  bookmarkhere <- 1 
+  
+  # because a missing value in 2014-07-31 "UMCSENTMEDIUM"  
+  #  I am required to do this na.trim and na.approx NOW!
+  
+  # zoo::na.trim
+  na.trim(UMCSENTAMAP, sides=c("both")) -> UMCSENTAMAP
+  
+  # time series impute missing values ( SHOULD BE JUST ONE COL ANYWAYS )
+  na.approx(UMCSENTAMAP[,"UMCSENTAMAP.Close"]) -> UMCSENTAMAP[,"UMCSENTAMAP.Close"]
+  
+  #  LEFT_OFF  [ ] average_out or velocitize UMICH data
+  #            [ ] add to merge data below
+  #  FAR NEXT  [ ] consider VIX volitity or 'similar' data / or OTHERS?
+  
+  
+  # ### MAIN MERGE BEGINS HERE ######
+  #                                 #
   # left join .External("mergeXts"? - complains about 'left join meant for 2' 'localtime is not UTC' 
   suppressWarnings(mergge(GSPC,USRECM,RECPROUSM156N,USARECM,join='left',tz="UTC")) -> GALAXY_L   
   
@@ -1971,20 +2170,6 @@ main_rcsnsight1_999 <- function(THESEED = 1) {
 
 # instead of graphs need sqldf() where graph output would be
 
-# POSSIBL HELP : since ONLY FEW crashes: REPEAT DATA 10x + slight sample WIGGLE ( TRY TO GET MORE OUTLIERS )
-# OR INCREASE THE NUMBER OF observations EXPONENTIALLY of those THAT are within 0 to 30 percent
-#   at least 'half my data in 'recession territory' ( VIDEO: Khun; unbalanced data in his book )
-# OR 'elimnate all cases below a threashold of 5%'!
-# http://skillport.books24x7.com/assetviewer.aspx?bookid=46441&chunkid=684472601&noteMenuToggle=0&leftMenuState=1
-
-# generate a new "SMOTEd" data set that addresses the class unbalance problem. ( classification )
-# http://www.rdocumentation.org/packages/DMwR/functions/SMOTE
-# Torgo, L. (2010) Data Mining using R: learning with case studies
-  # 4.4.2.1 The Class Imbalance Problem pdf 224
-  # The general idea of this method is to artificially generate new examples of the minority
-  # class using the nearest neighbors of these cases. Furthermore, the majority
-  # class examples are also under-sampled, leading to a more balanced dataset.
-  # BOOK_Data_Mining_with_R_Learning_with_Case_Studies_(2011)_(Torgo)_quantmod_specifyModel_buildModel_modelData_randomForest(130)_package_DMwR_GOOD_FREE.pdf
 
 # pick the 20 worst months over the last 46 years and just try to predict those
 # more (social import) variables 
@@ -1996,60 +2181,13 @@ main_rcsnsight1_999 <- function(THESEED = 1) {
 # [X] Change Prediction Criteria to 2-mo ave/3-mo ave ... 6-mo ave
 # [X] Put all 3 factors in there and run throu "pca" and "isa"(sp)
 
-# (wed Oct 22)
-# Updated: 2014-09-12 11:33 AM CDT
-# 2014-03-01
 
-  # http://research.stlouisfed.org/fred2/data/UMCSENT.txt
-  # Last Updated:        2014-09-12 11:33 AM CDT
-  # Notes:               At the request of the source, the data is delayed by 6 months.
-
-# http://research.stlouisfed.org/fred2/series/UMCSENT/
-
-# The most recent value is not shown due to an agreement with the source. 
-# To obtain historical data prior to January 1978, 
-# please see FRED data series UMCSENT1. 
-# Copyright, 2014, Survey Research Center, University of Michigan. Reprinted with permission. 
-
-  # Late 1952
-  # http://research.stlouisfed.org/fred2/data/UMCSENT1.txt
-
-# http://alfred.stlouisfed.org/series?seid=UMCSENT
-
-# Thomson Reuters announced on 8 July 2013 that is was suspending its early release practice
-# http://en.wikipedia.org/wiki/University_of_Michigan_Consumer_Sentiment_Index
-
-# Surveys of Consumers
-# http://www.sca.isr.umich.edu/fetchdoc.php?docid=24774
-
-# BUT WHERE CAN I GET THE DATA NOW!!
-# Michigan Consumer Sentiment at Highest Level Since July 2007
-# October 17, 2014
-# by Doug Short
-# http://www.advisorperspectives.com/dshort/updates/Michigan-Consumer-Sentiment-Index.php
-
-# How To Read The Michigan Consumer Sentiment Index 
-# http://www.investopedia.com/articles/general/092713/how-read-michigan-consumer-sentiment-index.asp
-
-# Consumers: Thomson Reuters/University of Michigan
-   # Announcements
-   # The October 2014 Preliminary Index of Consumer Sentiment is: 86.4 
-# http://www.sca.isr.umich.edu/.
-
-  # Data newer than six months is only available to survey sponsors. ( DISAPPOINING )
-  # http://www.sca.isr.umich.edu/data-archive/mine.php
-
-# http://www.investopedia.com/articles/general/092713/how-read-michigan-consumer-sentiment-index.asp
-
-
-# Economic
-# Last Update: 17-Oct-14 10:11 ET
-# Mich Sentiment
-# http://www.briefing.com/investor/calendars/economic/releases/mich.htm
-
-# [ ]does library(qmao) have it? getEconomicCalendarBriefing
+# [x]does library(qmao) have it? getEconomicCalendarBriefing
 # 
 # https://github.com/gsee/qmao/blob/master/R/getCalendar.R
 
 # [ ] caretensemlble ?
 # [ ] fscaret ?
+
+
+
