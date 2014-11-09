@@ -1,4 +1,6 @@
 
+# SEARCH FOR **** LEFT_OFF ***
+
 # RECENT HELP FROM
 # N:\FUND_DATA_FIXES_2\scratchFaberRecessionINDQuantstrat.txt
 
@@ -353,7 +355,13 @@ main_rcsnsight1_999 <- function(THESEED = 1) {
   
   require(data.table) # dplyr may/not? dynamically call this?
   require(dplyr)
-
+  
+  require(timeDate) # timeFirstDayInMonth
+  
+  # May be dangerous ( from CRAN archive )
+  require(unbalanced) # ubBalance
+  
+  
   # require(foreign)
 
   # # DECIDED - to have my columns to be named 'EndOf' 
@@ -1078,11 +1086,12 @@ main_rcsnsight1_999 <- function(THESEED = 1) {
   #            [ ] add to merge data below
   #  FAR NEXT  [ ] consider VIX volitity or 'similar' data / or OTHERS?
   
+  bookmarkhere <- 1
   
   # ### MAIN MERGE BEGINS HERE ######
   #                                 #
   # left join .External("mergeXts"? - complains about 'left join meant for 2' 'localtime is not UTC' 
-  suppressWarnings(mergge(GSPC,USRECM,RECPROUSM156N,USARECM,join='left',tz="UTC")) -> GALAXY_L   
+  suppressWarnings(mergge(GSPC,USRECM,RECPROUSM156N,USARECM,UMCSENTAMAP,join='left',tz="UTC")) -> GALAXY_L   
   
   # TOO EARLY - have to do below anyways
   # keep complete.cases ( zoo::na.trim is equivalent )
@@ -1130,6 +1139,13 @@ main_rcsnsight1_999 <- function(THESEED = 1) {
   # Generated
   # RECPROUSM156N.EndOf.Lag.4 ... RECPROUSM156N.EndOf.Lag.17
   
+  # three mo pred
+  symbol_OHLC_lag_k_periods(UMCSENTAMAP,"UMCSENTAMAP",3:4)                  -> UMCSENTAMAP_LAGS 
+  suppressWarnings(mergge(GALAXY_L,UMCSENTAMAP_LAGS,join='outer',tz='UTC')) -> GALAXY_L
+  
+  # Generated
+  # UMCSENTAMAP.EndOf.Lag.3  UMCSENTAMAP.EndOf.Lag.4
+  
   # OECD 4 month lag ( TO BE DONE [X] ) # old 0:1 ( NOW: 2 month ave, pred 1-6)
   symbol_OHLC_lag_k_periods(USARECM,"USARECM",5:11)                      -> USARECM_LAGS 
   suppressWarnings(mergge(GALAXY_L,USARECM_LAGS,join='outer',tz='UTC'))  -> GALAXY_L
@@ -1171,6 +1187,15 @@ main_rcsnsight1_999 <- function(THESEED = 1) {
   # Generated
   # RECPROUSM156N.AveOf.Lag.4.RangeAvgz.4.5  RECPROUSM156N.AveOf.Lag.9.RangeAvgz.9.10
   
+  # three mo pred
+  symbol_OHLC_range_k_periods(UMCSENTAMAP,"UMCSENTAMAP",3:3
+                              , qmOHLC = "Cl", llagk_zone_back = 1
+                              , findthat = "mean", findthat_name = "AveOf", findthat_range_name = "RangeAvgz" )  -> UMCSENTAMAP_RANGE_AVGZ 
+  suppressWarnings(mergge(GALAXY_L,UMCSENTAMAP_RANGE_AVGZ ,join='outer',tz='UTC'))    -> GALAXY_L 
+  
+  # generated
+  # UMCSENTAMAP.AveOf.Lag.3.RangeAvgz.3.4
+  
   symbol_OHLC_range_k_periods(USRECM,"USRECM",5:10
     , qmOHLC = "Cl", llagk_zone_back = 1
     , findthat = "mean", findthat_name = "AveOf", findthat_range_name = "RangeAvgz" )   -> USRECM_RANGE_AVGZ
@@ -1208,7 +1233,7 @@ main_rcsnsight1_999 <- function(THESEED = 1) {
   GALAXY_L[,!grepl(".Close",colnames(GALAXY_L))] -> GALAXY_L
   GALAXY_L[,!grepl(".Low",colnames(GALAXY_L))]   -> GALAXY_L
   
-  # currently - just predict 1 # ( LEFT_OFF: RE-VERIFY UPWARDS [ ] )
+  # 
   suppressWarnings(mergge(GALAXY_L
     ,  pct_chnge(GALAXY_L,"RECPROUSM156N.EndOf.Lag.4","RECPROUSM156N.EndOf.Lag.5")
     ,  pct_chnge(GALAXY_L,"RECPROUSM156N.EndOf.Lag.5","RECPROUSM156N.EndOf.Lag.6")
@@ -1332,6 +1357,8 @@ main_rcsnsight1_999 <- function(THESEED = 1) {
   GALAXY_L[, c("GSPC.MinOf.Lag.0.RangeLwz.0.2.EndOf.Lag.3.PctChnge.0.3"   # caret prefers the first col to be the outcome
                 , "RECPROUSM156N.EndOf.Lag.6"
                   , "RECPROUSM156N.AveOf.Lag.6.RangeAvgz.6.7"
+                , "UMCSENTAMAP.EndOf.Lag.3"
+                  , "UMCSENTAMAP.AveOf.Lag.3.RangeAvgz.3.4"
               )] -> GALAXY_L  
              
   # three mo pred
@@ -1500,7 +1527,7 @@ main_rcsnsight1_999 <- function(THESEED = 1) {
   # now change the labels back to the values: "one" (minority),"two" (majority)
   # TO DO
  
-   within(data.frame(coredata(GALAXY_L)),{  # LEFT_OFF
+   within(data.frame(coredata(GALAXY_L)),{  
      factor(ifelse( TargetObservation == 1L,
                     1L, 
                     2L), levels = c(1L,2L),labels=c("one","two")) -> TargetObservation
@@ -1569,10 +1596,10 @@ main_rcsnsight1_999 <- function(THESEED = 1) {
     , method =  c("ica")
     # fastICA::fastICA(x, ...); argument "n.comp" is missing, with no default
     # n.comp number of components to be extracted
-      , n.comp = 2
+      , n.comp = 2 # 2 usual: 'n.comp' is too large[3]: reset to 2
     # http://cran.r-project.org/web/packages/fastICA/fastICA.pdf
   )
-  # Use the predict methods to do the adjustments ( LEFT_OFF ) AFTER BREAK
+  # Use the predict methods to do the adjustments 
   GALAXY_L_trainScaled <- predict(procValues, GALAXY_L_Train[,-1*c(1),drop=FALSE])
   cbind(GALAXY_L_Train[,1,drop=FALSE],GALAXY_L_trainScaled) -> GALAXY_L_Train
   
@@ -1693,7 +1720,7 @@ main_rcsnsight1_999 <- function(THESEED = 1) {
     # tuneGrid = NULL ( "rf" default?! )
     # tuneGrid = grid # grid <- expand.grid()     # Note: "rf": Tuning Parameters: mtry (#Randomly Selected Predictors)
     # , tuneGrid = expand.grid( trials = 7, model = 'tree', winnow = TRUE ) # C5.0
-      , tuneGrid = expand.grid(interaction.depth = seq(1, 7, by = 2),n.trees = seq(100, 1000, by = 50),shrinkage = c(0.01, 0.1)) # gbm
+      , tuneGrid = expand.grid(interaction.depth = seq(1, 7, by = 2),n.trees = seq(100, 1000, by = 50),shrinkage = c(0.1)) # gbm: 60 seconds c(0.01, 0.1) # gbm: 30 seconds c(0.1)
     #  2008 pdf pdf 10: seems if I EXPLICITY define a tuneGrid, then it DOES NOT use TuneLength
     
     # TuneLength ?: By default, train uses a minimal search grid: 3 values for each tuning parameter. 
@@ -2019,7 +2046,7 @@ main_rcsnsight1_999 <- function(THESEED = 1) {
   #  Accuracy : 0.945652173913044  # Therefore 95% failure to predict using "rf" and 577 samples
   #  Accuracy : 0.285714285714286  # Therefore 29% failure to predict using "rf" and 57  samples
  
-  ##  end of classification only zone ## LEFT_OFF
+  ##  end of classification only zone ## 
  
  #############
  
@@ -2107,10 +2134,10 @@ main_rcsnsight1_999 <- function(THESEED = 1) {
 # [X] CSPC (1,2,3,4,5,6)  %change max drawdown (maxdraw(GSPC)-Cl(GSCPC))/abs(CSPC)
 # [X] slightly redone: remove second ticker
 
-# LEFT_OFF
+# 
 # NEXT: NEED STRUCTURES ( OR PRINTED ZONES ) TO GENERATE 6 OUTCOME 1 MO 2MO ... 6MO ( of maxdrawdawn )
 # [X] SOME THINKING IS REQUIRED ( fixed RANGE bug )
-# LEFT_OFF
+# 
 # worst drawdown the next 6 mo
 # GSPC                  lag 0 through 6  ( outcome )
 # RECESSION INDICATORS:           lag 9(9-10 min ranges)   ... PIGER
@@ -2139,7 +2166,7 @@ main_rcsnsight1_999 <- function(THESEED = 1) {
 # VERIFY MY DATA IS CORRECT ( YES - AGAIN ) [ ]
 # CHANGE PREDICT TEST TO 80 % [ ]  
 #  HOW WELL PREDICT? GALAXY_L_Predict_vector[1,,drop=FALSE] - GALAXY_L_Test[1,,drop=FALSE] [ ]
-### HIGEST - LEFT_OFF_ COMPARE
+### HIGH -_ COMPARE
   # ADD 'NOTSMART' COLUMN 'UNXDATE'  SO I CAN 'sqdf SQL JOIN or xts/zoo merge  ACROSS OR ( OTHER ) [ ] )
 # ADD IN hdntile/hdquantile [ ] : See the Ave + Ave + Ave problem
 
@@ -2153,7 +2180,7 @@ main_rcsnsight1_999 <- function(THESEED = 1) {
 # if USARECM always covers USAREC ( or I FORCE to cover ) then 
 #   the case of 0 + 1 never exists and 1 + 1 = 2 has TRUE value
 
-# NEED 2 ... 6 month LOOK AHEADS ( HIGH LEFT_OFF: STICK IN CODE ) [ ] SOME THINKING IS REQUIRED
+# NEED 2 ... 6 month LOOK AHEADS ( HIGH : STICK IN CODE ) [ ] SOME THINKING IS REQUIRED
 
 # need zoo:rollapply to fix/replace pct_change [ ]
 ### rcsnsight(2)?
@@ -2176,7 +2203,7 @@ main_rcsnsight1_999 <- function(THESEED = 1) {
 #    importance, fscaret (feature selection)
 # and library(caretEnsemble) - run many!
 
-# SEE *LEFT_OFF* IN THE SOURCE CODE
+# 
 # * TRY A [X]"gbm"/[ ]"C5.0" LOWER/RAISE THOSE PARAMETERS 
 # [X] Change Prediction Criteria to 2-mo ave/3-mo ave ... 6-mo ave
 # [X] Put all 3 factors in there and run throu "pca" and "isa"(sp)
