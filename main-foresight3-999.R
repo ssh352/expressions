@@ -80,7 +80,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
 #   
 #   if(getOption("RepositoryStyle") == "Installed")  {
 #     
-#     options(AAIIBase = "N:/MyVMWareSharedFolder/Professional140930") 
+#     options(AAIIBase = "N:/MyVMWareSharedFolder/Professional141031") 
 #     
 #   }
   
@@ -94,7 +94,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   if(getLocalOption("RepositoryStyle", optionlist = OPTIONLIST) == "Installed")  {
     
-    OPTIONLIST <- localoptions(AAIIBase = "N:/MyVMWareSharedFolder/Professional141017", optionlist = OPTIONLIST)
+    OPTIONLIST <- localoptions(AAIIBase = "N:/MyVMWareSharedFolder/Professional141031", optionlist = OPTIONLIST)
     
   }
   
@@ -192,7 +192,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
 
   require(sqldf)
 
-  require(lubridate)
+  require(lubridate) # verify/revisite later: why am I not using TimeWarp?
 
   require(plyr)
   require(dplyr)
@@ -202,6 +202,10 @@ main_foresight3_999 <- function(pauseat=NULL) {
 
   require(TTR)
   
+  require(gdata)
+  require(tidyr)
+  require(stringr)
+  require(gdata)
 
   # if( Sys.getenv("ISRTESTING") == "TRUE") { if(NROW(PAYLOAD) == 7000) print(paste0("","")) }
 
@@ -806,6 +810,99 @@ main_foresight3_999 <- function(pauseat=NULL) {
 
   # end elimintate un-investibles ( keep investibles) ( All Stocks)
   
+
+  # Dividend-Ex Date
+  # Data Table Name: DIVNQXDT
+  # Data Category: Income Statement ? Quarterly
+  # Field Type: Date (MM/DD/YYYY)
+  
+  # DD_FILE     SI_ISQ
+  # FIELD_NAME  DIVNQXDT
+  # FIELD_TYPE  D
+  # FIELD_DESC  Dividend-Ex Date
+  # DESCRIP     Income Statement - Quarterly
+  # FM_FILE     SI_ISQ
+  
+  # Dividend-Pmt Date
+  # Data Table Name: DIVNQPDT
+  # Data Category: Income Statement ? Quarterly
+  # Field Type: Date (MM/DD/YYYY)
+  
+  # DD_FILE     SI_ISQ
+  # FIELD_NAME  DIVNQPDT
+  # FIELD_TYPE  D
+  # FIELD_DESC  Dividend-Pmt Date
+  # DESCRIP     Income Statement - Quarterly
+  # FM_FILE     SI_ISQ
+  
+  
+  # have an 'annual' 'EPS change' greater than zero (0)'
+  # LAST of growth expose
+  
+  # FIELD_NAME  EPS_Q1
+  # FIELD_DESC  EPS Q1
+  # DESCRIP     Income Statement - Quarterly
+  # FM_FILE     SI_ISQ
+  
+  # if(getOption("FileStoreStyle") == "Optimized") {
+  # if( file.exists(getOption("AAIISIPro40PathFileOptim_SI_ISQ"))) {
+  # load(file = getOption("AAIISIPro40PathFileOptim_SI_ISQ"))
+  # } else {
+  # # load file
+  # SI_ISQ <- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_ISQ"), as.is = TRUE)))
+  # save("SI_ISQ",file = getOption("AAIISIPro40PathFileOptim_SI_ISQ"))
+  # }
+  # } else {
+  # # load file
+  # SI_ISQ <- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_ISQ"), as.is = TRUE)))
+  # }
+  
+  SI_ISQ <- get_from_disk("SI_ISQ", filesoptionlist = OPTIONLIST)
+  
+  # primary_key_dup <- SI_ISQ[duplicated(SI_ISQ[,'COMPANY_ID']),,drop=FALSE]
+  # new_df_no_duplicates <- SI_ISQ[!(SI_ISQ$COMPANY_ID %in% as.matrix(primary_key_dup)),,drop=FALSE]
+  # SI_ISQ <- new_df_no_duplicates
+  # rm(primary_key_dup,new_df_no_duplicates)
+  
+  SI_ISQ <- SI_ISQ # wierd performance bug ( program runs faster than can it access its variables )
+  SI_ISQ <- eliminate_all_duplicates( SI_ISQ, "COMPANY_ID" ) 
+  
+  SI_ISQ_tbl_sqlite <- copy_to(dpsqllconn, SI_ISQ, temporary = FALSE
+                               , indexes = list(
+                                 c("COMPANY_ID")
+                               )
+  )
+  SI_ISQ <- tbl_df(SI_ISQ)
+  
+  sqldf("DROP TABLE main.UNIVERSE", connection = dpsqllconn$con)
+  
+  # strip off
+  UNIVERSE <- as.data.frame(UNIVERSE)
+  UNIVERSE_tbl_sqlite <- copy_to(dpsqllconn, UNIVERSE, temporary = FALSE
+                                 , indexes = list(
+                                   #    c("TICKER")
+                                   # ,  
+                                   c("COMPANY_ID")
+                                   # ,  c("ORIG_ORDER")
+                                   
+                                 )
+  )
+  
+  UNIVERSE <- sqldf("SELECT UNIV.*, ISQ.EPS_Q1 AS EPS_Q1__numeric, ISQ.EPS_Q2 AS EPS_Q2__numeric, ISQ.EPS_Q3 AS EPS_Q3__numeric, ISQ.EPS_Q4 AS EPS_Q4__numeric,         -- comment
+                    ISQ.EPS_Q5 AS EPS_Q5__numeric, ISQ.EPS_Q6 AS EPS_Q6__numeric, ISQ.EPS_Q7 AS EPS_Q7__numeric, ISQ.EPS_Q8 AS EPS_Q8__numeric, 
+                    ISQ.EPSD_Q1 AS EPSD_Q1__numeric, ISQ.EPSD_Q2 AS EPSD_Q2__numeric, ISQ.EPSD_Q3 AS EPSD_Q3__numeric, ISQ.EPSD_Q4 AS EPSD_Q4__numeric, -- comment
+                    ISQ.EPSD_Q5 AS EPSD_Q5__numeric, ISQ.EPSD_Q6 AS EPSD_Q6__numeric, ISQ.EPSD_Q7 AS EPSD_Q7__numeric, ISQ.EPSD_Q8 AS EPSD_Q8__numeric, 
+                    ISQ.DIVNQXDT AS DIVNQXDTUNX, ISQ.DIVNQPDT AS DIVNQPDTUNX 
+                    FROM 
+                    main.UNIVERSE UNIV, main.SI_ISQ ISQ WHERE 
+                    UNIV.COMPANY_ID = ISQ.COMPANY_ID 
+                    ", connection = dpsqllconn$con, method="name__class")
+  
+  UNIVERSE <- tbl_df(UNIVERSE)
+
+
+
+
   
   ###########################################################################################
   ################  VISUALLY SEE THE 10-M MA AT LAST KNOWN MONTH END ########################
@@ -1055,7 +1152,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   # TO_DO [ ] END: NEED TO 'REALLY' MAKE 'NA' ... complete.cases, zoo::na.trim
 
   RET_DOLLAR_PRICE_UNIVERSE_NOT_NA <- 
-  UNIVERSE[,c("MG_DESC", "MKTCAP", "PRICE", "TICKER" 
+  UNIVERSE[,c("MG_DESC", "MKTCAP", "PRICE", "TICKER", "COMPANY_ID" 
               , "PRICEDM001UNX", "PRICEDM002UNX", "PRICEDM003UNX"  # 
               , "PRICEDM004UNX", "PRICEDM005UNX", "PRICEDM006UNX" 
               , "PRICEDM007UNX", "PRICEDM008UNX", "PRICEDM009UNX"
@@ -1073,7 +1170,11 @@ main_foresight3_999 <- function(pauseat=NULL) {
               , "PERENDUNX_Q7", "PERENDUNX_Q8"  
               , "SHR_AQ1", "SHR_AQ2", "SHR_AQ3"                 # SHR_AQ1__numeric         
               , "SHR_AQ4", "SHR_AQ5", "SHR_AQ6" 
-              , "SHR_AQ7", "SHR_AQ8"                                
+              , "SHR_AQ7", "SHR_AQ8"
+              , "EPSD_Q1", "EPSD_Q2", "EPSD_Q3"                 # EPSD_Q1__numeric         
+              , "EPSD_Q4", "EPSD_Q5", "EPSD_Q6" 
+              , "EPSD_Q7", "EPSD_Q8"
+              
   ),drop=FALSE] 
               
   RET_DOLLAR_PRICE_UNIVERSE_NOT_NA  <- group_by(RET_DOLLAR_PRICE_UNIVERSE_NOT_NA,MG_DESC)
@@ -1085,8 +1186,69 @@ main_foresight3_999 <- function(pauseat=NULL) {
              
   ret_dollar_price_grid_do <- function(x) {
 
+    # for zoo::coredata needing to be a numeric matrix
+    # transform the (old-ticker) 'company identifer(hexadecimal) into something more 
+    # 1. 'numerically base 10 flexible' AND 
+    # 2. 'data.frame column name flexible'
+    # help from stringr and base
+    
+    # SUPRISE - AAII
+    # NOT HEXADIMAL:  "9396N" "2091N" 
+    # ( but "N" is the only character out of the hexadecimal range - WHAT does "N" mean? )
+    # is it just a 'space' padding?
+    # (currently) just use NROW instead
+    
+    # safekeeping in case I have any use later
+    data.frame( 
+      TICKER             = x[,c("TICKER")]
+      , COMPANY_ID       = x[,c("COMPANY_ID")]
+      , COMPANY_ID_CID10 = str_join("CID", 1:NROW(x))  
+      , stringsAsFactors = FALSE
+    ) -> COMPANY_INFO
+    
+    # add a column at the end to x
+    COMPANY_INFO[,"COMPANY_ID_CID10",drop=FALSE] -> x[,"COMPANY_ID_CID10"]
+
+    # ? zoo::as.Date as.Date(x, frac = 1)
+    
+    # should HAVE BEEN unique and the END OF THE MONTH found out NOT TO BE SO
+    # garantee that I AM AT month-end
+    # NOTE: side affect 'this current month-time' is rounded up to the 'end of this month'
+    # maybe I want to ROUND DOWN?! ( WOULD ALSO HAVE TO TO 'min' and zoo as.Date 'frac = 0')
+    # hard note: some companies do not have recent prices  so M001 or M004
+    #   can be found shifted back several months
+    # THIS AREA ONLY GARANTEES that any 'monthly date' is shift to be an 'END OF MONTH date'
+    as.numeric(as.Date(as.yearmon(as.Date(x$PRICEDM001UNX)) , frac = 1)) -> x$PRICEDM001UNX
+    as.numeric(as.Date(as.yearmon(as.Date(x$PRICEDM002UNX)) , frac = 1)) -> x$PRICEDM002UNX
+    as.numeric(as.Date(as.yearmon(as.Date(x$PRICEDM003UNX)) , frac = 1)) -> x$PRICEDM003UNX
+    as.numeric(as.Date(as.yearmon(as.Date(x$PRICEDM004UNX)) , frac = 1)) -> x$PRICEDM004UNX
+    as.numeric(as.Date(as.yearmon(as.Date(x$PRICEDM005UNX)) , frac = 1)) -> x$PRICEDM005UNX
+    as.numeric(as.Date(as.yearmon(as.Date(x$PRICEDM006UNX)) , frac = 1)) -> x$PRICEDM006UNX
+    as.numeric(as.Date(as.yearmon(as.Date(x$PRICEDM007UNX)) , frac = 1)) -> x$PRICEDM007UNX
+    as.numeric(as.Date(as.yearmon(as.Date(x$PRICEDM008UNX)) , frac = 1)) -> x$PRICEDM008UNX
+    as.numeric(as.Date(as.yearmon(as.Date(x$PRICEDM009UNX)) , frac = 1)) -> x$PRICEDM009UNX
+    as.numeric(as.Date(as.yearmon(as.Date(x$PRICEDM010UNX)) , frac = 1)) -> x$PRICEDM010UNX
+    as.numeric(as.Date(as.yearmon(as.Date(x$PRICEDM011UNX)) , frac = 1)) -> x$PRICEDM011UNX
+    as.numeric(as.Date(as.yearmon(as.Date(x$PRICEDM012UNX)) , frac = 1)) -> x$PRICEDM012UNX
+    as.numeric(as.Date(as.yearmon(as.Date(x$PRICEDM013UNX)) , frac = 1)) -> x$PRICEDM013UNX
+    as.numeric(as.Date(as.yearmon(as.Date(x$PRICEDM014UNX)) , frac = 1)) -> x$PRICEDM014UNX
+    as.numeric(as.Date(as.yearmon(as.Date(x$PRICEDM015UNX)) , frac = 1)) -> x$PRICEDM015UNX
+    as.numeric(as.Date(as.yearmon(as.Date(x$PRICEDM016UNX)) , frac = 1)) -> x$PRICEDM016UNX
+    
+    # others need to round-up the end of the month I CAN do THAT here
+    as.numeric(as.Date(as.yearmon(as.Date(x$PERENDUNX_Q1)) , frac = 1)) -> x$PERENDUNX_Q1
+    as.numeric(as.Date(as.yearmon(as.Date(x$PERENDUNX_Q2)) , frac = 1)) -> x$PERENDUNX_Q2
+    as.numeric(as.Date(as.yearmon(as.Date(x$PERENDUNX_Q3)) , frac = 1)) -> x$PERENDUNX_Q3
+    as.numeric(as.Date(as.yearmon(as.Date(x$PERENDUNX_Q4)) , frac = 1)) -> x$PERENDUNX_Q4
+    as.numeric(as.Date(as.yearmon(as.Date(x$PERENDUNX_Q5)) , frac = 1)) -> x$PERENDUNX_Q5
+    as.numeric(as.Date(as.yearmon(as.Date(x$PERENDUNX_Q6)) , frac = 1)) -> x$PERENDUNX_Q6
+    as.numeric(as.Date(as.yearmon(as.Date(x$PERENDUNX_Q7)) , frac = 1)) -> x$PERENDUNX_Q7
+    as.numeric(as.Date(as.yearmon(as.Date(x$PERENDUNX_Q8)) , frac = 1)) -> x$PERENDUNX_Q8
+    
+    
+    # market information 
     PRIZED  <- 
-      x[,c("TICKER"
+      x[,c("COMPANY_ID_CID10"                                #, "TICKER",
         , "PRICEDM001UNX", "PRICEDM002UNX", "PRICEDM003UNX"  # AS PRICEDM001UNX
         , "PRICEDM004UNX", "PRICEDM005UNX", "PRICEDM006UNX" 
         , "PRICEDM007UNX", "PRICEDM008UNX", "PRICEDM009UNX"
@@ -1095,15 +1257,18 @@ main_foresight3_999 <- function(pauseat=NULL) {
         , "PRICEDM016UNX"                                               
     ),drop=FALSE] 
     
+    
     PRIZED[,1]  -> row.names(PRIZED)
     PRIZED[,-1] -> PRIZED
     PRIZED[,rev(1:length(colnames(PRIZED)))] -> PRIZED 
-    t(PRIZED) -> PRIZED
+    t(PRIZED) -> PRIZED 
     
-    # keep useful
+    # keep useful ( used below)
+    # (except for NAs) as.yearmon ABOVE 
+    #  garanties this this is unique ( if one non-NA found then 'value' else NA )
     apply(PRIZED, MARGIN = 1, FUN = max , na.rm = TRUE)  -> PRIZED_INDEX_NAMED_VECTOR
     
-    # SM - static  month
+    # SM - static  month 
     # DQ - dymanic quarter
     
     # add index
@@ -1111,10 +1276,21 @@ main_foresight3_999 <- function(pauseat=NULL) {
     c("INDEXSM") -> dimnames(PRIZED)[[2]][1]
     
     as.character(ymd(c("1970-01-01")) + days(PRIZED_INDEX_NAMED_VECTOR)) -> rownames(PRIZED)
-    as.xts(PRIZED) -> PRIZED
+    # as.xts(PRIZED) -> PRIZED ## ( BUT WILL NEED LATER!!!!)
     
+    # save 'PRIZED' no index
+    # INDEXSM
+    # append the 'month index' to the row.names
+    PRIZED -> PRIZED_NO_INDEXSM
+    # (keep hide ) that static, monthly index appended to the 'row.names of YYYY-MM-DD__N' dates
+    str_join(row.names(PRIZED_NO_INDEXSM), "__", PRIZED_NO_INDEXSM[,"INDEXSM",drop=FALSE]) -> row.names(PRIZED_NO_INDEXSM)
+    # remove INDEXSM 
+    PRIZED_NO_INDEXSM[,-1,drop=FALSE] -> PRIZED_NO_INDEXSM
+
+    
+    # company information
     PERENDUNX  <- 
-      x[,c("TICKER"
+      x[,c("COMPANY_ID_CID10"                                # "TICKER"
            , "PERENDUNX_Q1", "PERENDUNX_Q2", "PERENDUNX_Q3"  # PERENDUNX_Q1
            , "PERENDUNX_Q4", "PERENDUNX_Q5", "PERENDUNX_Q6" 
            , "PERENDUNX_Q7", "PERENDUNX_Q8"                                
@@ -1125,12 +1301,16 @@ main_foresight3_999 <- function(pauseat=NULL) {
     PERENDUNX[,rev(1:length(colnames(PERENDUNX)))] -> PERENDUNX 
     t(PERENDUNX) -> PERENDUNX
 
+    # save 'PERENDUNX no index'( for 'use' below )
+    PERENDUNX -> PERENDUNX_NO_INDEXDQ
+    
     # add index
-    cbind( 8:1, PERENDUNX ) -> PERENDUNX
+    cbind( 8:1, PERENDUNX ) -> PERENDUNX 
     c("INDEXDQ") -> dimnames(PERENDUNX)[[2]][1]
     
+    # market information
     PRIZE  <- 
-      x[,c("TICKER" 
+      x[,c("COMPANY_ID_CID10"                       # "TICKER" 
         , "PRICE_M001", "PRICE_M002", "PRICE_M003"  # PRICE_M001__numeric
         , "PRICE_M004", "PRICE_M005", "PRICE_M006" 
         , "PRICE_M007", "PRICE_M008", "PRICE_M009"
@@ -1150,10 +1330,20 @@ main_foresight3_999 <- function(pauseat=NULL) {
 
                                              # from far above
     as.character(ymd(c("1970-01-01")) + days(PRIZED_INDEX_NAMED_VECTOR)) -> rownames(PRIZE)
-    as.xts(PRIZE) -> PRIZE
+    # as.xts(PRIZE) -> PRIZE ## ( BUT WILL NEED LATER!!!!)
     
+    # save 'PRIZE' no index 
+    # INDEXSM
+    # append the 'month index' to the row.names
+    PRIZE -> PRIZE_NO_INDEXSM
+    # (keep hide ) that static, monthly index appended to the 'row.names of YYYY-MM-DD__N' dates
+    str_join(row.names(PRIZE_NO_INDEXSM), "__", PRIZE_NO_INDEXSM[,"INDEXSM",drop=FALSE]) -> row.names(PRIZE_NO_INDEXSM)
+    # remove INDEXSM 
+    PRIZE_NO_INDEXSM[,-1,drop=FALSE] -> PRIZE_NO_INDEXSM
+    
+    # company information
     SHR_AQ  <- 
-      x[,c("TICKER" 
+      x[,c("COMPANY_ID_CID10"                       # "TICKER" 
         , "SHR_AQ1", "SHR_AQ2", "SHR_AQ3"
         , "SHR_AQ4", "SHR_AQ5", "SHR_AQ6" 
         , "SHR_AQ7", "SHR_AQ8"                                
@@ -1164,12 +1354,273 @@ main_foresight3_999 <- function(pauseat=NULL) {
     SHR_AQ[,rev(1:length(colnames(SHR_AQ)))] -> SHR_AQ 
     t(SHR_AQ) -> SHR_AQ
     
+    # save 'SHR_AQ no index'( for 'use' below ) 
+    SHR_AQ -> SHR_AQ_NO_INDEXDQ
+    
     # add index
     cbind( 8:1, SHR_AQ ) -> SHR_AQ
     c("INDEXDQ") -> dimnames(SHR_AQ)[[2]][1]  
     
-    print("LEFT_OFF line 1171")
+    
+    # company information
+    EPSD_Q  <- 
+      x[,c("COMPANY_ID_CID10"                       # "TICKER" 
+           , "EPSD_Q1", "EPSD_Q2", "EPSD_Q3"
+           , "EPSD_Q4", "EPSD_Q5", "EPSD_Q6" 
+           , "EPSD_Q7", "EPSD_Q8"                                
+      ),drop=FALSE] 
+    
+    EPSD_Q[,1]  -> row.names(EPSD_Q)
+    EPSD_Q[,-1] -> EPSD_Q
+    EPSD_Q[,rev(1:length(colnames(EPSD_Q)))] -> EPSD_Q 
+    t(EPSD_Q) -> EPSD_Q
+    
+    # save 'EPSD_Q no index'( for 'use' below ) 
+    EPSD_Q -> EPSD_Q_NO_INDEXDQ
+    
+    # add index
+    cbind( 8:1, EPSD_Q ) -> EPSD_Q
+    c("INDEXDQ") -> dimnames(EPSD_Q)[[2]][1] 
+    
+    # print("LEFT_OFF line 1171")
   
+    bookmarkhere <- 1
+    
+    # want to get into the form ...
+    # PRIZED ... PRICE
+                  
+    # PRIZED                                     <ticker>
+    # <everymonth-index> | <periodendunx-#.0>   <everymo-price>
+    #                      <'         '-locf> 
+    # 
+
+    ### BEGIN TEMP_PERENDUNX ###
+    
+    # first 2x2 dim to 1:many_columns ( help from gdata ) # old [1:4,1:4]
+    unmatrix(PERENDUNX_NO_INDEXDQ) -> TEMP_PERENDUNX
+
+    # swap those ":" to be "."
+    gsub( ":", ".", names(TEMP_PERENDUNX) ) -> names(TEMP_PERENDUNX)
+
+    # make those vector names  to be the first  column of a data.frame
+    # make those vector values to be the second column of a data.frame
+    data.frame( variable=names(TEMP_PERENDUNX)
+                 , value=TEMP_PERENDUNX
+                 , row.names = NULL  # required for XTS S-LOGIC
+                 , stringsAsFactors = FALSE) -> TEMP_PERENDUNX 
+
+    # round to the 'end of the month' 
+    # help from How to get last day of a month? 
+    # http://r.789695.n4.nabble.com/How-to-get-last-day-of-a-month-td890694.html
+    # seems this 'company information' is end of month anyways
+    # but WILL 'safely' push it to the end of month, just in case some RARE  
+    # 'companies' are not THERE ( in the middle of the month somewhere)
+    # company information !! NOW AT THE 'END OF MONTH DATE' ... -> same as market information!! #s
+    as.numeric(as.Date(as.yearmon(as.Date(TEMP_PERENDUNX$value)) , frac = 1)) -> TEMP_PERENDUNX$value
+
+    # create an index : period 1 throug 8
+    as.numeric(
+      str_sub(TEMP_PERENDUNX$variable 
+              , str_locate(TEMP_PERENDUNX$variable, "[0-9]+")[,"start"]
+              , str_locate(TEMP_PERENDUNX$variable, "[0-9]+")[,"end"  ]
+      )
+    ) -> TEMP_PERENDUNX$index
+    
+    # isolate the 'variable' in be the CID____ 
+    # need numeric to be zoo coredata compatible
+    as.numeric(
+      str_sub(TEMP_PERENDUNX$variable 
+              , str_locate(TEMP_PERENDUNX$variable, "\\.CID[0-9]+")[,"start"] + 4
+              , str_locate(TEMP_PERENDUNX$variable, "\\.CID[0-9]+")[,"end"  ]
+      ) 
+    )-> TEMP_PERENDUNX$variable
+    
+    # TEMP_PERENDUNX$variable
+    # (COMPANY) ( DAY_END_OF_PERIOD) (PERID_INDEX)
+    # variable  value           index
+    # 1 15613.00000000000000000 8
+    # 1	15705.00000000000000000	7
+    # 1	15795.00000000000000000	6
+    # 1	15886.00000000000000000	5
+    # 2	14790.00000000000000000	8
+    
+    ### END TEMP_PERENDUNX ###
+    
+    bookmarkhere <- 1   
+    
+    ### BEGIN TEMP_PRIZED ###
+    
+    # first 2x2 dim to 1:many_columns ( help from gdata ) # old [1:4,1:4]
+    unmatrix(PRIZED_NO_INDEXSM) -> TEMP_PRIZED
+    
+    # swap those ":" to be "."
+    gsub( ":", ".", names(TEMP_PRIZED) ) -> names(TEMP_PRIZED)
+    
+    # make those vector names to be the first  column of a data.frame
+    # make those vector values to be the second column of a data.frame
+    data.frame( variable=names(TEMP_PRIZED)
+                , value=TEMP_PRIZED
+                , row.names = NULL  # required for XTS S-LOGIC
+                , stringsAsFactors = FALSE) -> TEMP_PRIZED
+    
+    # market information ( always at the end of month) # but I garantee it to be at the end of the month
+    as.numeric(as.Date(as.yearmon(as.Date(TEMP_PRIZED$value)) , frac = 1)) -> TEMP_PRIZED$value
+    
+    # create an index : period 1 through 8
+    as.numeric(
+      str_sub(TEMP_PRIZED$variable 
+              , str_locate(TEMP_PRIZED$variable, "__[0-9]+")[,"start"] + 2
+              , str_locate(TEMP_PRIZED$variable, "__[0-9]+")[,"end"  ]
+      )
+    ) -> TEMP_PRIZED$index
+    
+    # isolate the 'variable' in be the CID____ 
+    # need numeric to be zoo coredata compatible
+    as.numeric(
+      str_sub(TEMP_PRIZED$variable 
+              , str_locate(TEMP_PRIZED$variable, "\\.CID[0-9]+")[,"start"] + 4
+              , str_locate(TEMP_PRIZED$variable, "\\.CID[0-9]+")[,"end"  ]
+      ) 
+    )-> TEMP_PRIZED$variable
+    
+    ### END TEMP_PRIZED ###
+    
+    bookmarkhere <- 1   
+    
+    ### END TEMP_PRIZED ###
+    
+    ### BEGIN TEMP_PRIZE ###
+    
+    # first 2x2 dim to 1:many_columns ( help from gdata ) # old [1:4,1:4]
+    unmatrix(PRIZE_NO_INDEXSM) -> TEMP_PRIZE
+    
+    # swap those ":" to be "."
+    gsub( ":", ".", names(TEMP_PRIZE) ) -> names(TEMP_PRIZE)
+    
+    # make those vector names to be the first  column of a data.frame
+    # make those vector values to be the second column of a data.frame
+    data.frame( variable=names(TEMP_PRIZE)
+                , value=TEMP_PRIZE
+                , row.names = NULL  # required for XTS S-LOGIC
+                , stringsAsFactors = FALSE) -> TEMP_PRIZE
+    
+    # market information ( always at the end of month) # but I garantee it to be at the end of the month
+    ## 'not a date' ( actually is a 'value at a date')
+    ## as.numeric(as.Date(as.yearmon(as.Date(TEMP_PRIZE$value)) , frac = 1)) -> TEMP_PRIZE$value
+    
+    # create an index : period 1 through 8
+    as.numeric(
+      str_sub(TEMP_PRIZE$variable 
+              , str_locate(TEMP_PRIZE$variable, "__[0-9]+")[,"start"] + 2
+              , str_locate(TEMP_PRIZE$variable, "__[0-9]+")[,"end"  ]
+      )
+    ) -> TEMP_PRIZE$index
+    
+    # isolate the 'variable' in be the CID____ 
+    # need numeric to be zoo coredata compatible
+    as.numeric(
+      str_sub(TEMP_PRIZE$variable 
+              , str_locate(TEMP_PRIZE$variable, "\\.CID[0-9]+")[,"start"] + 4
+              , str_locate(TEMP_PRIZE$variable, "\\.CID[0-9]+")[,"end"  ]
+      ) 
+    )-> TEMP_PRIZE$variable
+    
+    ### END TEMP_PRIZE ###
+
+    ### BEGIN TEMP_SHR_AQ ### 
+    
+    # first 2x2 dim to 1:many_columns ( help from gdata ) # old [1:4,1:4]
+    unmatrix(SHR_AQ_NO_INDEXDQ) -> TEMP_SHR_AQ
+    
+    # swap those ":" to be "."
+    gsub( ":", ".", names(TEMP_SHR_AQ) ) -> names(TEMP_SHR_AQ)
+    
+    # make those vector names  to be the first  column of a data.frame
+    # make those vector values to be the second column of a data.frame
+    data.frame( variable=names(TEMP_SHR_AQ)
+                , value=TEMP_SHR_AQ
+                , row.names = NULL  # required for XTS S-LOGIC
+                , stringsAsFactors = FALSE) -> TEMP_SHR_AQ 
+    
+    # round to the 'end of the month' 
+    # help from How to get last day of a month? 
+    # http://r.789695.n4.nabble.com/How-to-get-last-day-of-a-month-td890694.html
+    # seems this 'company information' is end of month anyways
+    # but WILL 'safely' push it to the end of month, just in case some RARE  
+    # 'companies' are not THERE ( in the middle of the month somewhere)
+    # company information !! NOW AT THE 'END OF MONTH DATE' ... -> same as market information!! #s
+    ## 'not a date' ( actually is a 'value at a date')
+    ## as.numeric(as.Date(as.yearmon(as.Date(TEMP_SHR_AQ$value)) , frac = 1)) -> TEMP_SHR_AQ$value
+    
+    # create an index : period 1 throug 8
+    as.numeric(
+      str_sub(TEMP_SHR_AQ$variable 
+              , str_locate(TEMP_SHR_AQ$variable, "[0-9]+")[,"start"]
+              , str_locate(TEMP_SHR_AQ$variable, "[0-9]+")[,"end"  ]
+      )
+    ) -> TEMP_SHR_AQ$index
+    
+    # isolate the 'variable' in be the CID____ 
+    # need numeric to be zoo coredata compatible
+    as.numeric(
+      str_sub(TEMP_SHR_AQ$variable 
+              , str_locate(TEMP_SHR_AQ$variable, "\\.CID[0-9]+")[,"start"] + 4
+              , str_locate(TEMP_SHR_AQ$variable, "\\.CID[0-9]+")[,"end"  ]
+      ) 
+    )-> TEMP_SHR_AQ$variable
+    
+    ### END TEMP_SHR_AQ ###
+    
+    ### BEGIN TEMP_EPSD_Q ### 
+    
+    # first 2x2 dim to 1:many_columns ( help from gdata ) # old: [1:4,1:4]
+    unmatrix(EPSD_Q_NO_INDEXDQ) -> TEMP_EPSD_Q
+    
+    # swap those ":" to be "."
+    gsub( ":", ".", names(TEMP_EPSD_Q) ) -> names(TEMP_EPSD_Q)
+    
+    # make those vector names  to be the first  column of a data.frame
+    # make those vector values to be the second column of a data.frame
+    data.frame( variable=names(TEMP_EPSD_Q)
+                , value=TEMP_EPSD_Q
+                , row.names = NULL  # required for XTS S-LOGIC
+                , stringsAsFactors = FALSE) -> TEMP_EPSD_Q 
+    
+    # round to the 'end of the month' 
+    # help from How to get last day of a month? 
+    # http://r.789695.n4.nabble.com/How-to-get-last-day-of-a-month-td890694.html
+    # seems this 'company information' is end of month anyways
+    # but WILL 'safely' push it to the end of month, just in case some RARE  
+    # 'companies' are not THERE ( in the middle of the month somewhere)
+    # company information !! NOW AT THE 'END OF MONTH DATE' ... -> same as market information!! #s
+    ## 'not a date' ( actually is a 'value at a date')
+    ## as.numeric(as.Date(as.yearmon(as.Date(TEMP_EPSD_Q$value)) , frac = 1)) -> TEMP_EPSD_Q$value
+    
+    # create an index : period 1 throug 8
+    as.numeric(
+      str_sub(TEMP_EPSD_Q$variable 
+              , str_locate(TEMP_EPSD_Q$variable, "[0-9]+")[,"start"]
+              , str_locate(TEMP_EPSD_Q$variable, "[0-9]+")[,"end"  ]
+      )
+    ) -> TEMP_EPSD_Q$index
+    
+    # isolate the 'variable' in be the CID____ 
+    # need numeric to be zoo coredata compatible
+    as.numeric(
+      str_sub(TEMP_EPSD_Q$variable 
+              , str_locate(TEMP_EPSD_Q$variable, "\\.CID[0-9]+")[,"start"] + 4
+              , str_locate(TEMP_EPSD_Q$variable, "\\.CID[0-9]+")[,"end"  ]
+      ) 
+    )-> TEMP_EPSD_Q$variable
+    
+    ### END TEMP_EPSD_Q ###
+    
+    # LEFT_OFF ( see temporary NOTES )
+    bookmarkhere <- 1
+    
+    ### SQL ZONE BEGIN ###
+    ### SQL ZONE END ###
+    
     # xts TICKERS...across(7000 of them) - coredata
     # dates down left: ( xts::to.monthlthy) 
     #                  (  as.character(ymd_hms(c("1970-01-01 16:00:00.880-0400")) + days(. . . UNX))- index
@@ -1178,7 +1629,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
     # t()
     # xts.to.monthly(PRICEDM001)     -> row.names -> xts( , index(.))
     # xts.to.monthly(PEREND_Q(1...8)
-    # xts::merge()
+    # xts::merge() X.rbind
     # zoo::na.locf, apply, zoo::rollapply, Recall
   
     # some logic like
@@ -1380,96 +1831,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   # surviVor of '6-month price appreciation greater than the universal 'All stocks' median (UNIVERSE)'
   UNIVERSE <- mutate(UNIVERSE, GROWTH_EXPOSE_PRCHG_26W_NTILE2_SRVVR = ifelse(PRCHG_26W_NTILE2 == 2, 1, 0)  )
   
-
-  # Dividend-Ex Date
-  # Data Table Name: DIVNQXDT
-  # Data Category: Income Statement ? Quarterly
-  # Field Type: Date (MM/DD/YYYY)
-
-  # DD_FILE     SI_ISQ
-  # FIELD_NAME  DIVNQXDT
-  # FIELD_TYPE  D
-  # FIELD_DESC  Dividend-Ex Date
-  # DESCRIP     Income Statement - Quarterly
-  # FM_FILE     SI_ISQ
-
-  # Dividend-Pmt Date
-  # Data Table Name: DIVNQPDT
-  # Data Category: Income Statement ? Quarterly
-  # Field Type: Date (MM/DD/YYYY)
-
-  # DD_FILE     SI_ISQ
-  # FIELD_NAME  DIVNQPDT
-  # FIELD_TYPE  D
-  # FIELD_DESC  Dividend-Pmt Date
-  # DESCRIP     Income Statement - Quarterly
-  # FM_FILE     SI_ISQ
-  
-  
-  # have an 'annual' 'EPS change' greater than zero (0)'
-  # LAST of growth expose
-
-  # FIELD_NAME  EPS_Q1
-  # FIELD_DESC  EPS Q1
-  # DESCRIP     Income Statement - Quarterly
- 	# FM_FILE     SI_ISQ
-
-   # if(getOption("FileStoreStyle") == "Optimized") {
-    # if( file.exists(getOption("AAIISIPro40PathFileOptim_SI_ISQ"))) {
-      # load(file = getOption("AAIISIPro40PathFileOptim_SI_ISQ"))
-    # } else {
-      # # load file
-      # SI_ISQ <- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_ISQ"), as.is = TRUE)))
-      # save("SI_ISQ",file = getOption("AAIISIPro40PathFileOptim_SI_ISQ"))
-    # }
-  # } else {
-    # # load file
-    # SI_ISQ <- suppressWarnings(suppressMessages(read.dbf(file=getOption("AAIISIPro40PathFileNotOptim_SI_ISQ"), as.is = TRUE)))
-  # }
-
-    SI_ISQ <- get_from_disk("SI_ISQ", filesoptionlist = OPTIONLIST)
-  
-    # primary_key_dup <- SI_ISQ[duplicated(SI_ISQ[,'COMPANY_ID']),,drop=FALSE]
-    # new_df_no_duplicates <- SI_ISQ[!(SI_ISQ$COMPANY_ID %in% as.matrix(primary_key_dup)),,drop=FALSE]
-    # SI_ISQ <- new_df_no_duplicates
-    # rm(primary_key_dup,new_df_no_duplicates)
-  
-    SI_ISQ <- SI_ISQ # wierd performance bug ( program runs faster than can it access its variables )
-    SI_ISQ <- eliminate_all_duplicates( SI_ISQ, "COMPANY_ID" ) 
-  
-  SI_ISQ_tbl_sqlite <- copy_to(dpsqllconn, SI_ISQ, temporary = FALSE
-    , indexes = list(
-        c("COMPANY_ID")
-    )
-  )
-  SI_ISQ <- tbl_df(SI_ISQ)
-
-  sqldf("DROP TABLE main.UNIVERSE", connection = dpsqllconn$con)
-
-  # strip off
-  UNIVERSE <- as.data.frame(UNIVERSE)
-  UNIVERSE_tbl_sqlite <- copy_to(dpsqllconn, UNIVERSE, temporary = FALSE
-    , indexes = list(
-   #    c("TICKER")
-   # ,  
-        c("COMPANY_ID")
-   # ,  c("ORIG_ORDER")
-      
-    )
-  )
-  
-  UNIVERSE <- sqldf("SELECT UNIV.*, ISQ.EPS_Q1 AS EPS_Q1__numeric, ISQ.EPS_Q2 AS EPS_Q2__numeric, ISQ.EPS_Q3 AS EPS_Q3__numeric, ISQ.EPS_Q4 AS EPS_Q4__numeric,         -- comment
-                                    ISQ.EPS_Q5 AS EPS_Q5__numeric, ISQ.EPS_Q6 AS EPS_Q6__numeric, ISQ.EPS_Q7 AS EPS_Q7__numeric, ISQ.EPS_Q8 AS EPS_Q8__numeric, 
-                                    ISQ.EPSD_Q1 AS EPSD_Q1__numeric, ISQ.EPSD_Q2 AS EPSD_Q2__numeric, ISQ.EPSD_Q3 AS EPSD_Q3__numeric, ISQ.EPSD_Q4 AS EPSD_Q4__numeric, -- comment
-                                    ISQ.EPSD_Q5 AS EPSD_Q5__numeric, ISQ.EPSD_Q6 AS EPSD_Q6__numeric, ISQ.EPSD_Q7 AS EPSD_Q7__numeric, ISQ.EPSD_Q8 AS EPSD_Q8__numeric, 
-                                    ISQ.DIVNQXDT AS DIVNQXDTUNX, ISQ.DIVNQPDT AS DIVNQPDTUNX 
-                                  FROM 
-                                   main.UNIVERSE UNIV, main.SI_ISQ ISQ WHERE 
-                                   UNIV.COMPANY_ID = ISQ.COMPANY_ID 
-                                   ", connection = dpsqllconn$con, method="name__class")
-  
-  UNIVERSE <- tbl_df(UNIVERSE)
-  
+ 
 
    # if(getOption("FileStoreStyle") == "Optimized") {
     # if( file.exists(getOption("AAIISIPro40PathFileOptim_SI_BSQ"))) {
@@ -2758,6 +3120,14 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   # higher is better ( already Diluted! )
   
+  # NOTED NOV 8, 2014
+  # 1
+  # EPS-Diluted Q1
+  # EPSD_Q1
+  # Field Type: Dollars per share
+
+  # earn/share//price/share = earn/price O.K
+  
   # ( EPSDC_Q1 + EPSDC_Q2 + EPSDC_Q3 + EPSDC_Q4  ) / PRICE = VAL_EXPOSE_VAL_TWO_CMPST_EARN_TO_PRICE_RATIO
   
   UNIVERSE <- mutate(UNIVERSE, VAL_EXPOSE_VAL_TWO_CMPST_EARN_TO_PRICE_RATIO = as.numeric(as.no_worse_than_NA(  
@@ -2793,10 +3163,18 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   # higher is better ( Andre put in dilutions )
   
+  # CORRECTED NOV 8, 2014
+  # 2
+  # Sales Q1
+  # SALES_Q1
+  # Field Type: Dollars in millions (0.0 to 999999.9)
+
+  # sales/1//price/share = share*sales//price ... # to get rid of shares in numerator do "/ (SHR_AQ1 )"
+
   # ( SALES_Q1 + SALES_Q2 + SALES_Q3 + SALES_Q4  ) / PRICE = VAL_EXPOSE_VAL_TWO_CMPST_SALES_TO_PRICE_RATIO
   
   UNIVERSE <- mutate(UNIVERSE, VAL_EXPOSE_VAL_TWO_CMPST_SALES_TO_PRICE_RATIO = as.numeric(as.no_worse_than_NA(   
-    ( SALES_Q1  * ( 1.0 / DILUTION_MULT_Q1 ) + SALES_Q2  * ( 1.0 / DILUTION_MULT_Q2 ) + SALES_Q3  * ( 1.0 / DILUTION_MULT_Q3 ) + SALES_Q4  * ( 1.0 / DILUTION_MULT_Q4 )  ) / PRICE 
+    ( SALES_Q1  * ( 1.0 / DILUTION_MULT_Q1 ) / (SHR_AQ1) + SALES_Q2  * ( 1.0 / DILUTION_MULT_Q2 ) / (SHR_AQ2) + SALES_Q3  * ( 1.0 / DILUTION_MULT_Q3 ) / (SHR_AQ3) + SALES_Q4  * ( 1.0 / DILUTION_MULT_Q4 ) / (SHR_AQ4)  ) / PRICE 
   ) ) )
   
   UNIVERSE_NOT_NA <- group_by(UNIVERSE,MG_DESC) 
@@ -2851,6 +3229,14 @@ main_foresight3_999 <- function(pauseat=NULL) {
   # MANUAL CALCULATION 
   
   # higher is better ( Andre dilution is included )
+  
+  # NOTED NOV 8, 2014
+  # 3
+  # Free cash flow/share Q1
+  # FCFPS_Q1
+  # Field Type: Dollars per share (0.00 to 9999.99)
+
+  # fcf/share//price/share = fcf/price O.K
   
   # ( FCFPS_Q1 + FCFPS_Q2 + FCFPS_Q3 + FCFPS_Q4  ) / PRICE = VAL_EXPOSE_VAL_TWO_CMPST_FCFPS_XOR_BOOK_TO_PRCE_RATIO
   
@@ -2915,6 +3301,14 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   # higher is better ( Andre dilution is included )
   
+  # CORRECTED NOV 8, 2014
+  # (BOOK VALUE)
+  # Equity (common) Q1
+  # EQUITY_Q1
+  # Field Type: Dollars in millions (0.0 to 999999.9)
+
+  # equity/1//price/share = share*equity//price ... # to get rid of shares in numerator do "/ (SHR_AQ1 )"
+    
   # EQUITY_Q1 / PRICE = VAL_EXPOSE_VAL_TWO_CMPST_FCFPS_XOR_BOOK_TO_PRCE_RATIO
 
   UNIVERSE_NOT_NA <- group_by(UNIVERSE,MG_DESC) 
@@ -2926,7 +3320,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   # since still kept for 'non-Financial' just re-calculate(re-overwrite)  on top of 'Financial'
   
   UNIVERSE_NOT_NA <- mutate(UNIVERSE_NOT_NA, VAL_EXPOSE_VAL_TWO_CMPST_FCFPS_XOR_BOOK_TO_PRCE_RATIO = as.numeric(as.no_worse_than_NA(   
-    EQUITY_Q1 * ( 1.0 / DILUTION_MULT_Q1 ) / PRICE 
+    ( EQUITY_Q1 * ( 1.0 / DILUTION_MULT_Q1 ) / (SHR_AQ1 ) )/ PRICE 
   ) ) )
   
   # since still kept for 'non-Financial' just re-calculate(re-overwrite)  on top of 'Financial'
@@ -2996,6 +3390,22 @@ main_foresight3_999 <- function(pauseat=NULL) {
   # View(UNIVERSE[UNIVERSE$MG_DESC == "Financial",c("EBIT_Q1","EBIT_Q2","EBIT_Q3","EBIT_Q4","ENTVAL_Q1","VAL_EXPOSE_VAL_TWO_CMPST_EBITDA_TO_ENTVAL_RATIO","VAL_EXPOSE_VAL_TWO_CMPST_EBITDA_TO_ENTVAL_RATIO_NTILE100")])
   
   # higher is better ( Andre added dilutions )
+  
+  # NOTED NOV 8, 2014
+  # 4
+  # Depreciation Q1
+  # DEP_Q1
+  # Field Type: Dollars in millions
+
+  # Earnings before interest and taxes (EBIT) Q1
+  # EBIT_Q1
+  # Field Type: Dollars in millions (-99999.9 to 99999.9)
+
+  # Enterprise Value Q1
+  # ENTVAL_Q1
+  # Field Type: Dollars in millions (-999990.9 to 999999.9)
+
+  # ebitda//ent_value O.K.
   
   UNIVERSE <- mutate(UNIVERSE, VAL_EXPOSE_VAL_TWO_CMPST_EBITDA_TO_ENTVAL_RATIO = as.numeric(as.no_worse_than_NA(   
     (  EBIT_Q1 * ( 1.0 / DILUTION_MULT_Q1 ) + EBIT_Q2 * ( 1.0 / DILUTION_MULT_Q2 ) + 
