@@ -8,6 +8,9 @@ options(digits = 22)
 options(max.print=99999)
 options(scipen=255) # Try these = width
 options(sqldf.driver = "SQLite")
+## options(error = browser)
+options(error = recover) # DEFINITELY
+# options(error = NULL)
 
 # library(Hmisc)
 
@@ -80,7 +83,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
 #   
 #   if(getOption("RepositoryStyle") == "Installed")  {
 #     
-#     options(AAIIBase = "N:/MyVMWareSharedFolder/Professional141031") 
+#     options(AAIIBase = "N:/MyVMWareSharedFolder/Professional141114") 
 #     
 #   }
   
@@ -94,7 +97,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   if(getLocalOption("RepositoryStyle", optionlist = OPTIONLIST) == "Installed")  {
     
-    OPTIONLIST <- localoptions(AAIIBase = "N:/MyVMWareSharedFolder/Professional141031", optionlist = OPTIONLIST)
+    OPTIONLIST <- localoptions(AAIIBase = "N:/MyVMWareSharedFolder/Professional141114", optionlist = OPTIONLIST)
     
   }
   
@@ -202,14 +205,14 @@ main_foresight3_999 <- function(pauseat=NULL) {
 
   require(TTR)
   
-  require(gdata)
+  # require(gdata)
   require(tidyr)
   require(stringr)
   require(gdata)
 
-  # if( Sys.getenv("ISRTESTING") == "TRUE") { if(NROW(PAYLOAD) == 7000) print(paste0("","")) }
+  # if( Sys.getenv("ISRTESTING") == "TRUE") { if(NROW(PAYLOAD) == 7000) print(paste0("","")) }     
 
-  # stop() stopifnot(), warning(), message()
+  # stop() stopifnot(), warning(), message()  
   # tryCatch(code
   #   , error = function(c) "error"
   #   , warning = function(c) "warning"
@@ -1186,6 +1189,9 @@ main_foresight3_999 <- function(pauseat=NULL) {
              
   ret_dollar_price_grid_do <- function(x) {
 
+    print(unique(x[,"MG_DESC"]))
+    # return(x)
+    
     # for zoo::coredata needing to be a numeric matrix
     # transform the (old-ticker) 'company identifer(hexadecimal) into something more 
     # 1. 'numerically base 10 flexible' AND 
@@ -1424,7 +1430,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
               , str_locate(TEMP_PERENDUNX$variable, "[0-9]+")[,"start"]
               , str_locate(TEMP_PERENDUNX$variable, "[0-9]+")[,"end"  ]
       )
-    ) -> TEMP_PERENDUNX$index
+    ) -> TEMP_PERENDUNX$indexx
     
     # isolate the 'variable' in be the CID____ 
     # need numeric to be zoo coredata compatible
@@ -1472,7 +1478,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
               , str_locate(TEMP_PRIZED$variable, "__[0-9]+")[,"start"] + 2
               , str_locate(TEMP_PRIZED$variable, "__[0-9]+")[,"end"  ]
       )
-    ) -> TEMP_PRIZED$index
+    ) -> TEMP_PRIZED$indexx
     
     # isolate the 'variable' in be the CID____ 
     # need numeric to be zoo coredata compatible
@@ -1514,7 +1520,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
               , str_locate(TEMP_PRIZE$variable, "__[0-9]+")[,"start"] + 2
               , str_locate(TEMP_PRIZE$variable, "__[0-9]+")[,"end"  ]
       )
-    ) -> TEMP_PRIZE$index
+    ) -> TEMP_PRIZE$indexx
     
     # isolate the 'variable' in be the CID____ 
     # need numeric to be zoo coredata compatible
@@ -1558,7 +1564,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
               , str_locate(TEMP_SHR_AQ$variable, "[0-9]+")[,"start"]
               , str_locate(TEMP_SHR_AQ$variable, "[0-9]+")[,"end"  ]
       )
-    ) -> TEMP_SHR_AQ$index
+    ) -> TEMP_SHR_AQ$indexx
     
     # isolate the 'variable' in be the CID____ 
     # need numeric to be zoo coredata compatible
@@ -1602,7 +1608,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
               , str_locate(TEMP_EPSD_Q$variable, "[0-9]+")[,"start"]
               , str_locate(TEMP_EPSD_Q$variable, "[0-9]+")[,"end"  ]
       )
-    ) -> TEMP_EPSD_Q$index
+    ) -> TEMP_EPSD_Q$indexx
     
     # isolate the 'variable' in be the CID____ 
     # need numeric to be zoo coredata compatible
@@ -1615,10 +1621,392 @@ main_foresight3_999 <- function(pauseat=NULL) {
     
     ### END TEMP_EPSD_Q ###
     
-    # LEFT_OFF ( see temporary NOTES )
     bookmarkhere <- 1
     
     ### SQL ZONE BEGIN ###
+    
+    if (exists("con")) dbDisconnect(con)
+    if (exists("con")) con <- NULL
+    
+    con <- sqldf()
+    
+    # sqldf("select * from TEMP_PRIZE",  connection = con)      -> NONE
+    # sqldf("select * from main.TEMP_PRIZE",  connection = con) -> NONE
+
+    # sqldf("select * from TEMP_PRIZED",  connection = con) -> NONE
+    # sqldf("select * from main.TEMP_PRIZED",  connection = con) -> NONE
+ 
+    # sqldf is BUGGY in getting DATAFRAME into main.DATAFRAME
+    # (I usually use dplyr for this)
+    #   so just do it DIRECT ...
+    # 'index' is a KEYWORD IN SQLITE
+    
+    # now, the PRIZED and PRIZE in a pre-xts data.frame form
+    
+    sqldf("select TPRZD.value AS PRIZEDD
+                , TPRZD.variable as CID
+                , TPRZE.value AS TPRZEE 
+             from TEMP_PRIZED TPRZD, TEMP_PRIZE TPRZE 
+               where TPRZD.indexx = TPRZE.indexx and 
+                     TPRZD.variable = TPRZE.variable 
+          ",  connection = con) -> TEMP_PRIZEDDEE 
+    
+    # note about AAII most recent PRICED_M/PRICE_M data
+    #  some companies may have less that (16 - e.g. - just came into business - O.K.)
+    #  some companies may have gaps 
+    #      ( out of business ( or 'delisted on a stock exchange' ) 
+    #        to back into business : 'relisted on a stock exchange' )
+    
+    #   Therefore, PRICED_M009 ... may be much further back than the 9th element
+    #   RARE OCCURRANCE ( 1 / 100 ) 
+    #   BUT MY '10 month weighted MA' may NEED some SLIGHT programming AJUSTMENT
+    #   maybe NOT? but do I garantee with !is.na I SHOULD be 
+    #   DOES complete.cases MAKE THAT filter easer?
+    
+    # return(x)
+    
+    #  Protect from error
+    #  tidyr::spread 
+    #  Error: Duplicate identifiers for rows (1561, 1562), (1563, 1564), (1565, 1566), (1567, 1568), (1569, 1570)
+    #
+    #  Note: Slightly corrupted data from  the source ( 2 prices on the same day )
+    #  This probably coluld/would/should be eliminated earlier ( maybe after a transpose t() )
+    #    # but seems OK(to eliminate HERE)
+    
+    # row.names  PRIZEDD	                CID	                TPRZEE
+    # 1 1623	16251.00000000000000000	102.0000000000000000000	33.79999999999999715783
+    # 2	1624	16251.00000000000000000	102.0000000000000000000	33.79999999999999715783
+    # ...
+    # 5	1627	16313.00000000000000000	102.0000000000000000000	31.92000000000000170530
+    # 6	1628	16313.00000000000000000	102.0000000000000000000	32.03999999999999914735 ( SADLY DIFFERENT )
+    # ...
+    
+    # no NAs please
+    TEMP_PRIZEDDEE[complete.cases(TEMP_PRIZEDDEE),,drop=FALSE] -> TEMP_PRIZEDDEE
+    
+    # keep one row copy of exact full rows ( base )       
+    TEMP_PRIZEDDEE[!duplicated(TEMP_PRIZEDDEE[,c("PRIZEDD","CID","TPRZEE")]),,drop=FALSE] -> TEMP_PRIZEDDEE
+    
+    # no duplicates please ( gdata )           # unique identifier
+    TEMP_PRIZEDDEE[!duplicated2(TEMP_PRIZEDDEE[,c("PRIZEDD","CID")]),,drop=FALSE] -> TEMP_PRIZEDDEE
+    
+    spread(data = TEMP_PRIZEDDEE
+           , key = CID
+           , value = TPRZEE
+    ) -> TEMP_PRIZEDDEE_XTSDF 
+    # Note for the sector of 176 companies ( of 141030 ) of 1st sector iteration
+    # currently 29 dates are shown ( delisting reason above ) 
+    # ( I wonder if this 'greater than 16' would cause a problem?? )
+    
+    # return(x)
+    
+    # new (usefull) column names
+    # at least one company in this sector ( of 3000 companies )
+    if ( length(TEMP_PRIZEDDEE_XTSDF) > 1 ) {
+      paste0("CID",colnames(TEMP_PRIZEDDEE_XTSDF)[2:length(TEMP_PRIZEDDEE_XTSDF)])   -> colnames(TEMP_PRIZEDDEE_XTSDF)[2:length(TEMP_PRIZEDDEE_XTSDF)]
+      paste0(colnames(TEMP_PRIZEDDEE_XTSDF)[2:length(TEMP_PRIZEDDEE_XTSDF)],".PRIZE")-> colnames(TEMP_PRIZEDDEE_XTSDF)[2:length(TEMP_PRIZEDDEE_XTSDF)]
+    }
+    
+    bookmarkhere <- 1
+    
+    # now, the PERENDUNX and SHR_AQ in a pre-xts data.frame form
+    
+    sqldf("select TPENDD.value AS TPENDD
+          , TPENDD.variable as CID
+          , TSHAQ.value AS TSHAQE 
+          from TEMP_PERENDUNX TPENDD, TEMP_SHR_AQ TSHAQ 
+          where TPENDD.indexx = TSHAQ.indexx and 
+          TPENDD.variable = TSHAQ.variable 
+          ",  connection = con) -> TEMP_PERENDTSHAQEE 
+    
+    # no NAs please
+    TEMP_PERENDTSHAQEE[complete.cases(TEMP_PERENDTSHAQEE),,drop=FALSE] -> TEMP_PERENDTSHAQEE
+    
+    # keep one row copy of exact full rows ( base ) 
+    TEMP_PERENDTSHAQEE[!duplicated(TEMP_PERENDTSHAQEE[,c("TPENDD","CID","TSHAQE")]),,drop=FALSE] -> TEMP_PERENDTSHAQEE
+    
+    # no duplicates please ( gdata )                  # unique identifier 
+    TEMP_PERENDTSHAQEE[!duplicated2(TEMP_PERENDTSHAQEE[,c("TPENDD","CID")]),,drop=FALSE] -> TEMP_PERENDTSHAQEE
+    
+    spread(data = TEMP_PERENDTSHAQEE
+           , key = CID
+           , value = TSHAQE
+    ) -> TEMP_PERENDTSHAQEE_XTSDF 
+    
+    # THIS ONE
+    # browser(text = paste0("Just after the spread: ", unique(x[,"MG_DESC"]) ), expr = { unique(x[,"MG_DESC"]) == "Consumer Non-Cyclical" } )
+    
+    if ( length(TEMP_PERENDTSHAQEE_XTSDF) > 1 ) {
+      paste0("CID",colnames(TEMP_PERENDTSHAQEE_XTSDF)[2:length(TEMP_PERENDTSHAQEE_XTSDF)])   -> colnames(TEMP_PERENDTSHAQEE_XTSDF)[2:length(TEMP_PERENDTSHAQEE_XTSDF)]
+      paste0(colnames(TEMP_PERENDTSHAQEE_XTSDF)[2:length(TEMP_PERENDTSHAQEE_XTSDF)],".SHAQ") -> colnames(TEMP_PERENDTSHAQEE_XTSDF)[2:length(TEMP_PERENDTSHAQEE_XTSDF)]
+    }
+    
+    bookmarkhere <- 1
+    
+    # now, the PERENDUNX and EPSD_Q in a pre-xts data.frame form
+    
+    sqldf("select TPENDD.value AS TPENDD
+          , TPENDD.variable as CID
+          , TEPSDQ.value AS TEPSDQE 
+          from TEMP_PERENDUNX TPENDD, TEMP_EPSD_Q TEPSDQ 
+          where TPENDD.indexx = TEPSDQ.indexx and 
+          TPENDD.variable = TEPSDQ.variable 
+          ",  connection = con) -> TEMP_PERENDTEPSDQEE 
+    
+    # no NAs please
+    TEMP_PERENDTEPSDQEE[complete.cases(TEMP_PERENDTEPSDQEE),,drop=FALSE] -> TEMP_PERENDTEPSDQEE
+    
+    # keep one row copy of exact full rows ( base ) 
+    TEMP_PERENDTEPSDQEE[!duplicated(TEMP_PERENDTEPSDQEE[,c("TPENDD","CID","TEPSDQE")]),,drop=FALSE] -> TEMP_PERENDTEPSDQEE
+    
+    # no duplicates please ( gdata )                    # unique identifier
+    TEMP_PERENDTEPSDQEE[!duplicated2(TEMP_PERENDTEPSDQEE[,c("TPENDD","CID")]),,drop=FALSE] -> TEMP_PERENDTEPSDQEE
+    
+    spread(data = TEMP_PERENDTEPSDQEE
+           , key   = CID
+           , value = TEPSDQE
+    ) -> TEMP_PERENDTEPSDQEE_XTSDF 
+    
+    
+    if ( length(TEMP_PERENDTEPSDQEE_XTSDF) > 1 ) {
+      paste0("CID",colnames(TEMP_PERENDTEPSDQEE_XTSDF)[2:length(TEMP_PERENDTEPSDQEE_XTSDF)])   -> colnames(TEMP_PERENDTEPSDQEE_XTSDF)[2:length(TEMP_PERENDTEPSDQEE_XTSDF)]
+      paste0(colnames(TEMP_PERENDTEPSDQEE_XTSDF)[2:length(TEMP_PERENDTEPSDQEE_XTSDF)],".EPSDQ") -> colnames(TEMP_PERENDTEPSDQEE_XTSDF)[2:length(TEMP_PERENDTEPSDQEE_XTSDF)]
+    }
+    
+    bookmarkhere <- 1
+    
+    # new prepare to na.locf and merge
+    
+    # zoo:na.locf
+    # merg[g]e with left outer join ( TEMP_PRIZEDDEE_XTSDF garanteed to have all rows)
+
+    # market price is ( not reliable if too old ), therefore will not do na.locf
+    xts(TEMP_PRIZEDDEE_XTSDF[,-1],as.Date(TEMP_PRIZEDDEE_XTSDF[,1])) -> TEMP_PRIZEDDEE_XTS
+
+    # na.locf from the 'company information' last quarterly report
+    xts(TEMP_PERENDTSHAQEE_XTSDF[,-1],as.Date(TEMP_PERENDTSHAQEE_XTSDF[,1])) -> TEMP_PERENDTSHAQEE_XTS
+    na.locf(TEMP_PERENDTSHAQEE_XTS) -> TEMP_PERENDTSHAQEE_XTS
+    
+    # na.locf from the 'company information' last quarterly report
+    xts(TEMP_PERENDTEPSDQEE_XTSDF[,-1],as.Date(TEMP_PERENDTEPSDQEE_XTSDF[,1])) -> TEMP_PERENDTEPSDQEE_XTS
+    na.locf(TEMP_PERENDTEPSDQEE_XTS) -> TEMP_PERENDTEPSDQEE_XTS
+    
+    # prepare for 'math'
+    # safest: left join 'market information'(LEFT OUTER) to 'company information'(RIGHT)
+
+    # market information
+    TEMP_PRIZEDDEE_XTS -> TEMP_BULK_XTS
+    
+    # company information to previous information(market information)
+    merge(TEMP_BULK_XTS
+          , TEMP_PERENDTSHAQEE_XTS
+          , join = "left"
+    ) -> TEMP_BULK_XTS
+    
+     
+    # company information to previous information
+    merge(TEMP_BULK_XTS
+          , TEMP_PERENDTEPSDQEE_XTS
+          , join = "left"
+    ) -> TEMP_BULK_XTS
+    
+    # NOTE: the merge.xts has produced a situation such that 
+    #       all needed columns for 'just one' math statement may not exist
+    # i.e., e.g.
+    # # CID13.PRIZE to "CID12.SHAQ _____ CID14.SHAQ to CID13.ESPDQ
+    # # the situation is 'just (HOPEFULLY) easier' with-in frameApply
+    #    to handle the situation THERE
+    
+    # THIS ONE
+    # browser(text = paste0("Just after 2nd merge: ", unique(x[,"MG_DESC"]) ), expr = { unique(x[,"MG_DESC"]) == "Consumer Non-Cyclical" } )
+    
+    coredata(TEMP_BULK_XTS) -> BULK_XTS_COREDATA
+    as.data.frame( BULK_XTS_COREDATA, stringsAsFactors=FALSE ) -> BULK_XTS_COREDATA
+    
+    bookmarkhere <- 1
+    
+    # need to work on just one company (groupby) at a time
+    data.frame(colnames(BULK_XTS_COREDATA), stringsAsFactors=FALSE) -> BULK_XTS_COREDATA_COLINDEX 
+    c("column_names") -> colnames(BULK_XTS_COREDATA_COLINDEX)[1] 
+    str_extract(colnames(BULK_XTS_COREDATA), "[0-9]+") -> BULK_XTS_COREDATA_COLINDEX[["groupby"]]
+    
+    # BEGIN DEBUGGING HERE
+    # print(paste0("Just before: frameApply: ",unique(x[,"MG_DESC"])))
+    
+    # THIS ONE
+    # browser(text = paste0("Just before: frameApply: ", unique(x[,"MG_DESC"]) ), expr = { unique(x[,"MG_DESC"]) == "Consumer Non-Cyclical" } )
+    bookmarkhere <- 1
+    
+    # from ( gdata )
+    frameApply(
+      x   = BULK_XTS_COREDATA_COLINDEX
+      , on  = c("column_names")
+      , by  = c("groupby")
+      , simplify= FALSE # a list ( not a data.frame ) # TRUE; Error in match.names(clabs, names(xi)) : names do not match previous names
+      , fun = function(xdat, payload , current_care,  ...) {
+        
+          bookmarkhere <- 1
+          # browser(text = paste0("Just before: frameApply: ",current_care), expr = { current_care == "Consumer Cyclical" } )
+          # browser(text = paste0("Just before: frameApply: ",current_care), expr = { current_care == "Consumer Non-Cyclical" } )
+        
+          # LAST ERROR TO FIX [ ]
+          # "Consumer Non-Cyclical"
+          # Error in `[.data.frame`(payload_small, , SHAQ_POS, drop = FALSE) : 
+          # undefined columns selected 
+        
+          # get our variables of intererst
+          payload[,unlist(xdat[,"column_names",drop=FALSE]),drop=FALSE] -> payload_small
+        
+          # get the positions of our 'variables of intererst'
+          match(1,as.integer(!is.na(str_extract(colnames(payload_small),"CID[0-9]+\\.PRIZE") ))) -> PRIZE_POS
+          match(1,as.integer(!is.na(str_extract(colnames(payload_small),"CID[0-9]+\\.SHAQ") )))  -> SHAQ_POS
+          match(1,as.integer(!is.na(str_extract(colnames(payload_small),"CID[0-9]+\\.EPSDQ") ))) -> EPSDQ_POS
+          
+          # get the 'new column name' (by  = c("groupby")) will garantee at least one column
+          paste0("CID",unique(str_extract(colnames(payload_small), "[0-9]+")),".RETPERDOL" ) -> NEWCOLNAME
+
+          ### HERE ### VERIFY MATH [x]
+          # browser(text = paste0("is.na(SHAQ_POS) AND frameApply: ",current_care), expr = { current_care == "Consumer Non-Cyclical" && is.na(SHAQ_POS) } )
+          
+          # browser(text = paste0("frameApply: ",current_care), expr = { current_care == "Consumer Non-Cyclical"  } )
+          
+          # FOR MATH
+          # after both merges: must check filer ( all three must exist )
+          # CID13.PRIZE to "CID12.SHAQ _____ CID14.SHAQ to CID13.ESPDQ
+          # if all three do not exist DO NOT DO MATH!
+          
+          # (temp logic): use instead of any(is.na()) for exactness 
+          if(sum(as.integer(!is.na(c(PRIZE_POS,SHAQ_POS,EPSDQ_POS)))) != 3) {
+            
+            ## with one column of class numeric
+            # data.frame( 0.0 ) -> payload_small
+            # NEWCOLNAME -> colnames(payload_small)
+            
+            ## send back zero rows
+            # return(payload_small[FALSE,NEWCOLNAME,drop=FALSE])
+            
+            # will simply handle the list element later
+            return(NULL)
+          }
+          
+          # LAST ERROR TO FIX [ ]
+          # "Consumer Non-Cyclical"
+          # Error in `[.data.frame`(payload_small, , SHAQ_POS, drop = FALSE) : 
+          # undefined columns selected 
+          
+          # add the new column to the 
+          ## WRONG
+          ##  ( share * 1000000.0 ) * ( earn/share)  / price -> earn /price -> "return per dollar paid"
+
+          # CORRECT!
+          # VERIFY MATH [x]
+          # x - means cancels out
+          
+          #                                    TOTAL_EARNINGS  /   ( TOTAL_SHARES )         //  PRICE/SHARE -> EARN/PRICE 
+          
+          #  ( ( earn_per_share) * x( shares * 1000000.0 )x )  /  x( shares * 1000000.0 )x  //  price_per_share  -> "return(in_quarter) per dollar paid"
+          
+          #      earn_per_share                                                             //  price_per_share  ->  earn(in_quarter)/price
+          
+                                                      payload_small[,EPSDQ_POS,drop=FALSE]  /   payload_small[,PRIZE_POS,drop=FALSE]  -> payload_small[,NEWCOLNAME]
+          
+          
+          # 
+          # just interested in the ONE new column a DF of 'ONE COLUMN'
+          # return it!
+          payload_small[,NEWCOLNAME,drop=FALSE]
+          
+        } 
+      , payload = BULK_XTS_COREDATA
+      , current_care =  unique(x[,"MG_DESC"]) # { current_care <- unique(x[,"MG_DESC"]) } # ( seem needs to be a REAL variable ) some delayed eval 
+    ) -> LIST_SINGLECOL_XTS_COREDATA_NEWCOLUMN # is a list of dataframes of 'one col' each
+    
+    
+    # frameApply : simplify = FALSE output
+    LIST_SINGLECOL_XTS_COREDATA_NEWCOLUMN[["result"]] -> LIST_SINGLECOL_XTS_COREDATA_NEWCOLUMN_RESULT
+    
+    # as pointed out by B.D. Ripley
+    # [R] removing NULL elements from a list 
+    # https://stat.ethz.ch/pipermail/r-help/2003-April/032275.html
+    # because I did not have enough varibles to do the math, then skip that NULL
+    LIST_SINGLECOL_XTS_COREDATA_NEWCOLUMN_RESULT[sapply(LIST_SINGLECOL_XTS_COREDATA_NEWCOLUMN_RESULT,is.null)] <- NULL
+    
+    # when I cbind later, I DO NOT WANT the names() to become part of the new column names
+    NULL -> names(LIST_SINGLECOL_XTS_COREDATA_NEWCOLUMN_RESULT)
+    
+    # some ideas from ...
+    # Converting a list of data frames into one data frame in R
+    # http://stackoverflow.com/questions/2851327/converting-a-list-of-data-frames-into-one-data-frame-in-r
+    
+    # 'for now' combine all columns everywhere ( old + new)
+    #  keeping old around to verify the math: That I still need to do
+    cbind(BULK_XTS_COREDATA, do.call("cbind", LIST_SINGLECOL_XTS_COREDATA_NEWCOLUMN_RESULT) ) -> BULK_XTS_COREDATA
+    
+    # I would like to see/keep those row.names 'dates'
+    index(TEMP_BULK_XTS) -> row.names(BULK_XTS_COREDATA)
+    
+    # View( data.frame(  colnames( BULK_XTS_COREDATA )))
+    # LEFT_OFF ... [ ] VERIFY MATH .... [ ] massage and pritiffy output-consider t()
+    
+    # !!!!! STRONG GOOD IDEA: chop off beyond the last 16
+    # !!!!! NOTE: ( POSSIBLY) possible to return from 'do' a transpose FLIP
+    # NO! - DO ALL 'REMAINING MATH' AND FORMATTING BEFORE RETURNING FROM DO
+    
+    # !!!! FIX ERROR ABOVE [ ] ####
+    # VERIFY MATH [ ]!!!!!!!!!! ( TO BE DONE )
+    
+      # ( share / 1000000.0 ) * ( earn/share)  / price -> earn /price -> "return per dollar paid"
+    #     vaggregate(
+    #       .value = colnames(BULK_XTS_COREDATA)
+    #       , .group = as.factor(str_extract(colnames(BULK_XTS_COREDATA), "[0-9]+"))
+    #       , .fun     =  function(x,y) {
+    #         yname <- as.character(as.list(substitute(list(y)))[-1L][[1]] )  
+    #         paste0( 
+    #           yname
+    #           ,"[,'",x[match("SHAQ",str_extract(x, "SHAQ"))],"',drop=FALSE]"
+    #           ," / 1000000.0 * ("
+    #           ,yname
+    #           , "[,'",x[match("EPSDQ",str_extract(x, "EPSDQ"))],"',drop=FALSE]"
+    #           ,") / "
+    #           ,yname
+    #           , "[,'",x[match("PRIZE",str_extract(x, "PRIZE"))],"',drop=FALSE]"
+    #         ) -> z
+    #         return(z)
+    #       }
+    #       ,  y     = BULK_XTS_COREDATA
+    #     ) -> CID_BULK_RET_DOLLAR_DEPARSES
+    
+     # THURSDAY [ ]
+     # LEFT_OFF ( THIS SUCKS!!!) # REPLACAE WITH A dplyr 'group by'!!! [ ]
+     #     Browse[2]> head( data.frame(CID_BULK_RET_DOLLAR_DEPARSES ),2)
+     #     CID_BULK_RET_DOLLAR_DEPARSES
+     #     1    BULK_XTS_COREDATA[,'CID1.SHAQ',drop=FALSE] / 1000000.0 * (BULK_XTS_COREDATA[,'CID1.EPSDQ',drop=FALSE]) / BULK_XTS_COREDATA[,'CID1.PRIZE',drop=FALSE]
+     #     2 BULK_XTS_COREDATA[,'CID10.SHAQ',drop=FALSE] / 1000000.0 * (BULK_XTS_COREDATA[,'CID10.EPSDQ',drop=FALSE]) / BULK_XTS_COREDATA[,'CID10.PRIZE',drop=FALSE]
+     #     
+    
+    bookmarkhere <- 1
+    
+    # prepare for 'mass math'
+    
+    # Shares Average Q1
+    # SHR_AQ1
+    # Field Type: Shares in millions (0.0 to 999999.9)
+    
+    # EPS-Diluted Q1
+    # EPSD_Q1
+    # Field Type: Dollars per share
+    
+    # ( share / 1000000.0 ) * ( earn/share)  / price -> earn /price -> "return per dollar paid"
+    
+    # LEFT OFF 'mass MATH'
+    
+    # LEFT_OFF
+    # eval parse text and/or/not llply
+    
+    # dbDisconnect(con)
+    con <- NULL
+    
+    
     ### SQL ZONE END ###
     
     # xts TICKERS...across(7000 of them) - coredata
@@ -1636,15 +2024,19 @@ main_foresight3_999 <- function(pauseat=NULL) {
     # if ( PEREND_Q1  <=  PRICE_DATE  )                   EPSD_Q1 * SHR_AQ1 * ( 1.0 /  DILUTION_MULT_Q1 ) / PRICE_DATE -> M000_RET_PER_DOLLAR
     # if ( PEREND_Q2  <=  PRICEDM001  <=  PEREND_Q1  )    EPSD_Q2 * SHR_AQ2 * ( 1.0 /  DILUTION_MULT_Q2 ) / PRICE_M001 -> M001_RET_PER_DOLLAR
   
+    # return(x)
+    # return(data.frame())
     return(x)
 
   }
 
+  ## (HOPEFULLY TEMPORARY)
   RET_DOLLAR_PRICE_GRID <- suppressWarnings(do(RET_DOLLAR_PRICE_UNIVERSE_NOT_NA, ret_dollar_price_grid_do(.))) 
 
   RET_DOLLAR_PRICE_UNIVERSE_NOT_NA <- ungroup(RET_DOLLAR_PRICE_UNIVERSE_NOT_NA) 
   rm(RET_DOLLAR_PRICE_UNIVERSE_NOT_NA)
     
+  ## (HOPEFULLY TEMPORARY)
   RET_DOLLAR_PRICE_GRID <- ungroup(RET_DOLLAR_PRICE_GRID) 
   
   # OUTPUT IS RETURNED TO    RET_DOLLAR_PRICE_GRID
@@ -1727,7 +2119,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
   
   # require 3-month price appreciation greater than the universal 'All stocks' median (UNIVERSE)
-  # from SI_PSD  add back PRCHG_13W
+  # from SI_PSD  add back PRCHG_13W 
   
   sqldf("DROP TABLE main.UNIVERSE", connection = dpsqllconn$con)
 
