@@ -8,7 +8,7 @@ options(digits = 22)
 options(max.print=99999)
 options(scipen=255) # Try these = width
 options(sqldf.driver = "SQLite")
-## options(error = browser)
+## options(error = browser) 
 options(error = recover) # DEFINITELY
 # options(error = NULL)
 
@@ -1899,6 +1899,9 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
           # browser(text = paste0("Just before: frameApply: ",current_care), expr = { current_care == "Utilities" } )
           # browser(text = paste0("Just before: frameApply: ",current_care), expr = { current_care == "Transportation" } )
           
+          # 
+          # browser(text = paste0("Just inside: frameApply: ",current_care), expr = { current_care == "Basic Materials" } )
+          
           # LAST ERROR TO FIX [ ]
           # "Consumer Non-Cyclical"
           # Error in `[.data.frame`(payload_small, , SHAQ_POS, drop = FALSE) : 
@@ -1913,8 +1916,11 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
           match(1,as.integer(!is.na(str_extract(colnames(payload_small),"CID[0-9]+\\.EPSDQ") ))) -> EPSDQ_POS
           
           # get the 'new column name' (by  = c("groupby")) will garantee at least one column
-          paste0("CID",unique(str_extract(colnames(payload_small), "[0-9]+")),".RETPERDOL" ) -> NEWCOLNAME
+          paste0("CID",unique(str_extract(colnames(payload_small), "[0-9]+")),".RETPERDOL" ) -> NEWCOLNAME_RETPERDOL
 
+          # get the 'new column name' (by  = c("groupby")) will garantee at least one column
+          paste0("CID",unique(str_extract(colnames(payload_small), "[0-9]+")),".MKTWEIGHT" ) -> NEWCOLNAME_MKTWEIGHT
+          
           ### HERE ### VERIFY MATH [x]
           # browser(text = paste0("is.na(SHAQ_POS) AND frameApply: ",current_care), expr = { current_care == "Consumer Non-Cyclical" && is.na(SHAQ_POS) } )
           
@@ -1951,6 +1957,7 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
           ## WRONG
           ##  ( share * 1000000.0 ) * ( earn/share)  / price -> earn /price -> "return per dollar paid"
 
+          # *** return per dollar ***
           # CORRECT!
           # VERIFY MATH [x]
           # x - means cancels out
@@ -1961,13 +1968,16 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
           
           #      earn_per_share                                                             //  price_per_share  ->  earn(in_quarter)/price
           
-                                                      payload_small[,EPSDQ_POS,drop=FALSE]  /   payload_small[,PRIZE_POS,drop=FALSE]  -> payload_small[,NEWCOLNAME]
+                                                      payload_small[,EPSDQ_POS,drop=FALSE]  /   payload_small[,PRIZE_POS,drop=FALSE]  -> payload_small[,NEWCOLNAME_RETPERDOL]
           
+          # *** market weight ***                               price_per_share * ( share * 1000000.0 )
+          
+                                            payload_small[,PRIZE_POS,drop=FALSE] * ( payload_small[,SHAQ_POS,drop=FALSE] * 1000000.0 ) -> payload_small[,NEWCOLNAME_MKTWEIGHT] 
           
           # 
-          # just interested in the ONE new column a DF of 'ONE COLUMN'
+          # just interested in the MANY new columns a DF of 'MANY COLUMN'
           # return it!
-          payload_small[,NEWCOLNAME,drop=FALSE]
+          payload_small[,c(NEWCOLNAME_RETPERDOL,NEWCOLNAME_MKTWEIGHT),drop=FALSE]
           
         } 
       , payload = BULK_XTS_COREDATA
@@ -1977,6 +1987,9 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
     
     # frameApply : simplify = FALSE output
     LIST_SINGLECOL_XTS_COREDATA_NEWCOLUMN[["result"]] -> LIST_SINGLECOL_XTS_COREDATA_NEWCOLUMN_RESULT
+    
+    # 
+    # browser(text = paste0("Just inside: frameApply: ",unique(x[,"MG_DESC"])), expr = { unique(x[,"MG_DESC"]) == "Basic Materials" } )
     
     # as pointed out by B.D. Ripley
     # [R] removing NULL elements from a list 
@@ -2046,12 +2059,14 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
     # only the desired MAGIC are valuable ( behind data IS NOT reliable )
     BULK_XTS_COREDATA[tail(0:NROW(BULK_XTS_COREDATA),18),,drop=FALSE] -> BULK_XTS_COREDATA
     
-    # a quality of interest
+    # a qualities of interest
     BULK_XTS_COREDATA[,!is.na(str_extract(colnames(BULK_XTS_COREDATA), "RETPERDOL")),drop=FALSE] -> BULK_XTS_COREDATA_RETPERDOL
+    
+    BULK_XTS_COREDATA[,!is.na(str_extract(colnames(BULK_XTS_COREDATA), "MKTWEIGHT")),drop=FALSE] ->  BULK_XTS_COREDATA_MKTWEIGHT
     
     # are not numeric
     row.names(BULK_XTS_COREDATA) -> BULK_XTS_COREDATA_DATE_NAMES_VECTOR
-    rep(unique(x[,"MG_DESC"]),NROW(BULK_XTS_COREDATA)) -> BULK_XTS_COREDATA_RETPERDOL_MG_DESC_VECTOR
+    rep(unique(x[,"MG_DESC"]),NROW(BULK_XTS_COREDATA)) -> BULK_XTS_COREDATA_MG_DESC_VECTOR
     # are numeric
     aaply(as.matrix(BULK_XTS_COREDATA_RETPERDOL), 1, function(x) { length(x) } ) -> BULK_XTS_COREDATA_RETPERDOL_CIDS_TOTAL_VECTOR
     aaply(as.matrix(BULK_XTS_COREDATA_RETPERDOL), 1, function(x) { sum(as.integer(!is.na(x)))} ) -> BULK_XTS_COREDATA_RETPERDOL_CIDS_NOTNA_VECTOR
@@ -2063,12 +2078,57 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
     # median absolute deviation
     # aaply(as.matrix(BULK_XTS_COREDATA_RETPERDOL), 1, mad, na.rm = TRUE )     -> BULK_XTS_COREDATA_RETPERDOL_MAD_VECTOR
     
+    # 
+    # browser(text = paste0("Just inside: frameApply: ",unique(x[,"MG_DESC"])), expr = { unique(x[,"MG_DESC"]) == "Basic Materials" } )
+    
+    # TO_DO [ ]
+    # something like this SHOULD WORK ( note: 12:10 ( last known good )
+    # note: only 4 conglomerates exist, if every to be zero ( to filter through 3000 ) ( this would break )
+    # but dplyr group_by would SEND at least ONE
+    aaply(.data = cbind(1:NROW(BULK_XTS_COREDATA_RETPERDOL),as.matrix(BULK_XTS_COREDATA_RETPERDOL)), .margins = 1, .fun = function(x,y) {
+      
+      # x - is just a vector ( a row ) # element_1: is the 'row identifier'
+      
+      # na.rm = TRUE
+      # NA/NA o.k NA/(notNA) o.k.   (notNA)/NA:_entire_calculation->NA not_o.k.
+      #   Fix weighted.mean S-LOGIC problem
+      # > weighted.mean( c(1,2,3),c(3,NA,1), na.rm = TRUE)  # problem here ( weighted mean S-logic )
+      # [1] NA
+      
+      # should be dubugging here
+      # browser(text = paste0("Just inside: aaply: ",x[1]), expr = { x[1] == 5 } )
+      
+      # browser(text = paste0("Just inside: aaply: ",x[1]), expr = { x[1] == 15 } )
+      
+      -which(is.na(y[x[1],,drop=FALSE])) -> WEIGHTS_NA_POSZ
+      
+      # need to change te datatype
+      if(length(WEIGHTS_NA_POSZ) == 0) { c(TRUE) -> WEIGHTS_NA_POSZ } # so this is EVERYTHING
+      
+      # everything except the first column ( that is the 'weight vector row identifier' )
+      # original
+      # NA problem
+      # weighted.mean(x[-1], y[x[1],,drop=FALSE] , na.rm = TRUE)
+      
+      # adjusted for NAs in the weights THAT do have a _non_NA in the 
+      #   corresponding 'element of the vector being weighted'
+      # NaN problem
+      weighted.mean(x[-1][WEIGHTS_NA_POSZ],y[x[1],,drop=FALSE][,WEIGHTS_NA_POSZ,drop=FALSE], na.rm = TRUE)
+      
+      
+      } , y = as.matrix(BULK_XTS_COREDATA_MKTWEIGHT)
+    ) -> BULK_XTS_COREDATA_RETPERDOL_WEIGHTEDMEAN_VECTOR
+    
+    # 
+    # browser(text = paste0("Just inside: frameApply: ",unique(x[,"MG_DESC"])), expr = { unique(x[,"MG_DESC"]) == "Basic Materials" } )
+  
     # dates, divisor, and measure
     cbind(as.data.frame( BULK_XTS_COREDATA_DATE_NAMES_VECTOR, stringsAsFactors = FALSE )
-          , BULK_XTS_COREDATA_RETPERDOL_MG_DESC_VECTOR
+          , BULK_XTS_COREDATA_MG_DESC_VECTOR
           , BULK_XTS_COREDATA_RETPERDOL_CIDS_TOTAL_VECTOR
           , BULK_XTS_COREDATA_RETPERDOL_CIDS_NOTNA_VECTOR
           , BULK_XTS_COREDATA_RETPERDOL_MEAN_VECTOR
+          , BULK_XTS_COREDATA_RETPERDOL_WEIGHTEDMEAN_VECTOR
           , BULK_XTS_COREDATA_RETPERDOL_MEDIAN_VECTOR
           , stringsAsFactors = FALSE # works in the cbind case
     ) -> BULK_RETURN
@@ -2078,6 +2138,7 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
       ,"CIDS_TOTAL"
       ,"CIDS_NOTNA"
       ,"RETPERDOL_MEAN"
+      ,"RETPERDOL_WEIGHTEDMEAN"
       ,"RETPERDOL_MEDIAN") -> colnames(BULK_RETURN)
     
     # BULK_RETURN
