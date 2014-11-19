@@ -38,7 +38,7 @@ options(error = recover) # DEFINITELY
 # auto_test("./R", "./tests/testthat") 
 
 
-main_foresight3_999 <- function(pauseat=NULL) {
+main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
 
   oldwd <- getwd()
   # "current working directory of the R process"
@@ -661,6 +661,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
                             , PRICEDM005 AS PRICEDM005UNX, PRICEDM006 AS PRICEDM006UNX, PRICEDM007 AS PRICEDM007UNX, PRICEDM008 AS PRICEDM008UNX 
                             , PRICEDM009 AS PRICEDM009UNX, PRICEDM010 AS PRICEDM010UNX, PRICEDM011 AS PRICEDM011UNX, PRICEDM012 AS PRICEDM012UNX 
                             , PRICEDM013 AS PRICEDM013UNX, PRICEDM014 AS PRICEDM014UNX, PRICEDM015 AS PRICEDM015UNX, PRICEDM016 AS PRICEDM016UNX 
+                            , PRICEDM017 AS PRICEDM017UNX, PRICEDM018 AS PRICEDM018UNX 
                           ,SHR_AQ1 AS SHR_AQ1__numeric, SHR_AQ2 AS SHR_AQ2__numeric, SHR_AQ3 AS SHR_AQ3__numeric, SHR_AQ4 AS SHR_AQ4__numeric 
                           ,SHR_AQ5 AS SHR_AQ5__numeric, SHR_AQ6 AS SHR_AQ6__numeric, SHR_AQ7 AS SHR_AQ7__numeric, SHR_AQ8 AS SHR_AQ8__numeric 
                            FROM 
@@ -1161,13 +1162,13 @@ main_foresight3_999 <- function(pauseat=NULL) {
               , "PRICEDM007UNX", "PRICEDM008UNX", "PRICEDM009UNX"
               , "PRICEDM010UNX", "PRICEDM011UNX", "PRICEDM012UNX"
               , "PRICEDM013UNX", "PRICEDM014UNX", "PRICEDM015UNX"
-              , "PRICEDM016UNX"   
+              , "PRICEDM016UNX", "PRICEDM017UNX", "PRICEDM018UNX"
               , "PRICE_M001", "PRICE_M002", "PRICE_M003"        # PRICE_M001__numeric
               , "PRICE_M004", "PRICE_M005", "PRICE_M006" 
               , "PRICE_M007", "PRICE_M008", "PRICE_M009"
               , "PRICE_M010", "PRICE_M011", "PRICE_M012"
               , "PRICE_M013", "PRICE_M014", "PRICE_M015"
-              , "PRICE_M016"   
+              , "PRICE_M016", "PRICE_M017", "PRICE_M018"
               , "PERENDUNX_Q1", "PERENDUNX_Q2", "PERENDUNX_Q3"  # PERENDUNX_Q1
               , "PERENDUNX_Q4", "PERENDUNX_Q5", "PERENDUNX_Q6" 
               , "PERENDUNX_Q7", "PERENDUNX_Q8"  
@@ -1180,6 +1181,9 @@ main_foresight3_999 <- function(pauseat=NULL) {
               
   ),drop=FALSE] 
               
+  # IF BREAK HERE
+
+
   RET_DOLLAR_PRICE_UNIVERSE_NOT_NA  <- group_by(RET_DOLLAR_PRICE_UNIVERSE_NOT_NA,MG_DESC)
              
   # TO_DO [ ] END: NEED TO 'REALLY' MAKE 'NA' ... complete.cases, zoo::na.trim
@@ -1189,8 +1193,11 @@ main_foresight3_999 <- function(pauseat=NULL) {
              
   ret_dollar_price_grid_do <- function(x) {
 
-    print(unique(x[,"MG_DESC"]))
+    # print(paste0("Returns grid_do: ", unique(x[,"MG_DESC"])))
     # return(x)
+    # browser(text = paste0("Just after the start: ret_dollar_price_grid_do; ", unique(x[,"MG_DESC"]) ), expr = { unique(x[,"MG_DESC"]) == "Utilities" } )
+
+    # browser(text = paste0("Just after the start: ret_dollar_price_grid_do; ", unique(x[,"MG_DESC"]) ), expr = { unique(x[,"MG_DESC"]) == "Utilities" } )
     
     # for zoo::coredata needing to be a numeric matrix
     # transform the (old-ticker) 'company identifer(hexadecimal) into something more 
@@ -1240,6 +1247,10 @@ main_foresight3_999 <- function(pauseat=NULL) {
     as.numeric(as.Date(as.yearmon(as.Date(x$PRICEDM014UNX)) , frac = 1)) -> x$PRICEDM014UNX
     as.numeric(as.Date(as.yearmon(as.Date(x$PRICEDM015UNX)) , frac = 1)) -> x$PRICEDM015UNX
     as.numeric(as.Date(as.yearmon(as.Date(x$PRICEDM016UNX)) , frac = 1)) -> x$PRICEDM016UNX
+    as.numeric(as.Date(as.yearmon(as.Date(x$PRICEDM017UNX)) , frac = 1)) -> x$PRICEDM017UNX
+    as.numeric(as.Date(as.yearmon(as.Date(x$PRICEDM018UNX)) , frac = 1)) -> x$PRICEDM018UNX
+    
+    # MAGIC NUMBER IS THIS: 18 (Should may/can/be a persistent constant of some sort)
     
     # others need to round-up the end of the month I CAN do THAT here
     as.numeric(as.Date(as.yearmon(as.Date(x$PERENDUNX_Q1)) , frac = 1)) -> x$PERENDUNX_Q1
@@ -1260,7 +1271,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
         , "PRICEDM007UNX", "PRICEDM008UNX", "PRICEDM009UNX"
         , "PRICEDM010UNX", "PRICEDM011UNX", "PRICEDM012UNX"
         , "PRICEDM013UNX", "PRICEDM014UNX", "PRICEDM015UNX"
-        , "PRICEDM016UNX"                                               
+        , "PRICEDM016UNX", "PRICEDM017UNX", "PRICEDM018UNX"                                 
     ),drop=FALSE] 
     
     
@@ -1278,7 +1289,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
     # DQ - dymanic quarter
     
     # add index
-    cbind( 16:1, PRIZED ) -> PRIZED
+    cbind( 18:1, PRIZED ) -> PRIZED
     c("INDEXSM") -> dimnames(PRIZED)[[2]][1]
     
     as.character(ymd(c("1970-01-01")) + days(PRIZED_INDEX_NAMED_VECTOR)) -> rownames(PRIZED)
@@ -1322,7 +1333,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
         , "PRICE_M007", "PRICE_M008", "PRICE_M009"
         , "PRICE_M010", "PRICE_M011", "PRICE_M012"
         , "PRICE_M013", "PRICE_M014", "PRICE_M015"
-        , "PRICE_M016"                                               
+        , "PRICE_M016", "PRICE_M017", "PRICE_M018"                                 
     ),drop=FALSE] 
 
     PRIZE[,1]  -> row.names(PRIZE)
@@ -1331,7 +1342,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
     t(PRIZE) -> PRIZE
     
     # add index
-    cbind( 16:1, PRIZE ) -> PRIZE
+    cbind( 18:1, PRIZE ) -> PRIZE
     c("INDEXSM") -> dimnames(PRIZE)[[2]][1]    
 
                                              # from far above
@@ -1360,7 +1371,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
     SHR_AQ[,rev(1:length(colnames(SHR_AQ)))] -> SHR_AQ 
     t(SHR_AQ) -> SHR_AQ
     
-    # save 'SHR_AQ no index'( for 'use' below ) 
+    # save 'SHR_AQ no index'( for 'use' below )   
     SHR_AQ -> SHR_AQ_NO_INDEXDQ
     
     # add index
@@ -1368,7 +1379,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
     c("INDEXDQ") -> dimnames(SHR_AQ)[[2]][1]  
     
     
-    # company information
+    # company information  
     EPSD_Q  <- 
       x[,c("COMPANY_ID_CID10"                       # "TICKER" 
            , "EPSD_Q1", "EPSD_Q2", "EPSD_Q3"
@@ -1711,6 +1722,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
     
     # now, the PERENDUNX and SHR_AQ in a pre-xts data.frame form
     
+    # note: 'be careful' that I select from table correctly: R XOR database'
     sqldf("select TPENDD.value AS TPENDD
           , TPENDD.variable as CID
           , TSHAQ.value AS TSHAQE 
@@ -1745,6 +1757,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
     
     # now, the PERENDUNX and EPSD_Q in a pre-xts data.frame form
     
+    # note: 'be careful' that I select from table correctly: R XOR database'
     sqldf("select TPENDD.value AS TPENDD
           , TPENDD.variable as CID
           , TEPSDQ.value AS TEPSDQE 
@@ -1780,31 +1793,62 @@ main_foresight3_999 <- function(pauseat=NULL) {
     # zoo:na.locf
     # merg[g]e with left outer join ( TEMP_PRIZEDDEE_XTSDF garanteed to have all rows)
 
+    # 
+    # browser(text = paste0("Just before:na.locf: ",unique(x[,"MG_DESC"])), expr = { unique(x[,"MG_DESC"]) == "Utilities" } )
+    
     # market price is ( not reliable if too old ), therefore will not do na.locf
     xts(TEMP_PRIZEDDEE_XTSDF[,-1],as.Date(TEMP_PRIZEDDEE_XTSDF[,1])) -> TEMP_PRIZEDDEE_XTS
 
-    # na.locf from the 'company information' last quarterly report
+    # ( instead of doing low/high range)
+    # not sure what the 'market information monthly' dates may be 
+    # in a sector, a company must 'file a quarterly' report within a month
+    # but "Utilities" never file in months 2,5,8 ( REALLY )!!
+    # just left-join merge with the "market information dates" index
+    # to garantee all months that 'have market information' ( but not 'company information' )
+    xts(  rep(1,NROW(index(TEMP_PRIZEDDEE_XTS)))  ,index(TEMP_PRIZEDDEE_XTS) ) -> ALL_MARKET_DATES_XTS
+    
+    # 1 of 2 ( company information )
     xts(TEMP_PERENDTSHAQEE_XTSDF[,-1],as.Date(TEMP_PERENDTSHAQEE_XTSDF[,1])) -> TEMP_PERENDTSHAQEE_XTS
+
+    # company information to previous information(market information)(price dates - left join)
+    merge(ALL_MARKET_DATES_XTS
+          , TEMP_PERENDTSHAQEE_XTS
+          , join = "left"
+    ) -> TEMP_PERENDTSHAQEE_XTS
+    # NOW remove THAT dummy column
+    TEMP_PERENDTSHAQEE_XTS[,-1,drop=FALSE] -> TEMP_PERENDTSHAQEE_XTS
+    
+    # na.locf from the 'company information' last quarterly report
     na.locf(TEMP_PERENDTSHAQEE_XTS) -> TEMP_PERENDTSHAQEE_XTS
     
-    # na.locf from the 'company information' last quarterly report
+    # 2 of 2 ( conpany information)
     xts(TEMP_PERENDTEPSDQEE_XTSDF[,-1],as.Date(TEMP_PERENDTEPSDQEE_XTSDF[,1])) -> TEMP_PERENDTEPSDQEE_XTS
+
+    # company information to previous information(market information)(price dates - left join)
+    merge(ALL_MARKET_DATES_XTS
+          , TEMP_PERENDTEPSDQEE_XTS
+          , join = "left"
+    ) -> TEMP_PERENDTEPSDQEE_XTS
+    # NOW remove THAT dummy column
+    TEMP_PERENDTEPSDQEE_XTS[,-1,drop=FALSE] -> TEMP_PERENDTEPSDQEE_XTS
+    
+    # na.locf from the 'company information' last quarterly report
     na.locf(TEMP_PERENDTEPSDQEE_XTS) -> TEMP_PERENDTEPSDQEE_XTS
     
-    # prepare for 'math'
+    # prepare for 'math' 
     # safest: left join 'market information'(LEFT OUTER) to 'company information'(RIGHT)
 
-    # market information
+    # prepare market information (left join)
     TEMP_PRIZEDDEE_XTS -> TEMP_BULK_XTS
-    
-    # company information to previous information(market information)
+
+    # company information to previous information(market information) # 1 of 2
     merge(TEMP_BULK_XTS
           , TEMP_PERENDTSHAQEE_XTS
           , join = "left"
     ) -> TEMP_BULK_XTS
     
      
-    # company information to previous information
+    # company information to previous information(market information) # chain 2 of 2
     merge(TEMP_BULK_XTS
           , TEMP_PERENDTEPSDQEE_XTS
           , join = "left"
@@ -1837,6 +1881,9 @@ main_foresight3_999 <- function(pauseat=NULL) {
     # browser(text = paste0("Just before: frameApply: ", unique(x[,"MG_DESC"]) ), expr = { unique(x[,"MG_DESC"]) == "Consumer Non-Cyclical" } )
     bookmarkhere <- 1
     
+    # 
+    # browser(text = paste0("Just before:frameApply: ",unique(x[,"MG_DESC"])), expr = { unique(x[,"MG_DESC"]) == "Utilities" } )
+    
     # from ( gdata )
     frameApply(
       x   = BULK_XTS_COREDATA_COLINDEX
@@ -1849,6 +1896,9 @@ main_foresight3_999 <- function(pauseat=NULL) {
           # browser(text = paste0("Just before: frameApply: ",current_care), expr = { current_care == "Consumer Cyclical" } )
           # browser(text = paste0("Just before: frameApply: ",current_care), expr = { current_care == "Consumer Non-Cyclical" } )
         
+          # browser(text = paste0("Just before: frameApply: ",current_care), expr = { current_care == "Utilities" } )
+          # browser(text = paste0("Just before: frameApply: ",current_care), expr = { current_care == "Transportation" } )
+          
           # LAST ERROR TO FIX [ ]
           # "Consumer Non-Cyclical"
           # Error in `[.data.frame`(payload_small, , SHAQ_POS, drop = FALSE) : 
@@ -1874,6 +1924,9 @@ main_foresight3_999 <- function(pauseat=NULL) {
           # after both merges: must check filer ( all three must exist )
           # CID13.PRIZE to "CID12.SHAQ _____ CID14.SHAQ to CID13.ESPDQ
           # if all three do not exist DO NOT DO MATH!
+          
+          # #
+          # browser(text = paste0("Just before: frameApply: ",current_care), expr = { current_care == "Financial"  } ) # "Technology" # Utilities
           
           # (temp logic): use instead of any(is.na()) for exactness 
           if(sum(as.integer(!is.na(c(PRIZE_POS,SHAQ_POS,EPSDQ_POS)))) != 3) {
@@ -1931,6 +1984,10 @@ main_foresight3_999 <- function(pauseat=NULL) {
     # because I did not have enough varibles to do the math, then skip that NULL
     LIST_SINGLECOL_XTS_COREDATA_NEWCOLUMN_RESULT[sapply(LIST_SINGLECOL_XTS_COREDATA_NEWCOLUMN_RESULT,is.null)] <- NULL
     
+    # 
+    # browser(text = paste0("Just after RESULT ",unique(x[,"MG_DESC"])), expr = { unique(x[,"MG_DESC"]) == "Utilities" } )
+    
+    
     # when I cbind later, I DO NOT WANT the names() to become part of the new column names
     NULL -> names(LIST_SINGLECOL_XTS_COREDATA_NEWCOLUMN_RESULT)
     
@@ -1986,6 +2043,47 @@ main_foresight3_999 <- function(pauseat=NULL) {
     
     bookmarkhere <- 1
     
+    # only the desired MAGIC are valuable ( behind data IS NOT reliable )
+    BULK_XTS_COREDATA[tail(0:NROW(BULK_XTS_COREDATA),18),,drop=FALSE] -> BULK_XTS_COREDATA
+    
+    # a quality of interest
+    BULK_XTS_COREDATA[,!is.na(str_extract(colnames(BULK_XTS_COREDATA), "RETPERDOL")),drop=FALSE] -> BULK_XTS_COREDATA_RETPERDOL
+    
+    # are not numeric
+    row.names(BULK_XTS_COREDATA) -> BULK_XTS_COREDATA_DATE_NAMES_VECTOR
+    rep(unique(x[,"MG_DESC"]),NROW(BULK_XTS_COREDATA)) -> BULK_XTS_COREDATA_RETPERDOL_MG_DESC_VECTOR
+    # are numeric
+    aaply(as.matrix(BULK_XTS_COREDATA_RETPERDOL), 1, function(x) { length(x) } ) -> BULK_XTS_COREDATA_RETPERDOL_CIDS_TOTAL_VECTOR
+    aaply(as.matrix(BULK_XTS_COREDATA_RETPERDOL), 1, function(x) { sum(as.integer(!is.na(x)))} ) -> BULK_XTS_COREDATA_RETPERDOL_CIDS_NOTNA_VECTOR
+    aaply(as.matrix(BULK_XTS_COREDATA_RETPERDOL), 1, mean, na.rm = TRUE ) -> BULK_XTS_COREDATA_RETPERDOL_MEAN_VECTOR
+    aaply(as.matrix(BULK_XTS_COREDATA_RETPERDOL), 1, median, na.rm = TRUE ) -> BULK_XTS_COREDATA_RETPERDOL_MEDIAN_VECTOR
+    
+    # maybe some other day
+    # aaply(as.matrix(BULK_XTS_COREDATA_RETPERDOL), 1, sd, na.rm = TRUE )     -> BULK_XTS_COREDATA_RETPERDOL_SD_VECTOR
+    # median absolute deviation
+    # aaply(as.matrix(BULK_XTS_COREDATA_RETPERDOL), 1, mad, na.rm = TRUE )     -> BULK_XTS_COREDATA_RETPERDOL_MAD_VECTOR
+    
+    # dates, divisor, and measure
+    cbind(as.data.frame( BULK_XTS_COREDATA_DATE_NAMES_VECTOR, stringsAsFactors = FALSE )
+          , BULK_XTS_COREDATA_RETPERDOL_MG_DESC_VECTOR
+          , BULK_XTS_COREDATA_RETPERDOL_CIDS_TOTAL_VECTOR
+          , BULK_XTS_COREDATA_RETPERDOL_CIDS_NOTNA_VECTOR
+          , BULK_XTS_COREDATA_RETPERDOL_MEAN_VECTOR
+          , BULK_XTS_COREDATA_RETPERDOL_MEDIAN_VECTOR
+          , stringsAsFactors = FALSE # works in the cbind case
+    ) -> BULK_RETURN
+    NULL -> row.names(BULK_RETURN)
+    c("DATE_NAMES"
+      ,"MG_DESC"
+      ,"CIDS_TOTAL"
+      ,"CIDS_NOTNA"
+      ,"RETPERDOL_MEAN"
+      ,"RETPERDOL_MEDIAN") -> colnames(BULK_RETURN)
+    
+    # BULK_RETURN
+    
+    bookmarkhere <- 1
+    
     # prepare for 'mass math'
     
     # Shares Average Q1
@@ -2003,7 +2101,7 @@ main_foresight3_999 <- function(pauseat=NULL) {
     # LEFT_OFF
     # eval parse text and/or/not llply
     
-    # dbDisconnect(con)
+    # dbDisconnect(con)  
     con <- NULL
     
     
@@ -2026,19 +2124,23 @@ main_foresight3_999 <- function(pauseat=NULL) {
   
     # return(x)
     # return(data.frame())
-    return(x)
+    # return(x)
+    return(BULK_RETURN)
 
   }
 
-  ## (HOPEFULLY TEMPORARY)
-  RET_DOLLAR_PRICE_GRID <- suppressWarnings(do(RET_DOLLAR_PRICE_UNIVERSE_NOT_NA, ret_dollar_price_grid_do(.))) 
-
+  ### COMMENT/UNCOMMENT TO GET ret_dollar_price_grid_do
+  if(RDPG) {
+    RET_DOLLAR_PRICE_GRID <- suppressWarnings(do(RET_DOLLAR_PRICE_UNIVERSE_NOT_NA, ret_dollar_price_grid_do(.))) 
+  }
+  
   RET_DOLLAR_PRICE_UNIVERSE_NOT_NA <- ungroup(RET_DOLLAR_PRICE_UNIVERSE_NOT_NA) 
   rm(RET_DOLLAR_PRICE_UNIVERSE_NOT_NA)
     
-  ## (HOPEFULLY TEMPORARY)
-  RET_DOLLAR_PRICE_GRID <- ungroup(RET_DOLLAR_PRICE_GRID) 
-  
+  ### COMMENT/UNCOMMENT TO GET ret_dollar_price_grid_do
+  if(RDPG) {
+    RET_DOLLAR_PRICE_GRID <- ungroup(RET_DOLLAR_PRICE_GRID) 
+  }
   # OUTPUT IS RETURNED TO    RET_DOLLAR_PRICE_GRID
              
   bookmarkhere <- 1
@@ -4065,12 +4167,31 @@ main_foresight3_999 <- function(pauseat=NULL) {
   # rm(list=ls(all.names=TRUE))
   # source('N:/MyVMWareSharedFolder/foresight3/R/main-foresight3-999.R', echo=TRUE)
 
+  # View(main_foresight3_999())
+  # View(main_foresight3_999(RDPG=TRUE))  # ret dollare price grid
+  # View(main_foresight3_999(RDPG=FALSE)) # ret dollare price grid # ( default )
+  #    exists("RET_DOLLAR_PRICE_GRID") # FALSE
+
   # View(UNIVERSE_FMA)
-  # View(WGHT_MN_PRICE_GRID)
+  # View(WGHT_MN_PRICE_GRID)  
+
+  # View( RET_DOLLAR_PRICE_GRID )
+  # View(subset(RET_DOLLAR_PRICE_GRID, MG_DESC %in% c("Basic Materials") ))
+  # View(subset(RET_DOLLAR_PRICE_GRID, MG_DESC %in% c("Capital Goods") ))
+  # View(subset(RET_DOLLAR_PRICE_GRID, MG_DESC %in% c("Conglomerates") )) # much missing data
+  # View(subset(RET_DOLLAR_PRICE_GRID, MG_DESC %in% c("Consumer Cyclical") ))
+  # View(subset(RET_DOLLAR_PRICE_GRID, MG_DESC %in% c("Consumer Non-Cyclical") ))
+  # View(subset(RET_DOLLAR_PRICE_GRID, MG_DESC %in% c("Energy") ))
+  # View(subset(RET_DOLLAR_PRICE_GRID, MG_DESC %in% c("Financial") ))
+  # View(subset(RET_DOLLAR_PRICE_GRID, MG_DESC %in% c("Health Care") ))
+  # View(subset(RET_DOLLAR_PRICE_GRID, MG_DESC %in% c("Services") ))
+  # View(subset(RET_DOLLAR_PRICE_GRID, MG_DESC %in% c("Technology") ))
+  # View(subset(RET_DOLLAR_PRICE_GRID, MG_DESC %in% c("Transportation") ))
+  # View(subset(RET_DOLLAR_PRICE_GRID, MG_DESC %in% c("Utilities") )) # much missing data
 
   # list( UNIVERSE_FMA = UNIVERSE_FMA, WGHT_MN_PRICE_GRID = WGHT_MN_PRICE_GRID )
 
-  ##  View(main_foresight3_999())
+
 
   return(list( UNIVERSE_FMA = UNIVERSE_FMA, WGHT_MN_PRICE_GRID = WGHT_MN_PRICE_GRID ))      
   # return(UNIVERSE_FMA)
