@@ -83,7 +83,7 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
 #   
 #   if(getOption("RepositoryStyle") == "Installed")  {
 #     
-#     options(AAIIBase = "N:/MyVMWareSharedFolder/Professional141114") 
+#     options(AAIIBase = "N:/MyVMWareSharedFolder/Professional141121") 
 #     
 #   }
   
@@ -97,7 +97,7 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
   
   if(getLocalOption("RepositoryStyle", optionlist = OPTIONLIST) == "Installed")  {
     
-    OPTIONLIST <- localoptions(AAIIBase = "N:/MyVMWareSharedFolder/Professional141114", optionlist = OPTIONLIST)
+    OPTIONLIST <- localoptions(AAIIBase = "N:/MyVMWareSharedFolder/Professional141121", optionlist = OPTIONLIST)
     
   }
   
@@ -473,18 +473,18 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
   
   SI_PSD <- tbl_df(SI_PSD)
 
-  # 4–4–5 calendar
-  # he 4–4–5 calendar is a method of managing accounting periods. 
+  # 4-4-5 calendar
+  # he 4-4-5 calendar is a method of managing accounting periods. 
   # It is a common calendar structure for some industries such as retail, manufacturing and parking industry.
-
-  # The 4–4–5 calendar divides a year into 4 quarters. 
+  
+  # The 4-4-5 calendar divides a year into 4 quarters. 
   # Each quarter has 13 weeks, which are grouped into 
-   # two 4-week "months" and 
-   # one 5-week "month". 
-  # The grouping of 13 weeks may also be set up as 5–4–4 weeks or 4–5–4 weeks, 
-  # but the 4–4–5 seems to be the most common arrangement.
+  # two 4-week "months" and 
+  # one 5-week "month". 
+  # The grouping of 13 weeks may also be set up as 5-4-4 weeks or 4-5-4 weeks, 
+  # but the 4-4-5 seems to be the most common arrangement.
 
-  # you can still compare a period to the same period in the prior year
+  # you can still compare a period to the same period in the prior year  
 
   # end date of the period is always the same day of the week
 
@@ -934,10 +934,10 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
   # that is, #_shares_outstanding_at_the end_of_that_month
   # I could/may use Q# MKTCAP_ Q1, and locf ( last observation carried forward for a better approx
   # TTR::SMA
-  # stats::weighted.mean
+  # stats::weighted.mean  
   
   #  Berkshire Hathaway BRK.A cuases my Financial Sector moving average to be above 10,000
-  #  500 financial companies of 3000
+  #  500 financial companies of 3000 
   
   # dbGetQuery(conn = dpsqllconn$con, "SELECT MG_DESC, TICKER, MKTCAP, PRICE  FROM UNIVMA WHERE MG_DESC = 'Financial' ORDER BY PRICE DESC")
         # MG_DESC TICKER                     MKTCAP                        PRICE
@@ -1832,6 +1832,17 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
     # NOW remove THAT dummy column
     TEMP_PERENDTEPSDQEE_XTS[,-1,drop=FALSE] -> TEMP_PERENDTEPSDQEE_XTS
     
+    bookmarkhere <- 1
+    
+    # keep a 'statistic' on 'how many' 'reported EPSD' that PARTICULAR month
+    # part 1 of 3
+    # MUST do 'before na.locf' because na.locf WILL smear my data upon the future months
+    aaply(coredata(TEMP_PERENDTEPSDQEE_XTS), 1, function(x) { sum(as.integer(!is.na(x)))} )               -> TEMP_PERENDTEPSDQEE_EPSD_TRIED_TO_RPRT_VECTOR
+    xts(as.matrix(TEMP_PERENDTEPSDQEE_EPSD_TRIED_TO_RPRT_VECTOR,ncol=1), index(TEMP_PERENDTEPSDQEE_XTS) ) -> TEMP_PERENDTEPSDQEE_EPSD_TRIED_TO_RPRT_XTS
+    c("EPSD_TRIED_TO_RPRT")  -> colnames(TEMP_PERENDTEPSDQEE_EPSD_TRIED_TO_RPRT_XTS)[1]
+    
+    bookmarkhere <- 1
+    
     # na.locf from the 'company information' last quarterly report
     na.locf(TEMP_PERENDTEPSDQEE_XTS) -> TEMP_PERENDTEPSDQEE_XTS
     
@@ -1853,6 +1864,19 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
           , TEMP_PERENDTEPSDQEE_XTS
           , join = "left"
     ) -> TEMP_BULK_XTS
+    
+    # keep a 'statistic' on 'how many' 'reported EPSD' that PARTICULAR month
+    # ( continued from ABOVE ) part 2 of 3
+    # false merge (with a dummy column) 
+    #   to garantee that my 'EPSD reporting dates' 
+    #      are those of 'previous information(market information)'
+    # creates a 'dummy' xts
+    merge(xts(rep(1,NROW(TEMP_BULK_XTS)),index(TEMP_BULK_XTS))
+          , TEMP_PERENDTEPSDQEE_EPSD_TRIED_TO_RPRT_XTS
+          , join = "left"
+    ) -> TEMP_PERENDTEPSDQEE_EPSD_TRIED_TO_RPRT_XTS
+    # drop that dummy column
+    TEMP_PERENDTEPSDQEE_EPSD_TRIED_TO_RPRT_XTS[,-1,drop=FALSE] -> TEMP_PERENDTEPSDQEE_EPSD_TRIED_TO_RPRT_XTS
     
     # NOTE: the merge.xts has produced a situation such that 
     #       all needed columns for 'just one' math statement may not exist
@@ -2056,8 +2080,18 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
     
     bookmarkhere <- 1
     
+    # limit the previous most reliable dates
+    
     # only the desired MAGIC are valuable ( behind data IS NOT reliable )
     BULK_XTS_COREDATA[tail(0:NROW(BULK_XTS_COREDATA),18),,drop=FALSE] -> BULK_XTS_COREDATA
+    
+    # keep a 'statistic' on 'how many' 'reported EPSD' that PARTICULAR month
+    # ( continued from ABOVE ) part 3 of 3
+    #
+    # these 'dates' are the same as index(TEMP_BULK_XTS)
+    # ( because I 'left joined LEFT(TEMP_BULK_XTS)' them earlier ( see ABOVE ))
+    TEMP_PERENDTEPSDQEE_EPSD_TRIED_TO_RPRT_XTS[tail(0:NROW(TEMP_PERENDTEPSDQEE_EPSD_TRIED_TO_RPRT_XTS),18),,drop=FALSE] -> TEMP_PERENDTEPSDQEE_EPSD_TRIED_TO_RPRT_XTS
+    
     
     # a qualities of interest
     BULK_XTS_COREDATA[,!is.na(str_extract(colnames(BULK_XTS_COREDATA), "RETPERDOL")),drop=FALSE] -> BULK_XTS_COREDATA_RETPERDOL
@@ -2125,6 +2159,7 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
     # dates, divisor, and measure
     cbind(as.data.frame( BULK_XTS_COREDATA_DATE_NAMES_VECTOR, stringsAsFactors = FALSE )
           , BULK_XTS_COREDATA_MG_DESC_VECTOR
+          , as.integer(coredata(TEMP_PERENDTEPSDQEE_EPSD_TRIED_TO_RPRT_XTS))
           , BULK_XTS_COREDATA_RETPERDOL_CIDS_TOTAL_VECTOR
           , BULK_XTS_COREDATA_RETPERDOL_CIDS_NOTNA_VECTOR
           , BULK_XTS_COREDATA_RETPERDOL_MEAN_VECTOR
@@ -2135,6 +2170,7 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
     NULL -> row.names(BULK_RETURN)
     c("DATE_NAMES"
       ,"MG_DESC"
+      ,"EPSD_TRIED_TO_RPRT"
       ,"CIDS_TOTAL"
       ,"CIDS_NOTNA"
       ,"RETPERDOL_MEAN"
@@ -2142,6 +2178,43 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
       ,"RETPERDOL_MEDIAN") -> colnames(BULK_RETURN)
     
     # BULK_RETURN
+    
+    bookmarkhere <- 1
+    
+    # prepare for 'absolute percent changes' and combo with 'lags'
+    
+    # note: ( BULK_RETURN is ALREADY 'ordered by DATE_NAMES asc)
+    # REDUNDANT extra MOVE ... prevent SOME (future)? errors
+    # Browse[2]> identical(BULK_RETURN,arrange(BULK_RETURN, DATE_NAMES ))
+    # [1] TRUE
+    
+    arrange(BULK_RETURN, DATE_NAMES ) -> BULK_RETURN
+    
+    #  note: dplyr::lag(x, n = 1L, default = NA, order_by = NULL)
+    # , order_by = NULL
+    #   order_by: override the default ordering to use another vector
+    
+    # 'not need 'relative' , need 'absolute 'higher is better )
+    # relative   -6 - ( -3 ) /    ( -3 )   = -3 / -3 =  1
+    # absolute   -6 - ( -3 ) / abs( -3 )   = -3 /  3 = -1 ( WANT THIS )
+    
+    # NOTE: in ALL of this I did not FILTER out Berkshire Hathaway (  MG_DESC %in% c("Financial") BRK.A)
+    
+    # absolute percentatge change from previous
+    
+    mutate(BULK_RETURN, 
+             RETPERDOL_MEAN_APCTCH_PREV = ( RETPERDOL_MEAN - lag(RETPERDOL_MEAN, order_by = DATE_NAMES)  )  / abs( lag(RETPERDOL_MEAN, order_by = DATE_NAMES) ) * 100
+           , RETPERDOL_WEIGHTEDMEAN_APCTCH_PREV = ( RETPERDOL_WEIGHTEDMEAN - lag(RETPERDOL_WEIGHTEDMEAN, order_by = DATE_NAMES)  )  / abs( lag(RETPERDOL_WEIGHTEDMEAN, order_by = DATE_NAMES) ) * 100 
+           , RETPERDOL_MEDIAN_APCTCH_PREV = ( RETPERDOL_MEDIAN - lag(RETPERDOL_MEDIAN, order_by = DATE_NAMES)  )  / abs( lag(RETPERDOL_MEDIAN, order_by = DATE_NAMES) ) * 100
+    ) -> BULK_RETURN
+    
+    # absolute percentatage change from 12 months ago  
+    
+    mutate(BULK_RETURN, 
+             RETPERDOL_MEAN_APCTCH_PREV12 = ( RETPERDOL_MEAN - lag(RETPERDOL_MEAN, n = 12, order_by = DATE_NAMES)  )  / abs( lag(RETPERDOL_MEAN, n = 12, order_by = DATE_NAMES) ) * 100
+           , RETPERDOL_WEIGHTEDMEAN_APCTCH_PREV12 = ( RETPERDOL_WEIGHTEDMEAN - lag(RETPERDOL_WEIGHTEDMEAN, n = 12, order_by = DATE_NAMES)  )  / abs( lag(RETPERDOL_WEIGHTEDMEAN, n = 12, order_by = DATE_NAMES) ) * 100 
+           , RETPERDOL_MEDIAN_APCTCH_PREV12 = ( RETPERDOL_MEDIAN - lag(RETPERDOL_MEDIAN, n = 12, order_by = DATE_NAMES)  )  / abs( lag(RETPERDOL_MEDIAN, n = 12, order_by = DATE_NAMES) ) * 100
+    ) -> BULK_RETURN
     
     bookmarkhere <- 1
     
@@ -2200,7 +2273,16 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
     
   ### COMMENT/UNCOMMENT TO GET ret_dollar_price_grid_do
   if(RDPG) {
+    
+    # need "ABSOLUTE percent change since last month - IN PROGRESS
+    
+    bookmarkhere <- 1
+    
     RET_DOLLAR_PRICE_GRID <- ungroup(RET_DOLLAR_PRICE_GRID) 
+    
+
+    
+    
   }
   # OUTPUT IS RETURNED TO    RET_DOLLAR_PRICE_GRID
              
