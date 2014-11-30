@@ -641,7 +641,7 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
   # one record (main.SETUP SETUP): this will be a cartsian product
   
            # -- STP.MONTHDATE AS MONTHDATEUNX, STP.WEEKDATE AS WEEKDATEUNX, STP.SPLITDATE AS SPLITDATEUNX, 
-           # -- main.SETUP STP, 
+           # -- main.SETUP STP,   
   
   UNIVERSE <- sqldf(" 
     SELECT STP.MONTHDATE AS MONTHDATEUNX, STP.WEEKDATE AS WEEKDATEUNX, STP.SPLITDATE AS SPLITDATEUNX, 
@@ -650,7 +650,8 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
                            , DTE.PEREND_Q1 AS PERENDUNX_Q1, DTE.PEREND_Q2 AS PERENDUNX_Q2, DTE.PEREND_Q3 AS PERENDUNX_Q3, DTE.PEREND_Q4 AS PERENDUNX_Q4 
                            , DTE.PEREND_Q5 AS PERENDUNX_Q5, DTE.PEREND_Q6 AS PERENDUNX_Q6, DTE.PEREND_Q7 AS PERENDUNX_Q7, DTE.PEREND_Q8 AS PERENDUNX_Q8 
                            , DTE.PERLEN_Q1 AS PERLEN_Q1__integer, PERTYP_Q1 
-                           , PSD.MKTCAP AS MKTCAP__numeric, PSD.PRICE AS PRICE__numeric, PSD.SPLIT_DATE AS PSD_SPLITUNX_DATE, PSD.SPLIT_FACT AS SPLIT_FACT__numeric 
+                           , PSD.MKTCAP AS MKTCAP__numeric, PSD.PRICE AS PRICE__numeric, PRICE_DATE AS PRICE_DATEUNX 
+                           , PSD.SPLIT_DATE AS PSD_SPLITUNX_DATE, PSD.SPLIT_FACT AS SPLIT_FACT__numeric  
                            , PSDC.PRICE_M023 AS PRICE_M023__numeric, PSDC.PRICE_M022 AS PRICE_M022__numeric, PSDC.PRICE_M021 AS PRICE_M021__numeric, PSDC.PRICE_M020 AS PRICE_M020__numeric
                            , PSDC.PRICE_M019 AS PRICE_M019__numeric, PSDC.PRICE_M018 AS PRICE_M018__numeric, PSDC.PRICE_M017 AS PRICE_M017__numeric, PSDC.PRICE_M016 AS PRICE_M016__numeric
                            , PSDC.PRICE_M015 AS PRICE_M015__numeric, PSDC.PRICE_M014 AS PRICE_M014__numeric, PSDC.PRICE_M013 AS PRICE_M013__numeric, PSDC.PRICE_M012 AS PRICE_M012__numeric 
@@ -661,7 +662,8 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
                             , PRICEDM005 AS PRICEDM005UNX, PRICEDM006 AS PRICEDM006UNX, PRICEDM007 AS PRICEDM007UNX, PRICEDM008 AS PRICEDM008UNX 
                             , PRICEDM009 AS PRICEDM009UNX, PRICEDM010 AS PRICEDM010UNX, PRICEDM011 AS PRICEDM011UNX, PRICEDM012 AS PRICEDM012UNX 
                             , PRICEDM013 AS PRICEDM013UNX, PRICEDM014 AS PRICEDM014UNX, PRICEDM015 AS PRICEDM015UNX, PRICEDM016 AS PRICEDM016UNX 
-                            , PRICEDM017 AS PRICEDM017UNX, PRICEDM018 AS PRICEDM018UNX 
+                            , PRICEDM017 AS PRICEDM017UNX, PRICEDM018 AS PRICEDM018UNX, PRICEDM019 AS PRICEDM019UNX, PRICEDM020 AS PRICEDM020UNX
+                            , PRICEDM021 AS PRICEDM021UNX, PRICEDM022 AS PRICEDM022UNX, PRICEDM023 AS PRICEDM023UNX 
                           ,SHR_AQ1 AS SHR_AQ1__numeric, SHR_AQ2 AS SHR_AQ2__numeric, SHR_AQ3 AS SHR_AQ3__numeric, SHR_AQ4 AS SHR_AQ4__numeric 
                           ,SHR_AQ5 AS SHR_AQ5__numeric, SHR_AQ6 AS SHR_AQ6__numeric, SHR_AQ7 AS SHR_AQ7__numeric, SHR_AQ8 AS SHR_AQ8__numeric 
                            FROM 
@@ -683,7 +685,7 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
   
   # 0.4 seconds - a work in progress
   # library(compiler)
-  # lubridate:::add_period_to_date
+  # lubridate:::add_period_to_date  
   # add_period_to_date_comp <- cmpfun(lubridate:::add_period_to_date)
   # UNIVERSE[,"PERENDDT_Q1"]  <- as.character( add_period_to_date_comp( dmy("1/1/1970",tz = "EST"), days(UNIVERSE[,"PERENDUNX_Q1"]) ))
   # Error in as.POSIXlt.numeric(date) : 'origin' must be supplied 
@@ -961,7 +963,7 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
   #  I SUSPECT THAT A 'MOVING MEDIAN' MAY BE BETTER ( I WOULD HAVE TO QUANSTRAT BACKTEST THAT )
   #  I WOULD HAVE TO RESEARCH THIS LATER
 
-  # JUST ELIMINATE Berkshire Hathaway BRK.A
+  # JUST ELIMINATE Berkshire Hathaway BRK.A  
 
   UNIVERSE_NOT_NA <- group_by(UNIVERSE,MG_DESC) 
 
@@ -971,17 +973,17 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
     , is.na(PRICE)       == FALSE
     # , is.na(PRICE_M023)  == FALSE
     # , is.na(PRICE_M022)  == FALSE
-    # , is.na(PRICE_M021)  == FALSE
-    # , is.na(PRICE_M020)  == FALSE
-    # , is.na(PRICE_M019)  == FALSE
-    # , is.na(PRICE_M018)  == FALSE
-    # , is.na(PRICE_M017)  == FALSE
-    # , is.na(PRICE_M016)  == FALSE
-    # , is.na(PRICE_M015)  == FALSE
-    # , is.na(PRICE_M014)  == FALSE
-    # , is.na(PRICE_M013)  == FALSE
-    # , is.na(PRICE_M012)  == FALSE
-    # , is.na(PRICE_M011)  == FALSE
+    , is.na(PRICE_M021)  == FALSE
+    , is.na(PRICE_M020)  == FALSE
+    , is.na(PRICE_M019)  == FALSE
+    , is.na(PRICE_M018)  == FALSE
+    , is.na(PRICE_M017)  == FALSE
+    , is.na(PRICE_M016)  == FALSE
+    , is.na(PRICE_M015)  == FALSE
+    , is.na(PRICE_M014)  == FALSE
+    , is.na(PRICE_M013)  == FALSE
+    , is.na(PRICE_M012)  == FALSE
+    , is.na(PRICE_M011)  == FALSE
     , is.na(PRICE_M010)  == FALSE
     , is.na(PRICE_M009)  == FALSE
     , is.na(PRICE_M008)  == FALSE
@@ -1000,17 +1002,120 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
     1.0
   ))
  
-  # FUTURE ( COULD/SHOULD/WOULD USE THIS FOR TRENDY DATA ) 
+         
+  # to garantee data integrity   
+  # I want the UNIXdate that the maximum number of hits occurrs 
+  #  and some previous days ( based on the quality of the data sent by AAII )
+  
+  # Browse[2]> table(UNIVERSE_NOT_NA[,c("PRICE_DATEUNX")]) # today
+  
+  # 16367 16371 16391 16393 16395 
+  #    1     1     1     1  2833 
+  
+  # Browse[2]> table(UNIVERSE_NOT_NA[,c("PRICEDM001UNX")]) # today or the previous_day ( seems/may be 'softened' for dividends? )
+  
+  # 16367 16371 16392 16393 16394 16395 
+  #    1     1     2     1  1147  1685 
+  
+  # Browse[2]> table(UNIVERSE_NOT_NA[,c("PRICEDM002UNX")]) # 'business day' end  of month' ( last day of the previous month ) 
+  
+  # 15919 16329 16342 16374 16394 
+  #    1     1     1  2833     1 
+  
+  # Browse[2]> table(UNIVERSE_NOT_NA[,c("PRICEDM004UNX")]) # many ( 3 ) 'business day' end  of months back: a typical case
+  
+  # 15884 16281 16282 16309 16311 16374 
+  #    1     1     1     1  2832     1 
+
+
+  bookmarkhere <-- 1
+         
+  # given a REAL data.frame e.g. airquality and 'column of interest in 'text': "Month"
+  # and a length.out ( 'now and back' vector ) 
+  # 1 - highest number of occurrances 
+  # 2 - integer value 'one less that highest numer of occurreances    
+  #   reduce_to_most_occurances(airquality,"Month",1) 
+  #   reduce_to_most_occurances(airquality,"Month",5) == reduce_to_most_occurances(airquality,"Month",4)
+
+  reduce_to_most_occurances <- function(DF,INTERESTCOL,length.out) {
+    
+    DF[ 
+      DF[,INTERESTCOL] %in% as.numeric(seq.int(
+        from         = as.integer(
+          names(table(DF[,INTERESTCOL]))[which(table(DF[,INTERESTCOL]) %in%  max(table(DF[,INTERESTCOL])))][
+            which(
+              as.numeric(names(table(DF[,INTERESTCOL]))[which(table(DF[,INTERESTCOL]) %in%  max(table(DF[,INTERESTCOL])))]) %in%
+                max(as.numeric(names(table(DF[,INTERESTCOL]))[which(table(DF[,INTERESTCOL]) %in%  max(table(DF[,INTERESTCOL])))]))
+            )
+            ]
+        )
+        , by         = -1
+        , length.out =  length.out # 2 
+      ))
+      , ,drop = FALSE
+      ]
+    
+  }
+
+  # 'month of most' observations and 'previous month(if any)'
+  # > reduce_to_most_occurances(airquality,"Month",2)
+  
+  # 'month of most' observations and 'previous 4 months (if any)'
+  # > reduce_to_most_occurances(airquality,"Month",5)
+  # > reduce_to_most_occurances(airquality,"Month",4) # no studies in aprile
+  
+  # today with three day weekend
+  reduce_to_most_occurances(UNIVERSE_NOT_NA,"PRICE_DATEUNX",5) -> UNIVERSE_NOT_NA
+  
+  # today with three day weekend
+  reduce_to_most_occurances(UNIVERSE_NOT_NA,"PRICEDM001UNX",5) -> UNIVERSE_NOT_NA
+  
+  # last business day of the 'previous month'
+  reduce_to_most_occurances(UNIVERSE_NOT_NA,"PRICEDM002UNX",1) -> UNIVERSE_NOT_NA
+  
+  # last business day of the '# - 1' month'
+  reduce_to_most_occurances(UNIVERSE_NOT_NA,"PRICEDM003UNX",1) -> UNIVERSE_NOT_NA
+  
+  # other  '# - 1' month' months of interest
+  reduce_to_most_occurances(UNIVERSE_NOT_NA,"PRICEDM004UNX",1) -> UNIVERSE_NOT_NA
+  reduce_to_most_occurances(UNIVERSE_NOT_NA,"PRICEDM005UNX",1) -> UNIVERSE_NOT_NA
+  reduce_to_most_occurances(UNIVERSE_NOT_NA,"PRICEDM006UNX",1) -> UNIVERSE_NOT_NA
+  reduce_to_most_occurances(UNIVERSE_NOT_NA,"PRICEDM007UNX",1) -> UNIVERSE_NOT_NA
+  reduce_to_most_occurances(UNIVERSE_NOT_NA,"PRICEDM008UNX",1) -> UNIVERSE_NOT_NA
+  reduce_to_most_occurances(UNIVERSE_NOT_NA,"PRICEDM009UNX",1) -> UNIVERSE_NOT_NA
+  reduce_to_most_occurances(UNIVERSE_NOT_NA,"PRICEDM010UNX",1) -> UNIVERSE_NOT_NA
+  
+  reduce_to_most_occurances(UNIVERSE_NOT_NA,"PRICEDM011UNX",1) -> UNIVERSE_NOT_NA
+  reduce_to_most_occurances(UNIVERSE_NOT_NA,"PRICEDM012UNX",1) -> UNIVERSE_NOT_NA
+  reduce_to_most_occurances(UNIVERSE_NOT_NA,"PRICEDM013UNX",1) -> UNIVERSE_NOT_NA
+  reduce_to_most_occurances(UNIVERSE_NOT_NA,"PRICEDM014UNX",1) -> UNIVERSE_NOT_NA
+  reduce_to_most_occurances(UNIVERSE_NOT_NA,"PRICEDM015UNX",1) -> UNIVERSE_NOT_NA
+  reduce_to_most_occurances(UNIVERSE_NOT_NA,"PRICEDM016UNX",1) -> UNIVERSE_NOT_NA
+  reduce_to_most_occurances(UNIVERSE_NOT_NA,"PRICEDM017UNX",1) -> UNIVERSE_NOT_NA
+  reduce_to_most_occurances(UNIVERSE_NOT_NA,"PRICEDM018UNX",1) -> UNIVERSE_NOT_NA
+  reduce_to_most_occurances(UNIVERSE_NOT_NA,"PRICEDM019UNX",1) -> UNIVERSE_NOT_NA
+  reduce_to_most_occurances(UNIVERSE_NOT_NA,"PRICEDM020UNX",1) -> UNIVERSE_NOT_NA
+  reduce_to_most_occurances(UNIVERSE_NOT_NA,"PRICEDM021UNX",1) -> UNIVERSE_NOT_NA
+
+  bookmarkhere <-- 1
+
+
+  # FUTURE ( COULD/SHOULD/WOULD USE THIS FOR TRENDY DATA )
   UNIVERSE_NOT_NA <- mutate(UNIVERSE_NOT_NA, PRICE_WGHT_MEAN_SMA_10_M_SECTOR = as.numeric(SMA(c(
-                                       #    weighted.mean(PRICE_M011, MKTCAP), 
+                                           weighted.mean(PRICE_M011, MKTCAP), 
        weighted.mean(PRICE_M010, MKTCAP),  weighted.mean(PRICE_M009, MKTCAP), 
        weighted.mean(PRICE_M008, MKTCAP),  weighted.mean(PRICE_M007, MKTCAP), 
        weighted.mean(PRICE_M006, MKTCAP),  weighted.mean(PRICE_M005, MKTCAP), 
        weighted.mean(PRICE_M004, MKTCAP),  weighted.mean(PRICE_M003, MKTCAP), 
-       weighted.mean(PRICE_M002, MKTCAP),  weighted.mean(PRICE_M001, MKTCAP) 
-     ), 10)[10]
+       weighted.mean(PRICE_M002, MKTCAP),  weighted.mean(PRICE_M001, MKTCAP)  
+     ), 10)[11]
   ))
-  
+  # NOTE weighted.mean(PRICE_M001, MKTCAP) is BASELINE measure
+  # FOR 'month eveness' really should be: weighted.mean(PRICE_M002, MKTCAP) **** FIX [ ]
+
+
+
+
   UNIVERSE_NOT_NA <- mutate(UNIVERSE_NOT_NA, PRICE_WGHT_MEAN_SECTOR = as.numeric(
     weighted.mean(PRICE, MKTCAP) 
   ))
@@ -1042,7 +1147,7 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
       , "PRICE_M010", "PRICE_M011", "PRICE_M012"
       , "PRICE_M013", "PRICE_M014", "PRICE_M015"
       , "PRICE_M016", "PRICE_M017", "PRICE_M018"
-      , "PRICE_M019"                                                  
+      , "PRICE_M019", "PRICE_M020", "PRICE_M021"                                                
   ),drop=FALSE] 
   # 023 ( actually)
                                                                         # "MG_DESC", "MKTCAP", "PRICE", "TICKER"
@@ -1057,8 +1162,8 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
     ,       TICKER       != 'BRK.A'
   #     , is.na(PRICE_M023)  == FALSE
   #     , is.na(PRICE_M022)  == FALSE
-  #     , is.na(PRICE_M021)  == FALSE
-  #     , is.na(PRICE_M020)  == FALSE
+    , is.na(PRICE_M021)  == FALSE
+    , is.na(PRICE_M020)  == FALSE
     , is.na(PRICE_M019)  == FALSE
     , is.na(PRICE_M018)  == FALSE
     , is.na(PRICE_M017)  == FALSE
@@ -1084,7 +1189,8 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
   wght_mn_price_grid_do <- function(x) {
     
     data.frame( 
-                                                             weighted.mean(x[["PRICE_M019"]], x[["MKTCAP"]]),
+                                                             weighted.mean(x[["PRICE_M021"]], x[["MKTCAP"]]),
+           weighted.mean(x[["PRICE_M020"]], x[["MKTCAP"]]),  weighted.mean(x[["PRICE_M019"]], x[["MKTCAP"]]),
            weighted.mean(x[["PRICE_M018"]], x[["MKTCAP"]]),  weighted.mean(x[["PRICE_M017"]], x[["MKTCAP"]]), 
            weighted.mean(x[["PRICE_M016"]], x[["MKTCAP"]]),  weighted.mean(x[["PRICE_M015"]], x[["MKTCAP"]]), 
            weighted.mean(x[["PRICE_M014"]], x[["MKTCAP"]]),  weighted.mean(x[["PRICE_M013"]], x[["MKTCAP"]]), 
@@ -1097,7 +1203,8 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
     ) -> weighted.means_price_mo_sequence # JUST ONE LONG RECORD
 
     c(     
-                             "WGHT_MN_PRICE_M019", 
+                             "WGHT_MN_PRICE_M021",
+      "WGHT_MN_PRICE_M020",  "WGHT_MN_PRICE_M019", 
       "WGHT_MN_PRICE_M018",  "WGHT_MN_PRICE_M017",
       "WGHT_MN_PRICE_M016",  "WGHT_MN_PRICE_M015",
       "WGHT_MN_PRICE_M014",  "WGHT_MN_PRICE_M013",
@@ -1115,14 +1222,16 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
 
     data.frame(as.list( SMA(t(as.matrix(weighted.means_price_mo_sequence)),10))) -> weighted.means_price_mo_sequence_sma_10
 
-    paste0("PRICE_SMA_10_AT_M",19:1) -> colnames(weighted.means_price_mo_sequence_sma_10)
+    paste0("PRICE_SMA_10_AT_M",21:1) -> colnames(weighted.means_price_mo_sequence_sma_10)
     
     cbind(  weighted.means_price_mo_sequence_sma_10  , weighted.means_price_now , x[["MG_DESC"]][1] ) -> y
 
     c("MG_DESC") -> colnames(y)[length(y)]
     
     # get rid of excess NA columns for MA that I do not have enough data
-    y[,-1*c(1:(19 - 10))] -> y
+    # this gap() 
+    # OLD: 19 - 10 
+    y[,-1*c(1:(21 - 11))] -> y
     
     return(y)
 
@@ -1210,6 +1319,14 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
     # ( but "N" is the only character out of the hexadecimal range - WHAT does "N" mean? )
     # is it just a 'space' padding?
     # (currently) just use NROW instead
+    
+    # If in "Financial" can eliminate **Berkshire Hathaway** VERY early or VERY late 
+    # ( Currenly, I choose Early )
+    # help from dplyr
+    # dplyr groupings always garantee ONE record
+    if( x[1,"MG_DESC"] == "Financial") {
+      filter(x, TICKER  != 'BRK.A' ) -> x
+    }
     
     # safekeeping in case I have any use later
     data.frame( 
@@ -4308,7 +4425,7 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
 
   the_end_debug_bookmark_here <- 1
   # rm(list=ls(all.names=TRUE))
-  # source('N:/MyVMWareSharedFolder/foresight3/R/main-foresight3-999.R', echo=TRUE)
+  # source('N:/MyVMWareSharedFolder/foresight3/R/main-foresight3-999.R', echo=TRUE)   
 
   # View(main_foresight3_999())
   # View(main_foresight3_999(RDPG=TRUE))  # ret dollare price grid
@@ -4326,6 +4443,15 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
   # View(subset(RET_DOLLAR_PRICE_GRID, MG_DESC %in% c("Consumer Non-Cyclical") ))
   # View(subset(RET_DOLLAR_PRICE_GRID, MG_DESC %in% c("Energy") ))
   # View(subset(RET_DOLLAR_PRICE_GRID, MG_DESC %in% c("Financial") ))
+
+    # setwd("N:/MyVMWareSharedFolder/foresight3/R")
+    # save(GRID_FINANCIAL_141121, file = "GRID_FINANCIAL_141121.RData")
+    # unlink("GRID_FINANCIAL_141121.RData")
+    # rm("GRID_FINANCIAL_141121")
+    # 
+    # setwd("N:/MyVMWareSharedFolder/foresight3/R")
+    # load("GRID_FINANCIAL_141121.RData", envir = environment(), verbose = TRUE)
+
   # View(subset(RET_DOLLAR_PRICE_GRID, MG_DESC %in% c("Health Care") ))
   # View(subset(RET_DOLLAR_PRICE_GRID, MG_DESC %in% c("Services") ))
   # View(subset(RET_DOLLAR_PRICE_GRID, MG_DESC %in% c("Technology") ))
@@ -4408,7 +4534,7 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
 # END SUNDAY 
     
 # SOON ( MAKE SURE PRICES AND SPLITS ARE HOPEFULLY SMOOTH ) ( SHORT TERM - JUST INSPECT AND ELIM )
-# YES - AAPL 7 TO 1 SPLIT CORRECTLY [X]
+# YES - AAPL 7 TO 1 SPLIT CORRECTLY [X] 
 
 # [ ]
 #   RARE DATA CASE: FAR FUTURE: NOT A PRIORITY
