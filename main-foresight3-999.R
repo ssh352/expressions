@@ -1,6 +1,6 @@
 
  
-# HARD NOTE: dplyr IS FROM github NOT FROM CRAN ( should make no difference )
+# HARD NOTE: dplyr IS FROM github NOT FROM CRAN ( should make no difference )  
  
  
 options(width = 255)     
@@ -83,7 +83,7 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
 #   
 #   if(getOption("RepositoryStyle") == "Installed")  {
 #     
-#     options(AAIIBase = "N:/MyVMWareSharedFolder/Professional141121") 
+#     options(AAIIBase = "N:/MyVMWareSharedFolder/Professional141128") 
 #     
 #   }
   
@@ -97,7 +97,7 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
   
   if(getLocalOption("RepositoryStyle", optionlist = OPTIONLIST) == "Installed")  {
     
-    OPTIONLIST <- localoptions(AAIIBase = "N:/MyVMWareSharedFolder/Professional141121", optionlist = OPTIONLIST)
+    OPTIONLIST <- localoptions(AAIIBase = "N:/MyVMWareSharedFolder/Professional141128", optionlist = OPTIONLIST)
     
   }
   
@@ -1031,11 +1031,12 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
   bookmarkhere <-- 1
          
   # given a REAL data.frame e.g. airquality and 'column of interest in 'text': "Month"
-  # and a length.out ( 'now and back' vector ) 
+  # and a length.out ( 'now(end of month business day) and back' vector in days) 
   # 1 - highest number of occurrances 
   # 2 - integer value 'one less that highest numer of occurreances    
-  #   reduce_to_most_occurances(airquality,"Month",1) 
+  #   reduce_to_most_occurances(airquality,"Month",1) # just end of month business day
   #   reduce_to_most_occurances(airquality,"Month",5) == reduce_to_most_occurances(airquality,"Month",4)
+  #                                             # end of month business day and 4 days back (e.g. long weekend)
 
   reduce_to_most_occurances <- function(DF,INTERESTCOL,length.out) {
     
@@ -1108,14 +1109,18 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
        weighted.mean(PRICE_M006, MKTCAP),  weighted.mean(PRICE_M005, MKTCAP), 
        weighted.mean(PRICE_M004, MKTCAP),  weighted.mean(PRICE_M003, MKTCAP), 
        weighted.mean(PRICE_M002, MKTCAP),  weighted.mean(PRICE_M001, MKTCAP)  
-     ), 10)[11]
-  ))
+     ), 10)[11] # 11 that final entry ( of 11 entries)
+  ))            # just SMA at PRICE_M001 (using through PRICE_M010 ) 
   # NOTE weighted.mean(PRICE_M001, MKTCAP) is BASELINE measure
-  # FOR 'month eveness' really should be: weighted.mean(PRICE_M002, MKTCAP) **** FIX [ ]
+  # FOR 'month eveness' really should be: weighted.mean(PRICE_M002, MKTCAP) ??? FIX [ ]
+  # flexibility is there to * change to PRICE_M002 instead of  (PRICE_M001 'current )*
+  # NOTE: this is 'biased for 'market cap 'right now' BUT SHOULD BE 'O.K. for most things
 
+  # Rem: PRICE is 'right now latest close'
+  # Rem: PRICEM001 is 'right now close or yesterday close' ( possibly smoothed?)
+  # Rem: PRICEM002 is 'at the end of the previous month close'
 
-
-
+  # just the sector 'weighted mean price NOW'
   UNIVERSE_NOT_NA <- mutate(UNIVERSE_NOT_NA, PRICE_WGHT_MEAN_SECTOR = as.numeric(
     weighted.mean(PRICE, MKTCAP) 
   ))
@@ -1136,8 +1141,10 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
   #############################################################################
 
   
+  
   #############################################################################
-  ################  VISUALLY SEE THE 10-M MA PER MONTH ########################
+  #############################################################################
+  ################  PREPARE TO SEE ANY 10-M MA PER MONTH ######################
 
   PRICE_WGHT_MEAN_UNIVERSE_NOT_NA  <- 
     UNIVERSE[,c("MG_DESC", "MKTCAP", "PRICE", "TICKER"
@@ -1153,107 +1160,142 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
                                                                         # "MG_DESC", "MKTCAP", "PRICE", "TICKER"
   PRICE_WGHT_MEAN_UNIVERSE_NOT_NA  <- PRICE_WGHT_MEAN_UNIVERSE_NOT_NA[,c(1,2,3,4, rev(5:length(colnames(PRICE_WGHT_MEAN_UNIVERSE_NOT_NA)))) ]  
 
-  PRICE_WGHT_MEAN_UNIVERSE_NOT_NA  <- group_by(PRICE_WGHT_MEAN_UNIVERSE_NOT_NA,MG_DESC)
+  #############################################################################
+  ################  VISUALLY SEE THE 10-M MA PER MONTH ########################
 
-  # NOTE IF I ADD MORE OR LESS is.na THEN OUTPUTS WILL SIGHTLY CHANGE
-  PRICE_WGHT_MEAN_UNIVERSE_NOT_NA <- filter(PRICE_WGHT_MEAN_UNIVERSE_NOT_NA, 
-      is.na(MKTCAP)      == FALSE
-    , is.na(PRICE)       == FALSE
-    ,       TICKER       != 'BRK.A'
-  #     , is.na(PRICE_M023)  == FALSE
-  #     , is.na(PRICE_M022)  == FALSE
-    , is.na(PRICE_M021)  == FALSE
-    , is.na(PRICE_M020)  == FALSE
-    , is.na(PRICE_M019)  == FALSE
-    , is.na(PRICE_M018)  == FALSE
-    , is.na(PRICE_M017)  == FALSE
-    , is.na(PRICE_M016)  == FALSE
-    , is.na(PRICE_M015)  == FALSE
-    , is.na(PRICE_M014)  == FALSE
-    , is.na(PRICE_M013)  == FALSE
-    , is.na(PRICE_M012)  == FALSE
-    , is.na(PRICE_M011)  == FALSE
-    , is.na(PRICE_M010)  == FALSE
-    , is.na(PRICE_M009)  == FALSE
-    , is.na(PRICE_M008)  == FALSE
-    , is.na(PRICE_M007)  == FALSE
-    , is.na(PRICE_M006)  == FALSE
-    , is.na(PRICE_M005)  == FALSE
-    , is.na(PRICE_M004)  == FALSE
-    , is.na(PRICE_M003)  == FALSE
-    , is.na(PRICE_M002)  == FALSE
-    , is.na(PRICE_M001)  == FALSE
 
-  )
+  # if UNIVERSE = FALSE, then done per sector 
+  # if UNIVERSE = TRUE, treat the entire universe as 'one big sector' ( thrift savings plan )
+  # ( the 3000 stocks stock market )
 
-  wght_mn_price_grid_do <- function(x) {
+  wght_mn_price_grid <- function(PRICE_WGHT_MEAN_UNIVERSE_NOT_NA, UNIVERSE = FALSE) {
+  # wght_mn_price_grid <- function(PRICE_WGHT_MEAN_UNIVERSE_NOT_NA) {
+
+    # require(TTR) # TTR::SMA   # require(dplyr)
     
-    data.frame( 
-                                                             weighted.mean(x[["PRICE_M021"]], x[["MKTCAP"]]),
-           weighted.mean(x[["PRICE_M020"]], x[["MKTCAP"]]),  weighted.mean(x[["PRICE_M019"]], x[["MKTCAP"]]),
-           weighted.mean(x[["PRICE_M018"]], x[["MKTCAP"]]),  weighted.mean(x[["PRICE_M017"]], x[["MKTCAP"]]), 
-           weighted.mean(x[["PRICE_M016"]], x[["MKTCAP"]]),  weighted.mean(x[["PRICE_M015"]], x[["MKTCAP"]]), 
-           weighted.mean(x[["PRICE_M014"]], x[["MKTCAP"]]),  weighted.mean(x[["PRICE_M013"]], x[["MKTCAP"]]), 
-           weighted.mean(x[["PRICE_M012"]], x[["MKTCAP"]]),  weighted.mean(x[["PRICE_M011"]], x[["MKTCAP"]]), 
-           weighted.mean(x[["PRICE_M010"]], x[["MKTCAP"]]),  weighted.mean(x[["PRICE_M009"]], x[["MKTCAP"]]), 
-           weighted.mean(x[["PRICE_M008"]], x[["MKTCAP"]]),  weighted.mean(x[["PRICE_M007"]], x[["MKTCAP"]]), 
-           weighted.mean(x[["PRICE_M006"]], x[["MKTCAP"]]),  weighted.mean(x[["PRICE_M005"]], x[["MKTCAP"]]), 
-           weighted.mean(x[["PRICE_M004"]], x[["MKTCAP"]]),  weighted.mean(x[["PRICE_M003"]], x[["MKTCAP"]]), 
-           weighted.mean(x[["PRICE_M002"]], x[["MKTCAP"]]),  weighted.mean(x[["PRICE_M001"]], x[["MKTCAP"]])
-    ) -> weighted.means_price_mo_sequence # JUST ONE LONG RECORD
-
-    c(     
-                             "WGHT_MN_PRICE_M021",
-      "WGHT_MN_PRICE_M020",  "WGHT_MN_PRICE_M019", 
-      "WGHT_MN_PRICE_M018",  "WGHT_MN_PRICE_M017",
-      "WGHT_MN_PRICE_M016",  "WGHT_MN_PRICE_M015",
-      "WGHT_MN_PRICE_M014",  "WGHT_MN_PRICE_M013",
-      "WGHT_MN_PRICE_M012",  "WGHT_MN_PRICE_M011", 
-      "WGHT_MN_PRICE_M010",  "WGHT_MN_PRICE_M009",
-      "WGHT_MN_PRICE_M008",  "WGHT_MN_PRICE_M007",
-      "WGHT_MN_PRICE_M006",  "WGHT_MN_PRICE_M005",
-      "WGHT_MN_PRICE_M004",  "WGHT_MN_PRICE_M003",       
-      "WGHT_MN_PRICE_M002",  "WGHT_MN_PRICE_M001"
-    ) -> colnames(weighted.means_price_mo_sequence)
+    if(UNIVERSE == TRUE) {
+      # treat all sectors as just 'one big sector'
+      PRICE_WGHT_MEAN_UNIVERSE_NOT_NA[,"MG_DESC"] <- "UNIVZ"
+    }
     
-    data.frame( WGHT_MN_PRICE = weighted.mean(x[["PRICE"]], x[["MKTCAP"]]))  -> weighted.means_price_now
-    
-    c("WGHT_MN_PRICE") -> colnames(weighted.means_price_now)
-
-    data.frame(as.list( SMA(t(as.matrix(weighted.means_price_mo_sequence)),10))) -> weighted.means_price_mo_sequence_sma_10
-
-    paste0("PRICE_SMA_10_AT_M",21:1) -> colnames(weighted.means_price_mo_sequence_sma_10)
-    
-    cbind(  weighted.means_price_mo_sequence_sma_10  , weighted.means_price_now , x[["MG_DESC"]][1] ) -> y
-
-    c("MG_DESC") -> colnames(y)[length(y)]
-    
-    # get rid of excess NA columns for MA that I do not have enough data
-    # this gap() 
-    # OLD: 19 - 10 
-    y[,-1*c(1:(21 - 11))] -> y
-    
-    return(y)
-
-  }
-
-  WGHT_MN_PRICE_GRID <- suppressWarnings(do(PRICE_WGHT_MEAN_UNIVERSE_NOT_NA, wght_mn_price_grid_do(.))) 
+    PRICE_WGHT_MEAN_UNIVERSE_NOT_NA  <- group_by(PRICE_WGHT_MEAN_UNIVERSE_NOT_NA,MG_DESC)
   
-  # In rbind_all(out[[1]]) : Unequal factor levels: coercing to character    
-  # http://stackoverflow.com/questions/24609112/how-to-convert-a-list-of-lists-to-a-dataframe-non-identical-lists
+    # NOTE IF I ADD MORE OR LESS is.na THEN OUTPUTS WILL SIGHTLY CHANGE
+    PRICE_WGHT_MEAN_UNIVERSE_NOT_NA <- filter(PRICE_WGHT_MEAN_UNIVERSE_NOT_NA, 
+        is.na(MKTCAP)      == FALSE
+      , is.na(PRICE)       == FALSE
+      ,       TICKER       != 'BRK.A'   # yes - berkshire hathaway has been removed
+    #     , is.na(PRICE_M023)  == FALSE
+    #     , is.na(PRICE_M022)  == FALSE
+      , is.na(PRICE_M021)  == FALSE
+      , is.na(PRICE_M020)  == FALSE
+      , is.na(PRICE_M019)  == FALSE
+      , is.na(PRICE_M018)  == FALSE
+      , is.na(PRICE_M017)  == FALSE
+      , is.na(PRICE_M016)  == FALSE
+      , is.na(PRICE_M015)  == FALSE
+      , is.na(PRICE_M014)  == FALSE
+      , is.na(PRICE_M013)  == FALSE
+      , is.na(PRICE_M012)  == FALSE
+      , is.na(PRICE_M011)  == FALSE
+      , is.na(PRICE_M010)  == FALSE
+      , is.na(PRICE_M009)  == FALSE
+      , is.na(PRICE_M008)  == FALSE
+      , is.na(PRICE_M007)  == FALSE
+      , is.na(PRICE_M006)  == FALSE
+      , is.na(PRICE_M005)  == FALSE
+      , is.na(PRICE_M004)  == FALSE
+      , is.na(PRICE_M003)  == FALSE
+      , is.na(PRICE_M002)  == FALSE
+      , is.na(PRICE_M001)  == FALSE
   
-  # new variable
-  # View(WGHT_MN_PRICE_GRID)
+    )
+  
+    wght_mn_price_grid_do <- function(x) {
+      
+      data.frame( 
+                                                               weighted.mean(x[["PRICE_M021"]], x[["MKTCAP"]]),
+             weighted.mean(x[["PRICE_M020"]], x[["MKTCAP"]]),  weighted.mean(x[["PRICE_M019"]], x[["MKTCAP"]]),
+             weighted.mean(x[["PRICE_M018"]], x[["MKTCAP"]]),  weighted.mean(x[["PRICE_M017"]], x[["MKTCAP"]]), 
+             weighted.mean(x[["PRICE_M016"]], x[["MKTCAP"]]),  weighted.mean(x[["PRICE_M015"]], x[["MKTCAP"]]), 
+             weighted.mean(x[["PRICE_M014"]], x[["MKTCAP"]]),  weighted.mean(x[["PRICE_M013"]], x[["MKTCAP"]]), 
+             weighted.mean(x[["PRICE_M012"]], x[["MKTCAP"]]),  weighted.mean(x[["PRICE_M011"]], x[["MKTCAP"]]), 
+             weighted.mean(x[["PRICE_M010"]], x[["MKTCAP"]]),  weighted.mean(x[["PRICE_M009"]], x[["MKTCAP"]]), 
+             weighted.mean(x[["PRICE_M008"]], x[["MKTCAP"]]),  weighted.mean(x[["PRICE_M007"]], x[["MKTCAP"]]), 
+             weighted.mean(x[["PRICE_M006"]], x[["MKTCAP"]]),  weighted.mean(x[["PRICE_M005"]], x[["MKTCAP"]]), 
+             weighted.mean(x[["PRICE_M004"]], x[["MKTCAP"]]),  weighted.mean(x[["PRICE_M003"]], x[["MKTCAP"]]), 
+             weighted.mean(x[["PRICE_M002"]], x[["MKTCAP"]]),  weighted.mean(x[["PRICE_M001"]], x[["MKTCAP"]])
+      ) -> weighted.means_price_mo_sequence # JUST ONE LONG RECORD
+  
+      c(     
+                               "WGHT_MN_PRICE_M021",
+        "WGHT_MN_PRICE_M020",  "WGHT_MN_PRICE_M019", 
+        "WGHT_MN_PRICE_M018",  "WGHT_MN_PRICE_M017",
+        "WGHT_MN_PRICE_M016",  "WGHT_MN_PRICE_M015",
+        "WGHT_MN_PRICE_M014",  "WGHT_MN_PRICE_M013",
+        "WGHT_MN_PRICE_M012",  "WGHT_MN_PRICE_M011", 
+        "WGHT_MN_PRICE_M010",  "WGHT_MN_PRICE_M009",
+        "WGHT_MN_PRICE_M008",  "WGHT_MN_PRICE_M007",
+        "WGHT_MN_PRICE_M006",  "WGHT_MN_PRICE_M005",
+        "WGHT_MN_PRICE_M004",  "WGHT_MN_PRICE_M003",       
+        "WGHT_MN_PRICE_M002",  "WGHT_MN_PRICE_M001"
+      ) -> colnames(weighted.means_price_mo_sequence)
+      
+      data.frame( WGHT_MN_PRICE = weighted.mean(x[["PRICE"]], x[["MKTCAP"]]))  -> weighted.means_price_now
+      
+      c("WGHT_MN_PRICE") -> colnames(weighted.means_price_now)
+  
+      data.frame(as.list( SMA(t(as.matrix(weighted.means_price_mo_sequence)),10))) -> weighted.means_price_mo_sequence_sma_10
+  
+      paste0("PRICE_SMA_10_AT_M",21:1) -> colnames(weighted.means_price_mo_sequence_sma_10)
+      
+      cbind(  weighted.means_price_mo_sequence_sma_10  , weighted.means_price_now , x[["MG_DESC"]][1] ) -> y
+  
+      c("MG_DESC") -> colnames(y)[length(y)]
+      
+      # get rid of excess NA columns for MA that I do not have enough data
+      # this gap() 
+      # OLD: 19 - 10 
+      y[,-1*c(1:(21 - 11))] -> y
+      
+      return(y)
+  
+    }
+  
+    WGHT_MN_PRICE_GRID <- suppressWarnings(do(PRICE_WGHT_MEAN_UNIVERSE_NOT_NA, wght_mn_price_grid_do(.))) 
+    
+    # In rbind_all(out[[1]]) : Unequal factor levels: coercing to character    
+    # http://stackoverflow.com/questions/24609112/how-to-convert-a-list-of-lists-to-a-dataframe-non-identical-lists
+    
+    # new variable
+    # View(WGHT_MN_PRICE_GRID)
+  
+    PRICE_WGHT_MEAN_UNIVERSE_NOT_NA <- ungroup(PRICE_WGHT_MEAN_UNIVERSE_NOT_NA) 
+    rm(PRICE_WGHT_MEAN_UNIVERSE_NOT_NA)
+      
+    WGHT_MN_PRICE_GRID <- ungroup(WGHT_MN_PRICE_GRID) 
+    
+    # OUTPUT IS RETURNED TO    WGHT_MN_PRICE_GRID
+    
+  } 
 
-  PRICE_WGHT_MEAN_UNIVERSE_NOT_NA <- ungroup(PRICE_WGHT_MEAN_UNIVERSE_NOT_NA) 
-  rm(PRICE_WGHT_MEAN_UNIVERSE_NOT_NA)
-    
-  WGHT_MN_PRICE_GRID <- ungroup(WGHT_MN_PRICE_GRID) 
-  
-  # OUTPUT IS RETURNED TO    WGHT_MN_PRICE_GRID
-    
+  # if UNIVERSE = FALSE, then done per sector 
+
+  wght_mn_price_grid(PRICE_WGHT_MEAN_UNIVERSE_NOT_NA, UNIVERSE = FALSE) -> WGHT_MN_PRICE_GRID
+
+  # if UNIVERSE = TRUE, treat the entire universe as 'one big sector' ( thrift savings plan )
+  # ( the 3000 stocks stock market )
+
+  wght_mn_price_grid( PRICE_WGHT_MEAN_UNIVERSE_NOT_NA, UNIVERSE = TRUE) -> WGHT_MN_PRICE_GRID_UNIVERSE
+
   ############### END OF VISUALLY SEE THE 10-M MA PER MONTH ###################
   #############################################################################
+
+  ################  END OF ANY 10-M MA PER MONTH ##############################
+  #############################################################################
+  #############################################################################
+
+
 
 
   #############################################################################
@@ -1907,8 +1949,8 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
     
     # new prepare to na.locf and merge
     
-    # zoo:na.locf
-    # merg[g]e with left outer join ( TEMP_PRIZEDDEE_XTSDF garanteed to have all rows)
+    # zoo:na.locf  
+    # merg[g]e with left outer join ( TEMP_PRIZEDDEE_XTSDF garanteed to have all rows) 
 
     # 
     # browser(text = paste0("Just before:na.locf: ",unique(x[,"MG_DESC"])), expr = { unique(x[,"MG_DESC"]) == "Utilities" } )
@@ -1935,8 +1977,37 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
     # NOW remove THAT dummy column
     TEMP_PERENDTSHAQEE_XTS[,-1,drop=FALSE] -> TEMP_PERENDTSHAQEE_XTS
     
+    ## na.locf from the 'company information' last quarterly report
+    ##  na.locf(TEMP_PERENDTSHAQEE_XTS) -> TEMP_PERENDTSHAQEE_XTS
+    
     # na.locf from the 'company information' last quarterly report
-    na.locf(TEMP_PERENDTSHAQEE_XTS) -> TEMP_PERENDTSHAQEE_XTS
+    # but only carry forward a max of '4 periods'(THAT). 
+    # After THAT. NAs follow 
+    
+    # NOT USING xts:::rollapply.xts 
+    # NEED "partial = TRUE" support ( to handle early smaller windows )
+    #   so using zoo:::rollapply.zoo
+    
+    rollapply(as.zoo(TEMP_PERENDTSHAQEE_XTS), width = list(seq(-4, 0)),  FUN = function(x) {
+      
+      # if the 'element of interest'(last) is 'NA'
+      # and in the width range, there exists at least one other element that  is 'not NA'
+      # then about the range 'last observation carry forward'
+      #   to return the 'new element of interest' ( that will now have a "non-NA' value)
+      # othewise ( the entire range stays all 'NA's )
+      #   return just the element of interest ( will be 'NA' )   
+      
+      if( is.na(x[NROW(x)]) && (max(as.integer(!is.na(x))) > 0) ) { 
+        na.locf(x) -> y
+        return(y[NROW(y)]) 
+      } else {
+        return(x[NROW(x)])
+      }
+    }
+    , partial = 1 # min window size for partial computations
+    ) -> TEMP_PERENDTSHAQEE_XTS
+    xts(TEMP_PERENDTSHAQEE_XTS) -> TEMP_PERENDTSHAQEE_XTS # again as XTS
+    
     
     # 2 of 2 ( conpany information)
     xts(TEMP_PERENDTEPSDQEE_XTSDF[,-1],as.Date(TEMP_PERENDTEPSDQEE_XTSDF[,1])) -> TEMP_PERENDTEPSDQEE_XTS
@@ -1960,8 +2031,38 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
     
     bookmarkhere <- 1
     
+    ## na.locf from the 'company information' last quarterly report
+    ##  na.locf(TEMP_PERENDTEPSDQEE_XTS) -> TEMP_PERENDTEPSDQEE_XTS
+    
+    # COPIED CODE FROM ABOVE
     # na.locf from the 'company information' last quarterly report
-    na.locf(TEMP_PERENDTEPSDQEE_XTS) -> TEMP_PERENDTEPSDQEE_XTS
+    # but only carry forward a max of '4 periods'(THAT). 
+    # After THAT. NAs follow 
+    
+    # NOT USING xts:::rollapply.xts 
+    # NEED "partial = TRUE" support ( to handle early smaller windows )
+    #   so using zoo:::rollapply.zoo
+    
+    rollapply(as.zoo(TEMP_PERENDTEPSDQEE_XTS), width = list(seq(-4, 0)),  FUN = function(x) {
+      
+      # if the 'element of interest'(last) is 'NA'
+      # and in the width range, there exists at least one other element that  is 'not NA'
+      # then about the range 'last observation carry forward'
+      #   to return the 'new element of interest' ( that will now have a "non-NA' value)
+      # othewise ( the entire range stays all 'NA's )
+      #   return just the element of interest ( will be 'NA' )   
+      
+      if( is.na(x[NROW(x)]) && (max(as.integer(!is.na(x))) > 0) ) { 
+        na.locf(x) -> y
+        return(y[NROW(y)]) 
+      } else {
+        return(x[NROW(x)])
+      }
+    }
+    , partial = 1 # min window size for partial computations
+    ) -> TEMP_PERENDTEPSDQEE_XTS
+    xts(TEMP_PERENDTEPSDQEE_XTS) -> TEMP_PERENDTEPSDQEE_XTS # again as XTS
+    
     
     # prepare for 'math' 
     # safest: left join 'market information'(LEFT OUTER) to 'company information'(RIGHT)
@@ -2126,7 +2227,7 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
     ) -> LIST_SINGLECOL_XTS_COREDATA_NEWCOLUMN # is a list of dataframes of 'one col' each
     
     
-    # frameApply : simplify = FALSE output
+    # frameApply : simplify = FALSE output 
     LIST_SINGLECOL_XTS_COREDATA_NEWCOLUMN[["result"]] -> LIST_SINGLECOL_XTS_COREDATA_NEWCOLUMN_RESULT
     
     # 
@@ -2224,9 +2325,9 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
     aaply(as.matrix(BULK_XTS_COREDATA_RETPERDOL), 1, mean, na.rm = TRUE ) -> BULK_XTS_COREDATA_RETPERDOL_MEAN_VECTOR
     aaply(as.matrix(BULK_XTS_COREDATA_RETPERDOL), 1, median, na.rm = TRUE ) -> BULK_XTS_COREDATA_RETPERDOL_MEDIAN_VECTOR
     
-    # maybe some other day
+    # maybe some other day 
     # aaply(as.matrix(BULK_XTS_COREDATA_RETPERDOL), 1, sd, na.rm = TRUE )     -> BULK_XTS_COREDATA_RETPERDOL_SD_VECTOR
-    # median absolute deviation
+    # median absolute deviation 
     # aaply(as.matrix(BULK_XTS_COREDATA_RETPERDOL), 1, mad, na.rm = TRUE )     -> BULK_XTS_COREDATA_RETPERDOL_MAD_VECTOR
     
     # 
@@ -4434,6 +4535,7 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
 
   # View(UNIVERSE_FMA)
   # View(WGHT_MN_PRICE_GRID)  
+  # View(WGHT_MN_PRICE_GRID_UNIVERSE) # treat the entire universe as 'one big sector' 
 
   # View( RET_DOLLAR_PRICE_GRID )
   # View(subset(RET_DOLLAR_PRICE_GRID, MG_DESC %in% c("Basic Materials") ))
