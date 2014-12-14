@@ -646,7 +646,7 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
   UNIVERSE <- sqldf(" 
     SELECT STP.MONTHDATE AS MONTHDATEUNX, STP.WEEKDATE AS WEEKDATEUNX, STP.SPLITDATE AS SPLITDATEUNX, 
            CI.TICKER, CI.COMPANY, CI.COMPANY_ID, CI.SIC, CI.EXCHANGE, EXCHG.EXCHG_DESC 
-         , CI.IND_2_DIG, MGDSC.MG_DESC, CI.COUNTRY, CI.ADR 
+         , CI.IND_2_DIG, MGDSC.MG_DESC, CI.COUNTRY, CI.ADR, CI.SP AS SP__integer, CI.DOW 
                            , DTE.PEREND_Q1 AS PERENDUNX_Q1, DTE.PEREND_Q2 AS PERENDUNX_Q2, DTE.PEREND_Q3 AS PERENDUNX_Q3, DTE.PEREND_Q4 AS PERENDUNX_Q4 
                            , DTE.PEREND_Q5 AS PERENDUNX_Q5, DTE.PEREND_Q6 AS PERENDUNX_Q6, DTE.PEREND_Q7 AS PERENDUNX_Q7, DTE.PEREND_Q8 AS PERENDUNX_Q8 
                            , DTE.PERLEN_Q1 AS PERLEN_Q1__integer, PERTYP_Q1 
@@ -1146,8 +1146,20 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
   #############################################################################
   ################  PREPARE TO SEE ANY 10-M MA PER MONTH ######################
 
+  # CRAZY S***LOGIC ( of 3000 )
+  # LOOKS RIGHT ( MSFT, WMT, ORCL )
+  # Browse[2]> View( filter(UNIVERSE[,c("TICKER","COMPANY","SP")] , SP == 500))
+  # 475 entries
+  #
+  # Browse[2]> View( filter(UNIVERSE[,c("TICKER","COMPANY","SP")] , SP == 600)) 
+  # 575 ENTRIES
+  #
+  # Browse[2]> View( filter(UNIVERSE[,c("TICKER","COMPANY","SP")] , SP == 400))
+  # 385 ENTRIES
+  # 
+
   PRICE_WGHT_MEAN_UNIVERSE_NOT_NA  <- 
-    UNIVERSE[,c("MG_DESC", "MKTCAP", "PRICE", "TICKER"
+    UNIVERSE[,c("MG_DESC", "MKTCAP", "PRICE", "TICKER", "SP"
       , "PRICE_M001", "PRICE_M002", "PRICE_M003"
       , "PRICE_M004", "PRICE_M005", "PRICE_M006" 
       , "PRICE_M007", "PRICE_M008", "PRICE_M009"
@@ -1157,29 +1169,50 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
       , "PRICE_M019", "PRICE_M020", "PRICE_M021"                                                
   ),drop=FALSE] 
   # 023 ( actually)
-                                                                        # "MG_DESC", "MKTCAP", "PRICE", "TICKER"
-  PRICE_WGHT_MEAN_UNIVERSE_NOT_NA  <- PRICE_WGHT_MEAN_UNIVERSE_NOT_NA[,c(1,2,3,4, rev(5:length(colnames(PRICE_WGHT_MEAN_UNIVERSE_NOT_NA)))) ]  
+                                                                        # "MG_DESC", "MKTCAP", "PRICE", "TICKER", "SP"
+  PRICE_WGHT_MEAN_UNIVERSE_NOT_NA  <- PRICE_WGHT_MEAN_UNIVERSE_NOT_NA[,c(1,2,3,4,5, rev(6:length(colnames(PRICE_WGHT_MEAN_UNIVERSE_NOT_NA)))) ]  
 
   #############################################################################
   ################  VISUALLY SEE THE 10-M MA PER MONTH ########################
 
 
-  # if UNIVERSE = FALSE, then done per sector 
-  # if UNIVERSE = TRUE, treat the entire universe as 'one big sector' ( thrift savings plan )
+  # if BIGROUPING == "SECTOR3000",   then done per sector 
+  # if BIGROUPING == "UNIVERSE3000", treat the entire universe as 'one big sector' ( thrift savings plan )
+  # if BIGROUPING == "SP500", treat the entire universe as 'two sectors: SP500 and NOT_SP500' ( thrift savings plan )
+
   # ( the 3000 stocks stock market )
 
-  wght_mn_price_grid <- function(PRICE_WGHT_MEAN_UNIVERSE_NOT_NA, UNIVERSE = FALSE) {
+  wght_mn_price_grid <- function(PRICE_WGHT_MEAN_UNIVERSE_NOT_NA, BIGROUPING) {
   # wght_mn_price_grid <- function(PRICE_WGHT_MEAN_UNIVERSE_NOT_NA) {
 
     # require(TTR) # TTR::SMA   # require(dplyr)
     
-    if(UNIVERSE == TRUE) {
+    # could use base::switch?? or gdata::case??
+    
+    # if(BIGROUPING == "SECTOR3000") {
+    #   treat each sectors as individual sectors' ( default behaviour )
+    # }
+    if(is.null(BIGROUPING)) {
+      stop("to function wght_mn_price_grid, must supply parameter BIGROUPING")
+    }
+    
+    if(BIGROUPING == "UNIVERSE3000") {
       # treat all sectors as just 'one big sector'
       PRICE_WGHT_MEAN_UNIVERSE_NOT_NA[,"MG_DESC"] <- "UNIVZ"
     }
     
+    if(BIGROUPING == "SP500") {
+      # create 'SP500' and 'NOT_SP500'
+      PRICE_WGHT_MEAN_UNIVERSE_NOT_NA <- mutate(PRICE_WGHT_MEAN_UNIVERSE_NOT_NA, MG_DESC = 
+        # ifelse( SP == 500,              'SP500', 'NOT_SP500' ) 
+        ifelse(is.na(SP) | SP != 500, 'NOT_SP500', 'SP500' ) # prevent:  MG_DESC "NA" row from happening/showing
+      )
+    } # CRAZY: In FUN(1:84[[84L]], ...) : NAs introduced by coercion ( CAN NOT FIND THIS )
+    
+    # still grouping by sector ( or artificial sector )
     PRICE_WGHT_MEAN_UNIVERSE_NOT_NA  <- group_by(PRICE_WGHT_MEAN_UNIVERSE_NOT_NA,MG_DESC)
-  
+
+    
     # NOTE IF I ADD MORE OR LESS is.na THEN OUTPUTS WILL SIGHTLY CHANGE
     PRICE_WGHT_MEAN_UNIVERSE_NOT_NA <- filter(PRICE_WGHT_MEAN_UNIVERSE_NOT_NA, 
         is.na(MKTCAP)      == FALSE
@@ -1279,14 +1312,86 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
     
   } 
 
-  # if UNIVERSE = FALSE, then done per sector 
 
-  wght_mn_price_grid(PRICE_WGHT_MEAN_UNIVERSE_NOT_NA, UNIVERSE = FALSE) -> WGHT_MN_PRICE_GRID
+  # NOTE
+  # main.SI_MGDSC MGDSC
+  
+  # MG_CODE MG_DESC
+  
+  # 07 Financial
+  
+  # 56 0703 Consumer Financial Services
+  # 57 0706 Insurance (Accident & Health)
+  # 58 0709 Insurance (Life)
+  # 59 0712 Insurance (Miscellaneous)
+  # 60 0715 Insurance (Property & Casualty)
+  # 61 0718 Investment Services
+  # 62 0721 Misc. Financial Services ( 'AAF48 IYY iShares Dow Jones U.S. Index' AND 'AAF9A IVV iShares S&P 500 Index' )
+  # 63 0724 Money Center Banks
+  # 64 0727 Regional Banks
+  # 65 0730 S&Ls/Savings Banks
+  
+  # 'AAF48 IYY iShares Dow Jones U.S. Index' AND 'AAF9A IVV iShares S&P 500 Index'
+  #
+  # THEIR SI_CI.EXCHANGE IS *NA* ( ONLY TWO OF 7000 ) ( EXCHANGE NOT IN ('A','M','N')" ELIMINATES THESE FROM MY MATH )
+  #       SI_EXCHG.EXCHG_CODE does NOT contain *NA* ( only the 'general "O" - "Over the counter" )
+  
+  # ALSO IN 0721
+  
+  # OUT OF 7000 ( 319 ENTRIES IN  0721 )
+  
+  # junkyard UN-'sector/industry' MISC companies AND OTHER SPECIAL ...
+  
+  # Fund, Index Trust, Bond
+  
+  # Central Fund of Canada Limited
+  # iShares Dow Jones U.S. Index F[und]
+  # iShares S&P 500 Index (ETF)
+  # PIMCO Income Opportunity Fund
+  # Cushing MLP Total Return Fund
+  # Credit Suisse High Yield Bond
+  # iShares NASDAQ Biotechnology I[ndex]
+  # BlackRock Income Trust
+  # iShares S&P NA Tec. Semi. Idx.
+  # BlackRock Real Asset Trust
+  
+  # THERFORE, NOT TO 'BREAK ANYTHING', CHEAPER JUST TO USE THE  CI.SP == 1 ( LIKE UNIV.ADR == 0 ) #  ( OR CI.DOW == "DI" )
+  # HOPEFULLY S & P 500 WILL NOT BE ELIMINATED FROM THE ( 'EVENTUAL' 'GROUP OF 3000' ) 
+  
+  # S&P stock
+  # Data Table Name: SP
+  # Data Category: Company Information
+  # Field Type: Logical (T, F)
+  
+  # Indicates that the company is a component of the S&P 500 Index. 
+  # A (T) indicates that the company is a component of the S&P 500 Index while 
+  # a (F) indicates that the company is not a component of the S&P 500 Index.
+  
+  # Dow stock
+  # Data Table Name: DOW
+  # Data Category: Company Information
+  # Field Type: Character (DI, DT, DU)
+  
+  # Indicates that the company is a component of one of the Dow Jones Averages. 
+  # (DI) indicates that the company is part of the Dow Industrial, ( THESE 30 STOCKS )
+  # (DT) indicates that the company is part of the Dow Transportation, and 
+  # (DU) indicates that the firm is part of the Dow Utility.
 
-  # if UNIVERSE = TRUE, treat the entire universe as 'one big sector' ( thrift savings plan )
+
+  # if BIGROUPING == "SECTOR3000", then done per sector 
+
+  wght_mn_price_grid(PRICE_WGHT_MEAN_UNIVERSE_NOT_NA, BIGROUPING = "SECTOR3000" ) -> WGHT_MN_PRICE_GRID
+
+  # if BIGROUPING == "UNIVERSE3000", treat the entire universe as 'one big sector' ( thrift savings plan )
   # ( the 3000 stocks stock market )
 
-  wght_mn_price_grid( PRICE_WGHT_MEAN_UNIVERSE_NOT_NA, UNIVERSE = TRUE) -> WGHT_MN_PRICE_GRID_UNIVERSE
+  wght_mn_price_grid( PRICE_WGHT_MEAN_UNIVERSE_NOT_NA, BIGROUPING = "UNIVERSE3000" ) -> WGHT_MN_PRICE_GRID_UNIVERSE
+
+  # if BIGROUPING == "SP500" treat the entire universe as 'two sectors: SP500 and NOT_SP500'
+
+  wght_mn_price_grid( PRICE_WGHT_MEAN_UNIVERSE_NOT_NA, BIGROUPING = "SP500" ) -> WGHT_MN_PRICE_GRID_SP500
+
+
 
   ############### END OF VISUALLY SEE THE 10-M MA PER MONTH ###################
   #############################################################################
@@ -1947,7 +2052,7 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
     
     bookmarkhere <- 1
     
-    # new prepare to na.locf and merge
+    # new prepare to na.locf and merge 
     
     # zoo:na.locf  
     # merg[g]e with left outer join ( TEMP_PRIZEDDEE_XTSDF garanteed to have all rows) 
@@ -1961,8 +2066,8 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
     # ( instead of doing low/high range)
     # not sure what the 'market information monthly' dates may be 
     # in a sector, a company must 'file a quarterly' report within a month
-    # but "Utilities" never file in months 2,5,8 ( REALLY )!!
-    # just left-join merge with the "market information dates" index
+    # but "Utilities" never file in months 2,5,8 ( REALLY )!! 
+    # just left-join merge with the "market information dates" index 
     # to garantee all months that 'have market information' ( but not 'company information' )
     xts(  rep(1,NROW(index(TEMP_PRIZEDDEE_XTS)))  ,index(TEMP_PRIZEDDEE_XTS) ) -> ALL_MARKET_DATES_XTS
     
@@ -2037,10 +2142,10 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
     # COPIED CODE FROM ABOVE
     # na.locf from the 'company information' last quarterly report
     # but only carry forward a max of '4 periods'(THAT). 
-    # After THAT. NAs follow 
+    # After THAT. NAs follow  
     
-    # NOT USING xts:::rollapply.xts 
-    # NEED "partial = TRUE" support ( to handle early smaller windows )
+    # NOT USING xts:::rollapply.xts   
+    # NEED "partial = TRUE" support ( to handle early smaller windows ) 
     #   so using zoo:::rollapply.zoo
     
     rollapply(as.zoo(TEMP_PERENDTEPSDQEE_XTS), width = list(seq(-4, 0)),  FUN = function(x) {
@@ -4536,6 +4641,7 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
   # View(UNIVERSE_FMA)
   # View(WGHT_MN_PRICE_GRID)  
   # View(WGHT_MN_PRICE_GRID_UNIVERSE) # treat the entire universe as 'one big sector' 
+  # View(WGHT_MN_PRICE_GRID_SP500) # treat the entire universe as 'two sectors: SP500, NOT_SP500'
 
   # View( RET_DOLLAR_PRICE_GRID )
   # View(subset(RET_DOLLAR_PRICE_GRID, MG_DESC %in% c("Basic Materials") ))
