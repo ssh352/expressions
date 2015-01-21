@@ -8,7 +8,7 @@ options(digits = 22)
 options(max.print=99999)
 options(scipen=255) # Try these = width 
 
-setwd("N:\\MyVMWareSharedFolder\\rcsnsight1\\R") # TO BE CHANGED LATER
+setwd("N:\\MyVMWareSharedFolder\\rcsnsight1\\R") # TO BE CHANGED LATER 
 
 bookmark_here <- 1
 
@@ -20,10 +20,11 @@ retrieveSymbolsQuantmodRdata <- function(
   , finSymbolAttributes = c("Close")
   , initDate 
   # some minor testing 1980 
-  , subtractOffDaysSpec        # if the date received is the 'first of the month' 
-  #   then I want it to be the last of the previous month: (0 or -1) days      
+  , subtractOffDaysSpec        # if the date received is the 'first of the month'     
+  #   then I want it to be the last of the previous month: (0 or -1) days           
   # index ^GSPC
   , intlCurrency = "USD"
+  , interpolate = FALSE 
 ) {
   require("xts")
   require("Holidays")
@@ -68,6 +69,27 @@ retrieveSymbolsQuantmodRdata <- function(
       x[,X] <- as.numeric(x[,X])              # garantee numeric
     }
     colnames(x)<-gsub("x",symbol,colnames(x))
+    
+    # fill in missing values
+    if( interpolate == TRUE ) {
+      
+      # create month-end calendar dates from the first through the last
+      xts( ,order.by = as.Date(c(dateSeq(from = index(first(x)), to = index(last(x)) , by="months", k.by = 1 ) - 1,index(last(x)))) ) -> monthsxts
+      
+      # make lots of NAs
+      merge.xts(monthsxts,x, join="left")            -> x
+      
+      # merge.xt will prefix column(s)? with an "X".  Remove this "X"
+      sub("^X","",colnames(x)) -> colnames(x)
+      
+      # interpolate
+      na.approx(merge.xts(monthsxts,x, join="left")) -> x
+      
+      # merge.xt will prefix column(s)? with an "X".  Remove this "X"
+      sub("^X","",colnames(x)) -> colnames(x)
+      
+    }
+    
     assign(symbol,x)
     save(list = c(finSymbolNOIndex),file = paste0(getwd(),"/",finSymbolNOIndex,".Rdata"))
     return(get(symbol))
@@ -103,6 +125,10 @@ getSymbols.multpl <- function(
   #   Price to earnings ratio, based on trailing twelve month “as reported”
   #   http://www.multpl.com/table?f=m
   
+  # S&P 500 Book Value Per Share by Quarter ( "SandP.500.BV.Per.Share" )
+  # S&P 500 book value per share — non-inflation adjusted current dollars. 
+  # http://www.multpl.com/s-p-500-book-value/table/by-quarter
+  
   # web site and owner
   # multpl.com  JOSHSTAIGER@GMAIL.COM ( in California )
   # https://www.easywhois.com/
@@ -121,6 +147,7 @@ getSymbols.multpl <- function(
   if(symbolText == "SandP.500.12.month.EPS")              "http://www.multpl.com/s-p-500-earnings/table?f=m" -> url
   if(symbolText == "SandP.500.Real.Earnings.Growth.Pct")  "http://www.multpl.com/s-p-500-real-earnings-growth/table/by-quarter" -> url
   if(symbolText == "SandP.500.PE.Ratio")                  "http://www.multpl.com/table?f=m" -> url
+  if(symbolText == "SandP.500.BV.Per.Share")              "http://www.multpl.com/s-p-500-book-value/table/by-quarter" -> url
   # OTHERS ( in future follow ) ..
   # if
   # if
@@ -219,7 +246,7 @@ getSymbols.multpl <- function(
   }
   
   # TEMPORARILY hardcoded until I find a more elegant solution
-  # REALLY 'should' have BEEN put through the QUAUNTRAT to.monthly fixer method
+  # REALLY 'should' have BEEN put through the QUAUNTSTRAT to.monthly fixer method
   if(symbolText == "SandP.500.PE.Ratio") {
     
     # these dates are the '1st of the month'
@@ -268,7 +295,16 @@ retrieveSymbolsmultplRdata <- function(
                         , finSymbolAttribute = finSymbolAttribute 
                         , interpolate = FALSE 
       ) -> x
+      
     }
+      
+    if ( finSymbol == "SP500.BV.PER.SHARE" ) {
+      getSymbols.multpl("SandP.500.BV.Per.Share"
+                          , finSymbolAttribute = finSymbolAttribute 
+                          , interpolate = TRUE 
+      ) -> x
+    }
+
     
     symbol <- paste0(finSymbol,".",finSymbolAttribute)
     
@@ -311,7 +347,7 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
       , finSymbolAttributes = c("Close","Low")
       , initDate = "1950-03-01"
       , subtractOffDaysSpec = 0
-    ) -> GSPC.NOW
+    ) -> GSPC.DELAYZERO
     
     bookmark_here <- 1
     
@@ -337,12 +373,357 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
       , subtractOffDaysSpec = -1
     ) -> RECPROUSM156N.DELAYTHREE
     
+    #     Title:               Gross Domestic Product
+    #     Series ID:           GDP
+    #     Source:              US. Bureau of Economic Analysis
+    #     Release:             Gross Domestic Product
+    #     Seasonal Adjustment: Seasonally Adjusted Annual Rate
+    #     Frequency:           Quarterly
+    #     http://research.stlouisfed.org/fred2/data/GDP.txt
+    
+    retrieveSymbolsQuantmodRdata(
+        finSymbol = "GDP"
+      , finSymbolRemoteSource = "Quantmod_FRED"
+      , finSymbolAttributes = c("Close")
+      , initDate = "1950-03-01"
+      , subtractOffDaysSpec = -1
+      , interpolate = TRUE 
+    ) -> GDP.DELAYSIX
+    
     bookmark_here <- 1
     
-    retrieveSymbolsmultplRdata(
-        finSymbol = "SP500.PE.RATIO"
-      , finSymbolAttribute = "Close"
-    )  -> SP500.PE.RATIO.NOW  # "SandP.500.PE.Ratio.Close" ( web table header)
+    #     Title:               10-Year Treasury Constant Maturity Rate
+    #     Series ID:           GS10
+    #     Source:              Board of Governors of the Federal Reserve System
+    #     Release:             H.15 Selected Interest Rates
+    #     Seasonal Adjustment: Not Seasonally Adjusted
+    #     Frequency:           Monthly
+    #     http://research.stlouisfed.org/fred2/data/GS10.txt
+    
+    retrieveSymbolsQuantmodRdata(
+        finSymbol = "GS10"
+      , finSymbolRemoteSource = "Quantmod_FRED"
+      , finSymbolAttributes = c("Close")
+      , initDate = "1950-03-01"
+      , subtractOffDaysSpec = -1
+    ) -> GS10.DELAYZERO
+    
+    bookmark_here <- 1
+    
+    
+    #     Title:               3-Month Treasury Constant Maturity Rate
+    #     Series ID:           DGS3MO
+    #     Source:              Board of Governors of the Federal Reserve System (US)
+    #     Release:             H.15 Selected Interest Rates
+    #     Seasonal Adjustment: Not Seasonally Adjusted
+    #     Frequency:           Daily
+    #     Units:               Percent
+    #     http://research.stlouisfed.org/fred2/data/DGS3MO.txt
+    
+    retrieveSymbolsQuantmodRdata(
+        finSymbol = "DGS3MO"
+      , finSymbolRemoteSource = "Quantmod_FRED"
+      , finSymbolAttributes = c("Close")
+      , initDate = "1950-03-01"
+      , subtractOffDaysSpec = 0
+    ) -> DGS3MO.DELAYZERO
+    
+    bookmark_here <- 1
+    
+    #     Title:               Effective Federal Funds Rate
+    #     Series ID:           DFF
+    #     Source:              Board of Governors of the Federal Reserve System (US)
+    #     Release:             H.15 Selected Interest Rates
+    #     Seasonal Adjustment: Not Seasonally Adjusted
+    #     Frequency:           Daily, Seven Day
+    #     Units:               Percent
+    #     
+    #     interest rate at which depository
+    #     institutions trade federal funds (balances held at Federal Reserve
+    #                                       Banks) with each other overnight.
+    #     
+    #     http://research.stlouisfed.org/fred2/data/DFF.txt
+    
+    # ( Discount Rate ) ( Federal Funds Rate )
+    # Historical Changes of the Target Federal Funds and Discount Rates
+    # http://www.newyorkfed.org/markets/statistics/dlyrates/fedrate.html
+    
+    retrieveSymbolsQuantmodRdata(
+        finSymbol = "DFF"
+      , finSymbolRemoteSource = "Quantmod_FRED"
+      , finSymbolAttributes = c("Close")
+      , initDate = "1950-03-01"
+      , subtractOffDaysSpec = 0
+    ) -> DFF.DELAYZERO
+    
+    bookmark_here <- 1
+    
+    # maybe useful for some math somewhere
+    
+    #     Title:               Unemployed
+    #     Series ID:           UNEMPLOY
+    #     Source:              US. Bureau of Labor Statistics
+    #     Release:             Employment Situation
+    #     Seasonal Adjustment: Seasonally Adjusted
+    #     Frequency:           Monthly
+    #     Units:               Thousands of Persons
+    #     Date Range:          1948-01-01 to 2014-12-01
+    #     
+    #     http://research.stlouisfed.org/fred2/data/UNEMPLOY.txt
+    
+    retrieveSymbolsQuantmodRdata(
+        finSymbol = "UNEMPLOY"
+      , finSymbolRemoteSource = "Quantmod_FRED"
+      , finSymbolAttributes = c("Close")
+      , initDate = "1950-03-01"
+      , subtractOffDaysSpec = -1
+    ) -> UNEMPLOY.DELAYONE
+    
+    # pattern: flattens out before a recession
+    
+    #     Title:               Median Duration of Unemployment
+    #     Series ID:           UEMPMED
+    #     Source:              US. Bureau of Labor Statistics
+    #     Release:             Employment Situation
+    #     Seasonal Adjustment: Seasonally Adjusted
+    #     Frequency:           Monthly
+    #     Units:               Weeks
+    #     
+    #     http://research.stlouisfed.org/fred2/data/UEMPMED.txt
+    
+    retrieveSymbolsQuantmodRdata(
+        finSymbol = "UEMPMED"
+      , finSymbolRemoteSource = "Quantmod_FRED"
+      , finSymbolAttributes = c("Close")
+      , initDate = "1950-03-01"
+      , subtractOffDaysSpec = -1
+    ) -> UEMPMED.DELAYZERO
+    
+    # maybe useful for some math somewhere
+    
+    #     Title:               Total Population: All Ages including Armed Forces Overseas
+    #     Series ID:           POP
+    #     Source:              US. Bureau of the Census
+    #     Release:             Monthly National Population Estimates (Not a Press Release)
+    #     Seasonal Adjustment: Not Seasonally Adjusted
+    #     Frequency:           Monthly
+    #     Units:               Thousands
+    #     Date Range:          1952-01-01 to 2014-11-01
+    #     
+    #     http://research.stlouisfed.org/fred2/data/POP.txt
+    
+    retrieveSymbolsQuantmodRdata(
+        finSymbol = "POP"
+      , finSymbolRemoteSource = "Quantmod_FRED"
+      , finSymbolAttributes = c("Close")
+      , initDate = "1950-03-01"
+      , subtractOffDaysSpec = -1
+    ) -> POP.DELAYTWO
+    
+    bookmark_here <- 1
+    
+    #     Title:               Civilian Unemployment Rate
+    #     Series ID:           UNRATE
+    #     Source:              US. Bureau of Labor Statistics
+    #     Release:             Employment Situation
+    #     Seasonal Adjustment: Seasonally Adjusted
+    #     Frequency:           Monthly
+    #     Units:               Percent
+    #     
+    #     http://research.stlouisfed.org/fred2/data/UNRATE.txt
+    
+    retrieveSymbolsQuantmodRdata(
+        finSymbol = "UNRATE"
+      , finSymbolRemoteSource = "Quantmod_FRED"
+      , finSymbolAttributes = c("Close")
+      , initDate = "1950-03-01"
+      , subtractOffDaysSpec = -1
+    ) -> UNRATE.DELAYONE
+    
+    bookmark_here <- 1
+    
+    #     Title:               Consumer Price Index for All Urban Consumers: All Items Less Food & Energy
+    #     Series ID:           CPILFESL
+    #     Source:              US. Bureau of Labor Statistics
+    #     Release:             Consumer Price Index
+    #     Seasonal Adjustment: Seasonally Adjusted
+    #     Frequency:           Monthly
+    #     
+    #     http://research.stlouisfed.org/fred2/data/CPILFESL.txt
+    
+    retrieveSymbolsQuantmodRdata(
+        finSymbol = "CPILFESL"
+      , finSymbolRemoteSource = "Quantmod_FRED"
+      , finSymbolAttributes = c("Close")
+      , initDate = "1950-03-01"
+      , subtractOffDaysSpec = -1
+    ) -> CPILFESL.DELAYONE
+    
+    bookmark_here <- 1
+    
+    ### prob not useful: would need TOTAL_PRIV_DEBT TOTAL_PUBLIC_DEBT ###
+    
+    # abrupt start in 2002( and does not go back that far )
+    
+    #     Title:               U.S. Treasury securities held by the Federal Reserve: All Maturities
+    #     Series ID:           TREAST
+    #     Source:              Board of Governors of the Federal Reserve System (US)
+    #     Release:             H.4.1 Factors Affecting Reserve Balances
+    #     Seasonal Adjustment: Not Seasonally Adjusted
+    #     Frequency:           Weekly, As of Wednesday
+    #     Units:               Millions of Dollars
+    #     Date Range:          2002-12-18 to 2015-01-14
+    #     
+    #     http://research.stlouisfed.org/fred2/data/TREAST.txt
+    
+    retrieveSymbolsQuantmodRdata(
+        finSymbol = "TREAST"
+      , finSymbolRemoteSource = "Quantmod_FRED"
+      , finSymbolAttributes = c("Close")
+      , initDate = "1950-03-01"
+      , subtractOffDaysSpec = 0
+    ) -> TREAST.DELAYZERO
+    
+    # smooth start in 2002 ( otherwise zero before that )
+    
+    #     Title:               Mortgage-backed securities held by the Federal Reserve: All Maturities
+    #     Series ID:           MBST
+    #     Source:              Board of Governors of the Federal Reserve System (US)
+    #     Release:             H.4.1 Factors Affecting Reserve Balances
+    #     Seasonal Adjustment: Not Seasonally Adjusted
+    #     Frequency:           Weekly, As of Wednesday
+    #     Units:               Millions of Dollars
+    #     Date Range:          2002-12-18 to 2015-01-14
+    #     
+    #     http://research.stlouisfed.org/fred2/data/MBST.txt
+    
+    retrieveSymbolsQuantmodRdata(
+        finSymbol = "MBST"
+      , finSymbolRemoteSource = "Quantmod_FRED"
+      , finSymbolAttributes = c("Close")
+      , initDate = "1950-03-01"
+      , subtractOffDaysSpec = 0
+    ) -> MBST.DELAYZERO
+    
+    bookmark_here <- 1
+  
+    ### END OF prob not useful: would need TOTAL_PRIV_DEBT TOTAL_PUBLIC_DEBT ###
+    
+    # most recessions, there is a dip before theh recession
+    
+    #     Title:               Industrial Production Index                          
+    #     Series ID:           INDPRO
+    #     Source:              Board of Governors of the Federal Reserve System
+    #     Release:             G.17 Industrial Production and Capacity Utilization
+    #     Seasonal Adjustment: Seasonally Adjusted
+    #     Frequency:           Monthly
+    #     Units:               Index 2007=100
+    #     Date Range:          1919-01-01 to 2014-10-01
+    #     Last Updated:        2014-11-17 8:26 AM CST
+    
+    #     http://research.stlouisfed.org/fred2/data/INDPRO.txt
+    
+    retrieveSymbolsQuantmodRdata(
+      finSymbol = "INDPRO"
+      , finSymbolRemoteSource = "Quantmod_FRED"
+      , finSymbolAttributes = c("Close")
+      , initDate = "1950-03-01"
+      , subtractOffDaysSpec = -1
+    ) -> INDPRO.DELAYONE
+    
+    #     Title:               ISM Manufacturing: PMI Composite Index
+    #     Series ID:           NAPM
+    #     Source:              Institute for Supply Management
+    #     Release:             Manufacturing ISM Report on Business
+    #     Seasonal Adjustment: Seasonally Adjusted
+    #     Frequency:           Monthly
+    #     Units:               Index
+    #     Date Range:          1948-01-01 to 2014-12-01
+    #     
+    #     http://research.stlouisfed.org/fred2/data/NAPM.txt
+    
+    retrieveSymbolsQuantmodRdata(
+        finSymbol = "NAPM"
+      , finSymbolRemoteSource = "Quantmod_FRED"
+      , finSymbolAttributes = c("Close")
+      , initDate = "1950-03-01"
+      , subtractOffDaysSpec = -1
+    ) -> NAPM.DELAYONE
+    
+    bookmark_here <- 1
+    
+    # some recessions: flat or diving before the recession
+    
+    #     Title:               Capacity Utilization: Total Industry
+    #     Series ID:           TCU
+    #     Source:              Board of Governors of the Federal Reserve System
+    #     Release:             G.17 Industrial Production and Capacity Utilization
+    #     Seasonal Adjustment: Seasonally Adjusted
+    #     Frequency:           Monthly
+    #     Units:               Percent of Capacity
+    #     Date Range:          1967-01-01 to 2014-10-01
+    #     Last Updated:        2014-11-17 8:26 AM CST
+    #     http://research.stlouisfed.org/fred2/data/TCU.txt
+    
+    retrieveSymbolsQuantmodRdata(
+      finSymbol = "TCU"
+      , finSymbolRemoteSource = "Quantmod_FRED"
+      , finSymbolAttributes = c("Close")
+      , initDate = "1950-03-01"
+      , subtractOffDaysSpec = -1
+    ) -> TCU.DELAYONE
+    
+    bookmark_here <- 1
+    
+    #     Title:               Real Gross Domestic Income
+    #     Series ID:           A261RL1Q225SBEA
+    #     Source:              US. Bureau of Economic Analysis
+    #     Release:             Gross Domestic Product
+    #     Seasonal Adjustment: Seasonally Adjusted Annual Rate
+    #     Frequency:           Quarterly
+    #     Units:               Percent Change from Preceding Period
+    #     Date Range:          1947-04-01 to 2014-07-01
+    #     Last Updated:        2014-12-24 9:19 AM CST
+    #     Notes:               BEA Account Code: A261RL1
+    #     
+    #     http://research.stlouisfed.org/fred2/data/A261RL1Q225SBEA.txt
+    
+    retrieveSymbolsQuantmodRdata(
+        finSymbol = "A261RL1Q225SBEA"
+      , finSymbolRemoteSource = "Quantmod_FRED"
+      , finSymbolAttributes = c("Close")
+      , initDate = "1950-03-01"
+      , subtractOffDaysSpec = -1
+    ) ->  A261RL1Q225SBEA.DELAYSIX
+    
+    bookmark_here <- 1
+    
+    # change rate seems to DIP right before a RECESSION
+    
+    #     Title:               Compensation of employees: Wages and salaries       
+    #     Series ID:           A576RC1Q027SBEA
+    #     Source:              US. Bureau of Economic Analysis
+    #     Release:             Gross Domestic Product
+    #     Seasonal Adjustment: Seasonally Adjusted Annual Rate
+    #     Frequency:           Quarterly
+    #     Units:               Billions of Dollars
+    #     Date Range:          1947-01-01 to 2014-07-01
+    #     Last Updated:        2014-11-25 8:34 AM CST
+    #     Notes:               BEA Account Code: A576RC1
+    #     
+    #     http://research.stlouisfed.org/fred2/data/A576RC1Q027SBEA.txt
+    
+    retrieveSymbolsQuantmodRdata(
+      finSymbol = "A576RC1Q027SBEA"
+      , finSymbolRemoteSource = "Quantmod_FRED"
+      , finSymbolAttributes = c("Close")
+      , initDate = "1950-03-01"
+      , subtractOffDaysSpec = -1
+    ) -> A576RC1Q027SBEA.DELAYFIVE
+    
+    
+    
+    bookmark_here <- 1
     
     retrieveSymbolsmultplRdata(
         finSymbol = "SP500.12M.EPS"
@@ -353,6 +734,19 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
         finSymbol = "SP500.REAL.EARN.GR.PCT"
       , finSymbolAttribute = "Close"
     )  -> SP500.REAL.EARN.GR.PCT.DELAYTWO # "SandP.500.Real.Earnings.Growth.Pct.Close"
+    
+    retrieveSymbolsmultplRdata(
+        finSymbol = "SP500.PE.RATIO"
+      , finSymbolAttribute = "Close"
+    )  -> SP500.PE.RATIO.DELAYZERO # "SandP.500.PE.Ratio.Close" ( web table header)
+    
+    retrieveSymbolsmultplRdata(
+        finSymbol = "SP500.BV.PER.SHARE"
+      , finSymbolAttribute = "Close"
+    )  -> SP500.BV.PER.SHARE.DELAYTHREE  # "SandP.500.Book.Value.Close"
+    
+    
+    bookmark_here <- 1 
     
     the_end_debug_bookmark_here <- 1
     
@@ -367,18 +761,23 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
     ## [x]               RECPROUSM156N
     
     ## [ ] wed/th - get FROM FRED
-    ## [ ]   GDP garanteed
-    ## [ ]   10  year bond
-    ##   [ ] 'real earnings growth or similar' = 'EPS - 10 year treasury yield'
-    ## [ ]   unemployment
-    ## [ ]   inflation
-    ## [ ]   actions of the fed
+    ## [x]   GDP garanteed
+    ## [x]   10  year bond
+    ## [x]    3  year bill
+    ## [x]   effective funds rate
+    ##   [ ] (TO DO) 'real earnings growth or similar' = 'EPS - 10 year treasury yield'
+    ## [x]   unemployment
+    ## [x]   inflation
+    ## [SORTOF]   actions of the fed
+    
+    ## LEFT_OFF
+    ## [ ] (SPREAD) difference between yields on 10-year Treasury bonds and 3-month Treasury bills
+    ## [ ] PCTCHANGE(WHERE APPROPRIATE)  ( [ ] consider renaming prog variables to .ABS )
+    ## [ ] DO                SMA 1,2,3,...12, and
+    ## [ ] INDICATOR(NOW PERCENT ABOVE) SMA
     
     ## [ ]   re-UMCENT ???
-    
-    ## [ ] add ADD THE 'IMPORTANT ONES  from 
-    ##     REAL_Getting_Internet_Econ_Indicators.txt
-    ##
+
     ## 
     ## [ ] DURING THE WEEK: ABSVAL VELOCITY ACCEL JERK;  DOUBLE TRIPLE
     ## [ ]                  MOVING AVE(1:8), FLAG_ABOVE_MA
