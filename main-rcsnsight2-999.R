@@ -12,15 +12,31 @@ setwd("N:\\MyVMWareSharedFolder\\rcsnsight1\\R") # TO BE CHANGED LATER
 
 bookmark_here <- 1
 
+
+# put this early before xts is added to the search 
+# JUST 'pulls old dates forward!!'
+pullAheadZOOData <- function(zooobj,monthsPullAhead) {
+  
+  require(mondate)
+  require(zoo)
+  
+  index(zooobj) -> dates
+  
+  # zoo::as.Date  # pull 'past date' 'monthsPullAhead positions' into the 'current position' 
+  as.Date(as.character(as.mondate(dates, displayFormat="%Y-%m-%d",timeunits="months") + monthsPullAhead)) -> index(zooobj) 
+  return(zooobj)
+  
+}
+
 retrieveSymbolsQuantmodRdata <- function(
-  # "^GSPC"
+  # "^GSPC" 
   finSymbol # financial Symbol 
   # "1950-03-01"
   , finSymbolRemoteSource = "Quantmod_yahoo"
   , finSymbolAttributes = c("Close")
   , initDate 
   # some minor testing 1980 
-  , subtractOffDaysSpec        # if the date received is the 'first of the month'     
+  , subtractOffDaysSpec        # if the date received is the 'first of the month'       
   #   then I want it to be the last of the previous month: (0 or -1) days           
   # index ^GSPC
   , intlCurrency = "USD"
@@ -145,6 +161,8 @@ getSymbols.multpl <- function(
   
   # which web page data do I want?
   if(symbolText == "SandP.500.12.month.EPS")              "http://www.multpl.com/s-p-500-earnings/table?f=m" -> url
+  
+  # Annual percentage change in 12 month
   if(symbolText == "SandP.500.Real.Earnings.Growth.Pct")  "http://www.multpl.com/s-p-500-real-earnings-growth/table/by-quarter" -> url
   if(symbolText == "SandP.500.PE.Ratio")                  "http://www.multpl.com/table?f=m" -> url
   if(symbolText == "SandP.500.BV.Per.Share")              "http://www.multpl.com/s-p-500-book-value/table/by-quarter" -> url
@@ -321,6 +339,7 @@ retrieveSymbolsmultplRdata <- function(
 main_rcsnsight2_999 <- function(pauseat=NULL) {
   
   main_rcsnsight2_999_inner <- function(...) {
+  
     
     bookmarkhere <- 1
     
@@ -337,21 +356,30 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
 
     require(Holidays)
     require(TimeWarp)
-    require(quantstrat) # require(quantmod) # path: xts zoo
+    require(quantstrat) # and added to search() path: 
+    #  blotter, PerformanceAnalytics, FinancialInstrument,
+    #  quantmod, TTR, xts, zoo
     
     # require(require(PerformanceAnalytics) # POSSIBLE FUT ( and through require("quantstrat") )
     
+    # S&P500 from yahoo
     
     retrieveSymbolsQuantmodRdata(
         finSymbol = "^GSPC"
       , finSymbolAttributes = c("Close","Low")
       , initDate = "1950-03-01"
       , subtractOffDaysSpec = 0
-    ) -> GSPC.DELAYZERO
+    ) -> GSPC.DELAYZERO.ABS     # head "1950-03-31"
+    assign("GSPC.DELAYZERO.ABS", value=GSPC.DELAYZERO.ABS, envir = .GlobalEnv)
+    
     
     bookmark_here <- 1
     
     # NBER ( x3 x4x6 month lag )
+    
+    # 1 in a recession, 0 not in a recession
+    
+    # http://research.stlouisfed.org/fred2/data/USRECM.txt
     
     retrieveSymbolsQuantmodRdata(
         finSymbol = "USRECM"
@@ -359,11 +387,24 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
       , finSymbolAttributes = c("Close")
       , initDate = "1950-03-01"
       , subtractOffDaysSpec = -1
-    ) -> USRECM.DELAYSIX
+    ) -> USRECM.DELAYSEVEN.ABS      # head "1950-03-31"
+    assign("USRECM.DELAYSEVEN.ABS", value=USRECM.DELAYSEVEN.ABS, envir = .GlobalEnv)
     
+    pullAheadZOOData(USRECM.DELAYSEVEN.ABS,7) -> USRECM.DELAYSEVEN.ABS.ADJUSTNOW
+    assign("USRECM.DELAYSEVEN.ABS.ADJUSTNOW", value=USRECM.DELAYSEVEN.ABS.ADJUSTNOW, envir = .GlobalEnv)
+    
+    # LEFT_OFF ( repeat the FOLLOWING below FOR EACH ONE where NECESSARY)
+    # pullAheadZOOData(,) -> .ADJUSTNOW
+    # assign(".ADJUSTNOW", value=.ADJUSTNOW, envir = .GlobalEnv) 
+       
+     
     bookmark_here <- 1
     
-    # Chauvet/Piger ( 3 month lag ) ( sometimes 2 month lag) 
+    # Chauvet/Piger ( 3 month delay ) ( sometimes 2 month delay )  
+    
+    # http://research.stlouisfed.org/fred2/data/RECPROUSM156N.txt 
+    
+    # 'probability of a recession'  
     
     retrieveSymbolsQuantmodRdata(
         finSymbol = "RECPROUSM156N"
@@ -371,7 +412,8 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
       , finSymbolAttributes = c("Close")
       , initDate = "1950-03-01"
       , subtractOffDaysSpec = -1
-    ) -> RECPROUSM156N.DELAYTHREE
+    ) -> RECPROUSM156N.DELAYTHREE.ABS    # head "1967-05-31"
+    assign("RECPROUSM156N.DELAYTHREE.ABS", value=RECPROUSM156N.DELAYTHREE.ABS, envir = .GlobalEnv)
     
     #     Title:               Gross Domestic Product
     #     Series ID:           GDP
@@ -388,7 +430,8 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
       , initDate = "1950-03-01"
       , subtractOffDaysSpec = -1
       , interpolate = TRUE 
-    ) -> GDP.DELAYSIX
+    ) -> GDP.DELAYSIX.ABS      # head"1950-03-31"
+    assign("GDP.DELAYSIX.ABS", value=GDP.DELAYSIX.ABS, envir = .GlobalEnv)
     
     bookmark_here <- 1
     
@@ -406,7 +449,8 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
       , finSymbolAttributes = c("Close")
       , initDate = "1950-03-01"
       , subtractOffDaysSpec = -1
-    ) -> GS10.DELAYZERO
+    ) -> GS10.DELAYZERO.ABS        # head  "1953-03-31"
+    assign("GS10.DELAYZERO.ABS", value=GS10.DELAYZERO.ABS, envir = .GlobalEnv)
     
     bookmark_here <- 1
     
@@ -426,7 +470,8 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
       , finSymbolAttributes = c("Close")
       , initDate = "1950-03-01"
       , subtractOffDaysSpec = 0
-    ) -> DGS3MO.DELAYZERO
+    ) -> DGS3MO.DELAYZERO.ABS      # head "1982-01-31"
+    assign("DGS3MO.DELAYZERO.ABS", value=DGS3MO.DELAYZERO.ABS, envir = .GlobalEnv)
     
     bookmark_here <- 1
     
@@ -454,7 +499,8 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
       , finSymbolAttributes = c("Close")
       , initDate = "1950-03-01"
       , subtractOffDaysSpec = 0
-    ) -> DFF.DELAYZERO
+    ) -> DFF.DELAYZERO.ABS          # head "1954-07-31"
+    assign("DFF.DELAYZERO.ABS", value=DFF.DELAYZERO.ABS, envir = .GlobalEnv)
     
     bookmark_here <- 1
     
@@ -477,7 +523,8 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
       , finSymbolAttributes = c("Close")
       , initDate = "1950-03-01"
       , subtractOffDaysSpec = -1
-    ) -> UNEMPLOY.DELAYONE
+    ) -> UNEMPLOY.DELAYONE.ABS       # head "1950-03-31"
+    assign("UNEMPLOY.DELAYONE.ABS", value=UNEMPLOY.DELAYONE.ABS, envir = .GlobalEnv)
     
     # pattern: flattens out before a recession
     
@@ -497,7 +544,8 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
       , finSymbolAttributes = c("Close")
       , initDate = "1950-03-01"
       , subtractOffDaysSpec = -1
-    ) -> UEMPMED.DELAYZERO
+    ) -> UEMPMED.DELAYZERO.ABS        # head "1967-06-30"
+    assign("UEMPMED.DELAYZERO.ABS", value=UEMPMED.DELAYZERO.ABS, envir = .GlobalEnv)
     
     # maybe useful for some math somewhere
     
@@ -518,7 +566,8 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
       , finSymbolAttributes = c("Close")
       , initDate = "1950-03-01"
       , subtractOffDaysSpec = -1
-    ) -> POP.DELAYTWO
+    ) -> POP.DELAYTWO.ABS         # head "1951-12-31"
+    assign("POP.DELAYTWO.ABS", value=POP.DELAYTWO.ABS, envir = .GlobalEnv)
     
     bookmark_here <- 1
     
@@ -538,7 +587,8 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
       , finSymbolAttributes = c("Close")
       , initDate = "1950-03-01"
       , subtractOffDaysSpec = -1
-    ) -> UNRATE.DELAYONE
+    ) -> UNRATE.DELAYONE.ABS         # head "1950-03-31"
+    assign("UNRATE.DELAYONE.ABS", value=UNRATE.DELAYONE.ABS, envir = .GlobalEnv)
     
     bookmark_here <- 1
     
@@ -557,13 +607,15 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
       , finSymbolAttributes = c("Close")
       , initDate = "1950-03-01"
       , subtractOffDaysSpec = -1
-    ) -> CPILFESL.DELAYONE
+    ) -> CPILFESL.DELAYONE.ABS       # head "1956-12-31"
+    assign("CPILFESL.DELAYONE.ABS", value=CPILFESL.DELAYONE.ABS, envir = .GlobalEnv)
     
     bookmark_here <- 1
     
     ### prob not useful: would need TOTAL_PRIV_DEBT TOTAL_PUBLIC_DEBT ###
     
     # abrupt start in 2002( and does not go back that far )
+    # but still 'numerically useful' best to left join with OTHERS
     
     #     Title:               U.S. Treasury securities held by the Federal Reserve: All Maturities
     #     Series ID:           TREAST
@@ -582,7 +634,8 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
       , finSymbolAttributes = c("Close")
       , initDate = "1950-03-01"
       , subtractOffDaysSpec = 0
-    ) -> TREAST.DELAYZERO
+    ) -> TREAST.DELAYZERO.ABS     # head "2002-12-31"
+    assign("TREAST.DELAYZERO.ABS", value=TREAST.DELAYZERO.ABS, envir = .GlobalEnv)
     
     # smooth start in 2002 ( otherwise zero before that )
     
@@ -603,7 +656,8 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
       , finSymbolAttributes = c("Close")
       , initDate = "1950-03-01"
       , subtractOffDaysSpec = 0
-    ) -> MBST.DELAYZERO
+    ) -> MBST.DELAYZERO.ABS          # head "2002-12-31"
+    assign("MBST.DELAYZERO.ABS", value=MBST.DELAYZERO.ABS, envir = .GlobalEnv)
     
     bookmark_here <- 1
   
@@ -623,13 +677,16 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
     
     #     http://research.stlouisfed.org/fred2/data/INDPRO.txt
     
+    # real output for all facilities located in the United States
+    
     retrieveSymbolsQuantmodRdata(
       finSymbol = "INDPRO"
       , finSymbolRemoteSource = "Quantmod_FRED"
       , finSymbolAttributes = c("Close")
       , initDate = "1950-03-01"
       , subtractOffDaysSpec = -1
-    ) -> INDPRO.DELAYONE
+    ) -> INDPRO.DELAYONE.ABS        # head "1950-03-31"
+    assign("INDPRO.DELAYONE.ABS", value=INDPRO.DELAYONE.ABS, envir = .GlobalEnv)
     
     #     Title:               ISM Manufacturing: PMI Composite Index
     #     Series ID:           NAPM
@@ -642,13 +699,18 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
     #     
     #     http://research.stlouisfed.org/fred2/data/NAPM.txt
     
+    # A PMI reading above 50 percent indicates that the manufacturing
+    # economy is generally expanding; below 50 percent that it is generally
+    # declining.  
+    
     retrieveSymbolsQuantmodRdata(
         finSymbol = "NAPM"
       , finSymbolRemoteSource = "Quantmod_FRED"
       , finSymbolAttributes = c("Close")
       , initDate = "1950-03-01"
       , subtractOffDaysSpec = -1
-    ) -> NAPM.DELAYONE
+    ) -> NAPM.DELAYONE.ABS             # head "1950-03-31"
+    assign("NAPM.DELAYONE.ABS", value=NAPM.DELAYONE.ABS, envir = .GlobalEnv)
     
     bookmark_here <- 1
     
@@ -671,7 +733,8 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
       , finSymbolAttributes = c("Close")
       , initDate = "1950-03-01"
       , subtractOffDaysSpec = -1
-    ) -> TCU.DELAYONE
+    ) -> TCU.DELAYONE.ABS              # head "1966-12-31"
+    assign("TCU.DELAYONE.ABS", value=TCU.DELAYONE.ABS, envir = .GlobalEnv)
     
     bookmark_here <- 1
     
@@ -688,13 +751,16 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
     #     
     #     http://research.stlouisfed.org/fred2/data/A261RL1Q225SBEA.txt
     
+    # Percent Change from Preceding Period
+    
     retrieveSymbolsQuantmodRdata(
         finSymbol = "A261RL1Q225SBEA"
       , finSymbolRemoteSource = "Quantmod_FRED"
       , finSymbolAttributes = c("Close")
       , initDate = "1950-03-01"
       , subtractOffDaysSpec = -1
-    ) ->  A261RL1Q225SBEA.DELAYSIX
+    ) ->  A261RL1Q225SBEA.DELAYSIX.PCTCHG.OVER3MO  # head "1950-03-31"
+    assign("A261RL1Q225SBEA.DELAYSIX.PCTCHG.OVER3MO", value=A261RL1Q225SBEA.DELAYSIX.PCTCHG.OVER3MO, envir = .GlobalEnv)
     
     bookmark_here <- 1
     
@@ -719,8 +785,24 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
       , finSymbolAttributes = c("Close")
       , initDate = "1950-03-01"
       , subtractOffDaysSpec = -1
-    ) -> A576RC1Q027SBEA.DELAYFIVE
+    ) -> A576RC1Q027SBEA.DELAYFIVE.ABS     # head "1950-03-31"
+    assign("A576RC1Q027SBEA.DELAYFIVE.ABS", value=A576RC1Q027SBEA.DELAYFIVE.ABS, envir = .GlobalEnv)
     
+    
+    # DIDIER SORNETE? ( VOLITILITY BEFORE THE EARTHQUAKE? )
+    #
+    # ( FUTURE [ ]?: ^GSPC : CONSIDER ADDING CORRELATIONS )
+    # January 21, 2015
+    # By Ilya Kipnis   library(ecp); library(BreakoutDetection)
+    # http://www.r-bloggers.com/an-introduction-to-change-points-packages-ecp-and-breakoutdetection/
+    # https://quantstrattrader.wordpress.com/2015/01/21/an-introduction-to-change-points-packages-ecp-and-breakoutdetection/
+    
+    # Historical / Future Volatility Correlation Stability
+    # runSD -> lag -> na.omit -> runCor -> plot.zoo
+    # April 11, 2010
+    # By Joshua Ulrich
+    # http://www.r-bloggers.com/historical-future-volatility-correlation-stability/
+    # http://blog.fosstrading.com/2010/04/historical-future-volatility.html?utm_source=feedburner&utm_medium=feed&utm_campaign=Feed%3A+FossTrading+%28FOSS+Trading%29
     
     
     bookmark_here <- 1
@@ -728,22 +810,30 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
     retrieveSymbolsmultplRdata(
         finSymbol = "SP500.12M.EPS"
       , finSymbolAttribute = "Close"
-    )  -> SP500.12M.EPS.DELAYTWO  # "12.month.EPS.Close" ( web table header)
+    )  -> SP500.12M.EPS.DELAYTWO.ABS  # "12.month.EPS.Close" ( web table header) 
+    assign("SP500.12M.EPS.DELAYTWO.ABS", value=SP500.12M.EPS.DELAYTWO.ABS, envir = .GlobalEnv)
+    # head "1871-01-31"
     
     retrieveSymbolsmultplRdata(
-        finSymbol = "SP500.REAL.EARN.GR.PCT"
+        finSymbol = "SP500.REAL.EARN.GR.PCT"           # Annual percentage change in 12 month
       , finSymbolAttribute = "Close"
-    )  -> SP500.REAL.EARN.GR.PCT.DELAYTWO # "SandP.500.Real.Earnings.Growth.Pct.Close"
+    )  -> SP500.REAL.EARN.GR.DELAYTWO.PCTCHG.OVER12MO # "SandP.500.Real.Earnings.Growth.Pct.Close" 
+    assign("SP500.REAL.EARN.GR.DELAYTWO.PCTCHG.OVER12MO", value=SP500.REAL.EARN.GR.DELAYTWO.PCTCHG.OVER12MO, envir = .GlobalEnv)
+    # head "1989-12-31"
     
     retrieveSymbolsmultplRdata(
         finSymbol = "SP500.PE.RATIO"
       , finSymbolAttribute = "Close"
-    )  -> SP500.PE.RATIO.DELAYZERO # "SandP.500.PE.Ratio.Close" ( web table header)
+    )  -> SP500.PE.RATIO.DELAYZERO.ABS # "SandP.500.PE.Ratio.Close" ( web table header) 
+    assign("SP500.PE.RATIO.DELAYZERO.ABS", value=SP500.PE.RATIO.DELAYZERO.ABS, envir = .GlobalEnv)
+    # head "1870-12-31"
     
     retrieveSymbolsmultplRdata(
         finSymbol = "SP500.BV.PER.SHARE"
       , finSymbolAttribute = "Close"
-    )  -> SP500.BV.PER.SHARE.DELAYTHREE  # "SandP.500.Book.Value.Close"
+    )  -> SP500.BV.PER.SHARE.DELAYTHREE.ABS  # "SandP.500.Book.Value.Close"  
+    assign("SP500.BV.PER.SHARE.DELAYTHREE.ABS", value=SP500.BV.PER.SHARE.DELAYTHREE.ABS, envir = .GlobalEnv)
+    # head "1999-12-31"  
     
     
     bookmark_here <- 1 
@@ -771,8 +861,14 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
     ## [SORTOF]   actions of the fed
     
     ## LEFT_OFF
+    ## [ ] LEFT_OFF complete pullAheadZOOData's ( MANY many)
+    ##  [ ] VERIFY each pullAheadZOOData IS CORRECT [ ]
+    ## [ ] put 'ONLY' the variable name in a OBSPRED list()
+    ##  [ ] # as.formula(") -> quanmod::specifyModel  -> @
     ## [ ] (SPREAD) difference between yields on 10-year Treasury bonds and 3-month Treasury bills
-    ## [ ] PCTCHANGE(WHERE APPROPRIATE)  ( [ ] consider renaming prog variables to .ABS )
+    ## [ ] PCTCHANGE(WHERE APPROPRIATE)  
+    ## [x] consider renaming prog variables to .ABS )
+    ## [ ] tails - what is useful and what is not 
     ## [ ] DO                SMA 1,2,3,...12, and
     ## [ ] INDICATOR(NOW PERCENT ABOVE) SMA
     
