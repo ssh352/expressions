@@ -340,7 +340,6 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
   
   main_rcsnsight2_999_inner <- function(...) {
   
-    
     bookmarkhere <- 1
     
     setwd("N:\\MyVMWareSharedFolder\\rcsnsight1\\R")
@@ -362,6 +361,9 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
     
     # require(require(PerformanceAnalytics) # POSSIBLE FUT ( and through require("quantstrat") )
     
+    # everything
+    list() -> ALL.OBSERVEESPREDICTEES
+    
     # S&P500 from yahoo
     
     retrieveSymbolsQuantmodRdata(
@@ -372,32 +374,47 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
     ) -> GSPC.DELAYZERO.ABS     # head "1950-03-31"
     assign("GSPC.DELAYZERO.ABS", value=GSPC.DELAYZERO.ABS, envir = .GlobalEnv)
     
+    # specifics
+    Cl(GSPC.DELAYZERO.ABS) -> GSPC.DELAYZERO.ABS.CLOSE
+    Lo(GSPC.DELAYZERO.ABS) -> GSPC.DELAYZERO.ABS.LOW
+    assign("GSPC.DELAYZERO.ABS.CLOSE", value=GSPC.DELAYZERO.ABS.CLOSE, envir = .GlobalEnv)
+    assign("GSPC.DELAYZERO.ABS.LOW"  , value=GSPC.DELAYZERO.ABS.LOW  , envir = .GlobalEnv)
+    
+    "GSPC.DELAYZERO.ABS.CLOSE" -> ALL.OBSERVEESPREDICTEES["GSPC.DELAYZERO.ABS.CLOSE"] 
+    "GSPC.DELAYZERO.ABS.LOW"   -> ALL.OBSERVEESPREDICTEES["GSPC.DELAYZERO.ABS.LOW"] 
     
     bookmark_here <- 1
     
-    # NBER ( x3 x4x6 month lag )
+    # NBER ( x5 month 'behind' )
     
     # 1 in a recession, 0 not in a recession
     
-    # http://research.stlouisfed.org/fred2/data/USRECM.txt
+    # NO LONGER UPDATING
+    # first interpretation, known as the midpoint method ( USRECP )
+    # http://research.stlouisfed.org/fred2/series/USRECM
+    
+    # trough method
+    # 5 month lag ( would have seen 2008 rececession ( 2008-01-01 1) at ( 2008-06-01) 2008-05-31
+    # http://research.stlouisfed.org/fred2/data/USREC.txt
+    
+    # peak method ( EARLIEST WARNING )
+    # 5 month lag ( would have seen 2008 rececession ( 2007-12-01 1) at ( 2008-05-01) 2008-04-30
+    # http://research.stlouisfed.org/fred2/data/USRECP.txt
     
     retrieveSymbolsQuantmodRdata(
-        finSymbol = "USRECM"
+      finSymbol = "USRECP"
       , finSymbolRemoteSource = "Quantmod_FRED"
       , finSymbolAttributes = c("Close")
       , initDate = "1950-03-01"
       , subtractOffDaysSpec = -1
-    ) -> USRECM.DELAYSEVEN.ABS      # head "1950-03-31"
-    assign("USRECM.DELAYSEVEN.ABS", value=USRECM.DELAYSEVEN.ABS, envir = .GlobalEnv)
+    ) -> USRECP.DELAYFIVE.ABS      # head "1950-03-31"
+    assign("USRECP.DELAYFIVE.ABS", value=USRECP.DELAYFIVE.ABS, envir = .GlobalEnv)
     
-    pullAheadZOOData(USRECM.DELAYSEVEN.ABS,7) -> USRECM.DELAYSEVEN.ABS.ADJUSTNOW
-    assign("USRECM.DELAYSEVEN.ABS.ADJUSTNOW", value=USRECM.DELAYSEVEN.ABS.ADJUSTNOW, envir = .GlobalEnv)
+    pullAheadZOOData(USRECP.DELAYFIVE.ABS,5) -> USRECP.DELAYFIVE.ABS.ADJUSTNOW
+    assign("USRECP.DELAYFIVE.ABS.ADJUSTNOW", value=USRECP.DELAYFIVE.ABS.ADJUSTNOW, envir = .GlobalEnv)
     
-    # LEFT_OFF ( repeat the FOLLOWING below FOR EACH ONE where NECESSARY)
-    # pullAheadZOOData(,) -> .ADJUSTNOW
-    # assign(".ADJUSTNOW", value=.ADJUSTNOW, envir = .GlobalEnv) 
-       
-     
+    "USRECP.DELAYFIVE.ABS.ADJUSTNOW" -> ALL.OBSERVEESPREDICTEES["USRECP.DELAYFIVE.ABS.ADJUSTNOW"]
+    
     bookmark_here <- 1
     
     # Chauvet/Piger ( 3 month delay ) ( sometimes 2 month delay )  
@@ -414,6 +431,11 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
       , subtractOffDaysSpec = -1
     ) -> RECPROUSM156N.DELAYTHREE.ABS    # head "1967-05-31"
     assign("RECPROUSM156N.DELAYTHREE.ABS", value=RECPROUSM156N.DELAYTHREE.ABS, envir = .GlobalEnv)
+    
+    pullAheadZOOData(RECPROUSM156N.DELAYTHREE.ABS,3) -> RECPROUSM156N.DELAYTHREE.ABS.ADJUSTNOW
+    assign("RECPROUSM156N.DELAYTHREE.ABS.ADJUSTNOW", value=RECPROUSM156N.DELAYTHREE.ABS.ADJUSTNOW, envir = .GlobalEnv)
+    
+    "RECPROUSM156N.DELAYTHREE.ABS.ADJUSTNOW" -> ALL.OBSERVEESPREDICTEES["RECPROUSM156N.DELAYTHREE.ABS.ADJUSTNOW"]
     
     #     Title:               Gross Domestic Product
     #     Series ID:           GDP
@@ -433,6 +455,11 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
     ) -> GDP.DELAYSIX.ABS      # head"1950-03-31"
     assign("GDP.DELAYSIX.ABS", value=GDP.DELAYSIX.ABS, envir = .GlobalEnv)
     
+    pullAheadZOOData(GDP.DELAYSIX.ABS,6) -> GDP.DELAYSIX.ABS.ADJUSTNOW
+    assign("GDP.DELAYSIX.ABS.ADJUSTNOW", value=GDP.DELAYSIX.ABS.ADJUSTNOW, envir = .GlobalEnv)
+    
+    "GDP.DELAYSIX.ABS.ADJUSTNOW" -> ALL.OBSERVEESPREDICTEES["GDP.DELAYSIX.ABS.ADJUSTNOW"]
+    
     bookmark_here <- 1
     
     #     Title:               10-Year Treasury Constant Maturity Rate
@@ -451,6 +478,8 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
       , subtractOffDaysSpec = -1
     ) -> GS10.DELAYZERO.ABS        # head  "1953-03-31"
     assign("GS10.DELAYZERO.ABS", value=GS10.DELAYZERO.ABS, envir = .GlobalEnv)
+    
+    "GS10.DELAYZERO.ABS" -> ALL.OBSERVEESPREDICTEES["GS10.DELAYZERO.ABS"]
     
     bookmark_here <- 1
     
@@ -472,6 +501,8 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
       , subtractOffDaysSpec = 0
     ) -> DGS3MO.DELAYZERO.ABS      # head "1982-01-31"
     assign("DGS3MO.DELAYZERO.ABS", value=DGS3MO.DELAYZERO.ABS, envir = .GlobalEnv)
+    
+    "DGS3MO.DELAYZERO.ABS" -> ALL.OBSERVEESPREDICTEES["DGS3MO.DELAYZERO.ABS"]
     
     bookmark_here <- 1
     
@@ -502,6 +533,8 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
     ) -> DFF.DELAYZERO.ABS          # head "1954-07-31"
     assign("DFF.DELAYZERO.ABS", value=DFF.DELAYZERO.ABS, envir = .GlobalEnv)
     
+    "DFF.DELAYZERO.ABS" -> ALL.OBSERVEESPREDICTEES["DFF.DELAYZERO.ABS"]
+    
     bookmark_here <- 1
     
     # maybe useful for some math somewhere
@@ -526,6 +559,11 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
     ) -> UNEMPLOY.DELAYONE.ABS       # head "1950-03-31"
     assign("UNEMPLOY.DELAYONE.ABS", value=UNEMPLOY.DELAYONE.ABS, envir = .GlobalEnv)
     
+    pullAheadZOOData(UNEMPLOY.DELAYONE.ABS,1) -> UNEMPLOY.DELAYONE.ABS.ADJUSTNOW
+    assign("UNEMPLOY.DELAYONE.ABS.ADJUSTNOW", value=UNEMPLOY.DELAYONE.ABS.ADJUSTNOW, envir = .GlobalEnv)
+    
+    "UNEMPLOY.DELAYONE.ABS.ADJUSTNOW" -> ALL.OBSERVEESPREDICTEES["UNEMPLOY.DELAYONE.ABS.ADJUSTNOW"]
+    
     # pattern: flattens out before a recession
     
     #     Title:               Median Duration of Unemployment
@@ -546,6 +584,8 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
       , subtractOffDaysSpec = -1
     ) -> UEMPMED.DELAYZERO.ABS        # head "1967-06-30"
     assign("UEMPMED.DELAYZERO.ABS", value=UEMPMED.DELAYZERO.ABS, envir = .GlobalEnv)
+    
+    "UEMPMED.DELAYZERO.ABS" -> ALL.OBSERVEESPREDICTEES["UEMPMED.DELAYZERO.ABS"]
     
     # maybe useful for some math somewhere
     
@@ -569,6 +609,11 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
     ) -> POP.DELAYTWO.ABS         # head "1951-12-31"
     assign("POP.DELAYTWO.ABS", value=POP.DELAYTWO.ABS, envir = .GlobalEnv)
     
+    pullAheadZOOData(POP.DELAYTWO.ABS,2) -> POP.DELAYTWO.ABS.ADJUSTNOW
+    assign("POP.DELAYTWO.ABS.ADJUSTNOW", value=POP.DELAYTWO.ABS.ADJUSTNOW, envir = .GlobalEnv)
+    
+    "POP.DELAYTWO.ABS.ADJUSTNOW" -> ALL.OBSERVEESPREDICTEES["POP.DELAYTWO.ABS.ADJUSTNOW"]
+    
     bookmark_here <- 1
     
     #     Title:               Civilian Unemployment Rate
@@ -590,6 +635,11 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
     ) -> UNRATE.DELAYONE.ABS         # head "1950-03-31"
     assign("UNRATE.DELAYONE.ABS", value=UNRATE.DELAYONE.ABS, envir = .GlobalEnv)
     
+    pullAheadZOOData(UNRATE.DELAYONE.ABS,1) -> UNRATE.DELAYONE.ABS.ADJUSTNOW
+    assign("UNRATE.DELAYONE.ABS.ADJUSTNOW", value=UNRATE.DELAYONE.ABS.ADJUSTNOW, envir = .GlobalEnv)
+    
+    "UNRATE.DELAYONE.ABS.ADJUSTNOW" -> ALL.OBSERVEESPREDICTEES["UNRATE.DELAYONE.ABS.ADJUSTNOW"]
+    
     bookmark_here <- 1
     
     #     Title:               Consumer Price Index for All Urban Consumers: All Items Less Food & Energy
@@ -609,6 +659,11 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
       , subtractOffDaysSpec = -1
     ) -> CPILFESL.DELAYONE.ABS       # head "1956-12-31"
     assign("CPILFESL.DELAYONE.ABS", value=CPILFESL.DELAYONE.ABS, envir = .GlobalEnv)
+    
+    pullAheadZOOData(CPILFESL.DELAYONE.ABS,1) -> CPILFESL.DELAYONE.ABS.ADJUSTNOW
+    assign("CPILFESL.DELAYONE.ABS.ADJUSTNOW", value=CPILFESL.DELAYONE.ABS.ADJUSTNOW, envir = .GlobalEnv)
+    
+    "CPILFESL.DELAYONE.ABS.ADJUSTNOW" -> ALL.OBSERVEESPREDICTEES["CPILFESL.DELAYONE.ABS.ADJUSTNOW"]
     
     bookmark_here <- 1
     
@@ -637,6 +692,8 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
     ) -> TREAST.DELAYZERO.ABS     # head "2002-12-31"
     assign("TREAST.DELAYZERO.ABS", value=TREAST.DELAYZERO.ABS, envir = .GlobalEnv)
     
+    "TREAST.DELAYZERO.ABS" -> ALL.OBSERVEESPREDICTEES["TREAST.DELAYZERO.ABS"]
+    
     # smooth start in 2002 ( otherwise zero before that )
     
     #     Title:               Mortgage-backed securities held by the Federal Reserve: All Maturities
@@ -658,6 +715,8 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
       , subtractOffDaysSpec = 0
     ) -> MBST.DELAYZERO.ABS          # head "2002-12-31"
     assign("MBST.DELAYZERO.ABS", value=MBST.DELAYZERO.ABS, envir = .GlobalEnv)
+    
+    "MBST.DELAYZERO.ABS" -> ALL.OBSERVEESPREDICTEES["MBST.DELAYZERO.ABS"]
     
     bookmark_here <- 1
   
@@ -688,6 +747,11 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
     ) -> INDPRO.DELAYONE.ABS        # head "1950-03-31"
     assign("INDPRO.DELAYONE.ABS", value=INDPRO.DELAYONE.ABS, envir = .GlobalEnv)
     
+    pullAheadZOOData(INDPRO.DELAYONE.ABS,1) -> INDPRO.DELAYONE.ABS.ADJUSTNOW
+    assign("INDPRO.DELAYONE.ABS.ADJUSTNOW", value=INDPRO.DELAYONE.ABS.ADJUSTNOW, envir = .GlobalEnv)
+    
+    "INDPRO.DELAYONE.ABS.ADJUSTNOW" -> ALL.OBSERVEESPREDICTEES["INDPRO.DELAYONE.ABS.ADJUSTNOW"]
+    
     #     Title:               ISM Manufacturing: PMI Composite Index
     #     Series ID:           NAPM
     #     Source:              Institute for Supply Management
@@ -712,6 +776,11 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
     ) -> NAPM.DELAYONE.ABS             # head "1950-03-31"
     assign("NAPM.DELAYONE.ABS", value=NAPM.DELAYONE.ABS, envir = .GlobalEnv)
     
+    pullAheadZOOData(NAPM.DELAYONE.ABS,1) -> NAPM.DELAYONE.ABS.ADJUSTNOW
+    assign("NAPM.DELAYONE.ABS.ADJUSTNOW", value=NAPM.DELAYONE.ABS.ADJUSTNOW, envir = .GlobalEnv)
+    
+    "NAPM.DELAYONE.ABS.ADJUSTNOW" -> ALL.OBSERVEESPREDICTEES["NAPM.DELAYONE.ABS.ADJUSTNOW"]
+    
     bookmark_here <- 1
     
     # some recessions: flat or diving before the recession
@@ -735,6 +804,11 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
       , subtractOffDaysSpec = -1
     ) -> TCU.DELAYONE.ABS              # head "1966-12-31"
     assign("TCU.DELAYONE.ABS", value=TCU.DELAYONE.ABS, envir = .GlobalEnv)
+    
+    pullAheadZOOData(TCU.DELAYONE.ABS,1) -> TCU.DELAYONE.ABS.ADJUSTNOW
+    assign("TCU.DELAYONE.ABS.ADJUSTNOW", value=TCU.DELAYONE.ABS.ADJUSTNOW, envir = .GlobalEnv)
+    
+    "TCU.DELAYONE.ABS.ADJUSTNOW" -> ALL.OBSERVEESPREDICTEES["TCU.DELAYONE.ABS.ADJUSTNOW"]
     
     bookmark_here <- 1
     
@@ -762,6 +836,11 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
     ) ->  A261RL1Q225SBEA.DELAYSIX.PCTCHG.OVER3MO  # head "1950-03-31"
     assign("A261RL1Q225SBEA.DELAYSIX.PCTCHG.OVER3MO", value=A261RL1Q225SBEA.DELAYSIX.PCTCHG.OVER3MO, envir = .GlobalEnv)
     
+    pullAheadZOOData(A261RL1Q225SBEA.DELAYSIX.PCTCHG.OVER3MO,6) -> A261RL1Q225SBEA.DELAYSIX.PCTCHG.OVER3MO.ADJUSTNOW
+    assign("A261RL1Q225SBEA.DELAYSIX.PCTCHG.OVER3MO.ADJUSTNOW", value=A261RL1Q225SBEA.DELAYSIX.PCTCHG.OVER3MO.ADJUSTNOW, envir = .GlobalEnv)
+    
+    "A261RL1Q225SBEA.DELAYSIX.PCTCHG.OVER3MO.ADJUSTNOW" -> ALL.OBSERVEESPREDICTEES["A261RL1Q225SBEA.DELAYSIX.PCTCHG.OVER3MO.ADJUSTNOW"]
+    
     bookmark_here <- 1
     
     # change rate seems to DIP right before a RECESSION
@@ -788,6 +867,10 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
     ) -> A576RC1Q027SBEA.DELAYFIVE.ABS     # head "1950-03-31"
     assign("A576RC1Q027SBEA.DELAYFIVE.ABS", value=A576RC1Q027SBEA.DELAYFIVE.ABS, envir = .GlobalEnv)
     
+    pullAheadZOOData(A576RC1Q027SBEA.DELAYFIVE.ABS,5) -> A576RC1Q027SBEA.DELAYFIVE.ABS.ADJUSTNOW
+    assign("A576RC1Q027SBEA.DELAYFIVE.ABS.ADJUSTNOW", value=A576RC1Q027SBEA.DELAYFIVE.ABS.ADJUSTNOW, envir = .GlobalEnv)
+    
+    "A576RC1Q027SBEA.DELAYFIVE.ABS.ADJUSTNOW" -> ALL.OBSERVEESPREDICTEES["A576RC1Q027SBEA.DELAYFIVE.ABS.ADJUSTNOW"]
     
     # DIDIER SORNETE? ( VOLITILITY BEFORE THE EARTHQUAKE? )
     #
@@ -799,11 +882,12 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
     
     # Historical / Future Volatility Correlation Stability
     # runSD -> lag -> na.omit -> runCor -> plot.zoo
+      # also see Torgo data mining book
+      # specifyModel( . . . + runSD(Cl(GSPC)) )
     # April 11, 2010
     # By Joshua Ulrich
     # http://www.r-bloggers.com/historical-future-volatility-correlation-stability/
     # http://blog.fosstrading.com/2010/04/historical-future-volatility.html?utm_source=feedburner&utm_medium=feed&utm_campaign=Feed%3A+FossTrading+%28FOSS+Trading%29
-    
     
     bookmark_here <- 1
     
@@ -814,12 +898,22 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
     assign("SP500.12M.EPS.DELAYTWO.ABS", value=SP500.12M.EPS.DELAYTWO.ABS, envir = .GlobalEnv)
     # head "1871-01-31"
     
+    pullAheadZOOData(SP500.12M.EPS.DELAYTWO.ABS,2) -> SP500.12M.EPS.DELAYTWO.ABS.ADJUSTNOW
+    assign("SP500.12M.EPS.DELAYTWO.ABS.ADJUSTNOW", value=SP500.12M.EPS.DELAYTWO.ABS.ADJUSTNOW, envir = .GlobalEnv)
+    
+    "SP500.12M.EPS.DELAYTWO.ABS.ADJUSTNOW" -> ALL.OBSERVEESPREDICTEES["SP500.12M.EPS.DELAYTWO.ABS.ADJUSTNOW"]
+    
     retrieveSymbolsmultplRdata(
         finSymbol = "SP500.REAL.EARN.GR.PCT"           # Annual percentage change in 12 month
       , finSymbolAttribute = "Close"
     )  -> SP500.REAL.EARN.GR.DELAYTWO.PCTCHG.OVER12MO # "SandP.500.Real.Earnings.Growth.Pct.Close" 
     assign("SP500.REAL.EARN.GR.DELAYTWO.PCTCHG.OVER12MO", value=SP500.REAL.EARN.GR.DELAYTWO.PCTCHG.OVER12MO, envir = .GlobalEnv)
     # head "1989-12-31"
+    
+    pullAheadZOOData(SP500.REAL.EARN.GR.DELAYTWO.PCTCHG.OVER12MO,2) -> SP500.REAL.EARN.GR.DELAYTWO.PCTCHG.OVER12MO.ADJUSTNOW
+    assign("SP500.REAL.EARN.GR.DELAYTWO.PCTCHG.OVER12MO.ADJUSTNOW", value=SP500.REAL.EARN.GR.DELAYTWO.PCTCHG.OVER12MO.ADJUSTNOW, envir = .GlobalEnv)
+    
+    "SP500.REAL.EARN.GR.DELAYTWO.PCTCHG.OVER12MO.ADJUSTNOW" -> ALL.OBSERVEESPREDICTEES["SP500.REAL.EARN.GR.DELAYTWO.PCTCHG.OVER12MO.ADJUSTNOW"]
     
     retrieveSymbolsmultplRdata(
         finSymbol = "SP500.PE.RATIO"
@@ -828,6 +922,8 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
     assign("SP500.PE.RATIO.DELAYZERO.ABS", value=SP500.PE.RATIO.DELAYZERO.ABS, envir = .GlobalEnv)
     # head "1870-12-31"
     
+    "SP500.PE.RATIO.DELAYZERO.ABS" -> ALL.OBSERVEESPREDICTEES["SP500.PE.RATIO.DELAYZERO.ABS"]
+    
     retrieveSymbolsmultplRdata(
         finSymbol = "SP500.BV.PER.SHARE"
       , finSymbolAttribute = "Close"
@@ -835,42 +931,109 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
     assign("SP500.BV.PER.SHARE.DELAYTHREE.ABS", value=SP500.BV.PER.SHARE.DELAYTHREE.ABS, envir = .GlobalEnv)
     # head "1999-12-31"  
     
+    pullAheadZOOData(SP500.BV.PER.SHARE.DELAYTHREE.ABS,3) -> SP500.BV.PER.SHARE.DELAYTHREE.ABS.ADJUSTNOW
+    assign("SP500.BV.PER.SHARE.DELAYTHREE.ABS.ADJUSTNOW", value=SP500.BV.PER.SHARE.DELAYTHREE.ABS.ADJUSTNOW, envir = .GlobalEnv)
+    
+    "SP500.BV.PER.SHARE.DELAYTHREE.ABS.ADJUSTNOW" -> ALL.OBSERVEESPREDICTEES["SP500.BV.PER.SHARE.DELAYTHREE.ABS.ADJUSTNOW"]
     
     bookmark_here <- 1 
+    
+    # predictees area
+    
+    # LEFT_OFF ( [ ] SHOULD HAVE BEEN coded NEXT.RANGE.3.PCT.CHANGE )
+    NEXT.RANGE.3 <- function(x) {
+      require(quantmod)     # Next     # search path 'xts' # cbind
+      require(matrixStats)  # rowMins
+      colnames(x)           -> colnames_x # because matrixStats does not preserve
+      rowMins(cbind( Next(x,3), Next(x,2), Next(x,1) )) -> y
+      y -> coredata(x)
+      colnames_x -> colnames(x)
+      return(x)
+    }
+    sink("NULL")
+    assign("NEXT.RANGE.3", value = dput(NEXT.RANGE.3), envir = .GlobalEnv)
+    sink()
+    
+    # predictees area 
+    "NEXT.RANGE.3(GSPC.DELAYZERO.ABS.LOW)" -> ALL.OBSERVEESPREDICTEES[["NEXT.RANGE.3(GSPC.DELAYZERO.ABS.LOW)"]] 
+    CURR.PREDICTEE <- "NEXT.RANGE.3(GSPC.DELAYZERO.ABS.LOW)"
+    # end predictees area
+    
+    # begin observees area ( remove CURR.PREDICTEE )  
+    
+    # include all
+    ALL.OBSERVEESPREDICTEES -> CURR.OBSERVEES
+    
+    # obviously remove the PREDICTEE
+    NULL -> CURR.OBSERVEES[["NEXT.RANGE.3(GSPC.DELAYZERO.ABS.LOW)"]] 
+
+    # XOR
+    # exclude all
+    ## list(   
+    ##   GSPC.DELAYZERO.ABS.CLOSE = "GSPC.DELAYZERO.ABS.CLOSE"
+    ## ) -> CURR.OBSERVEES 
+    
+    # end observees area 
+    
+    CURR.FORMULA <- as.formula(paste0(CURR.PREDICTEE," ~ ",paste0(unlist(CURR.OBSERVEES), collapse =" + ")))
+    
+    # SOON (feature selection: perhaps use package fscaret )
+    # DATA.MODEL <- specifyModel(CURR.FORMULA . . . [ ]
+    #   DATA.MODEL@model.formula          SAVE [ ]
+    # find importance
+    # ( a now have to impute/remove NAs)  [ ]
+    # training early to 'DEC 2003'
+    # MODEL.FEATURES <- buildModel(DATA.MODEL,method='randomForest' . . .
+    # DATA.IMPORTANCE <- importance(MODEL.FEATURES@fitted.model, type = 1)
+    # rownames(iDATA.IMPORTANCE)[which(DATA.IMPORTANCE > 10)]
+    # DATA.MODEL <- specifyModel(**CURR.FORMULA.NEW** . . .
     
     the_end_debug_bookmark_here <- 1
     
     
     ## LEFT_OFF
-    ## [x] fix the below ( delay(if_any), save )
+    ## [x] fix the below ( delay(if_any), save )  
     ## 
-    ## [x]               SP500.12M#  
+    ## [x]               SP500.12M#   
     ## [x]               PE.RATIO
     ## 
-    ## [x]               USRECM 
-    ## [x]               RECPROUSM156N
+    ## [x]               USRECM   
+    ## [x]               RECPROUSM156N 
     
-    ## [ ] wed/th - get FROM FRED
+    ## [ ] wed/th - get FROM FRED  
     ## [x]   GDP garanteed
-    ## [x]   10  year bond
+    ## [x]   10  year bond 
     ## [x]    3  year bill
     ## [x]   effective funds rate
     ##   [ ] (TO DO) 'real earnings growth or similar' = 'EPS - 10 year treasury yield'
     ## [x]   unemployment
     ## [x]   inflation
-    ## [SORTOF]   actions of the fed
+    ## [SORTOF]   actions of the fed  
     
     ## LEFT_OFF
-    ## [ ] LEFT_OFF complete pullAheadZOOData's ( MANY many)
-    ##  [ ] VERIFY each pullAheadZOOData IS CORRECT [ ]
-    ## [ ] put 'ONLY' the variable name in a OBSPRED list()
-    ##  [ ] # as.formula(") -> quanmod::specifyModel  -> @
+    ## [x] LEFT_OFF complete pullAheadZOOData's ( MANY many)
+      # LEFT_OFF ( repeat the FOLLOWING below FOR EACH ONE where NECESSARY)
+      # pullAheadZOOData(,) -> .ADJUSTNOW
+      # assign(".ADJUSTNOW", value=.ADJUSTNOW, envir = .GlobalEnv) 
+    
+    ## [X] PUT .CLOSE/.LOW in ONE place WHERE appropriate
+    ## [X] GET other FRED data RECM[#] that has NOT BEEN stopped DELIVERED
+    ###  [LATER] remove .RData files ( [ ] generate NEW data )
+    ## after quantmodmodel [ ] TO simulate a train,test/predict HAVE limits
+    ##  [ ] 2nd VERIFY/REFINE each pullAheadZOOData result IS CORRECT 'land on date' [ ]
+    ## [X] put 'ONLY' the variable name in a OBSPRED list()
+    ##  [X] # as.formula(") -> quanmod::specifyModel  -> @
     ## [ ] (SPREAD) difference between yields on 10-year Treasury bonds and 3-month Treasury bills
-    ## [ ] PCTCHANGE(WHERE APPROPRIATE)  
+    
+    ## ******* LEFT_OFF ***************
+    ## [ ] new function function NEXT.RANGE.3.PCT.CHANGE 
+    ## [ ] DO                SMA 1,2,3,...12, and # ( see elegant MINIPLAYs )
+    ## [ ] INDICATOR(NOW PERCENT ABOVE) SMA
+    
+    ## [ ]   PCTCHANGE(WHERE APPROPRIATE)  
     ## [x] consider renaming prog variables to .ABS )
     ## [ ] tails - what is useful and what is not 
-    ## [ ] DO                SMA 1,2,3,...12, and
-    ## [ ] INDICATOR(NOW PERCENT ABOVE) SMA
+
     
     ## [ ]   re-UMCENT ???
 
@@ -901,6 +1064,6 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
   
 }
 # main_rcsnsight2_999()
-# debugSource('N:/MyVMWareSharedFolder/rcsnsight1/R/main-rcsnsight2-999.R')
+# debugSource('N:/MyVMWareSharedFolder/rcsnsight1/R/main-rcsnsight2-999.R') 
 # rm(list=ls(all.names=TRUE))
 
