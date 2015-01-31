@@ -353,6 +353,8 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
     # require(performanceEstimation) LATER ?!!
     # require(caret) ## CLOSE FUTURE
 
+    require(functional) # Curry
+    
     require(Holidays)
     require(TimeWarp)
     require(quantstrat) # and added to search() path: 
@@ -476,10 +478,13 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
       , finSymbolAttributes = c("Close")
       , initDate = "1950-03-01"
       , subtractOffDaysSpec = -1
-    ) -> GS10.DELAYZERO.ABS        # head  "1953-03-31"
-    assign("GS10.DELAYZERO.ABS", value=GS10.DELAYZERO.ABS, envir = .GlobalEnv)
+    ) -> GS10.DELAYONE.ABS        # head  "1953-03-31"
+    assign("GS10.DELAYONE.ABS", value=GS10.DELAYONE.ABS, envir = .GlobalEnv)
     
-    "GS10.DELAYZERO.ABS" -> ALL.OBSERVEESPREDICTEES["GS10.DELAYZERO.ABS"]
+    pullAheadZOOData(GS10.DELAYONE.ABS,1) -> GS10.DELAYONE.ABS.ADJUSTNOW
+    assign("GS10.DELAYONE.ABS.ADJUSTNOW", value=GS10.DELAYONE.ABS.ADJUSTNOW, envir = .GlobalEnv)
+    
+    "GS10.DELAYONE.ABS.ADJUSTNOW" -> ALL.OBSERVEESPREDICTEES["GS10.DELAYONE.ABS.ADJUSTNOW"]
     
     bookmark_here <- 1
     
@@ -503,6 +508,37 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
     assign("DGS3MO.DELAYZERO.ABS", value=DGS3MO.DELAYZERO.ABS, envir = .GlobalEnv)
     
     "DGS3MO.DELAYZERO.ABS" -> ALL.OBSERVEESPREDICTEES["DGS3MO.DELAYZERO.ABS"]
+    
+    bookmark_here <- 1
+    
+    # TO_DO [ ]: slope of the yield curve ( {T}_{t}) corresponds to the 
+    #   difference between the 10-year bond rate and the 3-month T-bill rate. 
+    # The slope of the curve is considered the best predictor of recessions among the yield curve components. 
+    # yield curve has inverted before five out of six recessions 
+    
+    # A Dynamic Factor Model of the Yield Curve as a Predictor of the Economy*
+    # Marcelle Chauvet1
+    # University of California Riverside
+    # Zeynep Senyuz2
+    # Federal Reserve Board
+    # March 2012
+    # http://www.federalreserve.gov/pubs/feds/2012/201232/index.html
+    
+    # (SPREAD) difference between yields on 10-year Treasury bonds and 3-month Treasury bills
+    # David S. Matteson
+    # Cornell University
+    # http://www.rinfinance.com/agenda/2014/talk/DavidMatteson.pdf
+    
+    #
+    # relies on ( just above ) GS10.DELAYONE.ABS.ADJUSTNOW and DGS3MO.DELAYZERO.ABS
+    
+    GS10.DELAYONE.ABS.ADJUSTNOW - DGS3MO.DELAYZERO.ABS -> DIFF.GS10.DGS3MO.DELAYONE.ABS.ADJUSTNOW
+    
+    "DIFF.GS10.DGS3MO.Close"                           ->   colnames(DIFF.GS10.DGS3MO.DELAYONE.ABS.ADJUSTNOW)[1]
+    
+    assign("DIFF.GS10.DGS3MO.DELAYONE.ABS.ADJUSTNOW", value= DIFF.GS10.DGS3MO.DELAYONE.ABS.ADJUSTNOW, envir = .GlobalEnv)
+    
+    "DIFF.GS10.DGS3MO.DELAYONE.ABS.ADJUSTNOW" -> ALL.OBSERVEESPREDICTEES["DIFF.GS10.DGS3MO.DELAYONE.ABS.ADJUSTNOW"]
     
     bookmark_here <- 1
     
@@ -783,6 +819,34 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
     
     bookmark_here <- 1
     
+    # 3 month lag 
+    
+    # real manufacturing and trade sales ( used by Chavet/Piger?! )
+    # http://research.stlouisfed.org/fred2/data/CMRMTSPL.txt
+    # http://pages.uoregon.edu/jpiger/us_recession_probs.htm/
+    
+    # Title:               Real Manufacturing and Trade Industries Sales
+    # Series ID:           CMRMTSPL
+    # Source:              Federal Reserve Bank of St. Louis
+    # Release:             Supplemental Estimates, Underlying Detail Tables, Spliced Series (Not a Press Release)
+    # Seasonal Adjustment: Seasonally Adjusted
+    
+    retrieveSymbolsQuantmodRdata(
+      finSymbol = "CMRMTSPL"
+      , finSymbolRemoteSource = "Quantmod_FRED"
+      , finSymbolAttributes = c("Close")
+      , initDate = "1950-03-01"
+      , subtractOffDaysSpec = -1
+    ) -> CMRMTSPL.DELAYTHREE.ABS             # head "1950-03-31"
+    assign("CMRMTSPL.DELAYTHREE.ABS", value=CMRMTSPL.DELAYTHREE.ABS, envir = .GlobalEnv)
+    
+    pullAheadZOOData(CMRMTSPL.DELAYTHREE.ABS,3) -> CMRMTSPL.DELAYTHREE.ABS.ADJUSTNOW
+    assign("CMRMTSPL.DELAYTHREE.ABS.ADJUSTNOW", value=CMRMTSPL.DELAYTHREE.ABS.ADJUSTNOW, envir = .GlobalEnv)
+    
+    "CMRMTSPL.DELAYTHREE.ABS.ADJUSTNOW" -> ALL.OBSERVEESPREDICTEES["CMRMTSPL.DELAYTHREE.ABS.ADJUSTNOW"]
+    
+    bookmark_here <- 1
+    
     # some recessions: flat or diving before the recession
     
     #     Title:               Capacity Utilization: Total Industry
@@ -938,34 +1002,94 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
     
     bookmark_here <- 1 
     
-    # predictees area
+    # predictees area   
     
-    # LEFT_OFF ( [ ] SHOULD HAVE BEEN coded NEXT.RANGE.3.PCT.CHANGE )
-    NEXT.RANGE.3 <- function(x) {
-      require(quantmod)     # Next     # search path 'xts' # cbind
+    NEXT.PCTDRAWDOWN.OVER <- function(x,y,over) {
+      require(quantmod)     # Next     # search path 'xts' # cbind 
       require(matrixStats)  # rowMins
-      colnames(x)           -> colnames_x # because matrixStats does not preserve
-      rowMins(cbind( Next(x,3), Next(x,2), Next(x,1) )) -> y
+      # get a list of "Next" 1 . . . over
+      y <- lapply(1:over, FUN = function(x,target) {
+        xts(Next(target, x)) 
+      }, target = y
+      )
+      # make into one data.frame
+      do.call("cbind",y) -> y
+      # minimum of all of those data.frame columns
+      rowMins(y)         -> y
+      # absolute percentage change
+      ( y - x )/ abs(x) * 100 -> y
       y -> coredata(x)
-      colnames_x -> colnames(x)
+      paste0(colnames(x),".NEXT.PCTDRAWDOWN.OVER.",over,"MO") -> colnames(x)
       return(x)
     }
+    # require(functional)
+    Curry(NEXT.PCTDRAWDOWN.OVER,over=3) -> NEXT.PCTDRAWDOWN.OVER.3MO 
+    
     sink("NULL")
-    assign("NEXT.RANGE.3", value = dput(NEXT.RANGE.3), envir = .GlobalEnv)
+    assign("NEXT.PCTDRAWDOWN.OVER.3MO", value = dput(NEXT.PCTDRAWDOWN.OVER.3MO), envir = .GlobalEnv)
     sink()
     
-    # predictees area 
-    "NEXT.RANGE.3(GSPC.DELAYZERO.ABS.LOW)" -> ALL.OBSERVEESPREDICTEES[["NEXT.RANGE.3(GSPC.DELAYZERO.ABS.LOW)"]] 
-    CURR.PREDICTEE <- "NEXT.RANGE.3(GSPC.DELAYZERO.ABS.LOW)"
+    # test
+    test1 <- NEXT.PCTDRAWDOWN.OVER.3MO(GSPC.DELAYZERO.ABS.CLOSE,GSPC.DELAYZERO.ABS.LOW)
+    
+    NEXT.PCTCHG.OVER <- function(x,over) {
+      require(quantmod)     # Next     # search path 'xts' # cbind
+      # absolute percent change
+      ( xts(Next(x,over)) - x )/ abs(x) * 100 -> y
+      y -> coredata(x)
+      paste0(colnames(x),".NEXT.PCTCHG.OVER",over,"MO") -> colnames(x)
+      return(x)
+    }
+    Curry(NEXT.PCTCHG.OVER,over=3) -> NEXT.PCTCHG.OVER.3MO 
+    Curry(NEXT.PCTCHG.OVER,over=2) -> NEXT.PCTCHG.OVER.2MO 
+    Curry(NEXT.PCTCHG.OVER,over=1) -> NEXT.PCTCHG.OVER.1MO 
+  
+    sink("NULL")
+    assign("NEXT.PCTCHG.OVER.3MO", value = dput(NEXT.PCTCHG.OVER.3MO), envir = .GlobalEnv)
+    assign("NEXT.PCTCHG.OVER.2MO", value = dput(NEXT.PCTCHG.OVER.2MO), envir = .GlobalEnv)
+    assign("NEXT.PCTCHG.OVER.1MO", value = dput(NEXT.PCTCHG.OVER.1MO), envir = .GlobalEnv)
+    sink()
+    
+    # test
+    test2 <- NEXT.PCTCHG.OVER.1MO(GSPC.DELAYZERO.ABS.CLOSE)
+    
+    bookmark_here <- 1 
+    
+    TTR.MATH.OVER <- function(x,math,over) {
+      require(TTR)  # technical trading rules
+      # technical trading rule
+      do.call(math,list(x = x, n = over)) -> y
+      y -> coredata(x)
+      paste(colnames(x),"TTR.MATH.OVER",math,over,"MO", sep='.') -> colnames(x)
+      return(x)
+    }
+    Curry(TTR.MATH.OVER,math="SMA",over=2) -> TTR.MATH.OVER.SMA.2
+    Curry(TTR.MATH.OVER,math="SMA",over=3) -> TTR.MATH.OVER.SMA.3
+    Curry(TTR.MATH.OVER,math="SMA",over=4) -> TTR.MATH.OVER.SMA.4
+
+    sink("NULL")
+    assign("TTR.MATH.OVER.SMA.2", value = dput(TTR.MATH.OVER.SMA.2), envir = .GlobalEnv)
+    assign("TTR.MATH.OVER.SMA.3", value = dput(TTR.MATH.OVER.SMA.3), envir = .GlobalEnv)
+    assign("TTR.MATH.OVER.SMA.4", value = dput(TTR.MATH.OVER.SMA.4), envir = .GlobalEnv)
+    sink()
+    
+    # test
+    test3 <- TTR.MATH.OVER.SMA.2(GSPC.DELAYZERO.ABS.CLOSE)
+    
+    bookmark_here <- 1 
+    
+    # predictees area    
+    ## "NEXT.RANGE.3(GSPC.DELAYZERO.ABS.LOW)" -> ALL.OBSERVEESPREDICTEES[["NEXT.RANGE.3(GSPC.DELAYZERO.ABS.LOW)"]] 
+    ## CURR.PREDICTEE <- "NEXT.RANGE.3(GSPC.DELAYZERO.ABS.LOW)" 
     # end predictees area
     
-    # begin observees area ( remove CURR.PREDICTEE )  
+    # begin observees area ( remove CURR.PREDICTEE )   
     
     # include all
-    ALL.OBSERVEESPREDICTEES -> CURR.OBSERVEES
+    ## ALL.OBSERVEESPREDICTEES -> CURR.OBSERVEES
     
-    # obviously remove the PREDICTEE
-    NULL -> CURR.OBSERVEES[["NEXT.RANGE.3(GSPC.DELAYZERO.ABS.LOW)"]] 
+    # obviously remove the PREDICTEE 
+    ## NULL -> CURR.OBSERVEES[["NEXT.RANGE.3(GSPC.DELAYZERO.ABS.LOW)"]] 
 
     # XOR
     # exclude all
@@ -975,7 +1099,7 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
     
     # end observees area 
     
-    CURR.FORMULA <- as.formula(paste0(CURR.PREDICTEE," ~ ",paste0(unlist(CURR.OBSERVEES), collapse =" + ")))
+    ## CURR.FORMULA <- as.formula(paste0(CURR.PREDICTEE," ~ ",paste0(unlist(CURR.OBSERVEES), collapse =" + ")))
     
     # SOON (feature selection: perhaps use package fscaret )
     # DATA.MODEL <- specifyModel(CURR.FORMULA . . . [ ]
@@ -985,14 +1109,14 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
     # training early to 'DEC 2003'
     # MODEL.FEATURES <- buildModel(DATA.MODEL,method='randomForest' . . .
     # DATA.IMPORTANCE <- importance(MODEL.FEATURES@fitted.model, type = 1)
-    # rownames(iDATA.IMPORTANCE)[which(DATA.IMPORTANCE > 10)]
-    # DATA.MODEL <- specifyModel(**CURR.FORMULA.NEW** . . .
+    # rownames(iDATA.IMPORTANCE)[which(DATA.IMPORTANCE > 10)] 
+    # DATA.MODEL <- specifyModel(**CURR.FORMULA.NEW** . . .   
     
     the_end_debug_bookmark_here <- 1
     
     
     ## LEFT_OFF
-    ## [x] fix the below ( delay(if_any), save )  
+    ## [x] fix the below ( delay(if_any), save )   
     ## 
     ## [x]               SP500.12M#   
     ## [x]               PE.RATIO
@@ -1000,7 +1124,7 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
     ## [x]               USRECM   
     ## [x]               RECPROUSM156N 
     
-    ## [ ] wed/th - get FROM FRED  
+    ## [X] wed/th - get FROM FRED  
     ## [x]   GDP garanteed
     ## [x]   10  year bond 
     ## [x]    3  year bill
@@ -1023,12 +1147,18 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
     ##  [ ] 2nd VERIFY/REFINE each pullAheadZOOData result IS CORRECT 'land on date' [ ]
     ## [X] put 'ONLY' the variable name in a OBSPRED list()
     ##  [X] # as.formula(") -> quanmod::specifyModel  -> @
-    ## [ ] (SPREAD) difference between yields on 10-year Treasury bonds and 3-month Treasury bills
+    ## [X] (SPREAD) difference between yields on 10-year Treasury bonds and 3-month Treasury bills
     
     ## ******* LEFT_OFF ***************
-    ## [ ] new function function NEXT.RANGE.3.PCT.CHANGE 
-    ## [ ] DO                SMA 1,2,3,...12, and # ( see elegant MINIPLAYs )
-    ## [ ] INDICATOR(NOW PERCENT ABOVE) SMA
+    
+    # TO ADD [x]
+    # real manufacturing and trade sales
+    # http://research.stlouisfed.org/fred2/data/CMRMTSPL.txt
+    # http://pages.uoregon.edu/jpiger/us_recession_probs.htm/
+    
+    ## [x] new function function NEXT.RANGE.3.PCT.CHANGE 
+    ## [x] DO                SMA 1,2,3,...12, and # ( see elegant MINIPLAYs )
+    ## [ ] INDICATOR(NOW PERCENT ABOVE) SMA ( *** LEFT_OFF *** )
     
     ## [ ]   PCTCHANGE(WHERE APPROPRIATE)  
     ## [x] consider renaming prog variables to .ABS )
@@ -1066,4 +1196,7 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
 # main_rcsnsight2_999()
 # debugSource('N:/MyVMWareSharedFolder/rcsnsight1/R/main-rcsnsight2-999.R') 
 # rm(list=ls(all.names=TRUE))
+
+######################## 
+
 
