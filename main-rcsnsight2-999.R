@@ -381,7 +381,7 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
                           ListName="Test2001"
         ),
           Test2008 = list(Train=list(initDate="1950-03-31",finDate ="2003-12-31"),
-                           Test=list(initDate="2004-01-01",finDate ="2014-12-31"),
+                           Test=list(initDate="2004-01-31",finDate ="2014-12-31"),
                            ListName="Test2008"
         )
     ) -> TestTrainDates
@@ -1009,11 +1009,12 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
         finSymbol = "A261RL1Q225SBEA"
       , finSymbolRemoteSource = "Quantmod_FRED"
       , finSymbolAttributes = c("Close")
-      , initDate = "1950-03-01"
+      , initDate = "1950-03-01"        
       , subtractOffDaysSpec = -1
+      , interpolate = TRUE
     ) ->  A261RL1Q225SBEA.DELAYSIX.PCTCHG.OVER3MO  # head "1950-03-31"
     merge.xts(MaxAllTestTrainMonthEnds,A261RL1Q225SBEA.DELAYSIX.PCTCHG.OVER3MO) -> A261RL1Q225SBEA.DELAYSIX.PCTCHG.OVER3MO
-
+    
     assign("A261RL1Q225SBEA.DELAYSIX.PCTCHG.OVER3MO", value=A261RL1Q225SBEA.DELAYSIX.PCTCHG.OVER3MO, envir = .GlobalEnv)
     
     pullAheadZOOData(A261RL1Q225SBEA.DELAYSIX.PCTCHG.OVER3MO,6) -> A261RL1Q225SBEA.DELAYSIX.PCTCHG.OVER3MO.ADJUSTNOW
@@ -1047,6 +1048,7 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
       , finSymbolAttributes = c("Close")
       , initDate = "1950-03-01"
       , subtractOffDaysSpec = -1
+      , interpolate = TRUE
     ) -> A576RC1Q027SBEA.DELAYFIVE.ABS     # head "1950-03-31"
     merge.xts(MaxAllTestTrainMonthEnds,A576RC1Q027SBEA.DELAYFIVE.ABS) -> A576RC1Q027SBEA.DELAYFIVE.ABS
 
@@ -1079,39 +1081,39 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
     
     bookmark_here <- 1
     
-    retrieveSymbolsmultplRdata(
-        finSymbol = "SP500.12M.EPS"
+    retrieveSymbolsmultplRdata(         # head "1871-01-31"
+      finSymbol = "SP500.12M.EPS"
       , finSymbolAttribute = "Close"
-    )  -> SP500.12M.EPS.DELAYTWO.ABS  # "12.month.EPS.Close" ( web table header) 
-    merge.xts(MaxAllTestTrainMonthEnds,SP500.12M.EPS.DELAYTWO.ABS) -> SP500.12M.EPS.DELAYTWO.ABS
+    )  -> SP500.12M.EPS.DELAYTHREE.ABS  # "12.month.EPS.Close" ( web table header) 
+    merge.xts(MaxAllTestTrainMonthEnds,SP500.12M.EPS.DELAYTHREE.ABS) -> SP500.12M.EPS.DELAYTHREE.ABS
     
-    assign("SP500.12M.EPS.DELAYTWO.ABS", value=SP500.12M.EPS.DELAYTWO.ABS, envir = .GlobalEnv)
-
-    pullAheadZOOData(SP500.12M.EPS.DELAYTWO.ABS,2) -> SP500.12M.EPS.DELAYTWO.ABS.ADJUSTNOW
-    merge.xts(MaxAllTestTrainMonthEnds,SP500.12M.EPS.DELAYTWO.ABS.ADJUSTNOW) -> SP500.12M.EPS.DELAYTWO.ABS.ADJUSTNOW
-    SP500.12M.EPS.DELAYTWO.ABS.ADJUSTNOW["1950-03-31::2014-12-31"] -> SP500.12M.EPS.DELAYTWO.ABS.ADJUSTNOW
+    assign("SP500.12M.EPS.DELAYTHREE.ABS", value=SP500.12M.EPS.DELAYTHREE.ABS, envir = .GlobalEnv)
     
-    assign("SP500.12M.EPS.DELAYTWO.ABS.ADJUSTNOW", value=SP500.12M.EPS.DELAYTWO.ABS.ADJUSTNOW, envir = .GlobalEnv)
+    pullAheadZOOData(SP500.12M.EPS.DELAYTHREE.ABS,3) -> SP500.12M.EPS.DELAYTHREE.ABS.ADJUSTNOW
+    merge.xts(MaxAllTestTrainMonthEnds,SP500.12M.EPS.DELAYTHREE.ABS.ADJUSTNOW) -> SP500.12M.EPS.DELAYTHREE.ABS.ADJUSTNOW
+    SP500.12M.EPS.DELAYTHREE.ABS.ADJUSTNOW["1950-03-31::2014-12-31"] -> SP500.12M.EPS.DELAYTHREE.ABS.ADJUSTNOW
     
-    "SP500.12M.EPS.DELAYTWO.ABS.ADJUSTNOW" -> ALL.OBSERVEES["SP500.12M.EPS.DELAYTWO.ABS.ADJUSTNOW"]
+    assign("SP500.12M.EPS.DELAYTHREE.ABS.ADJUSTNOW", value=SP500.12M.EPS.DELAYTHREE.ABS.ADJUSTNOW, envir = .GlobalEnv)
     
-    retrieveSymbolsmultplRdata(
-        finSymbol = "SP500.REAL.EARN.GR.PCT"           # Annual percentage change in 12 month
+    "SP500.12M.EPS.DELAYTHREE.ABS.ADJUSTNOW" -> ALL.OBSERVEES["SP500.12M.EPS.DELAYTHREE.ABS.ADJUSTNOW"]
+    
+    retrieveSymbolsmultplRdata(                      # head "1871-01-31"
+      finSymbol = "SP500.REAL.EARN.GR.PCT"           # Annual percentage change in 12 month
       , finSymbolAttribute = "Close"
-    )  -> SP500.REAL.EARN.GR.DELAYTWO.PCTCHG.OVER12MO # "SandP.500.Real.Earnings.Growth.Pct.Close" 
-    merge.xts(MaxAllTestTrainMonthEnds,SP500.REAL.EARN.GR.DELAYTWO.PCTCHG.OVER12MO) -> SP500.REAL.EARN.GR.DELAYTWO.PCTCHG.OVER12MO
-
-    assign("SP500.REAL.EARN.GR.DELAYTWO.PCTCHG.OVER12MO", value=SP500.REAL.EARN.GR.DELAYTWO.PCTCHG.OVER12MO, envir = .GlobalEnv)
-
-    pullAheadZOOData(SP500.REAL.EARN.GR.DELAYTWO.PCTCHG.OVER12MO,2) -> SP500.REAL.EARN.GR.DELAYTWO.PCTCHG.OVER12MO.ADJUSTNOW
-    merge.xts(MaxAllTestTrainMonthEnds,SP500.REAL.EARN.GR.DELAYTWO.PCTCHG.OVER12MO.ADJUSTNOW) -> SP500.REAL.EARN.GR.DELAYTWO.PCTCHG.OVER12MO.ADJUSTNOW
-    SP500.REAL.EARN.GR.DELAYTWO.PCTCHG.OVER12MO.ADJUSTNOW["1950-03-31::2014-12-31"] -> SP500.REAL.EARN.GR.DELAYTWO.PCTCHG.OVER12MO.ADJUSTNOW
+    )  -> SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO # "SandP.500.Real.Earnings.Growth.Pct.Close" 
+    merge.xts(MaxAllTestTrainMonthEnds,SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO) -> SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO
     
-    assign("SP500.REAL.EARN.GR.DELAYTWO.PCTCHG.OVER12MO.ADJUSTNOW", value=SP500.REAL.EARN.GR.DELAYTWO.PCTCHG.OVER12MO.ADJUSTNOW, envir = .GlobalEnv)
+    assign("SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO", value=SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO, envir = .GlobalEnv)
     
-    "SP500.REAL.EARN.GR.DELAYTWO.PCTCHG.OVER12MO.ADJUSTNOW" -> ALL.OBSERVEES["SP500.REAL.EARN.GR.DELAYTWO.PCTCHG.OVER12MO.ADJUSTNOW"]
+    pullAheadZOOData(SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO,3) -> SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO.ADJUSTNOW
+    merge.xts(MaxAllTestTrainMonthEnds,SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO.ADJUSTNOW) -> SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO.ADJUSTNOW
+    SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO.ADJUSTNOW["1950-03-31::2014-12-31"] -> SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO.ADJUSTNOW
     
-    retrieveSymbolsmultplRdata(
+    assign("SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO.ADJUSTNOW", value=SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO.ADJUSTNOW, envir = .GlobalEnv)
+    
+    "SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO.ADJUSTNOW" -> ALL.OBSERVEES["SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO.ADJUSTNOW"]
+    
+    retrieveSymbolsmultplRdata(              # head "1870-12-31"
         finSymbol = "SP500.PE.RATIO"
       , finSymbolAttribute = "Close"
     )  -> SP500.PE.RATIO.DELAYZERO.ABS # "SandP.500.PE.Ratio.Close" ( web table header) 
@@ -1122,7 +1124,7 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
 
     "SP500.PE.RATIO.DELAYZERO.ABS" -> ALL.OBSERVEES["SP500.PE.RATIO.DELAYZERO.ABS"]
     
-    retrieveSymbolsmultplRdata(
+    retrieveSymbolsmultplRdata(          #  head "head 1999-12-31"
         finSymbol = "SP500.BV.PER.SHARE"
       , finSymbolAttribute = "Close"
     )  -> SP500.BV.PER.SHARE.DELAYTHREE.ABS  # "SandP.500.Book.Value.Close" 
@@ -1183,7 +1185,7 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
 
     NEXT.PCTCHG.OVER <- function(x,over) {
       require(quantmod)     # Next     # search path 'xts' # cbind  
-      # absolute percent change  
+      # absolute percent change    
       ( xts(Next(x,over)) - x )/ abs(x) * 100 -> y
       y -> coredata(x)
       paste0(colnames(x),".NEXT.PCTCHG.OVER.",over,"MO") -> colnames(x)
@@ -1199,7 +1201,7 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
     assign("NEXT.PCTCHG.OVER.1MO", value = dput(NEXT.PCTCHG.OVER.1MO), envir = .GlobalEnv)
     sink()
     
-    # test 
+    # test  
     test2 <- NEXT.PCTCHG.OVER.1MO(GSPC.DELAYZERO.ABS.CLOSE)
     
     "NEXT.PCTCHG.OVER.3MO" -> ALL.PREDICTEESFUNCTIONS[["NEXT.PCTCHG.OVER.3MO"]]
@@ -1219,12 +1221,12 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
     
     bookmark_here <- 1
     
-    # WORKS ( BUT I AM CURRENLY *NOT USING* )
+    # WORKS ( BUT I AM CURRENLY *NOT USING* ) 
 
     #     assignManyOverCurries <- function(funct,overvalues) {
     #       require(functional) # Curry
     #       
-    #       match.fun(funct)                      -> match_fun_funct
+    #       match.fun(funct)                      -> match_fun_funct 
     #       
     #       as.character(substitute(funct))       -> funct_name 
     #       
@@ -1235,27 +1237,63 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
     #       
     #     }
     #     
-    #     # test
-    #     test2a <-  assignManyOverCurries(LAG.PCTCHG.OVER, overvalues= c(1,2,3,6,9,12) )
+    #     # test   
+    #     test2a <-  assignManyOverCurries(LAG.PCTCHG.OVER, overvalues= c(1,2,3,6,9,12) ) 
     
     bookmark_here <- 1
 
-    Curry(LAG.PCTCHG.OVER,over=3) -> LAG.PCTCHG.OVER.3MO 
-    Curry(LAG.PCTCHG.OVER,over=2) -> LAG.PCTCHG.OVER.2MO 
     Curry(LAG.PCTCHG.OVER,over=1) -> LAG.PCTCHG.OVER.1MO 
+    Curry(LAG.PCTCHG.OVER,over=2) -> LAG.PCTCHG.OVER.2MO 
+    Curry(LAG.PCTCHG.OVER,over=3) -> LAG.PCTCHG.OVER.3MO 
+    Curry(LAG.PCTCHG.OVER,over=4) -> LAG.PCTCHG.OVER.4MO 
+    Curry(LAG.PCTCHG.OVER,over=5) -> LAG.PCTCHG.OVER.5MO 
+    Curry(LAG.PCTCHG.OVER,over=6) -> LAG.PCTCHG.OVER.6MO 
+    Curry(LAG.PCTCHG.OVER,over=7) -> LAG.PCTCHG.OVER.7MO 
+    Curry(LAG.PCTCHG.OVER,over=8) -> LAG.PCTCHG.OVER.8MO 
+    Curry(LAG.PCTCHG.OVER,over=9) -> LAG.PCTCHG.OVER.9MO 
+    Curry(LAG.PCTCHG.OVER,over=10) -> LAG.PCTCHG.OVER.10MO 
+    Curry(LAG.PCTCHG.OVER,over=11) -> LAG.PCTCHG.OVER.11MO 
+    Curry(LAG.PCTCHG.OVER,over=12) -> LAG.PCTCHG.OVER.12MO 
+    Curry(LAG.PCTCHG.OVER,over=13) -> LAG.PCTCHG.OVER.13MO 
+    Curry(LAG.PCTCHG.OVER,over=14) -> LAG.PCTCHG.OVER.14MO 
+    Curry(LAG.PCTCHG.OVER,over=15) -> LAG.PCTCHG.OVER.15MO 
     
     sink("NULL")
-    assign("LAG.PCTCHG.OVER.3MO", value = dput(LAG.PCTCHG.OVER.3MO), envir = .GlobalEnv)
-    assign("LAG.PCTCHG.OVER.2MO", value = dput(LAG.PCTCHG.OVER.2MO), envir = .GlobalEnv)
     assign("LAG.PCTCHG.OVER.1MO", value = dput(LAG.PCTCHG.OVER.1MO), envir = .GlobalEnv)
+    assign("LAG.PCTCHG.OVER.2MO", value = dput(LAG.PCTCHG.OVER.2MO), envir = .GlobalEnv)
+    assign("LAG.PCTCHG.OVER.3MO", value = dput(LAG.PCTCHG.OVER.3MO), envir = .GlobalEnv)
+    assign("LAG.PCTCHG.OVER.4MO", value = dput(LAG.PCTCHG.OVER.4MO), envir = .GlobalEnv)
+    assign("LAG.PCTCHG.OVER.5MO", value = dput(LAG.PCTCHG.OVER.5MO), envir = .GlobalEnv)
+    assign("LAG.PCTCHG.OVER.6MO", value = dput(LAG.PCTCHG.OVER.6MO), envir = .GlobalEnv)
+    assign("LAG.PCTCHG.OVER.7MO", value = dput(LAG.PCTCHG.OVER.7MO), envir = .GlobalEnv)
+    assign("LAG.PCTCHG.OVER.8MO", value = dput(LAG.PCTCHG.OVER.8MO), envir = .GlobalEnv)
+    assign("LAG.PCTCHG.OVER.9MO", value = dput(LAG.PCTCHG.OVER.9MO), envir = .GlobalEnv)
+    assign("LAG.PCTCHG.OVER.10MO", value = dput(LAG.PCTCHG.OVER.10MO), envir = .GlobalEnv)
+    assign("LAG.PCTCHG.OVER.11MO", value = dput(LAG.PCTCHG.OVER.11MO), envir = .GlobalEnv)
+    assign("LAG.PCTCHG.OVER.12MO", value = dput(LAG.PCTCHG.OVER.12MO), envir = .GlobalEnv)
+    assign("LAG.PCTCHG.OVER.13MO", value = dput(LAG.PCTCHG.OVER.13MO), envir = .GlobalEnv)
+    assign("LAG.PCTCHG.OVER.14MO", value = dput(LAG.PCTCHG.OVER.14MO), envir = .GlobalEnv)
+    assign("LAG.PCTCHG.OVER.15MO", value = dput(LAG.PCTCHG.OVER.15MO), envir = .GlobalEnv)
     sink()
     
     # test
     test2b <- LAG.PCTCHG.OVER.1MO(GSPC.DELAYZERO.ABS.CLOSE)
 
-    "LAG.PCTCHG.OVER.3MO" -> ALL.OBSERVEESFUNCTIONS[["LAG.PCTCHG.OVER.3MO"]]
-    "LAG.PCTCHG.OVER.2MO" -> ALL.OBSERVEESFUNCTIONS[["LAG.PCTCHG.OVER.2MO"]]
     "LAG.PCTCHG.OVER.1MO" -> ALL.OBSERVEESFUNCTIONS[["LAG.PCTCHG.OVER.1MO"]]
+    "LAG.PCTCHG.OVER.2MO" -> ALL.OBSERVEESFUNCTIONS[["LAG.PCTCHG.OVER.2MO"]]
+    "LAG.PCTCHG.OVER.3MO" -> ALL.OBSERVEESFUNCTIONS[["LAG.PCTCHG.OVER.3MO"]]
+    "LAG.PCTCHG.OVER.4MO" -> ALL.OBSERVEESFUNCTIONS[["LAG.PCTCHG.OVER.4MO"]]
+    "LAG.PCTCHG.OVER.5MO" -> ALL.OBSERVEESFUNCTIONS[["LAG.PCTCHG.OVER.5MO"]]
+    "LAG.PCTCHG.OVER.6MO" -> ALL.OBSERVEESFUNCTIONS[["LAG.PCTCHG.OVER.6MO"]]
+    "LAG.PCTCHG.OVER.7MO" -> ALL.OBSERVEESFUNCTIONS[["LAG.PCTCHG.OVER.7MO"]]
+    "LAG.PCTCHG.OVER.8MO" -> ALL.OBSERVEESFUNCTIONS[["LAG.PCTCHG.OVER.8MO"]]
+    "LAG.PCTCHG.OVER.9MO" -> ALL.OBSERVEESFUNCTIONS[["LAG.PCTCHG.OVER.9MO"]]
+    "LAG.PCTCHG.OVER.10MO" -> ALL.OBSERVEESFUNCTIONS[["LAG.PCTCHG.OVER.10MO"]]
+    "LAG.PCTCHG.OVER.11MO" -> ALL.OBSERVEESFUNCTIONS[["LAG.PCTCHG.OVER.11MO"]]
+    "LAG.PCTCHG.OVER.12MO" -> ALL.OBSERVEESFUNCTIONS[["LAG.PCTCHG.OVER.12MO"]]
+    "LAG.PCTCHG.OVER.13MO" -> ALL.OBSERVEESFUNCTIONS[["LAG.PCTCHG.OVER.13MO"]]
+    "LAG.PCTCHG.OVER.14MO" -> ALL.OBSERVEESFUNCTIONS[["LAG.PCTCHG.OVER.14MO"]]
+    "LAG.PCTCHG.OVER.15MO" -> ALL.OBSERVEESFUNCTIONS[["LAG.PCTCHG.OVER.15MO"]]
     
     bookmark_here <- 1 
     
@@ -1287,11 +1325,33 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
     Curry(TTR.MATH.OVER,math="SMA",over=2) -> TTR.MATH.OVER.SMA.2MO
     Curry(TTR.MATH.OVER,math="SMA",over=3) -> TTR.MATH.OVER.SMA.3MO
     Curry(TTR.MATH.OVER,math="SMA",over=4) -> TTR.MATH.OVER.SMA.4MO
+    Curry(TTR.MATH.OVER,math="SMA",over=5) -> TTR.MATH.OVER.SMA.5MO
+    Curry(TTR.MATH.OVER,math="SMA",over=6) -> TTR.MATH.OVER.SMA.6MO
+    Curry(TTR.MATH.OVER,math="SMA",over=7) -> TTR.MATH.OVER.SMA.7MO
+    Curry(TTR.MATH.OVER,math="SMA",over=8) -> TTR.MATH.OVER.SMA.8MO
+    Curry(TTR.MATH.OVER,math="SMA",over=9) -> TTR.MATH.OVER.SMA.9MO
+    Curry(TTR.MATH.OVER,math="SMA",over=10) -> TTR.MATH.OVER.SMA.10MO
+    Curry(TTR.MATH.OVER,math="SMA",over=11) -> TTR.MATH.OVER.SMA.11MO
+    Curry(TTR.MATH.OVER,math="SMA",over=12) -> TTR.MATH.OVER.SMA.12MO
+    Curry(TTR.MATH.OVER,math="SMA",over=13) -> TTR.MATH.OVER.SMA.13MO
+    Curry(TTR.MATH.OVER,math="SMA",over=14) -> TTR.MATH.OVER.SMA.14MO
+    Curry(TTR.MATH.OVER,math="SMA",over=15) -> TTR.MATH.OVER.SMA.15MO
 
     sink("NULL")
     assign("TTR.MATH.OVER.SMA.2MO", value = dput(TTR.MATH.OVER.SMA.2MO), envir = .GlobalEnv)
     assign("TTR.MATH.OVER.SMA.3MO", value = dput(TTR.MATH.OVER.SMA.3MO), envir = .GlobalEnv)
     assign("TTR.MATH.OVER.SMA.4MO", value = dput(TTR.MATH.OVER.SMA.4MO), envir = .GlobalEnv)
+    assign("TTR.MATH.OVER.SMA.5MO", value = dput(TTR.MATH.OVER.SMA.5MO), envir = .GlobalEnv)
+    assign("TTR.MATH.OVER.SMA.6MO", value = dput(TTR.MATH.OVER.SMA.6MO), envir = .GlobalEnv)
+    assign("TTR.MATH.OVER.SMA.7MO", value = dput(TTR.MATH.OVER.SMA.7MO), envir = .GlobalEnv)
+    assign("TTR.MATH.OVER.SMA.8MO", value = dput(TTR.MATH.OVER.SMA.8MO), envir = .GlobalEnv)
+    assign("TTR.MATH.OVER.SMA.9MO", value = dput(TTR.MATH.OVER.SMA.9MO), envir = .GlobalEnv)
+    assign("TTR.MATH.OVER.SMA.10MO", value = dput(TTR.MATH.OVER.SMA.10MO), envir = .GlobalEnv)
+    assign("TTR.MATH.OVER.SMA.11MO", value = dput(TTR.MATH.OVER.SMA.11MO), envir = .GlobalEnv)
+    assign("TTR.MATH.OVER.SMA.12MO", value = dput(TTR.MATH.OVER.SMA.12MO), envir = .GlobalEnv)
+    assign("TTR.MATH.OVER.SMA.13MO", value = dput(TTR.MATH.OVER.SMA.13MO), envir = .GlobalEnv)
+    assign("TTR.MATH.OVER.SMA.14MO", value = dput(TTR.MATH.OVER.SMA.14MO), envir = .GlobalEnv)
+    assign("TTR.MATH.OVER.SMA.15MO", value = dput(TTR.MATH.OVER.SMA.15MO), envir = .GlobalEnv)
     sink()
     
     # test
@@ -1300,7 +1360,18 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
     "TTR.MATH.OVER.SMA.2MO" -> ALL.OBSERVEESFUNCTIONS[["TTR.MATH.OVER.SMA.2MO"]]
     "TTR.MATH.OVER.SMA.3MO" -> ALL.OBSERVEESFUNCTIONS[["TTR.MATH.OVER.SMA.3MO"]]
     "TTR.MATH.OVER.SMA.4MO" -> ALL.OBSERVEESFUNCTIONS[["TTR.MATH.OVER.SMA.4MO"]]
-    
+    "TTR.MATH.OVER.SMA.5MO" -> ALL.OBSERVEESFUNCTIONS[["TTR.MATH.OVER.SMA.5MO"]]
+    "TTR.MATH.OVER.SMA.6MO" -> ALL.OBSERVEESFUNCTIONS[["TTR.MATH.OVER.SMA.6MO"]]
+    "TTR.MATH.OVER.SMA.7MO" -> ALL.OBSERVEESFUNCTIONS[["TTR.MATH.OVER.SMA.7MO"]]
+    "TTR.MATH.OVER.SMA.8MO" -> ALL.OBSERVEESFUNCTIONS[["TTR.MATH.OVER.SMA.8MO"]]
+    "TTR.MATH.OVER.SMA.9MO" -> ALL.OBSERVEESFUNCTIONS[["TTR.MATH.OVER.SMA.9MO"]]
+    "TTR.MATH.OVER.SMA.10MO" -> ALL.OBSERVEESFUNCTIONS[["TTR.MATH.OVER.SMA.10MO"]]
+    "TTR.MATH.OVER.SMA.11MO" -> ALL.OBSERVEESFUNCTIONS[["TTR.MATH.OVER.SMA.11MO"]]
+    "TTR.MATH.OVER.SMA.12MO" -> ALL.OBSERVEESFUNCTIONS[["TTR.MATH.OVER.SMA.12MO"]]
+    "TTR.MATH.OVER.SMA.13MO" -> ALL.OBSERVEESFUNCTIONS[["TTR.MATH.OVER.SMA.13MO"]]
+    "TTR.MATH.OVER.SMA.14MO" -> ALL.OBSERVEESFUNCTIONS[["TTR.MATH.OVER.SMA.14MO"]]
+    "TTR.MATH.OVER.SMA.15MO" -> ALL.OBSERVEESFUNCTIONS[["TTR.MATH.OVER.SMA.15MO"]]
+
     bookmark_here <- 1 
     
     # x source ; y destination
@@ -1333,7 +1404,18 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
 
         # relative 
             
-        if( grepl("LAG\\.PCTCHG\\.OVER\\..*MO",var.obsfun) ) {    
+        if( grepl("LAG\\.PCTCHG\\.OVER\\..*MO",var.obsfun) ) {   
+          
+          # 1/0 0/0 0/1 on/off switches: no sense; skip this
+          if( var.obs == "USRECP.DELAYFIVE.ABS.ADJUSTNOW" ) { 
+            next 
+          }
+          
+          # Chauvet/Piger - recession probabilites - wrong math - too extreme to be useful
+          if( var.obs == "RECPROUSM156N.DELAYTHREE.ABS.ADJUSTNOW" ) { 
+            next 
+          }
+
           paste0(var.obsfun,"(",var.obs,")") -> CURR.OBSERVEES[[paste0(var.obsfun,"(",var.obs,")")]]
         }
         
@@ -1342,6 +1424,12 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
         if( grepl("TTR\\.MATH\\.OVER\\.SMA\\..*MO",var.obsfun) ) {  
           
           for( var.all.obsfun in ALL.OVER.OBSERVEESFUNCTIONS) {
+            
+            # 1/0 0/0 0/1 on/off switches: no sense; skip this
+            if(ALL.OVER.OBSERVEESFUNCTIONS == "COMPARE.ABOVE.PCT"             &&
+                                  var.obs  == "USRECP.DELAYFIVE.ABS.ADJUSTNOW"
+               ) {next}
+            
             paste0(var.all.obsfun,"(",var.obsfun,"(",var.obs,"),",var.obs,")") -> CURR.OBSERVEES[[paste0(var.all.obsfun,"(",var.obsfun,"(",var.obs,"),",var.obs,")")]]
           }
           
@@ -1391,19 +1479,58 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
             #         ) -> newlist
             
             # all data
-
-            model.data.train <- as.data.frame(modelData(data.model, data.window = c(var.testtraindates[["Train"]][["initDate"]] ,var.testtraindates[["Train"]][["finDate"]])), stringsAsFactors = FALSE)
             
-            model.data.test  <- as.data.frame(modelData(data.model, data.window  = c(var.testtraindates[["Test"]][["initDate"]],var.testtraindates[["Test"]][["finDate"]])), stringsAsFactors = FALSE)
-                
+
+            # Train_initDate through Test_finDate
+            model.data.ALL <- modelData(data.model, data.window = c(var.testtraindates[["Train"]][["initDate"]] ,var.testtraindates[["Test"]][["finDate"]]))
+            
+            # all except the 'predictee column'
+            model.data.OBSERVEES.CURR <- model.data.ALL[,setdiff(colnames(model.data.ALL),data.model@model.target)]
+            
+            # MAGIC NUMBER ( SHOULD BE STORED ELSEWHERE )
+            MinObserveeDate <- "1969-01-31"
+            
+            # choose only those observee columns that have the 'minimum date of interest'
+            model.data.OBSERVEES.CURR <- model.data.OBSERVEES.CURR[,which(!is.na(model.data.OBSERVEES.CURR[MinObserveeDate,colnames(model.data.OBSERVEES.CURR)] ))]
+            # test
+            # anyNA(model.data.OBSERVEES.CURR["1969-01-31::",]) == FALSE
+               
+            # choose only the observee columns that have the 'minimum date of interest'
+            # remove the single predectee's COLUMN most recent few NEXT NA elements ( if any )
+            # remove the single predectee's COLUMN trailing NAs ( if possible )
+            # remove observees                     trailing NAs 
+            #  will create a SMOOTH head
+            # xts:::na.omit.xts ( tested: will remove !(complete.cases(any single NA in row) )
+            model.data.CURR <-  na.omit(model.data.ALL[,c(data.model@model.target,colnames(model.data.OBSERVEES.CURR))])
+            
+            # earliest date HEAVY_LIKELY BE a 'before' MinObserveeDate("1969-01-31")
+            # e.g. "1968-10-31"
+            # step TO KEEP exactly ONLY the  MinObserveeDate and LATER 
+            model.data.CURR[paste0(MinObserveeDate,"::"),] -> model.data.CURR
+            
+            # real training data
+            model.data.CURR[paste0(var.testtraindates[["Train"]][["initDate"]],"::",var.testtraindates[["Train"]][["finDate"]]),] -> model.data.train.CURR
+            
+            # the 'real world test' data to be tried LATER
+            model.data.CURR[paste0(var.testtraindates[["Test"]][["initDate"]],"::",var.testtraindates[["Test"]][["finDate"]]),,] -> model.data.test.CURR
+          
             bookmark_here <- 1 
             
+            ## *** LEFT_OFF  ***
+            ## review fscaret ( any remove corr )( random forest feature selection )
+            ## review caret ( remove correlation, ica )
+            ## review DMwR ( a little bit)
+            ## # review performanceEstimation ( custom workflow for caret )
+            ##  
+            
+            # later 
+            # as.data.frame(modelData, stringsAsFactors = FALSE
           }
         }
       }
     } 
     
-    bookmark_here <- 1 
+    bookmark_here <- 1 # View(data.frame(t(tail(model.data.test,10))))
     
     # *** LEFT_OFF ***
     # [ ]  !!!! VERIFY THAT THE DATA IS ALIGNED TO 14-12-31: Browse[2]> View(data.frame(t(tail(model.data.test,10))))
