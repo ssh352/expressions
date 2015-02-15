@@ -361,6 +361,10 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
     #  blotter, PerformanceAnalytics, FinancialInstrument,
     #  quantmod, TTR, xts, zoo
     
+    # findLinearCombos
+    require(caret) # and added to search() path:
+    #  ggplot2, lattice 
+    
     # require(require(PerformanceAnalytics) # POSSIBLE FUT ( and through require("quantstrat") )
     
     # every function
@@ -1224,13 +1228,13 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
     # WORKS ( BUT I AM CURRENLY *NOT USING* ) 
 
     #     assignManyOverCurries <- function(funct,overvalues) {
-    #       require(functional) # Curry
+    #       require(functional) # Curry 
     #       
-    #       match.fun(funct)                      -> match_fun_funct 
+    #       match.fun(funct)                      -> match_fun_funct
     #       
-    #       as.character(substitute(funct))       -> funct_name 
+    #       as.character(substitute(funct))       -> funct_name   
     #       
-    #       for(var in overvalues) {
+    #       for(var in overvalues) { 
     #         assign(paste0(funct_name,".",var,"MO"   ), value = dput(Curry(match_fun_funct,over=var)), envir = parent.frame())  
     #         assign(paste0(funct_name,".",var,"MO"   ), value = dput(Curry(match_fun_funct,over=var)), envir = .GlobalEnv)  
     #       }
@@ -1238,7 +1242,7 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
     #     }
     #     
     #     # test   
-    #     test2a <-  assignManyOverCurries(LAG.PCTCHG.OVER, overvalues= c(1,2,3,6,9,12) ) 
+    #     test2a <-  assignManyOverCurries(LAG.PCTCHG.OVER, overvalues= c(1,2,3,6,9,12) )   
     
     bookmark_here <- 1
 
@@ -1484,6 +1488,12 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
             # Train_initDate through Test_finDate
             model.data.ALL <- modelData(data.model, data.window = c(var.testtraindates[["Train"]][["initDate"]] ,var.testtraindates[["Test"]][["finDate"]]))
             
+            # needed for caret::findLinearCombos
+            
+            model.data.ALL[model.data.ALL == -Inf] <- .Machine[["double.xmin"]]
+            model.data.ALL[model.data.ALL ==  Inf] <- .Machine[["double.xmax"]]
+            data.model@model.data <- model.data.ALL
+            
             # all except the 'predictee column'
             model.data.OBSERVEES.CURR <- model.data.ALL[,setdiff(colnames(model.data.ALL),data.model@model.target)]
             
@@ -1503,9 +1513,66 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
             # xts:::na.omit.xts ( tested: will remove !(complete.cases(any single NA in row) )
             model.data.CURR <-  na.omit(model.data.ALL[,c(data.model@model.target,colnames(model.data.OBSERVEES.CURR))])
             
+            bookmarkhere <- 1
+            
+            # note: A261RL1Q225SBEA seem to be a nightmare ( consider REMOVING )
+            
+            # caret - remove linear combinations ( do not check the predictee column )
+            
+            # find the predictee column
+            model.data.CURR.PREDICTEE.ORIG.COL.INDEX <- which(colnames(model.data.CURR) == data.model@model.target)
+            
+            # remove observee linear combinations ( do not check the predictee column )
+            model.data.CURR.OBSERVEES.LINEARCOMBOS.INDEXES  <- findLinearCombos(coredata(model.data.CURR[,-model.data.CURR.PREDICTEE.ORIG.COL.INDEX]))[["remove"]] 
+            
+            model.data.CURR.OBSERVEES.COLNAMES.REMOVED <- c()
+            if(!is.null(model.data.CURR.OBSERVEES.LINEARCOMBOS.INDEXES)) {
+            
+              print("Linear combination columns removed.")
+              model.data.CURR.OBSERVEES.COLNAMES.REMOVED <- colnames(model.data.CURR[,-model.data.CURR.PREDICTEE.ORIG.COL.INDEX])[model.data.CURR.OBSERVEES.LINEARCOMBOS.INDEXES]
+              print(model.data.CURR.OBSERVEES.COLNAMES.REMOVED)
+              
+              # keep remaining columns and the  predictee
+              model.data.CURR <- model.data.CURR[,!(colnames(model.data.CURR) %in% model.data.CURR.OBSERVEES.COLNAMES.REMOVED)]
+            
+            }
+            
+            bookmarkhere <- 1
+            
+            # caret - remove correlation ( do not check the predictee column )
+            
+            # find the predictee column
+            model.data.CURR.PREDICTEE.ORIG.COL.INDEX <- which(colnames(model.data.CURR) == data.model@model.target)
+            
+            # remove observee correlations ( do not check the predictee column )
+            # stats::cor
+            # method="spearman" does not return: nan na Inf -Inf
+            model.data.CURR.OBSERVEES.CORRELATIONS.MATRIX   <- cor(coredata(model.data.CURR[,-model.data.CURR.PREDICTEE.ORIG.COL.INDEX]), method="spearman")
+            model.data.CURR.OBSERVEES.CORRELATIONS.INDEXES  <- findCorrelation(model.data.CURR.OBSERVEES.CORRELATIONS.MATRIX) 
+            # default: cutoff = 0.9  will produce 61 observees ( some long term data )
+            #                   0.25 will product 9 points ( all 2MO data )
+            
+            model.data.CURR.OBSERVEES.COLNAMES.REMOVED <- c()
+            # handle zero correctly
+            if(model.data.CURR.OBSERVEES.CORRELATIONS.INDEXES[1] != 0) {
+              
+              print("Correlation columns removed.")
+              model.data.CURR.OBSERVEES.COLNAMES.REMOVED <- colnames(model.data.CURR[,-model.data.CURR.PREDICTEE.ORIG.COL.INDEX])[model.data.CURR.OBSERVEES.CORRELATIONS.INDEXES]
+              print(model.data.CURR.OBSERVEES.COLNAMES.REMOVED)
+              
+              # keep remaining columns and the  predictee
+              model.data.CURR <- model.data.CURR[,!(colnames(model.data.CURR) %in% model.data.CURR.OBSERVEES.COLNAMES.REMOVED)]
+              
+            }
+            
+            bookmarkhere <- 1
+            
+            # ** LEFT_OFF ** "FEATURE SELECTION"
+            # **  (follow)    ICA
+            
             # earliest date HEAVY_LIKELY BE a 'before' MinObserveeDate("1969-01-31")
             # e.g. "1968-10-31"
-            # step TO KEEP exactly ONLY the  MinObserveeDate and LATER 
+            # OPTIONAL step TO KEEP exactly ONLY the  MinObserveeDate and LATER 
             model.data.CURR[paste0(MinObserveeDate,"::"),] -> model.data.CURR
             
             # real training data
@@ -1530,13 +1597,13 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
       }
     } 
     
-    bookmark_here <- 1 # View(data.frame(t(tail(model.data.test,10))))
+    bookmark_here <- 1 # View(data.frame(t(tail(model.data.CURR,10))))
     
     # *** LEFT_OFF ***
-    # [ ]  !!!! VERIFY THAT THE DATA IS ALIGNED TO 14-12-31: Browse[2]> View(data.frame(t(tail(model.data.test,10))))
+    # [X]  !!!! VERIFY THAT THE DATA IS ALIGNED TO 14-12-31: Browse[2]> View(data.frame(t(tail(model.data.test,10))))
     #   solve mystery of NAs [ ] and NaNs [ ]
-    # [ ] better variable NAMES
-    # [ ] fscaret ( find variable importance) means(reduce CURR.OBSERVEES)
+    # [LATER] better variable NAMES
+    # [LATER] fscaret ( find variable importance) means(reduce CURR.OBSERVEES)
     
     # predictees area    
     
@@ -1563,15 +1630,7 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
     ## CURR.FORMULA <- as.formula(paste0(CURR.PREDICTEE," ~ ",paste0(unlist(CURR.OBSERVEES), collapse =" + ")))
     
     # SOON (feature selection: perhaps use package fscaret )
-    # DATA.MODEL <- specifyModel(CURR.FORMULA . . . [ ]
-    #   DATA.MODEL@model.formula          SAVE [ ]
-    # find importance
-    # ( a now have to impute/remove NAs)  [ ]
-    # training early to 'DEC 2003'
-    # MODEL.FEATURES <- buildModel(DATA.MODEL,method='randomForest' . . .
-    # DATA.IMPORTANCE <- importance(MODEL.FEATURES@fitted.model, type = 1)
-    # rownames(iDATA.IMPORTANCE)[which(DATA.IMPORTANCE > 10)] 
-    # DATA.MODEL <- specifyModel(**CURR.FORMULA.NEW** . . .   
+ 
     
     the_end_debug_bookmark_here <- 1
     
@@ -1590,7 +1649,7 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
     ## [x]   10  year bond 
     ## [x]    3  year bill
     ## [x]   effective funds rate
-    ##   [ ] (TO DO) 'real earnings growth or similar' = 'EPS - 10 year treasury yield'
+    ##   [X] (TO DO) 'real earnings growth or similar' = 'EPS - 10 year treasury yield'
     ## [x]   unemployment
     ## [x]   inflation
     ## [SORTOF]   actions of the fed  
@@ -1605,7 +1664,7 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
     ## [X] GET other FRED data RECM[#] that has NOT BEEN stopped DELIVERED
     ###  [LATER] remove .RData files ( [ ] generate NEW data )
     ## after quantmodmodel [ ] TO simulate a train,test/predict HAVE limits
-    ##  [ ] 2nd VERIFY/REFINE each pullAheadZOOData result IS CORRECT 'land on date' [ ]
+    ##  [X] 2nd VERIFY/REFINE each pullAheadZOOData result IS CORRECT 'land on date' [X]
     ## [X] put 'ONLY' the variable name in a OBSPRED list()
     ##  [X] # as.formula(") -> quanmod::specifyModel  -> @
     ## [X] (SPREAD) difference between yields on 10-year Treasury bonds and 3-month Treasury bills
@@ -1619,38 +1678,41 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
     
     ## [x] new function function NEXT.RANGE.3.PCT.CHANGE 
     ## [x] DO                SMA 1,2,3,...12, and # ( see elegant MINIPLAYs )
-    ## [ ] INDICATOR(NOW PERCENT ABOVE) SMA ( *** LEFT_OFF *** )
+    ## [X] INDICATOR(NOW PERCENT ABOVE) SMA ( *** LEFT_OFF *** )
     
-    ## [ ]   PCTCHANGE(WHERE APPROPRIATE)  
+    ## [X]   PCTCHANGE(WHERE APPROPRIATE)  
     ## [x] consider renaming prog variables to .ABS )
-    ## [ ] tails - what is useful and what is not  
+    ## [X] tails - what is useful and what is not  
 
-    
     ## [ ]   re-UMCENT ???
-
-    ## 
-    ## [ ] DURING THE WEEK: ABSVAL VELOCITY ACCEL JERK;  DOUBLE TRIPLE  
-    ## [ ]                  MOVING AVE(1:8), FLAG_ABOVE_MA 
+    
+    ## also consider
+    ## UMICH sent survey ( copy OVER from 1 )
+    ## IDENTITY() - ChavetPiger,NBER(Maybe Needs to be a factor),ManufactExpansionGr50
+    
+    ## HIGH
+    ## TRANSSFORM  ManufactExpansionGr50 +-(50-ManufactExpansionGr50)
+    
+    ## review fscaret ( any remove corr )( random forest feature selection )
+    ## review caret ( remove correlation, ica )
+    ## review DMwR ( a little bit)
+    ## review performanceEstimation ( custom workflow for caret )
     
     ## DYNAMIC INPUT
-    
-    
-    # QUANTMOD MODEL
-    
-    
-    # **** LEFT_OFF **** [ ] SPLIT THE MODEL INTO 128 CHUNKS  [ ] GET XTS DATA xts.merge TOGEGHER
-    #  FIRST [ ] - VERIFY THAT IT 'can' GET data returned on a small CHUNK
-    # data.model <- specifyModel(CURR.FORMULA, na.rm = FALSE) # na.rm = TRUE # default # I MAY WANT DIFFERENT
-    # Error in total.columns[j] <- ncol(m) : replacement has length zero
     
     # GET THE DATAFRAME FROM *THAT* MODEL
     
     # no.omit
     # handle MISSING values Impute? 'zoo interpolate' ( MAYBE I wanted to HANDLE earlier )
     # correlation remove
+  
+    # ** LEFT_OFF ** "FEATURE SELECTION" [ ]
+    # **  (follow)    ICA                [ ]
+    
     # variable importance
     # ICA
-    # no.omit, ( create factor response (SMOTE) )
+    
+    # ( create factor response (SMOTE) )
     
     # DMwR, performanceEstimation 
     
