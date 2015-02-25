@@ -59,17 +59,48 @@ main_valuesight1_999_miniplay1 <- function(pauseat=NULL) {
       LARGEVALUE = list(
           BPAIX = list( DESCR = "Boston Partners All Cap Value Fund (BPAIX)"          , EXPS = 0.70 )
         , FLVEX = list( DESCR = "Fidelity Large Cap Value Enhanced Index Fund (FLVEX)", EXPS = 0.47 )
+        , VIVAX = list( DESCR = "Vanguard Value Index Fund (VIVAX)"                      , EXPS =  0.24  )
+        , DTMMX = list( DESCR = "DFA Tax Managed U.S. Marketwide Value Portfolio (DTMMX)", EXPS =  0.37  )
+        , LSVEX = list( DESCR = "LSV Value Equity Fund (LSVEX)"                          , EXPS =  0.68  )
+        , VUVLX = list( DESCR = "Vanguard U.S. Value Fund (VUVLX)"                       , EXPS =  0.29  )
+        , DFMVX = list( DESCR = "DFA Tax Managed U.S. Marketwide Value II Portfolio (DFMVX)", EXPS = 0.23  )
+        , DFLVX = list( DESCR = "DFA U.S. Large Cap Value Portfolio (DFLVX)"                , EXPS = 0.27  )
+        , DFCVX = list( DESCR = "DFA U.S. Large Cap Value II Portfolio (DFCVX)"             , EXPS = 0.17  )
+        , HOVLX = list( DESCR = "Homestead Funds Value Fund (HOVLX)"                        , EXPS = 0.64  )
+
+        
       ),
       MIDCAPVALUE = list(
           ACLMX = list( DESCR = "American Century Investments NT Mid Cap Value Fund (ACLMX)", EXPS = 0.81 )
         , HAMVX = list( DESCR = "Harbor Mid Cap Value Fund (HAMVX)"                         , EXPS = 0.93 )
+        , NSEIX = list( DESCR = "Nicholas Equity Income Fund (NSEIX)"                       , EXPS = 0.72 )
+        , FMPAX = list( DESCR = "Fidelity Mid Cap Value Fund (FMPAX)"                       , EXPS = 1.15 )
+        , VASVX = list( DESCR = "Vanguard Selected Value Fund (VASVX)"                      , EXPS = 0.44 )
+        , PKPPX = list( DESCR = "Principal MidCap Value Fund III (PKPPX)"                   , EXPS = 1.44 )
+        , FDVLX = list( DESCR = "Fidelity Value Fund (FDVLX)"                               , EXPS = 0.76  )
+        , TIMVX = list( DESCR = "TIAA-CREF Mid-Cap Value Fund (TIMVX)"                      , EXPS = 0.45  )
+        , JVMAX = list( DESCR = "John Hancock Funds Disciplined Value Mid Cap Fund (JVMAX)" , EXPS = 1.18  )
+        , HWAAX = list( DESCR = "Hotchkis & Wiley Value Opportunities Fund (HWAAX)"         , EXPS = 1.25  )
+
       ),
       SMALLVALUE = list(
-          HWSAX = list( DESCR = "Hotchkis & Wiley Small Cap Value Fund (HWSAX)", EXPS = 1.25 )
-        , VISVX = list( DESCR = "Vanguard Small Cap Value Index Fund (VISVX)"  , EXPS =  0.24 )
+          HWSAX = list( DESCR = "Hotchkis & Wiley Small Cap Value Fund (HWSAX)"         , EXPS = 1.25  )
+        , VISVX = list( DESCR = "Vanguard Small Cap Value Index Fund (VISVX)"           , EXPS = 0.24  )
+        , DTMVX = list( DESCR = "DFA Tax Managed U.S. Targeted Value Portfolio (DTMVX)" , EXPS = 0.44  )
+        , MRSNX = list( DESCR = "BMO Small-Cap Value Fund (MRSNX)"                      , EXPS = 1.00  )
+        , DFSVX = list( DESCR = "DFA U.S. Small Cap Value Portfolio (DFSVX)"            , EXPS = 0.52  )
+        , DFFVX = list( DESCR = "DFA U.S. Targeted Value Portfolio (DFFVX)"             , EXPS = 0.37  )
+        , ANCCX = list( DESCR = "Ancora MicroCap Fund (ANCCX)"                          , EXPS = 2.59  )
+        , PPVIX = list( DESCR = "Principal SmallCap Value Fund II (PPVIX)"              , EXPS = 1.10  )
+        , WSCVX = list( DESCR = "Walthausen Small Cap Value Fund (WSCVX)"               , EXPS = 1.25  )
+        , VSCAX = list( DESCR = "Invesco Small Cap Value (VSCAX)"                       , EXPS = 1.12  )
+
       )
     )
-    
+
+    # store in a data.frame for sorting LATER
+    COLLECTION <- data.frame(VALUECAT=NA, TICKER=NA, DESCR=NA, EXPS=NA,  MO.BASE.NUMB=NA, BEATS.MO.BASE.PCT=NA, YRS.BASE.NUMB=NA, BEATS.YRS.BASE.PCT=NA, stringsAsFactors=FALSE) 
+    COLLECTION <- COLLECTION[FALSE,,drop=FALSE]
     
     for(vars.allvalue in seq_along(ALLVALUE)) {
       
@@ -112,6 +143,16 @@ main_valuesight1_999_miniplay1 <- function(pauseat=NULL) {
         # only the .Adjusted column
         assign(paste0(TICKER,".MO.ADJ"), value=Ad(eval(parse(text=paste0(TICKER,".MO")))))
         assign(paste0(TICKER,".MO.ADJ"), value=  eval(parse(text=paste0(TICKER,".MO.ADJ"))), envir = .GlobalEnv)
+        
+        bookmark_here <- 1
+        
+        # find maximum drawdown ( Andre Definition ) during 2008
+        if(NROW(eval(parse(text=paste0(TICKER,".MO.ADJ")))["2007-12-31"]) == 1 && NROW(eval(parse(text=paste0(TICKER,".MO.ADJ")))["2008-12-31"]) == 1) {
+          draw.down.2008.pct =  ( min(eval(parse(text=paste0(TICKER,".MO.ADJ")))["2008"]) - eval(parse(text=paste0(TICKER,".MO.ADJ")))["2007-12-31"] )/ abs(eval(parse(text=paste0(TICKER,".MO.ADJ")))["2007-12-31"]) * 100
+        } else {
+          draw.down.2008.pct = NA
+        }
+        names(draw.down.2008.pct)[1] <- "DRAW.DOWN.2008.PCT"
         
         bookmark_here <- 1
         
@@ -175,13 +216,28 @@ main_valuesight1_999_miniplay1 <- function(pauseat=NULL) {
         print(paste0("Beats BASELINE year  pct of time: " , returns.yearly.COL2BEATS1.PCT))
         print("")
         
+        # store in THE data.frame FOR sorting LATER
+        COLLECTION <- rbind(COLLECTION,data.frame(
+            VALUECAT          = names(ALLVALUE)[vars.allvalue]
+          , TICKER            = names(ALLVALUE[[vars.allvalue]])[vars.specvalue]
+          , DESCR             = ALLVALUE[[vars.allvalue]][[vars.specvalue]][["DESCR"]]
+          , EXPS              = ALLVALUE[[vars.allvalue]][[vars.specvalue]][["EXPS"]]
+          , MO.BASE.NUMB          = NROW(returns.COL2BEATS1)
+          , BEATS.MO.BASE.PCT     = returns.COL2BEATS1.PCT
+          , YRS.BASE.NUMB         = NROW(returns.yearly.COL2BEATS1)
+          , BEATS.YRS.BASE.PCT    = returns.yearly.COL2BEATS1.PCT
+          , DRAW.DOWN.2008.PCT    = draw.down.2008.pct
+        ))
+        
         bookmark_here <- 1
+        # View(COLLECTION)
         
       }
       
     }
     
     bookmark_here <- 1
+    # View(COLLECTION)
     
     # as of "Feb 22, 2015"
     
