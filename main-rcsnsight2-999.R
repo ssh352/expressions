@@ -732,6 +732,44 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
     
     bookmark_here <- 1
     
+    #  to make useful math 
+    
+    # FROM ABOVE
+    
+    #     Title:               Unemployed
+    #     Series ID:           UNEMPLOY
+    #     Source:              US. Bureau of Labor Statistics
+    #     Release:             Employment Situation
+    #     Seasonal Adjustment: Seasonally Adjusted
+    #     Frequency:           Monthly
+    #     Units:               Thousands of Persons
+    #     Date Range:          1948-01-01 to 2014-12-01
+    #     
+    #     http://research.stlouisfed.org/fred2/data/UNEMPLOY.txt
+    
+    # FROM ABOVE
+    
+    #     Title:               Total Population: All Ages including Armed Forces Overseas
+    #     Series ID:           POP
+    #     Source:              US. Bureau of the Census
+    #     Release:             Monthly National Population Estimates (Not a Press Release)
+    #     Seasonal Adjustment: Not Seasonally Adjusted
+    #     Frequency:           Monthly
+    #     Units:               Thousands
+    #     Date Range:          1952-01-01 to 2014-11-01
+    #     
+    #     http://research.stlouisfed.org/fred2/data/POP.txt
+    
+    UNEMPLOY.DELAYONE.ABS.ADJUSTNOW / POP.DELAYTWO.ABS.ADJUSTNOW * 100 -> CALC.UNEMPLOY.OVER.POP.ADJUSTNOW
+    
+    "CALC.UNEMPLOY.OVER.POP.ADJUSTNOW.Close"                          -> colnames(CALC.UNEMPLOY.OVER.POP.ADJUSTNOW)[1]
+    
+    assign("CALC.UNEMPLOY.OVER.POP.ADJUSTNOW", value=CALC.UNEMPLOY.OVER.POP.ADJUSTNOW, envir = .GlobalEnv)
+    
+    "CALC.UNEMPLOY.OVER.POP.ADJUSTNOW" -> ALL.OBSERVEES["CALC.UNEMPLOY.OVER.POP.ADJUSTNOW"]
+    
+    bookmark_here <- 1
+    
     #     Title:               Civilian Unemployment Rate
     #     Series ID:           UNRATE
     #     Source:              US. Bureau of Labor Statistics
@@ -1407,20 +1445,23 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
       for(var.obsfun in ALL.OBSERVEESFUNCTIONS) {
 
         # relative 
-            
+                    
         if( grepl("LAG\\.PCTCHG\\.OVER\\..*MO",var.obsfun) ) {   
           
+          # browser(text = paste0("loop starting: ", var.obsfun), expr = {  var.obs == "USRECP.DELAYFIVE.ABS.ADJUSTNOW" } )
+          
           # 1/0 0/0 0/1 on/off switches: no sense; skip this
-          if( var.obs == "USRECP.DELAYFIVE.ABS.ADJUSTNOW" ) { 
-            next 
+          # Chauvet/Piger - recession probabilites - wrong math - too extreme to be useful
+          
+          if( var.obs == "USRECP.DELAYFIVE.ABS.ADJUSTNOW" ||
+              var.obs == "RECPROUSM156N.DELAYTHREE.ABS.ADJUSTNOW" 
+          ) { 
+            # do nothing
+          }
+          else {
+            paste0(var.obsfun,"(",var.obs,")") -> CURR.OBSERVEES[[paste0(var.obsfun,"(",var.obs,")")]]
           }
           
-          # Chauvet/Piger - recession probabilites - wrong math - too extreme to be useful
-          if( var.obs == "RECPROUSM156N.DELAYTHREE.ABS.ADJUSTNOW" ) { 
-            next 
-          }
-
-          paste0(var.obsfun,"(",var.obs,")") -> CURR.OBSERVEES[[paste0(var.obsfun,"(",var.obs,")")]]
         }
         
         # absolute  
@@ -1429,12 +1470,19 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
           
           for( var.all.obsfun in ALL.OVER.OBSERVEESFUNCTIONS) {
             
-            # 1/0 0/0 0/1 on/off switches: no sense; skip this
+            # browser()
+            # browser(text = paste0("loop starting: ", var.all.obsfun), expr = {  var.obs == "USRECP.DELAYFIVE.ABS.ADJUSTNOW" } )
+            
+            # USRECP.DELAYFIVE.ABS.ADJUSTNOW 1/0 0/0 0/1 on/off switches: no sense; use the simpler form instead
             if(ALL.OVER.OBSERVEESFUNCTIONS == "COMPARE.ABOVE.PCT"             &&
                                   var.obs  == "USRECP.DELAYFIVE.ABS.ADJUSTNOW"
-               ) {next}
+            ) {
+               # USRECP.DELAYFIVE.ABS.ADJUSTNOW 1/0 0/0 0/1 on/off switches: no sense; use the simpler form instead
+               paste0(var.obsfun,"(",var.obs,")")  -> CURR.OBSERVEES[[paste0(var.obsfun,"(",var.obs,")")]]
+            } else {
+               paste0(var.all.obsfun,"(",var.obsfun,"(",var.obs,"),",var.obs,")") -> CURR.OBSERVEES[[paste0(var.all.obsfun,"(",var.obsfun,"(",var.obs,"),",var.obs,")")]]
+            }
             
-            paste0(var.all.obsfun,"(",var.obsfun,"(",var.obs,"),",var.obs,")") -> CURR.OBSERVEES[[paste0(var.all.obsfun,"(",var.obsfun,"(",var.obs,"),",var.obs,")")]]
           }
           
         }
@@ -1482,13 +1530,13 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
             #                , simplify = FALSE
             #         ) -> newlist
             
-            # all data
+            # all data 
             
 
-            # Train_initDate through Test_finDate
+            # Train_initDate through Test_finDate 
             model.data.ALL <- modelData(data.model, data.window = c(var.testtraindates[["Train"]][["initDate"]] ,var.testtraindates[["Test"]][["finDate"]]))
             
-            # needed for caret::findLinearCombos
+            # needed for caret::findLinearCombos 
             
             model.data.ALL[model.data.ALL == -Inf] <- .Machine[["double.xmin"]]
             model.data.ALL[model.data.ALL ==  Inf] <- .Machine[["double.xmax"]]
@@ -1497,25 +1545,25 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
             # all except the 'predictee column'
             model.data.OBSERVEES.CURR <- model.data.ALL[,setdiff(colnames(model.data.ALL),data.model@model.target)]
             
-            # MAGIC NUMBER ( SHOULD BE STORED ELSEWHERE )
+            # MAGIC NUMBER ( SHOULD BE STORED ELSEWHERE )  
             MinObserveeDate <- "1969-01-31"
             
             # choose only those observee columns that have the 'minimum date of interest'
             model.data.OBSERVEES.CURR <- model.data.OBSERVEES.CURR[,which(!is.na(model.data.OBSERVEES.CURR[MinObserveeDate,colnames(model.data.OBSERVEES.CURR)] ))]
-            # test
+            # test    
             # anyNA(model.data.OBSERVEES.CURR["1969-01-31::",]) == FALSE
                
-            # choose only the observee columns that have the 'minimum date of interest'
+            # choose only the observee columns that have the 'minimum date of interest'  
             # remove the single predectee's COLUMN most recent few NEXT NA elements ( if any )
-            # remove the single predectee's COLUMN trailing NAs ( if possible )
+            # remove the single predectee's COLUMN trailing NAs ( if possible ) 
             # remove observees                     trailing NAs 
-            #  will create a SMOOTH head
+            #  will create a SMOOTH head 
             # xts:::na.omit.xts ( tested: will remove !(complete.cases(any single NA in row) )
             model.data.CURR <-  na.omit(model.data.ALL[,c(data.model@model.target,colnames(model.data.OBSERVEES.CURR))])
             
             bookmarkhere <- 1
             
-            # note: A261RL1Q225SBEA seem to be a nightmare ( consider REMOVING )
+            # note: A261RL1Q225SBEA seem to be a nightmare ( consider REMOVING )  
             
             # caret - remove linear combinations ( do not check the predictee column )
             
@@ -1544,17 +1592,18 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
             # find the predictee column
             model.data.CURR.PREDICTEE.ORIG.COL.INDEX <- which(colnames(model.data.CURR) == data.model@model.target)
             
-            # remove observee correlations ( do not check the predictee column )
+            # remove observee correlations ( do not check the predictee column ) 
             # stats::cor
             # method="spearman" does not return: nan na Inf -Inf
             model.data.CURR.OBSERVEES.CORRELATIONS.MATRIX   <- cor(coredata(model.data.CURR[,-model.data.CURR.PREDICTEE.ORIG.COL.INDEX]), method="spearman")
-            model.data.CURR.OBSERVEES.CORRELATIONS.INDEXES  <- findCorrelation(model.data.CURR.OBSERVEES.CORRELATIONS.MATRIX) 
+            model.data.CURR.OBSERVEES.CORRELATIONS.INDEXES  <- findCorrelation(model.data.CURR.OBSERVEES.CORRELATIONS.MATRIX, cutoff = 1.00) 
+            #          cutoff = 1.0 NO COLUMNS REMOVED
             # default: cutoff = 0.9  will produce 61 observees ( some long term data )
-            #                   0.25 will product 9 points ( all 2MO data )
+            #                   0.25 will product 9 points ( all 2MO data ) 
             
             model.data.CURR.OBSERVEES.COLNAMES.REMOVED <- c()
             # handle zero correctly
-            if(model.data.CURR.OBSERVEES.CORRELATIONS.INDEXES[1] != 0) {
+            if(length(model.data.CURR.OBSERVEES.CORRELATIONS.INDEXES) != 0) {
               
               print("Correlation columns removed.")
               model.data.CURR.OBSERVEES.COLNAMES.REMOVED <- colnames(model.data.CURR[,-model.data.CURR.PREDICTEE.ORIG.COL.INDEX])[model.data.CURR.OBSERVEES.CORRELATIONS.INDEXES]
@@ -1598,6 +1647,55 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
     } 
     
     bookmark_here <- 1 # View(data.frame(t(tail(model.data.CURR,10))))
+    
+    trainControl(## 10-fold CV
+        method = "repeatedcv"  # randomForest ( could have been: 'oob' )
+      , number = 5, # ? trainControl ( "repeatedcv" default seems to be '10' anyways ) # QUICK 5
+      ## repeated ten times    
+      , repeats = 1 # CHANGE FROM 10 ( OR 5 ) DOWN TO 1 ( speed )                      # QUICK 1
+    ) -> fitControl
+    
+    bookmark_here <- 1 
+    
+    train( 
+        x = data.frame(model.data.train.CURR[,setdiff(colnames(model.data.train.CURR),data.model@model.target)],stringsAsFactors=FALSE)            
+      , y = as.vector(model.data.train.CURR[,data.model@model.target])
+      , trControl = fitControl
+      , method = "gbm" 
+      , verbose = FALSE # gbm TOO MUCH # default is TRUE? anyway?
+      , tuneGrid = expand.grid(interaction.depth = seq(1, 7, by = 2),n.trees = seq(100, 200, by = 50),shrinkage = c(0.1)) 
+    ) -> FitterTune
+    
+    bookmark_here <- 1 
+    
+    # gbm::summary(method=relative.influence) ?
+    #   # > caret:::varImp.gbm
+    #   # function (object, numTrees = NULL, ...)
+    # varImpFound <- varImp(FitterTune,numTrees = 1000)
+    
+    # TOO MUCH TIME
+    # LEFT_OFF ( skip VARIMP:  RESUME with ICA )
+    
+
+    ## LEFT_OFF
+    
+    # [x] ADD NUMBER ratio: unumployment/population
+    # DONE
+    
+    # [x] ADJUST removeCorr 1.00
+    # DONE
+    
+    # [ ] PRINT gbm Variable Importance
+    
+    # follow rest rcnsight1 
+    # ICA
+    # [SMOTE]
+    # gbm
+    # predict
+    
+    
+    
+    
     
     # *** LEFT_OFF ***
     # [X]  !!!! VERIFY THAT THE DATA IS ALIGNED TO 14-12-31: Browse[2]> View(data.frame(t(tail(model.data.test,10))))
