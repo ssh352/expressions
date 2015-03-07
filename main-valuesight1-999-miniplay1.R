@@ -95,6 +95,16 @@ main_valuesight1_999_miniplay1 <- function(pauseat=NULL) {
         , WSCVX = list( DESCR = "Walthausen Small Cap Value Fund (WSCVX)"               , EXPS = 1.25  )
         , VSCAX = list( DESCR = "Invesco Small Cap Value (VSCAX)"                       , EXPS = 1.12  )
 
+      ),
+      OTHERVALUE = list(
+          VFIIX = list( DESCR = "AAII MFG2015 Vanguard GNMA Inv (VFIIX)"   , EXPS = 0.21   )
+        , VTMFX = list( DESCR = "AAII MFG2015 Vanguard Tax-Mgd Bal Adm (VTMFX)"         , EXPS = 0.12   )
+        , VBILX = list( DESCR = "AAII MFG2015 Vanguard Intm Bd Idx Adm (VBILX)"         , EXPS = 0.10   )
+        , VIVAX = list( DESCR = "AAII MFG2015 Vanguard Val Idx Inv (VIVAX)"             , EXPS = 0.24   )
+        , VMVIX = list( DESCR = "AAII MFG2015 Vanguard MdCp Val Idx Inv (VMVIX)"        , EXPS = 0.24   )
+        , VISVX = list( DESCR = "AAII MFG2015 Vanguard SmCp Val Idx Inv (VISVX)"        , EXPS = 0.24   )
+          
+          
       )
     )
 
