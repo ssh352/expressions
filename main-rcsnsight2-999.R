@@ -138,11 +138,11 @@ getSymbols.multpl <- function(
   #   http://www.multpl.com/s-p-500-real-earnings-growth/table/by-quarter
   #   
   #   S&P 500 PE Ratio by Month ( MATH) ( SandP.500.PE.Ratio )
-  #   Price to earnings ratio, based on trailing twelve month “as reported”
+  #   Price to earnings ratio, based on trailing twelve month âas reportedâ
   #   http://www.multpl.com/table?f=m
   
   # S&P 500 Book Value Per Share by Quarter ( "SandP.500.BV.Per.Share" )
-  # S&P 500 book value per share — non-inflation adjusted current dollars. 
+  # S&P 500 book value per share â non-inflation adjusted current dollars. 
   # http://www.multpl.com/s-p-500-book-value/table/by-quarter
   
   # web site and owner
@@ -174,7 +174,7 @@ getSymbols.multpl <- function(
   
   require(XML)     # NEED readHTMLTable
   # Hadley Wickham # web scraping 
-  require(rvest)   # imports XML  masked from ‘package:XML’: xml
+  require(rvest)   # imports XML  masked from âpackage:XMLâ: xml
   # IF uncommented : require(XML), USE: XML::xml to access XML::xml
   require(xts)     # as.xts STUFF
   
@@ -336,10 +336,12 @@ retrieveSymbolsmultplRdata <- function(
 
 
 
-main_rcsnsight2_999 <- function(pauseat=NULL) {
+main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
   
   main_rcsnsight2_999_inner <- function(...) {
   
+    set.seed(THESEED)
+    
     bookmarkhere <- 1
     
     setwd("N:\\MyVMWareSharedFolder\\rcsnsight1\\R")
@@ -1545,15 +1547,15 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
             # all except the 'predictee column'
             model.data.OBSERVEES.CURR <- model.data.ALL[,setdiff(colnames(model.data.ALL),data.model@model.target)]
             
-            # MAGIC NUMBER ( SHOULD BE STORED ELSEWHERE )  
+            # MAGIC NUMBER ( SHOULD BE STORED ELSEWHERE )    
             MinObserveeDate <- "1969-01-31"
             
             # choose only those observee columns that have the 'minimum date of interest'
             model.data.OBSERVEES.CURR <- model.data.OBSERVEES.CURR[,which(!is.na(model.data.OBSERVEES.CURR[MinObserveeDate,colnames(model.data.OBSERVEES.CURR)] ))]
-            # test    
+            # test     
             # anyNA(model.data.OBSERVEES.CURR["1969-01-31::",]) == FALSE
                
-            # choose only the observee columns that have the 'minimum date of interest'  
+            # choose only the observee columns that have the 'minimum date of interest'   
             # remove the single predectee's COLUMN most recent few NEXT NA elements ( if any )
             # remove the single predectee's COLUMN trailing NAs ( if possible ) 
             # remove observees                     trailing NAs 
@@ -1572,8 +1574,12 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
             
             # remove observee linear combinations ( do not check the predictee column )
             model.data.CURR.OBSERVEES.LINEARCOMBOS.INDEXES  <- findLinearCombos(coredata(model.data.CURR[,-model.data.CURR.PREDICTEE.ORIG.COL.INDEX]))[["remove"]] 
+            #### TEMPORARILIY TURN OFF 'REMOVE LINEAR COMBINATIONS ###
+            print("### TEMPORARILIY TURN OFF 'REMOVE LINEAR COMBINATIONS '###")
+            NULL -> model.data.CURR.OBSERVEES.LINEARCOMBOS.INDEXES
             
             model.data.CURR.OBSERVEES.COLNAMES.REMOVED <- c()
+            
             if(!is.null(model.data.CURR.OBSERVEES.LINEARCOMBOS.INDEXES)) {
             
               print("Linear combination columns removed.")
@@ -1657,13 +1663,18 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
     
     bookmark_here <- 1 
     
+    print("")
+    print("Begin train to determine variable importance")
+    print("")
+    
     train( 
         x = data.frame(model.data.train.CURR[,setdiff(colnames(model.data.train.CURR),data.model@model.target)],stringsAsFactors=FALSE)            
       , y = as.vector(model.data.train.CURR[,data.model@model.target])
       , trControl = fitControl
       , method = "gbm" 
       , verbose = FALSE # gbm TOO MUCH # default is TRUE? anyway?
-      , tuneGrid = expand.grid(interaction.depth = seq(1, 7, by = 2),n.trees = seq(100, 200, by = 50),shrinkage = c(0.1)) 
+      # , tuneGrid = expand.grid(interaction.depth = seq(1, 7, by = 2),n.trees = seq(500, 1000, by = 250),shrinkage = c(0.1)) 
+      , tuneGrid = expand.grid(interaction.depth = 7, n.trees = 500, shrinkage = c(0.01))
     ) -> FitterTune
     
     bookmark_here <- 1 
@@ -1671,7 +1682,112 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
     # gbm::summary(method=relative.influence) ?
     #   # > caret:::varImp.gbm
     #   # function (object, numTrees = NULL, ...)
-    # varImpFound <- varImp(FitterTune,numTrees = 1000)
+    varImpFound <- varImp(FitterTune,numTrees = 500) # numTrees number must equal a number found in train(n.trees)
+    
+    # small data.frame of variable importance
+    model.data.CURR.OBSERVEES.IMPORTANCES <- dplyr::filter(dplyr::arrange( cbind(row.names(varImpFound$importance),varImpFound$importance), desc(Overall)), Overall >= 10.0)
+    
+    print("Most Important Observees kept")
+    print(model.data.CURR.OBSERVEES.IMPORTANCES)
+    
+    # Important Observees
+    model.data.CURR.OBSERVEES.MOST.IMPORTANT.VARIABLES <- model.data.CURR.OBSERVEES.IMPORTANCES[,"row.names(varImpFound$importance)"]
+    
+    ### TEMPORARILIY TURN OFF 'IMPORTANT VARIABLES' #####
+    print("### TEMPORARILIY TURN OFF 'IMPORTANT VARIABLES' #####")
+    model.data.CURR.OBSERVEES.MOST.IMPORTANT.VARIABLES <- setdiff(colnames(model.data.train.CURR),data.model@model.target)
+    
+    print("")
+    print("End train to determine variable importance")
+    print("")
+    
+    print("")
+    print("Begin train to determine predictions")
+    print("")
+    
+    # trainControl ( SHOULD BE BETTER ALTERNATE)
+    #   method='timeslice' # ( Zachary Mayer )
+    #   initialWindow
+    #   horizon
+    #   fixedWindow
+    
+    # THIS IS 'GOOD'
+    trainControl(## 10-fold CV
+      method = "repeatedcv"  # randomForest ( could have been: 'oob' )
+      , number = 5, # ? trainControl ( "repeatedcv" default seems to be '10' anyways ) # QUICK 5
+      ## repeated ten times    
+      , repeats = 1 # CHANGE FROM 10 ( OR 5 ) DOWN TO 1 ( speed ) # QUICK 1
+      # , preProcOptions = list(ICAcomp = 2)
+    ) -> fitControl
+    
+#   # Zachary Mayer
+
+    # gbm WITH timeslices
+    # Error in train.default(x = data.frame(model.data.train.CURR[, model.data.CURR.OBSERVEES.MOST.IMPORTANT.VARIABLES],  : 
+    # final tuning parameters could not be determined 
+
+    # 50: In eval(expr, envir, enclos) :
+    # model fit failed for Training050: interaction.depth=7, n.trees=500, shrinkage=0.01 
+    # Error in gbm.fit(x = structure(list(LAG.PCTCHG.OVER.7MO.NAPM.DELAYONE.ABS.ADJUSTNOW = c(15.8069883527454,  :                                                                                                                                                                         
+    # The dataset size is too small or subsampling rate is too large: nTrain*bag.fraction <= n.minobsinnode
+    #
+    #  the number of iterations,T(n.trees)
+    #  the depth of each tree,K(interaction.depth)
+    #  the shrinkage (or learning rate) parameter,Î»(shrinkage)
+    #  the subsampling rate,p(bag.fraction)
+    #
+    #  Generalized Boosted Models: A guide to the gbm package Greg Ridgeway August 3, 2007
+
+    # defaults
+    # n.trees = 100,
+    # interaction.depth = 1,
+    # n.minobsinnode = 10,
+    # shrinkage = 0.001,
+    # bag.fraction = 0.5,
+
+    #     trainControl(
+    #         method = "timeslice"  
+    #       , initialWindow=15
+    #       , fixedWindow=TRUE
+    #       , horizon=15
+    #       # , preProcOptions = list(ICAcomp = 2)
+    #     ) -> fitControl
+    
+    # almost the same as above but I added ica
+    train( 
+      x = data.frame(model.data.train.CURR[,model.data.CURR.OBSERVEES.MOST.IMPORTANT.VARIABLES],stringsAsFactors=FALSE)            
+      , y = as.vector(model.data.train.CURR[,data.model@model.target])
+      , trControl = fitControl
+      , method = "gbm" 
+      , verbose = FALSE # gbm TOO MUCH # default is TRUE? anyway?
+      # , preProcess = "ica"
+      # , tuneGrid = expand.grid(interaction.depth = seq(1, 7, by = 2),n.trees = seq(500, 1000, by = 250),shrinkage = c(0.1)) 
+      , tuneGrid = expand.grid(interaction.depth = 7, n.trees = 500, shrinkage = c(0.01)) 
+    ) -> FitterTune
+    
+    # caret
+    newpred <- predict(FitterTune, newdata=data.frame(model.data.test.CURR[,model.data.CURR.OBSERVEES.MOST.IMPORTANT.VARIABLES],stringsAsFactors=FALSE) )
+    
+    # cbind.xts wrapper over merge.xts
+    model.data.test.CURR.PRED <- cbind(model.data.test.CURR[,data.model@model.target], CURR.PRED=newpred )
+    "CURR.VALUE" -> colnames(model.data.test.CURR.PRED)[1]
+    
+    # View(model.data.test.CURR.PRED)
+    # plot.zoo(model.data.test.CURR.PRED,n=1,main=data.model@model.target)
+    
+    bookmark_here <- 1
+    
+    # zoo:::with.zoo
+    print("Ave pct that the CURR.PRED is away from the CURR.VALUE")
+    print(sum(with(model.data.test.CURR.PRED,{ abs((CURR.PRED - CURR.VALUE)/abs(CURR.VALUE) * 100)}))/NROW(model.data.test.CURR.PRED))
+    
+    bookmark_here <- 1
+        
+    print("")
+    print("End train to determine predictions")
+    print("")
+    
+    bookmark_here <- 1
     
     # TOO MUCH TIME
     # LEFT_OFF ( skip VARIMP:  RESUME with ICA )
@@ -1838,6 +1954,7 @@ main_rcsnsight2_999 <- function(pauseat=NULL) {
   
 }
 # main_rcsnsight2_999()
+# main_rcsnsight2_999(THESEED = 2)
 # debugSource('N:/MyVMWareSharedFolder/rcsnsight1/R/main-rcsnsight2-999.R') 
 # rm(list=ls(all.names=TRUE))
 
