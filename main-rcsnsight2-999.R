@@ -98,8 +98,8 @@ retrieveSymbolsQuantmodRdata <- function(
       # merge.xt will prefix column(s)? with an "X".  Remove this "X"
       sub("^X","",colnames(x)) -> colnames(x)
       
-      # interpolate
-      na.approx(merge.xts(monthsxts,x, join="left")) -> x
+      # interpolate(na.approx) to locf(na.locf) 
+      na.locf(merge.xts(monthsxts,x, join="left")) -> x
       
       # merge.xt will prefix column(s)? with an "X".  Remove this "X"
       sub("^X","",colnames(x)) -> colnames(x)
@@ -255,8 +255,8 @@ getSymbols.multpl <- function(
       # merge.xt will prefix column(s)? with an "X".  Remove this "X"
       sub("^X","",colnames(nowxts)) -> colnames(nowxts)
     
-    # interpolate
-    na.approx(merge.xts(monthsxts,nowxts, join="left")) -> nowxts
+    # interpolate(na.approx) to locf(na.locf)
+    na.locf(merge.xts(monthsxts,nowxts, join="left")) -> nowxts
     
       # merge.xt will prefix column(s)? with an "X".  Remove this "X"
       sub("^X","",colnames(nowxts)) -> colnames(nowxts)
@@ -401,7 +401,40 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
         ,index(  xts(,as.Date(("2014-12-31")))   ))) 
     ) -> MaxAllTestTrainMonthEnds
     
-    # S&P500 from yahoo
+    
+    retrieveSymbolsQuantmodRdata(
+      finSymbol = "UMCSENT1"
+      , finSymbolRemoteSource = "Quantmod_FRED"
+      , finSymbolAttributes = c("Close")
+      , initDate = "1950-03-01"
+      , subtractOffDaysSpec = -1
+      , interpolate = TRUE
+    ) -> UMCSENT1
+    
+    retrieveSymbolsQuantmodRdata(
+      finSymbol = "UMCSENT"
+      , finSymbolRemoteSource = "Quantmod_FRED"
+      , finSymbolAttributes = c("Close")
+      , initDate = "1950-03-01"
+      , subtractOffDaysSpec = -1
+      , interpolate = TRUE
+    ) -> UMCSENT
+    
+    "UMSENT.HIST.FRED" -> colnames(UMCSENT1) 
+    "UMSENT.HIST.FRED" -> colnames(UMCSENT) 
+    
+    # zoo no.locf
+    # cbind.xts
+    # one month patch
+    xts(as.numeric(NA),as.Date("1977-11-30")) -> xtspatch
+    "UMSENT.HIST.FRED" -> colnames(xtspatch)
+    na.locf(rbind(UMCSENT1, xtspatch, UMCSENT))  -> UMSENT.HIST.FRED 
+    
+    bookmark_here <- 1
+    
+    # LEFT_OFF above TRYING TO WORK IN UMICH SENTIMENT SURVEY
+    
+    # S&P500 from yahoo  
     
     retrieveSymbolsQuantmodRdata(
         finSymbol = "^GSPC"
@@ -1355,7 +1388,8 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
       
       # TTR rule: required 'x' data cannot have 'NA gaps' between the head and the tail
       # Error in runSum(x, n) : Series contains non-leading NAs
-      na.approx(x) -> x
+      # interpolate(na.approx) to locf(na.locf) 
+      na.locf(x) -> x
       
       do.call(math,list(x = x, n = over)) -> y # note TTR functions WILL remove NA head data EXCEPT one NA
       y -> coredata(x)
@@ -1498,10 +1532,12 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     
     # non-dynamic solution ( would HAVE preferred to get this from ALL.PREDICTEESFUNCTIONS and ALL.PREDICTEES
     
+    # *** On Predictee ( ONE of TWO code chanages are here ) *** #
     # ALL.PREDICTEES.HARD.CODED 
-    "NEXT.PCTCHG.OVER.3MO(GSPC.DELAYZERO.ABS.CLOSE)"                              -> ALL.PREDICTEES.HARD.CODED[["NEXT.PCTCHG.OVER.3MO(GSPC.DELAYZERO.ABS.CLOSE)"]]
+    # main thing I try to predict
+    # "NEXT.PCTCHG.OVER.3MO(GSPC.DELAYZERO.ABS.CLOSE)"                              -> ALL.PREDICTEES.HARD.CODED[["NEXT.PCTCHG.OVER.3MO(GSPC.DELAYZERO.ABS.CLOSE)"]]
     # "NEXT.PCTDRAWDOWN.OVER.3MO(GSPC.DELAYZERO.ABS.CLOSE,GSPC.DELAYZERO.ABS.LOW)"  -> ALL.PREDICTEES.HARD.CODED[["NEXT.PCTDRAWDOWN.OVER.3MO(GSPC.DELAYZERO.ABS.CLOSE,GSPC.DELAYZERO.ABS.LOW)"]]
-    # "NEXT.PCTCHG.OVER.3MO(GDP.DELAYSIX.ABS.ADJUSTNOW)"                            -> ALL.PREDICTEES.HARD.CODED[["NEXT.PCTCHG.OVER.3MO(GDP.DELAYSIX.ABS.ADJUSTNOW)"]]
+    "NEXT.PCTCHG.OVER.3MO(GDP.DELAYSIX.ABS.ADJUSTNOW)"                            -> ALL.PREDICTEES.HARD.CODED[["NEXT.PCTCHG.OVER.3MO(GDP.DELAYSIX.ABS.ADJUSTNOW)"]]
     
     bookmark_here <- 1 
     
@@ -1512,8 +1548,10 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
         # for right now ( just this one )
         if( var.testtraindates[["ListName"]] == "Test2008" ) {
         
+          # *** On Predictee ( TWO of TWO code changes are here ) *** #
           # for right now ( just this one )
-          if( var.all.pred.hard == "NEXT.PCTCHG.OVER.3MO(GSPC.DELAYZERO.ABS.CLOSE)" ) {
+          # if( var.all.pred.hard == "NEXT.PCTCHG.OVER.3MO(GSPC.DELAYZERO.ABS.CLOSE)" ) {
+          if( var.all.pred.hard == "NEXT.PCTCHG.OVER.3MO(GDP.DELAYSIX.ABS.ADJUSTNOW)" ) {
             
             # 'right now' 
             var.all.pred.hard -> CURR.PREDICTEE 
@@ -1532,7 +1570,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
             #                , simplify = FALSE
             #         ) -> newlist
             
-            # all data 
+            # all data   
             
 
             # Train_initDate through Test_finDate 
@@ -1555,17 +1593,17 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
             # test     
             # anyNA(model.data.OBSERVEES.CURR["1969-01-31::",]) == FALSE
                
-            # choose only the observee columns that have the 'minimum date of interest'   
+            # choose only the observee columns that have the 'minimum date of interest'    
             # remove the single predectee's COLUMN most recent few NEXT NA elements ( if any )
             # remove the single predectee's COLUMN trailing NAs ( if possible ) 
-            # remove observees                     trailing NAs 
+            # remove observees                     trailing NAs  
             #  will create a SMOOTH head 
             # xts:::na.omit.xts ( tested: will remove !(complete.cases(any single NA in row) )
             model.data.CURR <-  na.omit(model.data.ALL[,c(data.model@model.target,colnames(model.data.OBSERVEES.CURR))])
             
             bookmarkhere <- 1
             
-            # note: A261RL1Q225SBEA seem to be a nightmare ( consider REMOVING )  
+            # note: A261RL1Q225SBEA seem to be a nightmare ( consider REMOVING )   
             
             # caret - remove linear combinations ( do not check the predictee column )
             
@@ -1656,9 +1694,9 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     
     trainControl(## 10-fold CV
         method = "repeatedcv"  # randomForest ( could have been: 'oob' )
-      , number = 5, # ? trainControl ( "repeatedcv" default seems to be '10' anyways ) # QUICK 5
+      , number = 5, # 10 ? trainControl ( "repeatedcv" default seems to be '10' anyways ) # QUICK 5
       ## repeated ten times    
-      , repeats = 1 # CHANGE FROM 10 ( OR 5 ) DOWN TO 1 ( speed )                      # QUICK 1
+      , repeats = 1 # 3 CHANGE FROM 10 ( OR 5 ) DOWN TO 1 ( speed )                      # QUICK 1
     ) -> fitControl
     
     bookmark_here <- 1 
@@ -1714,9 +1752,9 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     # THIS IS 'GOOD'
     trainControl(## 10-fold CV
       method = "repeatedcv"  # randomForest ( could have been: 'oob' )
-      , number = 5, # ? trainControl ( "repeatedcv" default seems to be '10' anyways ) # QUICK 5
+      , number = 5, # 10 ? trainControl ( "repeatedcv" default seems to be '10' anyways ) # QUICK 5
       ## repeated ten times    
-      , repeats = 1 # CHANGE FROM 10 ( OR 5 ) DOWN TO 1 ( speed ) # QUICK 1
+      , repeats = 1 # 3 CHANGE FROM 10 ( OR 5 ) DOWN TO 1 ( speed ) # QUICK 1
       # , preProcOptions = list(ICAcomp = 2)
     ) -> fitControl
     
