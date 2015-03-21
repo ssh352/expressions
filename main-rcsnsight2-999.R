@@ -3,6 +3,20 @@
 
 # main-rcsnsight2-999.R 
 
+# ###########################
+# IMPORTANT
+#
+# GOOD ENOUGH FOR NOW
+#
+# (THIS) Works well gbm - 7,500,0.01
+#
+# FUTURE try gbm combos
+# trees 500/1000
+# interaction depth = 7
+# learn rate 0.05,0.20
+#
+#############################
+
 options(width = 255)     
 options(digits = 22) 
 options(max.print=99999)
@@ -371,36 +385,42 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     
     # every function
     list() -> ALL.OBSERVEES
-    
     list() -> ALL.OBSERVEESFUNCTIONS
     list() -> ALL.OVER.OBSERVEESFUNCTIONS
-    
     list() -> ALL.PREDICTEESFUNCTIONS
-    
-    list() -> ALL.PREDICTEES             # seems NO LONGER USED ( I could eliminate )
-    
     list() -> ALL.PREDICTEES.HARD.CODED
     
+    
+    # NOTE: PROGRAM (MAY) NOT (REALISTICALLY) WORK IF DATE IS BEFORE "1950-03-01/1950-03-31"
+    # NOTE: "1950-03-01" IS STILL HARD_CODED in PLACES
+    initData.TestTrain.Global.Earliest <- "1950-03-31"
+    
+    finDate.TestTrain.Global.Latest    <- "2015-03-31"  # 2014-12-31(perfect) 
+                                                        # march 21, 2015 run: "2015-01-31": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
+                                                        # march 21, 2015 run: "2015-02-28": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
+                                                        # march 21, 2015 run: "2015-03-31": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
+    
     # training and TRUE tests
-    list(Test2001 = list(Train=list(initDate="1950-03-31",finDate ="1998-12-31"),
-                          Test=list(initDate="1999-01-01",finDate ="2014-12-31"),
-                          ListName="Test2001"
-        ),
-          Test2008 = list(Train=list(initDate="1950-03-31",finDate ="2003-12-31"),
-                           Test=list(initDate="2004-01-31",finDate ="2014-12-31"),
-                           ListName="Test2008"
-        )
+    list(Test2001 = list(Train=list(initDate = initData.TestTrain.Global.Earliest,finDate ="1998-12-31"),
+                         Test=list(initDate = "1999-01-01",finDate = finDate.TestTrain.Global.Latest),
+                         ListName="Test2001"
+    ),
+    Test2008 = list(Train=list(initDate = initData.TestTrain.Global.Earliest,finDate ="2003-12-31"),
+                    Test=list(initDate="2004-01-31",finDate = finDate.TestTrain.Global.Latest),
+                    ListName="Test2008"
+    )
     ) -> TestTrainDates
     
-    # max range : total ; training and TRUE tests "1950-03-31" to "2014-12-31"
+    # max range : total ; training and TRUE tests initData.TestTrain.Global.Earliest to finDate.TestTrain.Global.Latest
     xts( 
       , order.by = as.Date(c(dateSeq(
-        from = index(xts(,as.Date(("1950-03-31"))))
-        , to = index(xts(,as.Date(("2014-12-31")))) 
+        from = index(xts(,as.Date((initData.TestTrain.Global.Earliest))))
+        , to = index(xts(,as.Date((finDate.TestTrain.Global.Latest)))) 
         , by="months", k.by = 1 ) - 1 
-        ,index(  xts(,as.Date(("2014-12-31")))   ))) 
+        ,index(  xts(,as.Date((finDate.TestTrain.Global.Latest)))   ))) 
     ) -> MaxAllTestTrainMonthEnds
     
+    MaxAllTestTrainMonthEndsRange <- paste0(initData.TestTrain.Global.Earliest,"::",finDate.TestTrain.Global.Latest)
     
     retrieveSymbolsQuantmodRdata(
       finSymbol = "UMCSENT1"
@@ -443,7 +463,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
       , subtractOffDaysSpec = 0
     ) -> GSPC.DELAYZERO.ABS     # head "1950-03-31"
     merge.xts(MaxAllTestTrainMonthEnds,GSPC.DELAYZERO.ABS) -> GSPC.DELAYZERO.ABS
-    GSPC.DELAYZERO.ABS["1950-03-31::2014-12-31"] -> GSPC.DELAYZERO.ABS
+    GSPC.DELAYZERO.ABS[MaxAllTestTrainMonthEndsRange] -> GSPC.DELAYZERO.ABS
     
     assign("GSPC.DELAYZERO.ABS", value=GSPC.DELAYZERO.ABS, envir = .GlobalEnv)
     
@@ -487,7 +507,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     
     pullAheadZOOData(USRECP.DELAYFIVE.ABS,5) -> USRECP.DELAYFIVE.ABS.ADJUSTNOW
     merge.xts(MaxAllTestTrainMonthEnds,USRECP.DELAYFIVE.ABS.ADJUSTNOW) -> USRECP.DELAYFIVE.ABS.ADJUSTNOW
-    USRECP.DELAYFIVE.ABS.ADJUSTNOW["1950-03-31::2014-12-31"] -> USRECP.DELAYFIVE.ABS.ADJUSTNOW
+    USRECP.DELAYFIVE.ABS.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> USRECP.DELAYFIVE.ABS.ADJUSTNOW
     
     assign("USRECP.DELAYFIVE.ABS.ADJUSTNOW", value=USRECP.DELAYFIVE.ABS.ADJUSTNOW, envir = .GlobalEnv)
     
@@ -514,7 +534,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     
     pullAheadZOOData(RECPROUSM156N.DELAYTHREE.ABS,3) -> RECPROUSM156N.DELAYTHREE.ABS.ADJUSTNOW
     merge.xts(MaxAllTestTrainMonthEnds,RECPROUSM156N.DELAYTHREE.ABS.ADJUSTNOW) -> RECPROUSM156N.DELAYTHREE.ABS.ADJUSTNOW
-    RECPROUSM156N.DELAYTHREE.ABS.ADJUSTNOW["1950-03-31::2014-12-31"] -> RECPROUSM156N.DELAYTHREE.ABS.ADJUSTNOW
+    RECPROUSM156N.DELAYTHREE.ABS.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> RECPROUSM156N.DELAYTHREE.ABS.ADJUSTNOW
     
     assign("RECPROUSM156N.DELAYTHREE.ABS.ADJUSTNOW", value=RECPROUSM156N.DELAYTHREE.ABS.ADJUSTNOW, envir = .GlobalEnv)
     
@@ -542,7 +562,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     
     pullAheadZOOData(GDP.DELAYSIX.ABS,6) -> GDP.DELAYSIX.ABS.ADJUSTNOW
     merge.xts(MaxAllTestTrainMonthEnds,GDP.DELAYSIX.ABS.ADJUSTNOW) -> GDP.DELAYSIX.ABS.ADJUSTNOW
-    GDP.DELAYSIX.ABS.ADJUSTNOW["1950-03-31::2014-12-31"] -> GDP.DELAYSIX.ABS.ADJUSTNOW
+    GDP.DELAYSIX.ABS.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> GDP.DELAYSIX.ABS.ADJUSTNOW
     
     assign("GDP.DELAYSIX.ABS.ADJUSTNOW", value=GDP.DELAYSIX.ABS.ADJUSTNOW, envir = .GlobalEnv)
     
@@ -571,7 +591,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     
     pullAheadZOOData(GS10.DELAYONE.ABS,1) -> GS10.DELAYONE.ABS.ADJUSTNOW
     merge.xts(MaxAllTestTrainMonthEnds,GS10.DELAYONE.ABS.ADJUSTNOW) -> GS10.DELAYONE.ABS.ADJUSTNOW
-    GS10.DELAYONE.ABS.ADJUSTNOW["1950-03-31::2014-12-31"] -> GS10.DELAYONE.ABS.ADJUSTNOW
+    GS10.DELAYONE.ABS.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> GS10.DELAYONE.ABS.ADJUSTNOW
     
     assign("GS10.DELAYONE.ABS.ADJUSTNOW", value=GS10.DELAYONE.ABS.ADJUSTNOW, envir = .GlobalEnv)
     
@@ -597,7 +617,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
       , subtractOffDaysSpec = 0
     ) -> DGS3MO.DELAYZERO.ABS      # head "1982-01-31"
     merge.xts(MaxAllTestTrainMonthEnds,DGS3MO.DELAYZERO.ABS) -> DGS3MO.DELAYZERO.ABS
-    DGS3MO.DELAYZERO.ABS["1950-03-31::2014-12-31"] -> DGS3MO.DELAYZERO.ABS
+    DGS3MO.DELAYZERO.ABS[MaxAllTestTrainMonthEndsRange] -> DGS3MO.DELAYZERO.ABS
     
     assign("DGS3MO.DELAYZERO.ABS", value=DGS3MO.DELAYZERO.ABS, envir = .GlobalEnv)
     
@@ -662,7 +682,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
       , subtractOffDaysSpec = 0
     ) -> DFF.DELAYZERO.ABS          # head "1954-07-31"
     merge.xts(MaxAllTestTrainMonthEnds,DFF.DELAYZERO.ABS) -> DFF.DELAYZERO.ABS
-    DFF.DELAYZERO.ABS["1950-03-31::2014-12-31"] -> DFF.DELAYZERO.ABS
+    DFF.DELAYZERO.ABS[MaxAllTestTrainMonthEndsRange] -> DFF.DELAYZERO.ABS
     
     assign("DFF.DELAYZERO.ABS", value=DFF.DELAYZERO.ABS, envir = .GlobalEnv)
 
@@ -696,7 +716,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     
     pullAheadZOOData(UNEMPLOY.DELAYONE.ABS,1) -> UNEMPLOY.DELAYONE.ABS.ADJUSTNOW
     merge.xts(MaxAllTestTrainMonthEnds,UNEMPLOY.DELAYONE.ABS.ADJUSTNOW) -> UNEMPLOY.DELAYONE.ABS.ADJUSTNOW
-    UNEMPLOY.DELAYONE.ABS.ADJUSTNOW["1950-03-31::2014-12-31"] -> UNEMPLOY.DELAYONE.ABS.ADJUSTNOW
+    UNEMPLOY.DELAYONE.ABS.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> UNEMPLOY.DELAYONE.ABS.ADJUSTNOW
     
     assign("UNEMPLOY.DELAYONE.ABS.ADJUSTNOW", value=UNEMPLOY.DELAYONE.ABS.ADJUSTNOW, envir = .GlobalEnv)
     
@@ -727,7 +747,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     
     pullAheadZOOData(UEMPMED.DELAYONE.ABS,1) -> UEMPMED.DELAYONE.ABS.ADJUSTNOW
     merge.xts(MaxAllTestTrainMonthEnds,UEMPMED.DELAYONE.ABS.ADJUSTNOW) -> UEMPMED.DELAYONE.ABS.ADJUSTNOW
-    UEMPMED.DELAYONE.ABS.ADJUSTNOW["1950-03-31::2014-12-31"] -> UEMPMED.DELAYONE.ABS.ADJUSTNOW
+    UEMPMED.DELAYONE.ABS.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> UEMPMED.DELAYONE.ABS.ADJUSTNOW
     
     assign("UEMPMED.DELAYONE.ABS.ADJUSTNOW", value=UEMPMED.DELAYONE.ABS.ADJUSTNOW, envir = .GlobalEnv)
     
@@ -759,7 +779,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     
     pullAheadZOOData(POP.DELAYTWO.ABS,2) -> POP.DELAYTWO.ABS.ADJUSTNOW
     merge.xts(MaxAllTestTrainMonthEnds,POP.DELAYTWO.ABS.ADJUSTNOW) -> POP.DELAYTWO.ABS.ADJUSTNOW
-    POP.DELAYTWO.ABS.ADJUSTNOW["1950-03-31::2014-12-31"] -> POP.DELAYTWO.ABS.ADJUSTNOW
+    POP.DELAYTWO.ABS.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> POP.DELAYTWO.ABS.ADJUSTNOW
     
     assign("POP.DELAYTWO.ABS.ADJUSTNOW", value=POP.DELAYTWO.ABS.ADJUSTNOW, envir = .GlobalEnv)
     
@@ -828,7 +848,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     
     pullAheadZOOData(UNRATE.DELAYONE.ABS,1) -> UNRATE.DELAYONE.ABS.ADJUSTNOW
     merge.xts(MaxAllTestTrainMonthEnds,UNRATE.DELAYONE.ABS.ADJUSTNOW) -> UNRATE.DELAYONE.ABS.ADJUSTNOW
-    UNRATE.DELAYONE.ABS.ADJUSTNOW["1950-03-31::2014-12-31"] -> UNRATE.DELAYONE.ABS.ADJUSTNOW
+    UNRATE.DELAYONE.ABS.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> UNRATE.DELAYONE.ABS.ADJUSTNOW
     
     assign("UNRATE.DELAYONE.ABS.ADJUSTNOW", value=UNRATE.DELAYONE.ABS.ADJUSTNOW, envir = .GlobalEnv)
     
@@ -858,7 +878,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     
     pullAheadZOOData(CPILFESL.DELAYONE.ABS,1) -> CPILFESL.DELAYONE.ABS.ADJUSTNOW
     merge.xts(MaxAllTestTrainMonthEnds,CPILFESL.DELAYONE.ABS.ADJUSTNOW) -> CPILFESL.DELAYONE.ABS.ADJUSTNOW
-    CPILFESL.DELAYONE.ABS.ADJUSTNOW["1950-03-31::2014-12-31"] -> CPILFESL.DELAYONE.ABS.ADJUSTNOW
+    CPILFESL.DELAYONE.ABS.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> CPILFESL.DELAYONE.ABS.ADJUSTNOW
     
     assign("CPILFESL.DELAYONE.ABS.ADJUSTNOW", value=CPILFESL.DELAYONE.ABS.ADJUSTNOW, envir = .GlobalEnv)
     
@@ -890,7 +910,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
       , subtractOffDaysSpec = 0
     ) -> TREAST.DELAYZERO.ABS     # head "2002-12-31"
     merge.xts(MaxAllTestTrainMonthEnds,TREAST.DELAYZERO.ABS) -> TREAST.DELAYZERO.ABS
-    TREAST.DELAYZERO.ABS["1950-03-31::2014-12-31"] -> TREAST.DELAYZERO.ABS
+    TREAST.DELAYZERO.ABS[MaxAllTestTrainMonthEndsRange] -> TREAST.DELAYZERO.ABS
     
     assign("TREAST.DELAYZERO.ABS", value=TREAST.DELAYZERO.ABS, envir = .GlobalEnv)
     
@@ -917,7 +937,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
       , subtractOffDaysSpec = 0
     ) -> MBST.DELAYZERO.ABS          # head "2002-12-31"
     merge.xts(MaxAllTestTrainMonthEnds,MBST.DELAYZERO.ABS) -> MBST.DELAYZERO.ABS
-    MBST.DELAYZERO.ABS["1950-03-31::2014-12-31"] -> MBST.DELAYZERO.ABS
+    MBST.DELAYZERO.ABS[MaxAllTestTrainMonthEndsRange] -> MBST.DELAYZERO.ABS
     
     assign("MBST.DELAYZERO.ABS", value=MBST.DELAYZERO.ABS, envir = .GlobalEnv)
     
@@ -957,7 +977,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     pullAheadZOOData(INDPRO.DELAYONE.ABS,1) -> INDPRO.DELAYONE.ABS.ADJUSTNOW
  
     merge.xts(MaxAllTestTrainMonthEnds,INDPRO.DELAYONE.ABS.ADJUSTNOW) -> INDPRO.DELAYONE.ABS.ADJUSTNOW
-    INDPRO.DELAYONE.ABS.ADJUSTNOW["1950-03-31::2014-12-31"] -> INDPRO.DELAYONE.ABS.ADJUSTNOW
+    INDPRO.DELAYONE.ABS.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> INDPRO.DELAYONE.ABS.ADJUSTNOW
     
     assign("INDPRO.DELAYONE.ABS.ADJUSTNOW", value=INDPRO.DELAYONE.ABS.ADJUSTNOW, envir = .GlobalEnv)
     
@@ -991,7 +1011,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     
     pullAheadZOOData(NAPM.DELAYONE.ABS,1) -> NAPM.DELAYONE.ABS.ADJUSTNOW
     merge.xts(MaxAllTestTrainMonthEnds,NAPM.DELAYONE.ABS.ADJUSTNOW) -> NAPM.DELAYONE.ABS.ADJUSTNOW
-    NAPM.DELAYONE.ABS.ADJUSTNOW["1950-03-31::2014-12-31"] -> NAPM.DELAYONE.ABS.ADJUSTNOW
+    NAPM.DELAYONE.ABS.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> NAPM.DELAYONE.ABS.ADJUSTNOW
     
     assign("NAPM.DELAYONE.ABS.ADJUSTNOW", value=NAPM.DELAYONE.ABS.ADJUSTNOW, envir = .GlobalEnv)
     
@@ -1025,7 +1045,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     pullAheadZOOData(CMRMTSPL.DELAYTHREE.ABS,3) -> CMRMTSPL.DELAYTHREE.ABS.ADJUSTNOW
 
     merge.xts(MaxAllTestTrainMonthEnds,CMRMTSPL.DELAYTHREE.ABS.ADJUSTNOW) -> CMRMTSPL.DELAYTHREE.ABS.ADJUSTNOW
-    CMRMTSPL.DELAYTHREE.ABS.ADJUSTNOW["1950-03-31::2014-12-31"] -> CMRMTSPL.DELAYTHREE.ABS.ADJUSTNOW
+    CMRMTSPL.DELAYTHREE.ABS.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> CMRMTSPL.DELAYTHREE.ABS.ADJUSTNOW
     
     assign("CMRMTSPL.DELAYTHREE.ABS.ADJUSTNOW", value=CMRMTSPL.DELAYTHREE.ABS.ADJUSTNOW, envir = .GlobalEnv)
     
@@ -1059,7 +1079,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     
     pullAheadZOOData(TCU.DELAYONE.ABS,1) -> TCU.DELAYONE.ABS.ADJUSTNOW
     merge.xts(MaxAllTestTrainMonthEnds,TCU.DELAYONE.ABS.ADJUSTNOW) -> TCU.DELAYONE.ABS.ADJUSTNOW
-    TCU.DELAYONE.ABS.ADJUSTNOW["1950-03-31::2014-12-31"] -> TCU.DELAYONE.ABS.ADJUSTNOW
+    TCU.DELAYONE.ABS.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> TCU.DELAYONE.ABS.ADJUSTNOW
     
     assign("TCU.DELAYONE.ABS.ADJUSTNOW", value=TCU.DELAYONE.ABS.ADJUSTNOW, envir = .GlobalEnv)
     
@@ -1096,7 +1116,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     
     pullAheadZOOData(A261RL1Q225SBEA.DELAYSIX.PCTCHG.OVER3MO,6) -> A261RL1Q225SBEA.DELAYSIX.PCTCHG.OVER3MO.ADJUSTNOW
     merge.xts(MaxAllTestTrainMonthEnds,A261RL1Q225SBEA.DELAYSIX.PCTCHG.OVER3MO.ADJUSTNOW) -> A261RL1Q225SBEA.DELAYSIX.PCTCHG.OVER3MO.ADJUSTNOW
-    A261RL1Q225SBEA.DELAYSIX.PCTCHG.OVER3MO.ADJUSTNOW["1950-03-31::2014-12-31"] -> A261RL1Q225SBEA.DELAYSIX.PCTCHG.OVER3MO.ADJUSTNOW
+    A261RL1Q225SBEA.DELAYSIX.PCTCHG.OVER3MO.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> A261RL1Q225SBEA.DELAYSIX.PCTCHG.OVER3MO.ADJUSTNOW
     
     assign("A261RL1Q225SBEA.DELAYSIX.PCTCHG.OVER3MO.ADJUSTNOW", value=A261RL1Q225SBEA.DELAYSIX.PCTCHG.OVER3MO.ADJUSTNOW, envir = .GlobalEnv)
     
@@ -1133,7 +1153,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     
     pullAheadZOOData(A576RC1Q027SBEA.DELAYFIVE.ABS,5) -> A576RC1Q027SBEA.DELAYFIVE.ABS.ADJUSTNOW
     merge.xts(MaxAllTestTrainMonthEnds,A576RC1Q027SBEA.DELAYFIVE.ABS.ADJUSTNOW) -> A576RC1Q027SBEA.DELAYFIVE.ABS.ADJUSTNOW
-    A576RC1Q027SBEA.DELAYFIVE.ABS.ADJUSTNOW["1950-03-31::2014-12-31"] -> A576RC1Q027SBEA.DELAYFIVE.ABS.ADJUSTNOW
+    A576RC1Q027SBEA.DELAYFIVE.ABS.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> A576RC1Q027SBEA.DELAYFIVE.ABS.ADJUSTNOW
     
     assign("A576RC1Q027SBEA.DELAYFIVE.ABS.ADJUSTNOW", value=A576RC1Q027SBEA.DELAYFIVE.ABS.ADJUSTNOW, envir = .GlobalEnv)
     
@@ -1168,7 +1188,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     
     pullAheadZOOData(SP500.12M.EPS.DELAYTHREE.ABS,3) -> SP500.12M.EPS.DELAYTHREE.ABS.ADJUSTNOW
     merge.xts(MaxAllTestTrainMonthEnds,SP500.12M.EPS.DELAYTHREE.ABS.ADJUSTNOW) -> SP500.12M.EPS.DELAYTHREE.ABS.ADJUSTNOW
-    SP500.12M.EPS.DELAYTHREE.ABS.ADJUSTNOW["1950-03-31::2014-12-31"] -> SP500.12M.EPS.DELAYTHREE.ABS.ADJUSTNOW
+    SP500.12M.EPS.DELAYTHREE.ABS.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> SP500.12M.EPS.DELAYTHREE.ABS.ADJUSTNOW
     
     assign("SP500.12M.EPS.DELAYTHREE.ABS.ADJUSTNOW", value=SP500.12M.EPS.DELAYTHREE.ABS.ADJUSTNOW, envir = .GlobalEnv)
     
@@ -1184,7 +1204,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     
     pullAheadZOOData(SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO,3) -> SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO.ADJUSTNOW
     merge.xts(MaxAllTestTrainMonthEnds,SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO.ADJUSTNOW) -> SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO.ADJUSTNOW
-    SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO.ADJUSTNOW["1950-03-31::2014-12-31"] -> SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO.ADJUSTNOW
+    SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO.ADJUSTNOW
     
     assign("SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO.ADJUSTNOW", value=SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO.ADJUSTNOW, envir = .GlobalEnv)
     
@@ -1195,7 +1215,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
       , finSymbolAttribute = "Close"
     )  -> SP500.PE.RATIO.DELAYZERO.ABS # "SandP.500.PE.Ratio.Close" ( web table header) 
     merge.xts(MaxAllTestTrainMonthEnds,SP500.PE.RATIO.DELAYZERO.ABS) -> SP500.PE.RATIO.DELAYZERO.ABS
-    SP500.PE.RATIO.DELAYZERO.ABS["1950-03-31::2014-12-31"] -> SP500.PE.RATIO.DELAYZERO.ABS
+    SP500.PE.RATIO.DELAYZERO.ABS[MaxAllTestTrainMonthEndsRange] -> SP500.PE.RATIO.DELAYZERO.ABS
     
     assign("SP500.PE.RATIO.DELAYZERO.ABS", value=SP500.PE.RATIO.DELAYZERO.ABS, envir = .GlobalEnv)
 
@@ -1211,7 +1231,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     
     pullAheadZOOData(SP500.BV.PER.SHARE.DELAYTHREE.ABS,3) -> SP500.BV.PER.SHARE.DELAYTHREE.ABS.ADJUSTNOW
     merge.xts(MaxAllTestTrainMonthEnds,SP500.BV.PER.SHARE.DELAYTHREE.ABS.ADJUSTNOW) -> SP500.BV.PER.SHARE.DELAYTHREE.ABS.ADJUSTNOW
-    SP500.BV.PER.SHARE.DELAYTHREE.ABS.ADJUSTNOW["1950-03-31::2014-12-31"] -> SP500.BV.PER.SHARE.DELAYTHREE.ABS.ADJUSTNOW 
+    SP500.BV.PER.SHARE.DELAYTHREE.ABS.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> SP500.BV.PER.SHARE.DELAYTHREE.ABS.ADJUSTNOW 
     
     assign("SP500.BV.PER.SHARE.DELAYTHREE.ABS.ADJUSTNOW", value=SP500.BV.PER.SHARE.DELAYTHREE.ABS.ADJUSTNOW, envir = .GlobalEnv)
     
@@ -1532,8 +1552,8 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     
     # non-dynamic solution ( would HAVE preferred to get this from ALL.PREDICTEESFUNCTIONS and ALL.PREDICTEES
     
-    # *** On Predictee ( ONE of TWO code chanages are here ) *** #
-    # ALL.PREDICTEES.HARD.CODED 
+    # *** On Predictee ( ONE of TWO code chanages are here ) *** #  
+    # ALL.PREDICTEES.HARD.CODED   
     # main thing I try to predict
     # "NEXT.PCTCHG.OVER.3MO(GSPC.DELAYZERO.ABS.CLOSE)"                              -> ALL.PREDICTEES.HARD.CODED[["NEXT.PCTCHG.OVER.3MO(GSPC.DELAYZERO.ABS.CLOSE)"]]
     # "NEXT.PCTDRAWDOWN.OVER.3MO(GSPC.DELAYZERO.ABS.CLOSE,GSPC.DELAYZERO.ABS.LOW)"  -> ALL.PREDICTEES.HARD.CODED[["NEXT.PCTDRAWDOWN.OVER.3MO(GSPC.DELAYZERO.ABS.CLOSE,GSPC.DELAYZERO.ABS.LOW)"]]
@@ -1548,15 +1568,15 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
         # for right now ( just this one )
         if( var.testtraindates[["ListName"]] == "Test2008" ) {
         
-          # *** On Predictee ( TWO of TWO code changes are here ) *** #
-          # for right now ( just this one )
-          # if( var.all.pred.hard == "NEXT.PCTCHG.OVER.3MO(GSPC.DELAYZERO.ABS.CLOSE)" ) {
+          # *** On Predictee ( TWO of TWO code changes are here ) *** # 
+          # for right now ( just this one ) 
+          # if( var.all.pred.hard == "NEXT.PCTCHG.OVER.3MO(GSPC.DELAYZERO.ABS.CLOSE)" ) {  
           if( var.all.pred.hard == "NEXT.PCTCHG.OVER.3MO(GDP.DELAYSIX.ABS.ADJUSTNOW)" ) {
             
-            # 'right now' 
+            # 'right now'   
             var.all.pred.hard -> CURR.PREDICTEE 
             
-            # 'right now' directly from the loop above 
+            # 'right now' directly from the loop above
             CURR.OBSERVEES    ->  CURR.OBSERVEES
             
             CURR.FORMULA <- as.formula(paste0(CURR.PREDICTEE," ~ ",paste0(unlist(CURR.OBSERVEES), collapse =" + ")))
@@ -1813,6 +1833,13 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     # View(model.data.test.CURR.PRED)
     # plot.zoo(model.data.test.CURR.PRED,n=1,main=data.model@model.target)
     
+    # useful KEEP
+    # View(data.frame(t(tail(model.data.CURR,10))))
+    # View(data.frame(t(head(model.data.CURR,10))))
+    # View(t(data.frame(ALL.OBSERVEES)))
+    # View(t(model.data.ALL[tail(index(model.data.ALL),4),])) # LEFT_OFF # find THIS DIRECTION UP # model.data.ALL
+    # WHY DO I 'NOT GET RECENT ( 3 MONTH DATA)?
+
     bookmark_here <- 1
     
     # zoo:::with.zoo
@@ -1973,11 +2000,6 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     
     the_end_debug_bookmark_here <- 1
     
-    
-    list() -> PREDICTORS
-    
-    list() -> OBSERVATIONS
-
     
     setwd("N:\\MyVMWareSharedFolder\\rcsnsight1\\R") # TO BE CHANGED LATER
     
