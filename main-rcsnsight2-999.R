@@ -152,11 +152,11 @@ getSymbols.multpl <- function(
   #   http://www.multpl.com/s-p-500-real-earnings-growth/table/by-quarter
   #   
   #   S&P 500 PE Ratio by Month ( MATH) ( SandP.500.PE.Ratio )
-  #   Price to earnings ratio, based on trailing twelve month âas reportedâ
+  #   Price to earnings ratio, based on trailing twelve month “as reported”
   #   http://www.multpl.com/table?f=m
   
   # S&P 500 Book Value Per Share by Quarter ( "SandP.500.BV.Per.Share" )
-  # S&P 500 book value per share â non-inflation adjusted current dollars. 
+  # S&P 500 book value per share — non-inflation adjusted current dollars. 
   # http://www.multpl.com/s-p-500-book-value/table/by-quarter
   
   # web site and owner
@@ -188,7 +188,7 @@ getSymbols.multpl <- function(
   
   require(XML)     # NEED readHTMLTable
   # Hadley Wickham # web scraping 
-  require(rvest)   # imports XML  masked from âpackage:XMLâ: xml
+  require(rvest)   # imports XML  masked from ‘package:XML’: xml
   # IF uncommented : require(XML), USE: XML::xml to access XML::xml
   require(xts)     # as.xts STUFF
   
@@ -395,7 +395,13 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     # NOTE: "1950-03-01" IS STILL HARD_CODED in PLACES
     initData.TestTrain.Global.Earliest <- "1950-03-31"
     
-    finDate.TestTrain.Global.Latest    <- "2015-03-31"  # 2014-12-31(perfect) 
+    # HARD NOTE
+    # NOTE: this IS NEVER the CURRENT MONTH 
+    #  1. 'all zoo shifts expect end of prev month' AND 
+    #  2. incomplete data exists of current month 
+    # THEREFORE
+    # this IS       the end of the PREVIOUS MONTH
+    finDate.TestTrain.Global.Latest    <- "2015-02-28"  # 2014-12-31(perfect) 
                                                         # march 21, 2015 run: "2015-01-31": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
                                                         # march 21, 2015 run: "2015-02-28": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
                                                         # march 21, 2015 run: "2015-03-31": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
@@ -500,18 +506,18 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
       , finSymbolAttributes = c("Close")
       , initDate = "1950-03-01"
       , subtractOffDaysSpec = -1
-    ) -> USRECP.DELAYFIVE.ABS      # head "1950-03-31"
-    merge.xts(MaxAllTestTrainMonthEnds,USRECP.DELAYFIVE.ABS) -> USRECP.DELAYFIVE.ABS
-
-    assign("USRECP.DELAYFIVE.ABS", value=USRECP.DELAYFIVE.ABS, envir = .GlobalEnv)
+    ) -> USRECP.DELAYSEVEN.ABS      # head "1950-03-31"
+    merge.xts(MaxAllTestTrainMonthEnds,USRECP.DELAYSEVEN.ABS) -> USRECP.DELAYSEVEN.ABS
     
-    pullAheadZOOData(USRECP.DELAYFIVE.ABS,5) -> USRECP.DELAYFIVE.ABS.ADJUSTNOW
-    merge.xts(MaxAllTestTrainMonthEnds,USRECP.DELAYFIVE.ABS.ADJUSTNOW) -> USRECP.DELAYFIVE.ABS.ADJUSTNOW
-    USRECP.DELAYFIVE.ABS.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> USRECP.DELAYFIVE.ABS.ADJUSTNOW
+    assign("USRECP.DELAYSEVEN.ABS", value=USRECP.DELAYSEVEN.ABS, envir = .GlobalEnv)
     
-    assign("USRECP.DELAYFIVE.ABS.ADJUSTNOW", value=USRECP.DELAYFIVE.ABS.ADJUSTNOW, envir = .GlobalEnv)
+    pullAheadZOOData(USRECP.DELAYSEVEN.ABS,7) -> USRECP.DELAYSEVEN.ABS.ADJUSTNOW
+    merge.xts(MaxAllTestTrainMonthEnds,USRECP.DELAYSEVEN.ABS.ADJUSTNOW) -> USRECP.DELAYSEVEN.ABS.ADJUSTNOW
+    USRECP.DELAYSEVEN.ABS.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> USRECP.DELAYSEVEN.ABS.ADJUSTNOW
     
-    "USRECP.DELAYFIVE.ABS.ADJUSTNOW" -> ALL.OBSERVEES["USRECP.DELAYFIVE.ABS.ADJUSTNOW"]
+    assign("USRECP.DELAYSEVEN.ABS.ADJUSTNOW", value=USRECP.DELAYSEVEN.ABS.ADJUSTNOW, envir = .GlobalEnv)
+    
+    "USRECP.DELAYSEVEN.ABS.ADJUSTNOW" -> ALL.OBSERVEES["USRECP.DELAYSEVEN.ABS.ADJUSTNOW"]
     
     bookmark_here <- 1
     
@@ -1213,13 +1219,19 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     retrieveSymbolsmultplRdata(              # head "1870-12-31"
         finSymbol = "SP500.PE.RATIO"
       , finSymbolAttribute = "Close"
-    )  -> SP500.PE.RATIO.DELAYZERO.ABS # "SandP.500.PE.Ratio.Close" ( web table header) 
-    merge.xts(MaxAllTestTrainMonthEnds,SP500.PE.RATIO.DELAYZERO.ABS) -> SP500.PE.RATIO.DELAYZERO.ABS
-    SP500.PE.RATIO.DELAYZERO.ABS[MaxAllTestTrainMonthEndsRange] -> SP500.PE.RATIO.DELAYZERO.ABS
+    )  -> SP500.PE.RATIO.DELAYONE.ABS # "SandP.500.PE.Ratio.Close" ( web table header) 
+    merge.xts(MaxAllTestTrainMonthEnds,SP500.PE.RATIO.DELAYONE.ABS) -> SP500.PE.RATIO.DELAYONE.ABS
+    SP500.PE.RATIO.DELAYONE.ABS[MaxAllTestTrainMonthEndsRange] -> SP500.PE.RATIO.DELAYONE.ABS
     
-    assign("SP500.PE.RATIO.DELAYZERO.ABS", value=SP500.PE.RATIO.DELAYZERO.ABS, envir = .GlobalEnv)
-
-    "SP500.PE.RATIO.DELAYZERO.ABS" -> ALL.OBSERVEES["SP500.PE.RATIO.DELAYZERO.ABS"]
+    assign("SP500.PE.RATIO.DELAYONE.ABS", value=SP500.PE.RATIO.DELAYONE.ABS, envir = .GlobalEnv)
+    
+    pullAheadZOOData(SP500.PE.RATIO.DELAYONE.ABS,1) -> SP500.PE.RATIO.DELAYONE.ABS.ADJUSTNOW
+    merge.xts(MaxAllTestTrainMonthEnds,SP500.PE.RATIO.DELAYONE.ABS.ADJUSTNOW) -> SP500.PE.RATIO.DELAYONE.ABS.ADJUSTNOW
+    SP500.PE.RATIO.DELAYONE.ABS.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> SP500.PE.RATIO.DELAYONE.ABS.ADJUSTNOW
+    
+    assign("SP500.PE.RATIO.DELAYONE.ABS.ADJUSTNOW", value=SP500.PE.RATIO.DELAYONE.ABS.ADJUSTNOW, envir = .GlobalEnv)
+    
+    "SP500.PE.RATIO.DELAYONE.ABS.ADJUSTNOW" -> ALL.OBSERVEES["SP500.PE.RATIO.DELAYONE.ABS.ADJUSTNOW"]
     
     retrieveSymbolsmultplRdata(          #  head "head 1999-12-31"
         finSymbol = "SP500.BV.PER.SHARE"
@@ -1504,12 +1516,12 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
                     
         if( grepl("LAG\\.PCTCHG\\.OVER\\..*MO",var.obsfun) ) {   
           
-          # browser(text = paste0("loop starting: ", var.obsfun), expr = {  var.obs == "USRECP.DELAYFIVE.ABS.ADJUSTNOW" } )
+          # browser(text = paste0("loop starting: ", var.obsfun), expr = {  var.obs == "USRECP.DELAYSEVEN.ABS.ADJUSTNOW" } )
           
           # 1/0 0/0 0/1 on/off switches: no sense; skip this
           # Chauvet/Piger - recession probabilites - wrong math - too extreme to be useful
           
-          if( var.obs == "USRECP.DELAYFIVE.ABS.ADJUSTNOW" ||
+          if( var.obs == "USRECP.DELAYSEVEN.ABS.ADJUSTNOW" ||
               var.obs == "RECPROUSM156N.DELAYTHREE.ABS.ADJUSTNOW" 
           ) { 
             # do nothing
@@ -1527,13 +1539,13 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
           for( var.all.obsfun in ALL.OVER.OBSERVEESFUNCTIONS) {
             
             # browser()
-            # browser(text = paste0("loop starting: ", var.all.obsfun), expr = {  var.obs == "USRECP.DELAYFIVE.ABS.ADJUSTNOW" } )
+            # browser(text = paste0("loop starting: ", var.all.obsfun), expr = {  var.obs == "USRECP.DELAYSEVEN.ABS.ADJUSTNOW" } )
             
-            # USRECP.DELAYFIVE.ABS.ADJUSTNOW 1/0 0/0 0/1 on/off switches: no sense; use the simpler form instead
+            # USRECP.DELAYSEVEN.ABS.ADJUSTNOW 1/0 0/0 0/1 on/off switches: no sense; use the simpler form instead
             if(ALL.OVER.OBSERVEESFUNCTIONS == "COMPARE.ABOVE.PCT"             &&
-                                  var.obs  == "USRECP.DELAYFIVE.ABS.ADJUSTNOW"
+                                  var.obs  == "USRECP.DELAYSEVEN.ABS.ADJUSTNOW"
             ) {
-               # USRECP.DELAYFIVE.ABS.ADJUSTNOW 1/0 0/0 0/1 on/off switches: no sense; use the simpler form instead
+               # USRECP.DELAYSEVEN.ABS.ADJUSTNOW 1/0 0/0 0/1 on/off switches: no sense; use the simpler form instead
                paste0(var.obsfun,"(",var.obs,")")  -> CURR.OBSERVEES[[paste0(var.obsfun,"(",var.obs,")")]]
             } else {
                paste0(var.all.obsfun,"(",var.obsfun,"(",var.obs,"),",var.obs,")") -> CURR.OBSERVEES[[paste0(var.all.obsfun,"(",var.obsfun,"(",var.obs,"),",var.obs,")")]]
@@ -1548,13 +1560,13 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     
     bookmark_here <- 1  
     
-    # predictees area      
+    # predictees area     
     
     # non-dynamic solution ( would HAVE preferred to get this from ALL.PREDICTEESFUNCTIONS and ALL.PREDICTEES
     
     # *** On Predictee ( ONE of TWO code chanages are here ) *** #  
-    # ALL.PREDICTEES.HARD.CODED   
-    # main thing I try to predict
+    # ALL.PREDICTEES.HARD.CODED
+    # main thing I try to predict 
     # "NEXT.PCTCHG.OVER.3MO(GSPC.DELAYZERO.ABS.CLOSE)"                              -> ALL.PREDICTEES.HARD.CODED[["NEXT.PCTCHG.OVER.3MO(GSPC.DELAYZERO.ABS.CLOSE)"]]
     # "NEXT.PCTDRAWDOWN.OVER.3MO(GSPC.DELAYZERO.ABS.CLOSE,GSPC.DELAYZERO.ABS.LOW)"  -> ALL.PREDICTEES.HARD.CODED[["NEXT.PCTDRAWDOWN.OVER.3MO(GSPC.DELAYZERO.ABS.CLOSE,GSPC.DELAYZERO.ABS.LOW)"]]
     "NEXT.PCTCHG.OVER.3MO(GDP.DELAYSIX.ABS.ADJUSTNOW)"                            -> ALL.PREDICTEES.HARD.CODED[["NEXT.PCTCHG.OVER.3MO(GDP.DELAYSIX.ABS.ADJUSTNOW)"]]
@@ -1791,7 +1803,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     #
     #  the number of iterations,T(n.trees)
     #  the depth of each tree,K(interaction.depth)
-    #  the shrinkage (or learning rate) parameter,Î»(shrinkage)
+    #  the shrinkage (or learning rate) parameter,λ(shrinkage)
     #  the subsampling rate,p(bag.fraction)
     #
     #  Generalized Boosted Models: A guide to the gbm package Greg Ridgeway August 3, 2007
@@ -1830,16 +1842,6 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     model.data.test.CURR.PRED <- cbind(model.data.test.CURR[,data.model@model.target], CURR.PRED=newpred )
     "CURR.VALUE" -> colnames(model.data.test.CURR.PRED)[1]
     
-    # View(model.data.test.CURR.PRED)
-    # plot.zoo(model.data.test.CURR.PRED,n=1,main=data.model@model.target)
-    
-    # useful KEEP
-    # View(data.frame(t(tail(model.data.CURR,10))))
-    # View(data.frame(t(head(model.data.CURR,10))))
-    # View(t(data.frame(ALL.OBSERVEES)))
-    # View(t(model.data.ALL[tail(index(model.data.ALL),4),])) # LEFT_OFF # find THIS DIRECTION UP # model.data.ALL
-    # WHY DO I 'NOT GET RECENT ( 3 MONTH DATA)?
-
     bookmark_here <- 1
     
     # zoo:::with.zoo
@@ -1852,6 +1854,60 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     print("End train to determine predictions")
     print("")
     
+    # predict on the 'most very recent data'
+    
+    # do not carry forward what I am trying to predict - does not make sense
+    # locf BECAUSE some data may not be perfectly right aligned
+    # please 1. avoid mis-aligned data
+    # please 2. no locf
+    model.data.ALL.na.locf <- na.locf(model.data.ALL[,setdiff(colnames(model.data.ALL),data.model@model.target)])
+    model.data.ALL.na.locf <- cbind.xts(model.data.ALL[,data.model@model.target], model.data.ALL.na.locf)
+
+    # just the last few months  length( colnames(model.data.CURR)  ) = 580
+    model.data.ALL.na.locf.NEWTAIL <- model.data.ALL.na.locf[as.Date(max(index(model.data.test.CURR))) < as.Date(index(model.data.ALL.na.locf)),]
+
+    # inherit same columns as ... identical(colnames(model.data.train.CURR),colnames(model.data.test.CURR)) and model.data.CURR
+    model.data.ALL.na.locf.NEWTAIL <- model.data.ALL.na.locf.NEWTAIL[,colnames(model.data.test.CURR)]
+
+    # just the 'meaningful columns'
+    newpred.NEWTAIL <- predict(FitterTune, newdata=data.frame(rbind.xts(model.data.test.CURR, model.data.ALL.na.locf.NEWTAIL)[,model.data.CURR.OBSERVEES.MOST.IMPORTANT.VARIABLES],stringsAsFactors=FALSE) )
+    # str(newpred.NEWTAIL) num [1:132] 
+    
+    model.data.test.CURR.NEWTAIL <- cbind(rbind.xts(model.data.test.CURR, model.data.ALL.na.locf.NEWTAIL)[,data.model@model.target], CURR.PRED=newpred.NEWTAIL )
+    "CURR.VALUE" -> colnames(model.data.test.CURR.NEWTAIL)[1] 
+    
+    # works 1.34 1.39 1.41
+    # View(model.data.test.CURR.NEWTAIL)
+
+    bookmark_here <- 1
+
+    # View(model.data.test.CURR.PRED)
+    # plot.zoo(model.data.test.CURR.PRED,n=1,main=data.model@model.target)
+    
+    # useful KEEP
+    # View(data.frame(t(tail(model.data.CURR,10)))) # MAKE SURE DATA IS ALIGNED RIGHT AS MUCH AS POSIBLE
+    # View(data.frame(t(head(model.data.CURR,10))))
+    # View(t(data.frame(ALL.OBSERVEES)))
+    # View(t(model.data.ALL[tail(index(model.data.ALL),4),])) 
+
+    # see greater than 10 importance ( gbm influence hard coded )
+    # View(print(model.data.CURR.OBSERVEES.IMPORTANCES))
+    # colnames that are important
+    # colnames(model.data.ALL)[colnames(model.data.ALL) %in% as.vector(model.data.CURR.OBSERVEES.IMPORTANCES[,"row.names(varImpFound$importance)"])]
+    # positions of column names that are important
+    # which(colnames(model.data.ALL) %in% as.vector(model.data.CURR.OBSERVEES.IMPORTANCES[,"row.names(varImpFound$importance)"]))
+    # see colnames
+    # View(data.frame(colnames(model.data.ALL)))
+    
+    # View(model.data.test.CURR.PRED)    # test zone predictions
+    # View(model.data.test.CURR.NEWTAIL) # test zone predictions + NEWTAIL
+
+    # View(data.frame(t(tail(model.data.ALL,10))))
+    
+    # after through filters na.omit(GARANTEED), linear combinations(OPTIONAL),
+    # correlations(OPTIONAL), columns manually removed because no sense'  
+    # model.data.CURR
+
     bookmark_here <- 1
     
     # TOO MUCH TIME
