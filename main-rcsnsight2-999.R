@@ -3,7 +3,7 @@
 
 # main-rcsnsight2-999.R 
 
-# ###########################
+# ########################### 
 # IMPORTANT
 #
 # GOOD ENOUGH FOR NOW
@@ -15,7 +15,7 @@
 # interaction depth = 7
 # learn rate 0.05,0.20
 #
-#############################
+############################# 
 
 options(width = 255)     
 options(digits = 22) 
@@ -152,11 +152,11 @@ getSymbols.multpl <- function(
   #   http://www.multpl.com/s-p-500-real-earnings-growth/table/by-quarter
   #   
   #   S&P 500 PE Ratio by Month ( MATH) ( SandP.500.PE.Ratio )
-  #   Price to earnings ratio, based on trailing twelve month “as reported”
+  #   Price to earnings ratio, based on trailing twelve month âas reportedâ
   #   http://www.multpl.com/table?f=m
   
   # S&P 500 Book Value Per Share by Quarter ( "SandP.500.BV.Per.Share" )
-  # S&P 500 book value per share — non-inflation adjusted current dollars. 
+  # S&P 500 book value per share â non-inflation adjusted current dollars. 
   # http://www.multpl.com/s-p-500-book-value/table/by-quarter
   
   # web site and owner
@@ -188,7 +188,7 @@ getSymbols.multpl <- function(
   
   require(XML)     # NEED readHTMLTable
   # Hadley Wickham # web scraping 
-  require(rvest)   # imports XML  masked from ‘package:XML’: xml
+  require(rvest)   # imports XML  masked from âpackage:XMLâ: xml
   # IF uncommented : require(XML), USE: XML::xml to access XML::xml
   require(xts)     # as.xts STUFF
   
@@ -371,6 +371,8 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
 
     require(functional) # Curry
     
+    require(mondate) # diff.mondate to calculate pullAheadZOODataMonthShiftAmount
+    
     require(Holidays)
     require(TimeWarp)
     require(quantstrat) # and added to search() path: 
@@ -401,10 +403,11 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     #  2. incomplete data exists of current month 
     # THEREFORE
     # this IS       the end of the PREVIOUS MONTH
-    finDate.TestTrain.Global.Latest    <- "2015-02-28"  # 2014-12-31(perfect) 
-                                                        # march 21, 2015 run: "2015-01-31": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
-                                                        # march 21, 2015 run: "2015-02-28": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
-                                                        # march 21, 2015 run: "2015-03-31": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
+    # finDate.TestTrain.Global.Latest    <- "2015-02-28"  # 2014-12-31(perfect) 
+                                                          # march 21, 2015 run: "2015-01-31": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
+                                                          # march 21, 2015 run: "2015-02-28": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
+                                                          # march 21, 2015 run: "2015-03-31": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
+    finDate.TestTrain.Global.Latest      <- "2015-03-31"  # april  6, 2015 run: "2015-03-31": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
     
     # training and TRUE tests
     list(Test2001 = list(Train=list(initDate = initData.TestTrain.Global.Earliest,finDate ="1998-12-31"),
@@ -507,11 +510,20 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
       , initDate = "1950-03-01"
       , subtractOffDaysSpec = -1
     ) -> USRECP.DELAYSEVEN.ABS      # head "1950-03-31"
+    
+    # for a monthly
+    as.integer(diff.mondate(c(
+      as.mondate(tail(index(USRECP.DELAYSEVEN.ABS),1), displayFormat="%Y-%m-%d",timeunits="months"),
+      as.mondate(finDate.TestTrain.Global.Latest, displayFormat="%Y-%m-%d",timeunits="months")
+    ))) -> pullAheadZOODataMonthShiftAmount
+    
     merge.xts(MaxAllTestTrainMonthEnds,USRECP.DELAYSEVEN.ABS) -> USRECP.DELAYSEVEN.ABS
     
     assign("USRECP.DELAYSEVEN.ABS", value=USRECP.DELAYSEVEN.ABS, envir = .GlobalEnv)
     
-    pullAheadZOOData(USRECP.DELAYSEVEN.ABS,7) -> USRECP.DELAYSEVEN.ABS.ADJUSTNOW
+    pullAheadZOOData(USRECP.DELAYSEVEN.ABS,pullAheadZOODataMonthShiftAmount) -> USRECP.DELAYSEVEN.ABS.ADJUSTNOW
+    print(paste0("USRECP pullAheadZOOData should be DELAYSEVEN"," Actual: ",pullAheadZOODataMonthShiftAmount))
+    
     merge.xts(MaxAllTestTrainMonthEnds,USRECP.DELAYSEVEN.ABS.ADJUSTNOW) -> USRECP.DELAYSEVEN.ABS.ADJUSTNOW
     USRECP.DELAYSEVEN.ABS.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> USRECP.DELAYSEVEN.ABS.ADJUSTNOW
     
@@ -1803,7 +1815,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     #
     #  the number of iterations,T(n.trees)
     #  the depth of each tree,K(interaction.depth)
-    #  the shrinkage (or learning rate) parameter,λ(shrinkage)
+    #  the shrinkage (or learning rate) parameter,Î»(shrinkage)
     #  the subsampling rate,p(bag.fraction)
     #
     #  Generalized Boosted Models: A guide to the gbm package Greg Ridgeway August 3, 2007
