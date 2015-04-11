@@ -15,7 +15,7 @@
 # interaction depth = 7
 # learn rate 0.05,0.20
 #
-############################# 
+#############################  
 
 options(width = 255)     
 options(digits = 22) 
@@ -462,6 +462,9 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     bookmark_here <- 1
     
     # LEFT_OFF above TRYING TO WORK IN UMICH SENTIMENT SURVEY
+    # 
+    # ### CURRENTLY - NOT USED 'UMICH SENTIMENT SURVEY' ###
+    #
     
     # S&P500 from yahoo  
     
@@ -471,19 +474,35 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
       , initDate = "1950-03-01"
       , subtractOffDaysSpec = 0
     ) -> GSPC.DELAYZERO.ABS     # head "1950-03-31"
+    
+    # really meant for a monthly
+    as.integer(diff.mondate(c(
+      as.mondate(tail(index(GSPC.DELAYZERO.ABS),1), displayFormat="%Y-%m-%d",timeunits="months"),
+      as.mondate(finDate.TestTrain.Global.Latest, displayFormat="%Y-%m-%d",timeunits="months")
+    ))) -> pullAheadZOODataMonthShiftAmount
+    
     merge.xts(MaxAllTestTrainMonthEnds,GSPC.DELAYZERO.ABS) -> GSPC.DELAYZERO.ABS
     GSPC.DELAYZERO.ABS[MaxAllTestTrainMonthEndsRange] -> GSPC.DELAYZERO.ABS
     
-    assign("GSPC.DELAYZERO.ABS", value=GSPC.DELAYZERO.ABS, envir = .GlobalEnv)
+    assign("GSPC.DELAYZERO.ABS", value=GSPC.DELAYZERO.ABS, envir = .GlobalEnv) 
     
-    # specifics
-    Cl(GSPC.DELAYZERO.ABS) -> GSPC.DELAYZERO.ABS.CLOSE
-    Lo(GSPC.DELAYZERO.ABS) -> GSPC.DELAYZERO.ABS.LOW
-    assign("GSPC.DELAYZERO.ABS.CLOSE", value=GSPC.DELAYZERO.ABS.CLOSE, envir = .GlobalEnv)
-    assign("GSPC.DELAYZERO.ABS.LOW"  , value=GSPC.DELAYZERO.ABS.LOW  , envir = .GlobalEnv)
+    # if HAD BEEN a Daily
+    max(pullAheadZOODataMonthShiftAmount,0) -> pullAheadZOODataMonthShiftAmount
     
-    "GSPC.DELAYZERO.ABS.CLOSE" -> ALL.OBSERVEES["GSPC.DELAYZERO.ABS.CLOSE"] 
-    "GSPC.DELAYZERO.ABS.LOW"   -> ALL.OBSERVEES["GSPC.DELAYZERO.ABS.LOW"] 
+    pullAheadZOOData(GSPC.DELAYZERO.ABS,pullAheadZOODataMonthShiftAmount) ->   GSPC.DELAYZERO.ABS.ADJUSTNOW
+    print(paste0("GSPC pullAheadZOOData should be DELAYZERO"," Actual: ",pullAheadZOODataMonthShiftAmount))
+    
+    merge.xts(MaxAllTestTrainMonthEnds,GSPC.DELAYZERO.ABS.ADJUSTNOW) -> GSPC.DELAYZERO.ABS.ADJUSTNOW
+    GSPC.DELAYZERO.ABS.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> GSPC.DELAYZERO.ABS.ADJUSTNOW
+    
+    # specifics 
+    Cl(GSPC.DELAYZERO.ABS.ADJUSTNOW) -> GSPC.DELAYZERO.ABS.ADJUSTNOW.CLOSE
+    Lo(GSPC.DELAYZERO.ABS.ADJUSTNOW) -> GSPC.DELAYZERO.ABS.ADJUSTNOW.LOW
+    assign("GSPC.DELAYZERO.ABS.ADJUSTNOW.CLOSE", value=GSPC.DELAYZERO.ABS.ADJUSTNOW.CLOSE, envir = .GlobalEnv)
+    assign("GSPC.DELAYZERO.ABS.ADJUSTNOW.LOW"  , value=GSPC.DELAYZERO.ABS.ADJUSTNOW.LOW  , envir = .GlobalEnv)
+    
+    "GSPC.DELAYZERO.ABS.ADJUSTNOW.CLOSE" -> ALL.OBSERVEES["GSPC.DELAYZERO.ABS.ADJUSTNOW.CLOSE"] 
+    "GSPC.DELAYZERO.ABS.ADJUSTNOW.LOW"   -> ALL.OBSERVEES["GSPC.DELAYZERO.ABS.ADJUSTNOW.LOW"] 
     
     bookmark_here <- 1
     
@@ -511,7 +530,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
       , subtractOffDaysSpec = -1
     ) -> USRECP.DELAYSEVEN.ABS      # head "1950-03-31"
     
-    # for a monthly
+    # really meant for a monthly
     as.integer(diff.mondate(c(
       as.mondate(tail(index(USRECP.DELAYSEVEN.ABS),1), displayFormat="%Y-%m-%d",timeunits="months"),
       as.mondate(finDate.TestTrain.Global.Latest, displayFormat="%Y-%m-%d",timeunits="months")
@@ -520,6 +539,9 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     merge.xts(MaxAllTestTrainMonthEnds,USRECP.DELAYSEVEN.ABS) -> USRECP.DELAYSEVEN.ABS
     
     assign("USRECP.DELAYSEVEN.ABS", value=USRECP.DELAYSEVEN.ABS, envir = .GlobalEnv)
+    
+    # if HAD BEEN a Daily
+    max(pullAheadZOODataMonthShiftAmount,0) -> pullAheadZOODataMonthShiftAmount
     
     pullAheadZOOData(USRECP.DELAYSEVEN.ABS,pullAheadZOODataMonthShiftAmount) -> USRECP.DELAYSEVEN.ABS.ADJUSTNOW
     print(paste0("USRECP pullAheadZOOData should be DELAYSEVEN"," Actual: ",pullAheadZOODataMonthShiftAmount))
@@ -546,11 +568,24 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
       , initDate = "1950-03-01"
       , subtractOffDaysSpec = -1
     ) -> RECPROUSM156N.DELAYTHREE.ABS    # head "1967-05-31"
+    
+    # really meant for a monthly
+    as.integer(diff.mondate(c(
+      as.mondate(tail(index(RECPROUSM156N.DELAYTHREE.ABS),1), displayFormat="%Y-%m-%d",timeunits="months"),
+      as.mondate(finDate.TestTrain.Global.Latest, displayFormat="%Y-%m-%d",timeunits="months")
+    ))) -> pullAheadZOODataMonthShiftAmount
+    
+    
     merge.xts(MaxAllTestTrainMonthEnds,RECPROUSM156N.DELAYTHREE.ABS) -> RECPROUSM156N.DELAYTHREE.ABS
     
     assign("RECPROUSM156N.DELAYTHREE.ABS", value=RECPROUSM156N.DELAYTHREE.ABS, envir = .GlobalEnv)
     
-    pullAheadZOOData(RECPROUSM156N.DELAYTHREE.ABS,3) -> RECPROUSM156N.DELAYTHREE.ABS.ADJUSTNOW
+    # if HAD BEEN a Daily
+    max(pullAheadZOODataMonthShiftAmount,0) -> pullAheadZOODataMonthShiftAmount
+    
+    pullAheadZOOData(RECPROUSM156N.DELAYTHREE.ABS,pullAheadZOODataMonthShiftAmount) -> RECPROUSM156N.DELAYTHREE.ABS.ADJUSTNOW
+    print(paste0("RECPROUSM156N pullAheadZOOData should be DELAYTHREE"," Actual: ",pullAheadZOODataMonthShiftAmount))
+    
     merge.xts(MaxAllTestTrainMonthEnds,RECPROUSM156N.DELAYTHREE.ABS.ADJUSTNOW) -> RECPROUSM156N.DELAYTHREE.ABS.ADJUSTNOW
     RECPROUSM156N.DELAYTHREE.ABS.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> RECPROUSM156N.DELAYTHREE.ABS.ADJUSTNOW
     
@@ -574,11 +609,23 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
       , subtractOffDaysSpec = -1
       , interpolate = TRUE 
     ) -> GDP.DELAYSIX.ABS      # head"1950-03-31"
+    
+    # really meant for a monthly
+    as.integer(diff.mondate(c(
+      as.mondate(tail(index(GDP.DELAYSIX.ABS),1), displayFormat="%Y-%m-%d",timeunits="months"),
+      as.mondate(finDate.TestTrain.Global.Latest, displayFormat="%Y-%m-%d",timeunits="months")
+    ))) -> pullAheadZOODataMonthShiftAmount
+    
     merge.xts(MaxAllTestTrainMonthEnds,GDP.DELAYSIX.ABS) -> GDP.DELAYSIX.ABS
 
     assign("GDP.DELAYSIX.ABS", value=GDP.DELAYSIX.ABS, envir = .GlobalEnv)
     
-    pullAheadZOOData(GDP.DELAYSIX.ABS,6) -> GDP.DELAYSIX.ABS.ADJUSTNOW
+    # if HAD BEEN a Daily
+    max(pullAheadZOODataMonthShiftAmount,0) -> pullAheadZOODataMonthShiftAmount
+    
+    pullAheadZOOData(GDP.DELAYSIX.ABS,pullAheadZOODataMonthShiftAmount) -> GDP.DELAYSIX.ABS.ADJUSTNOW
+    print(paste0("GDP pullAheadZOOData should be DELAYSIX"," Actual: ",pullAheadZOODataMonthShiftAmount))
+    
     merge.xts(MaxAllTestTrainMonthEnds,GDP.DELAYSIX.ABS.ADJUSTNOW) -> GDP.DELAYSIX.ABS.ADJUSTNOW
     GDP.DELAYSIX.ABS.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> GDP.DELAYSIX.ABS.ADJUSTNOW
     
@@ -603,11 +650,23 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
       , initDate = "1950-03-01"
       , subtractOffDaysSpec = -1
     ) -> GS10.DELAYONE.ABS        # head  "1953-03-31"
+
+    # really meant for a monthly
+    as.integer(diff.mondate(c(
+      as.mondate(tail(index(GS10.DELAYONE.ABS),1), displayFormat="%Y-%m-%d",timeunits="months"),
+      as.mondate(finDate.TestTrain.Global.Latest, displayFormat="%Y-%m-%d",timeunits="months")
+    ))) -> pullAheadZOODataMonthShiftAmount
+    
     merge.xts(MaxAllTestTrainMonthEnds,GS10.DELAYONE.ABS) -> GS10.DELAYONE.ABS
 
     assign("GS10.DELAYONE.ABS", value=GS10.DELAYONE.ABS, envir = .GlobalEnv)
     
-    pullAheadZOOData(GS10.DELAYONE.ABS,1) -> GS10.DELAYONE.ABS.ADJUSTNOW
+    # if HAD BEEN a Daily
+    max(pullAheadZOODataMonthShiftAmount,0) -> pullAheadZOODataMonthShiftAmount
+    
+    pullAheadZOOData(GS10.DELAYONE.ABS,pullAheadZOODataMonthShiftAmount) -> GS10.DELAYONE.ABS.ADJUSTNOW
+    print(paste0("GS10 pullAheadZOOData should be DELAYONE"," Actual: ",pullAheadZOODataMonthShiftAmount))
+    
     merge.xts(MaxAllTestTrainMonthEnds,GS10.DELAYONE.ABS.ADJUSTNOW) -> GS10.DELAYONE.ABS.ADJUSTNOW
     GS10.DELAYONE.ABS.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> GS10.DELAYONE.ABS.ADJUSTNOW
     
@@ -633,13 +692,30 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
       , finSymbolAttributes = c("Close")
       , initDate = "1950-03-01"
       , subtractOffDaysSpec = 0
-    ) -> DGS3MO.DELAYZERO.ABS      # head "1982-01-31"
+    ) -> DGS3MO.DELAYZERO.ABS      # head "1982-01-31" ( Daily )
+    
+    # really meant for a monthly
+    as.integer(diff.mondate(c(
+      as.mondate(tail(index(DGS3MO.DELAYZERO.ABS),1), displayFormat="%Y-%m-%d",timeunits="months"),
+      as.mondate(finDate.TestTrain.Global.Latest, displayFormat="%Y-%m-%d",timeunits="months")
+    ))) -> pullAheadZOODataMonthShiftAmount
+
     merge.xts(MaxAllTestTrainMonthEnds,DGS3MO.DELAYZERO.ABS) -> DGS3MO.DELAYZERO.ABS
     DGS3MO.DELAYZERO.ABS[MaxAllTestTrainMonthEndsRange] -> DGS3MO.DELAYZERO.ABS
     
     assign("DGS3MO.DELAYZERO.ABS", value=DGS3MO.DELAYZERO.ABS, envir = .GlobalEnv)
     
-    "DGS3MO.DELAYZERO.ABS" -> ALL.OBSERVEES["DGS3MO.DELAYZERO.ABS"]
+    # if HAD BEEN a Daily
+    max(pullAheadZOODataMonthShiftAmount,0) -> pullAheadZOODataMonthShiftAmount
+    
+    pullAheadZOOData(DGS3MO.DELAYZERO.ABS,pullAheadZOODataMonthShiftAmount) ->  DGS3MO.DELAYZERO.ABS.ADJUSTNOW
+    print(paste0("DGS3MO pullAheadZOOData should be DELAYZERO"," Actual: ",pullAheadZOODataMonthShiftAmount))
+    
+    merge.xts(MaxAllTestTrainMonthEnds,DGS3MO.DELAYZERO.ABS.ADJUSTNOW) -> DGS3MO.DELAYZERO.ABS.ADJUSTNOW
+    DGS3MO.DELAYZERO.ABS.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> DGS3MO.DELAYZERO.ABS.ADJUSTNOW
+    
+    assign("DGS3MO.DELAYZERO.ABS.ADJUSTNOW", value=DGS3MO.DELAYZERO.ABS.ADJUSTNOW, envir = .GlobalEnv)
+    "DGS3MO.DELAYZERO.ABS.ADJUSTNOW" -> ALL.OBSERVEES["DGS3MO.DELAYZERO.ABS.ADJUSTNOW"]
     
     bookmark_here <- 1
     
@@ -674,6 +750,105 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     
     bookmark_here <- 1
     
+    #     Title:               Moody's Seasoned Baa Corporate Bond Minus Federal Funds Rate
+    #     Series ID:           BAAFFM
+    #     Source:              Federal Reserve Bank of St. Louis
+    #     Release:             Interest Rate Spreads (Not a Press Release)
+    #     Seasonal Adjustment: Not Seasonally Adjusted
+    #     Frequency:           Monthly
+    #     Units:               Percent
+    #     https://research.stlouisfed.org/fred2/data/BAAFFM.txt
+    
+    retrieveSymbolsQuantmodRdata(
+      finSymbol = "BAAFFM"
+      , finSymbolRemoteSource = "Quantmod_FRED"
+      , finSymbolAttributes = c("Close")
+      , initDate = "1950-03-01"
+      , subtractOffDaysSpec = -1
+    ) -> BAAFFM.DELAYONE.ABS      # head "1982-01-31" 
+    
+    # really meant for a monthly
+    as.integer(diff.mondate(c(
+      as.mondate(tail(index(BAAFFM.DELAYONE.ABS),1), displayFormat="%Y-%m-%d",timeunits="months"),
+      as.mondate(finDate.TestTrain.Global.Latest, displayFormat="%Y-%m-%d",timeunits="months")
+    ))) -> pullAheadZOODataMonthShiftAmount
+    
+    merge.xts(MaxAllTestTrainMonthEnds,BAAFFM.DELAYONE.ABS) -> BAAFFM.DELAYONE.ABS
+    BAAFFM.DELAYONE.ABS[MaxAllTestTrainMonthEndsRange] -> BAAFFM.DELAYONE.ABS
+    
+    assign("BAAFFM.DELAYONE.ABS", value=BAAFFM.DELAYONE.ABS, envir = .GlobalEnv)
+    
+    # if HAD BEEN a Daily
+    max(pullAheadZOODataMonthShiftAmount,0) -> pullAheadZOODataMonthShiftAmount
+    
+    pullAheadZOOData(BAAFFM.DELAYONE.ABS,pullAheadZOODataMonthShiftAmount) ->  BAAFFM.DELAYONE.ABS.ADJUSTNOW
+    print(paste0("BAAFFM pullAheadZOOData should be DELAYONE"," Actual: ",pullAheadZOODataMonthShiftAmount))
+    
+    merge.xts(MaxAllTestTrainMonthEnds,BAAFFM.DELAYONE.ABS.ADJUSTNOW) -> BAAFFM.DELAYONE.ABS.ADJUSTNOW
+    BAAFFM.DELAYONE.ABS.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> BAAFFM.DELAYONE.ABS.ADJUSTNOW
+    
+    assign("BAAFFM.DELAYONE.ABS.ADJUSTNOW", value=BAAFFM.DELAYONE.ABS.ADJUSTNOW, envir = .GlobalEnv)
+
+    "BAAFFM.DELAYONE.ABS.ADJUSTNOW" -> ALL.OBSERVEES["BAAFFM.DELAYONE.ABS.ADJUSTNOW"]
+    
+    bookmark_here <- 1
+    
+    #     Title:               Moody's Seasoned Aaa Corporate Bond Minus Federal Funds Rate
+    #     Series ID:           AAAFFM
+    #     Source:              Federal Reserve Bank of St. Louis
+    #     Release:             Interest Rate Spreads (Not a Press Release)
+    #     Seasonal Adjustment: Not Seasonally Adjusted
+    #     Frequency:           Monthly
+    #     Units:               Percent
+    #     https://research.stlouisfed.org/fred2/data/AAAFFM.txt
+    
+    retrieveSymbolsQuantmodRdata(
+      finSymbol = "AAAFFM"
+      , finSymbolRemoteSource = "Quantmod_FRED"
+      , finSymbolAttributes = c("Close")
+      , initDate = "1950-03-01"
+      , subtractOffDaysSpec = -1
+    ) -> AAAFFM.DELAYONE.ABS      # head "1982-01-31" 
+    
+    # really meant for a monthly
+    as.integer(diff.mondate(c(
+      as.mondate(tail(index(AAAFFM.DELAYONE.ABS),1), displayFormat="%Y-%m-%d",timeunits="months"),
+      as.mondate(finDate.TestTrain.Global.Latest, displayFormat="%Y-%m-%d",timeunits="months")
+    ))) -> pullAheadZOODataMonthShiftAmount
+    
+    merge.xts(MaxAllTestTrainMonthEnds,AAAFFM.DELAYONE.ABS) -> AAAFFM.DELAYONE.ABS
+    AAAFFM.DELAYONE.ABS[MaxAllTestTrainMonthEndsRange] -> AAAFFM.DELAYONE.ABS
+    
+    assign("AAAFFM.DELAYONE.ABS", value=AAAFFM.DELAYONE.ABS, envir = .GlobalEnv)
+    
+    # if HAD BEEN a Daily
+    max(pullAheadZOODataMonthShiftAmount,0) -> pullAheadZOODataMonthShiftAmount
+    
+    pullAheadZOOData(AAAFFM.DELAYONE.ABS,pullAheadZOODataMonthShiftAmount) ->  AAAFFM.DELAYONE.ABS.ADJUSTNOW
+    print(paste0("AAAFFM pullAheadZOOData should be DELAYONE"," Actual: ",pullAheadZOODataMonthShiftAmount))
+    
+    merge.xts(MaxAllTestTrainMonthEnds,AAAFFM.DELAYONE.ABS.ADJUSTNOW) -> AAAFFM.DELAYONE.ABS.ADJUSTNOW
+    AAAFFM.DELAYONE.ABS.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> AAAFFM.DELAYONE.ABS.ADJUSTNOW
+    
+    assign("AAAFFM.DELAYONE.ABS.ADJUSTNOW", value=AAAFFM.DELAYONE.ABS.ADJUSTNOW, envir = .GlobalEnv)
+    
+    "AAAFFM.DELAYONE.ABS.ADJUSTNOW" -> ALL.OBSERVEES["AAAFFM.DELAYONE.ABS.ADJUSTNOW"]
+    
+    bookmark_here <- 1
+    
+    # Andre Also found that this SWUNG hard before the 2008 recession
+    
+    BAAFFM.DELAYONE.ABS.ADJUSTNOW - AAAFFM.DELAYONE.ABS.ADJUSTNOW  -> DIFF.BAAFFM.AAAFFM.DELAYONE.ABS.ADJUSTNOW
+    
+    "DIFF.BAAFFM.AAAFFM.Close"                            -> colnames(DIFF.BAAFFM.AAAFFM.DELAYONE.ABS.ADJUSTNOW)[1]
+    
+    assign("DIFF.BAAFFM.AAAFFM.DELAYONE.ABS.ADJUSTNOW", value= DIFF.BAAFFM.AAAFFM.DELAYONE.ABS.ADJUSTNOW, envir = .GlobalEnv)
+    
+    "DIFF.BAAFFM.AAAFFM.DELAYONE.ABS.ADJUSTNOW" -> ALL.OBSERVEES["DIFF.BAAFFM.AAAFFM.DELAYONE.ABS.ADJUSTNOW"]
+    
+    bookmark_here <- 1
+    
+    
     #     Title:               Effective Federal Funds Rate
     #     Series ID:           DFF
     #     Source:              Board of Governors of the Federal Reserve System (US)
@@ -698,14 +873,31 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
       , finSymbolAttributes = c("Close")
       , initDate = "1950-03-01"
       , subtractOffDaysSpec = 0
-    ) -> DFF.DELAYZERO.ABS          # head "1954-07-31"
+    ) -> DFF.DELAYZERO.ABS          # head "1954-07-31" ( Daily ) 
+ 
+    # really meant for a monthly
+    as.integer(diff.mondate(c(
+      as.mondate(tail(index(DFF.DELAYZERO.ABS),1), displayFormat="%Y-%m-%d",timeunits="months"),
+      as.mondate(finDate.TestTrain.Global.Latest, displayFormat="%Y-%m-%d",timeunits="months")
+    ))) -> pullAheadZOODataMonthShiftAmount
+    
     merge.xts(MaxAllTestTrainMonthEnds,DFF.DELAYZERO.ABS) -> DFF.DELAYZERO.ABS
     DFF.DELAYZERO.ABS[MaxAllTestTrainMonthEndsRange] -> DFF.DELAYZERO.ABS
     
     assign("DFF.DELAYZERO.ABS", value=DFF.DELAYZERO.ABS, envir = .GlobalEnv)
 
-    "DFF.DELAYZERO.ABS" -> ALL.OBSERVEES["DFF.DELAYZERO.ABS"]
+    # if HAD BEEN a Daily
+    max(pullAheadZOODataMonthShiftAmount,0) -> pullAheadZOODataMonthShiftAmount
     
+    pullAheadZOOData(DFF.DELAYZERO.ABS,pullAheadZOODataMonthShiftAmount) ->   DFF.DELAYZERO.ABS.ADJUSTNOW
+    print(paste0("DFF pullAheadZOOData should be DELAYZERO"," Actual: ",pullAheadZOODataMonthShiftAmount))
+    
+    merge.xts(MaxAllTestTrainMonthEnds,DFF.DELAYZERO.ABS.ADJUSTNOW) -> DFF.DELAYZERO.ABS.ADJUSTNOW
+    DFF.DELAYZERO.ABS.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> DFF.DELAYZERO.ABS.ADJUSTNOW
+    
+    assign("DFF.DELAYZERO.ABS.ADJUSTNOW", value=DFF.DELAYZERO.ABS.ADJUSTNOW, envir = .GlobalEnv)
+    "DFF.DELAYZERO.ABS.ADJUSTNOW" -> ALL.OBSERVEES["DFF.DELAYZERO.ABS.ADJUSTNOW"]
+
     bookmark_here <- 1
     
     # maybe useful for some math somewhere
@@ -728,11 +920,24 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
       , initDate = "1950-03-01"
       , subtractOffDaysSpec = -1
     ) -> UNEMPLOY.DELAYONE.ABS       # head "1950-03-31"
+
+    # really meant for a monthly
+    as.integer(diff.mondate(c(
+      as.mondate(tail(index(UNEMPLOY.DELAYONE.ABS),1), displayFormat="%Y-%m-%d",timeunits="months"),
+      as.mondate(finDate.TestTrain.Global.Latest, displayFormat="%Y-%m-%d",timeunits="months")
+    ))) -> pullAheadZOODataMonthShiftAmount
+    
     merge.xts(MaxAllTestTrainMonthEnds,UNEMPLOY.DELAYONE.ABS) -> UNEMPLOY.DELAYONE.ABS
+    UNEMPLOY.DELAYONE.ABS[MaxAllTestTrainMonthEndsRange] -> UNEMPLOY.DELAYONE.ABS
     
     assign("UNEMPLOY.DELAYONE.ABS", value=UNEMPLOY.DELAYONE.ABS, envir = .GlobalEnv)
     
-    pullAheadZOOData(UNEMPLOY.DELAYONE.ABS,1) -> UNEMPLOY.DELAYONE.ABS.ADJUSTNOW
+    # if HAD BEEN a Daily
+    max(pullAheadZOODataMonthShiftAmount,0) -> pullAheadZOODataMonthShiftAmount
+    
+    pullAheadZOOData(UNEMPLOY.DELAYONE.ABS,pullAheadZOODataMonthShiftAmount) -> UNEMPLOY.DELAYONE.ABS.ADJUSTNOW
+    print(paste0("UNEMPLOY pullAheadZOOData should be DELAYONE"," Actual: ",pullAheadZOODataMonthShiftAmount))
+    
     merge.xts(MaxAllTestTrainMonthEnds,UNEMPLOY.DELAYONE.ABS.ADJUSTNOW) -> UNEMPLOY.DELAYONE.ABS.ADJUSTNOW
     UNEMPLOY.DELAYONE.ABS.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> UNEMPLOY.DELAYONE.ABS.ADJUSTNOW
     
@@ -759,11 +964,24 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
       , initDate = "1950-03-01"
       , subtractOffDaysSpec = -1
     ) -> UEMPMED.DELAYONE.ABS        # head "1967-06-30"
+
+    # really meant for a monthly
+    as.integer(diff.mondate(c(
+      as.mondate(tail(index(UEMPMED.DELAYONE.ABS),1), displayFormat="%Y-%m-%d",timeunits="months"),
+      as.mondate(finDate.TestTrain.Global.Latest, displayFormat="%Y-%m-%d",timeunits="months")
+    ))) -> pullAheadZOODataMonthShiftAmount
+    
     merge.xts(MaxAllTestTrainMonthEnds,UEMPMED.DELAYONE.ABS) -> UEMPMED.DELAYONE.ABS
+    UEMPMED.DELAYONE.ABS[MaxAllTestTrainMonthEndsRange] -> UEMPMED.DELAYONE.ABS
     
     assign("UEMPMED.DELAYONE.ABS", value=UEMPMED.DELAYONE.ABS, envir = .GlobalEnv)
     
-    pullAheadZOOData(UEMPMED.DELAYONE.ABS,1) -> UEMPMED.DELAYONE.ABS.ADJUSTNOW
+    # if HAD BEEN a Daily
+    max(pullAheadZOODataMonthShiftAmount,0) -> pullAheadZOODataMonthShiftAmount
+    
+    pullAheadZOOData(UEMPMED.DELAYONE.ABS,pullAheadZOODataMonthShiftAmount) -> UEMPMED.DELAYONE.ABS.ADJUSTNOW
+    print(paste0("UEMPMED pullAheadZOOData should be DELAYONE"," Actual: ",pullAheadZOODataMonthShiftAmount))
+    
     merge.xts(MaxAllTestTrainMonthEnds,UEMPMED.DELAYONE.ABS.ADJUSTNOW) -> UEMPMED.DELAYONE.ABS.ADJUSTNOW
     UEMPMED.DELAYONE.ABS.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> UEMPMED.DELAYONE.ABS.ADJUSTNOW
     
@@ -791,11 +1009,24 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
       , initDate = "1950-03-01"
       , subtractOffDaysSpec = -1
     ) -> POP.DELAYTWO.ABS         # head "1951-12-31"
+    
+    # really meant for a monthly
+    as.integer(diff.mondate(c(
+      as.mondate(tail(index(POP.DELAYTWO.ABS),1), displayFormat="%Y-%m-%d",timeunits="months"),
+      as.mondate(finDate.TestTrain.Global.Latest, displayFormat="%Y-%m-%d",timeunits="months")
+    ))) -> pullAheadZOODataMonthShiftAmount
+    
     merge.xts(MaxAllTestTrainMonthEnds,POP.DELAYTWO.ABS) -> POP.DELAYTWO.ABS
+    POP.DELAYTWO.ABS[MaxAllTestTrainMonthEndsRange] -> POP.DELAYTWO.ABS
     
     assign("POP.DELAYTWO.ABS", value=POP.DELAYTWO.ABS, envir = .GlobalEnv)
     
-    pullAheadZOOData(POP.DELAYTWO.ABS,2) -> POP.DELAYTWO.ABS.ADJUSTNOW
+    # if HAD BEEN a Daily
+    max(pullAheadZOODataMonthShiftAmount,0) -> pullAheadZOODataMonthShiftAmount
+    
+    pullAheadZOOData(POP.DELAYTWO.ABS,pullAheadZOODataMonthShiftAmount) -> POP.DELAYTWO.ABS.ADJUSTNOW
+    print(paste0("POP pullAheadZOOData should be DELAYTWO"," Actual: ",pullAheadZOODataMonthShiftAmount))
+    
     merge.xts(MaxAllTestTrainMonthEnds,POP.DELAYTWO.ABS.ADJUSTNOW) -> POP.DELAYTWO.ABS.ADJUSTNOW
     POP.DELAYTWO.ABS.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> POP.DELAYTWO.ABS.ADJUSTNOW
     
@@ -860,11 +1091,24 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
       , initDate = "1950-03-01"
       , subtractOffDaysSpec = -1
     ) -> UNRATE.DELAYONE.ABS         # head "1950-03-31"
+    
+    # really meant for a monthly
+    as.integer(diff.mondate(c(
+      as.mondate(tail(index(UNRATE.DELAYONE.ABS),1), displayFormat="%Y-%m-%d",timeunits="months"),
+      as.mondate(finDate.TestTrain.Global.Latest, displayFormat="%Y-%m-%d",timeunits="months")
+    ))) -> pullAheadZOODataMonthShiftAmount
+    
     merge.xts(MaxAllTestTrainMonthEnds,UNRATE.DELAYONE.ABS) -> UNRATE.DELAYONE.ABS
-
+    UNRATE.DELAYONE.ABS[MaxAllTestTrainMonthEndsRange] -> UNRATE.DELAYONE.ABS
+    
     assign("UNRATE.DELAYONE.ABS", value=UNRATE.DELAYONE.ABS, envir = .GlobalEnv)
     
-    pullAheadZOOData(UNRATE.DELAYONE.ABS,1) -> UNRATE.DELAYONE.ABS.ADJUSTNOW
+    # if HAD BEEN a Daily
+    max(pullAheadZOODataMonthShiftAmount,0) -> pullAheadZOODataMonthShiftAmount
+    
+    pullAheadZOOData(UNRATE.DELAYONE.ABS,pullAheadZOODataMonthShiftAmount) -> UNRATE.DELAYONE.ABS.ADJUSTNOW
+    print(paste0("UNRATE pullAheadZOOData should be DELAYONE"," Actual: ",pullAheadZOODataMonthShiftAmount))
+    
     merge.xts(MaxAllTestTrainMonthEnds,UNRATE.DELAYONE.ABS.ADJUSTNOW) -> UNRATE.DELAYONE.ABS.ADJUSTNOW
     UNRATE.DELAYONE.ABS.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> UNRATE.DELAYONE.ABS.ADJUSTNOW
     
@@ -890,11 +1134,24 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
       , initDate = "1950-03-01"
       , subtractOffDaysSpec = -1
     ) -> CPILFESL.DELAYONE.ABS       # head "1956-12-31"
+    
+    # really meant for a monthly
+    as.integer(diff.mondate(c(
+      as.mondate(tail(index(CPILFESL.DELAYONE.ABS),1), displayFormat="%Y-%m-%d",timeunits="months"),
+      as.mondate(finDate.TestTrain.Global.Latest, displayFormat="%Y-%m-%d",timeunits="months")
+    ))) -> pullAheadZOODataMonthShiftAmount
+    
     merge.xts(MaxAllTestTrainMonthEnds,CPILFESL.DELAYONE.ABS) -> CPILFESL.DELAYONE.ABS
-
+    CPILFESL.DELAYONE.ABS[MaxAllTestTrainMonthEndsRange] -> CPILFESL.DELAYONE.ABS
+    
     assign("CPILFESL.DELAYONE.ABS", value=CPILFESL.DELAYONE.ABS, envir = .GlobalEnv)
     
-    pullAheadZOOData(CPILFESL.DELAYONE.ABS,1) -> CPILFESL.DELAYONE.ABS.ADJUSTNOW
+    # if HAD BEEN a Daily
+    max(pullAheadZOODataMonthShiftAmount,0) -> pullAheadZOODataMonthShiftAmount
+    
+    pullAheadZOOData(CPILFESL.DELAYONE.ABS,pullAheadZOODataMonthShiftAmount) -> CPILFESL.DELAYONE.ABS.ADJUSTNOW
+    print(paste0("CPILFESL pullAheadZOOData should be DELAYONE"," Actual: ",pullAheadZOODataMonthShiftAmount))
+    
     merge.xts(MaxAllTestTrainMonthEnds,CPILFESL.DELAYONE.ABS.ADJUSTNOW) -> CPILFESL.DELAYONE.ABS.ADJUSTNOW
     CPILFESL.DELAYONE.ABS.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> CPILFESL.DELAYONE.ABS.ADJUSTNOW
     
@@ -926,13 +1183,35 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
       , finSymbolAttributes = c("Close")
       , initDate = "1950-03-01"
       , subtractOffDaysSpec = 0
-    ) -> TREAST.DELAYZERO.ABS     # head "2002-12-31"
+    ) -> TREAST.DELAYZERO.ABS     # head "2002-12-31" ( Weekly )
+    merge.xts(MaxAllTestTrainMonthEnds,TREAST.DELAYZERO.ABS) -> TREAST.DELAYZERO.ABS
+
+    # really meant for a monthly
+    as.integer(diff.mondate(c(
+      as.mondate(tail(index(TREAST.DELAYZERO.ABS),1), displayFormat="%Y-%m-%d",timeunits="months"),
+      as.mondate(finDate.TestTrain.Global.Latest, displayFormat="%Y-%m-%d",timeunits="months")
+    ))) -> pullAheadZOODataMonthShiftAmount
+    
     merge.xts(MaxAllTestTrainMonthEnds,TREAST.DELAYZERO.ABS) -> TREAST.DELAYZERO.ABS
     TREAST.DELAYZERO.ABS[MaxAllTestTrainMonthEndsRange] -> TREAST.DELAYZERO.ABS
     
     assign("TREAST.DELAYZERO.ABS", value=TREAST.DELAYZERO.ABS, envir = .GlobalEnv)
     
-    "TREAST.DELAYZERO.ABS" -> ALL.OBSERVEES["TREAST.DELAYZERO.ABS"]
+    # if HAD BEEN a Daily
+    max(pullAheadZOODataMonthShiftAmount,0) -> pullAheadZOODataMonthShiftAmount
+    
+    pullAheadZOOData(TREAST.DELAYZERO.ABS,pullAheadZOODataMonthShiftAmount) ->  TREAST.DELAYZERO.ABS.ADJUSTNOW
+    print(paste0("TREAST pullAheadZOOData should be DELAYZERO"," Actual: ",pullAheadZOODataMonthShiftAmount))
+    
+    merge.xts(MaxAllTestTrainMonthEnds,TREAST.DELAYZERO.ABS.ADJUSTNOW) -> TREAST.DELAYZERO.ABS.ADJUSTNOW
+    TREAST.DELAYZERO.ABS.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> TREAST.DELAYZERO.ABS.ADJUSTNOW
+    
+    assign("TREAST.DELAYZERO.ABS.ADJUSTNOW", value=TREAST.DELAYZERO.ABS.ADJUSTNOW, envir = .GlobalEnv)
+    
+    "TREAST.DELAYZERO.ABS.ADJUSTNOW" -> ALL.OBSERVEES["TREAST.DELAYZERO.ABS.ADJUSTNOW"]
+    
+    
+    # "TREAST.DELAYZERO.ABS" -> ALL.OBSERVEES["TREAST.DELAYZERO.ABS"]
     
     # smooth start in 2002 ( otherwise zero before that )
     
@@ -953,13 +1232,31 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
       , finSymbolAttributes = c("Close")
       , initDate = "1950-03-01"
       , subtractOffDaysSpec = 0
-    ) -> MBST.DELAYZERO.ABS          # head "2002-12-31"
+    ) -> MBST.DELAYZERO.ABS          # head "2002-12-31" ( Weekly )
+    
+    # really meant for a monthly
+    as.integer(diff.mondate(c(
+      as.mondate(tail(index(MBST.DELAYZERO.ABS),1), displayFormat="%Y-%m-%d",timeunits="months"),
+      as.mondate(finDate.TestTrain.Global.Latest, displayFormat="%Y-%m-%d",timeunits="months")
+    ))) -> pullAheadZOODataMonthShiftAmount
+    
     merge.xts(MaxAllTestTrainMonthEnds,MBST.DELAYZERO.ABS) -> MBST.DELAYZERO.ABS
     MBST.DELAYZERO.ABS[MaxAllTestTrainMonthEndsRange] -> MBST.DELAYZERO.ABS
     
     assign("MBST.DELAYZERO.ABS", value=MBST.DELAYZERO.ABS, envir = .GlobalEnv)
     
-    "MBST.DELAYZERO.ABS" -> ALL.OBSERVEES["MBST.DELAYZERO.ABS"]
+    # if HAD BEEN a Daily
+    max(pullAheadZOODataMonthShiftAmount,0) -> pullAheadZOODataMonthShiftAmount
+    
+    pullAheadZOOData(MBST.DELAYZERO.ABS,pullAheadZOODataMonthShiftAmount) ->  MBST.DELAYZERO.ABS.ADJUSTNOW
+    print(paste0("MBST pullAheadZOOData should be DELAYZERO"," Actual: ",pullAheadZOODataMonthShiftAmount))
+    
+    merge.xts(MaxAllTestTrainMonthEnds,MBST.DELAYZERO.ABS.ADJUSTNOW) -> MBST.DELAYZERO.ABS.ADJUSTNOW
+    MBST.DELAYZERO.ABS.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> MBST.DELAYZERO.ABS.ADJUSTNOW
+    
+    assign("MBST.DELAYZERO.ABS.ADJUSTNOW", value=MBST.DELAYZERO.ABS.ADJUSTNOW, envir = .GlobalEnv)
+    
+    "MBST.DELAYZERO.ABS.ADJUSTNOW" -> ALL.OBSERVEES["MBST.DELAYZERO.ABS.ADJUSTNOW"]
     
     bookmark_here <- 1
     
@@ -988,12 +1285,24 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
       , initDate = "1950-03-01"
       , subtractOffDaysSpec = -1
     ) -> INDPRO.DELAYONE.ABS        # head "1950-03-31"
+    
+    # really meant for a monthly
+    as.integer(diff.mondate(c(
+      as.mondate(tail(index(INDPRO.DELAYONE.ABS),1), displayFormat="%Y-%m-%d",timeunits="months"),
+      as.mondate(finDate.TestTrain.Global.Latest, displayFormat="%Y-%m-%d",timeunits="months")
+    ))) -> pullAheadZOODataMonthShiftAmount
+    
     merge.xts(MaxAllTestTrainMonthEnds,INDPRO.DELAYONE.ABS) -> INDPRO.DELAYONE.ABS
-
+    INDPRO.DELAYONE.ABS[MaxAllTestTrainMonthEndsRange] -> INDPRO.DELAYONE.ABS
+    
     assign("INDPRO.DELAYONE.ABS", value=INDPRO.DELAYONE.ABS, envir = .GlobalEnv)
     
-    pullAheadZOOData(INDPRO.DELAYONE.ABS,1) -> INDPRO.DELAYONE.ABS.ADJUSTNOW
- 
+    # if HAD BEEN a Daily
+    max(pullAheadZOODataMonthShiftAmount,0) -> pullAheadZOODataMonthShiftAmount
+    
+    pullAheadZOOData(INDPRO.DELAYONE.ABS,pullAheadZOODataMonthShiftAmount) -> INDPRO.DELAYONE.ABS.ADJUSTNOW
+    print(paste0("INDPRO pullAheadZOOData should be DELAYONE"," Actual: ",pullAheadZOODataMonthShiftAmount))
+    
     merge.xts(MaxAllTestTrainMonthEnds,INDPRO.DELAYONE.ABS.ADJUSTNOW) -> INDPRO.DELAYONE.ABS.ADJUSTNOW
     INDPRO.DELAYONE.ABS.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> INDPRO.DELAYONE.ABS.ADJUSTNOW
     
@@ -1023,11 +1332,24 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
       , initDate = "1950-03-01"
       , subtractOffDaysSpec = -1
     ) -> NAPM.DELAYONE.ABS             # head "1950-03-31"
+    
+    # really meant for a monthly
+    as.integer(diff.mondate(c(
+      as.mondate(tail(index(NAPM.DELAYONE.ABS),1), displayFormat="%Y-%m-%d",timeunits="months"),
+      as.mondate(finDate.TestTrain.Global.Latest, displayFormat="%Y-%m-%d",timeunits="months")
+    ))) -> pullAheadZOODataMonthShiftAmount
+    
     merge.xts(MaxAllTestTrainMonthEnds,NAPM.DELAYONE.ABS) -> NAPM.DELAYONE.ABS
-
+    NAPM.DELAYONE.ABS[MaxAllTestTrainMonthEndsRange] -> NAPM.DELAYONE.ABS
+    
     assign("NAPM.DELAYONE.ABS", value=NAPM.DELAYONE.ABS, envir = .GlobalEnv)
     
-    pullAheadZOOData(NAPM.DELAYONE.ABS,1) -> NAPM.DELAYONE.ABS.ADJUSTNOW
+    # if HAD BEEN a Daily
+    max(pullAheadZOODataMonthShiftAmount,0) -> pullAheadZOODataMonthShiftAmount
+    
+    pullAheadZOOData(NAPM.DELAYONE.ABS,pullAheadZOODataMonthShiftAmount) -> NAPM.DELAYONE.ABS.ADJUSTNOW
+    print(paste0("NAPM pullAheadZOOData should be DELAYONE"," Actual: ",pullAheadZOODataMonthShiftAmount))
+    
     merge.xts(MaxAllTestTrainMonthEnds,NAPM.DELAYONE.ABS.ADJUSTNOW) -> NAPM.DELAYONE.ABS.ADJUSTNOW
     NAPM.DELAYONE.ABS.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> NAPM.DELAYONE.ABS.ADJUSTNOW
     
@@ -1049,6 +1371,9 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     # Release:             Supplemental Estimates, Underlying Detail Tables, Spliced Series (Not a Press Release)
     # Seasonal Adjustment: Seasonally Adjusted
     
+    # HARD NOTE ( MAY? DO MAY REVISIONS ) ( NEWER DATA DOES NOT LOOK ANYTING LIKE MY OLD DATA)
+    # https://alfred.stlouisfed.org/series/downloaddata?seid=CMRMTSPL
+    
     retrieveSymbolsQuantmodRdata(
       finSymbol = "CMRMTSPL"
       , finSymbolRemoteSource = "Quantmod_FRED"
@@ -1056,12 +1381,24 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
       , initDate = "1950-03-01"
       , subtractOffDaysSpec = -1
     ) -> CMRMTSPL.DELAYTHREE.ABS             # head "1950-03-31"
+    
+    # really meant for a monthly
+    as.integer(diff.mondate(c(
+      as.mondate(tail(index(CMRMTSPL.DELAYTHREE.ABS),1), displayFormat="%Y-%m-%d",timeunits="months"),
+      as.mondate(finDate.TestTrain.Global.Latest, displayFormat="%Y-%m-%d",timeunits="months")
+    ))) -> pullAheadZOODataMonthShiftAmount
+    
     merge.xts(MaxAllTestTrainMonthEnds,CMRMTSPL.DELAYTHREE.ABS) -> CMRMTSPL.DELAYTHREE.ABS
+    CMRMTSPL.DELAYTHREE.ABS[MaxAllTestTrainMonthEndsRange] -> CMRMTSPL.DELAYTHREE.ABS
     
     assign("CMRMTSPL.DELAYTHREE.ABS", value=CMRMTSPL.DELAYTHREE.ABS, envir = .GlobalEnv)
     
-    pullAheadZOOData(CMRMTSPL.DELAYTHREE.ABS,3) -> CMRMTSPL.DELAYTHREE.ABS.ADJUSTNOW
-
+    # if HAD BEEN a Daily
+    max(pullAheadZOODataMonthShiftAmount,0) -> pullAheadZOODataMonthShiftAmount
+    
+    pullAheadZOOData(CMRMTSPL.DELAYTHREE.ABS,pullAheadZOODataMonthShiftAmount) -> CMRMTSPL.DELAYTHREE.ABS.ADJUSTNOW
+    print(paste0("CMRMTSPL pullAheadZOOData should be DELAYTHREE"," Actual: ",pullAheadZOODataMonthShiftAmount))
+    
     merge.xts(MaxAllTestTrainMonthEnds,CMRMTSPL.DELAYTHREE.ABS.ADJUSTNOW) -> CMRMTSPL.DELAYTHREE.ABS.ADJUSTNOW
     CMRMTSPL.DELAYTHREE.ABS.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> CMRMTSPL.DELAYTHREE.ABS.ADJUSTNOW
     
@@ -1091,11 +1428,24 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
       , initDate = "1950-03-01"
       , subtractOffDaysSpec = -1
     ) -> TCU.DELAYONE.ABS              # head "1966-12-31"
+    
+    # really meant for a monthly
+    as.integer(diff.mondate(c(
+      as.mondate(tail(index(TCU.DELAYONE.ABS),1), displayFormat="%Y-%m-%d",timeunits="months"),
+      as.mondate(finDate.TestTrain.Global.Latest, displayFormat="%Y-%m-%d",timeunits="months")
+    ))) -> pullAheadZOODataMonthShiftAmount
+    
     merge.xts(MaxAllTestTrainMonthEnds,TCU.DELAYONE.ABS) -> TCU.DELAYONE.ABS
+    TCU.DELAYONE.ABS[MaxAllTestTrainMonthEndsRange] -> TCU.DELAYONE.ABS
     
     assign("TCU.DELAYONE.ABS", value=TCU.DELAYONE.ABS, envir = .GlobalEnv)
     
-    pullAheadZOOData(TCU.DELAYONE.ABS,1) -> TCU.DELAYONE.ABS.ADJUSTNOW
+    # if HAD BEEN a Daily
+    max(pullAheadZOODataMonthShiftAmount,0) -> pullAheadZOODataMonthShiftAmount
+    
+    pullAheadZOOData(TCU.DELAYONE.ABS,pullAheadZOODataMonthShiftAmount) -> TCU.DELAYONE.ABS.ADJUSTNOW
+    print(paste0("TCU pullAheadZOOData should be DELAYONE"," Actual: ",pullAheadZOODataMonthShiftAmount))
+    
     merge.xts(MaxAllTestTrainMonthEnds,TCU.DELAYONE.ABS.ADJUSTNOW) -> TCU.DELAYONE.ABS.ADJUSTNOW
     TCU.DELAYONE.ABS.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> TCU.DELAYONE.ABS.ADJUSTNOW
     
@@ -1128,11 +1478,24 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
       , subtractOffDaysSpec = -1
       , interpolate = TRUE
     ) ->  A261RL1Q225SBEA.DELAYSIX.PCTCHG.OVER3MO  # head "1950-03-31"
+    
+    # really meant for a monthly
+    as.integer(diff.mondate(c(
+      as.mondate(tail(index(A261RL1Q225SBEA.DELAYSIX.PCTCHG.OVER3MO),1), displayFormat="%Y-%m-%d",timeunits="months"),
+      as.mondate(finDate.TestTrain.Global.Latest, displayFormat="%Y-%m-%d",timeunits="months")
+    ))) -> pullAheadZOODataMonthShiftAmount
+    
     merge.xts(MaxAllTestTrainMonthEnds,A261RL1Q225SBEA.DELAYSIX.PCTCHG.OVER3MO) -> A261RL1Q225SBEA.DELAYSIX.PCTCHG.OVER3MO
+    A261RL1Q225SBEA.DELAYSIX.PCTCHG.OVER3MO[MaxAllTestTrainMonthEndsRange] -> A261RL1Q225SBEA.DELAYSIX.PCTCHG.OVER3MO
     
     assign("A261RL1Q225SBEA.DELAYSIX.PCTCHG.OVER3MO", value=A261RL1Q225SBEA.DELAYSIX.PCTCHG.OVER3MO, envir = .GlobalEnv)
     
-    pullAheadZOOData(A261RL1Q225SBEA.DELAYSIX.PCTCHG.OVER3MO,6) -> A261RL1Q225SBEA.DELAYSIX.PCTCHG.OVER3MO.ADJUSTNOW
+    # if HAD BEEN a Daily
+    max(pullAheadZOODataMonthShiftAmount,0) -> pullAheadZOODataMonthShiftAmount
+    
+    pullAheadZOOData(A261RL1Q225SBEA.DELAYSIX.PCTCHG.OVER3MO,pullAheadZOODataMonthShiftAmount) -> A261RL1Q225SBEA.DELAYSIX.PCTCHG.OVER3MO.ADJUSTNOW
+    print(paste0("261RL1Q225SBEA.DELAYSIX.PCTCHG.OVER3MO pullAheadZOOData should be DELAYSIX"," Actual: ",pullAheadZOODataMonthShiftAmount))
+    
     merge.xts(MaxAllTestTrainMonthEnds,A261RL1Q225SBEA.DELAYSIX.PCTCHG.OVER3MO.ADJUSTNOW) -> A261RL1Q225SBEA.DELAYSIX.PCTCHG.OVER3MO.ADJUSTNOW
     A261RL1Q225SBEA.DELAYSIX.PCTCHG.OVER3MO.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> A261RL1Q225SBEA.DELAYSIX.PCTCHG.OVER3MO.ADJUSTNOW
     
@@ -1165,11 +1528,24 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
       , subtractOffDaysSpec = -1
       , interpolate = TRUE
     ) -> A576RC1Q027SBEA.DELAYFIVE.ABS     # head "1950-03-31"
+    
+    # really meant for a monthly
+    as.integer(diff.mondate(c(
+      as.mondate(tail(index(A576RC1Q027SBEA.DELAYFIVE.ABS),1), displayFormat="%Y-%m-%d",timeunits="months"),
+      as.mondate(finDate.TestTrain.Global.Latest, displayFormat="%Y-%m-%d",timeunits="months")
+    ))) -> pullAheadZOODataMonthShiftAmount
+    
     merge.xts(MaxAllTestTrainMonthEnds,A576RC1Q027SBEA.DELAYFIVE.ABS) -> A576RC1Q027SBEA.DELAYFIVE.ABS
-
+    A576RC1Q027SBEA.DELAYFIVE.ABS[MaxAllTestTrainMonthEndsRange] -> A576RC1Q027SBEA.DELAYFIVE.ABS
+    
     assign("A576RC1Q027SBEA.DELAYFIVE.ABS", value=A576RC1Q027SBEA.DELAYFIVE.ABS, envir = .GlobalEnv)
     
-    pullAheadZOOData(A576RC1Q027SBEA.DELAYFIVE.ABS,5) -> A576RC1Q027SBEA.DELAYFIVE.ABS.ADJUSTNOW
+    # if HAD BEEN a Daily
+    max(pullAheadZOODataMonthShiftAmount,0) -> pullAheadZOODataMonthShiftAmount
+    
+    pullAheadZOOData(A576RC1Q027SBEA.DELAYFIVE.ABS,pullAheadZOODataMonthShiftAmount) -> A576RC1Q027SBEA.DELAYFIVE.ABS.ADJUSTNOW
+    print(paste0("A576RC1Q027SBEA pullAheadZOOData should be DELAYFIVE"," Actual: ",pullAheadZOODataMonthShiftAmount))
+    
     merge.xts(MaxAllTestTrainMonthEnds,A576RC1Q027SBEA.DELAYFIVE.ABS.ADJUSTNOW) -> A576RC1Q027SBEA.DELAYFIVE.ABS.ADJUSTNOW
     A576RC1Q027SBEA.DELAYFIVE.ABS.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> A576RC1Q027SBEA.DELAYFIVE.ABS.ADJUSTNOW
     
@@ -1200,11 +1576,24 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
       finSymbol = "SP500.12M.EPS"
       , finSymbolAttribute = "Close"
     )  -> SP500.12M.EPS.DELAYTHREE.ABS  # "12.month.EPS.Close" ( web table header) 
+ 
+    # really meant for a monthly
+    as.integer(diff.mondate(c(
+      as.mondate(tail(index(SP500.12M.EPS.DELAYTHREE.ABS),1), displayFormat="%Y-%m-%d",timeunits="months"),
+      as.mondate(finDate.TestTrain.Global.Latest, displayFormat="%Y-%m-%d",timeunits="months")
+    ))) -> pullAheadZOODataMonthShiftAmount
+    
     merge.xts(MaxAllTestTrainMonthEnds,SP500.12M.EPS.DELAYTHREE.ABS) -> SP500.12M.EPS.DELAYTHREE.ABS
+    SP500.12M.EPS.DELAYTHREE.ABS[MaxAllTestTrainMonthEndsRange] -> SP500.12M.EPS.DELAYTHREE.ABS
     
     assign("SP500.12M.EPS.DELAYTHREE.ABS", value=SP500.12M.EPS.DELAYTHREE.ABS, envir = .GlobalEnv)
     
-    pullAheadZOOData(SP500.12M.EPS.DELAYTHREE.ABS,3) -> SP500.12M.EPS.DELAYTHREE.ABS.ADJUSTNOW
+    # if HAD BEEN a Daily
+    max(pullAheadZOODataMonthShiftAmount,0) -> pullAheadZOODataMonthShiftAmount
+    
+    pullAheadZOOData(SP500.12M.EPS.DELAYTHREE.ABS,pullAheadZOODataMonthShiftAmount) -> SP500.12M.EPS.DELAYTHREE.ABS.ADJUSTNOW
+    print(paste0("SP500.12M.EPS pullAheadZOOData should be DELAYTHREE"," Actual: ",pullAheadZOODataMonthShiftAmount))
+    
     merge.xts(MaxAllTestTrainMonthEnds,SP500.12M.EPS.DELAYTHREE.ABS.ADJUSTNOW) -> SP500.12M.EPS.DELAYTHREE.ABS.ADJUSTNOW
     SP500.12M.EPS.DELAYTHREE.ABS.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> SP500.12M.EPS.DELAYTHREE.ABS.ADJUSTNOW
     
@@ -1212,15 +1601,31 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     
     "SP500.12M.EPS.DELAYTHREE.ABS.ADJUSTNOW" -> ALL.OBSERVEES["SP500.12M.EPS.DELAYTHREE.ABS.ADJUSTNOW"]
     
+    # TO DO ABOVE: FIX THAT COLNAME
+    # ...........12.month.EPS...........Value..........Close
+    
     retrieveSymbolsmultplRdata(                      # head "1871-01-31"
       finSymbol = "SP500.REAL.EARN.GR.PCT"           # Annual percentage change in 12 month
       , finSymbolAttribute = "Close"
     )  -> SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO # "SandP.500.Real.Earnings.Growth.Pct.Close" 
+    
+    # really meant for a monthly
+    as.integer(diff.mondate(c(
+      as.mondate(tail(index(SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO),1), displayFormat="%Y-%m-%d",timeunits="months"),
+      as.mondate(finDate.TestTrain.Global.Latest, displayFormat="%Y-%m-%d",timeunits="months")
+    ))) -> pullAheadZOODataMonthShiftAmount
+    
     merge.xts(MaxAllTestTrainMonthEnds,SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO) -> SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO
+    SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO[MaxAllTestTrainMonthEndsRange] -> SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO
     
     assign("SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO", value=SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO, envir = .GlobalEnv)
     
-    pullAheadZOOData(SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO,3) -> SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO.ADJUSTNOW
+    # if HAD BEEN a Daily
+    max(pullAheadZOODataMonthShiftAmount,0) -> pullAheadZOODataMonthShiftAmount
+    
+    pullAheadZOOData(SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO,pullAheadZOODataMonthShiftAmount) -> SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO.ADJUSTNOW
+    print(paste0("SP500.REAL.EARN.GR pullAheadZOOData should be DELAYTHREE"," Actual: ",pullAheadZOODataMonthShiftAmount))
+    
     merge.xts(MaxAllTestTrainMonthEnds,SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO.ADJUSTNOW) -> SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO.ADJUSTNOW
     SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO.ADJUSTNOW
     
@@ -1232,12 +1637,24 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
         finSymbol = "SP500.PE.RATIO"
       , finSymbolAttribute = "Close"
     )  -> SP500.PE.RATIO.DELAYONE.ABS # "SandP.500.PE.Ratio.Close" ( web table header) 
+
+    # really meant for a monthly
+    as.integer(diff.mondate(c(
+      as.mondate(tail(index(SP500.PE.RATIO.DELAYONE.ABS),1), displayFormat="%Y-%m-%d",timeunits="months"),
+      as.mondate(finDate.TestTrain.Global.Latest, displayFormat="%Y-%m-%d",timeunits="months")
+    ))) -> pullAheadZOODataMonthShiftAmount
+    
     merge.xts(MaxAllTestTrainMonthEnds,SP500.PE.RATIO.DELAYONE.ABS) -> SP500.PE.RATIO.DELAYONE.ABS
     SP500.PE.RATIO.DELAYONE.ABS[MaxAllTestTrainMonthEndsRange] -> SP500.PE.RATIO.DELAYONE.ABS
     
     assign("SP500.PE.RATIO.DELAYONE.ABS", value=SP500.PE.RATIO.DELAYONE.ABS, envir = .GlobalEnv)
     
-    pullAheadZOOData(SP500.PE.RATIO.DELAYONE.ABS,1) -> SP500.PE.RATIO.DELAYONE.ABS.ADJUSTNOW
+    # if HAD BEEN a Daily
+    max(pullAheadZOODataMonthShiftAmount,0) -> pullAheadZOODataMonthShiftAmount
+    
+    pullAheadZOOData(SP500.PE.RATIO.DELAYONE.ABS,pullAheadZOODataMonthShiftAmount) -> SP500.PE.RATIO.DELAYONE.ABS.ADJUSTNOW
+    print(paste0("SP500.PE.RATIO pullAheadZOOData should be DELAYONE"," Actual: ",pullAheadZOODataMonthShiftAmount))
+    
     merge.xts(MaxAllTestTrainMonthEnds,SP500.PE.RATIO.DELAYONE.ABS.ADJUSTNOW) -> SP500.PE.RATIO.DELAYONE.ABS.ADJUSTNOW
     SP500.PE.RATIO.DELAYONE.ABS.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> SP500.PE.RATIO.DELAYONE.ABS.ADJUSTNOW
     
@@ -1249,11 +1666,24 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
         finSymbol = "SP500.BV.PER.SHARE"
       , finSymbolAttribute = "Close"
     )  -> SP500.BV.PER.SHARE.DELAYTHREE.ABS  # "SandP.500.Book.Value.Close" 
-    merge.xts(MaxAllTestTrainMonthEnds,SP500.BV.PER.SHARE.DELAYTHREE.ABS) -> SP500.BV.PER.SHARE.DELAYTHREE.ABS
 
+    # really meant for a monthly
+    as.integer(diff.mondate(c(
+      as.mondate(tail(index(SP500.BV.PER.SHARE.DELAYTHREE.ABS),1), displayFormat="%Y-%m-%d",timeunits="months"),
+      as.mondate(finDate.TestTrain.Global.Latest, displayFormat="%Y-%m-%d",timeunits="months")
+    ))) -> pullAheadZOODataMonthShiftAmount
+    
+    merge.xts(MaxAllTestTrainMonthEnds,SP500.BV.PER.SHARE.DELAYTHREE.ABS) -> SP500.BV.PER.SHARE.DELAYTHREE.ABS
+    SP500.BV.PER.SHARE.DELAYTHREE.ABS[MaxAllTestTrainMonthEndsRange] -> SP500.BV.PER.SHARE.DELAYTHREE.ABS
+    
     assign("SP500.BV.PER.SHARE.DELAYTHREE.ABS", value=SP500.BV.PER.SHARE.DELAYTHREE.ABS, envir = .GlobalEnv)
     
-    pullAheadZOOData(SP500.BV.PER.SHARE.DELAYTHREE.ABS,3) -> SP500.BV.PER.SHARE.DELAYTHREE.ABS.ADJUSTNOW
+    # if HAD BEEN a Daily
+    max(pullAheadZOODataMonthShiftAmount,0) -> pullAheadZOODataMonthShiftAmount
+    
+    pullAheadZOOData(SP500.BV.PER.SHARE.DELAYTHREE.ABS,pullAheadZOODataMonthShiftAmount) -> SP500.BV.PER.SHARE.DELAYTHREE.ABS.ADJUSTNOW
+    print(paste0("SP500.BV.PER.SHARE pullAheadZOOData should be DELAYTHREE"," Actual: ",pullAheadZOODataMonthShiftAmount))
+    
     merge.xts(MaxAllTestTrainMonthEnds,SP500.BV.PER.SHARE.DELAYTHREE.ABS.ADJUSTNOW) -> SP500.BV.PER.SHARE.DELAYTHREE.ABS.ADJUSTNOW
     SP500.BV.PER.SHARE.DELAYTHREE.ABS.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> SP500.BV.PER.SHARE.DELAYTHREE.ABS.ADJUSTNOW 
     
@@ -1296,14 +1726,14 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     sink()
     
     # test
-    test1 <- NEXT.PCTDRAWDOWN.OVER.3MO(GSPC.DELAYZERO.ABS.CLOSE,GSPC.DELAYZERO.ABS.LOW)
+    test1 <- NEXT.PCTDRAWDOWN.OVER.3MO(GSPC.DELAYZERO.ABS.ADJUSTNOW.CLOSE,GSPC.DELAYZERO.ABS.ADJUSTNOW.LOW)
     
     "NEXT.PCTDRAWDOWN.OVER.3MO" -> ALL.PREDICTEESFUNCTIONS[["NEXT.PCTDRAWDOWN.OVER.3MO"]]
     "NEXT.PCTDRAWDOWN.OVER.2MO" -> ALL.PREDICTEESFUNCTIONS[["NEXT.PCTDRAWDOWN.OVER.2MO"]]
     "NEXT.PCTDRAWDOWN.OVER.1MO" -> ALL.PREDICTEESFUNCTIONS[["NEXT.PCTDRAWDOWN.OVER.1MO"]]
     
     bookmark_here <- 1 
-
+ 
     NEXT.PCTCHG.OVER <- function(x,over) {
       require(quantmod)     # Next     # search path 'xts' # cbind  
       # absolute percent change    
@@ -1323,7 +1753,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     sink()
     
     # test  
-    test2 <- NEXT.PCTCHG.OVER.1MO(GSPC.DELAYZERO.ABS.CLOSE)
+    test2 <- NEXT.PCTCHG.OVER.1MO(GSPC.DELAYZERO.ABS.ADJUSTNOW.CLOSE)
     
     "NEXT.PCTCHG.OVER.3MO" -> ALL.PREDICTEESFUNCTIONS[["NEXT.PCTCHG.OVER.3MO"]]
     "NEXT.PCTCHG.OVER.2MO" -> ALL.PREDICTEESFUNCTIONS[["NEXT.PCTCHG.OVER.2MO"]]
@@ -1398,7 +1828,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     sink()
     
     # test
-    test2b <- LAG.PCTCHG.OVER.1MO(GSPC.DELAYZERO.ABS.CLOSE)
+    test2b <- LAG.PCTCHG.OVER.1MO(GSPC.DELAYZERO.ABS.ADJUSTNOW.CLOSE)
 
     "LAG.PCTCHG.OVER.1MO" -> ALL.OBSERVEESFUNCTIONS[["LAG.PCTCHG.OVER.1MO"]]
     "LAG.PCTCHG.OVER.2MO" -> ALL.OBSERVEESFUNCTIONS[["LAG.PCTCHG.OVER.2MO"]]
@@ -1477,7 +1907,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     sink()
     
     # test
-    test3 <- TTR.MATH.OVER.SMA.2MO(GSPC.DELAYZERO.ABS.CLOSE)
+    test3 <- TTR.MATH.OVER.SMA.2MO(GSPC.DELAYZERO.ABS.ADJUSTNOW.CLOSE)
     
     "TTR.MATH.OVER.SMA.2MO" -> ALL.OBSERVEESFUNCTIONS[["TTR.MATH.OVER.SMA.2MO"]]
     "TTR.MATH.OVER.SMA.3MO" -> ALL.OBSERVEESFUNCTIONS[["TTR.MATH.OVER.SMA.3MO"]]
@@ -1510,7 +1940,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     sink()
     
     # test 
-    test4 <- COMPARE.ABOVE.PCT(TTR.MATH.OVER.SMA.2MO(GSPC.DELAYZERO.ABS.CLOSE),GSPC.DELAYZERO.ABS.CLOSE)
+    test4 <- COMPARE.ABOVE.PCT(TTR.MATH.OVER.SMA.2MO(GSPC.DELAYZERO.ABS.ADJUSTNOW.CLOSE),GSPC.DELAYZERO.ABS.ADJUSTNOW.CLOSE)
     
     # see 'test' above NEEDS a CLEVER use
     "COMPARE.ABOVE.PCT" ->  ALL.OVER.OBSERVEESFUNCTIONS[["COMPARE.ABOVE.PCT"]]
@@ -1579,8 +2009,8 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     # *** On Predictee ( ONE of TWO code chanages are here ) *** #  
     # ALL.PREDICTEES.HARD.CODED
     # main thing I try to predict 
-    # "NEXT.PCTCHG.OVER.3MO(GSPC.DELAYZERO.ABS.CLOSE)"                              -> ALL.PREDICTEES.HARD.CODED[["NEXT.PCTCHG.OVER.3MO(GSPC.DELAYZERO.ABS.CLOSE)"]]
-    # "NEXT.PCTDRAWDOWN.OVER.3MO(GSPC.DELAYZERO.ABS.CLOSE,GSPC.DELAYZERO.ABS.LOW)"  -> ALL.PREDICTEES.HARD.CODED[["NEXT.PCTDRAWDOWN.OVER.3MO(GSPC.DELAYZERO.ABS.CLOSE,GSPC.DELAYZERO.ABS.LOW)"]]
+    # "NEXT.PCTCHG.OVER.3MO(GSPC.DELAYZERO.ABS.ADJUSTNOW.CLOSE)"                              -> ALL.PREDICTEES.HARD.CODED[["NEXT.PCTCHG.OVER.3MO(GSPC.DELAYZERO.ABS.ADJUSTNOW.CLOSE)"]]
+    # "NEXT.PCTDRAWDOWN.OVER.3MO(GSPC.DELAYZERO.ABS.ADJUSTNOW.CLOSE,GSPC.DELAYZERO.ABS.ADJUSTNOW.LOW)"  -> ALL.PREDICTEES.HARD.CODED[["NEXT.PCTDRAWDOWN.OVER.3MO(GSPC.DELAYZERO.ABS.ADJUSTNOW.CLOSE,GSPC.DELAYZERO.ABS.ADJUSTNOW.LOW)"]]
     "NEXT.PCTCHG.OVER.3MO(GDP.DELAYSIX.ABS.ADJUSTNOW)"                            -> ALL.PREDICTEES.HARD.CODED[["NEXT.PCTCHG.OVER.3MO(GDP.DELAYSIX.ABS.ADJUSTNOW)"]]
     
     bookmark_here <- 1 
@@ -1594,7 +2024,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
         
           # *** On Predictee ( TWO of TWO code changes are here ) *** # 
           # for right now ( just this one ) 
-          # if( var.all.pred.hard == "NEXT.PCTCHG.OVER.3MO(GSPC.DELAYZERO.ABS.CLOSE)" ) {  
+          # if( var.all.pred.hard == "NEXT.PCTCHG.OVER.3MO(GSPC.DELAYZERO.ABS.ADJUSTNOW.CLOSE)" ) {  
           if( var.all.pred.hard == "NEXT.PCTCHG.OVER.3MO(GDP.DELAYSIX.ABS.ADJUSTNOW)" ) {
             
             # 'right now'   
@@ -1954,8 +2384,8 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     
     # predictees area    
     
-    ## "NEXT.RANGE.3(GSPC.DELAYZERO.ABS.LOW)" -> ALL.OBSERVEESPREDICTEES[["NEXT.RANGE.3(GSPC.DELAYZERO.ABS.LOW)"]] 
-    ## CURR.PREDICTEE <- "NEXT.RANGE.3(GSPC.DELAYZERO.ABS.LOW)" 
+    ## "NEXT.RANGE.3(GSPC.DELAYZERO.ABS.ADJUSTNOW.LOW)" -> ALL.OBSERVEESPREDICTEES[["NEXT.RANGE.3(GSPC.DELAYZERO.ABS.ADJUSTNOW.LOW)"]] 
+    ## CURR.PREDICTEE <- "NEXT.RANGE.3(GSPC.DELAYZERO.ABS.ADJUSTNOW.LOW)" 
     # end predictees area
     
     # begin observees area ( remove CURR.PREDICTEE )   
@@ -1964,12 +2394,12 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     ## ALL.OBSERVEESPREDICTEES -> CURR.OBSERVEES 
     
     # obviously remove the PREDICTEE 
-    ## NULL -> CURR.OBSERVEES[["NEXT.RANGE.3(GSPC.DELAYZERO.ABS.LOW)"]] 
+    ## NULL -> CURR.OBSERVEES[["NEXT.RANGE.3(GSPC.DELAYZERO.ABS.ADJUSTNOW.LOW)"]] 
 
     # XOR
     # exclude all
     ## list(   
-    ##   GSPC.DELAYZERO.ABS.CLOSE = "GSPC.DELAYZERO.ABS.CLOSE"
+    ##   GSPC.DELAYZERO.ABS.ADJUSTNOW.CLOSE = "GSPC.DELAYZERO.ABS.ADJUSTNOW.CLOSE"
     ## ) -> CURR.OBSERVEES 
     
     # end observees area 
