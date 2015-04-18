@@ -83,7 +83,7 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
 #   
 #   if(getOption("RepositoryStyle") == "Installed")  {
 #     
-#     options(AAIIBase = "N:/MyVMWareSharedFolder/Professional141128") 
+#     options(AAIIBase = "N:/MyVMWareSharedFolder/Professional150410")  
 #     
 #   }
   
@@ -97,7 +97,7 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
   
   if(getLocalOption("RepositoryStyle", optionlist = OPTIONLIST) == "Installed")  {
     
-    OPTIONLIST <- localoptions(AAIIBase = "N:/MyVMWareSharedFolder/Professional141128", optionlist = OPTIONLIST)
+    OPTIONLIST <- localoptions(AAIIBase = "N:/MyVMWareSharedFolder/Professional150410", optionlist = OPTIONLIST)
     
   }
   
@@ -4759,7 +4759,10 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
 
   
 # rm(list=ls(all.names=TRUE))
-# source('N:/MyVMWareSharedFolder/foresight3/R/main-foresight3-999.R', echo=TRUE)
+## source('N:/MyVMWareSharedFolder/foresight3/R/main-foresight3-999.R', echo=TRUE)
+# debugSource('N:/MyVMWareSharedFolder/foresight3/R/main-foresight3-999.R', echo=TRUE)
+# SET A BREAKPOINT
+# main_foresight3_999(RDPG=TRUE)
 
 # [ ] LEFT_OFF ret_dollar_price_grid_do() ... need to create those xts OBJECTS
 # [ ] SAVE TO github
