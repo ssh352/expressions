@@ -3,7 +3,7 @@
 
 # main-rcsnsight2-999.R 
 
-# ########################### 
+# ###########################   
 # IMPORTANT
 #
 # GOOD ENOUGH FOR NOW
@@ -41,6 +41,11 @@ pullAheadZOOData <- function(zooobj,monthsPullAhead) {
   return(zooobj)
   
 }
+
+# WARNING
+# NOTE:  subtractOffDaysSpec = # is persistently stored on .RData
+# THEREFORE, if I change this value I MUST delete the .Rdata files 
+#            then get BRAND NEW data from the external source
 
 retrieveSymbolsQuantmodRdata <- function(
   # "^GSPC" 
@@ -152,12 +157,12 @@ getSymbols.multpl <- function(
   #   http://www.multpl.com/s-p-500-real-earnings-growth/table/by-quarter
   #   
   #   S&P 500 PE Ratio by Month ( MATH) ( SandP.500.PE.Ratio )
-  #   Price to earnings ratio, based on trailing twelve month âas reportedâ
+  #   Price to earnings ratio, based on trailing twelve month “as reported”
   #   http://www.multpl.com/table?f=m
   
-  # S&P 500 Book Value Per Share by Quarter ( "SandP.500.BV.Per.Share" )
-  # S&P 500 book value per share â non-inflation adjusted current dollars. 
-  # http://www.multpl.com/s-p-500-book-value/table/by-quarter
+  #   S&P 500 Book Value Per Share by Quarter ( "SandP.500.BV.Per.Share" )
+  #   S&P 500 book value per share — non-inflation adjusted current dollars. 
+  #   http://www.multpl.com/s-p-500-book-value/table/by-quarter
   
   # web site and owner
   # multpl.com  JOSHSTAIGER@GMAIL.COM ( in California )
@@ -188,7 +193,7 @@ getSymbols.multpl <- function(
   
   require(XML)     # NEED readHTMLTable
   # Hadley Wickham # web scraping 
-  require(rvest)   # imports XML  masked from âpackage:XMLâ: xml
+  require(rvest)   # imports XML  masked from ‘package:XML’: xml
   # IF uncommented : require(XML), USE: XML::xml to access XML::xml
   require(xts)     # as.xts STUFF
   
@@ -528,7 +533,9 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
       , finSymbolAttributes = c("Close")
       , initDate = "1950-03-01"
       , subtractOffDaysSpec = -1
-    ) -> USRECP.DELAYSEVEN.ABS      # head "1950-03-31"
+    ) -> USRECP.DELAYSEVEN.ABS      # head "1854-12-01" 
+                                    # monthly
+                                    # ( Last Updated:  2014-09-18 - random date - typically 7 mo late WITH 7 mo old date )
     
     # really meant for a monthly
     as.integer(diff.mondate(c(
@@ -567,8 +574,9 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
       , finSymbolAttributes = c("Close")
       , initDate = "1950-03-01"
       , subtractOffDaysSpec = -1
-    ) -> RECPROUSM156N.DELAYTHREE.ABS    # head "1967-05-31"
-    
+    ) -> RECPROUSM156N.DELAYTHREE.ABS    # head "1967-06-01" ( Last Updated: 2015-04-01 12:53 PM CDT)
+                                         # monthly
+                                         # ( Last Updated:   2015-04-01 12:53 PM CDT - ??? date - typically 4 mo late WITH 4 mo old date )
     # really meant for a monthly
     as.integer(diff.mondate(c(
       as.mondate(tail(index(RECPROUSM156N.DELAYTHREE.ABS),1), displayFormat="%Y-%m-%d",timeunits="months"),
@@ -608,7 +616,9 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
       , initDate = "1950-03-01"
       , subtractOffDaysSpec = -1
       , interpolate = TRUE 
-    ) -> GDP.DELAYSIX.ABS      # head"1950-03-31"
+    ) -> GDP.DELAYSIX.ABS      # head "1947-01-01"
+                               # Quarterly
+                               # ( Last Updated: 2015-03-27 8:01 AM CDT - ??? date - typically 7 mo late WITH 7 mo old date in 3 mo chunks )
     
     # really meant for a monthly
     as.integer(diff.mondate(c(
@@ -649,8 +659,10 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
       , finSymbolAttributes = c("Close")
       , initDate = "1950-03-01"
       , subtractOffDaysSpec = -1
-    ) -> GS10.DELAYONE.ABS        # head  "1953-03-31"
-
+    ) -> GS10.DELAYONE.ABS        # head  "1953-04-01"
+                                  # Monthly
+                                  # ( Last Updated: 2015-04-06 3:41 PM CDT - ??? date - typically 1 mo late WITH 1 mo old date )
+    
     # really meant for a monthly
     as.integer(diff.mondate(c(
       as.mondate(tail(index(GS10.DELAYONE.ABS),1), displayFormat="%Y-%m-%d",timeunits="months"),
@@ -692,7 +704,9 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
       , finSymbolAttributes = c("Close")
       , initDate = "1950-03-01"
       , subtractOffDaysSpec = 0
-    ) -> DGS3MO.DELAYZERO.ABS      # head "1982-01-31" ( Daily )
+    ) -> DGS3MO.DELAYZERO.ABS      # head "1982-01-04" 
+                                   # Daily
+                                   # ( Last Updated:  015-04-17 3:31 PM CDT - ??? date - typically 1 day late WITH 1 day old date )
     
     # really meant for a monthly
     as.integer(diff.mondate(c(
@@ -765,7 +779,9 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
       , finSymbolAttributes = c("Close")
       , initDate = "1950-03-01"
       , subtractOffDaysSpec = -1
-    ) -> BAAFFM.DELAYONE.ABS      # head "1982-01-31" 
+    ) -> BAAFFM.DELAYONE.ABS      # head "1954-07-01"                          
+                                  # Monthly
+                                  # ( Last Updated:  2015-04-06 3:56 PM CDT - ??? date - typically 1 month late WITH 1 month old date )
     
     # really meant for a monthly
     as.integer(diff.mondate(c(
@@ -808,7 +824,9 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
       , finSymbolAttributes = c("Close")
       , initDate = "1950-03-01"
       , subtractOffDaysSpec = -1
-    ) -> AAAFFM.DELAYONE.ABS      # head "1982-01-31" 
+    ) -> AAAFFM.DELAYONE.ABS      # head "1954-07-01"                           
+                                  # Monthly
+                                  # ( Last Updated:  2015-04-06 3:56 PM CDT - ??? date - typically 1 month late WITH 1 month old date )
     
     # really meant for a monthly
     as.integer(diff.mondate(c(
@@ -873,8 +891,10 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
       , finSymbolAttributes = c("Close")
       , initDate = "1950-03-01"
       , subtractOffDaysSpec = 0
-    ) -> DFF.DELAYZERO.ABS          # head "1954-07-31" ( Daily ) 
- 
+    ) -> DFF.DELAYZERO.ABS          # head "1954-07-01" 
+                                    # Daily  
+                                    # ( Last Updated:  2015-04-17 3:31 PM CDT - ??? date - typically 1 day late WITH 1 day old date )
+    
     # really meant for a monthly
     as.integer(diff.mondate(c(
       as.mondate(tail(index(DFF.DELAYZERO.ABS),1), displayFormat="%Y-%m-%d",timeunits="months"),
@@ -919,7 +939,9 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
       , finSymbolAttributes = c("Close")
       , initDate = "1950-03-01"
       , subtractOffDaysSpec = -1
-    ) -> UNEMPLOY.DELAYONE.ABS       # head "1950-03-31"
+    ) -> UNEMPLOY.DELAYONE.ABS       # head "1948-01-01" 
+                                     # Monthly
+                                     # ( Last Updated:  2015-04-03 7:56 AM CDT- ??? date - typically 1 month late WITH 1 month old date )
 
     # really meant for a monthly
     as.integer(diff.mondate(c(
@@ -963,7 +985,9 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
       , finSymbolAttributes = c("Close")
       , initDate = "1950-03-01"
       , subtractOffDaysSpec = -1
-    ) -> UEMPMED.DELAYONE.ABS        # head "1967-06-30"
+    ) -> UEMPMED.DELAYONE.ABS        # head "1967-07-01"
+                                     # Monthly
+                                     # ( Last Updated: 2015-04-03 7:56 AM CDT  - ??? date - typically 1 month late WITH 1 month old date )
 
     # really meant for a monthly
     as.integer(diff.mondate(c(
@@ -1008,7 +1032,9 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
       , finSymbolAttributes = c("Close")
       , initDate = "1950-03-01"
       , subtractOffDaysSpec = -1
-    ) -> POP.DELAYTWO.ABS         # head "1951-12-31"
+    ) -> POP.DELAYTWO.ABS         # head "1952-01-01"
+                                  # Monthly
+                                  # ( Last Updated: 2015-04-08 8:51 AM CDT - ??? date - typically 1 month late WITH 1 month old date )
     
     # really meant for a monthly
     as.integer(diff.mondate(c(
@@ -1090,7 +1116,9 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
       , finSymbolAttributes = c("Close")
       , initDate = "1950-03-01"
       , subtractOffDaysSpec = -1
-    ) -> UNRATE.DELAYONE.ABS         # head "1950-03-31"
+    ) -> UNRATE.DELAYONE.ABS         # head "1948-01-01"
+                                     # Monthly
+                                     # ( Last Updated: 2015-04-03 7:56 AM CDT - ??? date - typically 1 month late WITH 1 month old date )
     
     # really meant for a monthly
     as.integer(diff.mondate(c(
@@ -1133,8 +1161,9 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
       , finSymbolAttributes = c("Close")
       , initDate = "1950-03-01"
       , subtractOffDaysSpec = -1
-    ) -> CPILFESL.DELAYONE.ABS       # head "1956-12-31"
-    
+    ) -> CPILFESL.DELAYONE.ABS       # head "1957-01-01"
+                                     # Monthly
+                                     # ( Last Updated: 2015-04-17 9:20 AM CDT - ??? date - typically 1 month late WITH 1 month old date )
     # really meant for a monthly
     as.integer(diff.mondate(c(
       as.mondate(tail(index(CPILFESL.DELAYONE.ABS),1), displayFormat="%Y-%m-%d",timeunits="months"),
@@ -1183,9 +1212,10 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
       , finSymbolAttributes = c("Close")
       , initDate = "1950-03-01"
       , subtractOffDaysSpec = 0
-    ) -> TREAST.DELAYZERO.ABS     # head "2002-12-31" ( Weekly )
-    merge.xts(MaxAllTestTrainMonthEnds,TREAST.DELAYZERO.ABS) -> TREAST.DELAYZERO.ABS
-
+    ) -> TREAST.DELAYZERO.ABS     # head "2002-12-18" 
+                                  # Weekly
+                                  # ( Last Updated: 2015-04-16 3:46 PM CDT - ??? date - typically 2 days late WITH 2 days old date in 7 day chunks )
+    
     # really meant for a monthly
     as.integer(diff.mondate(c(
       as.mondate(tail(index(TREAST.DELAYZERO.ABS),1), displayFormat="%Y-%m-%d",timeunits="months"),
@@ -1211,8 +1241,6 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     "TREAST.DELAYZERO.ABS.ADJUSTNOW" -> ALL.OBSERVEES["TREAST.DELAYZERO.ABS.ADJUSTNOW"]
     
     
-    # "TREAST.DELAYZERO.ABS" -> ALL.OBSERVEES["TREAST.DELAYZERO.ABS"]
-    
     # smooth start in 2002 ( otherwise zero before that )
     
     #     Title:               Mortgage-backed securities held by the Federal Reserve: All Maturities
@@ -1232,7 +1260,9 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
       , finSymbolAttributes = c("Close")
       , initDate = "1950-03-01"
       , subtractOffDaysSpec = 0
-    ) -> MBST.DELAYZERO.ABS          # head "2002-12-31" ( Weekly )
+    ) -> MBST.DELAYZERO.ABS          # head "2002-12-18" 
+                                     # Weekly
+                                     # ( Last Updated: 2015-04-16 3:46 PM CDT - ??? date - typically 2 days late WITH 2 days old date in 7 day chunks )
     
     # really meant for a monthly
     as.integer(diff.mondate(c(
@@ -1284,7 +1314,9 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
       , finSymbolAttributes = c("Close")
       , initDate = "1950-03-01"
       , subtractOffDaysSpec = -1
-    ) -> INDPRO.DELAYONE.ABS        # head "1950-03-31"
+    ) -> INDPRO.DELAYONE.ABS        # head "1919-01-01"
+                                    # Monthly
+                                    # ( Last Updated: 2015-04-15 11:28 AM CDT - ??? date - typically 1 month late WITH 1 month old date  )
     
     # really meant for a monthly
     as.integer(diff.mondate(c(
@@ -1331,7 +1363,9 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
       , finSymbolAttributes = c("Close")
       , initDate = "1950-03-01"
       , subtractOffDaysSpec = -1
-    ) -> NAPM.DELAYONE.ABS             # head "1950-03-31"
+    ) -> NAPM.DELAYONE.ABS             # head "1948-01-01"
+                                       # Monthly
+                                       # ( Last Updated: 2015-04-01 9:06 AM CDT - ??? date - typically 1 month late WITH 1 month old date  )
     
     # really meant for a monthly
     as.integer(diff.mondate(c(
@@ -1380,7 +1414,9 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
       , finSymbolAttributes = c("Close")
       , initDate = "1950-03-01"
       , subtractOffDaysSpec = -1
-    ) -> CMRMTSPL.DELAYTHREE.ABS             # head "1950-03-31"
+    ) -> CMRMTSPL.DELAYTHREE.ABS             # head "1967-01-01"
+                                             # Monthly
+                                             # ( Last Updated: 2015-04-07 1:41 PM CDT - ??? date - typically 4 months late WITH 4 months old date  )
     
     # really meant for a monthly
     as.integer(diff.mondate(c(
@@ -1427,7 +1463,9 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
       , finSymbolAttributes = c("Close")
       , initDate = "1950-03-01"
       , subtractOffDaysSpec = -1
-    ) -> TCU.DELAYONE.ABS              # head "1966-12-31"
+    ) -> TCU.DELAYONE.ABS              # head "1967-01-01"
+                                       # Monthly
+                                       # ( Last Updated: 2015-04-15 11:26 AM CDT - ??? date - typically 1 month late WITH 1 month old date  )
     
     # really meant for a monthly
     as.integer(diff.mondate(c(
@@ -1477,8 +1515,10 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
       , initDate = "1950-03-01"        
       , subtractOffDaysSpec = -1
       , interpolate = TRUE
-    ) ->  A261RL1Q225SBEA.DELAYSIX.PCTCHG.OVER3MO  # head "1950-03-31"
-    
+    ) ->  A261RL1Q225SBEA.DELAYSIX.PCTCHG.OVER3MO  # head "1947-04-01"
+                                                   # Quarterly
+                                                   # ( Last Updated: 2015-03-27 8:49 AM CDT - ??? date - typically 7 month late WITH 7 month old date in 3 month chunks )
+
     # really meant for a monthly
     as.integer(diff.mondate(c(
       as.mondate(tail(index(A261RL1Q225SBEA.DELAYSIX.PCTCHG.OVER3MO),1), displayFormat="%Y-%m-%d",timeunits="months"),
@@ -1527,8 +1567,10 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
       , initDate = "1950-03-01"
       , subtractOffDaysSpec = -1
       , interpolate = TRUE
-    ) -> A576RC1Q027SBEA.DELAYFIVE.ABS     # head "1950-03-31"
-    
+    ) -> A576RC1Q027SBEA.DELAYFIVE.ABS     # head "1947-01-01"
+                                           # Quarterly
+                                           # ( Last Updated: 2015-03-27 8:48 AM CDT - ??? date - typically 7 month late WITH 7 month old date in 3 month chunks )
+
     # really meant for a monthly
     as.integer(diff.mondate(c(
       as.mondate(tail(index(A576RC1Q027SBEA.DELAYFIVE.ABS),1), displayFormat="%Y-%m-%d",timeunits="months"),
@@ -1572,11 +1614,13 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     
     bookmark_here <- 1
     
-    retrieveSymbolsmultplRdata(         # head "1871-01-31"
+    retrieveSymbolsmultplRdata(         # "12.month.EPS.Close" ( web table header) 
       finSymbol = "SP500.12M.EPS"
       , finSymbolAttribute = "Close"
-    )  -> SP500.12M.EPS.DELAYTHREE.ABS  # "12.month.EPS.Close" ( web table header) 
- 
+    )  -> SP500.12M.EPS.DELAYTHREE.ABS  # head "Jan 31, 1871"
+                                        # Monthly
+                                        # ( Last Known Date: Dec 31, 2014 - ??? date - typically 4 month late WITH 4 month old date )
+    
     # really meant for a monthly
     as.integer(diff.mondate(c(
       as.mondate(tail(index(SP500.12M.EPS.DELAYTHREE.ABS),1), displayFormat="%Y-%m-%d",timeunits="months"),
@@ -1604,11 +1648,13 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     # TO DO ABOVE: FIX THAT COLNAME
     # ...........12.month.EPS...........Value..........Close
     
-    retrieveSymbolsmultplRdata(                      # head "1871-01-31"
+    retrieveSymbolsmultplRdata(                      # "SandP.500.Real.Earnings.Growth.Pct.Close"
       finSymbol = "SP500.REAL.EARN.GR.PCT"           # Annual percentage change in 12 month
       , finSymbolAttribute = "Close"
-    )  -> SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO # "SandP.500.Real.Earnings.Growth.Pct.Close" 
-    
+    )  -> SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO   # head "Dec 31, 1989"
+                                                          #  Quarterly
+                                                          # ( Last Known Date: Dec 31, 2014 - ??? date - typically 4 month late WITH 4 month old date )
+
     # really meant for a monthly
     as.integer(diff.mondate(c(
       as.mondate(tail(index(SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO),1), displayFormat="%Y-%m-%d",timeunits="months"),
@@ -1633,11 +1679,13 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     
     "SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO.ADJUSTNOW" -> ALL.OBSERVEES["SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO.ADJUSTNOW"]
     
-    retrieveSymbolsmultplRdata(              # head "1870-12-31"
+    retrieveSymbolsmultplRdata(          # "SandP.500.PE.Ratio.Close" ( web table header) 
         finSymbol = "SP500.PE.RATIO"
       , finSymbolAttribute = "Close"
-    )  -> SP500.PE.RATIO.DELAYONE.ABS # "SandP.500.PE.Ratio.Close" ( web table header) 
-
+    )  -> SP500.PE.RATIO.DELAYONE.ABS    # head "Jan 1, 1871"
+                                         #  Monthly ( with in-month estimate )
+                                         # ( Last Known Date: Mar 1, 2015 - ??? date - typically 1 month late WITH 1 month old date )
+    
     # really meant for a monthly
     as.integer(diff.mondate(c(
       as.mondate(tail(index(SP500.PE.RATIO.DELAYONE.ABS),1), displayFormat="%Y-%m-%d",timeunits="months"),
@@ -1662,11 +1710,14 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     
     "SP500.PE.RATIO.DELAYONE.ABS.ADJUSTNOW" -> ALL.OBSERVEES["SP500.PE.RATIO.DELAYONE.ABS.ADJUSTNOW"]
     
-    retrieveSymbolsmultplRdata(          #  head "head 1999-12-31"
+    retrieveSymbolsmultplRdata(               # "SandP.500.Book.Value.Close"
         finSymbol = "SP500.BV.PER.SHARE"
       , finSymbolAttribute = "Close"
-    )  -> SP500.BV.PER.SHARE.DELAYTHREE.ABS  # "SandP.500.Book.Value.Close" 
-
+    )  -> SP500.BV.PER.SHARE.DELAYTHREE.ABS   
+                                               # head "Dec 31, 1999"
+                                               #  Quarterly 
+                                               # ( Last Known Date:Sep 30, 2014 - ??? date - typically 6 month late WITH 6 month old date )
+    
     # really meant for a monthly
     as.integer(diff.mondate(c(
       as.mondate(tail(index(SP500.BV.PER.SHARE.DELAYTHREE.ABS),1), displayFormat="%Y-%m-%d",timeunits="months"),
@@ -2245,7 +2296,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     #
     #  the number of iterations,T(n.trees)
     #  the depth of each tree,K(interaction.depth)
-    #  the shrinkage (or learning rate) parameter,Î»(shrinkage)
+    #  the shrinkage (or learning rate) parameter,λ(shrinkage)
     #  the subsampling rate,p(bag.fraction)
     #
     #  Generalized Boosted Models: A guide to the gbm package Greg Ridgeway August 3, 2007
@@ -2349,6 +2400,26 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     # after through filters na.omit(GARANTEED), linear combinations(OPTIONAL),
     # correlations(OPTIONAL), columns manually removed because no sense'  
     # model.data.CURR
+
+    # begin all variable importance area #
+    # begin all variable importance area #
+    
+    # model.data.CURR.OBSERVEES.IMPORTANCES.ALL <- dplyr::arrange( cbind(row.names(varImpFound$importance),varImpFound$importance), desc(Overall))
+    
+    # View(model.data.CURR.OBSERVEES.IMPORTANCES.ALL)
+    
+    # model.data.CURR.OBSERVEES.IMPORTANCES.ALL.VECTOR <- model.data.CURR.OBSERVEES.IMPORTANCES.ALL[,"Overall"]
+    # names(model.data.CURR.OBSERVEES.IMPORTANCES.ALL.VECTOR) <- model.data.CURR.OBSERVEES.IMPORTANCES.ALL[,1]
+    
+    # where(indicies) does it occur
+    # grep("INDPRO", names(model.data.CURR.OBSERVEES.IMPORTANCES.ALL.VECTOR))
+    # grep("INDPRO\\.", names(model.data.CURR.OBSERVEES.IMPORTANCES.ALL.VECTOR))
+    # [1]   1  18  19  51  70  94 102
+    
+    # View(data.frame(grep("INDPRO", names(model.data.CURR.OBSERVEES.IMPORTANCES.ALL.VECTOR), value = TRUE)))
+    
+    # end all variable importance area #
+    # end all variable importance area #
 
     bookmark_here <- 1
     
@@ -2511,10 +2582,10 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
   main_rcsnsight2_999_inner(pauseat) # should have been do.call
   
 }
-# main_rcsnsight2_999()
-# main_rcsnsight2_999(THESEED = 2)
-# debugSource('N:/MyVMWareSharedFolder/rcsnsight1/R/main-rcsnsight2-999.R') 
 # rm(list=ls(all.names=TRUE))
+# debugSource('N:/MyVMWareSharedFolder/rcsnsight1/R/main-rcsnsight2-999.R')
+# PLACE DOWN BREAKPOINT
+# main_rcsnsight2_999(THESEED = 2)
 
 ########################       
 
