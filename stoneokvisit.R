@@ -114,6 +114,11 @@ okcupid_visit_looper_dev <- function() {
       # regulars
       apagearefsupr <- apagearefsup[str_detect(apagearefsup,"[?]cf=regular$")]
 
+      # I have not seen these(after the filters are done), but just in case crept through
+      
+      apagearefsupr <- apagearefsupr[!grepl("CALLGIRL",apagearefsupr,ignore.case=TRUE)]
+      apagearefsupr <- apagearefsupr[!grepl("ROBOT",apagearefsupr,ignore.case=TRUE)]
+      
       # loop and visit each name - from bottom(rev) to top ( testing ) 
       # testing - visit from the BOTTOM going UP
       
@@ -163,6 +168,8 @@ okcupid_visit_looper_dev <- function() {
 
 # rm(list=ls(),envir = .GlobalEnv)
 # debugSource('J:/YDrive/All_NewSeduction/All_ElectronicSpeech/RSeleniumAndBrowsers/AES1/okcupid_visit_looper_dev.R')
+
+# NOTE: Optional, but recommended, for performance, Turn OFF 'view google chrome images'
 
 # REM: taskmgr - manually KILL off java.exe if it is running
 # MANUALLY PLACE DOWN THE BREAKPOINT
