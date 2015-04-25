@@ -1,6 +1,93 @@
 
 ## search for "LEFT_OFF"
 
+# I ACTUALLY *RAN THESE THREE LINES IN *R TERM*
+# install.packages("checkpoint")
+# library(checkpoint)
+# ? checkpoint
+
+# checkpoint(snapshotDate, project = getwd(), R.version, 
+#           scanForPackages = TRUE, checkpointLocation = "~/", verbose = TRUE,
+#           use.knitr = system.file(package = "knitr") != "")
+
+
+
+# ( NOTE: REORGANIZE THESE 'checkpoint' NOTES )
+
+# https://github.com/RevolutionAnalytics/checkpoint
+
+# Introducing the Reproducible R Toolkit and the checkpoint package
+# October 13, 2014
+# http://blog.revolutionanalytics.com/2014/10/introducing-rrt.html
+# 
+# VIDEO ( HE DOES IT INTERACTIVELY )
+# Reproducibility with Revolution R Open and the Checkpoint Package
+# March 24, 2015
+# http://www.revolutionanalytics.com/webinars/reproducibility-revolution-r-open-and-checkpoint-package
+
+# MAKE SURE getwd() IS IN THE CORRECT DIRECTORY with the .R file(s)
+
+# INSTALLING
+# checkpoint("2015-04-25", R.version = "3.2.0")
+# COMMON EVERYDAY DEBUGGING
+# I do not want it to scan every time
+checkpoint("2015-04-25", R.version = "3.2.0", scanForPackages = FALSE)
+
+# SCANS THIS DIRECTORY FOR .R files
+
+# note: make sure that THIS FILE is closed by ALL applications
+# else RTERM may get this error
+#   > checkpoint("2015-04-25")
+#   Scanning for packages used in this project
+#   |======================================================================| 100%
+#   - Discovered 0 packages
+#   Unable to parse 1 files:
+#     - main-rcsnsight2-999.R
+#   No packages found to install
+#   checkpoint process complete
+#   ---
+
+# if an error, close THIS FILE
+# rerun
+# checkpoint("2015-04-25", R.version = "3.2.0")
+
+# NOTE : WAIT A WHILE, IT IS 'NOT HUNG'
+#  IT DOWNLOADS ALL PACKAGES, HANGS A WHILE,  THEN IT INSTALLS THEM
+
+# EVERYTHING GOES HERE ( R IN 64 BIT MODE )
+#   W:\New_Economics\rcsnsight1.320_assistance\RDebug\Home\.checkpoint\2015-04-25\lib\x86_64-w64-mingw32\3.2.0
+# EXCEPT compiler package
+#   W:\New_Economics\rcsnsight1.320_assistance\RDebug\Home\.checkpoint\R-3.2.0\compiler
+
+# DONE WHEN
+# checkpoint process complete
+
+
+# > getOption("repos")
+# [1] "http://mran.revolutionanalytics.com/snapshot/2015-04-25"
+
+# > .libPaths()
+# [1] "W:/New_Economics/rcsnsight1.320_assistance/RDebug/Home/.checkpoint/2015-04-25/lib/x86_64-w64-mingw32/3.2.0"
+# [2] "W:/New_Economics/rcsnsight1.320_assistance/RDebug/Home/.checkpoint/R-3.2.0"
+
+# Note, does not have any problem finding 'library' 'base and recommended'
+# > library(MASS)
+# OK
+
+# but '.checkpoint' is in '.libPaths' but 'library' is NOT
+# gbm needs 'survival' but it is already a 'base package'
+# but checkpoint re-downloads it into its 'checkpoint' directory
+
+# 1 package is needed for this model and is not installed. (gbm). Would you like to try to install it now?
+# 1: yes
+# 2: no
+# no - I chose, I manually wrote require(gbm)
+#      and let checkpoint() automatically 
+# install 1. survival(base) and 2. gbm(dynically installed by caret) 
+# it into the '.checkpoint' directory
+
+# ---
+
 # main-rcsnsight2-999.R 
 
 # ###########################   
@@ -22,7 +109,8 @@ options(digits = 22)
 options(max.print=99999)
 options(scipen=255) # Try these = width 
 
-setwd("N:\\MyVMWareSharedFolder\\rcsnsight1\\R") # TO BE CHANGED LATER 
+# setwd("N:\\MyVMWareSharedFolder\\rcsnsight1\\R") # TO BE CHANGED LATER 
+setwd("W:/New_Economics/rcsnsight1.320")
 
 bookmark_here <- 1
 
@@ -157,11 +245,11 @@ getSymbols.multpl <- function(
   #   http://www.multpl.com/s-p-500-real-earnings-growth/table/by-quarter
   #   
   #   S&P 500 PE Ratio by Month ( MATH) ( SandP.500.PE.Ratio )
-  #   Price to earnings ratio, based on trailing twelve month “as reported”
+  #   Price to earnings ratio, based on trailing twelve month âas reportedâ
   #   http://www.multpl.com/table?f=m
   
   #   S&P 500 Book Value Per Share by Quarter ( "SandP.500.BV.Per.Share" )
-  #   S&P 500 book value per share — non-inflation adjusted current dollars. 
+  #   S&P 500 book value per share â non-inflation adjusted current dollars. 
   #   http://www.multpl.com/s-p-500-book-value/table/by-quarter
   
   # web site and owner
@@ -193,7 +281,7 @@ getSymbols.multpl <- function(
   
   require(XML)     # NEED readHTMLTable
   # Hadley Wickham # web scraping 
-  require(rvest)   # imports XML  masked from ‘package:XML’: xml
+  require(rvest)   # imports XML  masked from âpackage:XMLâ: xml
   # IF uncommented : require(XML), USE: XML::xml to access XML::xml
   require(xts)     # as.xts STUFF
   
@@ -363,7 +451,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     
     bookmarkhere <- 1
     
-    setwd("N:\\MyVMWareSharedFolder\\rcsnsight1\\R")
+    setwd("W:/New_Economics/rcsnsight1.320")
     
     oldtz <- Sys.getenv('TZ')
     if(oldtz=='') {
@@ -380,9 +468,16 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     
     require(Holidays)
     require(TimeWarp)
-    require(quantstrat) # and added to search() path: 
+    
+    ## DANGEROUSLY commented out because checkpoint CAN NOT find quantstrat(R-forge)
+    ## require(quantstrat) # and added to search() path: 
     #  blotter, PerformanceAnalytics, FinancialInstrument,
     #  quantmod, TTR, xts, zoo
+    # IN PLACE OF require(quantstrat)
+    require(zoo)
+    require(xts)
+    require(TTR)
+    require(quantmod)
     
     # findLinearCombos
     require(caret) # and added to search() path:
@@ -2084,6 +2179,12 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
             # 'right now' directly from the loop above
             CURR.OBSERVEES    ->  CURR.OBSERVEES
             
+            # Remove these GS10, DGS3MO, DIFF.GS10.DGS3MO ( 160 )
+            # because     BAAFFM, AAAFFM, and 'BAAFFM - AAAFFM' seem better ( 148 )
+            CURR.OBSERVEES <- CURR.OBSERVEES[!grepl("\\(GS10\\.",CURR.OBSERVEES)]
+            CURR.OBSERVEES <- CURR.OBSERVEES[!grepl("\\(DGS3MO\\.",CURR.OBSERVEES)]
+            CURR.OBSERVEES <- CURR.OBSERVEES[!grepl("\\(DIFF\\.GS10\\.DGS3MO\\.",CURR.OBSERVEES)]
+            
             CURR.FORMULA <- as.formula(paste0(CURR.PREDICTEE," ~ ",paste0(unlist(CURR.OBSERVEES), collapse =" + ")))
             
             data.model <- specifyModel(CURR.FORMULA, na.rm = FALSE) # na.rm = TRUE # default # I MAY WANT DIFFERENT
@@ -2230,6 +2331,10 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     print("Begin train to determine variable importance")
     print("")
     
+    # checkpoint can find ( else caret will try to dynamically install
+    #   along with dependency survial(base) )
+    require(gbm)
+    
     train( 
         x = data.frame(model.data.train.CURR[,setdiff(colnames(model.data.train.CURR),data.model@model.target)],stringsAsFactors=FALSE)            
       , y = as.vector(model.data.train.CURR[,data.model@model.target])
@@ -2296,7 +2401,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     #
     #  the number of iterations,T(n.trees)
     #  the depth of each tree,K(interaction.depth)
-    #  the shrinkage (or learning rate) parameter,λ(shrinkage)
+    #  the shrinkage (or learning rate) parameter,Î»(shrinkage)
     #  the subsampling rate,p(bag.fraction)
     #
     #  Generalized Boosted Models: A guide to the gbm package Greg Ridgeway August 3, 2007
@@ -2570,7 +2675,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     the_end_debug_bookmark_here <- 1
     
     
-    setwd("N:\\MyVMWareSharedFolder\\rcsnsight1\\R") # TO BE CHANGED LATER
+    setwd("W:/New_Economics/rcsnsight1.320") # TO BE CHANGED LATER
     
     the_end_debug_bookmark_here <- 1
     
@@ -2580,10 +2685,12 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
   
   }  
   main_rcsnsight2_999_inner(pauseat) # should have been do.call
+
   
 }
 # rm(list=ls(all.names=TRUE))
-# debugSource('N:/MyVMWareSharedFolder/rcsnsight1/R/main-rcsnsight2-999.R')
+# library(checkpoint)
+# debugSource('W:/New_Economics/rcsnsight1.320/main-rcsnsight2-999.R')
 # PLACE DOWN BREAKPOINT
 # main_rcsnsight2_999(THESEED = 2)
 
