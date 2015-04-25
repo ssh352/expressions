@@ -42,8 +42,9 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
 
   oldwd <- getwd()
   # "current working directory of the R process"
-  setwd("N:\\MyVMWareSharedFolder\\foresight3\\R") 
-
+  ## setwd("L:\\MyVMWareSharedFolder\\foresight3\\R") 
+  setwd("W:/New_Economics/forsight3.311")
+  
   # slight less 'SAFE' rstudio debugSource will no longer parse these functions
   # source( paste0(getwd(),"/sql.select.R"))
   # may override as.data.frame ( BE CAREFUL )
@@ -77,13 +78,13 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
   
 #   if(getOption("RepositoryStyle") == "InstalledTest")  {
 #     
-#     options(AAIIBase = "N:/MyVMWareSharedFolder/ProfessionalTest") 
+#     options(AAIIBase = "L:/MyVMWareSharedFolder/ProfessionalTest") 
 #     
 #   }
 #   
 #   if(getOption("RepositoryStyle") == "Installed")  {
 #     
-#     options(AAIIBase = "N:/MyVMWareSharedFolder/Professional150410")  
+#     options(AAIIBase = "L:/MyVMWareSharedFolder/Professional150417")  
 #     
 #   }
   
@@ -91,13 +92,13 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
   
   if(getLocalOption("RepositoryStyle", optionlist = OPTIONLIST) == "InstalledTest")  {
     
-    OPTIONLIST <- localoptions(AAIIBase = "N:/MyVMWareSharedFolder/ProfessionalTest", optionlist = OPTIONLIST)
+    OPTIONLIST <- localoptions(AAIIBase = "L:/MyVMWareSharedFolder/ProfessionalTest", optionlist = OPTIONLIST)
     
   }
   
   if(getLocalOption("RepositoryStyle", optionlist = OPTIONLIST) == "Installed")  {
     
-    OPTIONLIST <- localoptions(AAIIBase = "N:/MyVMWareSharedFolder/Professional150410", optionlist = OPTIONLIST)
+    OPTIONLIST <- localoptions(AAIIBase = "L:/MyVMWareSharedFolder/Professional150417", optionlist = OPTIONLIST)
     
   }
   
@@ -4631,7 +4632,7 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
 
   the_end_debug_bookmark_here <- 1
   # rm(list=ls(all.names=TRUE))
-  # source('N:/MyVMWareSharedFolder/foresight3/R/main-foresight3-999.R', echo=TRUE)   
+  # debugSource('main-foresight3-999.R', echo=TRUE)   
 
   # View(main_foresight3_999())
   # View(main_foresight3_999(RDPG=TRUE))  # ret dollare price grid
@@ -4652,12 +4653,12 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
   # View(subset(RET_DOLLAR_PRICE_GRID, MG_DESC %in% c("Energy") ))
   # View(subset(RET_DOLLAR_PRICE_GRID, MG_DESC %in% c("Financial") ))
 
-    # setwd("N:/MyVMWareSharedFolder/foresight3/R")
+    # setwd("L:/MyVMWareSharedFolder/foresight3/R")
     # save(GRID_FINANCIAL_141121, file = "GRID_FINANCIAL_141121.RData")
     # unlink("GRID_FINANCIAL_141121.RData")
     # rm("GRID_FINANCIAL_141121")
     # 
-    # setwd("N:/MyVMWareSharedFolder/foresight3/R")
+    # setwd("L:/MyVMWareSharedFolder/foresight3/R")
     # load("GRID_FINANCIAL_141121.RData", envir = environment(), verbose = TRUE)
 
   # View(subset(RET_DOLLAR_PRICE_GRID, MG_DESC %in% c("Health Care") ))
@@ -4759,8 +4760,8 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
 
   
 # rm(list=ls(all.names=TRUE))
-## source('N:/MyVMWareSharedFolder/foresight3/R/main-foresight3-999.R', echo=TRUE)
-# debugSource('N:/MyVMWareSharedFolder/foresight3/R/main-foresight3-999.R', echo=TRUE)
+## source('L:/MyVMWareSharedFolder/foresight3/R/main-foresight3-999.R', echo=TRUE)
+# debugSource('L:/MyVMWareSharedFolder/foresight3/R/main-foresight3-999.R', echo=TRUE)
 # SET A BREAKPOINT
 # main_foresight3_999(RDPG=TRUE)
 
