@@ -1,5 +1,9 @@
 
 
+# NOTE 'FULL SYSTEM TEST' WITH THE 'SEND MESSAGE' NOT DONE YET'
+# NOTE 'FULL SYSTEM TEST' WITH THE 'SEND MESSAGE' NOT DONE YET'
+# NOTE 'FULL SYSTEM TEST' WITH THE 'SEND MESSAGE' NOT DONE YET'
+
 # shell("rstudio", wait=FALSE)
 
 okcupid_visit_looper_dev <- function() {
@@ -41,6 +45,33 @@ okcupid_visit_looper_dev <- function() {
     Sys.sleep(5 + 5* runif(1, min = 0, max = 1)) # 5 to 10 seconds wait
     
     print("logged into okcupid")
+    
+    c(
+        "I'm not sure I'm feeling you yet!"
+      , "OK, we're breaking up now!"
+      , "I'm ex-boyfriend material!"
+      , "Question about what you said..."
+      , "Ouch! Did you really just say that?"
+      , "You have mail!!!"
+      , "My elbows hurt :("
+      , "You'll never believe what just happened..."
+      , "Your profile made me laugh, here's why..."
+      , "Here's looking at you kid!"
+      , "You talkin' to me?"
+      , "Louis, I think that this is the beginning of a beautiful friendship."
+      , "We rob banks!"
+      , "Well, nobody's perfect!"
+      , "You had me at 'Hello!'"
+      , "Say 'Hello!' to my little friend."
+      , "Of all the gin joints in all the towns in the world, she walks into mine."
+      , "What we've got here is a failure to communicate."
+      , "Toto, I've got a feeling we are not in Kansas anymore :("
+    ) -> message_vector
+    
+    
+    message_textarea_begin <- "return document.getElementsByTagName(\"textarea\")[6].value = \""
+    message_textarea_end   <- "\";"
+    
     
     # MAGIC NUMBER
     agerange <- 30:31
@@ -133,6 +164,43 @@ okcupid_visit_looper_dev <- function() {
 
         remDr$executeScript("return 0")
          
+        # THIS SHOULD WORK!
+        # BEGIN SEND MESSAGE AREA
+        
+#         print(paste0("begin send message ", alink, " of the page of : ",agecurr, " of age ", agerange_str))
+#         
+#         current_message  <- message_vector[trunc( 1 + length(message_vector)*runif(1, min = 0, max = 1) - 0.001 )] 
+#         writeLines(paste0(message_textarea_begin,current_message,message_textarea_end))
+#         
+#         
+#         # send message button
+#         
+#         webElemSMB <- remDr$findElement("css selector", "#footer_send_btn")
+#         webElemSMB$highlightElement() # THAT WORKED
+#         remDr$mouseMoveToLocation(webElement = webElemSMB) 
+#         webElemSMB$sendKeysToElement(list(key = "enter")) 
+#         Sys.sleep(2 + 2* runif(1, min = 0, max = 1))
+#         
+#         
+#         # type characters in textarea
+#         
+#         remDr$executeScript(paste0(message_textarea_begin,current_message,message_textarea_end))[[1]]
+#         Sys.sleep(4 + 2* runif(1, min = 0, max = 1))
+#         
+#         
+#         # true message button
+#         
+#         webElemTMB <- remDr$findElement("css selector", "#global_messaging_container > div > form > button")
+#         remDr$mouseMoveToLocation(webElement = webElemTMB) 
+#         webElemTMB$highlightElement()
+#         webElemTMB$sendKeysToElement(list(key = "enter"))
+#         ## BOX STAYS UP - AND MESSAGE SHOWS SENT
+#         Sys.sleep(2 + 2* runif(1, min = 0, max = 1))
+#         
+#         print(paste0("end send message ", alink, " of the page of : ",agecurr, " of age ", agerange_str))
+        
+        # END SEND MESSAGE AREA
+        
         print(paste0("end visiting ", alink, " of the page of : ",agecurr, " of age ", agerange_str))
         
         remDr$goBack()
