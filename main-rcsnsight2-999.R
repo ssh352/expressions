@@ -3,12 +3,12 @@
 
 # I ACTUALLY *RAN THESE THREE LINES IN *R TERM*
 # install.packages("checkpoint")
-# library(checkpoint)
-# ? checkpoint
+# library(checkpoint) 
+# ? checkpoint 
 
 # checkpoint(snapshotDate, project = getwd(), R.version, 
 #           scanForPackages = TRUE, checkpointLocation = "~/", verbose = TRUE,
-#           use.knitr = system.file(package = "knitr") != "")
+#           use.knitr = system.file(package = "knitr") != "") 
 
 
 
@@ -31,7 +31,7 @@
 # checkpoint("2015-04-25", R.version = "3.2.0")
 # COMMON EVERYDAY DEBUGGING
 # I do not want it to scan every time
-checkpoint("2015-04-25", R.version = "3.2.0", scanForPackages = FALSE)
+### checkpoint("2015-04-25", R.version = "3.2.0", scanForPackages = FALSE)
 
 # SCANS THIS DIRECTORY FOR .R files
 
@@ -507,7 +507,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
                                                           # march 21, 2015 run: "2015-01-31": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
                                                           # march 21, 2015 run: "2015-02-28": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
                                                           # march 21, 2015 run: "2015-03-31": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
-    finDate.TestTrain.Global.Latest      <- "2015-03-31"  # april  6, 2015 run: "2015-03-31": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
+    finDate.TestTrain.Global.Latest      <- "2015-04-30"  # april  6, 2015 run: "2015-03-31": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
     
     # training and TRUE tests
     list(Test2001 = list(Train=list(initDate = initData.TestTrain.Global.Earliest,finDate ="1998-12-31"),
@@ -1241,6 +1241,59 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     
     bookmark_here <- 1
     
+    #     Of Total Unemployed, Percent Unemployed 27 Weeks and Over
+    #     Monthly, Seasonally Adjusted, LNS13025703, Updated: 2015-04-03 8:38 AM CDT 
+    #     http://research.stlouisfed.org/fred2/series/LNS13025703
+    #     
+    #     Title:               Of Total Unemployed, Percent Unemployed 27 Weeks and Over
+    #     Series ID:           LNS13025703
+    #     Source:              US. Bureau of Labor Statistics
+    #     Release:             Employment Situation
+    #     Seasonal Adjustment: Seasonally Adjusted
+    #     Frequency:           Monthly
+    #     Units:               Percent
+    #     Date Range:          1948-01-01 to 2015-04-01
+    #     Last Updated:        2015-05-08 8:57 AM CDT
+    #     Notes:               The series comes from the 'Current Population Survey (Household Survey)'
+    #     
+    #     http://research.stlouisfed.org/fred2/data/LNS13025703.txt
+    
+    retrieveSymbolsQuantmodRdata(
+      finSymbol = "LNS13025703"
+      , finSymbolRemoteSource = "Quantmod_FRED"
+      , finSymbolAttributes = c("Close")
+      , initDate = "1950-03-01"
+      , subtractOffDaysSpec = -1
+    ) -> LNS13025703.DELAYONE.ABS         # head "1948-01-01"
+                                          # Monthly
+                                          # ( Last Updated: 2015-05-08 - ??? date - typically 1 month late WITH 1 month old date )
+    
+    # really meant for a monthly
+    as.integer(diff.mondate(c(
+      as.mondate(tail(index(LNS13025703.DELAYONE.ABS),1), displayFormat="%Y-%m-%d",timeunits="months"),
+      as.mondate(finDate.TestTrain.Global.Latest, displayFormat="%Y-%m-%d",timeunits="months")
+    ))) -> pullAheadZOODataMonthShiftAmount
+    
+    merge.xts(MaxAllTestTrainMonthEnds,LNS13025703.DELAYONE.ABS) -> LNS13025703.DELAYONE.ABS
+    LNS13025703.DELAYONE.ABS[MaxAllTestTrainMonthEndsRange] -> LNS13025703.DELAYONE.ABS
+    
+    assign("LNS13025703.DELAYONE.ABS", value=LNS13025703.DELAYONE.ABS, envir = .GlobalEnv)
+    
+    # if HAD BEEN a Daily
+    max(pullAheadZOODataMonthShiftAmount,0) -> pullAheadZOODataMonthShiftAmount
+    
+    pullAheadZOOData(LNS13025703.DELAYONE.ABS,pullAheadZOODataMonthShiftAmount) -> LNS13025703.DELAYONE.ABS.ADJUSTNOW
+    print(paste0("LNS13025703 pullAheadZOOData should be DELAYONE"," Actual: ",pullAheadZOODataMonthShiftAmount))
+    
+    merge.xts(MaxAllTestTrainMonthEnds,LNS13025703.DELAYONE.ABS.ADJUSTNOW) -> LNS13025703.DELAYONE.ABS.ADJUSTNOW
+    LNS13025703.DELAYONE.ABS.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> LNS13025703.DELAYONE.ABS.ADJUSTNOW
+    
+    assign("LNS13025703.DELAYONE.ABS.ADJUSTNOW", value=LNS13025703.DELAYONE.ABS.ADJUSTNOW, envir = .GlobalEnv)
+    
+    "LNS13025703.DELAYONE.ABS.ADJUSTNOW" -> ALL.OBSERVEES["LNS13025703.DELAYONE.ABS.ADJUSTNOW"]
+    
+    bookmark_here <- 1
+    
     #     Title:               Consumer Price Index for All Urban Consumers: All Items Less Food & Energy
     #     Series ID:           CPILFESL
     #     Source:              US. Bureau of Labor Statistics
@@ -1585,6 +1638,60 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     assign("TCU.DELAYONE.ABS.ADJUSTNOW", value=TCU.DELAYONE.ABS.ADJUSTNOW, envir = .GlobalEnv)
     
     "TCU.DELAYONE.ABS.ADJUSTNOW" -> ALL.OBSERVEES["TCU.DELAYONE.ABS.ADJUSTNOW"]
+    
+    bookmark_here <- 1
+    
+    #     Industrial Production: Durable consumer goods 
+    #     Monthly, Seasonally Adjusted 1947-01 to 2015-02 (Mar 16) 
+    #     http://research.stlouisfed.org/fred2/series/IPDCONGD
+    #     
+    #     Title:               Industrial Production: Durable Consumer Goods
+    #     Series ID:           IPDCONGD
+    #     Source:              Board of Governors of the Federal Reserve System (US)
+    #     Release:             G.17 Industrial Production and Capacity Utilization
+    #     Seasonal Adjustment: Seasonally Adjusted
+    #     Frequency:           Monthly
+    #     Units:               Index 2007=100
+    #     Date Range:          1947-01-01 to 2015-03-01
+    #     Last Updated:        2015-04-15 11:29 AM CDT           
+    #     
+    #     http://research.stlouisfed.org/fred2/data/IPDCONGD.txt
+    
+
+    retrieveSymbolsQuantmodRdata(
+      finSymbol = "IPDCONGD"
+      , finSymbolRemoteSource = "Quantmod_FRED"
+      , finSymbolAttributes = c("Close")
+      , initDate = "1950-03-01"
+      , subtractOffDaysSpec = -1
+    ) -> IPDCONGD.DELAYONE.ABS         # head "1947-01-01"
+                                       # Monthly
+                                       # ( Last Updated: 2015-04-15 - ??? date - typically 1 month late WITH 1 month old date  )
+    
+    # really meant for a monthly
+    as.integer(diff.mondate(c(
+      as.mondate(tail(index(IPDCONGD.DELAYONE.ABS),1), displayFormat="%Y-%m-%d",timeunits="months"),
+      as.mondate(finDate.TestTrain.Global.Latest, displayFormat="%Y-%m-%d",timeunits="months")
+    ))) -> pullAheadZOODataMonthShiftAmount
+    
+    merge.xts(MaxAllTestTrainMonthEnds,IPDCONGD.DELAYONE.ABS) -> IPDCONGD.DELAYONE.ABS
+    IPDCONGD.DELAYONE.ABS[MaxAllTestTrainMonthEndsRange] -> IPDCONGD.DELAYONE.ABS
+    
+    assign("IPDCONGD.DELAYONE.ABS", value=IPDCONGD.DELAYONE.ABS, envir = .GlobalEnv)
+    
+    # if HAD BEEN a Daily
+    max(pullAheadZOODataMonthShiftAmount,0) -> pullAheadZOODataMonthShiftAmount
+    
+    pullAheadZOOData(IPDCONGD.DELAYONE.ABS,pullAheadZOODataMonthShiftAmount) -> IPDCONGD.DELAYONE.ABS.ADJUSTNOW
+    print(paste0("IPDCONGD pullAheadZOOData should be DELAYONE"," Actual: ",pullAheadZOODataMonthShiftAmount))
+    
+    merge.xts(MaxAllTestTrainMonthEnds,IPDCONGD.DELAYONE.ABS.ADJUSTNOW) -> IPDCONGD.DELAYONE.ABS.ADJUSTNOW
+    IPDCONGD.DELAYONE.ABS.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> IPDCONGD.DELAYONE.ABS.ADJUSTNOW
+    
+    assign("IPDCONGD.DELAYONE.ABS.ADJUSTNOW", value=IPDCONGD.DELAYONE.ABS.ADJUSTNOW, envir = .GlobalEnv)
+    
+    "IPDCONGD.DELAYONE.ABS.ADJUSTNOW" -> ALL.OBSERVEES["IPDCONGD.DELAYONE.ABS.ADJUSTNOW"]
+    
     
     bookmark_here <- 1
     
@@ -2179,11 +2286,12 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
             # 'right now' directly from the loop above
             CURR.OBSERVEES    ->  CURR.OBSERVEES
             
+            # KEEP - STRANGLY - IN COMBINATION WITH MOODY'S BONDS - GETTING SLIGHTLY BETTER RESULTS KEEPING THE *BORING GOVERNMENT BONDS"
             # Remove these GS10, DGS3MO, DIFF.GS10.DGS3MO ( 160 )
             # because     BAAFFM, AAAFFM, and 'BAAFFM - AAAFFM' seem better ( 148 )
-            CURR.OBSERVEES <- CURR.OBSERVEES[!grepl("\\(GS10\\.",CURR.OBSERVEES)]
-            CURR.OBSERVEES <- CURR.OBSERVEES[!grepl("\\(DGS3MO\\.",CURR.OBSERVEES)]
-            CURR.OBSERVEES <- CURR.OBSERVEES[!grepl("\\(DIFF\\.GS10\\.DGS3MO\\.",CURR.OBSERVEES)]
+            ##CURR.OBSERVEES <- CURR.OBSERVEES[!grepl("\\(GS10\\.",CURR.OBSERVEES)]
+            ##CURR.OBSERVEES <- CURR.OBSERVEES[!grepl("\\(DGS3MO\\.",CURR.OBSERVEES)]
+            ##CURR.OBSERVEES <- CURR.OBSERVEES[!grepl("\\(DIFF\\.GS10\\.DGS3MO\\.",CURR.OBSERVEES)]
             
             CURR.FORMULA <- as.formula(paste0(CURR.PREDICTEE," ~ ",paste0(unlist(CURR.OBSERVEES), collapse =" + ")))
             
@@ -2693,6 +2801,15 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
 # debugSource('W:/New_Economics/rcsnsight1.320/main-rcsnsight2-999.R')
 # PLACE DOWN BREAKPOINT
 # main_rcsnsight2_999(THESEED = 2)
+
+# REMEMBER TO SET TO THE LATEST END OF MONTH DATE
+# finDate.TestTrain.Global.Latest      <- "2015-03-31"
+# NOTE IF MY: "Ave pct that the CURR.PRED is away from the CURR.VALUE"
+#  is far greater than 160 ( e.g.  213 )then I forgot to set this variable(?)
+
+# SEE PAST PRICTIONS, PAST RESULTS, AND 
+# View(model.data.test.CURR.NEWTAIL)
+
 
 ########################       
 
