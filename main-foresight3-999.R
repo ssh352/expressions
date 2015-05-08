@@ -84,7 +84,7 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
 #   
 #   if(getOption("RepositoryStyle") == "Installed")  {
 #     
-#     options(AAIIBase = "L:/MyVMWareSharedFolder/Professional150417")  
+#     options(AAIIBase = "L:/MyVMWareSharedFolder/Professional150501")    
 #     
 #   }
   
@@ -98,7 +98,7 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
   
   if(getLocalOption("RepositoryStyle", optionlist = OPTIONLIST) == "Installed")  {
     
-    OPTIONLIST <- localoptions(AAIIBase = "L:/MyVMWareSharedFolder/Professional150417", optionlist = OPTIONLIST)
+    OPTIONLIST <- localoptions(AAIIBase = "L:/MyVMWareSharedFolder/Professional150501", optionlist = OPTIONLIST)
     
   }
   
@@ -1058,6 +1058,64 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
       ]
     
   }
+
+
+
+  reduce_to_most_occurances2 <- function(DF,INTERESTCOL,length.out) {
+    
+    someline <- 1
+    
+    DF[,INTERESTCOL] -> interior2 
+    
+    which(table(DF[,INTERESTCOL]) %in%  max(table(DF[,INTERESTCOL]))) -> interior5
+    
+    which(table(DF[,INTERESTCOL]) %in%  max(table(DF[,INTERESTCOL]))) -> interior9
+    
+    as.numeric(names(table(DF[,INTERESTCOL]))[which(table(DF[,INTERESTCOL]) %in%  max(table(DF[,INTERESTCOL])))]) -> interior10 
+    
+    interior10 %in% max(as.numeric(names(table(DF[,INTERESTCOL]))[interior9])) -> interior7 
+    
+    which(
+      interior7
+    ) -> interior6
+    
+    
+    as.integer(
+      names(table(DF[,INTERESTCOL]))[interior5][
+        interior6
+        ]
+    ) -> interior4
+    
+    
+    seq.int(
+      from         = interior4
+      , by         = -1
+      , length.out =  length.out # 2 
+    ) -> interior3
+    
+    
+    interior2  %in% as.numeric(
+      interior3
+    )  -> interior1
+    
+    
+    DF[ 
+      interior1
+      , ,drop = FALSE
+      ]
+    
+  }
+
+  # reduce_to_most_occurances2(UNIVERSE_NOT_NA,"PRICE_DATEUNX",5) -> NOTHING
+
+  # identical(reduce_to_most_occurances2(UNIVERSE_NOT_NA,"PRICE_DATEUNX",5),reduce_to_most_occurances(UNIVERSE_NOT_NA,"PRICE_DATEUNX",5))
+  # [1] TRUE
+
+  # str(UNIVERSE_NOT_NA[,"PRICE_DATEUNX"])
+  # Error: index out of bounds
+
+  # faulty dplyr ( CAN NOT DO - I WILL LOOSE MY grouped_df)
+  # UNIVERSE_NOT_NA <- data.frame(UNIVERSE_NOT_NA)
 
   # 'month of most' observations and 'previous month(if any)'
   # > reduce_to_most_occurances(airquality,"Month",2)
@@ -4632,7 +4690,19 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
 
   the_end_debug_bookmark_here <- 1
   # rm(list=ls(all.names=TRUE))
-  # debugSource('main-foresight3-999.R', echo=TRUE)   
+  #
+  ##  debugSource('main-foresight3-999.R', echo=TRUE)   
+  # 
+  # Must use the ABSOLUT PATH 
+  #  else R studio cant' correctly fully debugSource it
+  #
+  # debugSource('W:/New_Economics/forsight3.311/main-foresight3-999.R')
+
+  # general RUN
+  #
+  # put down BREAK POINT
+  #
+  # main_foresight3_999(RDPG=TRUE)
 
   # View(main_foresight3_999())
   # View(main_foresight3_999(RDPG=TRUE))  # ret dollare price grid
