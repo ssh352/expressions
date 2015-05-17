@@ -1,8 +1,24 @@
 
 
+# install.packages("checkpoint")   
+
+# checkpoint(snapshotDate, project = getwd(), R.version, 
+#           scanForPackages = TRUE, checkpointLocation = "~/", verbose = TRUE,
+#           use.knitr = system.file(package = "knitr") != "")  
+
+# INSTALLING
+# checkpoint("2015-05-09", R.version = "3.2.0")
+# COMMON EVERYDAY DEBUGGING
+# I do not want it to scan every time
+### checkpoint("2015-05-09", R.version = "3.2.0", scanForPackages = FALSE)
+
+# SCANS THIS DIRECTORY FOR .R files
+
+
+
 # NOTE 'FULL SYSTEM TEST' WITH THE 'SEND MESSAGE' NOT DONE YET'
 # NOTE 'FULL SYSTEM TEST' WITH THE 'SEND MESSAGE' NOT DONE YET'
-# NOTE 'FULL SYSTEM TEST' WITH THE 'SEND MESSAGE' NOT DONE YET'
+# NOTE 'FULL SYSTEM TEST' WITH THE 'SEND MESSAGE' NOT DONE YET' 
 
 # shell("rstudio", wait=FALSE)
 
@@ -143,7 +159,7 @@ okcupid_visit_looper_dev <- function() {
       apagearefsup  <- apagearefsu[str_detect(apagearefsu,"^.*profile")]
 
       # regulars
-      apagearefsupr <- apagearefsup[str_detect(apagearefsup,"[?]cf=regular$")]
+      apagearefsupr <- apagearefsup[str_detect(apagearefsup,"[?]cf=regular$")] # SOME WILL HAVE A SECOND LINK WITH ENDING: ?cf=recently_visited
 
       # I have not seen these(after the filters are done), but just in case crept through
       
@@ -200,6 +216,33 @@ okcupid_visit_looper_dev <- function() {
 #         print(paste0("end send message ", alink, " of the page of : ",agecurr, " of age ", agerange_str))
         
         # END SEND MESSAGE AREA
+
+        #### BEGIN "LIKE SOMEONE" "BOOKMARK AREA"  ###
+        #
+        # http://www.okcupid.com/profile/cheesexmonger?cf=regular
+        
+        # TO LIKE SOMEONE
+        # <button name="like" id="rate_user_profile" data-tuid="5265647272868517021" class="binary_rating_button flatbutton silver like"> <i class="icon i-star"></i> <span class="rating_like">Like</span> <span class="rating_liked">Liked</span> </button>
+        
+        # TO UNLIKE SOMEONE
+        # <button name="like" id="rate_user_profile" data-tuid="5265647272868517021" class="binary_rating_button flatbutton silver like liked"> <i class="icon i-star"></i> <span class="rating_like">Like</span> <span class="rating_liked">Liked</span> </button>
+        
+        # NOTE: keyboard RETURN does not work: only workable by javascript click ( IF POSSIBLE )
+        
+        
+        # ADD TO BOOKMARKS ( 2 PART DEAL : MORE COMPLICATED )
+        
+        # OPEN the MENU ( ENTER KEY NOT WORK )
+        # <div class="trigger_action_options_wrapper"> <a href="#" id="trigger_action_options"> <span class="icon i-ellipsis-h"></span> </a> </div>
+        # WHEN CLOSED BELOW (class="open") WILL NOT BE EXISTING
+        
+        # BOOKMARK ( ENTER KEY NOT WORK )
+        # <ul id="more_options_menu" class="open"> <li class=""> <a href="#" id="save_unsave" class="">Bookmark</a> </li> <li class=""> <a href="#" id="hide_user" class=""> Hide </a> </li>  <li class=""> <a href="#" id="flag_btn"> Report </a> </li>  </ul>
+        
+        # REMOVE BOOKMARK ( ENTER KEY NOT WORK )
+        # <ul id="more_options_menu" class="open"> <li class=""> <a href="#" id="save_unsave" class="bookmarked">Remove bookmark</a> </li> <li class=""> <a href="#" id="hide_user" class=""> Hide </a> </li>  <li class=""> <a href="#" id="flag_btn"> Report </a> </li>  </ul>
+        #
+        #### END "LIKE SOMEONE" "BOOKMARK AREA"  ###
         
         print(paste0("end visiting ", alink, " of the page of : ",agecurr, " of age ", agerange_str))
         
