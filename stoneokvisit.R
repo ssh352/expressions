@@ -1,5 +1,6 @@
 
 
+
 # install.packages("checkpoint")   
 
 # checkpoint(snapshotDate, project = getwd(), R.version, 
@@ -90,8 +91,8 @@ okcupid_visit_looper_dev <- function() {
     
     
     # MAGIC NUMBER
-    agerange <- 30:31
-    agerange_str <- "30:31"
+    agerange <-      50:18      #  30:31  # 50:49
+    agerange_str <- "50:18"     # "30:31" # 50:49
     
     for(agecurr in agerange) { # testing only 30 and 31 # 70:18
       
@@ -171,7 +172,10 @@ okcupid_visit_looper_dev <- function() {
       
       print(paste0("begin visiting each profile of the page of : ",agecurr, " of age ", agerange_str))
       
-      for(alink in rev(apagearefsupr)[1:2]) { # testing: reverse and first 2 names ( testing )
+      
+      # rev(apagearefsupr)[1:2]               BOTTOM OF PAGE:  testing: reverse and first 2 names ( testing )
+      # letters[1:(length(letters) %/% 2)]    TOP    OF PAGE:  50% of the unuque links GOING DOWN
+      for(alink in apagearefsupr[1:(length(apagearefsupr) %/% 2)]) { 
         
         print(paste0("begin visiting ", alink, " of the page of : ",agecurr, " of age ", agerange_str))
         
@@ -276,13 +280,32 @@ okcupid_visit_looper_dev <- function() {
   maininner()
 }
 
+# BEGIN INSTRUCTIONS
+# BEGIN INSTRUCTIONS
+
+# Every so often
+# Help-> About Google Chrome ( checking for updates )
+
+# MAIN DEVELOPMENT NOTES ARE HERE: J:\YDrive\All_NewSeduction\All_ElectronicSpeech
 
 # rm(list=ls(),envir = .GlobalEnv)
+
+# setwd("J:/YDrive/All_NewSeduction/All_ElectronicSpeech/RSeleniumAndBrowsers/AES1") # getwd()
+# MAKE SURE THAT THE .R file in the tab(hover over) has the same dir path as 'setwd'
+
+# ABSOLUTE PATH IS BEST
 # debugSource('J:/YDrive/All_NewSeduction/All_ElectronicSpeech/RSeleniumAndBrowsers/AES1/okcupid_visit_looper_dev.R')
 
-# NOTE: Optional, but recommended, for performance, Turn OFF 'view google chrome images'
+# NOTE: Optional, but HIGHLY recommended, for performance, Turn OFF 'view google chrome images'
+# NOTE: Optional, but HIGHLY recommended, for performance, Turn OFF 'view google chrome images'
 
 # REM: taskmgr - manually KILL off java.exe if it is running
+
 # MANUALLY PLACE DOWN THE BREAKPOINT
+#   e.g. remDr$open() # oracle.com  
 
 # okcupid_visit_looper_dev()
+
+# END INSTRUCTIONS
+# END INSTRUCTIONS
+
