@@ -2,9 +2,9 @@
 ## search for "LEFT_OFF"
 
 # I ACTUALLY *RAN THESE THREE LINES IN *R TERM*
-# install.packages("checkpoint")
+# install.packages("checkpoint") 
 # library(checkpoint) 
-# ? checkpoint 
+# ? checkpoint  
 
 # checkpoint(snapshotDate, project = getwd(), R.version, 
 #           scanForPackages = TRUE, checkpointLocation = "~/", verbose = TRUE,
@@ -2614,6 +2614,44 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     # correlations(OPTIONAL), columns manually removed because no sense'  
     # model.data.CURR
 
+    # BEGIN INSTRUCTIONS
+    # BEGIN INSTRUCTIONS
+    # 
+    # MANAGE THE OLD
+    # In W:\New_Economics\rcsnsight1.320
+    # Create folder DataYYMMDD  *** where YYMMDD is the date on the .RData files ***
+    #   Cut/Move all .Rdata files into DataYYMMDD
+    # Copy     all .R     files into DataYYMMDD
+    # 
+    # HARD NOTE: Any modification of 'data loading' and 'massaging'
+    # then I HAVE TO RE-GET the DATA from the SOURCE ( ** IMPORTANT ** )
+    # 
+    # DON'T FORGET THAT in R Studio
+    # setwd(""W:/New_Economics/rcsnsight1.320"") # getwd()
+    # 
+    # CHECK THAT THE LOADED .R FILE IN THE TAB (hover over) 
+    # HAS THE SAME PATH AS THE 'setwd'
+    # 
+    # *** VERY VERY VERY IMPORTANT  ***
+    # CHANGE "finDate.TestTrain.Global.Latest      <- "YYYY-MM-DD"
+    # TO BE the 'date of the 'end of the latest month' before running the program TODAY'
+    # 
+    # rm(list=ls(all.names=TRUE))
+    # 
+    # BEST HAVE THE 'ABSOLUTE PATH' 
+    # debugSource('W:/New_Economics/rcsnsight1.320/main-rcsnsight2-999.R')
+    # 
+    # PLACE DOWN BREAKPOINT AT "bookmark_here <- 1"
+    # 
+    # main_rcsnsight2_999(THESEED = 2)
+    # 
+    # View(model.data.test.CURR.NEWTAIL)
+    # BUT ( BETTER ) MAY WANT TO DO : model.data.test.CURR.NEWTAIL -> model.data.test.CURR.NEWTAIL_YYMMDD
+    # View(model.data.test.CURR.NEWTAIL_YYMMDD)
+    # 
+    # END INSTRUCTIONS
+    # END INSTRUCTIONS
+
     # begin all variable importance area #
     # begin all variable importance area #
     
@@ -2655,9 +2693,6 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     # [SMOTE]
     # gbm
     # predict
-    
-    
-    
     
     
     # *** LEFT_OFF ***
