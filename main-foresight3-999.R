@@ -84,7 +84,7 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
 #   
 #   if(getOption("RepositoryStyle") == "Installed")  {
 #     
-#     options(AAIIBase = "L:/MyVMWareSharedFolder/Professional150501")    
+#     options(AAIIBase = "L:/MyVMWareSharedFolder/Professional150522")    
 #     
 #   }
   
@@ -98,7 +98,7 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
   
   if(getLocalOption("RepositoryStyle", optionlist = OPTIONLIST) == "Installed")  {
     
-    OPTIONLIST <- localoptions(AAIIBase = "L:/MyVMWareSharedFolder/Professional150501", optionlist = OPTIONLIST)
+    OPTIONLIST <- localoptions(AAIIBase = "L:/MyVMWareSharedFolder/Professional150522", optionlist = OPTIONLIST)
     
   }
   
@@ -4689,32 +4689,52 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
   
 
   the_end_debug_bookmark_here <- 1
-  # rm(list=ls(all.names=TRUE))
+
   #
   ##  debugSource('main-foresight3-999.R', echo=TRUE)   
   # 
   # Must use the ABSOLUT PATH 
   #  else R studio cant' correctly fully debugSource it
   #
+  # BEGIN INSTRUCTIONS
+  # BEGIN INSTRUCTIONS
+  # 
+  # Run Stock Investor 4.0, 
+  # Help->About "Current(Weekly) data as of"
+  # save the latest ProfessionalYYMMDD to L:/MyVMWareSharedFolder
+  #
+  # DON'T FORGET THAT in R Studio
+  # setwd("W:/New_Economics/forsight3.311") # getwd()
+  #
+  # CHECK THAT THE LOADED .R FILE IN THE TAB (hover over) 
+  #   HAS THE SAME PATH AS THE 'setwd'
+  # 
+  # 2 PLACES in this file .R CODE
+  #   change : OLD ProfessionalYYMMDD TO NEW ProfessionalYYMMDD
+  #  
+  # rm(list=ls(all.names=TRUE))
+  #
+  # BEST HAVE THE 'ABSOLUTE PATH' 
   # debugSource('W:/New_Economics/forsight3.311/main-foresight3-999.R')
 
   # general RUN
   #
-  # put down BREAK POINT
+  # put down BREAK POINT AT "the_end_debug_bookmark_here <- 1"
   #
   # main_foresight3_999(RDPG=TRUE)
 
-  # View(main_foresight3_999())
-  # View(main_foresight3_999(RDPG=TRUE))  # ret dollare price grid
-  # View(main_foresight3_999(RDPG=FALSE)) # ret dollare price grid # ( default )
-  #    exists("RET_DOLLAR_PRICE_GRID") # FALSE
+  # NOT THIS ONE: View(main_foresight3_999())
+  # NOT THIS ONE: View(main_foresight3_999(RDPG=TRUE))  # ret dollare price grid
+  # NOT THIS ONE: View(main_foresight3_999(RDPG=FALSE)) # ret dollare price grid # ( default )
+  # NOT THIS ONE:    exists("RET_DOLLAR_PRICE_GRID") # FALSE
 
-  # View(UNIVERSE_FMA)
+  # View(UNIVERSE_FMA) # THE MAIN ONE
   # View(WGHT_MN_PRICE_GRID)  
   # View(WGHT_MN_PRICE_GRID_UNIVERSE) # treat the entire universe as 'one big sector' 
   # View(WGHT_MN_PRICE_GRID_SP500) # treat the entire universe as 'two sectors: SP500, NOT_SP500'
 
-  # View( RET_DOLLAR_PRICE_GRID )
+  # NOT THIS ONE: View( RET_DOLLAR_PRICE_GRID )
+  # 
   # View(subset(RET_DOLLAR_PRICE_GRID, MG_DESC %in% c("Basic Materials") ))
   # View(subset(RET_DOLLAR_PRICE_GRID, MG_DESC %in% c("Capital Goods") ))
   # View(subset(RET_DOLLAR_PRICE_GRID, MG_DESC %in% c("Conglomerates") )) # much missing data
@@ -4722,24 +4742,24 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
   # View(subset(RET_DOLLAR_PRICE_GRID, MG_DESC %in% c("Consumer Non-Cyclical") ))
   # View(subset(RET_DOLLAR_PRICE_GRID, MG_DESC %in% c("Energy") ))
   # View(subset(RET_DOLLAR_PRICE_GRID, MG_DESC %in% c("Financial") ))
-
-    # setwd("L:/MyVMWareSharedFolder/foresight3/R")
-    # save(GRID_FINANCIAL_141121, file = "GRID_FINANCIAL_141121.RData")
-    # unlink("GRID_FINANCIAL_141121.RData")
-    # rm("GRID_FINANCIAL_141121")
-    # 
-    # setwd("L:/MyVMWareSharedFolder/foresight3/R")
-    # load("GRID_FINANCIAL_141121.RData", envir = environment(), verbose = TRUE)
-
   # View(subset(RET_DOLLAR_PRICE_GRID, MG_DESC %in% c("Health Care") ))
   # View(subset(RET_DOLLAR_PRICE_GRID, MG_DESC %in% c("Services") ))
   # View(subset(RET_DOLLAR_PRICE_GRID, MG_DESC %in% c("Technology") ))
   # View(subset(RET_DOLLAR_PRICE_GRID, MG_DESC %in% c("Transportation") ))
   # View(subset(RET_DOLLAR_PRICE_GRID, MG_DESC %in% c("Utilities") )) # much missing data
 
+  # END INSTRUCTIONS  
+  # END INSTRUCTIONS
+
+  # setwd("L:/MyVMWareSharedFolder/foresight3/R")
+  # save(GRID_FINANCIAL_141121, file = "GRID_FINANCIAL_141121.RData")
+  # unlink("GRID_FINANCIAL_141121.RData")
+  # rm("GRID_FINANCIAL_141121")
+  # 
+  # setwd("L:/MyVMWareSharedFolder/foresight3/R")
+  # load("GRID_FINANCIAL_141121.RData", envir = environment(), verbose = TRUE)
+
   # list( UNIVERSE_FMA = UNIVERSE_FMA, WGHT_MN_PRICE_GRID = WGHT_MN_PRICE_GRID )
-
-
 
   return(list( UNIVERSE_FMA = UNIVERSE_FMA, WGHT_MN_PRICE_GRID = WGHT_MN_PRICE_GRID ))      
   # return(UNIVERSE_FMA)
@@ -4830,8 +4850,7 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
 
   
 # rm(list=ls(all.names=TRUE))
-## source('L:/MyVMWareSharedFolder/foresight3/R/main-foresight3-999.R', echo=TRUE)
-# debugSource('L:/MyVMWareSharedFolder/foresight3/R/main-foresight3-999.R', echo=TRUE)
+# debugSource('W:/New_Economics/forsight3.311/main-foresight3-999.R', echo=TRUE)
 # SET A BREAKPOINT
 # main_foresight3_999(RDPG=TRUE)
 
