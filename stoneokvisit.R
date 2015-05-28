@@ -7,7 +7,7 @@
 #           scanForPackages = TRUE, checkpointLocation = "~/", verbose = TRUE,
 #           use.knitr = system.file(package = "knitr") != "")  
 
-# INSTALLING
+# INSTALLING 
 # checkpoint("2015-05-09", R.version = "3.2.0")
 # COMMON EVERYDAY DEBUGGING
 # I do not want it to scan every time
@@ -19,7 +19,7 @@
 
 # NOTE 'FULL SYSTEM TEST' WITH THE 'SEND MESSAGE' NOT DONE YET'
 # NOTE 'FULL SYSTEM TEST' WITH THE 'SEND MESSAGE' NOT DONE YET'
-# NOTE 'FULL SYSTEM TEST' WITH THE 'SEND MESSAGE' NOT DONE YET' 
+# NOTE 'FULL SYSTEM TEST' WITH THE 'SEND MESSAGE' NOT DONE YET'  
 
 # shell("rstudio", wait=FALSE)
 
@@ -32,12 +32,12 @@ okcupid_visit_looper_dev <- function() {
     require(RSelenium)
     require(stringr)
     
-    # REM: taskmgr - manually KILL off java.exe if it is running
-    startServer()    
+    # REM: taskmgr OR 'some other way' KILL off java.exe if it is running
+    startServer(args = c("-port 4451"))  # default # 4456
     Sys.sleep(5.0) # 5 second wait
     
     cprof <- getChromeProfile("J:\\YDrive\\All_NewSeduction\\All_ElectronicSpeech\\RSeleniumAndBrowsers\\AES1_assistance\\RDebug\\Administrator\\AppData\\Local\\Google\\Chrome\\User Data", "time861wiz_time861wiz") 
-    remDr <- remoteDriver(browserName = "chrome", extraCapabilities = cprof)
+    remDr <- remoteDriver(browserName = "chrome", extraCapabilities = cprof, port = 4451) # default 4456
     remDr$open() # oracle.com  
     Sys.sleep(10 + 5* runif(1, min = 0, max = 1)) # 10 to 15 seconds wait
     
@@ -83,6 +83,9 @@ okcupid_visit_looper_dev <- function() {
       , "Of all the gin joints in all the towns in the world, she walks into mine."
       , "What we've got here is a failure to communicate."
       , "Toto, I've got a feeling we are not in Kansas anymore :("
+        # ANDRE 
+      , "Jumping Jack Flash, what a Gasp!"
+      , "A lawyer and a priest walked into a bar"
     ) -> message_vector
     
     
@@ -90,20 +93,21 @@ okcupid_visit_looper_dev <- function() {
     message_textarea_end   <- "\";"
     
     
-    # MAGIC NUMBER
-    agerange <-      50:18      #  30:31  # 50:49
-    agerange_str <- "50:18"     # "30:31" # 50:49
+    # MAGIC NUMBER 
+    agerange <-      26:18      #  30:31  # 50:49
+    agerange_str <- "26:18"     # "30:31" # 50:49    
     
-    for(agecurr in agerange) { # testing only 30 and 31 # 70:18
+    for(agecurr in agerange) { # testing only 30 and 31 # 50:18  
       
       print(paste0("beginning age ",agecurr))
       
-      remDr$navigate(paste0("http://www.okcupid.com/match?filter1=0,34&filter2=2,",agecurr,",",agecurr,"&filter3=3,50&filter4=5,604800&filter5=1,1&locid=0&timekey=1&matchOrderBy=MATCH&custom_search=0&fromWhoOnline=0&mygender=m&update_prefs=1&sort_type=0&sa=1&using_saved_search=&count=500"))
-      Sys.sleep(10 + 5* runif(1, min = 0, max = 1)) # 10 to 15 seconds wait
+      navigate_target <- paste0("http://www.okcupid.com/match?filter1=0,34&filter2=2,",agecurr,",",agecurr,"&filter3=3,50&filter4=5,604800&filter5=1,1&locid=0&timekey=1&matchOrderBy=MATCH&custom_search=0&fromWhoOnline=0&mygender=m&update_prefs=1&sort_type=0&sa=1&using_saved_search=&count=500")     
+      remDr$navigate(navigate_target)
+      Sys.sleep(10 + 5* runif(1, min = 0, max = 1)) # 10 to 15 seconds wait 
       
       # LOOP ( check to see if I am at the END of the PAGE? ) ( no more information to be dynamically loaded )
       
-      ## DOES WORK
+      ## DOES WORK  
       
       # begin on the top of the page
       
@@ -168,18 +172,46 @@ okcupid_visit_looper_dev <- function() {
       apagearefsupr <- apagearefsupr[!grepl("ROBOT",apagearefsupr,ignore.case=TRUE)]
       
       # loop and visit each name - from bottom(rev) to top ( testing ) 
-      # testing - visit from the BOTTOM going UP
+      # testing - visit from the BOTTOM going UP 
       
       print(paste0("begin visiting each profile of the page of : ",agecurr, " of age ", agerange_str))
       
       
       # rev(apagearefsupr)[1:2]               BOTTOM OF PAGE:  testing: reverse and first 2 names ( testing )
       # letters[1:(length(letters) %/% 2)]    TOP    OF PAGE:  50% of the unuque links GOING DOWN
-      for(alink in apagearefsupr[1:(length(apagearefsupr) %/% 2)]) { 
+      
+      apagearefsupr_total       <-  apagearefsupr
+      apagearefsupr_total_count <- length(apagearefsupr)
+      print(paste0("Total possible profiles: ",apagearefsupr_total_count))
+            
+      # choose e.g. visit only the top half
+      apagearefsupr_reduced <- apagearefsupr[1:(length(apagearefsupr) %/% 2)]
+      apagearefsupr_reduced_count <- length(apagearefsupr_reduced)
+      print(paste0("Reduced actually actioning  profiles: ",apagearefsupr_reduced_count))
+      
+      # get the name out of the url
+      begin_matchnames_str_locations <- (str_locate(apagearefsupr_reduced,"profile/") + 1)[,2,drop=FALSE]
+      end_matchnames_str_locations   <- (str_locate(apagearefsupr_reduced,"[?]"     ) - 1)[,1,drop=FALSE]
+      
+      # NOTE: (str_locate  finds 'first occurance"
+      # could possible break if  "?" is found in a strange spot
+      
+      # hadly S-logic
+      matchnames <- str_sub(apagearefsupr_reduced, start = cbind(begin_matchnames_str_locations, end_matchnames_str_locations))
+      
+      action_ref_counter <- 0
+      for(alink in apagearefsupr_reduced) { 
+        # so I know where I am
+        action_ref_counter <- action_ref_counter + 1
         
         print(paste0("begin visiting ", alink, " of the page of : ",agecurr, " of age ", agerange_str))
         
-        remDr$navigate(alink)
+        print(paste0("  current matchname: ",matchnames[action_ref_counter]))
+        
+        print(paste0("  action ", action_ref_counter, " of ",apagearefsupr_reduced_count ))
+        
+        navigate_target <- alink
+        remDr$navigate(navigate_target)
         Sys.sleep(2 + 2 * runif(1, min = 0, max = 1)) # 2 to 4 seconds wait
 
         remDr$executeScript("return 0")
@@ -300,6 +332,10 @@ okcupid_visit_looper_dev <- function() {
 # NOTE: Optional, but HIGHLY recommended, for performance, Turn OFF 'view google chrome images'
 
 # REM: taskmgr - manually KILL off java.exe if it is running
+# XOR
+# "command prompt"->"right click"->"run as adminsitrator"
+# netstat -o -a -b  -n | find /i "listening" | find /i ":4451"
+# taskkill /F /T /PID <above_right_col_number>
 
 # MANUALLY PLACE DOWN THE BREAKPOINT
 #   e.g. remDr$open() # oracle.com  
