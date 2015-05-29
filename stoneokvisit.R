@@ -39,27 +39,27 @@ okcupid_visit_looper_dev <- function() {
     cprof <- getChromeProfile("J:\\YDrive\\All_NewSeduction\\All_ElectronicSpeech\\RSeleniumAndBrowsers\\AES1_assistance\\RDebug\\Administrator\\AppData\\Local\\Google\\Chrome\\User Data", "time861wiz_time861wiz") 
     remDr <- remoteDriver(browserName = "chrome", extraCapabilities = cprof, port = 4451) # default 4456
     remDr$open() # oracle.com  
-    Sys.sleep(10 + 5* runif(1, min = 0, max = 1)) # 10 to 15 seconds wait
+    Sys.sleep(3 + 1 * runif(1, min = 0, max = 1)) # 10 to 15 seconds wait
     
     print("opened browser home page")
     
     # Sys.sleep(1 + 5* runif(1, min = 0, max = 1)) # 6 to 11 seconds wait
     
     remDr$navigate("https://www.okcupid.com/login")
-    Sys.sleep(10 + 5* runif(1, min = 0, max = 1)) # 10 to 15 seconds wait
+    Sys.sleep(3 + 1 * runif(1, min = 0, max = 1)) # 10 to 15 seconds wait
     
     print("navigated to okcupid")
     
     webElem1 <- remDr$findElement("css selector", "#login_username")
     webElem1$sendKeysToElement(list("time861wiz"))
-    Sys.sleep(3 + 2* runif(1, min = 0, max = 1)) # 3 to 5 seconds
+    Sys.sleep(3 + 2 * runif(1, min = 0, max = 1)) # 3 to 5 seconds
     
     webElem2 <- remDr$findElement("css selector", "#login_password")
     webElem2$sendKeysToElement(list("739heg08"))
-    Sys.sleep(3 + 2* runif(1, min = 0, max = 1)) # 3 to 5 seconds
+    Sys.sleep(3 + 2 * runif(1, min = 0, max = 1)) # 3 to 5 seconds
     
     webElem2$sendKeysToElement(list(key="enter"))
-    Sys.sleep(5 + 5* runif(1, min = 0, max = 1)) # 5 to 10 seconds wait
+    Sys.sleep(4 + 2 * runif(1, min = 0, max = 1)) # 5 to 10 seconds wait
     
     print("logged into okcupid")
     
@@ -83,7 +83,7 @@ okcupid_visit_looper_dev <- function() {
       , "Of all the gin joints in all the towns in the world, she walks into mine."
       , "What we've got here is a failure to communicate."
       , "Toto, I've got a feeling we are not in Kansas anymore :("
-        # ANDRE 
+        # ANDRE  
       , "Jumping Jack Flash, what a Gasp!"
       , "A lawyer and a priest walked into a bar"
     ) -> message_vector
@@ -94,16 +94,16 @@ okcupid_visit_looper_dev <- function() {
     
     
     # MAGIC NUMBER 
-    agerange <-      26:18      #  30:31  # 50:49
-    agerange_str <- "26:18"     # "30:31" # 50:49    
+    agerange <-      50:18      #  30:31  # 50:49
+    agerange_str <- "50:18"     # "30:31" # 50:49    
     
-    for(agecurr in agerange) { # testing only 30 and 31 # 50:18  
+    for(agecurr in agerange) { # testing only 30 and 31 # 50:18   
       
       print(paste0("beginning age ",agecurr))
       
       navigate_target <- paste0("http://www.okcupid.com/match?filter1=0,34&filter2=2,",agecurr,",",agecurr,"&filter3=3,50&filter4=5,604800&filter5=1,1&locid=0&timekey=1&matchOrderBy=MATCH&custom_search=0&fromWhoOnline=0&mygender=m&update_prefs=1&sort_type=0&sa=1&using_saved_search=&count=500")     
       remDr$navigate(navigate_target)
-      Sys.sleep(10 + 5* runif(1, min = 0, max = 1)) # 10 to 15 seconds wait 
+      Sys.sleep(3 + 1 * runif(1, min = 0, max = 1)) # 10 to 15 seconds wait 
       
       # LOOP ( check to see if I am at the END of the PAGE? ) ( no more information to be dynamically loaded )
       
@@ -128,7 +128,7 @@ okcupid_visit_looper_dev <- function() {
       while( !((window.innerHeight + window.scrollY) >= document.body.offsetHeight) ) {
         
         webElemSB$sendKeysToElement(list("\uE010")) # AGGRESSIVE PAGE DOWN
-        Sys.sleep(10 + 5* runif(1, min = 0, max = 1)) # 10 to 15 seconds wait
+        Sys.sleep(3 + 1 * runif(1, min = 0, max = 1)) # 10 to 15 seconds wait
         
         window.innerHeight          <- remDr$executeScript("return window.innerHeight")[[1]]
         window.scrollY              <- remDr$executeScript("return window.scrollY")[[1]]
@@ -151,7 +151,7 @@ okcupid_visit_looper_dev <- function() {
       if ( alinkslength > 0 ) { 
         for(alinkcurr in 0:(alinkslength -1)) {
           apagearefs <- c(apagearefs,remDr$executeScript(paste0("return document.getElementsByTagName('a')[",alinkcurr,"].href;"))[[1]])
-          Sys.sleep(0.01)
+          Sys.sleep(0.001)
         }
       }
 
@@ -212,7 +212,7 @@ okcupid_visit_looper_dev <- function() {
         
         navigate_target <- alink
         remDr$navigate(navigate_target)
-        Sys.sleep(2 + 2 * runif(1, min = 0, max = 1)) # 2 to 4 seconds wait
+        Sys.sleep(2 + 1 * runif(1, min = 0, max = 1)) # 2 to 4 seconds wait
 
         remDr$executeScript("return 0")
          
@@ -231,7 +231,7 @@ okcupid_visit_looper_dev <- function() {
 #         webElemSMB$highlightElement() # THAT WORKED
 #         remDr$mouseMoveToLocation(webElement = webElemSMB) 
 #         webElemSMB$sendKeysToElement(list(key = "enter")) 
-#         Sys.sleep(2 + 2* runif(1, min = 0, max = 1))
+#         Sys.sleep(2 + 1 * runif(1, min = 0, max = 1))
 #         
 #         
 #         # type characters in textarea
@@ -282,9 +282,12 @@ okcupid_visit_looper_dev <- function() {
         
         print(paste0("end visiting ", alink, " of the page of : ",agecurr, " of age ", agerange_str))
         
-        remDr$goBack()
-        Sys.sleep(2 + 2 * runif(1, min = 0, max = 1)) # 2 to 4 seconds wait
-        
+        #######
+        # COMMENTED OUT ( TOO MUCH TIME )
+        # remDr$goBack()
+        # Sys.sleep(1 + 2 * runif(1, min = 0, max = 1)) # 2 to 4 seconds wait
+        #######        
+
         remDr$executeScript("return 0")
         
       }
@@ -297,7 +300,7 @@ okcupid_visit_looper_dev <- function() {
     
     bookmarkhere <- 1
     
-    # manually logout of ok cupid here
+    # manually logout of ok cupid here 
     # manually X out ( shutdown ) the browser
     
     print("begin closing remDr")
