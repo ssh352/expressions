@@ -1,6 +1,61 @@
 
 
 
+# DON'T FORGET TO STARTUP PostgreSQL !!
+# FUTURE: CONSIDER RSelenium FLAG ... native EVENTS
+
+
+# 
+# CREATE TABLE aes_do_not_visit_list
+# (
+#   id            double precision  NOT NULL,
+#   match_source  text,
+#   my_matchname  text,
+#   her_matchname text
+# )
+# WITH (
+#   OIDS=FALSE
+# );
+# ALTER TABLE aes_do_not_visit_list
+# OWNER TO postgres;
+# 
+# CREATE UNIQUE INDEX aes_do_not_visit_list_pk_idx  
+# ON aes_do_not_visit_list
+# USING btree (id);  
+# 
+# ALTER TABLE aes_do_not_visit_list
+# ADD CONSTRAINT aes_do_not_visit_list_pk PRIMARY KEY  USING INDEX aes_do_not_visit_list_pk_idx;  
+# 
+# -- NOTE: now the index will dissapear from the GUI ( but the pk properties showed its there ( e.g. btree ) )
+#                                                      
+# REINDEX TABLE aes_do_not_visit_list; -- simply rebuild that index
+#                                                      
+# 
+# CREATE TABLE aes_have_visited_list
+# (
+#   id            double precision  NOT NULL,
+#   match_source  text,
+#   my_matchname  text,
+#   her_matchname text
+# )
+# WITH (
+#   OIDS=FALSE
+# );
+# ALTER TABLE aes_have_visited_list
+# OWNER TO postgres;
+# 
+# CREATE UNIQUE INDEX aes_have_visited_list_pk_idx  
+# ON aes_have_visited_list
+# USING btree (id);  
+# 
+# ALTER TABLE aes_have_visited_list
+# ADD CONSTRAINT aes_have_visited_list_pk PRIMARY KEY  USING INDEX aes_have_visited_list_pk_idx;  
+# 
+# -- NOTE: now the index will dissapear from the GUI ( but the pk properties showed its there ( e.g. btree ) )
+#                                                      
+# REINDEX TABLE aes_have_visited_list; -- simply rebuild that index
+#                                                      
+
 # install.packages("checkpoint")   
 
 # checkpoint(snapshotDate, project = getwd(), R.version, 
@@ -15,22 +70,105 @@
 
 # SCANS THIS DIRECTORY FOR .R files
 
+# NOTE 'FULL SYSTEM TEST' WITH THE 'SEND MESSAGE' NOT DONE YET' 
+# NOTE 'FULL SYSTEM TEST' WITH THE 'SEND MESSAGE' NOT DONE YET'
+# NOTE 'FULL SYSTEM TEST' WITH THE 'SEND MESSAGE' NOT DONE YET'   
 
 
-# NOTE 'FULL SYSTEM TEST' WITH THE 'SEND MESSAGE' NOT DONE YET'
-# NOTE 'FULL SYSTEM TEST' WITH THE 'SEND MESSAGE' NOT DONE YET'
-# NOTE 'FULL SYSTEM TEST' WITH THE 'SEND MESSAGE' NOT DONE YET'  
+
 
 # shell("rstudio", wait=FALSE)
+
+options(width = 255)     
+options(digits = 22) 
+options(max.print=99999)
+options(scipen=255) 
+options(digits.secs = 6)
+
+safe_navigate_to_new_url <- function(new_url = NULL, remote_driver = NULL, after_how_long = NULL, backout_url = NULL) {
+  
+  require(tcltk)
+  require(RSelenium)
+  
+  # NOTE: 'note very case is 'code covered' BUT IF A PROBLEM SHOULD BE FIXABLE
+  
+  # if browser/site/internet hangs just ...
+  # backout_url: "current_url", "goback" "http://www.time.gov"(default) "CUSTOMHTTP"
+  # NOTE: to retry JUST ONCE more: call by 'new_url == backout_url'
+  
+  #  1000:  good redirect success test
+  # 30000:  should never do 'backout_url' ( 30 seconds )
+  if(is.null(after_how_long)) { after_how_long <- 30000 } # 30 seconds ** CHANGE BACK TO 30 SECONDS
+  
+  backout_url_set <- FALSE
+  if(is.null(backout_url))         { backout_url_value <- "http://www.time.gov"; backout_url_set <- TRUE } # default
+  if(!is.null(backout_url) && backout_url == "goback")      { backout_url_value <- "goback"     ; backout_url_set <- TRUE }
+  if(!is.null(backout_url) && backout_url == "current_url") { backout_url_value <- "current_url"; backout_url_set <- TRUE }
+  if(!is.null(backout_url) && !isTrue( backout_url_set))    { backout_url_value <- backout_url; backout_url_set <- TRUE }
+  
+  if(!isTRUE(backout_url_set))  stop(paste0("safe_navigate_to_new_url call is missng a 'good backout_url'")) 
+  
+  # tcl: functon call does  not 'seem to be allowed to have any parameters ( rely on 'scope and visibility' )
+  safe_navigate_backout <- function() { 
+    
+    # SHOULD be TRUE here
+    if(isTRUE(backout_url_set)) {
+      
+      if(backout_url_value == "goback")         { remote_driver$goBack();              return() }
+      if(backout_url_value == "current_url")    { remote_driver$navigate(current_url); return() }
+      remote_driver$navigate(backout_url_value) 
+      return() 
+      
+    } else {
+      stop("in safe_navigate_backout NOT 'isTrue(backout_url_set)'") 
+    }
+    
+  }
+  
+  # NOT SURE of the 'tcl and safe_navigate_backout closure' rules, so I put this here
+  current_url <- remote_driver$getCurrentUrl()[[1]][1]
+  
+  # register task
+  .id <-tcl("after", after_how_long, safe_navigate_backout) 
+  
+  # To get info about this scheduled task
+  print(paste0("tcl_after_info_id: ",tcl("after", "info", .id)))   
+  
+  # regular run
+  remote_driver$navigate(new_url)
+  
+  # if hung after "after_how_long" milliseconds, will run (OTHER TRY): safe_navigate_backout
+  
+  # if I made it THIS far: "remote_driver$navigate(new_url)" ran, so then just cancel
+  # cancel the currently scheduled task
+  result = tryCatch({ tcl("after", "cancel", .id) }, warning = function(w) {}, error = function(e) {}, finally = {})
+  # unfortunately alwayS returns success: <Tcl> 
+  
+  new_url     <- remote_driver$getCurrentUrl()[[1]][1]
+  
+  # success if I navigated forward
+  return(list( success =(new_url != current_url), remote_driver = remote_driver  ))
+  
+}
+
 
 okcupid_visit_looper_dev <- function() {
   
   maininner <- function() {
     
+    oldtz <- Sys.getenv('TZ')
+    if(oldtz=='') {
+      Sys.setenv(TZ="UTC")
+    }
+    
     set.seed(runif(1, min = 0, max = 1))
     
     require(RSelenium)
     require(stringr)
+    
+    require(RPostgreSQL)
+    drv <- dbDriver("PostgreSQL")
+    con <- dbConnect(drv, host = "127.0.0.1", dbname = "aes_db", user = "postgres", password = "postgres")
     
     # REM: taskmgr OR 'some other way' KILL off java.exe if it is running
     startServer(args = c("-port 4451"))  # default # 4456
@@ -94,8 +232,8 @@ okcupid_visit_looper_dev <- function() {
     
     
     # MAGIC NUMBER 
-    agerange <-      50:18      #  30:31  # 50:49
-    agerange_str <- "50:18"     # "30:31" # 50:49    
+    agerange <-      36:18      #  30:31  # 50:49
+    agerange_str <- "36:18"     # "30:31" # 50:49    
     
     for(agecurr in agerange) { # testing only 30 and 31 # 50:18   
       
@@ -138,8 +276,8 @@ okcupid_visit_looper_dev <- function() {
       
       print(paste0("now at bottom of the page of : ",agecurr, " of age ", agerange_str))
       
-      # now at the bottom of the page, 
-      # get the distinct user names found in the HTML 
+      # now at the bottom of the page,  
+      # get the distinct user names found in the HTML  
       
       alinkslength <- remDr$executeScript("return document.getElementsByTagName('a').length;")[[1]]
       Sys.sleep(0.01)
@@ -211,11 +349,34 @@ okcupid_visit_looper_dev <- function() {
         print(paste0("  action ", action_ref_counter, " of ",apagearefsupr_reduced_count ))
         
         navigate_target <- alink
-        remDr$navigate(navigate_target)
-        Sys.sleep(2 + 1 * runif(1, min = 0, max = 1)) # 2 to 4 seconds wait
+        
+        # LESS SAFE (OLD)
+        # remDr$navigate(navigate_target)
+        
+        # MORE SAFE ( AFTER A 'HANG OF MORE 30 SECONDS' WILL GO TO 'TIME.GOV')
+        safe_navigate_to_new_url_success <- safe_navigate_to_new_url(new_url = navigate_target, remote_driver = remDr)
+        print(paste0("safe navigation to new url success: ",safe_navigate_to_new_url_success[["success"]]))
+        # in case some internals that I do not know of
+        rmDir <- safe_navigate_to_new_url_success[["remote_driver"]]
+        # identical( remDr, safe_navigate_to_new_url_success[["remote_driver"]] ) # [1] TRUE
+        
+        Sys.sleep(2.1 + 1 * runif(1, min = 0, max = 1)) # 2 to 4 seconds wait
 
         remDr$executeScript("return 0")
+        
+        if(isTRUE(safe_navigate_to_new_url_success[["success"]])) {
+          
+          dbGetQuery(con, paste0("insert into 
+          aes_have_visited_list(
+            id, match_source, my_matchname, her_matchname)
+              values(", as.numeric(Sys.time()), ", 'okcupid_NO_metro'", ", 'time861wiz'",", '",matchnames[action_ref_counter],"');")
+          )
+          # as.Date(as.POSIXct(1433110111.9225857, origin="1970-01-01"))
+          # [1] "2015-05-31"
+          
+        }
          
+
         # THIS SHOULD WORK!
         # BEGIN SEND MESSAGE AREA
         
@@ -310,7 +471,10 @@ okcupid_visit_looper_dev <- function() {
     print("begin closeServer remDr")
     result = tryCatch({ remDr$closeServer() }, warning = function(w) {}, error = function(e) {}, finally = {})
     print("end closeServer remDr")
-    
+
+    dbDisconnect(con)
+    Sys.setenv(TZ=oldtz)
+
   }
   maininner()
 }
