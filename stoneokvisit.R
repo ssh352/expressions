@@ -70,9 +70,9 @@
 
 # SCANS THIS DIRECTORY FOR .R files
 
-# NOTE 'FULL SYSTEM TEST' WITH THE 'SEND MESSAGE' NOT DONE YET' 
 # NOTE 'FULL SYSTEM TEST' WITH THE 'SEND MESSAGE' NOT DONE YET'
-# NOTE 'FULL SYSTEM TEST' WITH THE 'SEND MESSAGE' NOT DONE YET'   
+# NOTE 'FULL SYSTEM TEST' WITH THE 'SEND MESSAGE' NOT DONE YET'
+# NOTE 'FULL SYSTEM TEST' WITH THE 'SEND MESSAGE' NOT DONE YET'    
 
 
 
@@ -98,13 +98,14 @@ safe_navigate_to_new_url <- function(new_url = NULL, remote_driver = NULL, after
   
   #  1000:  good redirect success test
   # 30000:  should never do 'backout_url' ( 30 seconds )
-  if(is.null(after_how_long)) { after_how_long <- 30000 } # 30 seconds ** CHANGE BACK TO 30 SECONDS
+  if(is.null(after_how_long)) { after_how_long <- 30000 } # 30 seconds 
   
   backout_url_set <- FALSE
-  if(is.null(backout_url))         { backout_url_value <- "http://www.time.gov"; backout_url_set <- TRUE } # default
-  if(!is.null(backout_url) && backout_url == "goback")      { backout_url_value <- "goback"     ; backout_url_set <- TRUE }
-  if(!is.null(backout_url) && backout_url == "current_url") { backout_url_value <- "current_url"; backout_url_set <- TRUE }
-  if(!is.null(backout_url) && !isTrue( backout_url_set))    { backout_url_value <- backout_url; backout_url_set <- TRUE }
+  if(is.null(backout_url))                                        { backout_url_value <- "http://www.time.gov"  ; backout_url_set <- TRUE } # default
+  if(!is.null(backout_url) && backout_url == "gobackgoforward")   { backout_url_value <- "gobackgoforward"      ; backout_url_set <- TRUE }
+  if(!is.null(backout_url) && backout_url == "refreshgoforward")  { backout_url_value <- "refreshgoforward"     ; backout_url_set <- TRUE }
+  if(!is.null(backout_url) && backout_url == "current_url")       { backout_url_value <- "current_url" ; backout_url_set <- TRUE }
+  if(!is.null(backout_url) && !isTRUE(backout_url_set))           { backout_url_value <- backout_url   ; backout_url_set <- TRUE }
   
   if(!isTRUE(backout_url_set))  stop(paste0("safe_navigate_to_new_url call is missng a 'good backout_url'")) 
   
@@ -114,9 +115,10 @@ safe_navigate_to_new_url <- function(new_url = NULL, remote_driver = NULL, after
     # SHOULD be TRUE here
     if(isTRUE(backout_url_set)) {
       
-      if(backout_url_value == "goback")         { remote_driver$goBack();              return() }
-      if(backout_url_value == "current_url")    { remote_driver$navigate(current_url); return() }
-      remote_driver$navigate(backout_url_value) 
+      if(backout_url_value == "gobackgoforward")    { print("GOBACKGOFORWARD")       ; remote_driver$goBack();              remote_driver$goForward();            return() }
+      if(backout_url_value == "refreshgoforward")   { print("REFRESHKGOFORWARD")     ; remote_driver$refresh();             remote_driver$goForward();            return() }
+      if(backout_url_value == "current_url")        { print("NAVIGATE(CURRENT_URL")  ; remote_driver$navigate(current_url);                                       return() }
+      print("NAVIGATE(BACKOUT_URL_VALUE")  ;remote_driver$navigate(backout_url_value) 
       return() 
       
     } else {
@@ -232,8 +234,8 @@ okcupid_visit_looper_dev <- function() {
     
     
     # MAGIC NUMBER 
-    agerange <-      36:18      #  30:31  # 50:49
-    agerange_str <- "36:18"     # "30:31" # 50:49    
+    agerange <-      21:18      #  30:31  # 50:49
+    agerange_str <- "21:18"     # "30:31" # 50:49    
     
     for(agecurr in agerange) { # testing only 30 and 31 # 50:18   
       
@@ -354,7 +356,7 @@ okcupid_visit_looper_dev <- function() {
         # remDr$navigate(navigate_target)
         
         # MORE SAFE ( AFTER A 'HANG OF MORE 30 SECONDS' WILL GO TO 'TIME.GOV')
-        safe_navigate_to_new_url_success <- safe_navigate_to_new_url(new_url = navigate_target, remote_driver = remDr)
+        safe_navigate_to_new_url_success <- safe_navigate_to_new_url(new_url = navigate_target, remote_driver = remDr, backout_url = "gobackgoforward")
         print(paste0("safe navigation to new url success: ",safe_navigate_to_new_url_success[["success"]]))
         # in case some internals that I do not know of
         rmDir <- safe_navigate_to_new_url_success[["remote_driver"]]
@@ -464,6 +466,9 @@ okcupid_visit_looper_dev <- function() {
     # manually logout of ok cupid here 
     # manually X out ( shutdown ) the browser
     
+    remDr$navigate("http://wwww.okcupid.com/logout")
+    Sys.sleep(3 + 1 * runif(1, min = 0, max = 1)) # 10 to 15 seconds wait 
+
     print("begin closing remDr")
     remDr$close() 
     print("end closing remDr")
