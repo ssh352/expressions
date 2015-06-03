@@ -11,7 +11,8 @@
 #   id            double precision  NOT NULL,
 #   match_source  text,
 #   my_matchname  text,
-#   her_matchname text
+#   her_matchname text,
+#   her_age       integer,
 # )
 # WITH (
 #   OIDS=FALSE
@@ -51,19 +52,46 @@
 # ALTER TABLE aes_have_visited_list
 # ADD CONSTRAINT aes_have_visited_list_pk PRIMARY KEY  USING INDEX aes_have_visited_list_pk_idx;  
 # 
-# -- NOTE: now the index will dissapear from the GUI ( but the pk properties showed its there ( e.g. btree ) )
+# -- NOTE: now the index will disappear from the GUI ( but the pk properties showed its there ( e.g. btree ) )
 #                                                      
 # REINDEX TABLE aes_have_visited_list; -- simply rebuild that index
 #                                                      
 
+# CREATE TABLE aes_have_sent_message_list  
+# (
+#   id double precision NOT NULL,
+#   match_source text,
+#   my_matchname text,
+#   her_matchname text,
+#   her_age integer,
+#   sent_message text
+# )
+# WITH (
+#   OIDS=FALSE
+# );
+# ALTER TABLE aes_have_sent_message_list
+# OWNER TO postgres;
+# 
+# CREATE UNIQUE INDEX aes_have_sent_message_list_pk_idx  
+# ON aes_have_sent_message_list
+# USING btree (id);  
+# 
+# ALTER TABLE aes_have_sent_message_list
+# ADD CONSTRAINT aes_have_sent_message_list_pk PRIMARY KEY USING INDEX aes_have_sent_message_list_pk_idx; 
+# 
+# -- NOTE: now the index will disappear from the GUI ( but the pk properties showed its there ( e.g. btree ) )
+#                
+# REINDEX TABLE aes_have_sent_message_list; -- simply rebuild that index
+# 
+
 # install.packages("checkpoint")   
 
 # checkpoint(snapshotDate, project = getwd(), R.version, 
-#           scanForPackages = TRUE, checkpointLocation = "~/", verbose = TRUE,
+#           scanForPackages = TRUE, checkpointLocation = "~/", verbose = TRUE, 
 #           use.knitr = system.file(package = "knitr") != "")  
 
-# INSTALLING 
-# checkpoint("2015-05-09", R.version = "3.2.0")
+# INSTALLING  
+# checkpoint("2015-05-09", R.version = "3.2.0") 
 # COMMON EVERYDAY DEBUGGING
 # I do not want it to scan every time
 ### checkpoint("2015-05-09", R.version = "3.2.0", scanForPackages = FALSE)
@@ -72,12 +100,12 @@
 
 # NOTE 'FULL SYSTEM TEST' WITH THE 'SEND MESSAGE' NOT DONE YET'
 # NOTE 'FULL SYSTEM TEST' WITH THE 'SEND MESSAGE' NOT DONE YET'
-# NOTE 'FULL SYSTEM TEST' WITH THE 'SEND MESSAGE' NOT DONE YET'    
+# NOTE 'FULL SYSTEM TEST' WITH THE 'SEND MESSAGE' NOT DONE YET'       
 
 
 
 
-# shell("rstudio", wait=FALSE)
+# shell("rstudio", wait=FALSE) 
 
 options(width = 255)     
 options(digits = 22) 
@@ -90,20 +118,21 @@ safe_navigate_to_new_url <- function(new_url = NULL, remote_driver = NULL, after
   require(tcltk)
   require(RSelenium)
   
-  # NOTE: 'note very case is 'code covered' BUT IF A PROBLEM SHOULD BE FIXABLE
+  # NOTE: 'note very case is 'code covered' BUT IF A PROBLEM SHOULD BE FIXABLE 
   
   # if browser/site/internet hangs just ...
-  # backout_url: "current_url", "goback" "http://www.time.gov"(default) "CUSTOMHTTP"
+  # backout_url: "current_url", "goback" "http://www.time.gov"(default) "CUSTOMHTTP" 
   # NOTE: to retry JUST ONCE more: call by 'new_url == backout_url'
   
   #  1000:  good redirect success test
-  # 30000:  should never do 'backout_url' ( 30 seconds )
-  if(is.null(after_how_long)) { after_how_long <- 30000 } # 30 seconds 
+  # 30000:  should never do 'backout_url' ( 25 seconds )
+  if(is.null(after_how_long)) { after_how_long <- 25000 } # 30 seconds 
   
   backout_url_set <- FALSE
   if(is.null(backout_url))                                        { backout_url_value <- "http://www.time.gov"  ; backout_url_set <- TRUE } # default
   if(!is.null(backout_url) && backout_url == "gobackgoforward")   { backout_url_value <- "gobackgoforward"      ; backout_url_set <- TRUE }
   if(!is.null(backout_url) && backout_url == "refreshgoforward")  { backout_url_value <- "refreshgoforward"     ; backout_url_set <- TRUE }
+  if(!is.null(backout_url) && backout_url == "refresh")           { backout_url_value <- "refresh"              ; backout_url_set <- TRUE }
   if(!is.null(backout_url) && backout_url == "current_url")       { backout_url_value <- "current_url" ; backout_url_set <- TRUE }
   if(!is.null(backout_url) && !isTRUE(backout_url_set))           { backout_url_value <- backout_url   ; backout_url_set <- TRUE }
   
@@ -116,7 +145,8 @@ safe_navigate_to_new_url <- function(new_url = NULL, remote_driver = NULL, after
     if(isTRUE(backout_url_set)) {
       
       if(backout_url_value == "gobackgoforward")    { print("GOBACKGOFORWARD")       ; remote_driver$goBack();              remote_driver$goForward();            return() }
-      if(backout_url_value == "refreshgoforward")   { print("REFRESHKGOFORWARD")     ; remote_driver$refresh();             remote_driver$goForward();            return() }
+      if(backout_url_value == "refreshgoforward")   { print("REFRESHGOFORWARD")      ; remote_driver$refresh();                                                   return() }
+      if(backout_url_value == "refresh")            { print("REFRESH")               ; remote_driver$refresh();             remote_driver$goForward();            return() }
       if(backout_url_value == "current_url")        { print("NAVIGATE(CURRENT_URL")  ; remote_driver$navigate(current_url);                                       return() }
       print("NAVIGATE(BACKOUT_URL_VALUE")  ;remote_driver$navigate(backout_url_value) 
       return() 
@@ -154,7 +184,7 @@ safe_navigate_to_new_url <- function(new_url = NULL, remote_driver = NULL, after
 }
 
 
-okcupid_visit_looper_dev <- function() {
+okcupid_visit_looper_dev <- function(action = "just_visit") { # OR action = "message_greet_matchname" "message_random_catchphrase"
   
   maininner <- function() {
     
@@ -173,15 +203,20 @@ okcupid_visit_looper_dev <- function() {
     con <- dbConnect(drv, host = "127.0.0.1", dbname = "aes_db", user = "postgres", password = "postgres")
     
     # REM: taskmgr OR 'some other way' KILL off java.exe if it is running
-    startServer(args = c("-port 4451"))  # default # 4456
+    startServer(args = c("-port 4451","-timeout 3600","-browserTimeout 3600"))  # default # 4444 # java -jar selenium-server-standalone.jar -h
     Sys.sleep(5.0) # 5 second wait
     
     cprof <- getChromeProfile("J:\\YDrive\\All_NewSeduction\\All_ElectronicSpeech\\RSeleniumAndBrowsers\\AES1_assistance\\RDebug\\Administrator\\AppData\\Local\\Google\\Chrome\\User Data", "time861wiz_time861wiz") 
-    remDr <- remoteDriver(browserName = "chrome", extraCapabilities = cprof, port = 4451) # default 4456
+    remDr <- remoteDriver(browserName = "chrome", extraCapabilities = cprof, port = 4451) # default 4444
     remDr$open() # oracle.com  
     Sys.sleep(3 + 1 * runif(1, min = 0, max = 1)) # 10 to 15 seconds wait
     
-    print("opened browser home page")
+    print("(tried) opened browser home page")
+    
+    result = tryCatch({ remDr$navigate("https://www.okcupid.com/logout") }, warning = function(w) {}, error = function(e) {}, finally = {})
+    Sys.sleep(3 + 1 * runif(1, min = 0, max = 1)) 
+    
+    print("(tried) opened browser home page")
     
     # Sys.sleep(1 + 5* runif(1, min = 0, max = 1)) # 6 to 11 seconds wait
     
@@ -228,16 +263,16 @@ okcupid_visit_looper_dev <- function() {
       , "A lawyer and a priest walked into a bar"
     ) -> message_vector
     
-    
-    message_textarea_begin <- "return document.getElementsByTagName(\"textarea\")[6].value = \""
+    c("Hi") -> message_greet_matchname_vector
+                                                       # NOTE: THIS MAY BE VOLITILE ( AT FIRST WAS [6]?)
+    message_textarea_begin <- "return document.getElementsByTagName(\"textarea\")[5].value = \""
     message_textarea_end   <- "\";"
     
-    
     # MAGIC NUMBER 
-    agerange <-      21:18      #  30:31  # 50:49
-    agerange_str <- "21:18"     # "30:31" # 50:49    
+    agerange <-      30:18      #  30:31  # 50:49
+    agerange_str <- "30:18"     # "30:31" # 50:49    
     
-    for(agecurr in agerange) { # testing only 30 and 31 # 50:18   
+    for(agecurr in agerange) { # testing only 31 and 30 # 31:30   
       
       print(paste0("beginning age ",agecurr))
       
@@ -311,18 +346,20 @@ okcupid_visit_looper_dev <- function() {
       apagearefsupr <- apagearefsupr[!grepl("CALLGIRL",apagearefsupr,ignore.case=TRUE)]
       apagearefsupr <- apagearefsupr[!grepl("ROBOT",apagearefsupr,ignore.case=TRUE)]
       
+      # (TEMPORARILY) REMOVE send_message TEST CANDIDATE
+      apagearefsupr <- apagearefsupr[!grepl("redbeanredbean",apagearefsupr)]
+      
       # loop and visit each name - from bottom(rev) to top ( testing ) 
       # testing - visit from the BOTTOM going UP 
       
       print(paste0("begin visiting each profile of the page of : ",agecurr, " of age ", agerange_str))
       
-      
       # rev(apagearefsupr)[1:2]               BOTTOM OF PAGE:  testing: reverse and first 2 names ( testing )
-      # letters[1:(length(letters) %/% 2)]    TOP    OF PAGE:  50% of the unuque links GOING DOWN
+      # letters[1:(length(letters) %/% 2)]    TOP    OF PAGE:  50% of the unique links GOING DOWN
       
       apagearefsupr_total       <-  apagearefsupr
       apagearefsupr_total_count <- length(apagearefsupr)
-      print(paste0("Total possible profiles: ",apagearefsupr_total_count))
+      print(paste0("Total possible profiles: ",apagearefsupr_total_count))    
             
       # choose e.g. visit only the top half
       apagearefsupr_reduced <- apagearefsupr[1:(length(apagearefsupr) %/% 2)]
@@ -339,10 +376,13 @@ okcupid_visit_looper_dev <- function() {
       # hadly S-logic
       matchnames <- str_sub(apagearefsupr_reduced, start = cbind(begin_matchnames_str_locations, end_matchnames_str_locations))
       
-      action_ref_counter <- 0
-      for(alink in apagearefsupr_reduced) { 
+      action_ref_counter <- 0                  # NOT TEST:     apagearefsupr_reduced
+      for(alink in  apagearefsupr_reduced)   { #     TEST: rev(apagearefsupr_reduced)[1] # test: send a message to the bottom most link
+
         # so I know where I am
         action_ref_counter <- action_ref_counter + 1
+        # TEST ( *** REMOVE AFTER TEST *** )
+        # action_ref_counter <- length(apagearefsupr_reduced)
         
         print(paste0("begin visiting ", alink, " of the page of : ",agecurr, " of age ", agerange_str))
         
@@ -355,8 +395,8 @@ okcupid_visit_looper_dev <- function() {
         # LESS SAFE (OLD)
         # remDr$navigate(navigate_target)
         
-        # MORE SAFE ( AFTER A 'HANG OF MORE 30 SECONDS' WILL GO TO 'TIME.GOV')
-        safe_navigate_to_new_url_success <- safe_navigate_to_new_url(new_url = navigate_target, remote_driver = remDr, backout_url = "gobackgoforward")
+        # MORE SAFE ( AFTER A 'HANG OF MORE 25 SECONDS' WILL GO TO 'TIME.GOV')
+        safe_navigate_to_new_url_success <- safe_navigate_to_new_url(new_url = navigate_target, remote_driver = remDr, backout_url = "refresh")
         print(paste0("safe navigation to new url success: ",safe_navigate_to_new_url_success[["success"]]))
         # in case some internals that I do not know of
         rmDir <- safe_navigate_to_new_url_success[["remote_driver"]]
@@ -368,51 +408,115 @@ okcupid_visit_looper_dev <- function() {
         
         if(isTRUE(safe_navigate_to_new_url_success[["success"]])) {
           
+          # NOTE: DOES NOT YET ESCAPE OUT TICK MARKS('), SO DO NOT SEND OUT A TICK MARK(')
           dbGetQuery(con, paste0("insert into 
           aes_have_visited_list(
-            id, match_source, my_matchname, her_matchname)
-              values(", as.numeric(Sys.time()), ", 'okcupid_NO_metro'", ", 'time861wiz'",", '",matchnames[action_ref_counter],"');")
+            id, match_source, my_matchname, her_matchname, her_age)
+              values(", as.numeric(Sys.time()), ", 'okcupid_NO_metro'", ", 'time861wiz'",", '", matchnames[action_ref_counter], "', ", agecurr, ");")
           )
           # as.Date(as.POSIXct(1433110111.9225857, origin="1970-01-01"))
           # [1] "2015-05-31"
           
         }
          
-
-        # THIS SHOULD WORK!
         # BEGIN SEND MESSAGE AREA
         
-#         print(paste0("begin send message ", alink, " of the page of : ",agecurr, " of age ", agerange_str))
-#         
-#         current_message  <- message_vector[trunc( 1 + length(message_vector)*runif(1, min = 0, max = 1) - 0.001 )] 
-#         writeLines(paste0(message_textarea_begin,current_message,message_textarea_end))
-#         
-#         
-#         # send message button
-#         
-#         webElemSMB <- remDr$findElement("css selector", "#footer_send_btn")
-#         webElemSMB$highlightElement() # THAT WORKED
-#         remDr$mouseMoveToLocation(webElement = webElemSMB) 
-#         webElemSMB$sendKeysToElement(list(key = "enter")) 
-#         Sys.sleep(2 + 1 * runif(1, min = 0, max = 1))
-#         
-#         
-#         # type characters in textarea
-#         
-#         remDr$executeScript(paste0(message_textarea_begin,current_message,message_textarea_end))[[1]]
-#         Sys.sleep(4 + 2* runif(1, min = 0, max = 1))
-#         
-#         
-#         # true message button
-#         
-#         webElemTMB <- remDr$findElement("css selector", "#global_messaging_container > div > form > button")
-#         remDr$mouseMoveToLocation(webElement = webElemTMB) 
-#         webElemTMB$highlightElement()
-#         webElemTMB$sendKeysToElement(list(key = "enter"))
-#         ## BOX STAYS UP - AND MESSAGE SHOWS SENT
-#         Sys.sleep(2 + 2* runif(1, min = 0, max = 1))
-#         
-#         print(paste0("end send message ", alink, " of the page of : ",agecurr, " of age ", agerange_str))
+        # A WORK INPROGRESS ( NEED TO BE ABBLE TO DETECT INNER TEXT ON A PAGE ( THORUGH JAVASCRIPT)" )
+        
+        if( action == "message_greet_matchname" || action == "message_random_catchphrase" ) {
+          
+          print(paste0("begin send message ", alink, " of the page of : ",agecurr, " of age ", agerange_str))
+          
+          if( action == "message_greet_matchname" ) {
+            current_message  <- paste0(message_greet_matchname_vector[trunc( 1 + length(message_greet_matchname_vector)*runif(1, min = 0, max = 1) - 0.001 )], " ",matchnames[action_ref_counter]) 
+          } 
+        
+          if( action == "message_random_catchphrase" ) { # NOTE: UN-'TESTED IN PROD - BUT SHOULD WORK'
+            current_message  <- message_vector[trunc( 1 + length(message_vector)*runif(1, min = 0, max = 1) - 0.001 )] 
+          } 
+          
+          # send message button
+          
+          webElemSMB <- remDr$findElement("css selector", "#footer_send_btn")
+          webElemSMB$highlightElement() # THAT WORKED
+          remDr$mouseMoveToLocation(webElement = webElemSMB) 
+          webElemSMB$sendKeysToElement(list(key = "enter")) 
+          
+          Sys.sleep(2 + 1 * runif(1, min = 0, max = 1))
+          
+          # type characters in textarea
+          
+          # SHOULD *DETECT HERE*
+          # IF THE MESSAGE BOX IS NOT IN THE FOREGROUND "BECAUSE OF A MESSAGE"
+          # SHOULD *DETECT HERE* AND NOT BOTHER TO EXECUTE THE REMAINDER OF THE CODE
+          remDr$executeScript(paste0(message_textarea_begin,current_message,message_textarea_end))[[1]]
+          writeLines(paste0(message_textarea_begin,current_message,message_textarea_end))
+          # return document.getElementsByTagName("textarea")[6].value = "Hi redbeanredbean";
+          
+          Sys.sleep(1 + 2* runif(1, min = 0, max = 1))
+          
+          # true message button
+          
+          # webElemTMB <- remDr$findElement("css selector", "#global_messaging_container > div > form > button")
+          webElemTMB <- NULL
+          # IF THE MESSAGE BOX IS NOT OPEN ( NEVER CURRENTLY ABLE TO REPEAT THE TEST )
+          HER_MESSAGE_BOX_FULL_ERROR <- FALSE
+          result = tryCatch({ webElemTMB <- remDr$findElement("css selector", "#global_messaging_container > div > form > button") }, warning = function(w) {}, error = function(e) { HER_MESSAGE_BOX_FULL_ERROR <- TRUE  }, finally = {})
+          
+          # Error: Summary: NoSuchElement
+          #        Detail: An element could not be located on the page using the given search parameters.
+          #        class: org.openqa.selenium.NoSuchElementException 
+          
+          if(isTRUE(safe_navigate_to_new_url_success[["success"]]) && !HER_MESSAGE_BOX_FULL_ERROR) {
+          
+            # continue: true message button
+            
+            remDr$mouseMoveToLocation(webElement = webElemTMB) 
+            webElemTMB$highlightElement()
+            webElemTMB$sendKeysToElement(list(key = "enter"))
+            
+            # I enter a message, then JUST AFTER I  press the "enter" key
+            #
+            # They can’t get messages until they delete some.
+            # <div id="windowshade" class="show"><div id="send_to_full_promo" class="modal aligncenter fixed default_type ui-draggable show" style="display: block; margin-left: -270px;">    <div class="title_container"> <h2 class="title">They’ve reached their message limit</h2> </div>   <div class="desc"> <p> They can’t get messages until they delete some. <br> If you’re not above a little bribery, we’ll let it slide. </p> </div>  <div class="content empty">  </div>  <div class="drag_area"> <div class="top"></div> <div class="left"></div> <div class="right"></div> <div class="bottom"></div> </div> <a class="close" href="javascript:void(0)" onclick="Modal.close('send_to_full_promo')"> <span class="icon i-close"></span> </a>  <div class="buttons"> <ul>  <li> <button onclick="SendToFullPromo.go()" class="flatbutton blue">
+            #     			Message them for $1
+            #				</button> </li>  </ul> </div>  </div></div>
+            
+            # AFTER I PRESS THE 'X' ( to close out of the dialog )
+            # <div id="windowshade" class="">
+            
+            # WHEN EXACTLY ( SEEMS TO BE TIME! DEPEND? WITHIN 10 MINUTES? )
+            # You can’t send the same message twice. Be more original!
+            # <span class="okform-feedback message" style="height: 30px;">You can’t send the same message twice. Be more original!</span>
+            
+            # "Hi X again"
+            # If successful
+            # <span class="okform-feedback message empty" style="height: 0px;"></span>
+            
+            ## BOX STAYS UP - AND MESSAGE SHOWS SENT
+            Sys.sleep(2 + 2* runif(1, min = 0, max = 1))
+            
+            # TO_DO [ ] ... DETECT AND HANDLE
+            # You can’t send the same message twice. Be more original!
+            # <span class="okform-feedback message" style="height: 30px;">You can’t send the same message twice. Be more original!</span>
+              
+            
+            print(paste0("end send message ", alink, " of the page of : ",agecurr, " of age ", agerange_str))
+          
+            # dangerously assume - if I reached the page, sending messages are successfull
+          
+            # NOTE: DOES NOT YET ESCAPE OUT TICK MARKS('), SO DO NOT SEND OUT A TICK MARK(')
+            dbGetQuery(con, paste0("insert into 
+            aes_have_sent_message_list(
+            id, match_source, my_matchname, her_matchname, her_age, sent_message)
+              values(", as.numeric(Sys.time()), ", 'okcupid_NO_metro'", ", 'time861wiz'",", '", matchnames[action_ref_counter], "', ", agecurr,", '", current_message, "');")
+            )
+            # as.Date(as.POSIXct(1433110111.9225857, origin="1970-01-01"))
+            # [1] "2015-05-31"
+            
+          }
+          
+        }
         
         # END SEND MESSAGE AREA
 
@@ -427,7 +531,6 @@ okcupid_visit_looper_dev <- function() {
         # <button name="like" id="rate_user_profile" data-tuid="5265647272868517021" class="binary_rating_button flatbutton silver like liked"> <i class="icon i-star"></i> <span class="rating_like">Like</span> <span class="rating_liked">Liked</span> </button>
         
         # NOTE: keyboard RETURN does not work: only workable by javascript click ( IF POSSIBLE )
-        
         
         # ADD TO BOOKMARKS ( 2 PART DEAL : MORE COMPLICATED )
         
@@ -467,6 +570,9 @@ okcupid_visit_looper_dev <- function() {
     # manually X out ( shutdown ) the browser
     
     remDr$navigate("http://wwww.okcupid.com/logout")
+    Sys.sleep(3 + 1 * runif(1, min = 0, max = 1)) # 10 to 15 seconds wait 
+    
+    remDr$navigate("http://wwww.oracle.com")
     Sys.sleep(3 + 1 * runif(1, min = 0, max = 1)) # 10 to 15 seconds wait 
 
     print("begin closing remDr")
@@ -513,6 +619,7 @@ okcupid_visit_looper_dev <- function() {
 #   e.g. remDr$open() # oracle.com  
 
 # okcupid_visit_looper_dev()
+# okcupid_visit_looper_dev(action = "message_greet_matchname") 
 
 # END INSTRUCTIONS
 # END INSTRUCTIONS
