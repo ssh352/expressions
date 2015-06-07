@@ -57,7 +57,7 @@
 # REINDEX TABLE aes_have_visited_list; -- simply rebuild that index
 #                                                      
 
-# CREATE TABLE aes_have_sent_message_list  
+# CREATE TABLE aes_have_sent_message_list   
 # (
 #   id double precision NOT NULL,
 #   match_source text,
@@ -98,8 +98,8 @@
 
 # SCANS THIS DIRECTORY FOR .R files
 
-# NOTE 'FULL SYSTEM TEST' WITH THE 'SEND MESSAGE' NOT DONE YET'
-# NOTE 'FULL SYSTEM TEST' WITH THE 'SEND MESSAGE' NOT DONE YET'
+# NOTE 'FULL SYSTEM TEST' WITH THE 'SEND MESSAGE' NOT DONE YET' 
+# NOTE 'FULL SYSTEM TEST' WITH THE 'SEND MESSAGE' NOT DONE YET' 
 # NOTE 'FULL SYSTEM TEST' WITH THE 'SEND MESSAGE' NOT DONE YET'       
 
 
@@ -269,11 +269,12 @@ okcupid_visit_looper_dev <- function(action = "just_visit") { # OR action = "mes
     message_textarea_end   <- "\";"
     
     # MAGIC NUMBER 
-    agerange <-      30:18      #  30:31  # 50:49
-    agerange_str <- "30:18"     # "30:31" # 50:49    
+    agerange <-      50:18      #  30:31  # 50:49   c(25:18,50:31) "25:18,50:31"
+    agerange_str <- "50:18"     # "30:31" # 50:49    
     
     for(agecurr in agerange) { # testing only 31 and 30 # 31:30   
       
+      print(Sys.time())
       print(paste0("beginning age ",agecurr))
       
       navigate_target <- paste0("http://www.okcupid.com/match?filter1=0,34&filter2=2,",agecurr,",",agecurr,"&filter3=3,50&filter4=5,604800&filter5=1,1&locid=0&timekey=1&matchOrderBy=MATCH&custom_search=0&fromWhoOnline=0&mygender=m&update_prefs=1&sort_type=0&sa=1&using_saved_search=&count=500")     
@@ -361,8 +362,12 @@ okcupid_visit_looper_dev <- function(action = "just_visit") { # OR action = "mes
       apagearefsupr_total_count <- length(apagearefsupr)
       print(paste0("Total possible profiles: ",apagearefsupr_total_count))    
             
+      # choose e.g. visit everyone
+      # apagearefsupr_reduced <- apagearefsupr[1:(length(apagearefsupr) %/% 1)
+      
       # choose e.g. visit only the top half
       apagearefsupr_reduced <- apagearefsupr[1:(length(apagearefsupr) %/% 2)]
+      
       apagearefsupr_reduced_count <- length(apagearefsupr_reduced)
       print(paste0("Reduced actually actioning  profiles: ",apagearefsupr_reduced_count))
       
@@ -395,7 +400,8 @@ okcupid_visit_looper_dev <- function(action = "just_visit") { # OR action = "mes
         # LESS SAFE (OLD)
         # remDr$navigate(navigate_target)
         
-        # MORE SAFE ( AFTER A 'HANG OF MORE 25 SECONDS' WILL GO TO 'TIME.GOV')
+        # THIS 'tcl' after WORKS in TEST but DOES NOT seem to work in PRODUCTION
+        # MORE SAFE ( AFTER A 'HANG OF MORE 25 SECONDS' WILL GO TO 'backout_url')
         safe_navigate_to_new_url_success <- safe_navigate_to_new_url(new_url = navigate_target, remote_driver = remDr, backout_url = "refresh")
         print(paste0("safe navigation to new url success: ",safe_navigate_to_new_url_success[["success"]]))
         # in case some internals that I do not know of
@@ -446,75 +452,96 @@ okcupid_visit_looper_dev <- function(action = "just_visit") { # OR action = "mes
           
           # type characters in textarea
           
-          # SHOULD *DETECT HERE*
+          # *DETECT HERE*
           # IF THE MESSAGE BOX IS NOT IN THE FOREGROUND "BECAUSE OF A MESSAGE"
           # SHOULD *DETECT HERE* AND NOT BOTHER TO EXECUTE THE REMAINDER OF THE CODE
-          remDr$executeScript(paste0(message_textarea_begin,current_message,message_textarea_end))[[1]]
-          writeLines(paste0(message_textarea_begin,current_message,message_textarea_end))
-          # return document.getElementsByTagName("textarea")[6].value = "Hi redbeanredbean";
           
-          Sys.sleep(1 + 2* runif(1, min = 0, max = 1))
-          
-          # true message button
-          
-          # webElemTMB <- remDr$findElement("css selector", "#global_messaging_container > div > form > button")
-          webElemTMB <- NULL
-          # IF THE MESSAGE BOX IS NOT OPEN ( NEVER CURRENTLY ABLE TO REPEAT THE TEST )
-          HER_MESSAGE_BOX_FULL_ERROR <- FALSE
-          result = tryCatch({ webElemTMB <- remDr$findElement("css selector", "#global_messaging_container > div > form > button") }, warning = function(w) {}, error = function(e) { HER_MESSAGE_BOX_FULL_ERROR <- TRUE  }, finally = {})
-          
-          # Error: Summary: NoSuchElement
-          #        Detail: An element could not be located on the page using the given search parameters.
-          #        class: org.openqa.selenium.NoSuchElementException 
-          
-          if(isTRUE(safe_navigate_to_new_url_success[["success"]]) && !HER_MESSAGE_BOX_FULL_ERROR) {
-          
-            # continue: true message button
+          # MOST RELIABLE WAY TO DO IT.  NOTE: querySelectorAll also WORKS
+          message_textarea <-                               "document.querySelectorAll('textarea')[5].value"
+          message_textarea_detect_exists <- "try{ retvalue = document.querySelectorAll('textarea')[5].value; return 0 } catch(err) { return -1 };"
+          message_textarea_detect_exists_result <- remDr$executeScript(message_textarea_detect_exists)[[1]]
+
+          if(message_textarea_detect_exists_result == -1) {
             
-            remDr$mouseMoveToLocation(webElement = webElemTMB) 
-            webElemTMB$highlightElement()
-            webElemTMB$sendKeysToElement(list(key = "enter"))
+            print("after pressing MESSAGE . . . could not be found on the page")
+            print(message_textarea)
             
-            # I enter a message, then JUST AFTER I  press the "enter" key
-            #
-            # They can’t get messages until they delete some.
-            # <div id="windowshade" class="show"><div id="send_to_full_promo" class="modal aligncenter fixed default_type ui-draggable show" style="display: block; margin-left: -270px;">    <div class="title_container"> <h2 class="title">They’ve reached their message limit</h2> </div>   <div class="desc"> <p> They can’t get messages until they delete some. <br> If you’re not above a little bribery, we’ll let it slide. </p> </div>  <div class="content empty">  </div>  <div class="drag_area"> <div class="top"></div> <div class="left"></div> <div class="right"></div> <div class="bottom"></div> </div> <a class="close" href="javascript:void(0)" onclick="Modal.close('send_to_full_promo')"> <span class="icon i-close"></span> </a>  <div class="buttons"> <ul>  <li> <button onclick="SendToFullPromo.go()" class="flatbutton blue">
-            #     			Message them for $1
-            #				</button> </li>  </ul> </div>  </div></div>
+          } else {
+
+            # print("after pressing MESSAGE . . . is on the page")
+
+            ##  COMMENTED OUT 'WRITING A MESSAGE IN THE TEXT AREA' ( DEBUGGING )
+            remDr$executeScript(paste0(message_textarea_begin,current_message,message_textarea_end))[[1]]
+            writeLines(paste0(message_textarea_begin,current_message,message_textarea_end))
             
-            # AFTER I PRESS THE 'X' ( to close out of the dialog )
-            # <div id="windowshade" class="">
+            # code changed somewhere 6 --> 5  
+            # return document.getElementsByTagName("textarea")[6].value = "Hi redbeanredbean";
             
-            # WHEN EXACTLY ( SEEMS TO BE TIME! DEPEND? WITHIN 10 MINUTES? )
-            # You can’t send the same message twice. Be more original!
-            # <span class="okform-feedback message" style="height: 30px;">You can’t send the same message twice. Be more original!</span>
+            Sys.sleep(1 + 2 * runif(1, min = 0, max = 1))
             
-            # "Hi X again"
-            # If successful
-            # <span class="okform-feedback message empty" style="height: 0px;"></span>
+            # true message button
             
-            ## BOX STAYS UP - AND MESSAGE SHOWS SENT
-            Sys.sleep(2 + 2* runif(1, min = 0, max = 1))
+            # webElemTMB <- remDr$findElement("css selector", "#global_messaging_container > div > form > button")
+            webElemTMB <- NULL
+            # IF THE MESSAGE BOX IS NOT OPEN ( NEVER CURRENTLY ABLE TO REPEAT THE TEST )
+            HER_MESSAGE_BOX_FULL_ERROR <- FALSE
+            result = tryCatch({ webElemTMB <- remDr$findElement("css selector", "#global_messaging_container > div > form > button") }, warning = function(w) {}, error = function(e) { HER_MESSAGE_BOX_FULL_ERROR <- TRUE  }, finally = {})
             
-            # TO_DO [ ] ... DETECT AND HANDLE
-            # You can’t send the same message twice. Be more original!
-            # <span class="okform-feedback message" style="height: 30px;">You can’t send the same message twice. Be more original!</span>
+            # Error: Summary: NoSuchElement
+            #        Detail: An element could not be located on the page using the given search parameters.
+            #        class: org.openqa.selenium.NoSuchElementException 
+            
+            if(isTRUE(safe_navigate_to_new_url_success[["success"]]) && !HER_MESSAGE_BOX_FULL_ERROR) {
+              
+              # continue: true message button
+              
+              remDr$mouseMoveToLocation(webElement = webElemTMB) 
+              webElemTMB$highlightElement()
+              webElemTMB$sendKeysToElement(list(key = "enter"))
+              
+              # I enter a message, then JUST AFTER I  press the "enter" key
+              #
+              # They can't get messages until they delete some.
+              # <div id="windowshade" class="show"><div id="send_to_full_promo" class="modal aligncenter fixed default_type ui-draggable show" style="display: block; margin-left: -270px;">    <div class="title_container"> <h2 class="title">They've reached their message limit</h2> </div>   <div class="desc"> <p> They can't get messages until they delete some. <br> If you're not above a little bribery, we'll let it slide. </p> </div>  <div class="content empty">  </div>  <div class="drag_area"> <div class="top"></div> <div class="left"></div> <div class="right"></div> <div class="bottom"></div> </div> <a class="close" href="javascript:void(0)" onclick="Modal.close('send_to_full_promo')"> <span class="icon i-close"></span> </a>  <div class="buttons"> <ul>  <li> <button onclick="SendToFullPromo.go()" class="flatbutton blue">
+              #       		Message them for $1
+              #				</button> </li>  </ul> </div>  </div></div>
+              
+              # AFTER I PRESS THE 'X' ( to close out of the dialog )
+              # <div id="windowshade" class="">
+              
+              # WHEN EXACTLY ( SEEMS TO BE TIME! DEPEND? WITHIN 10 MINUTES? )
+              # You can't send the same message twice. Be more original!
+              # <span class="okform-feedback message" style="height: 30px;">You can't send the same message twice. Be more original!</span>
+              
+              # "Hi X again"
+              # If successful
+              # <span class="okform-feedback message empty" style="height: 0px;"></span>
+              
+              ## BOX STAYS UP - AND MESSAGE SHOWS SENT
+              Sys.sleep(2 + 2* runif(1, min = 0, max = 1))
+              
+              # TO_DO [ ] ... DETECT AND HANDLE ( FUTURE - DETECT )
+              # You can't send the same message twice. Be more original!
+              # <span class="okform-feedback message" style="height: 30px;">You can't send the same message twice. Be more original!</span>
+              
+              print(paste0("end message sent to ", matchnames[action_ref_counter], " the message : ", current_message))
+              print(paste0("end send message ", alink, " of the page of : ",agecurr, " of age ", agerange_str))
+              
+              # dangerously assume - if I reached the page, sending messages are successfull
+              
+              # NOTE: DOES NOT YET ESCAPE OUT TICK MARKS('), SO DO NOT SEND OUT A TICK MARK(')
+              dbGetQuery(con, paste0("insert into 
+              aes_have_sent_message_list(
+              id, match_source, my_matchname, her_matchname, her_age, sent_message)
+                values(", as.numeric(Sys.time()), ", 'okcupid_NO_metro'", ", 'time861wiz'",", '", matchnames[action_ref_counter], "', ", agecurr,", '", current_message, "');")
+              )
+              # as.Date(as.POSIXct(1433110111.9225857, origin="1970-01-01"))
+              # [1] "2015-05-31"
               
             
-            print(paste0("end send message ", alink, " of the page of : ",agecurr, " of age ", agerange_str))
+            } 
           
-            # dangerously assume - if I reached the page, sending messages are successfull
-          
-            # NOTE: DOES NOT YET ESCAPE OUT TICK MARKS('), SO DO NOT SEND OUT A TICK MARK(')
-            dbGetQuery(con, paste0("insert into 
-            aes_have_sent_message_list(
-            id, match_source, my_matchname, her_matchname, her_age, sent_message)
-              values(", as.numeric(Sys.time()), ", 'okcupid_NO_metro'", ", 'time861wiz'",", '", matchnames[action_ref_counter], "', ", agecurr,", '", current_message, "');")
-            )
-            # as.Date(as.POSIXct(1433110111.9225857, origin="1970-01-01"))
-            # [1] "2015-05-31"
-            
-          }
+          } 
           
         }
         
@@ -569,16 +596,18 @@ okcupid_visit_looper_dev <- function(action = "just_visit") { # OR action = "mes
     # manually logout of ok cupid here 
     # manually X out ( shutdown ) the browser
     
-    remDr$navigate("http://wwww.okcupid.com/logout")
+    remDr$navigate("http://www.okcupid.com/logout")
     Sys.sleep(3 + 1 * runif(1, min = 0, max = 1)) # 10 to 15 seconds wait 
     
-    remDr$navigate("http://wwww.oracle.com")
+    remDr$navigate("http://www.oracle.com")
     Sys.sleep(3 + 1 * runif(1, min = 0, max = 1)) # 10 to 15 seconds wait 
 
     print("begin closing remDr")
     remDr$close() 
     print("end closing remDr")
 
+    bookmarkhere <- 1
+    
     print("begin closeServer remDr")
     result = tryCatch({ remDr$closeServer() }, warning = function(w) {}, error = function(e) {}, finally = {})
     print("end closeServer remDr")
@@ -597,6 +626,8 @@ okcupid_visit_looper_dev <- function(action = "just_visit") { # OR action = "mes
 # Help-> About Google Chrome ( checking for updates )
 
 # MAIN DEVELOPMENT NOTES ARE HERE: J:\YDrive\All_NewSeduction\All_ElectronicSpeech
+
+# START UP PostgreSQL !!!
 
 # rm(list=ls(),envir = .GlobalEnv)
 
