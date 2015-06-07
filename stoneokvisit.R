@@ -363,10 +363,10 @@ okcupid_visit_looper_dev <- function(action = "just_visit") { # OR action = "mes
       print(paste0("Total possible profiles: ",apagearefsupr_total_count))    
             
       # choose e.g. visit everyone
-      # apagearefsupr_reduced <- apagearefsupr[1:(length(apagearefsupr) %/% 1)
+      apagearefsupr_reduced <- apagearefsupr[1:(length(apagearefsupr) %/% 1)]
       
       # choose e.g. visit only the top half
-      apagearefsupr_reduced <- apagearefsupr[1:(length(apagearefsupr) %/% 2)]
+      # apagearefsupr_reduced <- apagearefsupr[1:(length(apagearefsupr) %/% 2)]
       
       apagearefsupr_reduced_count <- length(apagearefsupr_reduced)
       print(paste0("Reduced actually actioning  profiles: ",apagearefsupr_reduced_count))
@@ -475,7 +475,7 @@ okcupid_visit_looper_dev <- function(action = "just_visit") { # OR action = "mes
             writeLines(paste0(message_textarea_begin,current_message,message_textarea_end))
             
             # code changed somewhere 6 --> 5  
-            # return document.getElementsByTagName("textarea")[6].value = "Hi redbeanredbean";
+            # return document.getElementsByTagName("textarea")[6].value = "Hi redbeanredbean"; 
             
             Sys.sleep(1 + 2 * runif(1, min = 0, max = 1))
             
