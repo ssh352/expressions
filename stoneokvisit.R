@@ -1,8 +1,6 @@
 
 
-
 # DON'T FORGET TO STARTUP PostgreSQL !!
-# FUTURE: CONSIDER RSelenium FLAG ... native EVENTS
 
 
 # 
@@ -184,7 +182,7 @@ safe_navigate_to_new_url <- function(new_url = NULL, remote_driver = NULL, after
 }
 
 
-okcupid_visit_looper_dev <- function(action = "just_visit") { # OR action = "message_greet_matchname" "message_random_catchphrase"
+okcupid_visit_looper_dev <- function(curr_port = 4451, action = "just_visit", online_when = "within_the_last_week") { # OR action = "message_greet_matchname" "message_random_catchphrase"
   
   maininner <- function() {
     
@@ -203,20 +201,24 @@ okcupid_visit_looper_dev <- function(action = "just_visit") { # OR action = "mes
     con <- dbConnect(drv, host = "127.0.0.1", dbname = "aes_db", user = "postgres", password = "postgres")
     
     # REM: taskmgr OR 'some other way' KILL off java.exe if it is running
-    startServer(args = c("-port 4451","-timeout 3600","-browserTimeout 3600"))  # default # 4444 # java -jar selenium-server-standalone.jar -h
+    startServer(args = c(paste0("-port ", curr_port),"-timeout 3600","-browserTimeout 3600"))  # default # 4444 # java -jar selenium-server-standalone.jar -h
     Sys.sleep(5.0) # 5 second wait
     
     cprof <- getChromeProfile("J:\\YDrive\\All_NewSeduction\\All_ElectronicSpeech\\RSeleniumAndBrowsers\\AES1_assistance\\RDebug\\Administrator\\AppData\\Local\\Google\\Chrome\\User Data", "time861wiz_time861wiz") 
-    remDr <- remoteDriver(browserName = "chrome", extraCapabilities = cprof, port = 4451) # default 4444
+    remDr <- remoteDriver(browserName = "chrome", extraCapabilities = cprof, port = curr_port) # default 4444
+    
+    print(paste0("PORT ", curr_port))
+    
     remDr$open() # oracle.com  
     Sys.sleep(3 + 1 * runif(1, min = 0, max = 1)) # 10 to 15 seconds wait
     
+    print(paste0("PORT ", curr_port))
     print("(tried) opened browser home page")
     
     result = tryCatch({ remDr$navigate("https://www.okcupid.com/logout") }, warning = function(w) {}, error = function(e) {}, finally = {})
     Sys.sleep(3 + 1 * runif(1, min = 0, max = 1)) 
     
-    print("(tried) opened browser home page")
+    print("(tried) logout from OKCupid")
     
     # Sys.sleep(1 + 5* runif(1, min = 0, max = 1)) # 6 to 11 seconds wait
     
@@ -263,21 +265,76 @@ okcupid_visit_looper_dev <- function(action = "just_visit") { # OR action = "mes
       , "A lawyer and a priest walked into a bar"
     ) -> message_vector
     
-    c("Hi") -> message_greet_matchname_vector
+    # NOTE: DOES NOT YET ESCAPE OUT TICK MARKS('), SO DO NOT SEND OUT A TICK MARK(')
+     
+    # OLD
+    # c("Hi") -> message_greet_matchname_vector
+    # NEW ( expect the matchname to come first )
+    c(", how is it going?") -> message_greet_matchname_vector
+    
+    # NOTE: DOES NOT YET ESCAPE OUT TICK MARKS('), SO DO NOT SEND OUT A TICK MARK(')
+    
                                                        # NOTE: THIS MAY BE VOLITILE ( AT FIRST WAS [6]?)
     message_textarea_begin <- "return document.getElementsByTagName(\"textarea\")[5].value = \""
     message_textarea_end   <- "\";"
     
     # MAGIC NUMBER 
-    agerange <-      50:18      #  30:31  # 50:49   c(25:18,50:31) "25:18,50:31"
-    agerange_str <- "50:18"     # "30:31" # 50:49    
+    agerange <-      50:48      #  30:31  # 50:49   c(25:18,50:31) "25:18,50:31"
+    agerange_str <- "50:48"     # "30:31" # 50:49    
     
     for(agecurr in agerange) { # testing only 31 and 30 # 31:30   
       
       print(Sys.time())
+      print(paste0("PORT ", curr_port))
+     
       print(paste0("beginning age ",agecurr))
       
-      navigate_target <- paste0("http://www.okcupid.com/match?filter1=0,34&filter2=2,",agecurr,",",agecurr,"&filter3=3,50&filter4=5,604800&filter5=1,1&locid=0&timekey=1&matchOrderBy=MATCH&custom_search=0&fromWhoOnline=0&mygender=m&update_prefs=1&sort_type=0&sa=1&using_saved_search=&count=500")     
+      
+      # 18 TO 50: CURRENLY ONLINE_NOW BY MATCH% 
+      # SUNDAY: 2:18 P.M. 47 * 3 = 141 entries
+      # https://www.okcupid.com/match?filter1=0,34&filter2=2,18,50&filter3=3,50&filter4=5,3600&filter5=1,1&locid=0&timekey=1&matchOrderBy=MATCH&custom_search=0&fromWhoOnline=0&mygender=m&update_prefs=1&sort_type=0&sa=1&using_saved_search=&count=18
+      
+      # CURRENTLY ONLINE BY MATCH% AND THIN ( $$ PAID FOR ) 11 entries
+      # https://www.okcupid.com/match?filter1=0,34&filter2=2,18,50&filter3=3,50&filter4=5,3600&filter5=30,4&filter6=1,1&locid=0&timekey=1&matchOrderBy=MATCH&custom_search=0&fromWhoOnline=0&mygender=m&update_prefs=1&sort_type=0&sa=1&using_saved_search=&count=18
+      
+      # CURRENTLY ONLINE BY MATCH% AND SKINNY ( $$ PAID FOR ) 3 entries
+      # https://www.okcupid.com/match?filter1=0,34&filter2=2,18,50&filter3=3,50&filter4=5,3600&filter5=30,16&filter6=1,1&locid=0&timekey=1&matchOrderBy=MATCH&custom_search=0&fromWhoOnline=0&mygender=m&update_prefs=1&sort_type=0&sa=1&using_saved_search=&count=18
+      
+      # CURRENTLY ONLINE BY MATCH% AND FIT ( $$ PAID FOR ) 18 entries
+      # https://www.okcupid.com/match?filter1=0,34&filter2=2,18,50&filter3=3,50&filter4=5,3600&filter5=30,64&filter6=1,1&locid=0&timekey=1&matchOrderBy=MATCH&custom_search=0&fromWhoOnline=0&mygender=m&update_prefs=1&sort_type=0&sa=1&using_saved_search=&count=18
+      
+      # CURRENTLY ONLINE BY MATCH% AND ATHLETIC ( $$ PAID FOR ) 18 entries
+      # https://www.okcupid.com/match?filter1=0,34&filter2=2,18,50&filter3=3,50&filter4=5,3600&filter5=30,128&filter6=1,1&locid=0&timekey=1&matchOrderBy=MATCH&custom_search=0&fromWhoOnline=0&mygender=m&update_prefs=1&sort_type=0&sa=1&using_saved_search=&count=18
+      
+      ##
+      
+      # 18 TO 50: ONLINE_IN_THE_LAST_WEEK BY MATCH%
+      # SUNDAY: 2:30 P.M. ~ approx 51 * 50 = 2500
+      
+      # ONLINE_IN_THE_LAST_WEEK BY MATCH% AND THIN ( $$ PAID FOR ) 124 entries
+      # https://www.okcupid.com/match?filter1=0,34&filter2=2,18,50&filter3=3,50&filter4=5,604800&filter5=30,4&filter6=1,1&locid=0&timekey=1&matchOrderBy=MATCH&custom_search=0&fromWhoOnline=0&mygender=m&update_prefs=1&sort_type=0&sa=1&using_saved_search=&count=18
+      
+      # ONLINE_IN_THE_LAST_WEEK BY MATCH% AND SKINNY ( $$ PAID FOR ) 40  entries
+      # https://www.okcupid.com/match?filter1=0,34&filter2=2,18,50&filter3=3,50&filter4=5,604800&filter5=30,16&filter6=1,1&locid=0&timekey=1&matchOrderBy=MATCH&custom_search=0&fromWhoOnline=0&mygender=m&update_prefs=1&sort_type=0&sa=1&using_saved_search=&count=18
+      
+      # ONLINE_IN_THE_LAST_WEEK BY MATCH% AND FIT ( $$ PAID FOR ) 117  entries
+      # https://www.okcupid.com/match?filter1=0,34&filter2=2,18,50&filter3=3,50&filter4=5,604800&filter5=30,64&filter6=1,1&locid=0&timekey=1&matchOrderBy=MATCH&custom_search=0&fromWhoOnline=0&mygender=m&update_prefs=1&sort_type=0&sa=1&using_saved_search=&count=18
+      
+      # ONLINE_IN_THE_LAST_WEEK BY MATCH% AND ATHLETIC ( $$ PAID FOR ) 92 entries
+      # https://www.okcupid.com/match?filter1=0,34&filter2=2,18,50&filter3=3,50&filter4=5,604800&filter5=30,128&filter6=1,1&locid=0&timekey=1&matchOrderBy=MATCH&custom_search=0&fromWhoOnline=0&mygender=m&update_prefs=1&sort_type=0&sa=1&using_saved_search=&count=18
+      
+      # IF I SEND (A CUSTOM *MESSAGE* NOT_GOOD_MATCH ) SOMETHING OUT: 1/38 SEEM TO BE MOTIVATED
+      
+      if(action == "message_greet_matchname" && online_when == "online_now") {
+      
+        navigate_target <- paste0("https://www.okcupid.com/match?filter1=0,34&filter2=2,",agecurr,",",agecurr,"&filter3=3,50&filter4=5,3600&filter5=1,1&locid=0&timekey=1&matchOrderBy=MATCH&custom_search=0&fromWhoOnline=0&mygender=m&update_prefs=1&sort_type=0&sa=1&using_saved_search=&count=500")
+        
+      } else { # default: visit everyone online within the last week
+
+        navigate_target <- paste0("http://www.okcupid.com/match?filter1=0,34&filter2=2,",agecurr,",",agecurr,"&filter3=3,50&filter4=5,604800&filter5=1,1&locid=0&timekey=1&matchOrderBy=MATCH&custom_search=0&fromWhoOnline=0&mygender=m&update_prefs=1&sort_type=0&sa=1&using_saved_search=&count=500") 
+
+      }    
+      
       remDr$navigate(navigate_target)
       Sys.sleep(3 + 1 * runif(1, min = 0, max = 1)) # 10 to 15 seconds wait 
       
@@ -344,11 +401,19 @@ okcupid_visit_looper_dev <- function(action = "just_visit") { # OR action = "mes
 
       # I have not seen these(after the filters are done), but just in case crept through
       
-      apagearefsupr <- apagearefsupr[!grepl("CALLGIRL",apagearefsupr,ignore.case=TRUE)]
-      apagearefsupr <- apagearefsupr[!grepl("ROBOT",apagearefsupr,ignore.case=TRUE)]
+      # apagearefsupr <- apagearefsupr[!grepl("CALLGIRL",apagearefsupr,ignore.case=TRUE)]
+      # apagearefsupr <- apagearefsupr[!grepl("ROBOT",apagearefsupr,ignore.case=TRUE)]
       
       # (TEMPORARILY) REMOVE send_message TEST CANDIDATE
-      apagearefsupr <- apagearefsupr[!grepl("redbeanredbean",apagearefsupr)]
+      # apagearefsupr <- apagearefsupr[!grepl("redbeanredbean",apagearefsupr)]
+      
+      # previous/a_person people that I prefer not to 're-contact of any kind'
+      # NOTE: I can not elmininate someone with part of the name 'https://www.okcupid.com/profile/USERNAME?cf=regular"'
+      
+      # remove
+      for(match_var in c(
+        "CALLGIRL","ROBOT","Kat0o" 
+      )) { apagearefsupr <- apagearefsupr[!grepl(match_var,apagearefsupr,ignore.case=TRUE)]  } 
       
       # loop and visit each name - from bottom(rev) to top ( testing ) 
       # testing - visit from the BOTTOM going UP 
@@ -377,6 +442,9 @@ okcupid_visit_looper_dev <- function(action = "just_visit") { # OR action = "mes
       
       # NOTE: (str_locate  finds 'first occurance"
       # could possible break if  "?" is found in a strange spot
+      
+      # eliminate matchnames that I would not visit - no matter how old they are
+      # TO_DO_THIS_WEEKEND [ ]
       
       # hadly S-logic
       matchnames <- str_sub(apagearefsupr_reduced, start = cbind(begin_matchnames_str_locations, end_matchnames_str_locations))
@@ -434,7 +502,10 @@ okcupid_visit_looper_dev <- function(action = "just_visit") { # OR action = "mes
           print(paste0("begin send message ", alink, " of the page of : ",agecurr, " of age ", agerange_str))
           
           if( action == "message_greet_matchname" ) {
-            current_message  <- paste0(message_greet_matchname_vector[trunc( 1 + length(message_greet_matchname_vector)*runif(1, min = 0, max = 1) - 0.001 )], " ",matchnames[action_ref_counter]) 
+            # OLD
+            # current_message  <- paste0(message_greet_matchname_vector[trunc( 1 + length(message_greet_matchname_vector)*runif(1, min = 0, max = 1) - 0.001 )], " ",matchnames[action_ref_counter]) 
+            # NEW expect the matchname to come first
+            current_message  <- paste0(matchnames[action_ref_counter],message_greet_matchname_vector[trunc( 1 + length(message_greet_matchname_vector)*runif(1, min = 0, max = 1) - 0.001 )])
           } 
         
           if( action == "message_random_catchphrase" ) { # NOTE: UN-'TESTED IN PROD - BUT SHOULD WORK'
@@ -468,7 +539,7 @@ okcupid_visit_looper_dev <- function(action = "just_visit") { # OR action = "mes
             
           } else {
 
-            # print("after pressing MESSAGE . . . is on the page")
+            # print("after pressing MESSAGE . . . is on the page") 
 
             ##  COMMENTED OUT 'WRITING A MESSAGE IN THE TEXT AREA' ( DEBUGGING )
             remDr$executeScript(paste0(message_textarea_begin,current_message,message_textarea_end))[[1]]
@@ -517,10 +588,10 @@ okcupid_visit_looper_dev <- function(action = "just_visit") { # OR action = "mes
               # If successful
               # <span class="okform-feedback message empty" style="height: 0px;"></span>
               
-              ## BOX STAYS UP - AND MESSAGE SHOWS SENT
+              ## BOX STAYS UP - AND MESSAGE SHOWS SENT 
               Sys.sleep(2 + 2* runif(1, min = 0, max = 1))
               
-              # TO_DO [ ] ... DETECT AND HANDLE ( FUTURE - DETECT )
+              # TO_DO [ ] ... DETECT AND HANDLE ( FUTURE - DETECT ) 
               # You can't send the same message twice. Be more original!
               # <span class="okform-feedback message" style="height: 30px;">You can't send the same message twice. Be more original!</span>
               
@@ -643,15 +714,20 @@ okcupid_visit_looper_dev <- function(action = "just_visit") { # OR action = "mes
 # REM: taskmgr - manually KILL off java.exe if it is running
 # XOR
 # "command prompt"->"right click"->"run as adminsitrator"
+# VISIT WITHIN LAST WEEK
 # netstat -o -a -b  -n | find /i "listening" | find /i ":4451"
+# taskkill /F /T /PID <above_right_col_number>
+# XOR
+# SEND MESSAGE TO 'ONLINE NOW'
+# netstat -o -a -b  -n | find /i "listening" | find /i ":4452"
 # taskkill /F /T /PID <above_right_col_number>
 
 # MANUALLY PLACE DOWN THE BREAKPOINT
 #   e.g. remDr$open() # oracle.com  
 
 # okcupid_visit_looper_dev()
-# okcupid_visit_looper_dev(action = "message_greet_matchname") 
+# okcupid_visit_looper_dev(curr_port = 4452, action = "message_greet_matchname", online_when = "online_now")  
 
-# END INSTRUCTIONS
-# END INSTRUCTIONS
+# END INSTRUCTIONS 
+# END INSTRUCTIONS  
 
