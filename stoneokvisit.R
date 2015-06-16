@@ -279,8 +279,8 @@ okcupid_visit_looper_dev <- function(curr_port = 4451, action = "just_visit", on
     message_textarea_end   <- "\";"
     
     # MAGIC NUMBER 
-    agerange <-      50:48      #  30:31  # 50:49   c(25:18,50:31) "25:18,50:31"
-    agerange_str <- "50:48"     # "30:31" # 50:49    
+    agerange <-      29:18      #  30:31  # 50:49   c(25:18,50:31) "25:18,50:31" # LEFT_OFF 29 _diamonds_ "message box full"
+    agerange_str <- "29:18"     # "30:31" # 50:49    
     
     for(agecurr in agerange) { # testing only 31 and 30 # 31:30   
       
@@ -427,6 +427,11 @@ okcupid_visit_looper_dev <- function(curr_port = 4451, action = "just_visit", on
       apagearefsupr_total_count <- length(apagearefsupr)
       print(paste0("Total possible profiles: ",apagearefsupr_total_count))    
             
+      if(apagearefsupr_total_count == 0) {
+        print("since Total possible profiles: 0, then SKIP AHEAD to next LOOP")
+        next
+      }
+      
       # choose e.g. visit everyone
       apagearefsupr_reduced <- apagearefsupr[1:(length(apagearefsupr) %/% 1)]
       
@@ -505,7 +510,7 @@ okcupid_visit_looper_dev <- function(curr_port = 4451, action = "just_visit", on
             # OLD
             # current_message  <- paste0(message_greet_matchname_vector[trunc( 1 + length(message_greet_matchname_vector)*runif(1, min = 0, max = 1) - 0.001 )], " ",matchnames[action_ref_counter]) 
             # NEW expect the matchname to come first
-            current_message  <- paste0(matchnames[action_ref_counter],message_greet_matchname_vector[trunc( 1 + length(message_greet_matchname_vector)*runif(1, min = 0, max = 1) - 0.001 )])
+            current_message  <- paste0(matchnames[action_ref_counter],message_greet_matchname_vector[trunc( 1 + length(message_greet_matchname_vector)*runif(1, min = 0, max = 1) - 0.001 )]," Ivan")
           } 
         
           if( action == "message_random_catchphrase" ) { # NOTE: UN-'TESTED IN PROD - BUT SHOULD WORK'
@@ -556,7 +561,8 @@ okcupid_visit_looper_dev <- function(curr_port = 4451, action = "just_visit", on
             webElemTMB <- NULL
             # IF THE MESSAGE BOX IS NOT OPEN ( NEVER CURRENTLY ABLE TO REPEAT THE TEST )
             HER_MESSAGE_BOX_FULL_ERROR <- FALSE
-            result = tryCatch({ webElemTMB <- remDr$findElement("css selector", "#global_messaging_container > div > form > button") }, warning = function(w) {}, error = function(e) { HER_MESSAGE_BOX_FULL_ERROR <- TRUE  }, finally = {})
+            result <- tryCatch({ webElemTMB <- remDr$findElement("css selector", "#global_messaging_container > div > form > button") }, warning = function(w) {}, error = function(e) { return("ERROR") }, finally = {})
+            if(result != "ERROR") HER_MESSAGE_BOX_FULL_ERROR <- FALSE
             
             # Error: Summary: NoSuchElement
             #        Detail: An element could not be located on the page using the given search parameters.
@@ -713,7 +719,7 @@ okcupid_visit_looper_dev <- function(curr_port = 4451, action = "just_visit", on
 
 # REM: taskmgr - manually KILL off java.exe if it is running
 # XOR
-# "command prompt"->"right click"->"run as adminsitrator"
+# "command prompt"->"right click"->"run as adminsitrator" 
 # VISIT WITHIN LAST WEEK
 # netstat -o -a -b  -n | find /i "listening" | find /i ":4451"
 # taskkill /F /T /PID <above_right_col_number>
