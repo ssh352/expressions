@@ -270,7 +270,8 @@ okcupid_visit_looper_dev <- function(curr_port = 4451, action = "just_visit", on
     # OLD
     # c("Hi") -> message_greet_matchname_vector
     # NEW ( expect the matchname to come first )
-    c(", how is it going?") -> message_greet_matchname_vector
+    # USED WEEK OF FRI JUNE 12: c(", how is it going?") -> message_greet_matchname_vector
+    c(", hello :)") -> message_greet_matchname_vector # IN PROGRESS: WEEK OF FRI JUNE 12
     
     # NOTE: DOES NOT YET ESCAPE OUT TICK MARKS('), SO DO NOT SEND OUT A TICK MARK(')
     
@@ -410,9 +411,30 @@ okcupid_visit_looper_dev <- function(curr_port = 4451, action = "just_visit", on
       # previous/a_person people that I prefer not to 're-contact of any kind'
       # NOTE: I can not elmininate someone with part of the name 'https://www.okcupid.com/profile/USERNAME?cf=regular"'
       
+      special <- c("CALLGIRL","ROBOT")
+      
+      some_curr_dialog <- c("Kat0o","Scottie_Lynn","gangsta_grll","msblue5159")
+      
+      rec6 <- c("blptqt_","afaternoon726","KissKissUsagi","Scottie_Lynn","kathattack05","geminileebaby","twa-corbies")
+      rec5 <- c("breezybaby2710","gangsta_grrl","dontcrycupid","courtneyesl","cna2hair","sweet_gal67","islandplaya")
+      rec4 <- c("NOLApink","Kat0o","msspecial14","msblue5159","Kira24K","ndcooper85","dezy703","kittygirrll","MLR15")
+      rec3 <- c("VonKathryn","justina_4u2nv","marciauptop","Cindilou4","OoshaBoom","MsLindsay1983","suny1974")
+      rec2 <- c("Missaaronharry","belledenola","FaultyVictory","BrittanyGamer87","browneyegirl8383","hphphp96")
+      rec1 <- c("im9124", "Stephameows","kthib23","solangelinoq","SMARTi8984","Alice")
+      
+      rec_all <-c(rec6,rec5,rec4,rec3,rec2,rec1)
+      
+      lik3 <- c("courtneyesl","autumnrose1991","sourpatchcam","sparkly_cakepop","mslblue5159")
+      lik2 <- c("Adizgeguzman","BrittanieRenee","FaultyVictory","jenna3312","ArgentAura")
+      lik1 <- c("Flyme2themoon","gangsta_grrl","charmanderx","kimtschelie","NOLApink","Kat0o")
+      
+      lik_all <- c(lik3,lik2,lik1)
+      
+      all_all <- c(lik_all,rec_all,some_curr_dialog,special) 
+      
       # remove
       for(match_var in c(
-        "CALLGIRL","ROBOT","Kat0o" 
+        all_all 
       )) { apagearefsupr <- apagearefsupr[!grepl(match_var,apagearefsupr,ignore.case=TRUE)]  } 
       
       # loop and visit each name - from bottom(rev) to top ( testing ) 
@@ -721,7 +743,7 @@ okcupid_visit_looper_dev <- function(curr_port = 4451, action = "just_visit", on
 # XOR
 # "command prompt"->"right click"->"run as adminsitrator"  
 # VISIT WITHIN LAST WEEK
-# netstat -o -a -b  -n | find /i "listening" | find /i ":4451"
+# netstat -o -a -b  -n | find /i "listening" | find /i ":4451" 
 # taskkill /F /T /PID <above_right_col_number>
 # XOR
 # SEND MESSAGE TO 'ONLINE NOW'
@@ -735,5 +757,5 @@ okcupid_visit_looper_dev <- function(curr_port = 4451, action = "just_visit", on
 # okcupid_visit_looper_dev(curr_port = 4452, action = "message_greet_matchname", online_when = "online_now")  
 
 # END INSTRUCTIONS 
-# END INSTRUCTIONS  
+# END INSTRUCTIONS    
 
