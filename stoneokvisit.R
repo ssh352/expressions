@@ -182,7 +182,9 @@ safe_navigate_to_new_url <- function(new_url = NULL, remote_driver = NULL, after
 }
 
 
-okcupid_visit_looper_dev <- function(curr_port = 4451, action = "just_visit", online_when = "within_the_last_week") { # OR action = "message_greet_matchname" "message_random_catchphrase"
+okcupid_visit_looper_dev <- function(curr_port = 4451, action = "just_visit", online_when = "within_the_last_week", not_to_vst = "NONE", not_to_msg = "NONE") { 
+  # OR action = "message_greet_matchname" "message_random_catchphrase"
+  # OR not_to_msg = "all_all"
   
   maininner <- function() {
     
@@ -411,7 +413,7 @@ okcupid_visit_looper_dev <- function(curr_port = 4451, action = "just_visit", on
       # previous/a_person people that I prefer not to 're-contact of any kind'
       # NOTE: I can not elmininate someone with part of the name 'https://www.okcupid.com/profile/USERNAME?cf=regular"'
       
-      special <- c("CALLGIRL","ROBOT")
+      special    <- c("robot")
       
       some_curr_dialog <- c("Kat0o","Scottie_Lynn","gangsta_grll","msblue5159")
       
@@ -430,11 +432,26 @@ okcupid_visit_looper_dev <- function(curr_port = 4451, action = "just_visit", on
       
       lik_all <- c(lik3,lik2,lik1)
       
-      all_all <- c(lik_all,rec_all,some_curr_dialog,special) 
+      all_all <- c(lik_all,rec_all,some_curr_dialog) 
       
-      # remove
+      # NOTE okcupid logic: a msg INCLUDES a vst
+      #  OKCUPID IDEA: turn anonymous browsing ON WHILE sending messages $$ A-list
+      
+      if(not_to_vst == "NONE") {     # default
+        do_not_vst <- c(special)
+      }
+      
+      # exclusive choices
+      if(not_to_msg == "NONE") {     # default
+        do_not_vst_msg <- c(do_not_vst)
+      }
+      if(not_to_msg == "all_all") {
+        do_not_vst_msg <- c(do_not_vst,all_all)
+      }  
+      
+      # ACTUALLY do not vst/msg
       for(match_var in c(
-        all_all 
+        do_not_vst_msg 
       )) { apagearefsupr <- apagearefsupr[!grepl(match_var,apagearefsupr,ignore.case=TRUE)]  } 
       
       # loop and visit each name - from bottom(rev) to top ( testing ) 
@@ -754,7 +771,7 @@ okcupid_visit_looper_dev <- function(curr_port = 4451, action = "just_visit", on
 #   e.g. remDr$open() # oracle.com  
 
 # okcupid_visit_looper_dev()
-# okcupid_visit_looper_dev(curr_port = 4452, action = "message_greet_matchname", online_when = "online_now")  
+# okcupid_visit_looper_dev(curr_port = 4452, action = "message_greet_matchname", online_when = "online_now", not_to_msg = "all_all")  
 
 # END INSTRUCTIONS 
 # END INSTRUCTIONS    
