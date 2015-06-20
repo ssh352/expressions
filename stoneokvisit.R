@@ -279,8 +279,8 @@ okcupid_visit_looper_dev <- function(curr_port = 4451, action = "just_visit", on
     message_textarea_end   <- "\";"
     
     # MAGIC NUMBER 
-    agerange <-      29:18      #  30:31  # 50:49   c(25:18,50:31) "25:18,50:31" # LEFT_OFF 29 _diamonds_ "message box full"
-    agerange_str <- "29:18"     # "30:31" # 50:49    
+    agerange <-      50:18      #  30:31  # 50:49   c(25:18,50:31) "25:18,50:31" # LEFT_OFF 29 _diamonds_ "message box full"
+    agerange_str <- "50:18"     # "30:31" # 50:49    
     
     for(agecurr in agerange) { # testing only 31 and 30 # 31:30   
       
@@ -562,7 +562,7 @@ okcupid_visit_looper_dev <- function(curr_port = 4451, action = "just_visit", on
             # IF THE MESSAGE BOX IS NOT OPEN ( NEVER CURRENTLY ABLE TO REPEAT THE TEST )
             HER_MESSAGE_BOX_FULL_ERROR <- FALSE
             result <- tryCatch({ webElemTMB <- remDr$findElement("css selector", "#global_messaging_container > div > form > button") }, warning = function(w) {}, error = function(e) { return("ERROR") }, finally = {})
-            if(result != "ERROR") HER_MESSAGE_BOX_FULL_ERROR <- FALSE
+            if(class(result) == "webElement") { HER_MESSAGE_BOX_FULL_ERROR <- FALSE } else { HER_MESSAGE_BOX_FULL_ERROR <- TRUE }
             
             # Error: Summary: NoSuchElement
             #        Detail: An element could not be located on the page using the given search parameters.
@@ -719,7 +719,7 @@ okcupid_visit_looper_dev <- function(curr_port = 4451, action = "just_visit", on
 
 # REM: taskmgr - manually KILL off java.exe if it is running
 # XOR
-# "command prompt"->"right click"->"run as adminsitrator" 
+# "command prompt"->"right click"->"run as adminsitrator"  
 # VISIT WITHIN LAST WEEK
 # netstat -o -a -b  -n | find /i "listening" | find /i ":4451"
 # taskkill /F /T /PID <above_right_col_number>
