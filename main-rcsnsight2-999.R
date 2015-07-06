@@ -507,7 +507,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
                                                           # march 21, 2015 run: "2015-01-31": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
                                                           # march 21, 2015 run: "2015-02-28": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
                                                           # march 21, 2015 run: "2015-03-31": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
-    finDate.TestTrain.Global.Latest      <- "2015-04-30"  # april  6, 2015 run: "2015-03-31": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
+    finDate.TestTrain.Global.Latest      <- "2015-06-30"  # april  6, 2015 run: "2015-03-31": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
     
     # training and TRUE tests
     list(Test2001 = list(Train=list(initDate = initData.TestTrain.Global.Earliest,finDate ="1998-12-31"),
@@ -2635,13 +2635,14 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     # *** VERY VERY VERY IMPORTANT  ***
     # CHANGE "finDate.TestTrain.Global.Latest      <- "YYYY-MM-DD"
     # TO BE the 'date of the 'end of the latest month' before running the program TODAY'
+    # **** SEARCH FOR * finDate.TestTrain.Global.Latest * SEARCH FOR *****
     # 
     # rm(list=ls(all.names=TRUE))
     # 
     # BEST HAVE THE 'ABSOLUTE PATH' 
     # debugSource('W:/New_Economics/rcsnsight1.320/main-rcsnsight2-999.R')
     # 
-    # PLACE DOWN BREAKPOINT AT "bookmark_here <- 1"
+    # PLACE DOWN BREAKPOINT AT "bookmark_here <- 1" ( ABOVE )
     # 
     # main_rcsnsight2_999(THESEED = 2)
     # 
