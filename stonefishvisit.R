@@ -236,7 +236,7 @@ pof_visit_looper_dev <- function(curr_port = 4461, action = "just_visit", online
     remDr$executeScript(paste0(js_clear_login_box))[[1]]
     
     webElem1 <- remDr$findElement("css selector", "input#logincontrol_username")
-    webElem1$sendKeysToElement(list("era674smart"))
+    webElem1$sendKeysToElement(list("era674smart")) # NOTE: BELOW: MAYBE DANGEROUSLY HARDCODED IN a message to here
     Sys.sleep(3 + 2 * runif(1, min = 0, max = 1)) # 3 to 5 seconds
     
     webElem2 <- remDr$findElement("css selector", "input#logincontrol_password")
@@ -252,8 +252,8 @@ pof_visit_looper_dev <- function(curr_port = 4461, action = "just_visit", online
     # pof
     # 45 is the maximum age for a 31 year old
     #  else it defaults to 'a big age range'
-    agerange <-      45:18      #  30:31  # 45:44   c(25:18,50:31) "25:18,50:31" # 
-    agerange_str <- "45:18"     # "30:31" # 45:44    
+    agerange     <-  24:38      #  30:31  # 45:44   c(25:18,50:31) "25:18,50:31" # 
+    agerange_str <- "24:38"     # "30:31" # 45:44    
     
     usernamename_already_visited <-c() # pof is extremely page dynamic: I do not want to visit a person accidentally twice
     for(agecurr in agerange) { # testing only 31 and 30 # 31:30    
@@ -273,7 +273,7 @@ pof_visit_looper_dev <- function(curr_port = 4461, action = "just_visit", online
         
         if(no_more_online_when == TRUE) {
           print(paste0("ending age ", agecurr," of ",agerange_str))
-          break # out of the page loop # since 'online_when' THIS IS per age, go to the next age ( above )
+          break # out of the page loop # since 'online_when' THIS IS 'per age', go to the next age ( above )
         }
         
         navigate_target_age_current_page <- paste0("http://www.pof.com/advancedsearch.aspx?iama=m&minage=",agecurr,"&maxage=",agecurr,"&city=70002&seekinga=f&searchtype=&country=1&heightb=999&maritalstatus=&relationshipage_id=&starsign=&body=&smarts=&fishtype=&pets=&eyes_id=&religionmult=&starsignmult=&thnicitymult=&haircolormult=&income=&profession_id=&Family_id=&intent=&easygoing_id=&confidence_id=&openness_id=&haircolor=&religion=&miles=50&page=",pagecurr,"&count=700")
@@ -371,11 +371,19 @@ pof_visit_looper_dev <- function(curr_port = 4461, action = "just_visit", online
               break; # out of the 'username(elements) on page loop'
             }
             
+            if(online_when == "online_now" && 
+                 usernameonlinexxxcurr %in% c("ONLINETODAY", "ONLINETHISWEEK", "UNKNOWN")  ) {
+              print("Done with the loop: no more ONLINENOW")
+              no_more_online_when <- TRUE
+              print(paste0("of age ",agecurr, " ending page ",pagecurr," of ",pagerange_str))
+              break; # out of the 'username(elements) on page loop'
+            }
+            
             
             # actually visit the username
             navigate_target_age_current_page_current_username <- usernameurlcurr
             
-            # actually visit 
+            # actually visit ( in pof a 'message' always includes a 'visit')
             
             # regular visit
             if( !(usernamenamecurr %in% usernamename_already_visited) ) {
@@ -383,6 +391,32 @@ pof_visit_looper_dev <- function(curr_port = 4461, action = "just_visit", online
               print(paste0("of age ",agecurr, " of page ",pagecurr," of ",pagerange_str," begin url nav to  ", usernamenamecurr))
               remDr$navigate(navigate_target_age_current_page_current_username)
               Sys.sleep(3 + 1 * runif(1, min = 0, max = 1)) 
+              
+                if( action == "message_greet_matchname" ) {
+                  
+                  c(", Hello from era674smart") -> message_greet_matchname_vector
+                  
+                  current_message  <- paste0(usernamenamecurr,message_greet_matchname_vector)
+                  
+                  # SEND MESSEGE - PER HERE PAGE STEPS 1-3 ( OF TOTAL 6 )
+                  
+                  print(paste0("Begin attempt to send message to ", usernamenamecurr))
+                  
+                  writeLines(current_message)
+                  
+                  webElemMB <- remDr$findElement("css selector", "textarea.profile")  # 1
+                  webElemMB$highlightElement()               # THAT WORKED            # 2
+                  webElemMB$sendKeysToElement(list(current_message)) # THAT WORKED            # 3
+                  
+                  webElemSMB <- remDr$findElement("css selector", "input.button.norm-green")   # 4
+                  webElemSMB$highlightElement() # THAT WORKED                                  # 5
+                  webElemSMB$clickElement() # SEEMS TO HAVE WORKED - THE PAGE CHANGED          # 6
+                  Sys.sleep(1 + 1 * runif(1, min = 0, max = 1)) 
+                  
+                  print(paste0("End attempt to send message to ", usernamenamecurr))
+                  
+                }
+              
               print(paste0("of age ",agecurr, " of page ",pagecurr," of ",pagerange_str,"   end url nav to  ", usernamenamecurr))
               usernamename_already_visited <-c(usernamename_already_visited,usernamenamecurr)
               
@@ -472,9 +506,12 @@ pof_visit_looper_dev <- function(curr_port = 4461, action = "just_visit", online
 # MANUALLY PLACE DOWN THE BREAKPOINT
 #   e.g. remDr$open() # oracle.com  
 
+# just visit
 # pof_visit_looper_dev()
-# pof_visit_looper-dev(curr_port = 4461, action = "just_visit", online_when = "within_the_last_week") # default
-# online_when == "online_now" OTHER OPTION
+# pof_visit_looper_dev(curr_port = 4461, action = "just_visit", online_when = "within_the_last_week") # default
+
+# send a message
+# pof_visit_looper_dev(curr_port = 4462, action = "message_greet_matchname", online_when = "online_now")
 
 # END INSTRUCTIONS 
 # END INSTRUCTIONS   
