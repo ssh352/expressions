@@ -245,11 +245,11 @@ getSymbols.multpl <- function(
   #   http://www.multpl.com/s-p-500-real-earnings-growth/table/by-quarter
   #   
   #   S&P 500 PE Ratio by Month ( MATH) ( SandP.500.PE.Ratio )
-  #   Price to earnings ratio, based on trailing twelve month âas reportedâ
+  #   Price to earnings ratio, based on trailing twelve month “as reported”
   #   http://www.multpl.com/table?f=m
   
   #   S&P 500 Book Value Per Share by Quarter ( "SandP.500.BV.Per.Share" )
-  #   S&P 500 book value per share â non-inflation adjusted current dollars. 
+  #   S&P 500 book value per share — non-inflation adjusted current dollars. 
   #   http://www.multpl.com/s-p-500-book-value/table/by-quarter
   
   # web site and owner
@@ -281,7 +281,7 @@ getSymbols.multpl <- function(
   
   require(XML)     # NEED readHTMLTable
   # Hadley Wickham # web scraping 
-  require(rvest)   # imports XML  masked from âpackage:XMLâ: xml
+  require(rvest)   # imports XML  masked from ‘package:XML’: xml
   # IF uncommented : require(XML), USE: XML::xml to access XML::xml
   require(xts)     # as.xts STUFF
   
@@ -2310,6 +2310,10 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
             # Train_initDate through Test_finDate 
             model.data.ALL <- modelData(data.model, data.window = c(var.testtraindates[["Train"]][["initDate"]] ,var.testtraindates[["Test"]][["finDate"]]))
             
+            # DEBUG(BOTH STMTS)
+            model.data.ALL_before_Inf_Fix <- model.data.ALL
+            save(list = c("model.data.ALL_before_Inf_Fix"), file = "DATA_model.data.ALL_before_Inf_Fix.RData")
+            
             # needed for caret::findLinearCombos 
             
             model.data.ALL[model.data.ALL == -Inf] <- .Machine[["double.xmin"]]
@@ -2509,7 +2513,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     #
     #  the number of iterations,T(n.trees)
     #  the depth of each tree,K(interaction.depth)
-    #  the shrinkage (or learning rate) parameter,Î»(shrinkage)
+    #  the shrinkage (or learning rate) parameter,λ(shrinkage)
     #  the subsampling rate,p(bag.fraction)
     #
     #  Generalized Boosted Models: A guide to the gbm package Greg Ridgeway August 3, 2007
@@ -2529,6 +2533,10 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     #       # , preProcOptions = list(ICAcomp = 2)
     #     ) -> fitControl
     
+    # DEBUG(BOTH STMTS)
+    train_x <- data.frame(model.data.train.CURR[,model.data.CURR.OBSERVEES.MOST.IMPORTANT.VARIABLES],stringsAsFactors=FALSE)
+    save(list = c("train_x"), file = "DATA_MOST.IMPORTANT_train_x.RData")
+
     # almost the same as above but I added ica
     train( 
       x = data.frame(model.data.train.CURR[,model.data.CURR.OBSERVEES.MOST.IMPORTANT.VARIABLES],stringsAsFactors=FALSE)            
@@ -2541,9 +2549,17 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
       , tuneGrid = expand.grid(interaction.depth = 7, n.trees = 500, shrinkage = c(0.01)) 
     ) -> FitterTune
     
+    # DEBUG(BOTH STMTS)
+    train_FitterTune <- FitterTune
+    save(list = c("train_FitterTune"), file = "DATA_MOST.IMPORTANT_train_FitterTune.RData")
+
     # caret
     newpred <- predict(FitterTune, newdata=data.frame(model.data.test.CURR[,model.data.CURR.OBSERVEES.MOST.IMPORTANT.VARIABLES],stringsAsFactors=FALSE) )
     
+    # DEBUG(BOTH STMTS)
+    predict_newdata <- data.frame(model.data.test.CURR[,model.data.CURR.OBSERVEES.MOST.IMPORTANT.VARIABLES],stringsAsFactors=FALSE)
+    save(list = c("predict_newdata"), file = "DATA_MOST.IMPORTANT_predict_newdata.RData")
+
     # cbind.xts wrapper over merge.xts
     model.data.test.CURR.PRED <- cbind(model.data.test.CURR[,data.model@model.target], CURR.PRED=newpred )
     "CURR.VALUE" -> colnames(model.data.test.CURR.PRED)[1]
@@ -2562,6 +2578,10 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     
     # predict on the 'most very recent data'
     
+    # DEBUG # DEBUG
+    save(list = c("data.model"), file = "DATA_data.model.RData")
+    save(list = c("model.data.ALL"), file = "DATA_model.data.ALL.RData")
+    
     # do not carry forward what I am trying to predict - does not make sense
     # locf BECAUSE some data may not be perfectly right aligned
     # please 1. avoid mis-aligned data
@@ -2569,11 +2589,18 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     model.data.ALL.na.locf <- na.locf(model.data.ALL[,setdiff(colnames(model.data.ALL),data.model@model.target)])
     model.data.ALL.na.locf <- cbind.xts(model.data.ALL[,data.model@model.target], model.data.ALL.na.locf)
 
+    # DEBUG
+    save(list = c("model.data.test.CURR"), file = "DATA_model.data.test.CURR.RData")
+
     # just the last few months  length( colnames(model.data.CURR)  ) = 580
     model.data.ALL.na.locf.NEWTAIL <- model.data.ALL.na.locf[as.Date(max(index(model.data.test.CURR))) < as.Date(index(model.data.ALL.na.locf)),]
 
     # inherit same columns as ... identical(colnames(model.data.train.CURR),colnames(model.data.test.CURR)) and model.data.CURR
     model.data.ALL.na.locf.NEWTAIL <- model.data.ALL.na.locf.NEWTAIL[,colnames(model.data.test.CURR)]
+
+    # DEBUG # DEBUG
+    save(list = c("model.data.test.CURR"), file = "DATA_model.data.test.CURR.RData")
+    save(list = c("model.data.CURR.OBSERVEES.MOST.IMPORTANT.VARIABLES"), file = "DATA_model.data.CURR.OBSERVEES.MOST.IMPORTANT.VARIABLES.RData")
 
     # just the 'meaningful columns'
     newpred.NEWTAIL <- predict(FitterTune, newdata=data.frame(rbind.xts(model.data.test.CURR, model.data.ALL.na.locf.NEWTAIL)[,model.data.CURR.OBSERVEES.MOST.IMPORTANT.VARIABLES],stringsAsFactors=FALSE) )
@@ -2581,10 +2608,15 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     
     model.data.test.CURR.NEWTAIL <- cbind(rbind.xts(model.data.test.CURR, model.data.ALL.na.locf.NEWTAIL)[,data.model@model.target], CURR.PRED=newpred.NEWTAIL )
     "CURR.VALUE" -> colnames(model.data.test.CURR.NEWTAIL)[1] 
-    
+    # DEBUG
+    save(list=c("model.data.test.CURR.NEWTAIL"), file = "DATA_model.data.test.CURR.NEWTAIL.RData")
+
     # works 1.34 1.39 1.41
     # View(model.data.test.CURR.NEWTAIL)
 
+    # DEBUG
+    save.image(file = "DATA_image.RData")
+    
     bookmark_here <- 1
 
     # View(model.data.test.CURR.PRED)
