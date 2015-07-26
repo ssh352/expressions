@@ -83,20 +83,20 @@
 # REINDEX TABLE aes_have_sent_message_list; -- simply rebuild that index
 # 
 
-# install.packages("checkpoint")   
+# install.packages("checkpoint")    
 
 # checkpoint(snapshotDate, project = getwd(), R.version, 
 #           scanForPackages = TRUE, checkpointLocation = "~/", verbose = TRUE, 
 #           use.knitr = system.file(package = "knitr") != "")  
 
-# INSTALLING  
-# checkpoint("2015-05-09", R.version = "3.2.0") 
-# COMMON EVERYDAY DEBUGGING
+# INSTALLING 
+# checkpoint("2015-05-09", R.version = "3.2.0")  
+# COMMON EVERYDAY DEBUGGING 
 # I do not want it to scan every time
 ### checkpoint("2015-05-09", R.version = "3.2.0", scanForPackages = FALSE)
 
 
-# shell("rstudio", wait=FALSE) 
+# shell("rstudio", wait=FALSE)  
 
 options(width = 255)     
 options(digits = 22) 
@@ -109,7 +109,7 @@ safe_navigate_to_new_url <- function(new_url = NULL, remote_driver = NULL, after
   require(tcltk)
   require(RSelenium)
   
-  # NOTE: 'note very case is 'code covered' BUT IF A PROBLEM SHOULD BE FIXABLE 
+  # NOTE: 'note very case is 'code covered' BUT IF A PROBLEM SHOULD BE FIXABLE  
   
   # if browser/site/internet hangs just ...
   # backout_url: "current_url", "goback" "http://www.time.gov"(default) "CUSTOMHTTP" 
@@ -176,7 +176,7 @@ safe_navigate_to_new_url <- function(new_url = NULL, remote_driver = NULL, after
 
 
 
-pof_visit_looper_dev <- function(curr_port = 4461, action = "just_visit", online_when = "within_the_last_week") { 
+pof_visit_looper_dev <- function(curr_port = 4461, action = "just_visit", online_when = "within_the_last_week", not_to_vst = "NONE", not_to_msg = "NONE") { 
   # OR action = "message_greet_matchname" "message_random_catchphrase"
   # OR not_to_msg = "all_all"
   # CONSIDER other PARAMETERS: , online_when = "within_the_last_week", not_to_vst = "NONE", not_to_msg = "NONE"
@@ -319,6 +319,40 @@ pof_visit_looper_dev <- function(curr_port = 4461, action = "just_visit", online
             usernamenamecurr <- usernamename[usernamecurr]         
             usernamequalitiescurr <- usernamequalities[[usernamecurr]]  
             
+            special    <- c("robot")
+            
+            some_curr_dialog <- c()
+            
+            rec_all <- c("FitBrittany","southernredhead8","nolacountrygirl985") # HAVE SENT A good CUSTOM FIRST MESSAGE - SUN JUL 26
+            
+            lik_all <- c()
+            
+            all_all <- c(lik_all,rec_all,some_curr_dialog) 
+            
+            # MANUAL OVERRIDE
+            # all_all <- c()
+            
+            do_not_vst <- c()
+            if(not_to_vst == "NONE") {     # default
+              do_not_vst <- c(special)
+            }
+            
+            # exclusive choices
+            if(not_to_msg == "NONE") {     # default
+              do_not_vst_msg <- c(do_not_vst)
+            }
+            if(not_to_msg == "all_all") {
+              do_not_vst_msg <- c(do_not_vst,all_all)
+            }  
+            
+            # ACTUALLY do not vst/msg 
+            if(usernamecurr %in% do_not_vst_msg) {
+              print(paste0("usernamecurr ", usernamecurr, " is explicit: do not vst/msg"))
+              print(paste0("therfore, skipping to the next user usernamecurr"))
+              next; # out of the 'username(elements) on page loop'
+            }
+            
+            # begin determining last online time
             
             usernameonlinexxxcurr <- c("UNKNOWN") 
             
@@ -349,6 +383,7 @@ pof_visit_looper_dev <- function(curr_port = 4461, action = "just_visit", online
             
             # possible kick out of the program ( !!! NOT TESTED !!! )
             
+            # ALPHAALPHA: NOTE ALPHAALPHA is the same as BETABETA - remove one of the two
             if(online_when == "online_now" &&
                  (
                   usernameonlinexxxcurr ==  "ONLINETODAY" ||
@@ -363,6 +398,7 @@ pof_visit_looper_dev <- function(curr_port = 4461, action = "just_visit", online
             }
             
             # NOTE: (CODE ABOVE): I HAVE "NOT DETECTED 'THIS MONTH'" ( SLIGHTLY DANGEROUS HERE)
+            #   NOT DETECTED: Online Last 30 Days
             if(online_when == "within_the_last_week" && 
             usernameonlinexxxcurr == "UNKNOWN"  ) {
               print("Done with the loop: no more ONLINENOW, ONLINETODAY, ONLINETHISWEEK")
@@ -371,6 +407,7 @@ pof_visit_looper_dev <- function(curr_port = 4461, action = "just_visit", online
               break; # out of the 'username(elements) on page loop'
             }
             
+            # BETABETA: NOTE ALPHAALPHA is the same as BETABETA - remove one of the two
             if(online_when == "online_now" && 
                  usernameonlinexxxcurr %in% c("ONLINETODAY", "ONLINETHISWEEK", "UNKNOWN")  ) {
               print("Done with the loop: no more ONLINENOW")
@@ -394,15 +431,17 @@ pof_visit_looper_dev <- function(curr_port = 4461, action = "just_visit", online
               
                 if( action == "message_greet_matchname" ) {
                   
-                  c(", Hello from era674smart") -> message_greet_matchname_vector
+                  c(", happy Sunday! How are you?") -> message_greet_matchname_vector
                   
-                  current_message  <- paste0(usernamenamecurr,message_greet_matchname_vector)
+                  current_message  <- paste0(usernamenamecurr, message_greet_matchname_vector)
                   
                   # SEND MESSEGE - PER HERE PAGE STEPS 1-3 ( OF TOTAL 6 )
                   
                   print(paste0("Begin attempt to send message to ", usernamenamecurr))
                   
                   writeLines(current_message)
+                  
+                  # TEMP COMMENTED OUT FOR OTHER TESTING
                   
                   webElemMB <- remDr$findElement("css selector", "textarea.profile")  # 1
                   webElemMB$highlightElement()               # THAT WORKED            # 2
@@ -430,14 +469,14 @@ pof_visit_looper_dev <- function(curr_port = 4461, action = "just_visit", online
         
         print(paste0("of age ",agecurr, " ending page ",pagecurr," of ",pagerange_str))
         
-        ## END or ERROR
+        ## END or ERROR  
         ## next;
         ## break;
       }
       
       print(paste0("ending age ", agecurr," of ",agerange_str))
       
-    ## END or ERROR
+    ## END or ERROR  
     ## next;
     ## break;
       
@@ -511,7 +550,7 @@ pof_visit_looper_dev <- function(curr_port = 4461, action = "just_visit", online
 # pof_visit_looper_dev(curr_port = 4461, action = "just_visit", online_when = "within_the_last_week") # default
 
 # send a message
-# pof_visit_looper_dev(curr_port = 4462, action = "message_greet_matchname", online_when = "online_now")
+# pof_visit_looper_dev(curr_port = 4462, action = "message_greet_matchname", online_when = "online_now", not_to_msg = "all_all")
 
 # END INSTRUCTIONS 
 # END INSTRUCTIONS   
