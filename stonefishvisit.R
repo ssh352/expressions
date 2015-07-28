@@ -193,6 +193,10 @@ pof_visit_looper_dev <- function(curr_port = 4461, action = "just_visit", online
     require(RSelenium)
     require(stringr)
     
+    # Administrative sleep POSSIBLE_FUNCTION_PARAMETER
+    # e.g. I have to go somewhere and want this to run automatically
+    # Sys.sleep(6700) # 7200 - two hours
+    
     require(RPostgreSQL)
     drv <- dbDriver("PostgreSQL")
     con <- dbConnect(drv, host = "127.0.0.1", dbname = "aes_db", user = "postgres", password = "postgres")
@@ -208,9 +212,10 @@ pof_visit_looper_dev <- function(curr_port = 4461, action = "just_visit", online
     
     # NOTE: POF # stores 'preferences(cookie-ish) on its servers in Vancouver'
     # pof has DEEP memory
-    
+  
     remDr$open() # hp.com  
     Sys.sleep(3 + 1 * runif(1, min = 0, max = 1)) # 10 to 15 seconds wait
+    
     
     print(paste0("PORT ", curr_port))
     print("(tried) opened browser home page")
@@ -252,8 +257,8 @@ pof_visit_looper_dev <- function(curr_port = 4461, action = "just_visit", online
     # pof
     # 45 is the maximum age for a 31 year old
     #  else it defaults to 'a big age range'
-    agerange     <-  24:38      #  30:31  # 45:44   c(25:18,50:31) "25:18,50:31" # 
-    agerange_str <- "24:38"     # "30:31" # 45:44    
+    agerange     <-  27:38      #  30:31  # 45:44   c(25:18,50:31) "25:18,50:31" # 
+    agerange_str <- "27:38"     # "30:31" # 45:44    
     
     usernamename_already_visited <-c() # pof is extremely page dynamic: I do not want to visit a person accidentally twice
     for(agecurr in agerange) { # testing only 31 and 30 # 31:30    
@@ -276,7 +281,24 @@ pof_visit_looper_dev <- function(curr_port = 4461, action = "just_visit", online
           break # out of the page loop # since 'online_when' THIS IS 'per age', go to the next age ( above )
         }
         
-        navigate_target_age_current_page <- paste0("http://www.pof.com/advancedsearch.aspx?iama=m&minage=",agecurr,"&maxage=",agecurr,"&city=70002&seekinga=f&searchtype=&country=1&heightb=999&maritalstatus=&relationshipage_id=&starsign=&body=&smarts=&fishtype=&pets=&eyes_id=&religionmult=&starsignmult=&thnicitymult=&haircolormult=&income=&profession_id=&Family_id=&intent=&easygoing_id=&confidence_id=&openness_id=&haircolor=&religion=&miles=50&page=",pagecurr,"&count=700")
+        # POSSIBLE_FUNCTION_PARAMETER
+        
+        # age1 to age1
+        # 70002 - 50 miles
+        # Body Type: Anything DEFAULT ( but I could sort by 'Newest Users')
+        # Sort By: 'Last Visit' ( but I could sort by 'Newest Users')
+        # navigate_target_age_current_page <- paste0("http://www.pof.com/advancedsearch.aspx?iama=m&minage=",agecurr,"&maxage=",agecurr,"&city=70002&seekinga=f&searchtype=&country=1&heightb=999&maritalstatus=&relationshipage_id=&starsign=&body=&smarts=&fishtype=&pets=&eyes_id=&religionmult=&starsignmult=&thnicitymult=&haircolormult=&income=&profession_id=&Family_id=&intent=&easygoing_id=&confidence_id=&openness_id=&haircolor=&religion=&miles=50&page=",pagecurr,"&count=700")
+        
+        
+        # SINCE I ONLY HAVE A LIMIT OF 55 NEW USERS EVER CONTACTED IN A 24 HOUR PERIOD, I MIGHT AS WELL MAKE THEM COUNT
+        # age1 to age1
+        # 70002 - 50 miles
+        # Body Type: Thin, Athletic
+        # Sort By: 'Last Visit' DEFAULT ( but I could sort by 'Newest Users')
+        navigate_target_age_current_page <- paste0("http://www.pof.com/advancedsearch.aspx?iama=m&minage=",agecurr,"&maxage=",agecurr,"&state=26&city=70002&seekinga=f&searchtype=&country=1&heightb=999&maritalstatus=&relationshipage_id=&starsign=&body=1_2&smarts=&fishtype=&pets=&eyes_id=&religionmult=&starsignmult=&thnicitymult=&haircolormult=&income=&profession_id=&Family_id=&intent=&easygoing_id=&confidence_id=&openness_id=&haircolor=&religion=&miles=50&page=",pagecurr,"&count=700")
+        
+        
+        
         
         print(paste0("of age ",agecurr, " beginning page ",pagecurr," of ",pagerange_str))
         
@@ -431,7 +453,7 @@ pof_visit_looper_dev <- function(curr_port = 4461, action = "just_visit", online
               
                 if( action == "message_greet_matchname" ) {
                   
-                  c(", happy Sunday! How are you?") -> message_greet_matchname_vector
+                  c(", good evening this fine Monday! Are you well this evening?") -> message_greet_matchname_vector
                   
                   current_message  <- paste0(usernamenamecurr, message_greet_matchname_vector)
                   
@@ -469,14 +491,14 @@ pof_visit_looper_dev <- function(curr_port = 4461, action = "just_visit", online
         
         print(paste0("of age ",agecurr, " ending page ",pagecurr," of ",pagerange_str))
         
-        ## END or ERROR  
+        ## END or ERROR   
         ## next;
         ## break;
       }
       
       print(paste0("ending age ", agecurr," of ",agerange_str))
       
-    ## END or ERROR  
+    ## END or ERROR   
     ## next;
     ## break;
       
