@@ -258,8 +258,8 @@ pof_visit_looper_dev <- function(curr_port = 4461, action = "just_visit", online
     # pof
     # 45 is the maximum age for a 31 year old
     #  else it defaults to 'a big age range'
-    agerange     <-  24:38      #  30:31  # 45:44   c(25:18,50:31) "25:18,50:31" # 
-    agerange_str <- "24:38"     # "30:31" # 45:44    
+    agerange     <-  25:38      #  30:31  # 45:44   c(25:18,50:31) "25:18,50:31" # 
+    agerange_str <- "25:38"     # "30:31" # 45:44    
     
     usernamename_already_visited <-c() # pof is extremely page dynamic: I do not want to visit a person accidentally twice
     for(agecurr in agerange) { # testing only 31 and 30 # 31:30    
@@ -306,13 +306,16 @@ pof_visit_looper_dev <- function(curr_port = 4461, action = "just_visit", online
         }
         
         print(paste0("body type is ", body_type))
-        
+        print(paste0("CURRENT URL"))
+        print(navigate_target_age_current_page)
         
         
         print(paste0("of age ",agecurr, " beginning page ",pagecurr," of ",pagerange_str))
         
         remDr$navigate(navigate_target_age_current_page)
-        Sys.sleep(3 + 1 * runif(1, min = 0, max = 1)) # 10 to 15 seconds wait 
+        Sys.sleep(5 + 3 * runif(1, min = 0, max = 1)) # 5 to 8 seconds wait ( POF catch up?) 
+        remDr$refresh() # may or may not help ( SUDDEN case of empty page ?? )
+        # NOTE: manual message management: go to a new tab of the chrome browser ( not to a new opera )
         
         usernamecount <- remDr$executeScript("return document.querySelectorAll('div.about').length;")[[1]] # NOTE: ADD ERROR HANDLING LATER
         if( usernamecount == 0 ) {
