@@ -177,7 +177,7 @@ safe_navigate_to_new_url <- function(new_url = NULL, remote_driver = NULL, after
 
 
 
-pof_visit_looper_dev <- function(curr_port = 4461, action = "just_visit", online_when = "within_the_last_week", not_to_vst = "NONE", not_to_msg = "NONE") { 
+pof_visit_looper_dev <- function(curr_port = 4461, action = "just_visit", online_when = "within_the_last_week", not_to_vst = "NONE", not_to_msg = "NONE", body_type = "anything") { 
   # OR action = "message_greet_matchname" "message_random_catchphrase"
   # OR not_to_msg = "all_all"
   # CONSIDER other PARAMETERS: , online_when = "within_the_last_week", not_to_vst = "NONE", not_to_msg = "NONE"
@@ -282,22 +282,30 @@ pof_visit_looper_dev <- function(curr_port = 4461, action = "just_visit", online
           break # out of the page loop # since 'online_when' THIS IS 'per age', go to the next age ( above )
         }
         
-        # POSSIBLE_FUNCTION_PARAMETER
+
+        # default
+        if( body_type == "anything" ) {
+          
+          # age1 to age1
+          # 70002 - 50 miles
+          # Body Type: Anything DEFAULT ( but I could sort by 'Newest Users')
+          # Sort By: 'Last Visit' ( but I could sort by 'Newest Users')
+          navigate_target_age_current_page <- paste0("http://www.pof.com/advancedsearch.aspx?iama=m&minage=",agecurr,"&maxage=",agecurr,"&city=70002&seekinga=f&searchtype=&country=1&heightb=999&maritalstatus=&relationshipage_id=&starsign=&body=&smarts=&fishtype=&pets=&eyes_id=&religionmult=&starsignmult=&thnicitymult=&haircolormult=&income=&profession_id=&Family_id=&intent=&easygoing_id=&confidence_id=&openness_id=&haircolor=&religion=&miles=50&page=",pagecurr,"&count=700")
         
-        # age1 to age1
-        # 70002 - 50 miles
-        # Body Type: Anything DEFAULT ( but I could sort by 'Newest Users')
-        # Sort By: 'Last Visit' ( but I could sort by 'Newest Users')
-        # navigate_target_age_current_page <- paste0("http://www.pof.com/advancedsearch.aspx?iama=m&minage=",agecurr,"&maxage=",agecurr,"&city=70002&seekinga=f&searchtype=&country=1&heightb=999&maritalstatus=&relationshipage_id=&starsign=&body=&smarts=&fishtype=&pets=&eyes_id=&religionmult=&starsignmult=&thnicitymult=&haircolormult=&income=&profession_id=&Family_id=&intent=&easygoing_id=&confidence_id=&openness_id=&haircolor=&religion=&miles=50&page=",pagecurr,"&count=700")
+        }
+  
+        if( body_type == "thin_athletic" ) {
         
+          # SINCE I ONLY HAVE A LIMIT OF 55 NEW USERS EVER CONTACTED IN A 24 HOUR PERIOD, I MIGHT AS WELL MAKE THEM COUNT
+          # age1 to age1
+          # 70002 - 50 miles
+          # Body Type: Thin, Athletic
+          # Sort By: 'Last Visit' DEFAULT ( but I could sort by 'Newest Users')
+          navigate_target_age_current_page <- paste0("http://www.pof.com/advancedsearch.aspx?iama=m&minage=",agecurr,"&maxage=",agecurr,"&state=26&city=70002&seekinga=f&searchtype=&country=1&heightb=999&maritalstatus=&relationshipage_id=&starsign=&body=1_2&smarts=&fishtype=&pets=&eyes_id=&religionmult=&starsignmult=&thnicitymult=&haircolormult=&income=&profession_id=&Family_id=&intent=&easygoing_id=&confidence_id=&openness_id=&haircolor=&religion=&miles=50&page=",pagecurr,"&count=700")
         
-        # SINCE I ONLY HAVE A LIMIT OF 55 NEW USERS EVER CONTACTED IN A 24 HOUR PERIOD, I MIGHT AS WELL MAKE THEM COUNT
-        # age1 to age1
-        # 70002 - 50 miles
-        # Body Type: Thin, Athletic
-        # Sort By: 'Last Visit' DEFAULT ( but I could sort by 'Newest Users')
-        navigate_target_age_current_page <- paste0("http://www.pof.com/advancedsearch.aspx?iama=m&minage=",agecurr,"&maxage=",agecurr,"&state=26&city=70002&seekinga=f&searchtype=&country=1&heightb=999&maritalstatus=&relationshipage_id=&starsign=&body=1_2&smarts=&fishtype=&pets=&eyes_id=&religionmult=&starsignmult=&thnicitymult=&haircolormult=&income=&profession_id=&Family_id=&intent=&easygoing_id=&confidence_id=&openness_id=&haircolor=&religion=&miles=50&page=",pagecurr,"&count=700")
+        }
         
+        print(paste0("body type is ", body_type))
         
         
         
@@ -572,10 +580,10 @@ pof_visit_looper_dev <- function(curr_port = 4461, action = "just_visit", online
 
 # just visit
 # pof_visit_looper_dev()
-# pof_visit_looper_dev(curr_port = 4461, action = "just_visit", online_when = "within_the_last_week") # default
+# pof_visit_looper_dev(curr_port = 4461, action = "just_visit", online_when = "within_the_last_week", not_to_vst = "NONE", not_to_msg = "NONE", body_type = "anything") # default
 
 # send a message
-# pof_visit_looper_dev(curr_port = 4462, action = "message_greet_matchname", online_when = "online_now", not_to_msg = "all_all")
+# pof_visit_looper_dev(curr_port = 4462, action = "message_greet_matchname", online_when = "online_now", not_to_vst = "NONE", not_to_msg = "all_all", body_type = "thin_athletic")
 
 # END INSTRUCTIONS  
 # END INSTRUCTIONS    
