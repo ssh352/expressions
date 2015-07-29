@@ -203,10 +203,64 @@ pof_visit_looper_dev <- function(curr_port = 4461, action = "just_visit", online
     con <- dbConnect(drv, host = "127.0.0.1", dbname = "aes_db", user = "postgres", password = "postgres")
     
     # REM: taskmgr OR 'some other way' KILL off java.exe if it is running
+    
+    # netstat -o -a -b  -n | find /i "listening" | find /i ":4461" 
+    # taskkill /F /T /PID <above_right_col_number>
+    # ABOVE done more elegantly BELOW
+    
+    # get the parent port 
+    child_port <- as.character(curr_port)
+    tcpip_network_connections <- system2("netstat", args="-o -a -n ", stdout = TRUE)
+    tcpip_network_connections_port_of_interest_index <- str_detect(tcpip_network_connections, child_port)
+
+    # is at least one value TRUE? 
+    tcpip_network_connections_interested <- c()
+    parent_port <- ""
+    if(any(tcpip_network_connections_port_of_interest_index)) {
+      
+      tcpip_network_connections_interested <- tcpip_network_connections[tcpip_network_connections_port_of_interest_index]
+      parent_port <- unique(str_replace(str_extract(tcpip_network_connections_interested,"[ ]\\d+$"),"[ ]",""))
+      
+      # kills parent and dependent children(java.exe and chromedriver.exe) DOES NOT kill chrome.exe
+      print(paste0("begin killing child port ",child_port," and parent port ( and children ) ", parent_port))
+      system2("taskkill", args=paste0(" /F /T /PID ", parent_port), stdout = TRUE) # need print() to print
+      print(paste0("end killing child port ",child_port," and parent port ( and children ) ", parent_port))
+    }
+        
     startServer(args = c(paste0("-port ", curr_port),"-timeout 3600","-browserTimeout 3600"))  # default # 4444 # java -jar selenium-server-standalone.jar -h
     Sys.sleep(5.0) # 5 second wait
     
-    cprof <- getChromeProfile("J:\\YDrive\\All_NewSeduction\\All_ElectronicSpeech\\RSeleniumAndBrowsers\\AES1_assistance\\RDebug\\Administrator\\AppData\\Local\\Google\\Chrome\\User Data", "era674smartie_era674smart") 
+    
+    browser_profile_dir_path   <- "J:\\YDrive\\All_NewSeduction\\All_ElectronicSpeech\\RSeleniumAndBrowsers\\AES1_assistance\\RDebug\\Administrator\\AppData\\Local\\Google\\Chrome\\User Data"
+    browser_profile            <- "era674smartie_era674smart"
+    browser_profile_file       <- "Preferences"
+    browser_profile_file_GOOD  <- "Preferences.CORRECT_HOME_PAGE_AND_IMAGES"    
+    
+    browser_pref_conf_file_name <- paste0(browser_profile_dir_path, "\\", browser_profile, "\\" , browser_profile_file)
+    browser_pref_conf_file_name_GOOD <- paste0(browser_profile_dir_path, "\\", browser_profile, "\\" , browser_profile_file_GOOD)
+    
+    # chrome - CRASH RESTORE LAST SESSION PROBLEM
+    # Disable Google Chrome session restore functionality [duplicate]
+    # http://superuser.com/questions/461035/disable-google-chrome-session-restore-functionality
+    #                   exit_type: None NOT Normal
+    # JSON profile exited_cleanly: true
+    # http://jsbeautifier.org
+    # http://jsonviewer.stack.hu
+    # ABOVE - DID NOT WORK
+    
+    # Solution - JUST REPLACE THE NEWER PREF FILE WITH AN OLDER PREF FILE
+    
+    print("Begin browser pref conf file name GOOD copy ")
+    file.copy(from = browser_pref_conf_file_name_GOOD
+              , to   = browser_pref_conf_file_name
+              , overwrite = TRUE, copy.date = TRUE
+    ) # return TRUE/FALSE
+    # if 'from' file not found, it will * silently fail *
+    Sys.sleep(5.0) # flush time
+    print("End browser pref conf file name GOOD copy ")
+    
+    # cprof <- getChromeProfile("J:\\YDrive\\All_NewSeduction\\All_ElectronicSpeech\\RSeleniumAndBrowsers\\AES1_assistance\\RDebug\\Administrator\\AppData\\Local\\Google\\Chrome\\User Data", "era674smartie_era674smart") 
+    cprof <- getChromeProfile(browser_profile_dir_path, browser_profile)
     remDr <- remoteDriver(browserName = "chrome", extraCapabilities = cprof, port = curr_port) # default 4444
     
     print(paste0("PORT ", curr_port))
@@ -258,8 +312,8 @@ pof_visit_looper_dev <- function(curr_port = 4461, action = "just_visit", online
     # pof
     # 45 is the maximum age for a 31 year old
     #  else it defaults to 'a big age range'
-    agerange     <-  25:38      #  30:31  # 45:44   c(25:18,50:31) "25:18,50:31" # 
-    agerange_str <- "25:38"     # "30:31" # 45:44    
+    agerange     <-  24:38      #  30:31  # 45:44   c(25:18,50:31) "25:18,50:31" # 
+    agerange_str <- "24:38"     # "30:31" # 45:44    
     
     usernamename_already_visited <-c() # pof is extremely page dynamic: I do not want to visit a person accidentally twice
     for(agecurr in agerange) { # testing only 31 and 30 # 31:30    
@@ -345,6 +399,9 @@ pof_visit_looper_dev <- function(curr_port = 4461, action = "just_visit", online
             usernamequalities[[usernamecurr]] <- unlist(strsplit(usernamequalities[[usernamecurr]], "[ ]"))
             
           }
+          
+          # vector: will be updated if the user chose to show her first name e.g. Renee in her profile
+          usernamename_lastbetterknown <- usernamename
           
           # per username(elements) on this page
           for(usernamecurr in usernamerange) {
@@ -469,11 +526,31 @@ pof_visit_looper_dev <- function(curr_port = 4461, action = "just_visit", online
                   # , good evening this fine Monday! Are you well this evening? --Monday July 28th
                   
                   
-                  current_message  <- paste0(usernamenamecurr, message_greet_matchname_vector)
+                  webElemPOSSBTRNAMETEXT <- remDr$findElement("css selector", "span.headline.AboutMe")  
+                  webElemPOSSBTRNAMETEXT$highlightElement()   # works
+                  
+                  headline_about_caption <- webElemPOSSBTRNAMETEXT$getElementText()[[1]]
+                  # "About Renee"
+                  
+                  headline_about_caption_selfid <- str_replace(str_extract(headline_about_caption,"[ ].*"),"[ ]","")
+                  # [1] "Renee"
+                  
+                  if(headline_about_caption_selfid != "Me") {
+                    usernamename_lastbetterknown[usernamecurr] <- headline_about_caption_selfid 
+                  } else {
+                    usernamename_lastbetterknown[usernamecurr] <- usernamenamecurr
+                  }
+                  usernamenamecurr_lastbetterknowncurr <- usernamename_lastbetterknown[usernamecurr]
+                  
+                  # AFTER SURE CUSTOM NAME WORKS CORRECTLY THEN REMOVE THIS LINE
+                  # current_message  <- paste0(usernamenamecurr, message_greet_matchname_vector)
+                  current_message  <- paste0(usernamenamecurr_lastbetterknowncurr, message_greet_matchname_vector)
                   
                   # SEND MESSEGE - PER HERE PAGE STEPS 1-3 ( OF TOTAL 6 )
                   
-                  print(paste0("Begin attempt to send message to ", usernamenamecurr))
+                  # AFTER SURE CUSTOM NAME WORKS CORRECTLY THEN REMOVE THIS LINE
+                  # print(paste0("Begin attempt to send message to ", usernamenamecurr))
+                  print(paste0("Begin attempt to send message to ", usernamenamecurr," aka ", usernamenamecurr_lastbetterknowncurr))
                   
                   writeLines(current_message)
                   
@@ -488,7 +565,9 @@ pof_visit_looper_dev <- function(curr_port = 4461, action = "just_visit", online
                   webElemSMB$clickElement() # SEEMS TO HAVE WORKED - THE PAGE CHANGED          # 6
                   Sys.sleep(1 + 1 * runif(1, min = 0, max = 1)) 
                   
-                  print(paste0("End attempt to send message to ", usernamenamecurr))
+                  # AFTER SURE CUSTOM NAME WORKS CORRECTLY THEN REMOVE THIS LINE
+                  # print(paste0("End attempt to send message to ", usernamenamecurr))
+                  print(paste0("End attempt to send message to ", usernamenamecurr," aka ", usernamenamecurr_lastbetterknowncurr))
                   
                 }
               
@@ -588,6 +667,6 @@ pof_visit_looper_dev <- function(curr_port = 4461, action = "just_visit", online
 # send a message
 # pof_visit_looper_dev(curr_port = 4462, action = "message_greet_matchname", online_when = "online_now", not_to_vst = "NONE", not_to_msg = "all_all", body_type = "thin_athletic")
 
-# END INSTRUCTIONS  
-# END INSTRUCTIONS    
+# END INSTRUCTIONS 
+# END INSTRUCTIONS     
 
