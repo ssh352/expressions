@@ -103,6 +103,7 @@ options(digits = 22)
 options(max.print=99999)
 options(scipen=255) 
 options(digits.secs = 6)
+options(error = recover)
 
 safe_navigate_to_new_url <- function(new_url = NULL, remote_driver = NULL, after_how_long = NULL, backout_url = NULL) {
   
@@ -257,8 +258,8 @@ pof_visit_looper_dev <- function(curr_port = 4461, action = "just_visit", online
     # pof
     # 45 is the maximum age for a 31 year old
     #  else it defaults to 'a big age range'
-    agerange     <-  27:38      #  30:31  # 45:44   c(25:18,50:31) "25:18,50:31" # 
-    agerange_str <- "27:38"     # "30:31" # 45:44    
+    agerange     <-  24:38      #  30:31  # 45:44   c(25:18,50:31) "25:18,50:31" # 
+    agerange_str <- "24:38"     # "30:31" # 45:44    
     
     usernamename_already_visited <-c() # pof is extremely page dynamic: I do not want to visit a person accidentally twice
     for(agecurr in agerange) { # testing only 31 and 30 # 31:30    
@@ -393,7 +394,7 @@ pof_visit_looper_dev <- function(curr_port = 4461, action = "just_visit", online
             } else {  }
             
             if(sub("^\\s+", "", usernamequalitiescurr[length(usernamequalitiescurr)-2]) == "Online" && 
-                 usernamequalitiescurr[length(usernamequalitiescurr-1)]  == "This"  && 
+                 usernamequalitiescurr[length(usernamequalitiescurr)-1]  == "This"  && 
                  usernamequalitiescurr[length(usernamequalitiescurr)  ]  == "Week"  
             ) { 
               usernameonlinexxxcurr <- "ONLINETHISWEEK"
@@ -453,7 +454,9 @@ pof_visit_looper_dev <- function(curr_port = 4461, action = "just_visit", online
               
                 if( action == "message_greet_matchname" ) {
                   
-                  c(", good evening this fine Monday! Are you well this evening?") -> message_greet_matchname_vector
+                  c(", Hi!") -> message_greet_matchname_vector
+                  # , good evening this fine Monday! Are you well this evening? --Monday July 28th
+                  
                   
                   current_message  <- paste0(usernamenamecurr, message_greet_matchname_vector)
                   
@@ -574,6 +577,6 @@ pof_visit_looper_dev <- function(curr_port = 4461, action = "just_visit", online
 # send a message
 # pof_visit_looper_dev(curr_port = 4462, action = "message_greet_matchname", online_when = "online_now", not_to_msg = "all_all")
 
-# END INSTRUCTIONS 
-# END INSTRUCTIONS   
+# END INSTRUCTIONS  
+# END INSTRUCTIONS    
 
