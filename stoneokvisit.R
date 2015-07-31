@@ -444,6 +444,10 @@ okcupid_visit_looper_dev <- function(curr_port = 4451, action = "just_visit", on
       
       print(paste0("end collecting all A elements of THIS SEGMENT of the page of : ",agecurr, " of age ", agerange_str))
       
+      # removing 'cf event' - these are not 'the name' and not 'the url' so thes do not have 'use' to me
+      # un-removal MAY be causing the last person in an age to be 'double contacted'?
+      apagearefs <- str_replace(apagearefs,"[?]cf=event","")
+
       # unique
       apagearefsu   <- unique(apagearefs)
       
@@ -495,6 +499,10 @@ okcupid_visit_looper_dev <- function(curr_port = 4451, action = "just_visit", on
 
         print(paste0("end collecting all A elements of THIS SEGMENT of the page of : ",agecurr, " of age ", agerange_str))
         
+        # removing 'cf event' - these are not 'the name' and not 'the url' so thes do not have 'use' to me
+        # un-removal MAY be causing the last person in an age to be 'double contacted'?
+        apagearefs <- str_replace(apagearefs,"[?]cf=event","")
+
         # unique
         apagearefsu   <- unique(apagearefs)
         
@@ -626,8 +634,9 @@ okcupid_visit_looper_dev <- function(curr_port = 4451, action = "just_visit", on
       
       # get the name out of the url
 
+      # MOVED UP ( to a better place ) - probably? too late here
       # NEW - slight cleanup SOME have THESE FLAGS
-      apagearefsupr_reduced <- str_replace(apagearefsupr_reduced,"[?]cf=event","")
+      # apagearefsupr_reduced <- str_replace(apagearefsupr_reduced,"[?]cf=event","")
 
       begin_matchnames_str_locations <- (str_locate(apagearefsupr_reduced,"profile/") + 1)[,2,drop=FALSE]
       
@@ -931,6 +940,6 @@ okcupid_visit_looper_dev <- function(curr_port = 4451, action = "just_visit", on
 
 
 
-# END INSTRUCTIONS 
 # END INSTRUCTIONS   
+# END INSTRUCTIONS     
 
