@@ -268,7 +268,7 @@ okcupid_visit_looper_dev <- function(curr_port = 4451, action = "just_visit", on
     # USED WEEK OF FRI JUNE 19: c(", hello :)") -> message_greet_matchname_vector  
     # , howdy :)  # SAT - JUNE 20
     # ", Good Tuesday evening. How are you?" - JULY 14 - caught - cajunfaith (NEW PERSON)
-    c(", happy Sunday! How are you?") -> message_greet_matchname_vector # JULY 26
+    c(", hi and good evening to you this fine Thursday. How are you?") -> message_greet_matchname_vector # JULY 26
     
     # NOTE: DOES NOT YET ESCAPE OUT TICK MARKS('), SO DO NOT SEND OUT A TICK MARK(')
     
@@ -277,8 +277,8 @@ okcupid_visit_looper_dev <- function(curr_port = 4451, action = "just_visit", on
     message_textarea_end   <- "\";"
     
     # MAGIC NUMBER 
-    agerange <-      24:38      #  30:31  # 50:49   c(25:18,50:31) "25:18,50:31" # LEFT_OFF 29 _diamonds_ "message box full"
-    agerange_str <- "24:38"     # "30:31" # 50:49    
+    agerange <-      21:49      #  30:31  # 50:49   c(25:18,50:31) "25:18,50:31" # LEFT_OFF 29 _diamonds_ "message box full"
+    agerange_str <- "21:49"     # "30:31" # 50:49    
     
     for(agecurr in agerange) { # testing only 31 and 30 # 31:30   
       
@@ -422,12 +422,25 @@ okcupid_visit_looper_dev <- function(curr_port = 4451, action = "just_visit", on
       
       apagearefs <- c()
       
+      # SLOW VERSION
+#       if ( alinkslength > 0 ) { 
+#         for(alinkcurr in 0:(alinkslength -1)) {
+#           apagearefs <- c(apagearefs,remDr$executeScript(paste0("return document.getElementsByTagName('a')[",alinkcurr,"].href;"))[[1]])
+#           Sys.sleep(0.001)
+#         }
+#       }
+#       # FAST VERSION OF ABOVE ( IF WORKS, THEN REMOVE THE SLOW VERSION ABOVE )
+      # s = "x".repeat(Math.pow(2, 23)) + "y"; s.length;
+      # http://bytes.com/topic/javascript/answers/92088-max-allowed-length-javascript-string
+      apagearefs_superstring <- ""
       if ( alinkslength > 0 ) { 
-        for(alinkcurr in 0:(alinkslength -1)) {
-          apagearefs <- c(apagearefs,remDr$executeScript(paste0("return document.getElementsByTagName('a')[",alinkcurr,"].href;"))[[1]])
-          Sys.sleep(0.001)
-        }
+        getelmentsbytagname_js_command <- paste0("return ", paste("document.getElementsByTagName('a')[",0:(alinkslength -1),"].href", sep = "", collapse =" + ' ' + "),";" )
+        apagearefs_superstring <-remDr$executeScript(getelmentsbytagname_js_command)[[1]]
       }
+      if(apagearefs_superstring != "") {
+        apagearefs <- str_split(apagearefs_superstring,"[ ]")[[1]]
+      }
+      
       
       print(paste0("end collecting all A elements of THIS SEGMENT of the page of : ",agecurr, " of age ", agerange_str))
       
@@ -460,14 +473,26 @@ okcupid_visit_looper_dev <- function(curr_port = 4451, action = "just_visit", on
         print(paste0("begin collecting all A elements of THIS SEGMENT of the page of : ",agecurr, " of age ", agerange_str))
         
         apagearefs <- c()
-        
+
+        # SLOW VERSION
+#         if ( alinkslength > 0 ) { 
+#           for(alinkcurr in 0:(alinkslength -1)) {
+#             apagearefs <- c(apagearefs,remDr$executeScript(paste0("return document.getElementsByTagName('a')[",alinkcurr,"].href;"))[[1]])
+#             Sys.sleep(0.001)
+#           }
+#         }
+        # FAST VERSION OF ABOVE ( IF WORKS, THEN REMOVE THE SLOW VERSION ABOVE )
+        # s = "x".repeat(Math.pow(2, 23)) + "y"; s.length;
+        # http://bytes.com/topic/javascript/answers/92088-max-allowed-length-javascript-string
+        apagearefs_superstring <- ""
         if ( alinkslength > 0 ) { 
-          for(alinkcurr in 0:(alinkslength -1)) {
-            apagearefs <- c(apagearefs,remDr$executeScript(paste0("return document.getElementsByTagName('a')[",alinkcurr,"].href;"))[[1]])
-            Sys.sleep(0.001)
-          }
+           getelmentsbytagname_js_command <- paste0("return ", paste("document.getElementsByTagName('a')[",0:(alinkslength -1),"].href", sep = "", collapse =" + ' ' + "),";" )
+           apagearefs_superstring <-remDr$executeScript(getelmentsbytagname_js_command)[[1]]
         }
-        
+        if(apagearefs_superstring != "") {
+          apagearefs <- str_split(apagearefs_superstring,"[ ]")[[1]]
+        }
+
         print(paste0("end collecting all A elements of THIS SEGMENT of the page of : ",agecurr, " of age ", agerange_str))
         
         # unique
@@ -549,8 +574,8 @@ okcupid_visit_looper_dev <- function(curr_port = 4451, action = "just_visit", on
       
       # all_all <- c(lik_all,rec_all,some_curr_dialog) 
       
-      # MANUAL OVERRIDE
-      all_all <- c("Kat0o","cajunfaith","southernkitsune") # JULY 14 - INVITED HERE
+      # MANUAL OVERRIDE                                   # OPEN MARRIAGE JUST WIERD
+      all_all <- c("Kat0o","cajunfaith","southernkitsune","smartsassysweet1") # JULY 14 - INVITED HERE
       
       # NOTE okcupid logic: a msg INCLUDES a vst
       #  OKCUPID IDEA: turn anonymous browsing ON WHILE sending messages $$ A-list
@@ -600,6 +625,10 @@ okcupid_visit_looper_dev <- function(curr_port = 4451, action = "just_visit", on
       print(paste0("Reduced actually actioning  profiles: ",apagearefsupr_reduced_count))
       
       # get the name out of the url
+
+      # NEW - slight cleanup SOME have THESE FLAGS
+      apagearefsupr_reduced <- str_replace(apagearefsupr_reduced,"[?]cf=event","")
+
       begin_matchnames_str_locations <- (str_locate(apagearefsupr_reduced,"profile/") + 1)[,2,drop=FALSE]
       
       # OLD
