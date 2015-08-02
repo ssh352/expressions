@@ -203,7 +203,8 @@ okcupid_visit_looper_dev <- function(curr_port = 4451, action = "just_visit", on
     
     print(paste0("PORT ", curr_port))
     
-    remDr$open() # oracle.com  
+    # oracle.com 
+    remDr$open() 
     Sys.sleep(3 + 1 * runif(1, min = 0, max = 1)) # 10 to 15 seconds wait
     
     print(paste0("PORT ", curr_port))
@@ -268,17 +269,25 @@ okcupid_visit_looper_dev <- function(curr_port = 4451, action = "just_visit", on
     # USED WEEK OF FRI JUNE 19: c(", hello :)") -> message_greet_matchname_vector  
     # , howdy :)  # SAT - JUNE 20
     # ", Good Tuesday evening. How are you?" - JULY 14 - caught - cajunfaith (NEW PERSON)
-    c(", hi and good evening to you this fine Thursday. How are you?") -> message_greet_matchname_vector # JULY 26
+    # c(", hi and good evening to you this fine Thursday. How are you?") -> message_greet_matchname_vector # JULY 30
     
+    c(", hello. Good Saturday!  How are you this evening?") -> message_greet_matchname_vector # JULY 26
+
+
     # NOTE: DOES NOT YET ESCAPE OUT TICK MARKS('), SO DO NOT SEND OUT A TICK MARK(')
     
                                                        # NOTE: THIS MAY BE VOLITILE ( AT FIRST WAS [6]?)
     message_textarea_begin <- "return document.getElementsByTagName(\"textarea\")[5].value = \""
     message_textarea_end   <- "\";"
     
+    # ( REMOVE AFTER DEBUGGING )
+    # SECOND_TOUCH_ERROR
+    # PER 'ALL AGES' ( SEEMS TO BE HAPPENING? AT THE END OF AN AGE_TOUCH_LIST ) 
+    already_touched_alink <- c()
+    
     # MAGIC NUMBER 
-    agerange <-      21:49      #  30:31  # 50:49   c(25:18,50:31) "25:18,50:31" # LEFT_OFF 29 _diamonds_ "message box full"
-    agerange_str <- "21:49"     # "30:31" # 50:49    
+    agerange <-      19:49      #  30:31  # 50:49   c(25:18,50:31) "25:18,50:31" # LEFT_OFF 29 _diamonds_ "message box full"
+    agerange_str <- "19:49"     # "30:31" # 50:49    
     
     for(agecurr in agerange) { # testing only 31 and 30 # 31:30   
       
@@ -584,7 +593,9 @@ okcupid_visit_looper_dev <- function(curr_port = 4451, action = "just_visit", on
       
       # MANUAL OVERRIDE                                   # OPEN MARRIAGE JUST WIERD
       all_all <- c("Kat0o","cajunfaith","southernkitsune","smartsassysweet1") # JULY 14 - INVITED HERE
-      
+      all_all <- c(all_all, "gangsta_grrl","CriuseChick","catsyoulater") # some recent dialog
+      all_all <- c(all_all,"5000kwatts","Bozzo327")  # far way but too hot to miss
+
       # NOTE okcupid logic: a msg INCLUDES a vst
       #  OKCUPID IDEA: turn anonymous browsing ON WHILE sending messages $$ A-list
       
@@ -667,6 +678,17 @@ okcupid_visit_looper_dev <- function(curr_port = 4451, action = "just_visit", on
         print(paste0("  current matchname: ",matchnames[action_ref_counter]))
         
         print(paste0("  action ", action_ref_counter, " of ",apagearefsupr_reduced_count ))
+        
+        # ( REMOVE AFTER DEBUGGING )
+        # SECOND_TOUCH_ERROR
+        # BAD PATCH COVERALL  
+        # LATER - I SHOULD FIND HOW THAT DUPLICATE GETS IN AN (any_visit DEBUG) AND CORRECT IT
+        if(alink %in% already_touched_alink) { 
+          print(paste0("skipping - already visited / greet_matchname (below) - THIS SHOULD NOT HAPPEN - please fix"));
+          print(paste0("SKIP(NEXT) and END visiting ", alink, " of the page of : ",agecurr, " of age ", agerange_str))
+          already_touched_alink <- c(already_touched_alink,alink)
+          next; # alink in  apagearefsupr_reduced
+        }
         
         navigate_target <- alink
         
