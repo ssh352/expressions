@@ -209,26 +209,26 @@ pof_visit_looper_dev <- function(curr_port = 4461, action = "just_visit", online
     # ABOVE done more elegantly BELOW
     
     # get the parent port 
-    child_port <- as.character(curr_port)
-    tcpip_network_connections <- system2("netstat", args="-o -a -n ", stdout = TRUE)
-    tcpip_network_connections_port_of_interest_index <- str_detect(tcpip_network_connections, child_port)
-
-    # is at least one value TRUE? 
-    tcpip_network_connections_interested <- c()
-    parent_port <- ""
-    if(any(tcpip_network_connections_port_of_interest_index)) {
-      
-      tcpip_network_connections_interested <- tcpip_network_connections[tcpip_network_connections_port_of_interest_index]
-      parent_port <- unique(str_replace(str_extract(tcpip_network_connections_interested,"[ ]\\d+$"),"[ ]",""))
-      
-      # kills parent and dependent children(java.exe and chromedriver.exe) DOES NOT kill chrome.exe
-      print(paste0("begin killing child port ",child_port," and parent port ( and children ) ", parent_port))
-      system2("taskkill", args=paste0(" /F /T /PID ", parent_port), stdout = TRUE) # need print() to print
-      print(paste0("end killing child port ",child_port," and parent port ( and children ) ", parent_port))
-    }
-        
-    startServer(args = c(paste0("-port ", curr_port),"-timeout 3600","-browserTimeout 3600"))  # default # 4444 # java -jar selenium-server-standalone.jar -h
-    Sys.sleep(5.0) # 5 second wait
+#     child_port <- as.character(curr_port)
+#     tcpip_network_connections <- system2("netstat", args="-o -a -n ", stdout = TRUE)
+#     tcpip_network_connections_port_of_interest_index <- str_detect(tcpip_network_connections, child_port)
+# 
+#     # is at least one value TRUE? 
+#     tcpip_network_connections_interested <- c()
+#     parent_port <- ""
+#     if(any(tcpip_network_connections_port_of_interest_index)) {
+#       
+#       tcpip_network_connections_interested <- tcpip_network_connections[tcpip_network_connections_port_of_interest_index]
+#       parent_port <- unique(str_replace(str_extract(tcpip_network_connections_interested,"[ ]\\d+$"),"[ ]",""))
+#       
+#       # kills parent and dependent children(java.exe and chromedriver.exe) DOES NOT kill chrome.exe
+#       print(paste0("begin killing child port ",child_port," and parent port ( and children ) ", parent_port))
+#       system2("taskkill", args=paste0(" /F /T /PID ", parent_port), stdout = TRUE) # need print() to print
+#       print(paste0("end killing child port ",child_port," and parent port ( and children ) ", parent_port))
+#     }
+#         
+      startServer(args = c(paste0("-port ", curr_port),"-timeout 3600","-browserTimeout 3600"))  # default # 4444 # java -jar selenium-server-standalone.jar -h
+      Sys.sleep(5.0) # 5 second wait
     
     
     browser_profile_dir_path   <- "J:\\YDrive\\All_NewSeduction\\All_ElectronicSpeech\\RSeleniumAndBrowsers\\AES1_assistance\\RDebug\\Administrator\\AppData\\Local\\Google\\Chrome\\User Data"
@@ -254,7 +254,8 @@ pof_visit_looper_dev <- function(curr_port = 4461, action = "just_visit", online
     file.copy(from = browser_pref_conf_file_name_GOOD
               , to   = browser_pref_conf_file_name
               , overwrite = TRUE, copy.date = TRUE
-    ) # return TRUE/FALSE
+    ) -> file_copy_success # return TRUE/FALSE
+    if(!isTRUE(file_copy_success)) { stop("Preferences file copy failed!")  }
     # if 'from' file not found, it will * silently fail *
     Sys.sleep(5.0) # flush time
     print("End browser pref conf file name GOOD copy ")
@@ -265,7 +266,7 @@ pof_visit_looper_dev <- function(curr_port = 4461, action = "just_visit", online
     
     print(paste0("PORT ", curr_port))
     
-    # NOTE: POF # stores 'preferences(cookie-ish) on its servers in Vancouver'
+    # NOTE: POF # stores 'preferences(cookie-ish) on its servers in Vancouver '
     # pof has DEEP memory
   
     remDr$open() # hp.com  
@@ -312,8 +313,11 @@ pof_visit_looper_dev <- function(curr_port = 4461, action = "just_visit", online
     # pof
     # 45 is the maximum age for a 31 year old
     #  else it defaults to 'a big age range'
-    agerange     <-  24:38      #  30:31  # 45:44   c(25:18,50:31) "25:18,50:31" # 
-    agerange_str <- "24:38"     # "30:31" # 45:44    
+    # 31 YEAR OLD - SEARCH ON * age * WILL FAIL - '22 is first success' '45 is the last success'
+    #    SAFE MIN: 23 SAFE MAX 44
+
+    agerange     <-  23:44      #  30:31  # 45:44   c(25:18,50:31) "25:18,50:31" # 
+    agerange_str <- "23:44"     # "30:31" # 45:44    
     
     usernamename_already_visited <-c() # pof is extremely page dynamic: I do not want to visit a person accidentally twice
     for(agecurr in agerange) { # testing only 31 and 30 # 31:30    
@@ -667,6 +671,6 @@ pof_visit_looper_dev <- function(curr_port = 4461, action = "just_visit", online
 # send a message
 # pof_visit_looper_dev(curr_port = 4462, action = "message_greet_matchname", online_when = "online_now", not_to_vst = "NONE", not_to_msg = "all_all", body_type = "thin_athletic")
 
-# END INSTRUCTIONS 
-# END INSTRUCTIONS     
+# END INSTRUCTIONS  
+# END INSTRUCTIONS      
 
