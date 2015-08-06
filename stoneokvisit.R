@@ -190,6 +190,9 @@ okcupid_visit_looper_dev <- function(curr_port = 4451, action = "just_visit", on
     require(RSelenium)
     require(stringr)
     
+    # Administrative sleep
+    # Sys.sleep(3600.0 * 8) # 5:30 + 8 hours = 1:30 p.m.START
+    
     require(RPostgreSQL)
     drv <- dbDriver("PostgreSQL")
     con <- dbConnect(drv, host = "127.0.0.1", dbname = "aes_db", user = "postgres", password = "postgres")
@@ -271,7 +274,7 @@ okcupid_visit_looper_dev <- function(curr_port = 4451, action = "just_visit", on
     # ", Good Tuesday evening. How are you?" - JULY 14 - caught - cajunfaith (NEW PERSON)
     # c(", hi and good evening to you this fine Thursday. How are you?") -> message_greet_matchname_vector # JULY 30
     
-    c(", hello. Good Saturday!  How are you this evening?") -> message_greet_matchname_vector # JULY 26
+    c(", good day!  This is a joyful Tuesday.  I just had a surprise.  So, how are you today?") -> message_greet_matchname_vector # JULY 26
 
 
     # NOTE: DOES NOT YET ESCAPE OUT TICK MARKS('), SO DO NOT SEND OUT A TICK MARK(')
@@ -286,8 +289,8 @@ okcupid_visit_looper_dev <- function(curr_port = 4451, action = "just_visit", on
     already_touched_alink <- c()
     
     # MAGIC NUMBER 
-    agerange <-      19:49      #  30:31  # 50:49   c(25:18,50:31) "25:18,50:31" # LEFT_OFF 29 _diamonds_ "message box full"
-    agerange_str <- "19:49"     # "30:31" # 50:49    
+    agerange <-      18:49      #  30:31  # 50:49   c(25:18,50:31) "25:18,50:31" # LEFT_OFF 29 _diamonds_ "message box full"
+    agerange_str <- "18:49"     # "30:31" # 50:49    
     
     for(agecurr in agerange) { # testing only 31 and 30 # 31:30   
       
@@ -591,19 +594,30 @@ okcupid_visit_looper_dev <- function(curr_port = 4451, action = "just_visit", on
       
       # all_all <- c(lik_all,rec_all,some_curr_dialog) 
       
-      # MANUAL OVERRIDE                                   # OPEN MARRIAGE JUST WIERD
-      all_all <- c("Kat0o","cajunfaith","southernkitsune","smartsassysweet1") # JULY 14 - INVITED HERE
-      all_all <- c(all_all, "gangsta_grrl","CriuseChick","catsyoulater") # some recent dialog
-      all_all <- c(all_all,"5000kwatts","Bozzo327")  # far way but too hot to miss
+      # MANUAL OVERRIDE    # OPEN MARRIAGE JUST WIERD
+      all_all <- c()
+      all_all <- c(all_all,"Kat0o","cajunfaith") # prev dates
+      all_all <- c(all_all,"southernkitsune")   # hot but no car
+      all_all <- c(all_all,"smartsassysweet1")   # wierd swinger
+      all_all <- c(all_all,"gangsta_grrl","CriuseChick","catsyoulater") # some recent dialog
+      all_all <- c(all_all,"5000kwatts")  # far way but too hot to miss
+      all_all <- c(all_all,"fireunleashed") # OVER THE HILL WOMAN - BUT HOT ( I GAVE A CUSTOM REPLY )
+      all_all <- c(all_all,"LadyTSydney") # direct to me - NO
+      all_all <- c(all_all,"Bozzo327") # from Sunday # You should sms my cell at 5045151708 # far away but hot
+      all_all <- c(all_all,"nataleebabinn") # I sent out of the blue ( she is too hot )
 
       # NOTE okcupid logic: a msg INCLUDES a vst
       #  OKCUPID IDEA: turn anonymous browsing ON WHILE sending messages $$ A-list
       
       do_not_vst <- c()
       if(not_to_vst == "NONE") {     # default
-        do_not_vst <- c(special)
+        do_not_vst <- c(special,"Kat0o","cajunfaith") # previous dates
       }
       
+     if(not_to_vst == "SOME") {     # default
+       do_not_vst <- c(special,"Kat0o","cajunfaith") # previous dates
+     }
+
       # exclusive choices
       if(not_to_msg == "NONE") {     # default
         do_not_vst_msg <- c(do_not_vst)
@@ -890,6 +904,7 @@ okcupid_visit_looper_dev <- function(curr_port = 4451, action = "just_visit", on
       
     }
     
+    print(Sys.time())
     bookmarkhere <- 1
     
     # manually logout of ok cupid here 
@@ -955,9 +970,14 @@ okcupid_visit_looper_dev <- function(curr_port = 4451, action = "just_visit", on
 
 # MAKE SURE - I am (IF PAID FOR) NOT browsing anonymously
 
+# visiting
+# okcupid_visit_looper_dev()
 # okcupid_visit_looper_dev <- function(curr_port = 4451, action = "just_visit", online_when = "within_the_last_week", not_to_vst = "NONE", not_to_msg = "NONE")
 
-# okcupid_visit_looper_dev()
+# visiting - not previous dates
+# okcupid_visit_looper_dev(curr_port = 4451, action = "just_visit", online_when = "within_the_last_week", not_to_vst = "SOME", not_to_msg = "NONE")
+
+# messaging
 # okcupid_visit_looper_dev(curr_port = 4452, action = "message_greet_matchname", online_when = "online_now", not_to_msg = "all_all")  
 
 
