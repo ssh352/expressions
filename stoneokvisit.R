@@ -274,8 +274,9 @@ okcupid_visit_looper_dev <- function(curr_port = 4451, action = "just_visit", on
     # ", Good Tuesday evening. How are you?" - JULY 14 - caught - cajunfaith (NEW PERSON)
     # c(", hi and good evening to you this fine Thursday. How are you?") -> message_greet_matchname_vector # JULY 30
     
-    c(", good day!  This is a joyful Tuesday.  I just had a surprise.  So, how are you today?") -> message_greet_matchname_vector # JULY 26
-
+    # c(", good day!  This is a joyful Tuesday.  I just had a surprise.  So, how are you today?") -> message_greet_matchname_vector # TUES AUG 6
+    c(", happy Thursday!  So, how are you doing this fine evening?") -> message_greet_matchname_vector # THE AUG 8
+    
 
     # NOTE: DOES NOT YET ESCAPE OUT TICK MARKS('), SO DO NOT SEND OUT A TICK MARK(')
     
@@ -599,12 +600,19 @@ okcupid_visit_looper_dev <- function(curr_port = 4451, action = "just_visit", on
       all_all <- c(all_all,"Kat0o","cajunfaith") # prev dates
       all_all <- c(all_all,"southernkitsune")   # hot but no car
       all_all <- c(all_all,"smartsassysweet1")   # wierd swinger
+      all_all <- c(all_all,"Alpha0227") # just weird
+      all_all <- c(all_all,"Ms_MandaJ") # THE AUG 6 - sent back weak repsonse: YOUNG BL GIRL: I HAVE TO THINK IF I WANT TO ASK HER OUT
       all_all <- c(all_all,"gangsta_grrl","CriuseChick","catsyoulater") # some recent dialog
       all_all <- c(all_all,"5000kwatts")  # far way but too hot to miss
-      all_all <- c(all_all,"fireunleashed") # OVER THE HILL WOMAN - BUT HOT ( I GAVE A CUSTOM REPLY )
-      all_all <- c(all_all,"LadyTSydney") # direct to me - NO
+      all_all <- c(all_all,"jennh379") # # OVER THE HILL WOMAN - AVE ( BUT ASKED OFFLINE IF I MAY MEET HER IN PERSON  (TH AUG 6) ) New Orleans
+      all_all <- c(all_all,"fireunleashed","Carpinteria01") # OVER THE HILL WOMAN - BUT HOT ( I GAVE A CUSTOM REPLY )
       all_all <- c(all_all,"Bozzo327") # from Sunday # You should sms my cell at 5045151708 # far away but hot
       all_all <- c(all_all,"nataleebabinn") # I sent out of the blue ( she is too hot )
+      all_all <- c(all_all,"AniLevee") # Tells me that I am too old for her
+
+      all_all <- c(all_all,"lilbird987","xoxosunshinexoxo","PoopySoupy","pizzaforbrkfst") # she tells me directly that she is not interested
+
+      all_all <- c(all_all,"LadyTSydney") # direct to me - NO
 
       # NOTE okcupid logic: a msg INCLUDES a vst
       #  OKCUPID IDEA: turn anonymous browsing ON WHILE sending messages $$ A-list
@@ -746,7 +754,32 @@ okcupid_visit_looper_dev <- function(curr_port = 4451, action = "just_visit", on
             # OLD
             # current_message  <- paste0(message_greet_matchname_vector[trunc( 1 + length(message_greet_matchname_vector)*runif(1, min = 0, max = 1) - 0.001 )], " ",matchnames[action_ref_counter]) 
             # NEW expect the matchname to come first  # *** NOTE: STICK ," Ivan" at the end to add a signature  ***
-            current_message  <- paste0(matchnames[action_ref_counter],message_greet_matchname_vector[trunc( 1 + length(message_greet_matchname_vector)*runif(1, min = 0, max = 1) - 0.001 )])
+            
+            matchname_current <- matchnames[action_ref_counter]
+            
+            # If she has a REAL name, I will use it in messages
+            
+            matchnames_aliases <- list(
+              c("aaplude92","Amanda"),    # THESE PEOPLE TOLD ME THEIR NAMES OR IT WAS I THEIR PROFILE
+              c("jsbutterfly","Jocelyn"),
+              c("breezybaby2710","Alexa"),
+              c("MOFlynn37","Michelle")
+            )
+            
+            matchnames_aliases_db <- as.data.frame(t(data.frame(matchnames_aliases)), stringsAsFactors = FALSE)
+            
+            if(any(str_detect(matchname_current,matchnames_aliases_db[,1]))) {
+              # as an alias  # find the alias
+              # NOTE: could fail if TWO entries are found ( really should have tested more)
+              matchname_to_message <- matchnames_aliases_db["V2"][matchnames_aliases_db["V1"] == matchname_current]
+            } else {
+              matchname_to_message <- matchname_current
+            }
+            print(paste0("Messageing her real name instead: ", matchname_to_message))
+            
+            current_message  <- paste0(matchname_to_message,message_greet_matchname_vector[trunc( 1 + length(message_greet_matchname_vector)*runif(1, min = 0, max = 1) - 0.001 )])            
+            # current_message  <- paste0(matchnames[action_ref_counter],message_greet_matchname_vector[trunc( 1 + length(message_greet_matchname_vector)*runif(1, min = 0, max = 1) - 0.001 )])
+            
           } 
         
           if( action == "message_random_catchphrase" ) { # NOTE: UN-'TESTED IN PROD - BUT SHOULD WORK'
@@ -978,8 +1011,7 @@ okcupid_visit_looper_dev <- function(curr_port = 4451, action = "just_visit", on
 # okcupid_visit_looper_dev(curr_port = 4451, action = "just_visit", online_when = "within_the_last_week", not_to_vst = "SOME", not_to_msg = "NONE")
 
 # messaging
-# okcupid_visit_looper_dev(curr_port = 4452, action = "message_greet_matchname", online_when = "online_now", not_to_msg = "all_all")  
-
+# 
 
 
 # END INSTRUCTIONS   
