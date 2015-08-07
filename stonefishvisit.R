@@ -319,8 +319,17 @@ pof_visit_looper_dev <- function(curr_port = 4461, action = "just_visit", online
     agerange     <-  23:44      #  30:31  # 45:44   c(25:18,50:31) "25:18,50:31" # 
     agerange_str <- "23:44"     # "30:31" # 45:44    
     
+    # POF limit of 55 messages per 24 hour period
+    true_attempted_send_message_ANDRE_this_session_run_limit <- 40
+    true_attempted_send_message_count <- 0
+
     usernamename_already_visited <-c() # pof is extremely page dynamic: I do not want to visit a person accidentally twice
     for(agecurr in agerange) { # testing only 31 and 30 # 31:30    
+      
+      if(true_attempted_send_message_ANDRE_this_session_run_limit == true_attempted_send_message_count) {
+        print(paste0("sent message: Andre this session run limit reached - break from all ages loop"))
+        break;
+      }
       
       # per age
       no_more_online_when <- FALSE
@@ -334,6 +343,11 @@ pof_visit_looper_dev <- function(curr_port = 4461, action = "just_visit", online
       pagerange_str <- "1:20"    
       
       for(pagecurr in pagerange) {
+        
+        if(true_attempted_send_message_ANDRE_this_session_run_limit == true_attempted_send_message_count) {
+          print(paste0("sent message: Andre this session run limit reached - break from pagerange of this age loop"))
+          break;
+        }
         
         if(no_more_online_when == TRUE) {
           print(paste0("ending age ", agecurr," of ",agerange_str))
@@ -526,7 +540,7 @@ pof_visit_looper_dev <- function(curr_port = 4461, action = "just_visit", online
               
                 if( action == "message_greet_matchname" ) {
                   
-                  c(", Hi!") -> message_greet_matchname_vector
+                  c(", good Friday morning to you!  How are you?") -> message_greet_matchname_vector
                   # , good evening this fine Monday! Are you well this evening? --Monday July 28th
                   
                   
@@ -572,6 +586,16 @@ pof_visit_looper_dev <- function(curr_port = 4461, action = "just_visit", online
                   # AFTER SURE CUSTOM NAME WORKS CORRECTLY THEN REMOVE THIS LINE
                   # print(paste0("End attempt to send message to ", usernamenamecurr))
                   print(paste0("End attempt to send message to ", usernamenamecurr," aka ", usernamenamecurr_lastbetterknowncurr))
+                  
+                  if(action == "message_greet_matchname") {
+                    true_attempted_send_message_count <- true_attempted_send_message_count + 1
+                  }
+
+                  if(true_attempted_send_message_ANDRE_this_session_run_limit == true_attempted_send_message_count) {
+                    print(paste0("message ",true_attempted_send_message_count," of max messages ", true_attempted_send_message_ANDRE_this_session_run_limit))
+                    print(paste0("sent message: Andre this session run limit reached - break from username(elements) on this page loop"))
+                    break;
+                  }
                   
                 }
               
