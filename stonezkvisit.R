@@ -103,7 +103,7 @@ options(digits = 22)
 options(max.print=99999)
 options(scipen=255) 
 options(digits.secs = 6)
-options(error = recover)
+options(error=NULL) # options(error = recover) 
 
 safe_navigate_to_new_url <- function(new_url = NULL, remote_driver = NULL, after_how_long = NULL, backout_url = NULL) {
   
@@ -276,12 +276,13 @@ zk_visit_looper_dev <- function(curr_port = 4471, action = "just_visit", online_
 
     # not required firefox does native events "MANUALLY type remDr to SEE"
     # remDr <- remoteDriver(port= curr_port, nativeEvents = TRUE) # RSelenium-basics.html async javascript PROBLEM firefox?
+    # OVERRIDE
+    # OVERRIDE
     # OVERRIDE - CURRENLY ONLY PRACTICING WITH FIREFOX
     # FIREFOX
     # nativeEvents = XXXX # because DEFAULT may be platform specific
     remDr <- remoteDriver(port= curr_port, nativeEvents = TRUE)  # SYNC/ASYNC PAGE LOADING?
     # remDr <- remoteDriver(port= curr_port, nativeEvents = FALSE)  # SYNC/ASYNC PAGE LOADING? - NO AFFECT
-
 
     print(paste0("PORT ", curr_port))
     
@@ -388,618 +389,516 @@ zk_visit_looper_dev <- function(curr_port = 4471, action = "just_visit", online_
 
     print("logged into zoosk")
     
-    # WORKS - but I may/will 'return to' later
-    # navigate to the search page
 
-    remDr$navigate("https://www.zoosk.com/personals/search/edit")
-    Sys.sleep(7 + 1 * runif(1, min = 0, max = 1)) # TIME CONSUMING
-    # now at location of tabs 'New Search(HERE)     Saved Searches'
+    # 'do not visit/do not message' global collection
+    # LATER - re-write using PAIRS? - can I search by ... long name?
 
-    # SOMETIMES (even without cookies)
-    # REMEMBERS LAST SEARCH - not what I want safer to
-    # 1. reset 2. go to search link again
+    special    <- c("robot")
+    some_curr_dialog <- c()
+    rec_all <- c() # HAVE SENT A good CUSTOM FIRST MESSAGE - SUN JUL 26
+    lik_all <- c()
+    all_all <- c(lik_all,rec_all,some_curr_dialog) 
+    
+    # MANUAL OVERRIDE
+    # all_all <- c()
+    
+    do_not_vst <- c()
+    if(not_to_vst == "NONE") {     # default
+      do_not_vst <- c(special)
+    }
+    
+    # exclusive choices
+    if(not_to_msg == "NONE") {     # default
+      do_not_vst_msg <- c(do_not_vst)
+    }
+    if(not_to_msg == "all_all") {
+      do_not_vst_msg <- c(do_not_vst,all_all)
+    }  
 
-    # reset
-
-    webElemSEARCHRESETLINK <- remDr$findElement("css selector", ".js-reset-link")
-    webElemSEARCHRESETLINK$highlightElement() 
-    webElemSEARCHRESETLINK$clickElement() # works
-    Sys.sleep(3 + 1 * runif(1, min = 0, max = 1))
-
-    # re-navigate to search page
-
-    remDr$navigate("https://www.zoosk.com/personals/search/edit")
-    Sys.sleep(7 + 1 * runif(1, min = 0, max = 1)) # TIME CONSUMING
-
-    # setting the search age
-    
-    agecurr <- 21
-    
-    webElemAGEMIN <- remDr$findElement("css selector", ".js-criteria-age-min.age-input")
-    webElemAGEMIN$highlightElement()
-    remDr$executeScript(script = "return arguments[0].value = arguments[1];", args = list(webElemAGEMIN,agecurr))[[1]] # WORKS
-    Sys.sleep(1 + 1 * runif(1, min = 0, max = 1))
-    
-    webElemAGEMAX <- remDr$findElement("css selector", ".js-criteria-age-max.age-input")
-    webElemAGEMAX$highlightElement()
-    remDr$executeScript(script = "return arguments[0].value = arguments[1];", args = list(webElemAGEMAX,agecurr))[[1]] 
-    Sys.sleep(1 + 1 * runif(1, min = 0, max = 1))
-    
-    # setting the search distance
-    
-    webElemDISTANCE <- remDr$findElement("name", "distance")
-    webElemDISTANCE$highlightElement()                               # <option value="80">50 miles</option>
-    remDr$executeScript(script = "return arguments[0].value = arguments[1];", args = list(webElemDISTANCE,80))[[1]] # works
-    Sys.sleep(1 + 1 * runif(1, min = 0, max = 1))
-    
-    # press the advanced search link
-    
-    webElemADVSEARCHLINK <- remDr$findElement("css selector", ".js-advanced-search-link")
-    webElemADVSEARCHLINK$highlightElement() 
-    webElemADVSEARCHLINK$clickElement() # works
-    Sys.sleep(3 + 1 * runif(1, min = 0, max = 1))
-    
-    # body type
-    webElemSEARCH_CRIT_BODY_TYPE  <- remDr$findElements("css selector", "input.js-criteria-body_type")
-    
-    # SLIM <input class="js-criteria-body_type" value="1" type="checkbox"> ( will not hightlight )
-    webElemSEARCH_CRIT_BODY_TYPE[[1]]$clickElement()
-    Sys.sleep(1 + 1 * runif(1, min = 0, max = 1))
-    
-    # ATHLETIC <input class="js-criteria-body_type" value="2" type="checkbox">
-    webElemSEARCH_CRIT_BODY_TYPE[[2]]$clickElement()
-    Sys.sleep(1 + 1 * runif(1, min = 0, max = 1))
-    
-    # Also - Average [[3]] and Curvy [[4]]
-    # NOTE: much work exists to TRY CLICK on the 'ANY box' - detect text "Body Type"
-    # OR MAY WANT TO USE A DIFFERENT KIND OF 'text orientated' SELECTOR
-    
-    # press the search button 
-    
-    # ONLY DO EXACTLY BEFORE pressing SEARCH 
-    #  ( its changed position basic/advanced will cause webElem to *Error* )
-    webElemSEARCHBTN <- remDr$findElement("css selector", "span.js-button-search span")
-    webElemSEARCHBTN$highlightElement() 
-    webElemSEARCHBTN$clickElement() #  WORKS
-    Sys.sleep(5 + 1 * runif(1, min = 0, max = 1))
-
-    # WORKS - but I may/will 'return to' later
-# take me to the 'saved searches tab'
-
-#     webElemSEARCHTAB <- remDr$findElement("css selector", "li.js-es-tab-saved-searches")
-#     webElemSEARCHTAB$highlightElement() # THAT WORKED
-#     webElemSEARCHTAB$clickElement()  # WORKED # 1ST TIME HUNG ( NOTE: ZOOSK - MAY HAVE A TENDENCY TO HANG ?? )
-
-    # AFTER A SEARCH
-    # AFTER A SEARCH
-
-    # toggle the grid
-    
-    webElemTOGGLEGRIDBTN <- remDr$findElement("css selector", "span.view-toggle.view-toggle-grid")
-    webElemTOGGLEGRIDBTN$highlightElement()
-    webElemTOGGLEGRIDBTN$clickElement()
-    print("just toggled the GRID")
-    Sys.sleep(2 + 1 * runif(1, min = 0, max = 1))
-
-    # next button will show
-
-    # (I would actually want to process this page before 'going to the NEXT page')
+    # zk: I do not want to ACCIDENTALLY visit a person accidentally twice
+    data_guid_already_visited <-c() 
 
     # unique id will by data_guid ( FOR NOW )
     match_matchname_data_guid_no_reencounter_global <- c()
     match_matchname_no_reencounter_global_list <- list()
 
-    # get all match guids on the page 
-
-    webElemMATCHES <-remDr$findElements("css selector", "li.grid-tile")
-    print("just got all the TILES on page")
-    # partial url of matches
-    match_matchname_data_guid <- unlist(lapply(webElemMATCHES , function(x){x$getElementAttribute("data-guid")}))
-    print("just got page all data-guid")
-
-    # example visit https://www.zoosk.com/personals/datecard/(EXACT match_matchname_data_guid)/about
-    # https://www.zoosk.com/personals/datecard/9387ed9733ae66494f825bae57880827/about
-
-    # get all match attributes on the page 
-    # NOTE: I MUST(diff from okcupid and pof) LOOP THROUGH ALL PAGES (at least per age )AND COLLECT THE ATTRIBUTES 
-    #   before visting anyone the "http... page=1" will recycle after the 3rd page '4th page = 1st page" WHICH IS FALSE
-
-    # webElemMATCHES - continued from previous KEEP
-    text_of_matches <- unlist(lapply(webElemMATCHES , function(x){x$getElementText()}))
-    print("just got page all text of matches")
-
-    # CURRENTLY NOT USED
-    # match_attributes_list <- list()
-
-    match_matchname_short <- c()
-    match_matchname_recent_online <- c()
-    match_matchname_online_now <- c()
-    match_matchname_age <- c()
-    match_matchname_location <- c()
+    # NOTE: zk: 
+    # I MUST (diff from okcupid and pof) LOOP THROUGH ALL PAGES (at least per age ) 
+    #        AND COLLECT THE ATTRIBUTES 
+    #   before visting anyone. If I manually browse to  "http... page=1", then page data 
+    #      will recycle after the 3rd page '4th page = 1st page" WHICH IS FALSE
     
-    text_of_matches_current_counter <- 0
-    if(length(text_of_matches) > 0 ) {        # usually 28 - if not ... another way to detect if I am at the last page
-      for(text_of_a_match_current in text_of_matches) {
-        text_of_matches_current_counter = text_of_matches_current_counter  + 1
-        
-        current_match_attributes <- str_split(text_of_matches[text_of_matches_current_counter], "\n")[[1]]
-        
-        # IF NO ONLINE_STATUS then this will be missing
-        # "5 Photos"        "Recently Online" "A Zoosk m..."    "32, New Orleans" 
-        
-        current_match_attributes_length <- length(current_match_attributes) 
-        
-        # matchname is always 2nd from the end
-        current_match_matchname_short <- current_match_attributes[current_match_attributes_length -1]
-        
-        # her age - the end  - "32, New Orleans"
-        current_match_matchname_age <- str_extract(current_match_attributes[current_match_attributes_length],"^\\d\\d")
-        
-        # her location - the end - "32, New Orleans"
-        current_match_matchname_location <- str_replace(str_extract(current_match_attributes[current_match_attributes_length],"[ ].*"),"[ ]","")
-        
-        # true/false
-        current_match_matchname_recent_online <- ("Recently Online" %in% current_match_attributes)
-        current_match_matchname_online_now    <- ("Online Now" %in% current_match_attributes)
-        
-        # CURRENLY NOT USED
-        # store - list of each ("5 Photos"        "Recently Online" "A Zoosk m..."    "32, New Orleans") 
-        # match_attributes_list[[text_of_matches_current_counter]]            <-  current_match_attributes
-        
-        # would have to get match_matchname_long from the datacard page itself
-        
-        match_matchname_short[text_of_matches_current_counter]         <-  current_match_matchname_short
-        match_matchname_recent_online[text_of_matches_current_counter] <-  current_match_matchname_recent_online
-        match_matchname_online_now[text_of_matches_current_counter]    <-  current_match_matchname_online_now
-        match_matchname_age[text_of_matches_current_counter]           <-  current_match_matchname_age
-        match_matchname_location[text_of_matches_current_counter]      <-  current_match_matchname_location
-        
-      }
-    }
-
-    # keep the ones that I have not encountered before
-    keep_current_matchnames_index <- !(match_matchname_data_guid %in% match_matchname_data_guid_no_reencounter_global)
+    # MAGIC NUMBER  
+    # zk ( ANY numbers: minage < me < maxage ) ??
     
-    # just keep the ones that I have no encountered before
+    agerange     <-  18:20      #  30:31  # 45:44   c(25:18,50:31) "25:18,50:31" # 
+    agerange_str <- "18:20"     # "30:31" # 45:44
 
-    match_matchname_data_guid_reduced      <-  match_matchname_data_guid[keep_current_matchnames_index]
-    
-    match_matchname_short_reduced          <-  match_matchname_short[keep_current_matchnames_index]           
-    match_matchname_recent_online_reduced  <-  match_matchname_recent_online[keep_current_matchnames_index]  
-    match_matchname_online_now_reduced     <-  match_matchname_online_now[keep_current_matchnames_index]     
-    match_matchname_age_reduced            <-  match_matchname_age[keep_current_matchnames_index]             
-    match_matchname_location_reduced       <-  match_matchname_location[keep_current_matchnames_index]       
-    
-    # put the ones that I have not encountered before into a list
-    
-    match_matchname_no_reencounter_list <- list(
-      
-      match_matchname_data_guid              = match_matchname_data_guid_reduced,
-      
-      match_matchname_short                  = match_matchname_short_reduced,            
-      match_matchname_recent_online          = match_matchname_recent_online_reduced,
-      match_matchname_online_now             = match_matchname_online_now_reduced,      
-      match_matchname_age                    = match_matchname_age_reduced,        
-      match_matchname_location               = match_matchname_location_reduced     
-    )
-    
-    # save to global only the new ones that I have not encountered before
-    
-    match_matchname_data_guid_no_reencounter_global <- c(match_matchname_data_guid_no_reencounter_global, match_matchname_data_guid_reduced)
-    match_matchname_no_reencounter_global_list      <- c(match_matchname_no_reencounter_global_list,match_matchname_no_reencounter_list)
-
-
-    # LOOP through all of the 'pages of the age' # then the 'age of the ages'
-
-    # of the (possible) NEXT button
-    
-    NEXT_BUTTON_STATE <-c()
-    # manage NEXT and NEXT_disable
-    if(remDr$executeScript("return document.querySelectorAll('li.next-button.paging.disabled').length;")[[1]] != 0) {
-      print("NEXT_disable not found")
-      # BEGIN PROCESSING THOSE COLLECTED LINKS
-      NEXT_BUTTON_STATE <-c("NEXT_DISABLED")
-      # END PROCESSING THOSE COLLETED LINKS
-    } else {
-      print("NEXT not on PAGE ... XOR ... NEXT_enabled")
-      if(remDr$executeScript("return document.querySelectorAll('li.next-button.paging').length;")[[1]] != 0) {
-        print("  NEXT_enabled")
-        NEXT_BUTTON_STATE <-c("NEXT_ENABLED")
-      } else {
-        print("  NEXT not on PAGE")
-        NEXT_BUTTON_STATE <-c("NEXT_NOT_ON_PAGE")
-      }
-    }
-    
-    
-    if(NEXT_BUTTON_STATE == "NEXT_ENABLED") {
-      
-      # press the NEXT button
-      
-      # two on page ( top and bottom )- selection does not matter - this is the top one
-      webElemNEXTBTN <- remDr$findElement("css selector", "li.next-button.paging")
-      webElemNEXTBTN$highlightElement()
-      webElemNEXTBTN$clickElement()
-      print("just pressed the NEXT button")
-      Sys.sleep(2 + 1 * runif(1, min = 0, max = 1))
-      # NEXT button was pressed
-      
-    }
-    # would not naturally collect all information on this page
-
-    LEFT_OFF <- 1 #
-
-    # LEFT_OFF: DO THIS SATURDAY 
-    # looping thorugh all pages and collecting all *information* 
-
-    # [ ] ( MAKE THE 'PAGES PER AGE LOOP - SIMPLE )
-    # [ ] ( MAKE THE  AGE PER ALL AGES LOOP')
-    
-    # start visiting PER AGE
-
-    current_match_matchname_data_guid_no_reencounter_global_counter <- 0
-    for(current_match_matchname_data_guid_no_reencounter_global in match_matchname_data_guid_no_reencounter_global) {
-      current_match_matchname_data_guid_no_reencounter_global_counter <- current_match_matchname_data_guid_no_reencounter_global_counter + 1
-      
-      # read match_matchname_no_reencounter_global_list[[current_match_matchname_data_guid_no_reencounter_global_counter]]
-      #   [["match_matchname_online_now"]]
-      #   [["match_matchname_recent_online"]]
-      
-      
-      webElemLONGMATCHNAME <-remDr$findElement("css selector", ".profile-header-text")
-      webElemLONGMATCHNAME$highlightElement()
-      
-      # "Profile: Geaux Geaux Gal" ( for her name in a message )
-      current_match_matchname_matchname_long <- str_replace(str_extract(webElemLONGMATCHNAME$getElementText()[[1]],":[ ].*"),":[ ]","")
-      
-      # "next;" OUT of ones I do not want to visit/visit_send_a_message
-      
-      remDr$navigate("https://www.zoosk.com/personals/datecard/9387ed9733ae66494f825bae57880827/about")
-      
-      
-    }
-
-    # if appropriate (IN THAT LOOP ABOVE) send a message
-
-    # if she does NOT have a 'button to send the message'
-    
-    if(remDr$executeScript("return document.querySelectorAll('p.chat-encourage-initial').length;")[[1]] != 0) {
-      
-      webElemSMALLINITCHATAREA <- remDr$findElement("css selector", "p.chat-encourage-initial")
-      webElemSMALLINITCHATAREA$highlightElement() # DID A TEST - I DO NOT REMEMBER
-      # write . . .
-      
-    }
-
-    # if she has a 'button to send the message'
-
-    if(remDr$executeScript("return document.querySelectorAll('input.quick-message-text').length;")[[1]] != 0) {
-      
-      # online use chat box
-      
-      webElemSMALLCHATAREA <-remDr$findElement("css selector", "input.quick-message-text")
-      webElemSMALLCHATAREA$highlightElement()
-      # WORKS ( AS FAR AS I CAN TELL )
-      
-      # write
-      Sys.sleep(1 + 1 * runif(1, min = 0, max = 1))
-      
-      # online user send chat button
-      
-      if(remDr$executeScript("return document.querySelectorAll('span.minor-button-confirm.send-chat').length;")[[1]] != 0) {
-        
-        webElemSENDCHATBUTTON <-remDr$findElement("css selector", "span.minor-button-confirm.send-chat")
-        webElemSENDCHATBUTTON$highlightElement()
-        # WORKS ( AS FAR AS I CAN TELL )
-        
-      }
-      
-    }
-
-
-
-
-    # MAGIC NUMBER 
-    # pof
-    # 45 is the maximum age for a 31 year old
-    #  else it defaults to 'a big age range'
-    # 31 YEAR OLD - SEARCH ON * age * WILL FAIL - '22 is first success' '45 is the last success'
-    #    SAFE MIN: 23 SAFE MAX 44
-
-    agerange     <-  23:44      #  30:31  # 45:44   c(25:18,50:31) "25:18,50:31" # 
-    agerange_str <- "23:44"     # "30:31" # 45:44    
-    
-    usernamename_already_visited <-c() # pof is extremely page dynamic: I do not want to visit a person accidentally twice
     for(agecurr in agerange) { # testing only 31 and 30 # 31:30    
       
-      # per age
-      no_more_online_when <- FALSE
+      this_age_visit_number_counter <- 0
+      
+      match_matchname_data_guid_reduced_per_age     <- c() 
+      match_matchname_short_reduced_per_age         <- c() 
+      match_matchname_recent_online_reduced_per_age <- c() 
+      match_matchname_online_now_reduced_per_age    <- c() 
+      match_matchname_age_reduced_per_age           <- c() 
+      match_matchname_location_reduced_per_age      <- c() 
+      
+      match_matchname_no_reencounter_list_per_age   <- list()
+      
+      # IS USED ANYMORE?
+      data_guid_range_allthisage <- c()
       
       print(Sys.time())
       print(paste0("PORT ", curr_port))
     
       print(paste0("beginning age ",agecurr," of ",agerange_str))
       
-      pagerange <-      1:20      
-      pagerange_str <- "1:20"    
+      # going to search page
+      
+      remDr$navigate("https://www.zoosk.com/personals/search/edit")
+      Sys.sleep(3 + 1 * runif(1, min = 0, max = 1)) # TIME CONSUMING
+      # now at location of tabs 'New Search(HERE)     Saved Searches'
+      
+      # SOMETIMES (even without cookies)
+      # REMEMBERS LAST SEARCH - not what I want safer to
+      # 1. reset 2. go to search link again
+      
+      # reset
+      
+      webElemSEARCHRESETLINK <- remDr$findElement("css selector", ".js-reset-link")
+      webElemSEARCHRESETLINK$highlightElement() 
+      webElemSEARCHRESETLINK$clickElement() # works
+      Sys.sleep(1 + 1 * runif(1, min = 0, max = 1))
+      
+      # re-navigate to search page
+      
+      remDr$navigate("https://www.zoosk.com/personals/search/edit")
+      Sys.sleep(3 + 1 * runif(1, min = 0, max = 1)) # TIME CONSUMING
+      
+      # WORKS - but I may/will 'return to' later
+      # takes me to the 'saved searches tab'
+      
+      #     webElemSEARCHTAB <- remDr$findElement("css selector", "li.js-es-tab-saved-searches")
+      #     webElemSEARCHTAB$highlightElement() # THAT WORKED
+      #     webElemSEARCHTAB$clickElement()  # WORKED # ( hangs in 'selenium chrome' better in firefox? )
+      
+      # setting the search age ( always (unless saved search?)) # age1 to age1
+      
+      webElemAGEMIN <- remDr$findElement("css selector", ".js-criteria-age-min.age-input")
+      webElemAGEMIN$highlightElement()
+      remDr$executeScript(script = "return arguments[0].value = arguments[1];", args = list(webElemAGEMIN,agecurr))[[1]] # WORKS
+      Sys.sleep(1 + 1 * runif(1, min = 0, max = 1))
+      
+      webElemAGEMAX <- remDr$findElement("css selector", ".js-criteria-age-max.age-input")
+      webElemAGEMAX$highlightElement()
+      remDr$executeScript(script = "return arguments[0].value = arguments[1];", args = list(webElemAGEMAX,agecurr))[[1]] 
+      Sys.sleep(1 + 1 * runif(1, min = 0, max = 1))
+      
+      # setting the location
+      # note zk knows Metairie or 70002 - persistent enough not to code 
+      
+      # setting the search distance ( always (unless saved search?)) # 50 miles
+      
+      webElemDISTANCE <- remDr$findElement("name", "distance")
+      webElemDISTANCE$highlightElement()                               # <option value="80">50 miles</option>
+      remDr$executeScript(script = "return arguments[0].value = arguments[1];", args = list(webElemDISTANCE,80))[[1]] # works
+      Sys.sleep(1 + 1 * runif(1, min = 0, max = 1))
+      
+      # default
+      if( body_type == "anything" ) {
+        # reset(way above) PUT 'advanced critia' at ANY
+      }
+      
+      # Body Type: zk: "SLIM or ATHLETIC"
+      if( body_type == "thin_athletic" ) {
+
+        # reset(way above) PUT 'advanced critia' at ANY
+        # press the advanced search link
+        
+        webElemADVSEARCHLINK <- remDr$findElement("css selector", ".js-advanced-search-link")
+        webElemADVSEARCHLINK$highlightElement() 
+        webElemADVSEARCHLINK$clickElement() # works
+        Sys.sleep(1 + 1 * runif(1, min = 0, max = 1))
+        
+        # body type
+        webElemSEARCH_CRIT_BODY_TYPE  <- remDr$findElements("css selector", "input.js-criteria-body_type")
+        
+        # SLIM <input class="js-criteria-body_type" value="1" type="checkbox"> ( will not hightlight )
+        webElemSEARCH_CRIT_BODY_TYPE[[1]]$clickElement()
+        Sys.sleep(1 + 1 * runif(1, min = 0, max = 1))
+        
+        # ATHLETIC <input class="js-criteria-body_type" value="2" type="checkbox">
+        webElemSEARCH_CRIT_BODY_TYPE[[2]]$clickElement()
+        Sys.sleep(1 + 1 * runif(1, min = 0, max = 1))
+        
+        # Also - Average [[3]] and Curvy [[4]]
+        # NOTE: much work exists to TRY CLICK on the 'ANY box' - detect text "Body Type"
+        # OR MAY WANT TO USE A DIFFERENT KIND OF 'text orientated' SELECTOR
+      }
+      
+      print(paste0("body type is ", body_type))
+      
+      # press the search button 
+      
+      # ONLY DO EXACTLY BEFORE pressing SEARCH 
+      #  ( its changed position basic/advanced will cause webElem to *Error* )
+      webElemSEARCHBTN <- remDr$findElement("css selector", "span.js-button-search span")
+      webElemSEARCHBTN$highlightElement() 
+      webElemSEARCHBTN$clickElement() #  WORKS
+      Sys.sleep(4 + 1 * runif(1, min = 0, max = 1))
+      
+      # now I am at target age current_page THAT first page
+      
+      # toggle the grid
+      
+      webElemTOGGLEGRIDBTN <- remDr$findElement("css selector", "span.view-toggle.view-toggle-grid")
+      webElemTOGGLEGRIDBTN$highlightElement()
+      webElemTOGGLEGRIDBTN$clickElement()
+      print("just toggled the GRID")
+      Sys.sleep(1 + 1 * runif(1, min = 0, max = 1))
+      
+      # NEXT button will show
+      
+      pagerange <-      1:99      
+      pagerange_str <- "1:99"    
       
       for(pagecurr in pagerange) {
         
-        if(no_more_online_when == TRUE) {
-          print(paste0("ending age ", agecurr," of ",agerange_str))
-          break # out of the page loop # since 'online_when' THIS IS 'per age', go to the next age ( above )
+        print(paste0("of age ",agecurr, " beginning page collecting information of ",pagecurr," of ",pagerange_str))
+               
+        # process this page before 'going to the NEXT page'
+        
+        # get all match guids on the page 
+        
+        webElemMATCHES <-remDr$findElements("css selector", "li.grid-tile")
+        print("just got page all TILES")
+        
+        # partial url of matches
+        match_matchname_data_guid <- unlist(lapply(webElemMATCHES , function(x){x$getElementAttribute("data-guid")}))
+        print("just got page all data-guid attributes")
+        
+        text_of_matches <- unlist(lapply(webElemMATCHES , function(x){x$getElementText()}))
+        print("just got page all text of matches")
+        
+        match_matchname_short <- c()
+        match_matchname_recent_online <- c()
+        match_matchname_online_now <- c()
+        match_matchname_age <- c()
+        match_matchname_location <- c()
+        
+        print(paste0(" of age ", agecurr, " of page ", pagecurr, " length of text of matches found: ",length(text_of_matches) ))
+        
+        text_of_matches_current_counter <- 0
+        if(length(text_of_matches) > 0 ) {        # usually 28 - if not ... another way to detect if I am at the last page
+          for(text_of_a_match_current in text_of_matches) {
+            text_of_matches_current_counter = text_of_matches_current_counter  + 1
+            
+            current_match_attributes <- str_split(text_of_matches[text_of_matches_current_counter], "\n")[[1]]
+            
+            # IF NO ONLINE_STATUS then this will be missing
+            # "5 Photos"        "Recently Online" "A Zoosk m..."    "32, New Orleans" 
+            
+            current_match_attributes_length <- length(current_match_attributes) 
+            
+            # matchname is always 2nd from the end
+            current_match_matchname_short <- current_match_attributes[current_match_attributes_length -1]
+            
+            # her age - the end  - "32, New Orleans"
+            current_match_matchname_age <- str_extract(current_match_attributes[current_match_attributes_length],"^\\d\\d")
+            
+            # her location - the end - "32, New Orleans"
+            current_match_matchname_location <- str_replace(str_extract(current_match_attributes[current_match_attributes_length],"[ ].*"),"[ ]","")
+            
+            # true/false
+            current_match_matchname_recent_online <- ("Recently Online" %in% current_match_attributes)
+            current_match_matchname_online_now    <- ("Online Now" %in% current_match_attributes)
+            
+            # CURRENLY NOT USED
+            # store - list of each ("5 Photos"        "Recently Online" "A Zoosk m..."    "32, New Orleans") 
+            # match_attributes_list[[text_of_matches_current_counter]]            <-  current_match_attributes
+            
+            # would have to get match_matchname_long from the datacard page itself
+            
+            match_matchname_short[text_of_matches_current_counter]         <-  current_match_matchname_short
+            match_matchname_recent_online[text_of_matches_current_counter] <-  current_match_matchname_recent_online
+            match_matchname_online_now[text_of_matches_current_counter]    <-  current_match_matchname_online_now
+            match_matchname_age[text_of_matches_current_counter]           <-  current_match_matchname_age
+            match_matchname_location[text_of_matches_current_counter]      <-  current_match_matchname_location
+            
+          }
         }
+        print("done processing the match_matchname_* attributes")
+        
+        print(paste0(" of age ", agecurr, " of page ", pagecurr, " length of match_matchname_data_guid_no_reencounter_global: ", length(match_matchname_data_guid_no_reencounter_global)))
+        
+        # keep the ones that I have not encountered before 
+        # ( assumption that no two users per page have the same guid )
+        keep_current_matchnames_index <- !(match_matchname_data_guid %in% match_matchname_data_guid_no_reencounter_global)
+        
+        print(paste0(" of age ", agecurr, " of page ", pagecurr, " sum as.integer (TRUEs) of keep_current_matchnames_index: ", sum(as.integer(keep_current_matchnames_index))))
+        print(!(match_matchname_data_guid %in% match_matchname_data_guid_no_reencounter_global))
+        
+        
+        # per page: just keep the ones that I have no encountered before
+        
+        match_matchname_data_guid_reduced      <-  match_matchname_data_guid[keep_current_matchnames_index]
+        
+        match_matchname_short_reduced          <-  match_matchname_short[keep_current_matchnames_index]           
+        match_matchname_recent_online_reduced  <-  match_matchname_recent_online[keep_current_matchnames_index]  
+        match_matchname_online_now_reduced     <-  match_matchname_online_now[keep_current_matchnames_index]     
+        match_matchname_age_reduced            <-  match_matchname_age[keep_current_matchnames_index]             
+        match_matchname_location_reduced       <-  match_matchname_location[keep_current_matchnames_index]       
         
 
-        # default
-        if( body_type == "anything" ) {
+        # per page: put the ones that I have not encountered before into a list
+        
+        match_matchname_no_reencounter_list <- list(
           
-          # age1 to age1
-          # 70002 - 50 miles
-          # Body Type: Anything DEFAULT ( but I could sort by 'Newest Users')
-          # Sort By: 'Last Visit' ( but I could sort by 'Newest Users')
-          navigate_target_age_current_page <- paste0("http://www.pof.com/advancedsearch.aspx?iama=m&minage=",agecurr,"&maxage=",agecurr,"&city=70002&seekinga=f&searchtype=&country=1&heightb=999&maritalstatus=&relationshipage_id=&starsign=&body=&smarts=&fishtype=&pets=&eyes_id=&religionmult=&starsignmult=&thnicitymult=&haircolormult=&income=&profession_id=&Family_id=&intent=&easygoing_id=&confidence_id=&openness_id=&haircolor=&religion=&miles=50&page=",pagecurr,"&count=700")
-        
-        }
-  
-        if( body_type == "thin_athletic" ) {
-        
-          # SINCE I ONLY HAVE A LIMIT OF 55 NEW USERS EVER CONTACTED IN A 24 HOUR PERIOD, I MIGHT AS WELL MAKE THEM COUNT
-          # age1 to age1
-          # 70002 - 50 miles
-          # Body Type: Thin, Athletic
-          # Sort By: 'Last Visit' DEFAULT ( but I could sort by 'Newest Users')
-          navigate_target_age_current_page <- paste0("http://www.pof.com/advancedsearch.aspx?iama=m&minage=",agecurr,"&maxage=",agecurr,"&state=26&city=70002&seekinga=f&searchtype=&country=1&heightb=999&maritalstatus=&relationshipage_id=&starsign=&body=1_2&smarts=&fishtype=&pets=&eyes_id=&religionmult=&starsignmult=&thnicitymult=&haircolormult=&income=&profession_id=&Family_id=&intent=&easygoing_id=&confidence_id=&openness_id=&haircolor=&religion=&miles=50&page=",pagecurr,"&count=700")
-        
-        }
-        
-        print(paste0("body type is ", body_type))
-        print(paste0("CURRENT URL"))
-        print(navigate_target_age_current_page)
-        
-        
-        print(paste0("of age ",agecurr, " beginning page ",pagecurr," of ",pagerange_str))
-        
-        remDr$navigate(navigate_target_age_current_page)
-        Sys.sleep(5 + 3 * runif(1, min = 0, max = 1)) # 5 to 8 seconds wait ( POF catch up?) 
-        remDr$refresh() # may or may not help ( SUDDEN case of empty page ?? )
-        # NOTE: manual message management: go to a new tab of the chrome browser ( not to a new opera )
-        
-        usernamecount <- remDr$executeScript("return document.querySelectorAll('div.about').length;")[[1]] # NOTE: ADD ERROR HANDLING LATER
-        if( usernamecount == 0 ) {
-          print(paste0("no usernames found of of age ",agecurr, "ending page ",pagecurr," of ",pagerange_str))
-          print(paste0("of age ",agecurr, "ending page ",pagecurr," of ",pagerange_str))
-          break; # pagecurr in pagerange, GOTO NEXT agecurr in agerange
+          match_matchname_data_guid              = match_matchname_data_guid_reduced,
           
+          match_matchname_short                  = match_matchname_short_reduced,            
+          match_matchname_recent_online          = match_matchname_recent_online_reduced,
+          match_matchname_online_now             = match_matchname_online_now_reduced,      
+          match_matchname_age                    = match_matchname_age_reduced,        
+          match_matchname_location               = match_matchname_location_reduced     
+        )
+        
+        # cummulatively per_age: 'save the ones that I have not encountered (reduced)' on this page ( for age processing later)
+
+        match_matchname_data_guid_reduced_per_age     <- c(match_matchname_data_guid_reduced_per_age, match_matchname_data_guid_reduced) 
+
+        match_matchname_short_reduced_per_age         <- c(match_matchname_short_reduced_per_age, match_matchname_short_reduced) 
+        match_matchname_recent_online_reduced_per_age <- c(match_matchname_recent_online_reduced_per_age, match_matchname_recent_online_reduced) 
+        match_matchname_online_now_reduced_per_age    <- c(match_matchname_online_now_reduced_per_age,match_matchname_online_now_reduced ) 
+        match_matchname_age_reduced_per_age           <- c(match_matchname_age_reduced_per_age, match_matchname_age_reduced) 
+        match_matchname_location_reduced_per_age      <- c(match_matchname_location_reduced_per_age, match_matchname_location_reduced) 
+        
+        # Merge Two Lists in R ( and avoid: zero-length inputs cannot be mixed with those of non-zero length )
+        # http://stackoverflow.com/questions/9519543/merge-two-lists-in-r
+        if(length(match_matchname_no_reencounter_list_per_age) > 0) {
+          match_matchname_no_reencounter_list_per_age   <-  mapply(c,match_matchname_no_reencounter_list_per_age, match_matchname_no_reencounter_list, SIMPLIFY=FALSE)          
         } else {
-          
-          
-          usernamerange <- 1:usernamecount
-          pagerange_str <- paste0(1,":",usernamecount)
-          
-          
-          # collect the page information
-          usernameurl         <- c()
-          usernamename        <- c()
-          usernamequalities   <- list()
-          
-          for(usernamecurr in usernamerange) {
-            
-            usernameurl[usernamecurr]        <- remDr$executeScript(paste0("return document.querySelectorAll('div.about > a.link')[",(usernamecurr - 1),"].href;"))[[1]]
-            
-            usernamename[usernamecurr]       <- remDr$executeScript(paste0("return document.querySelectorAll('div.about > a.link')[",(usernamecurr - 1),"].innerText;"))[[1]]
-            
-            usernamequalities[[usernamecurr]] <- remDr$executeScript(paste0("return document.querySelectorAll('div.about')[",(usernamecurr - 1),"].innerText;"))[[1]]
-            usernamequalities[[usernamecurr]] <- unlist(strsplit(usernamequalities[[usernamecurr]], "[ ]"))
-            
-          }
-          
-          # vector: will be updated if the user chose to show her first name e.g. Renee in her profile
-          usernamename_lastbetterknown <- usernamename
-          
-          # per username(elements) on this page
-          for(usernamecurr in usernamerange) {
-            
-            usernameurlcurr <- usernameurl[usernamecurr]          
-            usernamenamecurr <- usernamename[usernamecurr]         
-            usernamequalitiescurr <- usernamequalities[[usernamecurr]]  
-            
-            special    <- c("robot")
-            
-            some_curr_dialog <- c()
-            
-            rec_all <- c("FitBrittany","southernredhead8","nolacountrygirl985") # HAVE SENT A good CUSTOM FIRST MESSAGE - SUN JUL 26
-            
-            lik_all <- c()
-            
-            all_all <- c(lik_all,rec_all,some_curr_dialog) 
-            
-            # MANUAL OVERRIDE
-            # all_all <- c()
-            
-            do_not_vst <- c()
-            if(not_to_vst == "NONE") {     # default
-              do_not_vst <- c(special)
-            }
-            
-            # exclusive choices
-            if(not_to_msg == "NONE") {     # default
-              do_not_vst_msg <- c(do_not_vst)
-            }
-            if(not_to_msg == "all_all") {
-              do_not_vst_msg <- c(do_not_vst,all_all)
-            }  
-            
-            # ACTUALLY do not vst/msg 
-            if(usernamecurr %in% do_not_vst_msg) {
-              print(paste0("usernamecurr ", usernamecurr, " is explicit: do not vst/msg"))
-              print(paste0("therfore, skipping to the next user usernamecurr"))
-              next; # out of the 'username(elements) on page loop'
-            }
-            
-            # begin determining last online time
-            
-            usernameonlinexxxcurr <- c("UNKNOWN") 
-            
-            # javascript is 'zero(0) based'
-            
-            if(sub("^\\s+", "", usernamequalitiescurr[length(usernamequalitiescurr)-1]) == "Online" && 
-                 usernamequalitiescurr[length(usernamequalitiescurr)]  == "Now" ) { 
-              usernameonlinexxxcurr <- "ONLINENOW"
-              print(paste0(usernamenamecurr, " is Online Now"))   
-            } else { }
-            
-            if(sub("^\\s+", "", usernamequalitiescurr[length(usernamequalitiescurr)-1]) == "Online" && 
-                 usernamequalitiescurr[length(usernamequalitiescurr)]  == "Today" ) { 
-              usernameonlinexxxcurr <- "ONLINETODAY"
-              print(paste0(usernamenamecurr, " is Online Today"))   
-            } else {  }
-            
-            if(sub("^\\s+", "", usernamequalitiescurr[length(usernamequalitiescurr)-2]) == "Online" && 
-                 usernamequalitiescurr[length(usernamequalitiescurr)-1]  == "This"  && 
-                 usernamequalitiescurr[length(usernamequalitiescurr)  ]  == "Week"  
-            ) { 
-              usernameonlinexxxcurr <- "ONLINETHISWEEK"
-              print(paste0(usernamenamecurr, " is Online This Week"))   
-            } else {  }
-            
-            # what online status?
-            print(paste0(usernamenamecurr, " Online status is ", usernameonlinexxxcurr)) 
-            
-            # possible kick out of the program ( !!! NOT TESTED !!! )
-            
-            # ALPHAALPHA: NOTE ALPHAALPHA is the same as BETABETA - remove one of the two
-            if(online_when == "online_now" &&
-                 (
-                  usernameonlinexxxcurr ==  "ONLINETODAY" ||
-                  usernameonlinexxxcurr ==  "ONLINETHISWEEK" ||
-                  usernameonlinexxxcurr ==  "UNKNOWN" 
-                 ) 
-            ) {
-              print("Done with the loop: no more ONLINENOW.")
-              no_more_online_when <- TRUE
-              print(paste0("of age ",agecurr, " ending page ",pagecurr," of ",pagerange_str))
-              break; # out of the 'username(elements) on page loop'
-            }
-            
-            # NOTE: (CODE ABOVE): I HAVE "NOT DETECTED 'THIS MONTH'" ( SLIGHTLY DANGEROUS HERE)
-            #   NOT DETECTED: Online Last 30 Days
-            if(online_when == "within_the_last_week" && 
-            usernameonlinexxxcurr == "UNKNOWN"  ) {
-              print("Done with the loop: no more ONLINENOW, ONLINETODAY, ONLINETHISWEEK")
-              no_more_online_when <- TRUE
-              print(paste0("of age ",agecurr, " ending page ",pagecurr," of ",pagerange_str))
-              break; # out of the 'username(elements) on page loop'
-            }
-            
-            # BETABETA: NOTE ALPHAALPHA is the same as BETABETA - remove one of the two
-            if(online_when == "online_now" && 
-                 usernameonlinexxxcurr %in% c("ONLINETODAY", "ONLINETHISWEEK", "UNKNOWN")  ) {
-              print("Done with the loop: no more ONLINENOW")
-              no_more_online_when <- TRUE
-              print(paste0("of age ",agecurr, " ending page ",pagecurr," of ",pagerange_str))
-              break; # out of the 'username(elements) on page loop'
-            }
-            
-            
-            # actually visit the username
-            navigate_target_age_current_page_current_username <- usernameurlcurr
-            
-            # actually visit ( in pof a 'message' always includes a 'visit')
-            
-            # regular visit
-            if( !(usernamenamecurr %in% usernamename_already_visited) ) {
-              
-              print(paste0("of age ",agecurr, " of page ",pagecurr," of ",pagerange_str," begin url nav to  ", usernamenamecurr))
-              remDr$navigate(navigate_target_age_current_page_current_username)
-              Sys.sleep(3 + 1 * runif(1, min = 0, max = 1)) 
-              
-                if( action == "message_greet_matchname" ) {
-                  
-                  c(", Hi!") -> message_greet_matchname_vector
-                  # , good evening this fine Monday! Are you well this evening? --Monday July 28th
-                  
-                  
-                  webElemPOSSBTRNAMETEXT <- remDr$findElement("css selector", "span.headline.AboutMe")  
-                  webElemPOSSBTRNAMETEXT$highlightElement()   # works
-                  
-                  headline_about_caption <- webElemPOSSBTRNAMETEXT$getElementText()[[1]]
-                  # "About Renee"
-                  
-                  headline_about_caption_selfid <- str_replace(str_extract(headline_about_caption,"[ ].*"),"[ ]","")
-                  # [1] "Renee"
-                  
-                  if(headline_about_caption_selfid != "Me") {
-                    usernamename_lastbetterknown[usernamecurr] <- headline_about_caption_selfid 
-                  } else {
-                    usernamename_lastbetterknown[usernamecurr] <- usernamenamecurr
-                  }
-                  usernamenamecurr_lastbetterknowncurr <- usernamename_lastbetterknown[usernamecurr]
-                  
-                  # AFTER SURE CUSTOM NAME WORKS CORRECTLY THEN REMOVE THIS LINE
-                  # current_message  <- paste0(usernamenamecurr, message_greet_matchname_vector)
-                  current_message  <- paste0(usernamenamecurr_lastbetterknowncurr, message_greet_matchname_vector)
-                  
-                  # SEND MESSEGE - PER HERE PAGE STEPS 1-3 ( OF TOTAL 6 )
-                  
-                  # AFTER SURE CUSTOM NAME WORKS CORRECTLY THEN REMOVE THIS LINE
-                  # print(paste0("Begin attempt to send message to ", usernamenamecurr))
-                  print(paste0("Begin attempt to send message to ", usernamenamecurr," aka ", usernamenamecurr_lastbetterknowncurr))
-                  
-                  writeLines(current_message)
-                  
-                  # TEMP COMMENTED OUT FOR OTHER TESTING
-                  
-                  webElemMB <- remDr$findElement("css selector", "textarea.profile")  # 1
-                  webElemMB$highlightElement()               # THAT WORKED            # 2
-                  webElemMB$sendKeysToElement(list(current_message)) # THAT WORKED            # 3
-                  
-                  webElemSMB <- remDr$findElement("css selector", "input.button.norm-green")   # 4
-                  webElemSMB$highlightElement() # THAT WORKED                                  # 5
-                  webElemSMB$clickElement() # SEEMS TO HAVE WORKED - THE PAGE CHANGED          # 6
-                  Sys.sleep(1 + 1 * runif(1, min = 0, max = 1)) 
-                  
-                  # AFTER SURE CUSTOM NAME WORKS CORRECTLY THEN REMOVE THIS LINE
-                  # print(paste0("End attempt to send message to ", usernamenamecurr))
-                  print(paste0("End attempt to send message to ", usernamenamecurr," aka ", usernamenamecurr_lastbetterknowncurr))
-                  
-                }
-              
-              print(paste0("of age ",agecurr, " of page ",pagecurr," of ",pagerange_str,"   end url nav to  ", usernamenamecurr))
-              usernamename_already_visited <-c(usernamename_already_visited,usernamenamecurr)
-              
-            } else { # pof - do not accidentally visit a 2nd time
-              print(paste0("of age ",agecurr, " of page ",pagecurr," of ",pagerange_str," SKIPPING(already visited) url nav to  ", usernamenamecurr))
-            }
-
-          }
-
+          match_matchname_no_reencounter_list_per_age   <- match_matchname_no_reencounter_list
         }
         
-        print(paste0("of age ",agecurr, " ending page ",pagecurr," of ",pagerange_str))
+        print(paste0(" of age ", agecurr, " of page ", pagecurr, " length of match_matchname_no_reencounter_list_per_age data_guid: ", length(match_matchname_no_reencounter_list_per_age[["match_matchname_data_guid"]])))
         
-        ## END or ERROR   
-        ## next;
-        ## break;
-      }
+        # global: saveonly the new ones that I have not encountered before
+        
+        match_matchname_data_guid_no_reencounter_global <- c(match_matchname_data_guid_no_reencounter_global, match_matchname_data_guid_reduced)
+
+        # Merge Two Lists in R ( and avoid: zero-length inputs cannot be mixed with those of non-zero length )
+        # http://stackoverflow.com/questions/9519543/merge-two-lists-in-r
+        if(length(match_matchname_no_reencounter_global_list) > 0) {
+          match_matchname_no_reencounter_global_list  <-  mapply(c,match_matchname_no_reencounter_global_list, match_matchname_no_reencounter_list, SIMPLIFY=FALSE)
+        } else {
+          match_matchname_no_reencounter_global_list  <-  match_matchname_no_reencounter_list
+        }
+
+        print(paste0("of age ",agecurr, " ending page collecting information of ",pagecurr," of ",pagerange_str))
+        
+        # of the (possible) NEXT button
+        
+        NEXT_BUTTON_STATE <-c()
+        # manage NEXT and NEXT_disable
+        if(remDr$executeScript("return document.querySelectorAll('li.next-button.paging.disabled').length;")[[1]] != 0) {
+          print("NEXT_disable is found")
+          # BEGIN PROCESSING THOSE COLLECTED LINKS
+          NEXT_BUTTON_STATE <-c("NEXT_DISABLED")
+          # END PROCESSING THOSE COLLETED LINKS
+        } else {
+          print("NEXT not on PAGE ... XOR ... NEXT_enabled")
+          if(remDr$executeScript("return document.querySelectorAll('li.next-button.paging').length;")[[1]] != 0) {
+            print("  NEXT_enabled")
+            NEXT_BUTTON_STATE <-c("NEXT_ENABLED")
+          } else {
+            print("  NEXT not on PAGE")
+            NEXT_BUTTON_STATE <-c("NEXT_NOT_ON_PAGE")
+          }
+        }
+        
+        if(NEXT_BUTTON_STATE == "NEXT_ENABLED") {
+          
+          # press the NEXT button
+          
+          # two on page ( top and bottom )- selection does not matter - this is the top one
+          webElemNEXTBTN <- remDr$findElement("css selector", "li.next-button.paging")
+          webElemNEXTBTN$highlightElement()
+          webElemNEXTBTN$clickElement()
+          print("just pressed the NEXT button")
+          Sys.sleep(2 + 1 * runif(1, min = 0, max = 1))
+          # NEXT button was pressed
+          next; # for(pagecurr in pagerange)
+        } else { # NEXT_BUTTON_STATE != "NEXT_ENABLED"
+          print(paste0("ending age collecting information of age ", agecurr," of ",agerange_str))
+          break; # for(pagecurr in pagerange)
+                # below: begin visiting/messaging matches_per_age
+        }
+        
+        
+      } # for(pagecurr in pagerange)
       
+  
+      # per matchname(tile) on all pages in this age range 
+      # possible visits/messages
+      
+      print(paste0("begin visit/message of age ",agecurr," of ",agerange_str))
+      
+      match_matchname_no_reencounter_list_per_age_data_guid_current_counter <- 0
+      for(match_matchname_no_reencounter_list_per_age_data_guid_current in match_matchname_no_reencounter_list_per_age[["match_matchname_data_guid"]]) {
+        match_matchname_no_reencounter_list_per_age_data_guid_current_counter <- match_matchname_no_reencounter_list_per_age_data_guid_current_counter + 1
+        
+        
+        # reduced by ('online now' or ('online now' or 'online recent')))
+        #
+        # NOTE: this does NOTE update: data_guid_already_visited (see below)
+        # 
+        
+        if(online_when == "online_now") {
+          if(!match_matchname_no_reencounter_list_per_age[["match_matchname_online_now"]][match_matchname_no_reencounter_list_per_age_data_guid_current_counter]){
+            next; # if not online_when == "online_now"(TRUE) THEN next
+                  # so do not visit(at least)
+          }
+        }
+        
+        # default "within_the_last_week"  # NOTE:IS ACTUALLY ONLINE_RECENT
+        if(online_when == "within_the_last_week"){ 
+          if(!(match_matchname_no_reencounter_list_per_age[["match_matchname_recent_online"]][match_matchname_no_reencounter_list_per_age_data_guid_current_counter]  ||
+               match_matchname_no_reencounter_list_per_age[["match_matchname_online_now"]][match_matchname_no_reencounter_list_per_age_data_guid_current_counter])
+          ){
+            next; # if niether online_when == "within_the_last_week"(TRUE) nor online_when == "online_now"(TRUE) THEN next
+                  # so do not visit(at least)
+          }
+        }
+
+        # NOTE: short_name is 'probably' not unique
+        
+        # TEMPORARILY - match by guid
+        # ACTUALLY do not vst/msg # EXPLICIT by ME
+        #
+        # NOTE: this does NOTE update: data_guid_already_visited (see below)
+        # 
+        if(match_matchname_no_reencounter_list_per_age_data_guid_current %in% do_not_vst_msg) { # currenly guids ( TEMP )
+          print(paste0("data_guid ", match_matchname_no_reencounter_list_per_age_data_guid_current, " is explicit: do not vst/msg"))
+          print(paste0("therfore, skipping to the next user data_guid"))
+          next; #  for(match_matchname_no_reencounter_list_per_age_data_guid_current in match_matchname_no_reencounter_list_per_age[["match_matchname_data_guid"]])
+                #  so do not visit(at least)
+        }
+        
+        # OTHER 'do not message match methods'? LATER (while on her page) by long_name
+        # ...
+        
+        # actually visit the username
+        # actually visit ( in zk a 'message' always includes a 'visit')
+        # regular visit
+        
+        if( !(match_matchname_no_reencounter_list_per_age_data_guid_current %in% data_guid_already_visited) ) {
+          
+          # DEFAULT action = "just_visit" ( action = "message_greet_matchname" INCLUDES action = "just_visit" )
+          #
+          print(paste0("of age ",agecurr, " of ", agerange_str, " begin url nav to  ", match_matchname_no_reencounter_list_per_age_data_guid_current,"  ", match_matchname_no_reencounter_list_per_age[["match_matchname_short"]][match_matchname_no_reencounter_list_per_age_data_guid_current_counter]))
+          remDr$navigate(paste0("https://www.zoosk.com/personals/datecard/",match_matchname_no_reencounter_list_per_age_data_guid_current,"/about"))
+          Sys.sleep(3 + 1 * runif(1, min = 0, max = 1)) 
+          this_age_visit_number_counter <- this_age_visit_number_counter + 1
+          print(paste0("  This had been visit number ", this_age_visit_number_counter," of age ", agecurr))
+          
+          # collect her 'long name' (prob unique)? but can login with email ( found per page )
+          # but since I login with facebook/google/email - even the long name is not unique?
+          #
+          # NOTE: this(currently) is only needed for the messaging could/should move into message_greet_matchname" BELOW
+          #
+          webElemLONGMATCHNAME <-remDr$findElement("css selector", ".profile-header-text")
+          webElemLONGMATCHNAME$highlightElement()
+          
+          # "Profile: Geaux Geaux Gal" ( for her name in a message )
+          match_matchname_long_current  <- str_replace(str_extract(webElemLONGMATCHNAME$getElementText()[[1]],":[ ].*"),":[ ]","")
+          
+          if( action == "message_greet_matchname" ) {
+            
+            c(", happy Xday! How are you doing today?") -> message_greet_matchname_vector
+            
+            # zk: long name is only seen in the profile 
+            
+            current_message  <- paste0(match_matchname_long_current, message_greet_matchname_vector)
+            
+            print(paste0("Begin attempt to send message to ", match_matchname_no_reencounter_list_per_age_data_guid_current," aka ", match_matchname_long_current, " with her age ", match_matchname_no_reencounter_list_per_age[["match_matchname_age"]][match_matchname_no_reencounter_list_per_age_data_guid_current_counter]))            
+            writeLines(current_message)
+            
+            # actually send THE message
+            
+            # if she 'does NOT have a button to send the message'
+            
+            if(remDr$executeScript("return document.querySelectorAll('p.chat-encourage-initial').length;")[[1]] != 0) {
+              
+              webElemSMALLINITCHATAREA <- remDr$findElement("css selector", "p.chat-encourage-initial")
+              webElemSMALLINITCHATAREA$highlightElement() # DID A TEST - I DO NOT REMEMBER
+              # write
+              Sys.sleep(1 + 1 * runif(1, min = 0, max = 1))
+              
+            }
+            
+            # I THINK - EITHER - above OR below
+            
+            # if she 'has a button to send the message'
+            
+            if(remDr$executeScript("return document.querySelectorAll('input.quick-message-text').length;")[[1]] != 0) {
+              
+              # online use chat box
+              
+              webElemSMALLCHATAREA <-remDr$findElement("css selector", "input.quick-message-text")
+              webElemSMALLCHATAREA$highlightElement()
+              # WORKS ( AS FAR AS I CAN TELL )
+              # write ...
+              Sys.sleep(1 + 1 * runif(1, min = 0, max = 1))
+              
+              # online user send chat button
+              
+              if(remDr$executeScript("return document.querySelectorAll('span.minor-button-confirm.send-chat').length;")[[1]] != 0) {
+                
+                webElemSENDCHATBUTTON <-remDr$findElement("css selector", "span.minor-button-confirm.send-chat")
+                webElemSENDCHATBUTTON$highlightElement()
+                # WORKS ( AS FAR AS I CAN TELL )
+                # write ...
+                Sys.sleep(1 + 1 * runif(1, min = 0, max = 1))
+                
+              }
+              
+            }
+            
+            print(paste0("End attempt to send message to ", match_matchname_no_reencounter_list_per_age_data_guid_current," aka ", match_matchname_long_current, " with her age ", match_matchname_no_reencounter_list_per_age[["match_matchname_age"]][match_matchname_no_reencounter_list_per_age_data_guid_current_counter]))            
+          }
+          
+          # update - I have already visited/messaged
+          data_guid_already_visited <- c(data_guid_already_visited, match_matchname_no_reencounter_list_per_age_data_guid_current)
+          print(paste0("of age ",agecurr," of ", agerange_str, "   end url nav to  ", match_matchname_no_reencounter_list_per_age_data_guid_current,"  ", match_matchname_no_reencounter_list_per_age[["match_matchname_short"]][match_matchname_no_reencounter_list_per_age_data_guid_current_counter]))
+
+          
+        } else { # zk - do not accidentally visit a 2nd time
+          print(paste0("of age ",agecurr, " of ", agerange_str, " SKIPPING(already visited) url nav to  ", match_matchname_no_reencounter_list_per_age_data_guid_current,"  ", match_matchname_no_reencounter_list_per_age[["match_matchname_short"]][match_matchname_no_reencounter_list_per_age_data_guid_current_counter]))
+        }
+        
+        print(paste0("end visit/message of age ",agecurr," of ",agerange_str))
+        
+      } # for(match_matchname_no_reencounter_list_per_age_data_guid_current in match_matchname_no_reencounter_list_per_age[["match_matchname_data_guid"]])
+      
+ 
+      # NOT PART
       print(paste0("ending age ", agecurr," of ",agerange_str))
       
-    ## END or ERROR   
-    ## next;
-    ## break;
       
-    }
+    } # for(agecurr in agerange)
     
     bookmarkhere <- 1
     
     # manually logout of pof cupid here 
     # manually X out ( shutdown ) the browser
     
-    remDr$navigate("http://www.pof.com/abandon.aspx")
+    remDr$navigate("https://www.zoosk.com/zoosk-on-the-go?notify=logout&from=user-menu")
     Sys.sleep(3 + 1 * runif(1, min = 0, max = 1)) # 10 to 15 seconds wait 
     
-    remDr$navigate("http://www.hp.com")
+    remDr$navigate("http://www.apple.com")
     Sys.sleep(3 + 1 * runif(1, min = 0, max = 1)) # 10 to 15 seconds wait 
     
     print("begin closing remDr")
@@ -1018,6 +917,8 @@ zk_visit_looper_dev <- function(curr_port = 4471, action = "just_visit", online_
   }
   maininner()
 }
+
+
 
 # BEGIN INSTRUCTIONS
 # BEGIN INSTRUCTIONS
@@ -1058,9 +959,15 @@ zk_visit_looper_dev <- function(curr_port = 4471, action = "just_visit", online_
 # zk_visit_looper_dev()
 # zk_visit_looper_dev(curr_port = 4471, action = "just_visit", online_when = "within_the_last_week", not_to_vst = "NONE", not_to_msg = "NONE", body_type = "anything") # default
 
+# possible testing
+# zk_visit_looper_dev(curr_port = 4472, action = "message_greet_matchname", online_when = "_ANY_", not_to_vst = "NONE", not_to_msg = "all_all", body_type = "thin_athletic")
+
+# possible testing
+# zk_visit_looper_dev(curr_port = 4472, action = "just_visit", online_when = "_ANY_", not_to_vst = "NONE", not_to_msg = "all_all", body_type = "thin_athletic")
+
 # send a message
 # zk_visit_looper_dev(curr_port = 4472, action = "message_greet_matchname", online_when = "online_now", not_to_vst = "NONE", not_to_msg = "all_all", body_type = "thin_athletic")
 
-# END INSTRUCTIONS   
 # END INSTRUCTIONS       
+# END INSTRUCTIONS        
 
