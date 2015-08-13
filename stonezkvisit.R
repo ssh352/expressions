@@ -268,8 +268,8 @@ zk_visit_looper_dev <- function(curr_port = 4471, action = "just_visit", online_
     # CURRENTLY - zk WILL NOT USE A PROFILE - selenium/chrome - NOT_WORK_profile_MULTI_remDrS 
 
     # cprof <- getChromeProfile("J:\\YDrive\\All_NewSeduction\\All_ElectronicSpeech\\RSeleniumAndBrowsers\\AES1_assistance\\RDebug\\Administrator\\AppData\\Local\\Google\\Chrome\\User Data", "epoch536intel_epoch536intel") 
-    cprof <- getChromeProfile(browser_profile_dir_path, browser_profile)
-    remDr <- remoteDriver(browserName = "chrome", extraCapabilities = cprof, port = curr_port) # default 4444
+    ### cprof <- getChromeProfile(browser_profile_dir_path, browser_profile)
+    ### remDr <- remoteDriver(browserName = "chrome", extraCapabilities = cprof, port = curr_port) # default 4444
     
     # MAYBE FREEZES IF IT DOES NOT HAVE A PROFILE?
     # remDr <- remoteDriver(browserName = "chrome", port = curr_port)
@@ -283,6 +283,10 @@ zk_visit_looper_dev <- function(curr_port = 4471, action = "just_visit", online_
     # nativeEvents = XXXX # because DEFAULT may be platform specific
     remDr <- remoteDriver(port= curr_port, nativeEvents = TRUE)  # SYNC/ASYNC PAGE LOADING?
     # remDr <- remoteDriver(port= curr_port, nativeEvents = FALSE)  # SYNC/ASYNC PAGE LOADING? - NO AFFECT
+
+    # (hangs too much to use)
+    # CHROME ALONE ( NO PROFILE)
+    # remDr <- remoteDriver(port= curr_port, browserName = "chrome")
 
     print(paste0("PORT ", curr_port))
     
@@ -431,8 +435,8 @@ zk_visit_looper_dev <- function(curr_port = 4471, action = "just_visit", online_
     # MAGIC NUMBER  
     # zk ( ANY numbers: minage < me < maxage ) ??
     
-    agerange     <-  18:20      #  30:31  # 45:44   c(25:18,50:31) "25:18,50:31" # 
-    agerange_str <- "18:20"     # "30:31" # 45:44
+    agerange     <-  18:49      #  30:31  # 45:44   c(25:18,50:31) "25:18,50:31" # 
+    agerange_str <- "18:49"     # "30:31" # 45:44
 
     for(agecurr in agerange) { # testing only 31 and 30 # 31:30    
       
@@ -757,19 +761,19 @@ zk_visit_looper_dev <- function(curr_port = 4471, action = "just_visit", online_
         # 
         
         if(online_when == "online_now") {
+          # not on GRID COLLECTED PAGE found: 'Online Now'"
           if(!match_matchname_no_reencounter_list_per_age[["match_matchname_online_now"]][match_matchname_no_reencounter_list_per_age_data_guid_current_counter]){
-            next; # if not online_when == "online_now"(TRUE) THEN next
-                  # so do not visit(at least)
+            next; # so do not visit(at least)
           }
         }
         
         # default "within_the_last_week"  # NOTE:IS ACTUALLY ONLINE_RECENT
         if(online_when == "within_the_last_week"){ 
+          # not on GRID COLLECTED PAGE found: ( 'Online Now' OR "Recently Online' )
           if(!(match_matchname_no_reencounter_list_per_age[["match_matchname_recent_online"]][match_matchname_no_reencounter_list_per_age_data_guid_current_counter]  ||
                match_matchname_no_reencounter_list_per_age[["match_matchname_online_now"]][match_matchname_no_reencounter_list_per_age_data_guid_current_counter])
           ){
-            next; # if niether online_when == "within_the_last_week"(TRUE) nor online_when == "online_now"(TRUE) THEN next
-                  # so do not visit(at least)
+            next; # so do not visit(at least)
           }
         }
 
@@ -793,7 +797,6 @@ zk_visit_looper_dev <- function(curr_port = 4471, action = "just_visit", online_
         # actually visit the username
         # actually visit ( in zk a 'message' always includes a 'visit')
         # regular visit
-        
         if( !(match_matchname_no_reencounter_list_per_age_data_guid_current %in% data_guid_already_visited) ) {
           
           # DEFAULT action = "just_visit" ( action = "message_greet_matchname" INCLUDES action = "just_visit" )
@@ -804,68 +807,120 @@ zk_visit_looper_dev <- function(curr_port = 4471, action = "just_visit", online_
           this_age_visit_number_counter <- this_age_visit_number_counter + 1
           print(paste0("  This had been visit number ", this_age_visit_number_counter," of age ", agecurr))
           
-          # collect her 'long name' (prob unique)? but can login with email ( found per page )
-          # but since I login with facebook/google/email - even the long name is not unique?
-          #
-          # NOTE: this(currently) is only needed for the messaging could/should move into message_greet_matchname" BELOW
-          #
-          webElemLONGMATCHNAME <-remDr$findElement("css selector", ".profile-header-text")
-          webElemLONGMATCHNAME$highlightElement()
-          
-          # "Profile: Geaux Geaux Gal" ( for her name in a message )
-          match_matchname_long_current  <- str_replace(str_extract(webElemLONGMATCHNAME$getElementText()[[1]],":[ ].*"),":[ ]","")
           
           if( action == "message_greet_matchname" ) {
             
-            c(", happy Xday! How are you doing today?") -> message_greet_matchname_vector
+            # collect her 'long name' (prob unique)? but can login with email ( found per page )
+            # but since I login with facebook/google/email - even the long name is not unique?
+            #
+            # NOTE: this(currently) is only needed for the messaging
+            #
             
             # zk: long name is only seen in the profile 
+            
+            webElemLONGMATCHNAME <-remDr$findElement("css selector", ".profile-header-text")
+            webElemLONGMATCHNAME$highlightElement()
+            
+            # "Profile: Geaux Geaux Gal" ( for her name in a message )
+            match_matchname_long_current  <- str_replace(str_extract(webElemLONGMATCHNAME$getElementText()[[1]],":[ ].*"),":[ ]","")
+            
+            c(", happy Wednesday! How are you doing today?") -> message_greet_matchname_vector
             
             current_message  <- paste0(match_matchname_long_current, message_greet_matchname_vector)
             
             print(paste0("Begin attempt to send message to ", match_matchname_no_reencounter_list_per_age_data_guid_current," aka ", match_matchname_long_current, " with her age ", match_matchname_no_reencounter_list_per_age[["match_matchname_age"]][match_matchname_no_reencounter_list_per_age_data_guid_current_counter]))            
             writeLines(current_message)
             
-            # actually send THE message
+            # actually (attempt to) send THE message
             
-            # if she 'does NOT have a button to send the message'
+            # AT THIS POINT - FROM ABOVE
+            # I have already filtered out ( on the GRID ) the 
+            # survivors (as applicable): *online now* OR *recenly online* 
             
-            if(remDr$executeScript("return document.querySelectorAll('p.chat-encourage-initial').length;")[[1]] != 0) {
-              
-              webElemSMALLINITCHATAREA <- remDr$findElement("css selector", "p.chat-encourage-initial")
-              webElemSMALLINITCHATAREA$highlightElement() # DID A TEST - I DO NOT REMEMBER
-              # write
-              Sys.sleep(1 + 1 * runif(1, min = 0, max = 1))
-              
-            }
+            # NOTE: CODE currenly only implemented for *online now*
+            # 
             
-            # I THINK - EITHER - above OR below
-            
-            # if she 'has a button to send the message'
-            
-            if(remDr$executeScript("return document.querySelectorAll('input.quick-message-text').length;")[[1]] != 0) {
+            if(online_when == "online_now") {
               
-              # online use chat box
-              
-              webElemSMALLCHATAREA <-remDr$findElement("css selector", "input.quick-message-text")
-              webElemSMALLCHATAREA$highlightElement()
-              # WORKS ( AS FAR AS I CAN TELL )
-              # write ...
-              Sys.sleep(1 + 1 * runif(1, min = 0, max = 1))
-              
-              # online user send chat button
-              
-              if(remDr$executeScript("return document.querySelectorAll('span.minor-button-confirm.send-chat').length;")[[1]] != 0) {
+              # CURRENLY MOST RELIABLE
+              #
+              # (green cirle) Chatting
+              # 
+              # DETECT *online now* on HER PAGE
+              #   if she has  ... (green cirle) Chatting ... then she is 'ONLY *online now*'
+              # online - exact css only found only on HER PAGE when she is *online now*
+              # <span class="online-indicator-status">Chatting</span>
+              if(remDr$executeScript("return document.querySelectorAll('span.online-indicator-status').length;")[[1]] != 0) {
+                # FOUND (green cirle) Chatting
                 
-                webElemSENDCHATBUTTON <-remDr$findElement("css selector", "span.minor-button-confirm.send-chat")
-                webElemSENDCHATBUTTON$highlightElement()
-                # WORKS ( AS FAR AS I CAN TELL )
-                # write ...
-                Sys.sleep(1 + 1 * runif(1, min = 0, max = 1))
+                # put in message
                 
+                # index number 1 or 2 ( no logic which - but always the last one found in the DOM )
+                # plural
+                webElemSMALLCHATAREA <- remDr$findElements("css selector", "input.quick-message-text")
+                webElemSMALLCHATAREA <- webElemSMALLCHATAREA[[length(webElemSMALLCHATAREA)]]
+                webElemSMALLCHATAREA$highlightElement() # WORKS KEEP
+                webElemSMALLCHATAREA$sendKeysToElement(list(current_message)) # WORKS ( AS LONG AS I DO NOT GET THAT STUPID' UPLOAD PHOTO POPUT )
+                # note if 'chat area stays gray', it seems to be some sort 
+                #   of unknown logic 'anti-spamming' software 
+                # My best deal - use her name in front AND keep my sentence long in words
+                
+                # actually send
+                
+                # on the right, the blue button 
+                # index number 1 or 2 ( no logic which - but always the last one found in the DOM )
+                # plural
+                # <span tabindex="0" data-zat="send-message-button" style="-moz-user-select: none;" class="minor-button-confirm send-chat"><span  class="button-icon"></span><span style="display: none;" class="processing-bar"></span></span>
+                webElemSMALLCHATAREASENDBTN <-remDr$findElements("css selector", "span.minor-button-confirm.send-chat span.button-icon")
+                webElemSMALLCHATAREASENDBTN <- webElemSMALLCHATAREASENDBTN[[length(webElemSMALLCHATAREASENDBTN)]]
+                webElemSMALLCHATAREASENDBTN$highlightElement() # WORKS
+                webElemSMALLCHATAREASENDBTN$clickElement() # WORKS - if does not send ( then its because 'chat area' above is grayed out )
+                Sys.sleep(3 + 1 * runif(1, min = 0, max = 1)) 
               }
               
             }
+            
+            # CURRENTLY ONLY OTHER online_when VALUE 
+            if(online_when == "within_the_last_week") { # all other cases when SHE IS NOT *online now*
+              
+              if(remDr$executeScript("return document.querySelectorAll('span.online-indicator-status').length;")[[1]] == 0) {
+                # NOT FOUND   (green cirle) Chatting
+                
+                # NOTE: THIS CODE DOES NOT WORK - THIS CODE IS NOT IMPLEMENTED
+                # NOTE: THIS CODE DOES NOT WORK - THIS CODE IS NOT IMPLEMENTED
+                
+                # RESEARVED FOR 'FUTURE CODING'
+                
+                # empty white zone
+                webElemSMALLINITCHATAREA <- remDr$findElement("css selector", "p.chat-encourage-initial")
+                webElemSMALLINITCHATAREA$highlightElement() 
+                webElemSMALLINITCHATAREA$clickElement() # pop-up bigger box
+                
+                # in pop-up bigger box
+                webElemSMALLINITCHATAREAPOPUPBOX <- remDr$findElement("css selector", "textarea.quick-message-text")
+                webElemSMALLINITCHATAREAPOPUPBOX$highlightElement() 
+                
+                webElemSMALLINITCHATAREAPOPUPBOX$clickElement() # DOES NOTHING ?
+                
+                # try to enter text in the txtarea
+                
+                js_enter_words_textarea_box <- paste0("try{ retvalue = document.querySelector('textarea.quick-message-text').value = '", current_message,"'; return 0 } catch(err) { return -1 };")
+                remDr$executeScript(paste0(js_enter_words_textarea_box))[[1]] # WORKS RETURNS 0 ( AND VISUALLY PUTS "Hello..."(in light gray) BOX)
+                #
+                #  *** NOW HUMAN *** (HAS TO BE DONE) HUMAN MANUALLY PLACES *MOUSE CURSOR* IN THE BOX ( HAVE NOT FIGURED THIS ONE OUT *YET* ) ( IF I EVER CARE TO )
+                #
+                # NOW (in white) BOX)
+                webElemSMALLINITCHATAREAPOPUPBOX$sendKeysToElement(list(current_message)) # WILL WRITE
+                
+                webElemSMALLINITCHATAREAPOPUPBOXSENDBTN <- remDr$findElement("css selector", "div.chat-messenger-actions span.control-button-confirm")
+                webElemSMALLINITCHATAREAPOPUPBOXSENDBTN$highlightElement() 
+                webElemSMALLINITCHATAREAPOPUPBOXSENDBTN$clickElement()   
+                
+              }  
+              
+            }
+            
+            # End of 'actually  (attempt to) send THE message'
             
             print(paste0("End attempt to send message to ", match_matchname_no_reencounter_list_per_age_data_guid_current," aka ", match_matchname_long_current, " with her age ", match_matchname_no_reencounter_list_per_age[["match_matchname_age"]][match_matchname_no_reencounter_list_per_age_data_guid_current_counter]))            
           }
@@ -956,7 +1011,7 @@ zk_visit_looper_dev <- function(curr_port = 4471, action = "just_visit", online_
 #   e.g. remDr$open() # oracle.com  
 
 # just visit
-# zk_visit_looper_dev()
+# zk_visit_looper_dev() # ( MAIN - JUST VISIT - WITHIN THE LAST WEEK )
 # zk_visit_looper_dev(curr_port = 4471, action = "just_visit", online_when = "within_the_last_week", not_to_vst = "NONE", not_to_msg = "NONE", body_type = "anything") # default
 
 # possible testing
@@ -965,9 +1020,21 @@ zk_visit_looper_dev <- function(curr_port = 4471, action = "just_visit", online_
 # possible testing
 # zk_visit_looper_dev(curr_port = 4472, action = "just_visit", online_when = "_ANY_", not_to_vst = "NONE", not_to_msg = "all_all", body_type = "thin_athletic")
 
-# send a message
+# main send message testing ( this one )
+# possible testing
+# zk_visit_looper_dev(curr_port = 4472, action = "message_greet_matchname", online_when = "online_now", not_to_vst = "NONE", not_to_msg = "all_all", body_type = "anything")
+
+# or if 'so few' online, then it is better to send THIS one ( MAIN - SEND MESSAGE - ONLINE_NOW )
+# send a message ( if zk does not have a 'restriction on the number of messages sendable')
+# zk_visit_looper_dev(curr_port = 4472, action = "message_greet_matchname", online_when = "online_now", not_to_vst = "NONE", not_to_msg = "all_all", body_type = "anything")
+
+# WONT BE USED IN PRODUCTION if I do not find I way to send messages to those NOT(*online now*)
+# JUST TEST THE 'CODE ZONE'
+# zk_visit_looper_dev(curr_port = 4472, action = "message_greet_matchname", online_when = "within_the_last_week", not_to_vst = "NONE", not_to_msg = "all_all", body_type = "anything")
+
+# send a message ( if zk has a 'restriction on the number of messages sendable')
 # zk_visit_looper_dev(curr_port = 4472, action = "message_greet_matchname", online_when = "online_now", not_to_vst = "NONE", not_to_msg = "all_all", body_type = "thin_athletic")
 
+# END INSTRUCTIONS      
 # END INSTRUCTIONS       
-# END INSTRUCTIONS        
 
