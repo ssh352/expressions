@@ -1,184 +1,32 @@
 
 
+# okcupid
 # DON'T FORGET TO STARTUP PostgreSQL !!
 
-
-# 
-# CREATE TABLE aes_do_not_visit_list
-# (
-#   id            double precision  NOT NULL,
-#   match_source  text,
-#   my_matchname  text,
-#   her_matchname text,
-#   her_age       integer,
-# )
-# WITH (
-#   OIDS=FALSE
-# );
-# ALTER TABLE aes_do_not_visit_list
-# OWNER TO postgres;
-# 
-# CREATE UNIQUE INDEX aes_do_not_visit_list_pk_idx  
-# ON aes_do_not_visit_list
-# USING btree (id);  
-# 
-# ALTER TABLE aes_do_not_visit_list
-# ADD CONSTRAINT aes_do_not_visit_list_pk PRIMARY KEY  USING INDEX aes_do_not_visit_list_pk_idx;  
-# 
-# -- NOTE: now the index will dissapear from the GUI ( but the pk properties showed its there ( e.g. btree ) )
-#                                                      
-# REINDEX TABLE aes_do_not_visit_list; -- simply rebuild that index
-#                                                      
-# 
-# CREATE TABLE aes_have_visited_list
-# (
-#   id            double precision  NOT NULL,
-#   match_source  text,
-#   my_matchname  text,
-#   her_matchname text
-# )
-# WITH (
-#   OIDS=FALSE
-# );
-# ALTER TABLE aes_have_visited_list
-# OWNER TO postgres;
-# 
-# CREATE UNIQUE INDEX aes_have_visited_list_pk_idx  
-# ON aes_have_visited_list
-# USING btree (id);  
-# 
-# ALTER TABLE aes_have_visited_list
-# ADD CONSTRAINT aes_have_visited_list_pk PRIMARY KEY  USING INDEX aes_have_visited_list_pk_idx;  
-# 
-# -- NOTE: now the index will disappear from the GUI ( but the pk properties showed its there ( e.g. btree ) )
-#                                                      
-# REINDEX TABLE aes_have_visited_list; -- simply rebuild that index
-#                                                      
-
-# CREATE TABLE aes_have_sent_message_list   
-# (
-#   id double precision NOT NULL,
-#   match_source text,
-#   my_matchname text,
-#   her_matchname text,
-#   her_age integer,
-#   sent_message text
-# )
-# WITH (
-#   OIDS=FALSE
-# );
-# ALTER TABLE aes_have_sent_message_list
-# OWNER TO postgres;
-# 
-# CREATE UNIQUE INDEX aes_have_sent_message_list_pk_idx  
-# ON aes_have_sent_message_list
-# USING btree (id);  
-# 
-# ALTER TABLE aes_have_sent_message_list
-# ADD CONSTRAINT aes_have_sent_message_list_pk PRIMARY KEY USING INDEX aes_have_sent_message_list_pk_idx; 
-# 
-# -- NOTE: now the index will disappear from the GUI ( but the pk properties showed its there ( e.g. btree ) )
-#                
-# REINDEX TABLE aes_have_sent_message_list; -- simply rebuild that index
-# 
-
-# install.packages("checkpoint")   
-
-# checkpoint(snapshotDate, project = getwd(), R.version, 
-#           scanForPackages = TRUE, checkpointLocation = "~/", verbose = TRUE, 
-#           use.knitr = system.file(package = "knitr") != "")  
-
-# INSTALLING  
-# checkpoint("2015-05-09", R.version = "3.2.0") 
-# COMMON EVERYDAY DEBUGGING
-# I do not want it to scan every time
-### checkpoint("2015-05-09", R.version = "3.2.0", scanForPackages = FALSE)
-
-
-# shell("rstudio", wait=FALSE) 
 
 options(width = 255)     
 options(digits = 22) 
 options(max.print=99999)
 options(scipen=255) 
 options(digits.secs = 6)
+options(error=NULL) # options(error = recover) 
 
-safe_navigate_to_new_url <- function(new_url = NULL, remote_driver = NULL, after_how_long = NULL, backout_url = NULL) {
-  
-  require(tcltk)
-  require(RSelenium)
-  
-  # NOTE: 'note very case is 'code covered' BUT IF A PROBLEM SHOULD BE FIXABLE  
-  
-  # if browser/site/internet hangs just ...
-  # backout_url: "current_url", "goback" "http://www.time.gov"(default) "CUSTOMHTTP" 
-  # NOTE: to retry JUST ONCE more: call by 'new_url == backout_url'
-  
-  #  1000:  good redirect success test
-  # 30000:  should never do 'backout_url' ( 25 seconds )
-  if(is.null(after_how_long)) { after_how_long <- 25000 } # 30 seconds 
-  
-  backout_url_set <- FALSE
-  if(is.null(backout_url))                                        { backout_url_value <- "http://www.time.gov"  ; backout_url_set <- TRUE } # default
-  if(!is.null(backout_url) && backout_url == "gobackgoforward")   { backout_url_value <- "gobackgoforward"      ; backout_url_set <- TRUE }
-  if(!is.null(backout_url) && backout_url == "refreshgoforward")  { backout_url_value <- "refreshgoforward"     ; backout_url_set <- TRUE }
-  if(!is.null(backout_url) && backout_url == "refresh")           { backout_url_value <- "refresh"              ; backout_url_set <- TRUE }
-  if(!is.null(backout_url) && backout_url == "current_url")       { backout_url_value <- "current_url" ; backout_url_set <- TRUE }
-  if(!is.null(backout_url) && !isTRUE(backout_url_set))           { backout_url_value <- backout_url   ; backout_url_set <- TRUE }
-  
-  if(!isTRUE(backout_url_set))  stop(paste0("safe_navigate_to_new_url call is missng a 'good backout_url'")) 
-  
-  # tcl: functon call does  not 'seem to be allowed to have any parameters ( rely on 'scope and visibility' )
-  safe_navigate_backout <- function() { 
-    
-    # SHOULD be TRUE here
-    if(isTRUE(backout_url_set)) {
-      
-      if(backout_url_value == "gobackgoforward")    { print("GOBACKGOFORWARD")       ; remote_driver$goBack();              remote_driver$goForward();            return() }
-      if(backout_url_value == "refreshgoforward")   { print("REFRESHGOFORWARD")      ; remote_driver$refresh();                                                   return() }
-      if(backout_url_value == "refresh")            { print("REFRESH")               ; remote_driver$refresh();             remote_driver$goForward();            return() }
-      if(backout_url_value == "current_url")        { print("NAVIGATE(CURRENT_URL")  ; remote_driver$navigate(current_url);                                       return() }
-      print("NAVIGATE(BACKOUT_URL_VALUE")  ;remote_driver$navigate(backout_url_value) 
-      return() 
-      
-    } else {
-      stop("in safe_navigate_backout NOT 'isTrue(backout_url_set)'") 
-    }
-    
-  }
-  
-  # NOT SURE of the 'tcl and safe_navigate_backout closure' rules, so I put this here
-  current_url <- remote_driver$getCurrentUrl()[[1]][1]
-  
-  # register task
-  .id <-tcl("after", after_how_long, safe_navigate_backout) 
-  
-  # To get info about this scheduled task
-  print(paste0("tcl_after_info_id: ",tcl("after", "info", .id)))   
-  
-  # regular run
-  remote_driver$navigate(new_url)
-  
-  # if hung after "after_how_long" milliseconds, will run (OTHER TRY): safe_navigate_backout
-  
-  # if I made it THIS far: "remote_driver$navigate(new_url)" ran, so then just cancel
-  # cancel the currently scheduled task
-  result = tryCatch({ tcl("after", "cancel", .id) }, warning = function(w) {}, error = function(e) {}, finally = {})
-  # unfortunately alwayS returns success: <Tcl> 
-  
-  new_url     <- remote_driver$getCurrentUrl()[[1]][1]
-  
-  # success if I navigated forward
-  return(list( success =(new_url != current_url), remote_driver = remote_driver  ))
-  
+
+if(Sys.getenv("RSTUDIO") == "1") {
+  debugSource(paste0(getwd(),"/","utilities_ext_visit_looper_dev.R"))
+} else {
+  source(paste0(getwd(),"/","utilities_ext_visit_looper_dev.R"))
 }
 
-
-okcupid_visit_looper_dev <- function(curr_port = 4451, action = "just_visit", online_when = "within_the_last_week", not_to_vst = "NONE", not_to_msg = "NONE") { 
+okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_the_custom_profile = FALSE, site_login = NULL, site_password = NULL, age_range_str = "18:49", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * (-5)), "! How are you today?"), on_exit_logoff_site = TRUE, on_exit_close_browser = TRUE, on_exit_stop_selenium_server = FALSE, action = "just_visit", online_when = "within_the_last_week", not_to_vst = "NONE", not_to_msg = "NONE") { 
   # OR action = "message_greet_matchname" "message_random_catchphrase"
   # OR not_to_msg = "all_all"
   
+  looper_typed_in_call <- match.call( ) # language
+  
   maininner <- function() {
+    
+    print(paste0("Program run Starting at: ",Sys.time()))
     
     oldtz <- Sys.getenv('TZ')
     if(oldtz=='') {
@@ -187,28 +35,50 @@ okcupid_visit_looper_dev <- function(curr_port = 4451, action = "just_visit", on
     
     set.seed(runif(1, min = 0, max = 1))
     
+    
+    
     require(RSelenium)
     require(stringr)
     
     # Administrative sleep
     # Sys.sleep(3600.0 * 8) # 5:30 + 8 hours = 1:30 p.m.START
+    # Administravive sleep ( no profile - with images - will take longer )
+    # Sys.sleep(3600.0 * 7) # 5:30 + 8 hours = 1:30 p.m.START
     
     require(RPostgreSQL)
     drv <- dbDriver("PostgreSQL")
     con <- dbConnect(drv, host = "127.0.0.1", dbname = "aes_db", user = "postgres", password = "postgres")
     
     # REM: taskmgr OR 'some other way' KILL off java.exe if it is running
-    startServer(args = c(paste0("-port ", curr_port),"-timeout 3600","-browserTimeout 3600"))  # default # 4444 # java -jar selenium-server-standalone.jar -h
-    Sys.sleep(5.0) # 5 second wait
+    # SHOULD have been arleady started
+    manageRSeleniumServer(curr_port = 4444, doif = "if_server_not_started_please_start" )
     
-    cprof <- getChromeProfile("J:\\YDrive\\All_NewSeduction\\All_ElectronicSpeech\\RSeleniumAndBrowsers\\AES1_assistance\\RDebug\\Administrator\\AppData\\Local\\Google\\Chrome\\User Data", "time861wiz_time861wiz") 
-    remDr <- remoteDriver(browserName = "chrome", extraCapabilities = cprof, port = curr_port) # default 4444
+    ### cprof <- getChromeProfile("J:\\YDrive\\All_NewSeduction\\All_ElectronicSpeech\\RSeleniumAndBrowsers\\AES1_assistance\\RDebug\\Administrator\\AppData\\Local\\Google\\Chrome\\User Data", "time861wiz_time861wiz") 
+    ### remDr <- remoteDriver(browserName = "chrome", extraCapabilities = cprof, port = curr_port) # default 4444
+    
+    if(  browser == "chrome"  &&  use_the_custom_profile == FALSE) {
+      
+      # OVERRIDE # NO PROFILE
+      remDr <- remoteDriver(browserName = "chrome", port = curr_port)
+      
+    } 
     
     print(paste0("PORT ", curr_port))
     
-    # oracle.com 
-    remDr$open() 
-    Sys.sleep(3 + 1 * runif(1, min = 0, max = 1)) # 10 to 15 seconds wait
+    # if fail - retry once - chrome specific 1ST run of the day problem
+    result_open <- tryCatch({ remDr$open() }, warning = function(w) {}, error = function(e) { return("ERROR") }, finally = {})
+    if(class(result_open) == "character" &&  result_open == "ERROR" ) { 
+      Sys.sleep(4.0) 
+      print("Begin retry of browser open fail")
+      remDr$open()
+      print("End retry of browser open fail")
+    } 
+    Sys.sleep(4.0) 
+    
+    if(browser == "chrome") {
+      # nav to chrome://settings/ and turn off images for performance reasons
+      remDr <- google_chrome_set_no_images(remDr = remDr)
+    }
     
     print(paste0("PORT ", curr_port))
     print("(tried) opened browser home page")
@@ -226,11 +96,11 @@ okcupid_visit_looper_dev <- function(curr_port = 4451, action = "just_visit", on
     print("navigated to okcupid")
     
     webElem1 <- remDr$findElement("css selector", "#login_username")
-    webElem1$sendKeysToElement(list("time861wiz"))
+    webElem1$sendKeysToElement(list(site_login))
     Sys.sleep(3 + 2 * runif(1, min = 0, max = 1)) # 3 to 5 seconds
     
     webElem2 <- remDr$findElement("css selector", "#login_password")
-    webElem2$sendKeysToElement(list("739heg08"))
+    webElem2$sendKeysToElement(list(site_password))
     Sys.sleep(3 + 2 * runif(1, min = 0, max = 1)) # 3 to 5 seconds
     
     webElem2$sendKeysToElement(list(key="enter"))
@@ -275,9 +145,13 @@ okcupid_visit_looper_dev <- function(curr_port = 4451, action = "just_visit", on
     # c(", hi and good evening to you this fine Thursday. How are you?") -> message_greet_matchname_vector # JULY 30
     
     # c(", good day!  This is a joyful Tuesday.  I just had a surprise.  So, how are you today?") -> message_greet_matchname_vector # TUES AUG 6
-    c(", happy Thursday!  So, how are you doing this fine evening?") -> message_greet_matchname_vector # THE AUG 8
+    # c(", good Tuesday to you! Are you feeling sparkly happy this evening?")  # THE AUG 8
     
+    # c(", fabulous Thursday! How are you today?") -> message_greet_matchname_vector #THu AUG 12
 
+    # from function call actual argument
+    todays_message -> message_greet_matchname_vector
+    
     # NOTE: DOES NOT YET ESCAPE OUT TICK MARKS('), SO DO NOT SEND OUT A TICK MARK(')
     
                                                        # NOTE: THIS MAY BE VOLITILE ( AT FIRST WAS [6]?)
@@ -289,9 +163,17 @@ okcupid_visit_looper_dev <- function(curr_port = 4451, action = "just_visit", on
     # PER 'ALL AGES' ( SEEMS TO BE HAPPENING? AT THE END OF AN AGE_TOUCH_LIST ) 
     already_touched_alink <- c()
     
+    
+    print("Of THIS progrem, the user hand written call follows.")
+    print(looper_typed_in_call) # language
+    
     # MAGIC NUMBER 
-    agerange <-      18:49      #  30:31  # 50:49   c(25:18,50:31) "25:18,50:31" # LEFT_OFF 29 _diamonds_ "message box full"
-    agerange_str <- "18:49"     # "30:31" # 50:49    
+    
+    # agerange <-      18:49      #  30:31  # 50:49   c(25:18,50:31) "25:18,50:31" # LEFT_OFF 29 _diamonds_ "message box full"
+    # agerange_str <- "18:49"     # "30:31" # 50:49    
+    
+    agerange_str <- age_range_str
+    agerange     <- eval(parse(text=agerange_str))
     
     for(agecurr in agerange) { # testing only 31 and 30 # 31:30   
       
@@ -603,16 +485,23 @@ okcupid_visit_looper_dev <- function(curr_port = 4451, action = "just_visit", on
       all_all <- c(all_all,"Alpha0227") # just weird
       all_all <- c(all_all,"Ms_MandaJ") # THE AUG 6 - sent back weak repsonse: YOUNG BL GIRL: I HAVE TO THINK IF I WANT TO ASK HER OUT
       all_all <- c(all_all,"gangsta_grrl","CriuseChick","catsyoulater") # some recent dialog
-      all_all <- c(all_all,"5000kwatts")  # far way but too hot to miss
+    # all_all <- c(all_all,"5000kwatts")  # far way but too hot to miss
       all_all <- c(all_all,"jennh379") # # OVER THE HILL WOMAN - AVE ( BUT ASKED OFFLINE IF I MAY MEET HER IN PERSON  (TH AUG 6) ) New Orleans
       all_all <- c(all_all,"fireunleashed","Carpinteria01") # OVER THE HILL WOMAN - BUT HOT ( I GAVE A CUSTOM REPLY )
       all_all <- c(all_all,"Bozzo327") # from Sunday # You should sms my cell at 5045151708 # far away but hot
-      all_all <- c(all_all,"nataleebabinn") # I sent out of the blue ( she is too hot )
+    # all_all <- c(all_all,"nataleebabinn") # I sent out of the blue ( she is too hot )
       all_all <- c(all_all,"AniLevee") # Tells me that I am too old for her
 
       all_all <- c(all_all,"lilbird987","xoxosunshinexoxo","PoopySoupy","pizzaforbrkfst") # she tells me directly that she is not interested
 
       all_all <- c(all_all,"LadyTSydney") # direct to me - NO
+
+      all_all <- c(all_all,"kaykay1279") # online today - not responding
+
+      all_all <- c(all_all,"Sarahnaden") # 28 TUESDAY - ALREADY SENT TODAYS RESPONSE - SENT RESPONSE - HOT ( SOME DIALOG) - LATER -ANS BACK TUES EVEN *** COME BACK
+    # all_all <- c(all_all,"jtrybulski228") # some diag ONLINE NOW -26 MANDLEVILL AND HOT
+
+    # all_all <- c(all_all,"Carpinteria01") # TUESDAY - asked her FOR A DATE - ... getting together with her x
 
       # NOTE okcupid logic: a msg INCLUDES a vst
       #  OKCUPID IDEA: turn anonymous browsing ON WHILE sending messages $$ A-list
@@ -687,6 +576,9 @@ okcupid_visit_looper_dev <- function(curr_port = 4451, action = "just_visit", on
       # hadly S-logic
       matchnames <- str_sub(apagearefsupr_reduced, start = cbind(begin_matchnames_str_locations, end_matchnames_str_locations))
       
+      print(paste0("Will (try) to visit these links of age: ", agecurr))
+      print(as.data.frame(sort(apagearefsupr_reduced)))
+
       action_ref_counter <- 0                  # NOT TEST:     apagearefsupr_reduced
       for(alink in  apagearefsupr_reduced)   { #     TEST: rev(apagearefsupr_reduced)[1] # test: send a message to the bottom most link
 
@@ -706,8 +598,8 @@ okcupid_visit_looper_dev <- function(curr_port = 4451, action = "just_visit", on
         # BAD PATCH COVERALL  
         # LATER - I SHOULD FIND HOW THAT DUPLICATE GETS IN AN (any_visit DEBUG) AND CORRECT IT
         if(alink %in% already_touched_alink) { 
-          print(paste0("skipping - already visited / greet_matchname (below) - THIS SHOULD NOT HAPPEN - please fix"));
-          print(paste0("SKIP(NEXT) and END visiting ", alink, " of the page of : ",agecurr, " of age ", agerange_str))
+          print(paste0("      ** skipping - already visited / greet_matchname (below) - THIS SHOULD NOT HAPPEN - please fix"));
+          print(paste0("      ** SKIP(NEXT) and END visiting ", alink, " of the page of : ",agecurr, " of age ", agerange_str))
           already_touched_alink <- c(already_touched_alink,alink)
           next; # alink in  apagearefsupr_reduced
         }
@@ -763,7 +655,13 @@ okcupid_visit_looper_dev <- function(curr_port = 4451, action = "just_visit", on
               c("aaplude92","Amanda"),    # THESE PEOPLE TOLD ME THEIR NAMES OR IT WAS I THEIR PROFILE
               c("jsbutterfly","Jocelyn"),
               c("breezybaby2710","Alexa"),
-              c("MOFlynn37","Michelle")
+              c("MOFlynn37","Michelle"),
+              c("LetsDoThis46","Tracey"),
+              c("JaNaeMarie37","JM"),
+              c("nonnon333","Maggie"),
+              c("usernametaken985","Tonia"), # some weak dialog # I care not to respond
+              c("courtneyesl","Courtney")
+              
             )
             
             matchnames_aliases_db <- as.data.frame(t(data.frame(matchnames_aliases)), stringsAsFactors = FALSE)
@@ -934,36 +832,66 @@ okcupid_visit_looper_dev <- function(curr_port = 4451, action = "just_visit", on
       print(paste0("end visiting each profile of the page of : ",agecurr, " of age ", agerange_str))
       
       print(paste0("ending age ", agecurr))
+
+      print("Of THIS progrem, the user hand written call follows.")
+      print(looper_typed_in_call) # language
       
     }
     
-    print(Sys.time())
+    print(paste0("Program run Ending at: ",Sys.time()))
+
     bookmarkhere <- 1
     
     # manually logout of ok cupid here 
     # manually X out ( shutdown ) the browser
     
-    remDr$navigate("http://www.okcupid.com/logout")
-    Sys.sleep(3 + 1 * runif(1, min = 0, max = 1)) # 10 to 15 seconds wait 
-    
-    remDr$navigate("http://www.oracle.com")
-    Sys.sleep(3 + 1 * runif(1, min = 0, max = 1)) # 10 to 15 seconds wait 
+    # often I may want this to be FALSE
+    if( on_exit_logoff_site == TRUE ) {
+      
+      remDr$navigate("http://www.okcupid.com/logout")
+      Sys.sleep(3 + 1 * runif(1, min = 0, max = 1)) # 10 to 15 seconds wait 
+      
+      remDr$navigate("http://www.oracle.com")
+      Sys.sleep(3 + 1 * runif(1, min = 0, max = 1)) # 10 to 15 seconds wait 
+      
+    }
 
-    print("begin closing remDr")
-    remDr$close() 
-    print("end closing remDr")
+    if( on_exit_close_browser == TRUE ) {
+      
+      result_close <- tryCatch({ remDr$close() }, warning = function(w) {}, error = function(e) { return("ERROR") }, finally = {})
+      if(class(result_close) == "character" &&  result_close == "ERROR" ) { 
+        Sys.sleep(4.0) 
+        print("Begin retry of browser close fail")
+        result_close <- tryCatch({ remDr$close() }, warning = function(w) {}, error = function(e) { return("ERROR") }, finally = {})
+        if(class(result_close) == "character" &&  result_close == "ERROR" ) { 
+          print("BROWSER STILL FAILED TO CLOSE ... SO IGNORING ... NOT CLOSING")
+        }
+        print("End retry of browser close fail")
+      } 
+      Sys.sleep(4.0)
+      
+    }
 
     bookmarkhere <- 1
     
-    print("begin closeServer remDr")
-    result = tryCatch({ remDr$closeServer() }, warning = function(w) {}, error = function(e) {}, finally = {})
-    print("end closeServer remDr")
+    if( on_exit_stop_selenium_server == TRUE ) {
+      
+      print("begin closeServer remDr")
+      # IF I really! want to stop
+      # result = tryCatch({ remDr$closeServer() }, warning = function(w) {}, error = function(e) {}, finally = {})
+      manageRSeleniumServer(curr_port = curr_port, doif = "if_server_not_stopped_please_stop")
+      print("end closeServer remDr")
+      
+    }
 
     dbDisconnect(con)
     Sys.setenv(TZ=oldtz)
 
+    return(remDr)
+
   }
-  maininner()
+  remDr <- maininner()
+  return(remDr)
 }
 
 # BEGIN INSTRUCTIONS
@@ -991,11 +919,11 @@ okcupid_visit_looper_dev <- function(curr_port = 4451, action = "just_visit", on
 # XOR
 # "command prompt"->"right click"->"run as adminsitrator"  
 # VISIT WITHIN LAST WEEK
-# netstat -o -a -b  -n | find /i "listening" | find /i ":4451" 
+# netstat -o -a -b  -n | find /i "listening" | find /i ":4444" 
 # taskkill /F /T /PID <above_right_col_number>
 # XOR
 # SEND MESSAGE TO 'ONLINE NOW'
-# netstat -o -a -b  -n | find /i "listening" | find /i ":4452"
+# netstat -o -a -b  -n | find /i "listening" | find /i ":4444"
 # taskkill /F /T /PID <above_right_col_number>
 
 # MANUALLY PLACE DOWN THE BREAKPOINT
@@ -1005,15 +933,18 @@ okcupid_visit_looper_dev <- function(curr_port = 4451, action = "just_visit", on
 
 # visiting
 # okcupid_visit_looper_dev()
-# okcupid_visit_looper_dev <- function(curr_port = 4451, action = "just_visit", online_when = "within_the_last_week", not_to_vst = "NONE", not_to_msg = "NONE")
-
-# visiting - not previous dates
-# okcupid_visit_looper_dev(curr_port = 4451, action = "just_visit", online_when = "within_the_last_week", not_to_vst = "SOME", not_to_msg = "NONE")
-
-# messaging
+# okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = NULL, site_password = NULL, age_range_str = "18:49", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * (-5)), "! How are you today?"), action = "just_visit", online_when = "within_the_last_week", not_to_vst = "NONE", not_to_msg = "NONE")
+#
+# lately ( just prev dates - not visit)
+# okcupid_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = NULL, site_password = NULL, age_range_str = "18:49", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * (-5)), "! How are you today?"), action = "just_visit", online_when = "within_the_last_week", not_to_vst = "SOME", not_to_msg = "NONE")
 # 
 
+# messaging - not previous dates
+# okcupid_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = NULL, site_password = NULL, age_range_str = "18:49", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * (-5)), "! How are you today?"), action = "message_greet_matchname", online_when = "online_now", not_to_vst = "NONE", not_to_msg = "all_all")  
 
-# END INSTRUCTIONS   
-# END INSTRUCTIONS     
+# END INSTRUCTIONS  
+# END INSTRUCTIONS    
+
+
+ 
 
