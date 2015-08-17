@@ -1,186 +1,27 @@
 
 
-# SEARCH FOR # LEFT_OFF ( GET HER REAL NAME )
-
+# pof
 # DON'T FORGET TO STARTUP PostgreSQL !!
-
-# 
-# CREATE TABLE aes_do_not_visit_list
-# (
-#   id            double precision  NOT NULL,
-#   match_source  text,
-#   my_matchname  text,
-#   her_matchname text,
-#   her_age       integer,
-# )
-# WITH (
-#   OIDS=FALSE
-# );
-# ALTER TABLE aes_do_not_visit_list
-# OWNER TO postgres;
-# 
-# CREATE UNIQUE INDEX aes_do_not_visit_list_pk_idx  
-# ON aes_do_not_visit_list
-# USING btree (id);  
-# 
-# ALTER TABLE aes_do_not_visit_list
-# ADD CONSTRAINT aes_do_not_visit_list_pk PRIMARY KEY  USING INDEX aes_do_not_visit_list_pk_idx;  
-# 
-# -- NOTE: now the index will dissapear from the GUI ( but the pk properties showed its there ( e.g. btree ) )
-#                                                      
-# REINDEX TABLE aes_do_not_visit_list; -- simply rebuild that index
-#                                                      
-# 
-# CREATE TABLE aes_have_visited_list
-# (
-#   id            double precision  NOT NULL,
-#   match_source  text,
-#   my_matchname  text,
-#   her_matchname text
-# )
-# WITH (
-#   OIDS=FALSE
-# );
-# ALTER TABLE aes_have_visited_list
-# OWNER TO postgres;
-# 
-# CREATE UNIQUE INDEX aes_have_visited_list_pk_idx  
-# ON aes_have_visited_list
-# USING btree (id);  
-# 
-# ALTER TABLE aes_have_visited_list
-# ADD CONSTRAINT aes_have_visited_list_pk PRIMARY KEY  USING INDEX aes_have_visited_list_pk_idx;  
-# 
-# -- NOTE: now the index will disappear from the GUI ( but the pk properties showed its there ( e.g. btree ) )
-#                                                      
-# REINDEX TABLE aes_have_visited_list; -- simply rebuild that index
-#                                                      
-
-# CREATE TABLE aes_have_sent_message_list   
-# (
-#   id double precision NOT NULL,
-#   match_source text,
-#   my_matchname text,
-#   her_matchname text,
-#   her_age integer,
-#   sent_message text
-# )
-# WITH (
-#   OIDS=FALSE
-# );
-# ALTER TABLE aes_have_sent_message_list
-# OWNER TO postgres;
-# 
-# CREATE UNIQUE INDEX aes_have_sent_message_list_pk_idx  
-# ON aes_have_sent_message_list
-# USING btree (id);  
-# 
-# ALTER TABLE aes_have_sent_message_list
-# ADD CONSTRAINT aes_have_sent_message_list_pk PRIMARY KEY USING INDEX aes_have_sent_message_list_pk_idx; 
-# 
-# -- NOTE: now the index will disappear from the GUI ( but the pk properties showed its there ( e.g. btree ) )
-#                
-# REINDEX TABLE aes_have_sent_message_list; -- simply rebuild that index
-# 
-
-# install.packages("checkpoint")    
-
-# checkpoint(snapshotDate, project = getwd(), R.version, 
-#           scanForPackages = TRUE, checkpointLocation = "~/", verbose = TRUE, 
-#           use.knitr = system.file(package = "knitr") != "")  
-
-# INSTALLING 
-# checkpoint("2015-05-09", R.version = "3.2.0")  
-# COMMON EVERYDAY DEBUGGING 
-# I do not want it to scan every time
-### checkpoint("2015-05-09", R.version = "3.2.0", scanForPackages = FALSE)
-
-
-# shell("rstudio", wait=FALSE)  
 
 options(width = 255)     
 options(digits = 22) 
 options(max.print=99999)
 options(scipen=255) 
 options(digits.secs = 6)
-options(error = recover)
+options(error=NULL) # options(error = recover) 
 
-safe_navigate_to_new_url <- function(new_url = NULL, remote_driver = NULL, after_how_long = NULL, backout_url = NULL) {
-  
-  require(tcltk)
-  require(RSelenium)
-  
-  # NOTE: 'note very case is 'code covered' BUT IF A PROBLEM SHOULD BE FIXABLE  
-  
-  # if browser/site/internet hangs just ...
-  # backout_url: "current_url", "goback" "http://www.time.gov"(default) "CUSTOMHTTP" 
-  # NOTE: to retry JUST ONCE more: call by 'new_url == backout_url'
-  
-  #  1000:  good redirect success test
-  # 30000:  should never do 'backout_url' ( 25 seconds )
-  if(is.null(after_how_long)) { after_how_long <- 25000 } # 30 seconds 
-  
-  backout_url_set <- FALSE
-  if(is.null(backout_url))                                        { backout_url_value <- "http://www.time.gov"  ; backout_url_set <- TRUE } # default
-  if(!is.null(backout_url) && backout_url == "gobackgoforward")   { backout_url_value <- "gobackgoforward"      ; backout_url_set <- TRUE }
-  if(!is.null(backout_url) && backout_url == "refreshgoforward")  { backout_url_value <- "refreshgoforward"     ; backout_url_set <- TRUE }
-  if(!is.null(backout_url) && backout_url == "refresh")           { backout_url_value <- "refresh"              ; backout_url_set <- TRUE }
-  if(!is.null(backout_url) && backout_url == "current_url")       { backout_url_value <- "current_url" ; backout_url_set <- TRUE }
-  if(!is.null(backout_url) && !isTRUE(backout_url_set))           { backout_url_value <- backout_url   ; backout_url_set <- TRUE }
-  
-  if(!isTRUE(backout_url_set))  stop(paste0("safe_navigate_to_new_url call is missng a 'good backout_url'")) 
-  
-  # tcl: functon call does  not 'seem to be allowed to have any parameters ( rely on 'scope and visibility' )
-  safe_navigate_backout <- function() { 
-    
-    # SHOULD be TRUE here
-    if(isTRUE(backout_url_set)) {
-      
-      if(backout_url_value == "gobackgoforward")    { print("GOBACKGOFORWARD")       ; remote_driver$goBack();              remote_driver$goForward();            return() }
-      if(backout_url_value == "refreshgoforward")   { print("REFRESHGOFORWARD")      ; remote_driver$refresh();                                                   return() }
-      if(backout_url_value == "refresh")            { print("REFRESH")               ; remote_driver$refresh();             remote_driver$goForward();            return() }
-      if(backout_url_value == "current_url")        { print("NAVIGATE(CURRENT_URL")  ; remote_driver$navigate(current_url);                                       return() }
-      print("NAVIGATE(BACKOUT_URL_VALUE")  ;remote_driver$navigate(backout_url_value) 
-      return() 
-      
-    } else {
-      stop("in safe_navigate_backout NOT 'isTrue(backout_url_set)'") 
-    }
-    
-  }
-  
-  # NOT SURE of the 'tcl and safe_navigate_backout closure' rules, so I put this here
-  current_url <- remote_driver$getCurrentUrl()[[1]][1]
-  
-  # register task
-  .id <-tcl("after", after_how_long, safe_navigate_backout) 
-  
-  # To get info about this scheduled task
-  print(paste0("tcl_after_info_id: ",tcl("after", "info", .id)))   
-  
-  # regular run
-  remote_driver$navigate(new_url)
-  
-  # if hung after "after_how_long" milliseconds, will run (OTHER TRY): safe_navigate_backout
-  
-  # if I made it THIS far: "remote_driver$navigate(new_url)" ran, so then just cancel
-  # cancel the currently scheduled task
-  result = tryCatch({ tcl("after", "cancel", .id) }, warning = function(w) {}, error = function(e) {}, finally = {})
-  # unfortunately alwayS returns success: <Tcl> 
-  
-  new_url     <- remote_driver$getCurrentUrl()[[1]][1]
-  
-  # success if I navigated forward
-  return(list( success =(new_url != current_url), remote_driver = remote_driver  ))
-  
+if(Sys.getenv("RSTUDIO") == "1") {
+  debugSource(paste0(getwd(),"/","utilities_ext_visit_looper_dev.R"))
+} else {
+  source(paste0(getwd(),"/","utilities_ext_visit_looper_dev.R"))
 }
 
-
-
-pof_visit_looper_dev <- function(curr_port = 4461, action = "just_visit", online_when = "within_the_last_week", not_to_vst = "NONE", not_to_msg = "NONE", body_type = "anything") { 
+pof_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_the_custom_profile = FALSE, site_login = NULL, site_password = NULL, age_range_str = "23:44", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * (-5)), "! How are you today?"), on_exit_logoff_site = TRUE, on_exit_close_browser = TRUE, on_exit_stop_selenium_server = FALSE, action = "just_visit", online_when = "within_the_last_week", not_to_vst = "NONE", not_to_msg = "NONE", body_type = "anything") { 
   # OR action = "message_greet_matchname" "message_random_catchphrase"
   # OR not_to_msg = "all_all"
   # CONSIDER other PARAMETERS: , online_when = "within_the_last_week", not_to_vst = "NONE", not_to_msg = "NONE"
+  
+  looper_typed_in_call <- match.call( ) # language
   
   maininner <- function() {
     
@@ -227,52 +68,75 @@ pof_visit_looper_dev <- function(curr_port = 4461, action = "just_visit", online
 #       print(paste0("end killing child port ",child_port," and parent port ( and children ) ", parent_port))
 #     }
 #         
-      startServer(args = c(paste0("-port ", curr_port),"-timeout 3600","-browserTimeout 3600"))  # default # 4444 # java -jar selenium-server-standalone.jar -h
-      Sys.sleep(5.0) # 5 second wait
+    # SHOULD have been arleady started
+    manageRSeleniumServer(curr_port = 4444, doif = "if_server_not_started_please_start" )
     
-    
-    browser_profile_dir_path   <- "J:\\YDrive\\All_NewSeduction\\All_ElectronicSpeech\\RSeleniumAndBrowsers\\AES1_assistance\\RDebug\\Administrator\\AppData\\Local\\Google\\Chrome\\User Data"
-    browser_profile            <- "era674smartie_era674smart"
-    browser_profile_file       <- "Preferences"
-    browser_profile_file_GOOD  <- "Preferences.CORRECT_HOME_PAGE_AND_IMAGES"    
-    
-    browser_pref_conf_file_name <- paste0(browser_profile_dir_path, "\\", browser_profile, "\\" , browser_profile_file)
-    browser_pref_conf_file_name_GOOD <- paste0(browser_profile_dir_path, "\\", browser_profile, "\\" , browser_profile_file_GOOD)
-    
-    # chrome - CRASH RESTORE LAST SESSION PROBLEM
-    # Disable Google Chrome session restore functionality [duplicate]
-    # http://superuser.com/questions/461035/disable-google-chrome-session-restore-functionality
-    #                   exit_type: None NOT Normal
-    # JSON profile exited_cleanly: true
-    # http://jsbeautifier.org
-    # http://jsonviewer.stack.hu
-    # ABOVE - DID NOT WORK
-    
-    # Solution - JUST REPLACE THE NEWER PREF FILE WITH AN OLDER PREF FILE
-    
-    print("Begin browser pref conf file name GOOD copy ")
-    file.copy(from = browser_pref_conf_file_name_GOOD
-              , to   = browser_pref_conf_file_name
-              , overwrite = TRUE, copy.date = TRUE
-    ) -> file_copy_success # return TRUE/FALSE
-    if(!isTRUE(file_copy_success)) { stop("Preferences file copy failed!")  }
-    # if 'from' file not found, it will * silently fail *
-    Sys.sleep(5.0) # flush time
-    print("End browser pref conf file name GOOD copy ")
-    
-    # cprof <- getChromeProfile("J:\\YDrive\\All_NewSeduction\\All_ElectronicSpeech\\RSeleniumAndBrowsers\\AES1_assistance\\RDebug\\Administrator\\AppData\\Local\\Google\\Chrome\\User Data", "era674smartie_era674smart") 
-    cprof <- getChromeProfile(browser_profile_dir_path, browser_profile)
-    remDr <- remoteDriver(browserName = "chrome", extraCapabilities = cprof, port = curr_port) # default 4444
-    
+    if(  browser == "chrome"  &&  use_the_custom_profile == TRUE) {
+      
+      browser_profile_dir_path   <- "J:\\YDrive\\All_NewSeduction\\All_ElectronicSpeech\\RSeleniumAndBrowsers\\AES1_assistance\\RDebug\\Administrator\\AppData\\Local\\Google\\Chrome\\User Data"
+      browser_profile            <- "era674smartie_era674smart"
+      browser_profile_file       <- "Preferences"
+      browser_profile_file_GOOD  <- "Preferences.CORRECT_HOME_PAGE_AND_NO_IMAGES"    
+      
+      browser_pref_conf_file_name <- paste0(browser_profile_dir_path, "\\", browser_profile, "\\" , browser_profile_file)
+      browser_pref_conf_file_name_GOOD <- paste0(browser_profile_dir_path, "\\", browser_profile, "\\" , browser_profile_file_GOOD)
+      
+      # chrome - CRASH RESTORE LAST SESSION PROBLEM
+      # Disable Google Chrome session restore functionality [duplicate]
+      # http://superuser.com/questions/461035/disable-google-chrome-session-restore-functionality
+      #                   exit_type: None NOT Normal
+      # JSON profile exited_cleanly: true
+      # http://jsbeautifier.org
+      # http://jsonviewer.stack.hu
+      # ABOVE - DID NOT WORK
+      
+      # Solution - JUST REPLACE THE NEWER PREF FILE WITH AN OLDER PREF FILE
+      
+      print("Begin browser pref conf file name GOOD copy ")
+      file.copy(from = browser_pref_conf_file_name_GOOD
+                , to   = browser_pref_conf_file_name
+                , overwrite = TRUE, copy.date = TRUE
+      ) -> file_copy_success # return TRUE/FALSE
+      if(!isTRUE(file_copy_success)) { stop("Preferences file copy failed!")  }
+      # if 'from' file not found, it will * silently fail *
+      Sys.sleep(5.0) # flush time
+      print("End browser pref conf file name GOOD copy ")
+      
+      # cprof <- getChromeProfile("J:\\YDrive\\All_NewSeduction\\All_ElectronicSpeech\\RSeleniumAndBrowsers\\AES1_assistance\\RDebug\\Administrator\\AppData\\Local\\Google\\Chrome\\User Data", "era674smartie_era674smart") 
+      cprof <- getChromeProfile(browser_profile_dir_path, browser_profile)
+      remDr <- remoteDriver(browserName = "chrome", extraCapabilities = cprof, port = curr_port) # default 4444
+      
+    }
+
+    if(  browser == "chrome"  &&  use_the_custom_profile == FALSE) {
+      remDr <- remoteDriver(browserName = "chrome", port = curr_port)
+    } 
+
+    if(  browser == "firefox" ) {
+      remDr <- remoteDriver(browserName = "firefox", port = curr_port, nativeEvents = TRUE)
+    } 
+      
+
     print(paste0("PORT ", curr_port))
     
     # NOTE: POF # stores 'preferences(cookie-ish) on its servers in Vancouver '
     # pof has DEEP memory
   
-    remDr$open() # hp.com  
-    Sys.sleep(3 + 1 * runif(1, min = 0, max = 1)) # 10 to 15 seconds wait
-    
-    
+    # if fail - retry once - chrome specific 1ST run of the day problem
+    result_open <- tryCatch({ remDr$open() }, warning = function(w) {}, error = function(e) { return("ERROR") }, finally = {})
+    if(class(result_open) == "character" &&  result_open == "ERROR" ) { 
+      Sys.sleep(4.0) 
+      print("Begin retry of browser open fail")
+      remDr$open()
+      print("End retry of browser open fail")
+    } 
+    Sys.sleep(4.0)
+
+    if(browser == "chrome") {
+      # nav to chrome://settings/ and turn off images for performance reasons
+      remDr <- google_chrome_set_no_images(remDr = remDr)
+    }
+
     print(paste0("PORT ", curr_port))
     print("(tried) opened browser home page")
     
@@ -297,11 +161,11 @@ pof_visit_looper_dev <- function(curr_port = 4461, action = "just_visit", online
     remDr$executeScript(paste0(js_clear_login_box))[[1]]
     
     webElem1 <- remDr$findElement("css selector", "input#logincontrol_username")
-    webElem1$sendKeysToElement(list("era674smart")) # NOTE: BELOW: MAYBE DANGEROUSLY HARDCODED IN a message to here
+    webElem1$sendKeysToElement(list(site_login)) # NOTE: BELOW: MAYBE DANGEROUSLY HARDCODED IN a message to here
     Sys.sleep(3 + 2 * runif(1, min = 0, max = 1)) # 3 to 5 seconds
     
     webElem2 <- remDr$findElement("css selector", "input#logincontrol_password")
-    webElem2$sendKeysToElement(list("739heg08"))
+    webElem2$sendKeysToElement(list(site_password))
     Sys.sleep(3 + 2 * runif(1, min = 0, max = 1)) # 3 to 5 seconds 
     
     webElem2$sendKeysToElement(list(key="enter"))
@@ -309,6 +173,9 @@ pof_visit_looper_dev <- function(curr_port = 4461, action = "just_visit", online
     
     print("logged into pof")
     
+    print("Of THIS progrem, the user hand written call follows.")
+    print(looper_typed_in_call) # language
+
     # MAGIC NUMBER 
     # pof
     # 45 is the maximum age for a 31 year old
@@ -316,11 +183,14 @@ pof_visit_looper_dev <- function(curr_port = 4461, action = "just_visit", online
     # 31 YEAR OLD - SEARCH ON * age * WILL FAIL - '22 is first success' '45 is the last success'
     #    SAFE MIN: 23 SAFE MAX 44
 
-    agerange     <-  23:44      #  30:31  # 45:44   c(25:18,50:31) "25:18,50:31" # 
-    agerange_str <- "23:44"     # "30:31" # 45:44    
+    # agerange     <-  23:44      #  30:31  # 45:44   c(25:18,50:31) "25:18,50:31" # 
+    # agerange_str <- "23:44"     # "30:31" # 45:44    
     
-    # POF limit of 55 messages per 24 hour period
-    true_attempted_send_message_ANDRE_this_session_run_limit <- 40
+    agerange_str <- age_range_str
+    agerange     <- eval(parse(text=agerange_str))
+
+    # POF limit of 55 messages per 24 hour period to 100% NEW PEOPLE
+    true_attempted_send_message_ANDRE_this_session_run_limit <- 55 * 2 # to cover people that I previously 'New messaged'
     true_attempted_send_message_count <- 0
 
     usernamename_already_visited <-c() # pof is extremely page dynamic: I do not want to visit a person accidentally twice
@@ -540,9 +410,12 @@ pof_visit_looper_dev <- function(curr_port = 4461, action = "just_visit", online
               
                 if( action == "message_greet_matchname" ) {
                   
-                  c(", good Friday morning to you!  How are you?") -> message_greet_matchname_vector
                   # , good evening this fine Monday! Are you well this evening? --Monday July 28th
+                  #", good Friday morning to you!  How are you?" -- Fri Aug 6
+                  #c(", happy Saturday afternoon! How are you today?") -> message_greet_matchname_vector 
                   
+                  # from function call actual argument
+                  todays_message -> message_greet_matchname_vector
                   
                   webElemPOSSBTRNAMETEXT <- remDr$findElement("css selector", "span.headline.AboutMe")  
                   webElemPOSSBTRNAMETEXT$highlightElement()   # works
@@ -619,6 +492,9 @@ pof_visit_looper_dev <- function(curr_port = 4461, action = "just_visit", online
       
       print(paste0("ending age ", agecurr," of ",agerange_str))
       
+      print("Of THIS progrem, the user hand written call follows.")
+      print(looper_typed_in_call) # language
+      
     ## END or ERROR   
     ## next;
     ## break;
@@ -630,27 +506,53 @@ pof_visit_looper_dev <- function(curr_port = 4461, action = "just_visit", online
     # manually logout of pof cupid here 
     # manually X out ( shutdown ) the browser
     
-    remDr$navigate("http://www.pof.com/abandon.aspx")
-    Sys.sleep(3 + 1 * runif(1, min = 0, max = 1)) # 10 to 15 seconds wait 
-    
-    remDr$navigate("http://www.hp.com")
-    Sys.sleep(3 + 1 * runif(1, min = 0, max = 1)) # 10 to 15 seconds wait 
-    
-    print("begin closing remDr")
-    remDr$close() 
-    print("end closing remDr")
-    
+    # often I may want this to be FALSE
+    if( on_exit_logoff_site == TRUE ) {
+      
+      remDr$navigate("http://www.pof.com/abandon.aspx")
+      Sys.sleep(3 + 1 * runif(1, min = 0, max = 1)) # 10 to 15 seconds wait 
+      
+      remDr$navigate("http://www.hp.com")
+      Sys.sleep(3 + 1 * runif(1, min = 0, max = 1)) # 10 to 15 seconds wait 
+      
+    }
+
+    if( on_exit_close_browser == TRUE ) {
+      
+      result_close <- tryCatch({ remDr$close() }, warning = function(w) {}, error = function(e) { return("ERROR") }, finally = {})
+      if(class(result_close) == "character" &&  result_close == "ERROR" ) { 
+        Sys.sleep(4.0) 
+        print("Begin retry of browser close fail")
+        result_close <- tryCatch({ remDr$close() }, warning = function(w) {}, error = function(e) { return("ERROR") }, finally = {})
+        if(class(result_close) == "character" &&  result_close == "ERROR" ) { 
+          print("BROWSER STILL FAILED TO CLOSE ... SO IGNORING ... NOT CLOSING")
+        }
+        print("End retry of browser close fail")
+      } 
+      Sys.sleep(4.0)
+      
+    }
+
     bookmarkhere <- 1
     
-    print("begin closeServer remDr")
-    result = tryCatch({ remDr$closeServer() }, warning = function(w) {}, error = function(e) {}, finally = {})
-    print("end closeServer remDr")
-    
+    if( on_exit_stop_selenium_server == TRUE ) {
+      
+      print("begin closeServer remDr")
+      # IF I really! want to stop
+      # result = tryCatch({ remDr$closeServer() }, warning = function(w) {}, error = function(e) {}, finally = {})
+      manageRSeleniumServer(curr_port = curr_port, doif = "if_server_not_stopped_please_stop")
+      print("end closeServer remDr")
+      
+    }
+
     dbDisconnect(con)
     Sys.setenv(TZ=oldtz)
+
+    return(remDr)
     
   }
-  maininner()
+  remDr <- maininner()
+  return(remDr)
 }
 
 # BEGIN INSTRUCTIONS
@@ -678,11 +580,11 @@ pof_visit_looper_dev <- function(curr_port = 4461, action = "just_visit", online
 # XOR
 # "command prompt"->"right click"->"run as adminsitrator"  
 # VISIT WITHIN LAST WEEK
-# netstat -o -a -b  -n | find /i "listening" | find /i ":4461" 
+# netstat -o -a -b  -n | find /i "listening" | find /i ":4444" 
 # taskkill /F /T /PID <above_right_col_number>
 # XOR
 # SEND MESSAGE TO 'ONLINE NOW'
-# netstat -o -a -b  -n | find /i "listening" | find /i ":4462"
+# netstat -o -a -b  -n | find /i "listening" | find /i ":4444"
 # taskkill /F /T /PID <above_right_col_number>
 
 # MANUALLY PLACE DOWN THE BREAKPOINT
@@ -690,11 +592,12 @@ pof_visit_looper_dev <- function(curr_port = 4461, action = "just_visit", online
 
 # just visit
 # pof_visit_looper_dev()
-# pof_visit_looper_dev(curr_port = 4461, action = "just_visit", online_when = "within_the_last_week", not_to_vst = "NONE", not_to_msg = "NONE", body_type = "anything") # default
+# pof_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = NULL, site_password = NULL, age_range_str = "18:49", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * (-5)), "! How are you today?"), action = "just_visit", online_when = "within_the_last_week", not_to_vst = "NONE", not_to_msg = "NONE", body_type = "anything") # default
 
 # send a message
-# pof_visit_looper_dev(curr_port = 4462, action = "message_greet_matchname", online_when = "online_now", not_to_vst = "NONE", not_to_msg = "all_all", body_type = "thin_athletic")
+# pof_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = NULL, site_password = NULL, age_range_str = "18:49", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * (-5)), "! How are you today?"), action = "message_greet_matchname", online_when = "online_now", not_to_vst = "NONE", not_to_msg = "all_all", body_type = "thin_athletic")
 
 # END INSTRUCTIONS  
-# END INSTRUCTIONS      
+# END INSTRUCTIONS  
+
 
