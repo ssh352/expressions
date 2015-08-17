@@ -1,102 +1,7 @@
 
 
-# SEARCH FOR # LEFT_OFF ( GET HER REAL NAME )
-
+# zk
 # DON'T FORGET TO STARTUP PostgreSQL !!
-
-# 
-# CREATE TABLE aes_do_not_visit_list
-# (
-#   id            double precision  NOT NULL,
-#   match_source  text,
-#   my_matchname  text,
-#   her_matchname text,
-#   her_age       integer,
-# )
-# WITH (
-#   OIDS=FALSE
-# );
-# ALTER TABLE aes_do_not_visit_list
-# OWNER TO postgres;
-# 
-# CREATE UNIQUE INDEX aes_do_not_visit_list_pk_idx  
-# ON aes_do_not_visit_list
-# USING btree (id);  
-# 
-# ALTER TABLE aes_do_not_visit_list
-# ADD CONSTRAINT aes_do_not_visit_list_pk PRIMARY KEY  USING INDEX aes_do_not_visit_list_pk_idx;  
-# 
-# -- NOTE: now the index will dissapear from the GUI ( but the pk properties showed its there ( e.g. btree ) )
-#                                                      
-# REINDEX TABLE aes_do_not_visit_list; -- simply rebuild that index
-#                                                      
-# 
-# CREATE TABLE aes_have_visited_list
-# (
-#   id            double precision  NOT NULL,
-#   match_source  text,
-#   my_matchname  text,
-#   her_matchname text
-# )
-# WITH (
-#   OIDS=FALSE
-# );
-# ALTER TABLE aes_have_visited_list
-# OWNER TO postgres;
-# 
-# CREATE UNIQUE INDEX aes_have_visited_list_pk_idx  
-# ON aes_have_visited_list
-# USING btree (id);  
-# 
-# ALTER TABLE aes_have_visited_list
-# ADD CONSTRAINT aes_have_visited_list_pk PRIMARY KEY  USING INDEX aes_have_visited_list_pk_idx;  
-# 
-# -- NOTE: now the index will disappear from the GUI ( but the pk properties showed its there ( e.g. btree ) )
-#                                                      
-# REINDEX TABLE aes_have_visited_list; -- simply rebuild that index
-#                                                      
-
-# CREATE TABLE aes_have_sent_message_list   
-# (
-#   id double precision NOT NULL,
-#   match_source text,
-#   my_matchname text,
-#   her_matchname text,
-#   her_age integer,
-#   sent_message text
-# )
-# WITH (
-#   OIDS=FALSE
-# );
-# ALTER TABLE aes_have_sent_message_list
-# OWNER TO postgres;
-# 
-# CREATE UNIQUE INDEX aes_have_sent_message_list_pk_idx  
-# ON aes_have_sent_message_list
-# USING btree (id);  
-# 
-# ALTER TABLE aes_have_sent_message_list
-# ADD CONSTRAINT aes_have_sent_message_list_pk PRIMARY KEY USING INDEX aes_have_sent_message_list_pk_idx; 
-# 
-# -- NOTE: now the index will disappear from the GUI ( but the pk properties showed its there ( e.g. btree ) )
-#                
-# REINDEX TABLE aes_have_sent_message_list; -- simply rebuild that index
-# 
-
-# install.packages("checkpoint")    
-
-# checkpoint(snapshotDate, project = getwd(), R.version, 
-#           scanForPackages = TRUE, checkpointLocation = "~/", verbose = TRUE, 
-#           use.knitr = system.file(package = "knitr") != "")  
-
-# INSTALLING 
-# checkpoint("2015-05-09", R.version = "3.2.0")  
-# COMMON EVERYDAY DEBUGGING 
-# I do not want it to scan every time
-### checkpoint("2015-05-09", R.version = "3.2.0", scanForPackages = FALSE)
-
-
-# shell("rstudio", wait=FALSE)  
 
 options(width = 255)     
 options(digits = 22) 
@@ -105,82 +10,18 @@ options(scipen=255)
 options(digits.secs = 6)
 options(error=NULL) # options(error = recover) 
 
-safe_navigate_to_new_url <- function(new_url = NULL, remote_driver = NULL, after_how_long = NULL, backout_url = NULL) {
-  
-  require(tcltk)
-  require(RSelenium)
-  
-  # NOTE: 'note very case is 'code covered' BUT IF A PROBLEM SHOULD BE FIXABLE  
-  
-  # if browser/site/internet hangs just ...
-  # backout_url: "current_url", "goback" "http://www.time.gov"(default) "CUSTOMHTTP" 
-  # NOTE: to retry JUST ONCE more: call by 'new_url == backout_url'
-  
-  #  1000:  good redirect success test
-  # 30000:  should never do 'backout_url' ( 25 seconds )
-  if(is.null(after_how_long)) { after_how_long <- 25000 } # 30 seconds 
-  
-  backout_url_set <- FALSE
-  if(is.null(backout_url))                                        { backout_url_value <- "http://www.time.gov"  ; backout_url_set <- TRUE } # default
-  if(!is.null(backout_url) && backout_url == "gobackgoforward")   { backout_url_value <- "gobackgoforward"      ; backout_url_set <- TRUE }
-  if(!is.null(backout_url) && backout_url == "refreshgoforward")  { backout_url_value <- "refreshgoforward"     ; backout_url_set <- TRUE }
-  if(!is.null(backout_url) && backout_url == "refresh")           { backout_url_value <- "refresh"              ; backout_url_set <- TRUE }
-  if(!is.null(backout_url) && backout_url == "current_url")       { backout_url_value <- "current_url" ; backout_url_set <- TRUE }
-  if(!is.null(backout_url) && !isTRUE(backout_url_set))           { backout_url_value <- backout_url   ; backout_url_set <- TRUE }
-  
-  if(!isTRUE(backout_url_set))  stop(paste0("safe_navigate_to_new_url call is missng a 'good backout_url'")) 
-  
-  # tcl: functon call does  not 'seem to be allowed to have any parameters ( rely on 'scope and visibility' )
-  safe_navigate_backout <- function() { 
-    
-    # SHOULD be TRUE here
-    if(isTRUE(backout_url_set)) {
-      
-      if(backout_url_value == "gobackgoforward")    { print("GOBACKGOFORWARD")       ; remote_driver$goBack();              remote_driver$goForward();            return() }
-      if(backout_url_value == "refreshgoforward")   { print("REFRESHGOFORWARD")      ; remote_driver$refresh();                                                   return() }
-      if(backout_url_value == "refresh")            { print("REFRESH")               ; remote_driver$refresh();             remote_driver$goForward();            return() }
-      if(backout_url_value == "current_url")        { print("NAVIGATE(CURRENT_URL")  ; remote_driver$navigate(current_url);                                       return() }
-      print("NAVIGATE(BACKOUT_URL_VALUE")  ;remote_driver$navigate(backout_url_value) 
-      return() 
-      
-    } else {
-      stop("in safe_navigate_backout NOT 'isTrue(backout_url_set)'") 
-    }
-    
-  }
-  
-  # NOT SURE of the 'tcl and safe_navigate_backout closure' rules, so I put this here
-  current_url <- remote_driver$getCurrentUrl()[[1]][1]
-  
-  # register task
-  .id <-tcl("after", after_how_long, safe_navigate_backout) 
-  
-  # To get info about this scheduled task
-  print(paste0("tcl_after_info_id: ",tcl("after", "info", .id)))   
-  
-  # regular run
-  remote_driver$navigate(new_url)
-  
-  # if hung after "after_how_long" milliseconds, will run (OTHER TRY): safe_navigate_backout
-  
-  # if I made it THIS far: "remote_driver$navigate(new_url)" ran, so then just cancel
-  # cancel the currently scheduled task
-  result = tryCatch({ tcl("after", "cancel", .id) }, warning = function(w) {}, error = function(e) {}, finally = {})
-  # unfortunately alwayS returns success: <Tcl> 
-  
-  new_url     <- remote_driver$getCurrentUrl()[[1]][1]
-  
-  # success if I navigated forward
-  return(list( success =(new_url != current_url), remote_driver = remote_driver  ))
-  
+if(Sys.getenv("RSTUDIO") == "1") {
+  debugSource(paste0(getwd(),"/","utilities_ext_visit_looper_dev.R"))
+} else {
+  source(paste0(getwd(),"/","utilities_ext_visit_looper_dev.R"))
 }
 
-
-
-zk_visit_looper_dev <- function(curr_port = 4471, action = "just_visit", online_when = "within_the_last_week", not_to_vst = "NONE", not_to_msg = "NONE", body_type = "anything") { 
+zk_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_the_custom_profile = FALSE, site_login = NULL, site_password = NULL, age_range_str = "18:49", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * (-5)), "! How are you today?"), on_exit_logoff_site = TRUE, on_exit_close_browser = TRUE, on_exit_stop_selenium_server = FALSE, action = "just_visit", online_when = "within_the_last_week", not_to_vst = "NONE", not_to_msg = "NONE", body_type = "anything") { 
   # OR action = "message_greet_matchname" "message_random_catchphrase"
   # OR not_to_msg = "all_all"
   # CONSIDER other PARAMETERS: , online_when = "within_the_last_week", not_to_vst = "NONE", not_to_msg = "NONE"
+  
+  looper_typed_in_call <- match.call( ) # language
   
   maininner <- function() {
     
@@ -227,62 +68,78 @@ zk_visit_looper_dev <- function(curr_port = 4471, action = "just_visit", online_
 #       print(paste0("end killing child port ",child_port," and parent port ( and children ) ", parent_port))
 #     }
 
-      # CHROME/FIREFOX - ENABLED NATIVE EVENTS DEFAULT - SEEMS NOT REQUIRED
-      # " -Dwebdriver.enable.native.events=1" ( SEEMS *NO AFFECT IN/OUT")
-      startServer(args = c(paste0("-port ", curr_port),"-timeout 3600","-browserTimeout 3600"))  # default # 4444 # java -jar selenium-server-standalone.jar -h
-      Sys.sleep(5.0) # 5 second wait
+    # CHROME/FIREFOX - ENABLED NATIVE EVENTS DEFAULT - SEEMS NOT REQUIRED
+    # " -Dwebdriver.enable.native.events=1" ( SEEMS *NO AFFECT IN/OUT")
+    # SHOULD have been arleady started
+    manageRSeleniumServer(curr_port = 4444, doif = "if_server_not_started_please_start" )
     
     # CURRENTLY - zk WILL NOT USE A PROFILE - selenium/chrome - NOT_WORK_profile_MULTI_remDrS 
 
+    if(  browser == "chrome"  &&  use_the_custom_profile == TRUE) {
+      
       browser_profile_dir_path   <- "J:\\YDrive\\All_NewSeduction\\All_ElectronicSpeech\\RSeleniumAndBrowsers\\AES1_assistance\\RDebug\\Administrator\\AppData\\Local\\Google\\Chrome\\User Data"
       browser_profile            <- "epoch536intel_epoch536intel"
-#     browser_profile_file       <- "Preferences"
-#     browser_profile_file_GOOD  <- "Preferences.CORRECT_HOME_PAGE_AND_IMAGES"    
-#     
-#     browser_pref_conf_file_name <- paste0(browser_profile_dir_path, "\\", browser_profile, "\\" , browser_profile_file)
-#     browser_pref_conf_file_name_GOOD <- paste0(browser_profile_dir_path, "\\", browser_profile, "\\" , browser_profile_file_GOOD)
+      browser_profile_file       <- "Preferences"
+      browser_profile_file_GOOD  <- "Preferences.CORRECT_HOME_PAGE_AND_IMAGES"  # SHOUD BE 'NO_IMAGES' ( LATER: MAKE ONE OF THESE )  
+      
+      browser_pref_conf_file_name <- paste0(browser_profile_dir_path, "\\", browser_profile, "\\" , browser_profile_file)
+      browser_pref_conf_file_name_GOOD <- paste0(browser_profile_dir_path, "\\", browser_profile, "\\" , browser_profile_file_GOOD)
     
-    # chrome - CRASH RESTORE LAST SESSION PROBLEM
-    # Disable Google Chrome session restore functionality [duplicate]
-    # http://superuser.com/questions/461035/disable-google-chrome-session-restore-functionality
-    #                   exit_type: None NOT Normal
-    # JSON profile exited_cleanly: true
-    # http://jsbeautifier.org
-    # http://jsonviewer.stack.hu
-    # ABOVE - DID NOT WORK
-    
-    # Solution - JUST REPLACE THE NEWER PREF FILE WITH AN OLDER PREF FILE
-    
-    # CURRENTLY - zk WILL NOT USE A PROFILE - selenium/chrome - NOT_WORK_profile_MULTI_remDrS 
+      # chrome - CRASH RESTORE LAST SESSION PROBLEM
+      # Disable Google Chrome session restore functionality [duplicate]
+      # http://superuser.com/questions/461035/disable-google-chrome-session-restore-functionality
+      #                   exit_type: None NOT Normal
+      # JSON profile exited_cleanly: true
+      # http://jsbeautifier.org
+      # http://jsonviewer.stack.hu
+      # ABOVE - DID NOT WORK
+      
+      # Solution - JUST REPLACE THE NEWER PREF FILE WITH AN OLDER PREF FILE
+      
+      # CURRENTLY - zk WILL NOT USE A PROFILE - selenium/chrome - NOT_WORK_profile_MULTI_remDrS 
+  
+      print("Begin browser pref conf file name GOOD copy ")
+      file.copy(from = browser_pref_conf_file_name_GOOD
+                , to   = browser_pref_conf_file_name
+                , overwrite = TRUE, copy.date = TRUE
+      ) -> file_copy_success # return TRUE/FALSE
+      if(!isTRUE(file_copy_success)) { stop("Preferences file copy failed!")  }
+      # if 'from' file not found, it will * silently fail *
+      Sys.sleep(5.0) # flush time
+      print("End browser pref conf file name GOOD copy ")
+      
+      # CURRENTLY - zk WILL NOT USE A PROFILE - selenium/chrome - NOT_WORK_profile_MULTI_remDrS 
+  
+      # cprof <- getChromeProfile("J:\\YDrive\\All_NewSeduction\\All_ElectronicSpeech\\RSeleniumAndBrowsers\\AES1_assistance\\RDebug\\Administrator\\AppData\\Local\\Google\\Chrome\\User Data", "epoch536intel_epoch536intel") 
+      cprof <- getChromeProfile(browser_profile_dir_path, browser_profile)
+      remDr <- remoteDriver(browserName = "chrome", extraCapabilities = cprof, port = curr_port) # default 4444
 
-#     print("Begin browser pref conf file name GOOD copy ")
-#     file.copy(from = browser_pref_conf_file_name_GOOD
-#               , to   = browser_pref_conf_file_name
-#               , overwrite = TRUE, copy.date = TRUE
-#     ) -> file_copy_success # return TRUE/FALSE
-#     if(!isTRUE(file_copy_success)) { stop("Preferences file copy failed!")  }
-#     # if 'from' file not found, it will * silently fail *
-#     Sys.sleep(5.0) # flush time
-#     print("End browser pref conf file name GOOD copy ")
-    
-    # CURRENTLY - zk WILL NOT USE A PROFILE - selenium/chrome - NOT_WORK_profile_MULTI_remDrS 
+    }
 
-    # cprof <- getChromeProfile("J:\\YDrive\\All_NewSeduction\\All_ElectronicSpeech\\RSeleniumAndBrowsers\\AES1_assistance\\RDebug\\Administrator\\AppData\\Local\\Google\\Chrome\\User Data", "epoch536intel_epoch536intel") 
-    ### cprof <- getChromeProfile(browser_profile_dir_path, browser_profile)
-    ### remDr <- remoteDriver(browserName = "chrome", extraCapabilities = cprof, port = curr_port) # default 4444
-    
-    # MAYBE FREEZES IF IT DOES NOT HAVE A PROFILE?
-    # remDr <- remoteDriver(browserName = "chrome", port = curr_port)
+    if(  browser == "chrome"  &&  use_the_custom_profile == FALSE) {
+      
+      # MAYBE FREEZES IF IT DOES NOT HAVE A PROFILE? ( no images - help? )
+      remDr <- remoteDriver(browserName = "chrome", port = curr_port)
 
-    # not required firefox does native events "MANUALLY type remDr to SEE"
-    # remDr <- remoteDriver(port= curr_port, nativeEvents = TRUE) # RSelenium-basics.html async javascript PROBLEM firefox?
-    # OVERRIDE
-    # OVERRIDE
-    # OVERRIDE - CURRENLY ONLY PRACTICING WITH FIREFOX
-    # FIREFOX
-    # nativeEvents = XXXX # because DEFAULT may be platform specific
-    remDr <- remoteDriver(port= curr_port, nativeEvents = TRUE)  # SYNC/ASYNC PAGE LOADING?
-    # remDr <- remoteDriver(port= curr_port, nativeEvents = FALSE)  # SYNC/ASYNC PAGE LOADING? - NO AFFECT
+    } 
+
+    if(  browser == "firefox" ) {
+      
+      # not required firefox does native events "MANUALLY type remDr to SEE"
+      # remDr <- remoteDriver(port= curr_port, nativeEvents = TRUE) # RSelenium-basics.html async javascript PROBLEM firefox?
+      # OVERRIDE
+      # OVERRIDE
+      # OVERRIDE - CURRENLY ONLY PRACTICING WITH FIREFOX
+      # FIREFOX
+      # nativeEvents = XXXX # because DEFAULT may be platform specific
+      remDr <- remoteDriver(browserName = "firefox", port= curr_port, nativeEvents = TRUE)  # SYNC/ASYNC PAGE LOADING?
+      # remDr <- remoteDriver(port= curr_port, nativeEvents = FALSE)  # SYNC/ASYNC PAGE LOADING? - NO AFFECT
+      
+    } 
+
+
+
+
 
     # (hangs too much to use)
     # CHROME ALONE ( NO PROFILE)
@@ -293,9 +150,29 @@ zk_visit_looper_dev <- function(curr_port = 4471, action = "just_visit", online_
     # NOTE: POF # stores 'preferences(cookie-ish) on its servers in Vancouver '
     # pof has DEEP memory
   
-    remDr$open() # <somewhere>.com (PROFILE) # data; (NO PROFILE) 
-    Sys.sleep(3 + 1 * runif(1, min = 0, max = 1)) # 10 to 15 seconds wait
+    # if fail - retry once - chrome specific 1ST run of the day problem
+    result_open <- tryCatch({ remDr$open() }, warning = function(w) {}, error = function(e) { return("ERROR") }, finally = {})
+    if(class(result_open) == "character" &&  result_open == "ERROR" ) { 
+      Sys.sleep(4.0) 
+      print("Begin retry of browser open fail")
+      remDr$open()
+      print("End retry of browser open fail")
+    } 
+    Sys.sleep(4.0)
+
+    # default is 10 seconds ( 10000 millisecons ) ( playing with this again )
+    remDr$setImplicitWaitTimeout(60000)
+
+    # default is 10 seconds ( 10000 millisecons ) ( playing with this again )
+    remDr$setAsyncScriptTimeout(60000)
     
+    # chrome crashes on this one
+    # remDr$setTimeout(60000)
+
+    if(browser == "chrome") {
+      # nav to chrome://settings/ and turn off images for performance reasons
+      remDr <- google_chrome_set_no_images(remDr = remDr)
+    }
 
     # I did not see on chrome_pof, chrome_okcupid  ( but ff_zoosk may be different )
     #
@@ -372,12 +249,12 @@ zk_visit_looper_dev <- function(curr_port = 4471, action = "just_visit", online_
 
     webElemEMAIL <- remDr$findElement("name", "email")
     webElemEMAIL$highlightElement()
-    webElemEMAIL$sendKeysToElement(list("epoch536intel@gmail.com"))
+    webElemEMAIL$sendKeysToElement(list(site_login))
     Sys.sleep(2 + 1 * runif(1, min = 0, max = 1))
 
     webElemEMAILPASS <- remDr$findElement("name", "password")
     webElemEMAILPASS $highlightElement()
-    webElemEMAILPASS$sendKeysToElement(list("739heg08"))
+    webElemEMAILPASS$sendKeysToElement(list(site_password))
     Sys.sleep(2 + 1 * runif(1, min = 0, max = 1))
 
     webElemLOGINBTNTRUE <- remDr$findElement("css selector", "button.button-confirm")
@@ -426,6 +303,9 @@ zk_visit_looper_dev <- function(curr_port = 4471, action = "just_visit", online_
     match_matchname_data_guid_no_reencounter_global <- c()
     match_matchname_no_reencounter_global_list <- list()
 
+    print("Of THIS progrem, the user hand written call follows.")
+    print(looper_typed_in_call) # language
+
     # NOTE: zk: 
     # I MUST (diff from okcupid and pof) LOOP THROUGH ALL PAGES (at least per age ) 
     #        AND COLLECT THE ATTRIBUTES 
@@ -435,8 +315,11 @@ zk_visit_looper_dev <- function(curr_port = 4471, action = "just_visit", online_
     # MAGIC NUMBER  
     # zk ( ANY numbers: minage < me < maxage ) ??
     
-    agerange     <-  18:49      #  30:31  # 45:44   c(25:18,50:31) "25:18,50:31" # 
-    agerange_str <- "18:49"     # "30:31" # 45:44
+    # agerange     <-  18:49      #  30:31  # 45:44   c(25:18,50:31) "25:18,50:31" # 
+    # agerange_str <- "18:49"     # "30:31" # 45:44
+
+    agerange_str <- age_range_str
+    agerange     <- eval(parse(text=agerange_str))
 
     for(agecurr in agerange) { # testing only 31 and 30 # 31:30    
       
@@ -461,8 +344,34 @@ zk_visit_looper_dev <- function(curr_port = 4471, action = "just_visit", online_
       
       # going to search page
       
-      remDr$navigate("https://www.zoosk.com/personals/search/edit")
-      Sys.sleep(3 + 1 * runif(1, min = 0, max = 1)) # TIME CONSUMING
+      # remDr$navigate("https://www.zoosk.com/personals/search/edit")
+      # Sys.sleep(3 + 1 * runif(1, min = 0, max = 1)) # TIME CONSUMING
+    
+      # Note: this will *also* ( properly ) show : Edit Search ( Currenly Unused )
+      # https://www.zoosk.com/personals/search?page=1&view=slideshow
+      
+      # BELOW - no longer has "Edit Search" on the right
+#       result_navigate <- tryCatch({ remDr$navigate("https://www.zoosk.com/personals/search/edit") }, warning = function(w) {}, error = function(e) { return("ERROR") }, finally = {})
+#       if(class(result_navigate) == "character" &&  result_navigate == "ERROR" ) { 
+#         Sys.sleep(10.0) 
+#         print("Begin retry of fail of nav to personals/search/edit browser open fail")
+#         remDr$navigate("https://www.zoosk.com/personals/search/edit")
+#         print("End retry of fail of nave to personals/search/edit browser open fail")
+#         Sys.sleep(10.0) 
+#       } 
+      
+
+        # show link "Edit Search" ( Right Side)
+        webElemSEARCHMAGGLASS <- remDr$findElement("css selector", "li.main-nav-search span:nth-child(2)")
+        webElemSEARCHMAGGLASS$highlightElement() 
+        webElemSEARCHMAGGLASS$clickElement() 
+
+        # click on "edit search" ( Right Side )
+        webElemEDITSEARCH <- remDr$findElement("css selector", "span.search-edit.edit-search-options.link")
+        webElemEDITSEARCH$highlightElement()
+        webElemEDITSEARCH$clickElement()
+        Sys.sleep(10.0)
+
       # now at location of tabs 'New Search(HERE)     Saved Searches'
       
       # SOMETIMES (even without cookies)
@@ -478,9 +387,20 @@ zk_visit_looper_dev <- function(curr_port = 4471, action = "just_visit", online_
       
       # re-navigate to search page
       
-      remDr$navigate("https://www.zoosk.com/personals/search/edit")
-      Sys.sleep(3 + 1 * runif(1, min = 0, max = 1)) # TIME CONSUMING
+      # remDr$navigate("https://www.zoosk.com/personals/search/edit")
+      # Sys.sleep(3 + 1 * runif(1, min = 0, max = 1)) # TIME CONSUMING
       
+      # show link "Edit Search" ( Right Side)
+      webElemSEARCHMAGGLASS <- remDr$findElement("css selector", "li.main-nav-search span:nth-child(2)")
+      webElemSEARCHMAGGLASS$highlightElement() 
+      webElemSEARCHMAGGLASS$clickElement() 
+      
+      # click on "edit search" ( Right Side )
+      webElemEDITSEARCH <- remDr$findElement("css selector", "span.search-edit.edit-search-options.link")
+      webElemEDITSEARCH$highlightElement()
+      webElemEDITSEARCH$clickElement()
+      Sys.sleep(10.0)
+
       # WORKS - but I may/will 'return to' later
       # takes me to the 'saved searches tab'
       
@@ -573,6 +493,9 @@ zk_visit_looper_dev <- function(curr_port = 4471, action = "just_visit", online_
         print(paste0("of age ",agecurr, " beginning page collecting information of ",pagecurr," of ",pagerange_str))
                
         # process this page before 'going to the NEXT page'
+        
+        # RESEARVED - * NOT USED (YET) *
+        remDrGridPageSource <- htmlParse(remDr$getPageSource()[[1]])
         
         # get all match guids on the page 
         
@@ -824,7 +747,10 @@ zk_visit_looper_dev <- function(curr_port = 4471, action = "just_visit", online_
             # "Profile: Geaux Geaux Gal" ( for her name in a message )
             match_matchname_long_current  <- str_replace(str_extract(webElemLONGMATCHNAME$getElementText()[[1]],":[ ].*"),":[ ]","")
             
-            c(", happy Wednesday! How are you doing today?") -> message_greet_matchname_vector
+            # c(", happy Wednesday! How are you doing today?") -> message_greet_matchname_vector
+
+            # from function call actual argument
+            todays_message -> message_greet_matchname_vector
             
             current_message  <- paste0(match_matchname_long_current, message_greet_matchname_vector)
             
@@ -942,6 +868,8 @@ zk_visit_looper_dev <- function(curr_port = 4471, action = "just_visit", online_
       # NOT PART
       print(paste0("ending age ", agecurr," of ",agerange_str))
       
+      print("Of THIS progrem, the user hand written call follows.")
+      print(looper_typed_in_call) # language
       
     } # for(agecurr in agerange)
     
@@ -950,27 +878,53 @@ zk_visit_looper_dev <- function(curr_port = 4471, action = "just_visit", online_
     # manually logout of pof cupid here 
     # manually X out ( shutdown ) the browser
     
-    remDr$navigate("https://www.zoosk.com/zoosk-on-the-go?notify=logout&from=user-menu")
-    Sys.sleep(3 + 1 * runif(1, min = 0, max = 1)) # 10 to 15 seconds wait 
-    
-    remDr$navigate("http://www.apple.com")
-    Sys.sleep(3 + 1 * runif(1, min = 0, max = 1)) # 10 to 15 seconds wait 
-    
-    print("begin closing remDr")
-    remDr$close() 
-    print("end closing remDr")
-    
+    # often I may want this to be FALSE
+    if( on_exit_logoff_site == TRUE ) {
+      
+      remDr$navigate("https://www.zoosk.com/zoosk-on-the-go?notify=logout&from=user-menu")
+      Sys.sleep(3 + 1 * runif(1, min = 0, max = 1)) # 10 to 15 seconds wait 
+      
+      remDr$navigate("http://www.apple.com")
+      Sys.sleep(3 + 1 * runif(1, min = 0, max = 1)) # 10 to 15 seconds wait 
+      
+    }
+
+    if( on_exit_close_browser == TRUE ) {
+      
+      result_close <- tryCatch({ remDr$close() }, warning = function(w) {}, error = function(e) { return("ERROR") }, finally = {})
+      if(class(result_close) == "character" &&  result_close == "ERROR" ) { 
+        Sys.sleep(4.0) 
+        print("Begin retry of browser close fail")
+        result_close <- tryCatch({ remDr$close() }, warning = function(w) {}, error = function(e) { return("ERROR") }, finally = {})
+        if(class(result_close) == "character" &&  result_close == "ERROR" ) { 
+          print("BROWSER STILL FAILED TO CLOSE ... SO IGNORING ... NOT CLOSING")
+        }
+        print("End retry of browser close fail")
+      } 
+      Sys.sleep(4.0)
+
+    }
+
     bookmarkhere <- 1
     
-    print("begin closeServer remDr")
-    result = tryCatch({ remDr$closeServer() }, warning = function(w) {}, error = function(e) {}, finally = {})
-    print("end closeServer remDr")
-    
+    if( on_exit_stop_selenium_server == TRUE ) {
+      
+      print("begin closeServer remDr")
+      # result = tryCatch({ remDr$closeServer() }, warning = function(w) {}, error = function(e) {}, finally = {})
+      # IF I really! want to stop
+      manageRSeleniumServer(curr_port = curr_port, doif = "if_server_not_stopped_please_stop")
+      print("end closeServer remDr")
+      
+    }
+
     dbDisconnect(con)
     Sys.setenv(TZ=oldtz)
+
+    return(remDr)
     
   }
-  maininner()
+  remDr <- maininner()
+  return(remDr)
 }
 
 
@@ -1000,11 +954,11 @@ zk_visit_looper_dev <- function(curr_port = 4471, action = "just_visit", online_
 # XOR
 # "command prompt"->"right click"->"run as adminsitrator"  
 # VISIT WITHIN LAST WEEK
-# netstat -o -a -b  -n | find /i "listening" | find /i ":4471" 
+# netstat -o -a -b  -n | find /i "listening" | find /i ":4444" 
 # taskkill /F /T /PID <above_right_col_number>
 # XOR
 # SEND MESSAGE TO 'ONLINE NOW'
-# netstat -o -a -b  -n | find /i "listening" | find /i ":4472"
+# netstat -o -a -b  -n | find /i "listening" | find /i ":4444"
 # taskkill /F /T /PID <above_right_col_number>
 
 # MANUALLY PLACE DOWN THE BREAKPOINT
@@ -1012,29 +966,32 @@ zk_visit_looper_dev <- function(curr_port = 4471, action = "just_visit", online_
 
 # just visit
 # zk_visit_looper_dev() # ( MAIN - JUST VISIT - WITHIN THE LAST WEEK )
-# zk_visit_looper_dev(curr_port = 4471, action = "just_visit", online_when = "within_the_last_week", not_to_vst = "NONE", not_to_msg = "NONE", body_type = "anything") # default
+# zk_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = NULL, site_password = NULL, age_range_str = "18:49", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * (-5)), "! How are you today?"), action = "just_visit", online_when = "within_the_last_week", not_to_vst = "NONE", not_to_msg = "NONE", body_type = "anything") # default
 
 # possible testing
-# zk_visit_looper_dev(curr_port = 4472, action = "message_greet_matchname", online_when = "_ANY_", not_to_vst = "NONE", not_to_msg = "all_all", body_type = "thin_athletic")
+# zk_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = NULL, site_password = NULL, age_range_str = "18:49", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * (-5)), "! How are you today?"), action = "message_greet_matchname", online_when = "_ANY_", not_to_vst = "NONE", not_to_msg = "all_all", body_type = "thin_athletic")
 
 # possible testing
-# zk_visit_looper_dev(curr_port = 4472, action = "just_visit", online_when = "_ANY_", not_to_vst = "NONE", not_to_msg = "all_all", body_type = "thin_athletic")
+# zk_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = NULL, site_password = NULL, age_range_str = "18:49", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * (-5)), "! How are you today?"), action = "just_visit", online_when = "_ANY_", not_to_vst = "NONE", not_to_msg = "all_all", body_type = "thin_athletic")
 
 # main send message testing ( this one )
 # possible testing
-# zk_visit_looper_dev(curr_port = 4472, action = "message_greet_matchname", online_when = "online_now", not_to_vst = "NONE", not_to_msg = "all_all", body_type = "anything")
+# zk_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = NULL, site_password = NULL, age_range_str = "18:49", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * (-5)), "! How are you today?"), action = "message_greet_matchname", online_when = "online_now", not_to_vst = "NONE", not_to_msg = "all_all", body_type = "anything")
 
 # or if 'so few' online, then it is better to send THIS one ( MAIN - SEND MESSAGE - ONLINE_NOW )
 # send a message ( if zk does not have a 'restriction on the number of messages sendable')
-# zk_visit_looper_dev(curr_port = 4472, action = "message_greet_matchname", online_when = "online_now", not_to_vst = "NONE", not_to_msg = "all_all", body_type = "anything")
+# zk_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = NULL, site_password = NULL, age_range_str = "18:49", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * (-5)), "! How are you today?"), action = "message_greet_matchname", online_when = "online_now", not_to_vst = "NONE", not_to_msg = "all_all", body_type = "anything")
 
 # WONT BE USED IN PRODUCTION if I do not find I way to send messages to those NOT(*online now*)
 # JUST TEST THE 'CODE ZONE'
-# zk_visit_looper_dev(curr_port = 4472, action = "message_greet_matchname", online_when = "within_the_last_week", not_to_vst = "NONE", not_to_msg = "all_all", body_type = "anything")
+# zk_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = NULL, site_password = NULL, age_range_str = "18:49", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * (-5)), "! How are you today?"), action = "message_greet_matchname", online_when = "within_the_last_week", not_to_vst = "NONE", not_to_msg = "all_all", body_type = "anything")
 
 # send a message ( if zk has a 'restriction on the number of messages sendable')
-# zk_visit_looper_dev(curr_port = 4472, action = "message_greet_matchname", online_when = "online_now", not_to_vst = "NONE", not_to_msg = "all_all", body_type = "thin_athletic")
+# zk_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = NULL, site_password = NULL, age_range_str = "18:49", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * (-5)), "! How are you today?"), action = "message_greet_matchname", online_when = "online_now", not_to_vst = "NONE", not_to_msg = "all_all", body_type = "thin_athletic")
 
 # END INSTRUCTIONS      
 # END INSTRUCTIONS       
+
+
+
 
