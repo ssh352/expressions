@@ -1,4 +1,13 @@
 
+# stone utilities
+
+options(width = 255)     
+options(digits = 22) 
+options(max.print=99999)
+options(scipen=255) 
+options(digits.secs = 6)
+options(error=NULL) # options(error = recover) 
+
 
 
 # 
@@ -92,16 +101,8 @@
 # I do not want it to scan every time
 ### checkpoint("2015-05-09", R.version = "3.2.0", scanForPackages = FALSE)
 
-
 # shell("rstudio", wait=FALSE) 
 
-
-options(width = 255)     
-options(digits = 22) 
-options(max.print=99999)
-options(scipen=255) 
-options(digits.secs = 6)
-options(error=NULL) # options(error = recover) 
 
 
 # okcupid
@@ -176,160 +177,39 @@ safe_navigate_to_new_url <- function(new_url = NULL, remote_driver = NULL, after
 }
 
 
-# pof
-# safe_navigate_to_new_url <- function(new_url = NULL, remote_driver = NULL, after_how_long = NULL, backout_url = NULL) {
-#   
-#   require(tcltk)
-#   require(RSelenium)
-#   
-#   # NOTE: 'note very case is 'code covered' BUT IF A PROBLEM SHOULD BE FIXABLE  
-#   
-#   # if browser/site/internet hangs just ...
-#   # backout_url: "current_url", "goback" "http://www.time.gov"(default) "CUSTOMHTTP" 
-#   # NOTE: to retry JUST ONCE more: call by 'new_url == backout_url'
-#   
-#   #  1000:  good redirect success test
-#   # 30000:  should never do 'backout_url' ( 25 seconds )
-#   if(is.null(after_how_long)) { after_how_long <- 25000 } # 30 seconds 
-#   
-#   backout_url_set <- FALSE
-#   if(is.null(backout_url))                                        { backout_url_value <- "http://www.time.gov"  ; backout_url_set <- TRUE } # default
-#   if(!is.null(backout_url) && backout_url == "gobackgoforward")   { backout_url_value <- "gobackgoforward"      ; backout_url_set <- TRUE }
-#   if(!is.null(backout_url) && backout_url == "refreshgoforward")  { backout_url_value <- "refreshgoforward"     ; backout_url_set <- TRUE }
-#   if(!is.null(backout_url) && backout_url == "refresh")           { backout_url_value <- "refresh"              ; backout_url_set <- TRUE }
-#   if(!is.null(backout_url) && backout_url == "current_url")       { backout_url_value <- "current_url" ; backout_url_set <- TRUE }
-#   if(!is.null(backout_url) && !isTRUE(backout_url_set))           { backout_url_value <- backout_url   ; backout_url_set <- TRUE }
-#   
-#   if(!isTRUE(backout_url_set))  stop(paste0("safe_navigate_to_new_url call is missng a 'good backout_url'")) 
-#   
-#   # tcl: functon call does  not 'seem to be allowed to have any parameters ( rely on 'scope and visibility' )
-#   safe_navigate_backout <- function() { 
-#     
-#     # SHOULD be TRUE here
-#     if(isTRUE(backout_url_set)) {
-#       
-#       if(backout_url_value == "gobackgoforward")    { print("GOBACKGOFORWARD")       ; remote_driver$goBack();              remote_driver$goForward();            return() }
-#       if(backout_url_value == "refreshgoforward")   { print("REFRESHGOFORWARD")      ; remote_driver$refresh();                                                   return() }
-#       if(backout_url_value == "refresh")            { print("REFRESH")               ; remote_driver$refresh();             remote_driver$goForward();            return() }
-#       if(backout_url_value == "current_url")        { print("NAVIGATE(CURRENT_URL")  ; remote_driver$navigate(current_url);                                       return() }
-#       print("NAVIGATE(BACKOUT_URL_VALUE")  ;remote_driver$navigate(backout_url_value) 
-#       return() 
-#       
-#     } else {
-#       stop("in safe_navigate_backout NOT 'isTrue(backout_url_set)'") 
-#     }
-#     
-#   }
-#   
-#   # NOT SURE of the 'tcl and safe_navigate_backout closure' rules, so I put this here
-#   current_url <- remote_driver$getCurrentUrl()[[1]][1]
-#   
-#   # register task
-#   .id <-tcl("after", after_how_long, safe_navigate_backout) 
-#   
-#   # To get info about this scheduled task
-#   print(paste0("tcl_after_info_id: ",tcl("after", "info", .id)))   
-#   
-#   # regular run
-#   remote_driver$navigate(new_url)
-#   
-#   # if hung after "after_how_long" milliseconds, will run (OTHER TRY): safe_navigate_backout
-#   
-#   # if I made it THIS far: "remote_driver$navigate(new_url)" ran, so then just cancel
-#   # cancel the currently scheduled task
-#   result = tryCatch({ tcl("after", "cancel", .id) }, warning = function(w) {}, error = function(e) {}, finally = {})
-#   # unfortunately alwayS returns success: <Tcl> 
-#   
-#   new_url     <- remote_driver$getCurrentUrl()[[1]][1]
-#   
-#   # success if I navigated forward
-#   return(list( success =(new_url != current_url), remote_driver = remote_driver  ))
-#   
-# }
 
 
-# zk
-# safe_navigate_to_new_url <- function(new_url = NULL, remote_driver = NULL, after_how_long = NULL, backout_url = NULL) {
-#   
-#   require(tcltk)
-#   require(RSelenium)
-#   
-#   # NOTE: 'note very case is 'code covered' BUT IF A PROBLEM SHOULD BE FIXABLE  
-#   
-#   # if browser/site/internet hangs just ...
-#   # backout_url: "current_url", "goback" "http://www.time.gov"(default) "CUSTOMHTTP" 
-#   # NOTE: to retry JUST ONCE more: call by 'new_url == backout_url'
-#   
-#   #  1000:  good redirect success test
-#   # 30000:  should never do 'backout_url' ( 25 seconds )
-#   if(is.null(after_how_long)) { after_how_long <- 25000 } # 30 seconds 
-#   
-#   backout_url_set <- FALSE
-#   if(is.null(backout_url))                                        { backout_url_value <- "http://www.time.gov"  ; backout_url_set <- TRUE } # default
-#   if(!is.null(backout_url) && backout_url == "gobackgoforward")   { backout_url_value <- "gobackgoforward"      ; backout_url_set <- TRUE }
-#   if(!is.null(backout_url) && backout_url == "refreshgoforward")  { backout_url_value <- "refreshgoforward"     ; backout_url_set <- TRUE }
-#   if(!is.null(backout_url) && backout_url == "refresh")           { backout_url_value <- "refresh"              ; backout_url_set <- TRUE }
-#   if(!is.null(backout_url) && backout_url == "current_url")       { backout_url_value <- "current_url" ; backout_url_set <- TRUE }
-#   if(!is.null(backout_url) && !isTRUE(backout_url_set))           { backout_url_value <- backout_url   ; backout_url_set <- TRUE }
-#   
-#   if(!isTRUE(backout_url_set))  stop(paste0("safe_navigate_to_new_url call is missng a 'good backout_url'")) 
-#   
-#   # tcl: functon call does  not 'seem to be allowed to have any parameters ( rely on 'scope and visibility' )
-#   safe_navigate_backout <- function() { 
-#     
-#     # SHOULD be TRUE here
-#     if(isTRUE(backout_url_set)) {
-#       
-#       if(backout_url_value == "gobackgoforward")    { print("GOBACKGOFORWARD")       ; remote_driver$goBack();              remote_driver$goForward();            return() }
-#       if(backout_url_value == "refreshgoforward")   { print("REFRESHGOFORWARD")      ; remote_driver$refresh();                                                   return() }
-#       if(backout_url_value == "refresh")            { print("REFRESH")               ; remote_driver$refresh();             remote_driver$goForward();            return() }
-#       if(backout_url_value == "current_url")        { print("NAVIGATE(CURRENT_URL")  ; remote_driver$navigate(current_url);                                       return() }
-#       print("NAVIGATE(BACKOUT_URL_VALUE")  ;remote_driver$navigate(backout_url_value) 
-#       return() 
-#       
-#     } else {
-#       stop("in safe_navigate_backout NOT 'isTrue(backout_url_set)'") 
-#     }
-#     
-#   }
-#   
-#   # NOT SURE of the 'tcl and safe_navigate_backout closure' rules, so I put this here
-#   current_url <- remote_driver$getCurrentUrl()[[1]][1]
-#   
-#   # register task
-#   .id <-tcl("after", after_how_long, safe_navigate_backout) 
-#   
-#   # To get info about this scheduled task
-#   print(paste0("tcl_after_info_id: ",tcl("after", "info", .id)))   
-#   
-#   # regular run
-#   remote_driver$navigate(new_url)
-#   
-#   # if hung after "after_how_long" milliseconds, will run (OTHER TRY): safe_navigate_backout
-#   
-#   # if I made it THIS far: "remote_driver$navigate(new_url)" ran, so then just cancel
-#   # cancel the currently scheduled task
-#   result = tryCatch({ tcl("after", "cancel", .id) }, warning = function(w) {}, error = function(e) {}, finally = {})
-#   # unfortunately alwayS returns success: <Tcl> 
-#   
-#   new_url     <- remote_driver$getCurrentUrl()[[1]][1]
-#   
-#   # success if I navigated forward
-#   return(list( success =(new_url != current_url), remote_driver = remote_driver  ))
-#   
-# }
 
+# will work for a switch to 'daylight savings time'
+# e.g. 
+# dynamic_UTC_offset()
+
+dynamic_UTC_offset <- function() {  
+
+  return(as.integer(as.POSIXct(as.character(Sys.time()), tz="UTC") - as.POSIXct(as.character(Sys.time()), tz="America/Chicago")))
+  
+  # NOTE: Sys.timezone() exists - BUT currently I do SO MANY time_zone switches
+  # SO - for now I will HARD CODE *PLACE/CITY* in it until I MOVE SOMEWHERE ELSE.
+  # Get Current Date, Time and Timezone - 
+  # http://astrostatistics.psu.edu/su07/R/html/base/html/Sys.time.html
+
+}
+
+# NOTE: relies on ABOVE: dynamic_UTC_offset()
 
 # Aug 16,2015 # Central Time Zone current time is UTC - 5
 # EDT will be observed in New York, Nassau until Nov 1, 2015 at 2:00 AM UTC Offset: UTC -4:00
 # http://www.timeanddate.com/time/zones/edt
 
 # e.g. 
-# delayUntilAbsoluteTime( starthourmin = 1330, timezone_hour_shift = -5 ) # 1:30 p.m.
+# delayUntilAbsoluteTime( starthourmin = 1330) # # 1:30 p.m.
+# 
+# less better ( if I am 100% sure of the shift )
+# delayUntilAbsoluteTime( starthourmin = 1330, timezone_hour_shift = -5 ) # 1:30 p.m. Central Daylight Time
 
 delayUntilAbsoluteTime <- function( 
-  starthourmin = 1500 
-  , timezone_hour_shift = NULL
+  starthourmin = 1500, 
+  timezone_hour_shift = dynamic_UTC_offset()
 ) { # 3:00 p.m. CDT - NOT DYNAMICALLY CHANGE
   
   oldtz <- Sys.getenv('TZ') 
@@ -379,11 +259,13 @@ delayUntilAbsoluteTime <- function(
 # delayUntilRelativeTimeFromNow(addhourmin = 5, timezone_hour_shift = -5) # 5 minutes
 # delayUntilRelativeTimeFromNow(addhourmin = 1, timezone_hour_shift = -5) # 1 minute
 
+
+# NOTE: relies on ABOVE: dynamic_UTC_offset()
 # NOTE: relies on ABOVE: delayUntilAbsoluteTime()
 
 delayUntilRelativeTimeFromNow <- function( 
-  addhourmin = 900 # 4:30 a.m. to # 3:30 p.m. CDT - NOT DYNAMICALLY CHANGE
-  , timezone_hour_shift = NULL
+  addhourmin = 900,            # 4:30 a.m. to # 3:30 p.m. CDT - NOT DYNAMICALLY CHANGE
+  timezone_hour_shift = dynamic_UTC_offset()
 ) {
   
   oldtz <- Sys.getenv('TZ') 
@@ -496,8 +378,8 @@ manageRSeleniumServer <- function(curr_port = 4444, doif = "if_server_not_starte
   
 }
 
-############
-############
+############ 
+############ 
 
 
 
