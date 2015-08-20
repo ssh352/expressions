@@ -16,7 +16,7 @@ if(Sys.getenv("RSTUDIO") == "1") {
   source(paste0(getwd(),"/","utilities_ext_visit_looper_dev.R"))
 }
 
-pof_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_the_custom_profile = FALSE, site_login = NULL, site_password = NULL, age_range_str = "23:44", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * (-5)), "! How are you today?"), on_exit_logoff_site = TRUE, on_exit_close_browser = TRUE, on_exit_stop_selenium_server = FALSE, action = "just_visit", online_when = "within_the_last_week", not_to_vst = "NONE", not_to_msg = "NONE", body_type = "anything") { 
+pof_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_the_custom_profile = FALSE, site_login = NULL, site_password = NULL, age_range_str = "23:44", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), on_exit_logoff_site = TRUE, on_exit_close_browser = TRUE, on_exit_stop_selenium_server = FALSE, action = "just_visit", online_when = "within_the_last_week", not_to_vst = "NONE", not_to_msg = "NONE", body_type = "anything") { 
   # OR action = "message_greet_matchname" "message_random_catchphrase"
   # OR not_to_msg = "all_all"
   # CONSIDER other PARAMETERS: , online_when = "within_the_last_week", not_to_vst = "NONE", not_to_msg = "NONE"
@@ -176,6 +176,9 @@ pof_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_the_
     print("Of THIS progrem, the user hand written call follows.")
     print(looper_typed_in_call) # language
 
+    program_run_started <- Sys.time()
+    print(paste0("Program run Starting at: ",program_run_started))
+
     # MAGIC NUMBER 
     # pof
     # 45 is the maximum age for a 31 year old
@@ -224,6 +227,24 @@ pof_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_the_
           break # out of the page loop # since 'online_when' THIS IS 'per age', go to the next age ( above )
         }
         
+        # not 'advanced search'
+        
+        # Fiddler TextView ( NOT USEFUL: GET ON COMMAND LINE DOES NOT WORK )
+        # agelow=42&agehigh=42&miles=50&contacted=3&viewtype=0
+        # if CARE, use selenium .submit() instead
+        # http://stackoverflow.com/questions/17530104/selenium-webdriver-submit-vs-click
+        # JUST BELOW
+        
+        # choose age: 18 to 18 50 miles of KNOWN_PLACE ( from 'pof' personal email to me )
+        # http://www.pof.com/lastonlinemycity.aspx # SELENIUM? add form to page and do a POST request
+        #   ALL_USERS             Online Now ... Last Online
+        #   USERS_I_HAVE_CONTACTED
+        #   USERS_I_HAVE_NOT_CONTACTED ( not much use? - can only restrict by 'age' and 'distance' )
+        #                                
+        # choose age: 18 to 18 50 miles ofKNOWN_PLACE ( from 'above' bottom of the page link followed )
+        # http://www.pof.com/lastsignup.aspx ( already on 'advanced search page' )
+        
+        # advanced search - does not have - 'new users' - NO CODE implementation yet
 
         # default
         if( body_type == "anything" ) {
@@ -500,6 +521,9 @@ pof_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_the_
     ## break;
       
     }
+
+    print(paste0("This Program run Started at: ",program_run_started))
+    print(paste0("Program run Ending at: ",Sys.time()))
     
     bookmarkhere <- 1
     
@@ -592,12 +616,13 @@ pof_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_the_
 
 # just visit
 # pof_visit_looper_dev()
-# pof_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = NULL, site_password = NULL, age_range_str = "18:49", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * (-5)), "! How are you today?"), action = "just_visit", online_when = "within_the_last_week", not_to_vst = "NONE", not_to_msg = "NONE", body_type = "anything") # default
+# pof_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = NULL, site_password = NULL, age_range_str = "23:44", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), action = "just_visit", online_when = "within_the_last_week", not_to_vst = "NONE", not_to_msg = "NONE", body_type = "anything") # default
 
 # send a message
-# pof_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = NULL, site_password = NULL, age_range_str = "18:49", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * (-5)), "! How are you today?"), action = "message_greet_matchname", online_when = "online_now", not_to_vst = "NONE", not_to_msg = "all_all", body_type = "thin_athletic")
+# pof_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = NULL, site_password = NULL, age_range_str = "23:44", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), action = "message_greet_matchname", online_when = "online_now", not_to_vst = "NONE", not_to_msg = "all_all", body_type = "thin_athletic")
 
 # END INSTRUCTIONS  
 # END INSTRUCTIONS  
+
 
 
