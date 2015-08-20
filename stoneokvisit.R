@@ -18,7 +18,7 @@ if(Sys.getenv("RSTUDIO") == "1") {
   source(paste0(getwd(),"/","utilities_ext_visit_looper_dev.R"))
 }
 
-okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_the_custom_profile = FALSE, site_login = NULL, site_password = NULL, age_range_str = "18:49", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * (-5)), "! How are you today?"), on_exit_logoff_site = TRUE, on_exit_close_browser = TRUE, on_exit_stop_selenium_server = FALSE, action = "just_visit", online_when = "within_the_last_week", not_to_vst = "NONE", not_to_msg = "NONE") { 
+okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_the_custom_profile = FALSE, site_login = NULL, site_password = NULL, age_range_str = "18:49", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), on_exit_logoff_site = TRUE, on_exit_close_browser = TRUE, on_exit_stop_selenium_server = FALSE, action = "just_visit", online_when = "within_the_last_week", not_to_vst = "NONE", not_to_msg = "NONE") { 
   # OR action = "message_greet_matchname" "message_random_catchphrase"
   # OR not_to_msg = "all_all"
   
@@ -26,16 +26,12 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
   
   maininner <- function() {
     
-    print(paste0("Program run Starting at: ",Sys.time()))
-    
     oldtz <- Sys.getenv('TZ')
     if(oldtz=='') {
       Sys.setenv(TZ="UTC")
     }
     
     set.seed(runif(1, min = 0, max = 1))
-    
-    
     
     require(RSelenium)
     require(stringr)
@@ -166,6 +162,9 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
     
     print("Of THIS progrem, the user hand written call follows.")
     print(looper_typed_in_call) # language
+
+    program_run_started <- Sys.time()
+    print(paste0("Program run Starting at: ",program_run_started))
     
     # MAGIC NUMBER 
     
@@ -496,12 +495,15 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
 
       all_all <- c(all_all,"LadyTSydney") # direct to me - NO
 
-      all_all <- c(all_all,"kaykay1279") # online today - not responding
+    # all_all <- c(all_all,"kaykay1279") # online today - not responding
 
-      all_all <- c(all_all,"Sarahnaden") # 28 TUESDAY - ALREADY SENT TODAYS RESPONSE - SENT RESPONSE - HOT ( SOME DIALOG) - LATER -ANS BACK TUES EVEN *** COME BACK
+    # all_all <- c(all_all,"Sarahnaden") # 28 TUESDAY - ALREADY SENT TODAYS RESPONSE - SENT RESPONSE - HOT ( SOME DIALOG) - LATER -ANS BACK TUES EVEN *** COME BACK
     # all_all <- c(all_all,"jtrybulski228") # some diag ONLINE NOW -26 MANDLEVILL AND HOT
 
     # all_all <- c(all_all,"Carpinteria01") # TUESDAY - asked her FOR A DATE - ... getting together with her x
+
+    # all_all <- c(all_all,"anitkiln") # PLEASE FOLLOW UP
+    # all_all <- c(all_all,"cmm303")   # PLEASE FOLLOW UP ( 33 AND BOILING HOT ) 
 
       # NOTE okcupid logic: a msg INCLUDES a vst
       #  OKCUPID IDEA: turn anonymous browsing ON WHILE sending messages $$ A-list
@@ -640,6 +642,23 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
         
         if( action == "message_greet_matchname" || action == "message_random_catchphrase" ) {
           
+          # A 19 year old slipped backwards in with the  18 year old ( how is that possible ? )
+          # https://www.okcupid.com/profile/Divaqueen03 SHE_IS_OLD but  MSG POPUP ON THE 18 YEAR OLD PAGE
+          # ( If the message popup is on the grid page It is included in the PAGED SCRAPED LINKS - different )
+          
+          # on her PERSONAL page, her PRINTED age 
+          webElemHERPAGE_AGE <- remDr$findElement("css selector", "div#basic_info div#aso_loc p.infos span:nth-child(1)")
+          # webElemHERPAGE_AGE$highlightElement()
+          current_her_page_age <- as.integer(webElemHERPAGE_AGE$getElementText()[[1]])
+          
+          if( current_her_page_age != agecurr  ) {
+            
+            print(paste0("      **** WRONG AGE ON PAGE of matchname ", matchnames[action_ref_counter]," of search criteria age ", agecurr," BUT SHE HAS page age ", current_her_page_age))
+                   print("      **** SKIPPING send message to HER ... next loop ...")
+            next
+            
+          }
+          
           print(paste0("begin send message ", alink, " of the page of : ",agecurr, " of age ", agerange_str))
           
           if( action == "message_greet_matchname" ) {
@@ -660,7 +679,9 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
               c("JaNaeMarie37","JM"),
               c("nonnon333","Maggie"),
               c("usernametaken985","Tonia"), # some weak dialog # I care not to respond
-              c("courtneyesl","Courtney")
+              c("courtneyesl","Courtney"),
+              c("loveecovee","Angela"),
+              c("lindsayp13","Lindsay") # BUT *SHE* IS A BITCH
               
             )
             
@@ -838,6 +859,7 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
       
     }
     
+    print(paste0("This Program run Started at: ",program_run_started))
     print(paste0("Program run Ending at: ",Sys.time()))
 
     bookmarkhere <- 1
@@ -933,18 +955,17 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
 
 # visiting
 # okcupid_visit_looper_dev()
-# okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = NULL, site_password = NULL, age_range_str = "18:49", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * (-5)), "! How are you today?"), action = "just_visit", online_when = "within_the_last_week", not_to_vst = "NONE", not_to_msg = "NONE")
+# okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = NULL, site_password = NULL, age_range_str = "18:49", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), action = "just_visit", online_when = "within_the_last_week", not_to_vst = "NONE", not_to_msg = "NONE")
 #
-# lately ( just prev dates - not visit)
-# okcupid_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = NULL, site_password = NULL, age_range_str = "18:49", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * (-5)), "! How are you today?"), action = "just_visit", online_when = "within_the_last_week", not_to_vst = "SOME", not_to_msg = "NONE")
+# lately ( just prev dates - SOME not visit)
+# okcupid_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = NULL, site_password = NULL, age_range_str = "18:49", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), action = "just_visit", online_when = "within_the_last_week", not_to_vst = "SOME", not_to_msg = "NONE")
 # 
 
 # messaging - not previous dates
-# okcupid_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = NULL, site_password = NULL, age_range_str = "18:49", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * (-5)), "! How are you today?"), action = "message_greet_matchname", online_when = "online_now", not_to_vst = "NONE", not_to_msg = "all_all")  
+# okcupid_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = NULL, site_password = NULL, age_range_str = "18:49", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), action = "message_greet_matchname", online_when = "online_now", not_to_vst = "NONE", not_to_msg = "all_all")  
 
 # END INSTRUCTIONS  
 # END INSTRUCTIONS    
 
 
- 
 
