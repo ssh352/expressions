@@ -49,6 +49,13 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
     # SHOULD have been arleady started
     manageRSeleniumServer(curr_port = 4444, doif = "if_server_not_started_please_start" )
     
+    # native events: TRUE; default on IE. 
+    #    not_default on chrome BUT settable = TRUE works, 
+    #    NEVER default settable on firefox(always ends up FALSE)
+    # SEE ( Andre Experiments ) # SEE ERROR remDr$value$message # SEE NATIVE EVENTS remDr$sessionInfo$nativeEvents
+    # $mouseMoveToLocation without "move" #21
+    # https://github.com/ropensci/RSelenium/issues/21
+
     ### cprof <- getChromeProfile("J:\\YDrive\\All_NewSeduction\\All_ElectronicSpeech\\RSeleniumAndBrowsers\\AES1_assistance\\RDebug\\Administrator\\AppData\\Local\\Google\\Chrome\\User Data", "time861wiz_time861wiz") 
     ### remDr <- remoteDriver(browserName = "chrome", extraCapabilities = cprof, port = curr_port) # default 4444
     
@@ -61,16 +68,23 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
     
     print(paste0("PORT ", curr_port))
     
+    # chrome - NEVER KILL JAVA ALONE,  always ( x_out of the browser FIRST !! OR remDr$close() FIRST )
     # if fail - retry once - chrome specific 1ST run of the day problem
     result_open <- tryCatch({ remDr$open() }, warning = function(w) {}, error = function(e) { return("ERROR") }, finally = {})
     if(class(result_open) == "character" &&  result_open == "ERROR" ) { 
       Sys.sleep(4.0) 
       print("Begin retry of browser open fail")
-      remDr$open()
+      result_open <- tryCatch({ remDr$open() }, warning = function(w) {}, error = function(e) { return("ERROR") }, finally = {})
+      if(class(result_open) == "character" &&  result_open == "ERROR" ) { 
+        Sys.sleep(4.0) 
+        print("Begin retry of browser open fail 2")
+        remDr$open()
+        print("End retry of browser open fail 2")
+      } 
       print("End retry of browser open fail")
     } 
-    Sys.sleep(4.0) 
-    
+    Sys.sleep(4.0)
+
     if(browser == "chrome") {
       # nav to chrome://settings/ and turn off images for performance reasons
       remDr <- google_chrome_set_no_images(remDr = remDr)
@@ -694,7 +708,7 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
             } else {
               matchname_to_message <- matchname_current
             }
-            print(paste0("Messageing her real name instead: ", matchname_to_message))
+            print(paste0("Messaging her real name instead: ", matchname_to_message))
             
             current_message  <- paste0(matchname_to_message,message_greet_matchname_vector[trunc( 1 + length(message_greet_matchname_vector)*runif(1, min = 0, max = 1) - 0.001 )])            
             # current_message  <- paste0(matchnames[action_ref_counter],message_greet_matchname_vector[trunc( 1 + length(message_greet_matchname_vector)*runif(1, min = 0, max = 1) - 0.001 )])
@@ -909,11 +923,13 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
     dbDisconnect(con)
     Sys.setenv(TZ=oldtz)
 
-    return(remDr)
+    # NOT IMPLMENTED YET
+    true_attempted_send_message_count <- 1
+    return(list(remDr = remDr, SentMsgAttemptedCount = true_attempted_send_message_count))
 
   }
-  remDr <- maininner()
-  return(remDr)
+  RETURN <- maininner()
+  return(RETURN) 
 }
 
 # BEGIN INSTRUCTIONS
@@ -967,5 +983,17 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
 # END INSTRUCTIONS  
 # END INSTRUCTIONS    
 
+# NO GITHUB 
+# okcupid
+# , site_login = "time861wiz", site_password = "739heg08", 
+#  
+# lately ( just prev dates - SOME not visit)
+# okcupid_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = "time861wiz", site_password = "739heg08", age_range_str = "18:49", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), action = "just_visit", online_when = "within_the_last_week", not_to_vst = "SOME", not_to_msg = "NONE")
 
+# messaging - not previous dates
+# okcupid_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = "time861wiz", site_password = "739heg08", age_range_str = "18:49", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), action = "message_greet_matchname", online_when = "online_now", not_to_vst = "NONE", not_to_msg = "all_all")  
+
+#    
+#     
+ 
 
