@@ -382,7 +382,40 @@ manageRSeleniumServer <- function(curr_port = 4444, doif = "if_server_not_starte
 ############ 
 
 
+# e.g timednavigate(remDr,"http://www.microsoft.com", timeout = 100)
+# note: use 100 as a 'good' minimum.  Faster speeds may be faster thanthe windows clock
 
+timednavigate <- function(remDr = remDr, url, timeout = 10000) {
+  
+  require(RSelenium)
+  require(tcltk)
+  
+  do <- function() {
+    remDr$navigate(url) 
+    result_url <- remDr$getCurrentUrl()[[1]]
+    # print(paste0("timednaviage done to : ", result_url))
+    assign(x="result_url",value=result_url,envir = parent.frame())
+  }
+  do_quit <- function() {
+    remDr$navigate("about:blank")
+    result_url <- remDr$getCurrentUrl()[[1]]
+    # print(result_url)
+    assign(x="result_url",value=result_url,envir = parent.frame())
+  }
+
+  do_quit_task_id <- tcl("after", timeout, do_quit )
+  do()
+  # if I made it this far - if I navigated and returned within *TIME*
+  tcl("after", "cancel", do_quit_task_id) 
+  # print(result_url)
+  
+  if( result_url == "about:blank" ) { 
+    # print("navigate timed out")
+    return(paste0("TIMED_NAVIGATE_TIMEOUT: ", url))
+  } else {
+    return(paste0("TIMED_NAVIGATE_SUCCESS: ", url))
+  }
+}
 
 
 
