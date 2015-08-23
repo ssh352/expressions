@@ -8,7 +8,9 @@ options(digits = 22)
 options(max.print=99999)
 options(scipen=255) 
 options(digits.secs = 6)
-options(error=NULL) # options(error = recover) 
+# options(error=NULL) 
+# options(error = recover) 
+options(error = browser) 
 
 if(Sys.getenv("RSTUDIO") == "1") {
   debugSource(paste0(getwd(),"/","utilities_ext_visit_looper_dev.R"))
@@ -24,6 +26,10 @@ zk_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_the_c
   looper_typed_in_call <- match.call( ) # language
   
   maininner <- function() {
+    
+    # SAVE - zk - error on page problem
+    # <div class="cupid-popover cupid-popover-fixed" style="z-index: 1001; top: 220px; margin-left: -250px;"><div class="general-error-popover-v2 centered popover-v4"><div class="popover-header-wrapper"><div class="popover-header"><span class="icon-error icon-font" data-zat=""></span></div></div><div class="popover-body-wrapper"><div class="popover-body"><p>Sorry, an error occurred. Please try again.</p><p class="secondary-action"><span class="js-close-link link-negative">Close</span></p></div></div></div></div>
+    
     
     oldtz <- Sys.getenv('TZ')
     if(oldtz=='') {
@@ -73,6 +79,13 @@ zk_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_the_c
     # SHOULD have been arleady started
     manageRSeleniumServer(curr_port = 4444, doif = "if_server_not_started_please_start" )
     
+    # native events: TRUE; default on IE. 
+    #    not_default on chrome BUT settable = TRUE works, 
+    #    NEVER default settable on firefox(always ends up FALSE)
+    # SEE ( Andre Experiments ) # SEE ERROR remDr$value$message # SEE NATIVE EVENTS remDr$sessionInfo$nativeEvents
+    # $mouseMoveToLocation without "move" #21
+    # https://github.com/ropensci/RSelenium/issues/21
+
     # CURRENTLY - zk WILL NOT USE A PROFILE - selenium/chrome - NOT_WORK_profile_MULTI_remDrS 
 
     if(  browser == "chrome"  &&  use_the_custom_profile == TRUE) {
@@ -112,14 +125,14 @@ zk_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_the_c
   
       # cprof <- getChromeProfile("J:\\YDrive\\All_NewSeduction\\All_ElectronicSpeech\\RSeleniumAndBrowsers\\AES1_assistance\\RDebug\\Administrator\\AppData\\Local\\Google\\Chrome\\User Data", "epoch536intel_epoch536intel") 
       cprof <- getChromeProfile(browser_profile_dir_path, browser_profile)
-      remDr <- remoteDriver(browserName = "chrome", extraCapabilities = cprof, port = curr_port) # default 4444
+      remDr <- remoteDriver(browserName = "chrome", nativeEvents = TRUE, extraCapabilities = cprof, port = curr_port) # default 4444
 
     }
 
     if(  browser == "chrome"  &&  use_the_custom_profile == FALSE) {
       
       # MAYBE FREEZES IF IT DOES NOT HAVE A PROFILE? ( no images - help? )
-      remDr <- remoteDriver(browserName = "chrome", port = curr_port)
+      remDr <- remoteDriver(browserName = "chrome", nativeEvents = TRUE, port = curr_port)
 
     } 
 
@@ -132,12 +145,18 @@ zk_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_the_c
       # OVERRIDE - CURRENLY ONLY PRACTICING WITH FIREFOX
       # FIREFOX
       # nativeEvents = XXXX # because DEFAULT may be platform specific
-      remDr <- remoteDriver(browserName = "firefox", port= curr_port, nativeEvents = TRUE)  # SYNC/ASYNC PAGE LOADING?
+      remDr <- remoteDriver(browserName = "firefox", port= curr_port)  # SYNC/ASYNC PAGE LOADING?
       # remDr <- remoteDriver(port= curr_port, nativeEvents = FALSE)  # SYNC/ASYNC PAGE LOADING? - NO AFFECT
       
     } 
 
 
+    if(  browser == "internet explorer" ) {
+      
+      # native events is ON by default
+      remDr <- remoteDriver(browserName = "internet explorer", port= curr_port)  # SYNC/ASYNC PAGE LOADING?
+      
+    } 
 
 
 
@@ -150,24 +169,47 @@ zk_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_the_c
     # NOTE: POF # stores 'preferences(cookie-ish) on its servers in Vancouver '
     # pof has DEEP memory
   
+    # chrome - NEVER KILL JAVA ALONE,  always ( x_out of the browser FIRST !! OR remDr$close() FIRST )
     # if fail - retry once - chrome specific 1ST run of the day problem
     result_open <- tryCatch({ remDr$open() }, warning = function(w) {}, error = function(e) { return("ERROR") }, finally = {})
     if(class(result_open) == "character" &&  result_open == "ERROR" ) { 
       Sys.sleep(4.0) 
       print("Begin retry of browser open fail")
-      remDr$open()
+      result_open <- tryCatch({ remDr$open() }, warning = function(w) {}, error = function(e) { return("ERROR") }, finally = {})
+      if(class(result_open) == "character" &&  result_open == "ERROR" ) { 
+        Sys.sleep(4.0) 
+        print("Begin retry of browser open fail 2")
+        remDr$open()
+        print("End retry of browser open fail 2")
+      } 
       print("End retry of browser open fail")
     } 
     Sys.sleep(4.0)
 
-    # default is 10 seconds ( 10000 millisecons ) ( playing with this again )
-    remDr$setImplicitWaitTimeout(60000)
+
+
+    # ImplicitlyWait     is the amount of time searching for an element on the page, 
+    # SetScriptTimeout   is the amount of time waiting for async JS to load
+    # SetPageLoadTimeout is the amount of time waiting for a URL to load, and  ( ANSWER )
+    # COMMENTS OF
+    # Selenium WebDriver - How to set Page Load Timeout using C#
+    # http://stackoverflow.com/questions/10606703/selenium-webdriver-how-to-set-page-load-timeout-using-c-sharp
+
 
     # default is 10 seconds ( 10000 millisecons ) ( playing with this again )
-    remDr$setAsyncScriptTimeout(60000)
+    remDr$setImplicitWaitTimeout(60000) # 60000
+
+    # default is 10 seconds ( 10000 millisecons ) ( playing with this again )
+    remDr$setAsyncScriptTimeout(60000) # 60000
     
+    # NO HELP
+    # webdriver hangs on page load and does not give control back for script execution
+    # https://code.google.com/p/chromedriver/issues/detail?id=402
+
     # chrome crashes on this one
     # remDr$setTimeout(60000)
+
+
 
     if(browser == "chrome") {
       # nav to chrome://settings/ and turn off images for performance reasons
@@ -349,23 +391,25 @@ zk_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_the_c
       
       # going to search page
       
+      # should remove - place holder for starting page
       # remDr$navigate("https://www.zoosk.com/personals/search/edit")
       # Sys.sleep(3 + 1 * runif(1, min = 0, max = 1)) # TIME CONSUMING
     
       # Note: this will *also* ( properly ) show : Edit Search ( Currenly Unused )
       # https://www.zoosk.com/personals/search?page=1&view=slideshow
       
-      # BELOW - no longer has "Edit Search" on the right
-#       result_navigate <- tryCatch({ remDr$navigate("https://www.zoosk.com/personals/search/edit") }, warning = function(w) {}, error = function(e) { return("ERROR") }, finally = {})
-#       if(class(result_navigate) == "character" &&  result_navigate == "ERROR" ) { 
-#         Sys.sleep(10.0) 
-#         print("Begin retry of fail of nav to personals/search/edit browser open fail")
-#         remDr$navigate("https://www.zoosk.com/personals/search/edit")
-#         print("End retry of fail of nave to personals/search/edit browser open fail")
-#         Sys.sleep(10.0) 
-#       } 
+      #### BEGIN SEARCH ####
       
-
+      # BELOW - no longer has "Edit Search" on the right
+      result_navigate <- tryCatch({ remDr$navigate("https://www.zoosk.com/personals/search/edit") }, warning = function(w) {}, error = function(e) { return("ERROR") }, finally = {})
+      if(class(result_navigate) == "character" &&  result_navigate == "ERROR" ) { 
+        Sys.sleep(10.0) 
+        print("Begin retry of fail of nav to personals/search/edit browser open fail")
+        remDr$navigate("https://www.zoosk.com/personals/search/edit")
+        print("End retry of fail of nave to personals/search/edit browser open fail")
+        Sys.sleep(10.0) 
+      } 
+      
         # show link "Edit Search" ( Right Side)
         webElemSEARCHMAGGLASS <- remDr$findElement("css selector", "li.main-nav-search span:nth-child(2)")
         webElemSEARCHMAGGLASS$highlightElement() 
@@ -478,9 +522,13 @@ zk_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_the_c
       webElemSEARCHBTN$clickElement() #  WORKS
       Sys.sleep(4 + 1 * runif(1, min = 0, max = 1))
       
+      #### END SEARCH ####
+      
       # now I am at target age current_page THAT first page
       
       # toggle the grid
+      
+
       
       webElemTOGGLEGRIDBTN <- remDr$findElement("css selector", "span.view-toggle.view-toggle-grid")
       webElemTOGGLEGRIDBTN$highlightElement()
@@ -543,7 +591,7 @@ zk_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_the_c
             # her location - the end - "32, New Orleans"
             current_match_matchname_location <- str_replace(str_extract(current_match_attributes[current_match_attributes_length],"[ ].*"),"[ ]","")
             
-            # true/false
+            # TRUE/FALSE
             current_match_matchname_recent_online <- ("Recently Online" %in% current_match_attributes)
             current_match_matchname_online_now    <- ("Online Now" %in% current_match_attributes)
             
@@ -660,7 +708,9 @@ zk_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_the_c
           webElemNEXTBTN$highlightElement()
           webElemNEXTBTN$clickElement()
           print("just pressed the NEXT button")
-          Sys.sleep(2 + 1 * runif(1, min = 0, max = 1))
+          # 
+          # Sys.sleep(2 + 1 * runif(1, min = 0, max = 1)) # (currently seems not necessary )
+          #
           # NEXT button was pressed
           next; # for(pagecurr in pagerange)
         } else { # NEXT_BUTTON_STATE != "NEXT_ENABLED"
@@ -705,6 +755,16 @@ zk_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_the_c
           }
         }
 
+
+        if(online_when == "within_the_last_week_ONLY") {
+          # not on GRID COLLECTED PAGE found: 'Online Now'"
+          if(!match_matchname_no_reencounter_list_per_age[["match_matchname_recent_online"]][match_matchname_no_reencounter_list_per_age_data_guid_current_counter]){
+            next; # so do not visit(at least)
+          }
+        }
+        
+        
+        
         # NOTE: short_name is 'probably' not unique
         
         # TEMPORARILY - match by guid
@@ -728,13 +788,26 @@ zk_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_the_c
         if( !(match_matchname_no_reencounter_list_per_age_data_guid_current %in% data_guid_already_visited) ) {
           
           # DEFAULT action = "just_visit" ( action = "message_greet_matchname" INCLUDES action = "just_visit" )
+          # HANG HERE ( does THIS help)?
+          # remDr$refresh()
           #
           print(paste0("of age ",agecurr, " of ", agerange_str, " begin url nav to  ", match_matchname_no_reencounter_list_per_age_data_guid_current,"  ", match_matchname_no_reencounter_list_per_age[["match_matchname_short"]][match_matchname_no_reencounter_list_per_age_data_guid_current_counter]))
+          
+          timed_navigate_result <- timednavigate(remDr, url=paste0("https://www.zoosk.com/personals/datecard/",match_matchname_no_reencounter_list_per_age_data_guid_current,"/about"), timeout = 10000)
+          print(timed_navigate_result)
           remDr$navigate(paste0("https://www.zoosk.com/personals/datecard/",match_matchname_no_reencounter_list_per_age_data_guid_current,"/about"))
+          
           Sys.sleep(3 + 1 * runif(1, min = 0, max = 1)) 
           this_age_visit_number_counter <- this_age_visit_number_counter + 1
           print(paste0("  This had been visit number ", this_age_visit_number_counter," of age ", agecurr))
           
+          # BUT REALLY SHOULD USE JS TO DETERMINE IF ELEMENT EXISTS
+          # BUT MAYBE DETECT IF THE ELEMENT IS HUMAN VISIBLE:   webElem$getElementLocation()[c('x','y')]  ???
+          # remDr$mouseMoveToLocation(webElement = webElem) # ERROR ???
+          #
+          # some thoughts
+          # How to verify element present or visible in selenium 2 (Selenium WebDriver)
+          # http://stackoverflow.com/questions/14156656/how-to-verify-element-present-or-visible-in-selenium-2-selenium-webdriver
           
           if( action == "message_greet_matchname" ) {
             
@@ -781,6 +854,10 @@ zk_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_the_c
               #   if she has  ... (green cirle) Chatting ... then she is 'ONLY *online now*'
               # online - exact css only found only on HER PAGE when she is *online now*
               # <span class="online-indicator-status">Chatting</span>
+              #
+              # NOTE: I am(currently) skipping those whose state has QUICKLY changed from "online_now" to "within_the_last_week"
+              #   But I(currently) do not care
+              #
               if(remDr$executeScript("return document.querySelectorAll('span.online-indicator-status').length;")[[1]] != 0) {
                 # FOUND (green cirle) Chatting
                 
@@ -807,49 +884,127 @@ zk_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_the_c
                 webElemSMALLCHATAREASENDBTN$highlightElement() # WORKS
                 webElemSMALLCHATAREASENDBTN$clickElement() # WORKS - if does not send ( then its because 'chat area' above is grayed out )
                 Sys.sleep(3 + 1 * runif(1, min = 0, max = 1)) 
-              }
+
+              } # FOUND (green cirle) Chatting
               
-            }
+            } # online_when == "online_now"
             
             # CURRENTLY ONLY OTHER online_when VALUE 
-            if(online_when == "within_the_last_week") { # all other cases when SHE IS NOT *online now*
+            if(online_when == "within_the_last_week") { # SEE ABOVE: includes: BOTH "online_now" AND "within_the_last_week"  
+              
+              # 
+              #  "online_now"(Chatting) 
+              #   
+
+              if(remDr$executeScript("return document.querySelectorAll('span.online-indicator-status').length;")[[1]] != 0) {
+                # FOUND (green cirle) Chatting
+                
+                # put in message
+                
+                # index number 1 or 2 ( no logic which - but always the last one found in the DOM )
+                # plural
+                webElemSMALLCHATAREA <- remDr$findElements("css selector", "input.quick-message-text")
+                webElemSMALLCHATAREA <- webElemSMALLCHATAREA[[length(webElemSMALLCHATAREA)]]
+                webElemSMALLCHATAREA$highlightElement() # WORKS KEEP
+                webElemSMALLCHATAREA$sendKeysToElement(list(current_message)) # WORKS ( AS LONG AS I DO NOT GET THAT STUPID' UPLOAD PHOTO POPUT )
+                # note if 'chat area stays gray', it seems to be some sort 
+                #   of unknown logic 'anti-spamming' software 
+                # My best deal - use her name in front AND keep my sentence long in words
+                
+                # actually send
+                
+                # on the right, the blue button 
+                # index number 1 or 2 ( no logic which - but always the last one found in the DOM )
+                # plural
+                # <span tabindex="0" data-zat="send-message-button" style="-moz-user-select: none;" class="minor-button-confirm send-chat"><span  class="button-icon"></span><span style="display: none;" class="processing-bar"></span></span>
+                webElemSMALLCHATAREASENDBTN <-remDr$findElements("css selector", "span.minor-button-confirm.send-chat span.button-icon")
+                webElemSMALLCHATAREASENDBTN <- webElemSMALLCHATAREASENDBTN[[length(webElemSMALLCHATAREASENDBTN)]]
+                webElemSMALLCHATAREASENDBTN$highlightElement() # WORKS
+                webElemSMALLCHATAREASENDBTN$clickElement() # WORKS - if does not send ( then its because 'chat area' above is grayed out )
+                Sys.sleep(3 + 1 * runif(1, min = 0, max = 1)) 
+                
+              } # FOUND (green cirle) Chatting
+              
+              # 
+              #  "within_the_last_week"(No Chatting)
+              #   
               
               if(remDr$executeScript("return document.querySelectorAll('span.online-indicator-status').length;")[[1]] == 0) {
                 # NOT FOUND   (green cirle) Chatting
                 
-                # NOTE: THIS CODE DOES NOT WORK - THIS CODE IS NOT IMPLEMENTED
-                # NOTE: THIS CODE DOES NOT WORK - THIS CODE IS NOT IMPLEMENTED
-                
-                # RESEARVED FOR 'FUTURE CODING'
+                # NEVER "firefox"
+                # if not native events ... popup box will be gray
                 
                 # empty white zone
-                webElemSMALLINITCHATAREA <- remDr$findElement("css selector", "p.chat-encourage-initial")
+                webElemSMALLINITCHATAREA <- remDr$findElements("css selector", "p.chat-encourage-initial")
+                
+                # very first message length = 1, and subsequent messagess length = 2 :want last one
+                
+                webElemSMALLINITCHATAREA_length <- length(webElemSMALLINITCHATAREA)
+                webElemSMALLINITCHATAREA <- webElemSMALLINITCHATAREA[[webElemSMALLINITCHATAREA_length]]
+                
+                
                 webElemSMALLINITCHATAREA$highlightElement() 
                 webElemSMALLINITCHATAREA$clickElement() # pop-up bigger box
                 
-                # in pop-up bigger box
-                webElemSMALLINITCHATAREAPOPUPBOX <- remDr$findElement("css selector", "textarea.quick-message-text")
-                webElemSMALLINITCHATAREAPOPUPBOX$highlightElement() 
                 
-                webElemSMALLINITCHATAREAPOPUPBOX$clickElement() # DOES NOTHING ?
+                # then this is a '1st message to a person'
+                if(webElemSMALLINITCHATAREA_length == 1) {
+                  
+                  # in pop-up bigger box
+                  webElemSMALLINITCHATAREAPOPUPBOX <- remDr$findElement("css selector", "textarea.quick-message-text")
+                  webElemSMALLINITCHATAREAPOPUPBOX$highlightElement() 
+                  
+                  # try to enter text in the txtarea
+                  
+                  # js
+                  # native events and js: will NOT work "internet explorer"
+                  # native events and js: will WIL  work "chrome"
+                  # js_enter_words_textarea_box <- paste0("try{ retvalue = document.querySelector('textarea.quick-message-text').value = '", current_message,"'; return 0 } catch(err) { return -1 };")
+                  # remDr$executeScript(paste0(js_enter_words_textarea_box))[[1]] # WORKS RETURNS 0 ( AND VISUALLY PUTS "Hello..."(in light gray) BOX)
+                   
+                  #  if not 'native events', then ... HUMAN MANUALLY PLACES *MOUSE CURSOR* IN THE BOX 
+                   
+                  # NOW (in white) BOX) # If using "chrome" I personally prefer . . . 
+                  webElemSMALLINITCHATAREAPOPUPBOX$sendKeysToElement(list(current_message)) # WILL WRITE
+                  
+                  webElemSMALLINITCHATAREAPOPUPBOXSENDBTN <- remDr$findElement("css selector", "div.chat-messenger-actions span.control-button-confirm")
+                  webElemSMALLINITCHATAREAPOPUPBOXSENDBTN$highlightElement() 
+                  webElemSMALLINITCHATAREAPOPUPBOXSENDBTN$clickElement()   
                 
-                # try to enter text in the txtarea
+                } # '1st message to a person'
                 
-                js_enter_words_textarea_box <- paste0("try{ retvalue = document.querySelector('textarea.quick-message-text').value = '", current_message,"'; return 0 } catch(err) { return -1 };")
-                remDr$executeScript(paste0(js_enter_words_textarea_box))[[1]] # WORKS RETURNS 0 ( AND VISUALLY PUTS "Hello..."(in light gray) BOX)
-                #
-                #  *** NOW HUMAN *** (HAS TO BE DONE) HUMAN MANUALLY PLACES *MOUSE CURSOR* IN THE BOX ( HAVE NOT FIGURED THIS ONE OUT *YET* ) ( IF I EVER CARE TO )
-                #
-                # NOW (in white) BOX)
-                webElemSMALLINITCHATAREAPOPUPBOX$sendKeysToElement(list(current_message)) # WILL WRITE
+                # then this is a '2nd or greater message to a person' ( AND A DIFFERENT BOX )
+                if(webElemSMALLINITCHATAREA_length == 2) {
+                  
+                  # index number 1 or 2 ( no logic which - but always the last one found in the DOM )
+                  # plural
+                  webElemSMALLCHATAREA <- remDr$findElements("css selector", "input.quick-message-text")
+                  webElemSMALLCHATAREA <- webElemSMALLCHATAREA[[length(webElemSMALLCHATAREA)]]
+                  webElemSMALLCHATAREA$highlightElement() # WORKS KEEP
+                  webElemSMALLCHATAREA$sendKeysToElement(list(current_message)) # WORKS ( AS LONG AS I DO NOT GET THAT STUPID' UPLOAD PHOTO POPUT )
+                  # note if 'chat area stays gray', it seems to be some sort 
+                  #   of unknown logic 'anti-spamming' software 
+                  # My best deal - use her name in front AND keep my sentence long in words
+                  
+                  # actually send
+                  
+                  # on the right, the blue button 
+                  # index number 1 or 2 ( no logic which - but always the last one found in the DOM )
+                  # plural
+                  # <span tabindex="0" data-zat="send-message-button" style="-moz-user-select: none;" class="minor-button-confirm send-chat"><span  class="button-icon"></span><span style="display: none;" class="processing-bar"></span></span>
+                  webElemSMALLCHATAREASENDBTN <-remDr$findElements("css selector", "span.minor-button-confirm.send-chat span.button-icon")
+                  webElemSMALLCHATAREASENDBTN <- webElemSMALLCHATAREASENDBTN[[length(webElemSMALLCHATAREASENDBTN)]]
+                  webElemSMALLCHATAREASENDBTN$highlightElement() # WORKS
+                  webElemSMALLCHATAREASENDBTN$clickElement() # WORKS - if does not send ( then its because 'chat area' above is grayed out )
+                  Sys.sleep(3 + 1 * runif(1, min = 0, max = 1)) 
+                  
+                } # '2nd or greater message to a person'
                 
-                webElemSMALLINITCHATAREAPOPUPBOXSENDBTN <- remDr$findElement("css selector", "div.chat-messenger-actions span.control-button-confirm")
-                webElemSMALLINITCHATAREAPOPUPBOXSENDBTN$highlightElement() 
-                webElemSMALLINITCHATAREAPOPUPBOXSENDBTN$clickElement()   
                 
-              }  
+              }  # NOT FOUND   (green cirle) Chatting
               
-            }
+            } # "online_when == "within_the_last_week"
             
             # End of 'actually  (attempt to) send THE message'
             
@@ -928,11 +1083,13 @@ zk_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_the_c
     dbDisconnect(con)
     Sys.setenv(TZ=oldtz)
 
-    return(remDr)
-    
+    # NOT IMPLMENTED YET
+    true_attempted_send_message_count <- 1
+    return(list(remDr = remDr, SentMsgAttemptedCount = true_attempted_send_message_count))
+
   }
-  remDr <- maininner()
-  return(remDr)
+  RETURN <- maininner()
+  return(RETURN) 
 }
 
 
@@ -1002,3 +1159,6 @@ zk_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_the_c
 
 # END INSTRUCTIONS      
 # END INSTRUCTIONS       
+
+
+# 
