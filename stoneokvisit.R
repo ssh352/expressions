@@ -983,17 +983,3 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
 # END INSTRUCTIONS  
 # END INSTRUCTIONS    
 
-# NO GITHUB 
-# okcupid
-# , site_login = "time861wiz", site_password = "739heg08", 
-#  
-# lately ( just prev dates - SOME not visit)
-# okcupid_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = "time861wiz", site_password = "739heg08", age_range_str = "18:49", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), action = "just_visit", online_when = "within_the_last_week", not_to_vst = "SOME", not_to_msg = "NONE")
-
-# messaging - not previous dates
-# okcupid_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = "time861wiz", site_password = "739heg08", age_range_str = "18:49", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), action = "message_greet_matchname", online_when = "online_now", not_to_vst = "NONE", not_to_msg = "all_all")  
-
-#    
-#     
- 
-
