@@ -337,7 +337,9 @@ pof_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_the_
             
             some_curr_dialog <- c()
             
-            rec_all <- c("FitBrittany","southernredhead8","nolacountrygirl985") # HAVE SENT A good CUSTOM FIRST MESSAGE - SUN JUL 26
+            # rec_all <- c("FitBrittany","southernredhead8","nolacountrygirl985") # HAVE SENT A good CUSTOM FIRST MESSAGE - SUN JUL 26
+            
+            rec_all <- c("sungelique504","j325h") # JUST TODAY - SOME DIALOG
             
             lik_all <- c()
             
@@ -698,4 +700,5 @@ pof_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_the_
 
 # END INSTRUCTIONS  
 # END INSTRUCTIONS  
+
 
