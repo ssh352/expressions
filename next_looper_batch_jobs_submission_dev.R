@@ -1,9 +1,11 @@
 
+# debugSource('J:/YDrive/All_NewSeduction/All_ElectronicSpeech/RSeleniumAndBrowsers/AES1/next_looper_batch_jobs_submission_dev.R')
+# parsecheck <- function () {
+
 # ** REQUIRED** TO BE THE TOP LINES OF THE FILE
 options(echo=TRUE) # if you want see commands in output file
 args <- commandArgs(trailingOnly = TRUE)
 
-#
 # FIX: visit_everyone_thin_atheltic_within_last_week -- chromedriver.exe dialog error
 # [ ] GOT A STOPPER MESSAGE BOX ( NEED EACH TO RUN IN ITS OWN BATCH FILE: NOT THE SAME: DIALOG BOX AT 24 HANGS ZK PROGRAM
 
@@ -33,8 +35,7 @@ options(error=NULL)
 
 todays_message = paste0(", wonderful ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you this evening?")
 
-# debugSource('J:/YDrive/All_NewSeduction/All_ElectronicSpeech/RSeleniumAndBrowsers/AES1/next_looper_batch_jobs_submission_dev.R')
-# parsecheck <- function () {
+
 
 # How can I read command line parameters from an R script?
 # http://stackoverflow.com/questions/2151212/how-can-i-read-command-line-parameters-from-an-r-script
@@ -161,11 +162,10 @@ if( args[2] == "zk" ) {
   if( args[3] == "visit_everyone_thin_atheltic_within_last_week" ) {
     print(args[3])
 
-    run_age_range <- 18:49
-    for(run_age_now in run_age_range) { 
-
-      run_age_now_vec_range_str <- paste0(run_age_now,":",run_age_now)
-    
+    if(length(args) == 4) {
+      print(args[4])
+      run_age_now_vec_range_str <- paste0(args[4],":",args[4])
+      
       result_close <- tryCatch({ 
 
         # uses run_age_now_vec_range_str
@@ -177,23 +177,51 @@ if( args[2] == "zk" ) {
       }, warning = function(w) {}, error = function(e) { return("ERROR") }, finally = {})
 
       if(class(result_close) == "character" &&  result_close == "ERROR" ) { 
-        print(paste0("ERROR zk visit_everyone_thin_atheltic_within_last_week", run_age_now_vec_range_str))
+        print(paste0("ERROR zk visit_everyone_thin_atheltic_within_last_week ", run_age_now_vec_range_str))
       }
+
+    } # length(args) == 4
     
-    } # for(run_age_now in run_age_range)
+    if(length(args) <= 3) {
+
+      run_age_range <- 18:49
+      for(run_age_now in run_age_range) { 
+      
+        print(paste0("run_age_range is ", run_age_range))
+        print(paste0("run_age_now is ", run_age_now))
+
+        run_age_now_vec_range_str <- paste0(run_age_now,":",run_age_now)
+      
+        result_close <- tryCatch({ 
+
+          # uses run_age_now_vec_range_str
+          # just visit - online_when = "within_the_last_week" - FIREFOX
+          
+          # just visit - online_when = "within_the_last_week"
+          zk_RETURN_visit <- zk_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = "epoch536intel@gmail.com", site_password = "YOURPASSWORD", age_range_str = run_age_now_vec_range_str, todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), action = "just_visit", online_when = "within_the_last_week", not_to_vst = "NONE", not_to_msg = "all_all", body_type = "thin_athletic")
+
+        }, warning = function(w) {}, error = function(e) { return("ERROR") }, finally = {})
+
+        if(class(result_close) == "character" &&  result_close == "ERROR" ) { 
+          print(paste0("ERROR zk visit_everyone_thin_atheltic_within_last_week ", run_age_now_vec_range_str))
+        }
+      
+        print(paste0("run_age_now was ", run_age_now))
+        print(paste0("run_age_range was ", run_age_range))
+      
+      } # for(run_age_now in run_age_range)
+    
+    } # length(args) <= 3
     
   } # "visit_everyone_thin_atheltic_within_last_week"
 
   if( args[3] == "message_everyone_thin_atheltic_within_last_week" ) {
     print(args[3])
 
-    run_age_range <- 18:49
-    for(run_age_now in run_age_range) {
-      print(paste0("run_age_range is ", run_age_range))
-      print(paste0("run_age_now is ", run_age_now))
+    if(length(args) == 4) {
+      print(args[4])
+      run_age_now_vec_range_str <- paste0(args[4],":",args[4])
 
-      run_age_now_vec_range_str <- paste0(run_age_now,":",run_age_now)
-      
       result_close <- tryCatch({ 
 
         # uses run_age_now_vec_range_str
@@ -205,12 +233,38 @@ if( args[2] == "zk" ) {
       if(class(result_close) == "character" &&  result_close == "ERROR" ) { 
         print(paste0("ERROR zk message_everyone_thin_atheltic_within_last_week ", run_age_now_vec_range_str))
       }
-        
-      print(paste0("run_age_now was ", run_age_now))
-      print(paste0("run_age_range was ", run_age_range))
-        
-    } # for(run_age_now in run_age_range)
 
+    } # length(args) == 4
+    
+    if(length(args) <= 3) {
+
+      run_age_range <- 18:49
+      for(run_age_now in run_age_range) {
+      
+        print(paste0("run_age_range is ", run_age_range))
+        print(paste0("run_age_now is ", run_age_now))
+
+        run_age_now_vec_range_str <- paste0(run_age_now,":",run_age_now)
+        
+        result_close <- tryCatch({ 
+
+          # uses run_age_now_vec_range_str
+          # use production - action = "message_greet_matchname", online_when = "within_the_last_week"
+          zk_RETURN_message <- zk_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = "epoch536intel@gmail.com", site_password = "YOURPASSWORD", age_range_str = run_age_now_vec_range_str, todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), action = "message_greet_matchname", online_when = "within_the_last_week", not_to_vst = "NONE", not_to_msg = "all_all", body_type = "thin_athletic")
+
+        }, warning = function(w) {}, error = function(e) { return("ERROR") }, finally = {})
+
+        if(class(result_close) == "character" &&  result_close == "ERROR" ) { 
+          print(paste0("ERROR zk message_everyone_thin_atheltic_within_last_week ", run_age_now_vec_range_str))
+        }
+          
+        print(paste0("run_age_now was ", run_age_now))
+        print(paste0("run_age_range was ", run_age_range))
+          
+      } # for(run_age_now in run_age_range)
+
+    } # length(args) <= 3
+    
   } # "message_everyone_thin_atheltic_within_last_week"
   
 } # zk
