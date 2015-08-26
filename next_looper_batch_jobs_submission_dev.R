@@ -3,6 +3,7 @@
 options(echo=TRUE) # if you want see commands in output file
 args <- commandArgs(trailingOnly = TRUE)
 
+#
 # FIX: visit_everyone_thin_atheltic_within_last_week -- chromedriver.exe dialog error
 # [ ] GOT A STOPPER MESSAGE BOX ( NEED EACH TO RUN IN ITS OWN BATCH FILE: NOT THE SAME: DIALOG BOX AT 24 HANGS ZK PROGRAM
 
