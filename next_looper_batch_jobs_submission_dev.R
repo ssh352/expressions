@@ -3,6 +3,11 @@
 options(echo=TRUE) # if you want see commands in output file
 args <- commandArgs(trailingOnly = TRUE)
 
+# FIX: visit_everyone_thin_atheltic_within_last_week -- chromedriver.exe dialog error
+# [ ] GOT A STOPPER MESSAGE BOX ( NEED EACH TO RUN IN ITS OWN BATCH FILE: NOT THE SAME: DIALOG BOX AT 24 HANGS ZK PROGRAM
+
+
+
 length(args)
 print(args)
 
@@ -56,7 +61,7 @@ if( args[2] == "ok" ) {
     result_close <- tryCatch({ 
 
       # lately ( just prev dates - SOME not visit)
-      ok_RETURN_visit <- okcupid_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = "time861wiz", site_password = "YOURPASSWORD", age_range_str = "18:49", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), action = "just_visit", online_when = "within_the_last_week", not_to_vst = "SOME", not_to_msg = "NONE")
+      ok_RETURN_visit <- okcupid_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = "time861wiz", site_password = "739heg08", age_range_str = "18:49", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), action = "just_visit", online_when = "within_the_last_week", not_to_vst = "SOME", not_to_msg = "NONE")
 
     }, warning = function(w) {}, error = function(e) { return("ERROR") }, finally = {})
     if(class(result_close) == "character" &&  result_close == "ERROR" ) { 
@@ -70,7 +75,7 @@ if( args[2] == "ok" ) {
     result_close <- tryCatch({ 
 
       # messaging - not previous dates
-      ok_RETURN_message <- okcupid_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = "time861wiz", site_password = "YOURPASSWORD", age_range_str = "18:49", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), action = "message_greet_matchname", online_when = "online_now", not_to_vst = "NONE", not_to_msg = "all_all")  
+      ok_RETURN_message <- okcupid_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = "time861wiz", site_password = "739heg08", age_range_str = "18:49", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), action = "message_greet_matchname", online_when = "online_now", not_to_vst = "NONE", not_to_msg = "all_all")  
 
     }, warning = function(w) {}, error = function(e) { return("ERROR") }, finally = {})
     if(class(result_close) == "character" &&  result_close == "ERROR" ) { 
@@ -98,7 +103,7 @@ if( args[2] == "pof" ) {
 
       # just visit
       # pof_visit_looper_dev() - body_type = "anything" - online_when = "within_the_last_week"
-      pof_RETURN_visit <- pof_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = "era674smartest01", site_password = "YOURPASSWORD", age_range_str = "23:44", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), action = "just_visit", online_when = "within_the_last_week", not_to_vst = "NONE", not_to_msg = "NONE", body_type = "anything") # default
+      pof_RETURN_visit <- pof_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = "era674smartest01", site_password = "739heg08", age_range_str = "23:44", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), action = "just_visit", online_when = "within_the_last_week", not_to_vst = "NONE", not_to_msg = "NONE", body_type = "anything") # default
 
     }, warning = function(w) {}, error = function(e) { return("ERROR") }, finally = {})
 
@@ -116,7 +121,7 @@ if( args[2] == "pof" ) {
       # send a message
       # FIRST OF TWO
       # send a message - body_type = "thin_athletic" - "online_now"
-      pof_RETURN_message_01 <- pof_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = "era674smartest01", site_password = "YOURPASSWORD", age_range_str = "23:44", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), action = "message_greet_matchname", online_when = "online_now", not_to_vst = "NONE", not_to_msg = "all_all", body_type = "thin_athletic")
+      pof_RETURN_message_01 <- pof_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = "era674smartest01", site_password = "739heg08", age_range_str = "23:44", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), action = "message_greet_matchname", online_when = "online_now", not_to_vst = "NONE", not_to_msg = "all_all", body_type = "thin_athletic")
 
     }, warning = function(w) {}, error = function(e) { return("ERROR") }, finally = {})
 
@@ -130,7 +135,7 @@ if( args[2] == "pof" ) {
 
       # SECOND OF TWO
       # send a message - body_type = "thin_athletic" - "online_today_ONLY" ( may end up at early 20 year olds )
-      pof_RETURN_message_02 <- pof_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = "era674smartest01", site_password = "YOURPASSWORD", age_range_str = "23:44", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), action = "message_greet_matchname", online_when = "online_today_ONLY", not_to_vst = "NONE", not_to_msg = "all_all", body_type = "thin_athletic")
+      pof_RETURN_message_02 <- pof_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = "era674smartest01", site_password = "739heg08", age_range_str = "23:44", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), action = "message_greet_matchname", online_when = "online_today_ONLY", not_to_vst = "NONE", not_to_msg = "all_all", body_type = "thin_athletic")
 
     }, warning = function(w) {}, error = function(e) { return("ERROR") }, finally = {})
 
@@ -166,7 +171,7 @@ if( args[2] == "zk" ) {
         # just visit - online_when = "within_the_last_week" - FIREFOX
         
         # just visit - online_when = "within_the_last_week"
-        zk_RETURN_visit <- zk_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = "epoch536intel@gmail.com", site_password = "YOURPASSWORD", age_range_str = run_age_now_vec_range_str, todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), action = "just_visit", online_when = "within_the_last_week", not_to_vst = "NONE", not_to_msg = "all_all", body_type = "thin_athletic")
+        zk_RETURN_visit <- zk_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = "epoch536intel@gmail.com", site_password = "739heg08", age_range_str = run_age_now_vec_range_str, todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), action = "just_visit", online_when = "within_the_last_week", not_to_vst = "NONE", not_to_msg = "all_all", body_type = "thin_athletic")
 
       }, warning = function(w) {}, error = function(e) { return("ERROR") }, finally = {})
 
@@ -182,7 +187,9 @@ if( args[2] == "zk" ) {
     print(args[3])
 
     run_age_range <- 18:49
-    for(run_age_now in run_age_range) { 
+    for(run_age_now in run_age_range) {
+      print(paste0("run_age_range is ", run_age_range))
+      print(paste0("run_age_now is ", run_age_now))
 
       run_age_now_vec_range_str <- paste0(run_age_now,":",run_age_now)
       
@@ -190,13 +197,16 @@ if( args[2] == "zk" ) {
 
         # uses run_age_now_vec_range_str
         # use production - action = "message_greet_matchname", online_when = "within_the_last_week"
-        zk_RETURN_message <- zk_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = "epoch536intel@gmail.com", site_password = "YOURPASSWORD", age_range_str = run_age_now_vec_range_str, todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), action = "message_greet_matchname", online_when = "within_the_last_week", not_to_vst = "NONE", not_to_msg = "all_all", body_type = "thin_athletic")
+        zk_RETURN_message <- zk_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = "epoch536intel@gmail.com", site_password = "739heg08", age_range_str = run_age_now_vec_range_str, todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), action = "message_greet_matchname", online_when = "within_the_last_week", not_to_vst = "NONE", not_to_msg = "all_all", body_type = "thin_athletic")
 
       }, warning = function(w) {}, error = function(e) { return("ERROR") }, finally = {})
 
       if(class(result_close) == "character" &&  result_close == "ERROR" ) { 
         print(paste0("ERROR zk message_everyone_thin_atheltic_within_last_week ", run_age_now_vec_range_str))
       }
+        
+      print(paste0("run_age_now was ", run_age_now))
+      print(paste0("run_age_range was ", run_age_range))
         
     } # for(run_age_now in run_age_range)
 
@@ -209,7 +219,7 @@ if( args[2] == "zk" ) {
 # } # parsecheck <- function ()
 
 
-# 
-# 
+#   
+#   
 
 
