@@ -61,7 +61,7 @@ if( args[2] == "ok" ) {
     result_close <- tryCatch({ 
 
       # lately ( just prev dates - SOME not visit)
-      ok_RETURN_visit <- okcupid_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = "time861wiz", site_password = "739heg08", age_range_str = "18:49", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), action = "just_visit", online_when = "within_the_last_week", not_to_vst = "SOME", not_to_msg = "NONE")
+      ok_RETURN_visit <- okcupid_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = "time861wiz", site_password = "YOURPASSWORD", age_range_str = "18:49", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), action = "just_visit", online_when = "within_the_last_week", not_to_vst = "SOME", not_to_msg = "NONE")
 
     }, warning = function(w) {}, error = function(e) { return("ERROR") }, finally = {})
     if(class(result_close) == "character" &&  result_close == "ERROR" ) { 
@@ -75,7 +75,7 @@ if( args[2] == "ok" ) {
     result_close <- tryCatch({ 
 
       # messaging - not previous dates
-      ok_RETURN_message <- okcupid_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = "time861wiz", site_password = "739heg08", age_range_str = "18:49", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), action = "message_greet_matchname", online_when = "online_now", not_to_vst = "NONE", not_to_msg = "all_all")  
+      ok_RETURN_message <- okcupid_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = "time861wiz", site_password = "YOURPASSWORD", age_range_str = "18:49", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), action = "message_greet_matchname", online_when = "online_now", not_to_vst = "NONE", not_to_msg = "all_all")  
 
     }, warning = function(w) {}, error = function(e) { return("ERROR") }, finally = {})
     if(class(result_close) == "character" &&  result_close == "ERROR" ) { 
@@ -103,7 +103,7 @@ if( args[2] == "pof" ) {
 
       # just visit
       # pof_visit_looper_dev() - body_type = "anything" - online_when = "within_the_last_week"
-      pof_RETURN_visit <- pof_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = "era674smartest01", site_password = "739heg08", age_range_str = "23:44", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), action = "just_visit", online_when = "within_the_last_week", not_to_vst = "NONE", not_to_msg = "NONE", body_type = "anything") # default
+      pof_RETURN_visit <- pof_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = "era674smartest01", site_password = "YOURPASSWORD", age_range_str = "23:44", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), action = "just_visit", online_when = "within_the_last_week", not_to_vst = "NONE", not_to_msg = "NONE", body_type = "anything") # default
 
     }, warning = function(w) {}, error = function(e) { return("ERROR") }, finally = {})
 
@@ -121,7 +121,7 @@ if( args[2] == "pof" ) {
       # send a message
       # FIRST OF TWO
       # send a message - body_type = "thin_athletic" - "online_now"
-      pof_RETURN_message_01 <- pof_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = "era674smartest01", site_password = "739heg08", age_range_str = "23:44", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), action = "message_greet_matchname", online_when = "online_now", not_to_vst = "NONE", not_to_msg = "all_all", body_type = "thin_athletic")
+      pof_RETURN_message_01 <- pof_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = "era674smartest01", site_password = "YOURPASSWORD", age_range_str = "23:44", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), action = "message_greet_matchname", online_when = "online_now", not_to_vst = "NONE", not_to_msg = "all_all", body_type = "thin_athletic")
 
     }, warning = function(w) {}, error = function(e) { return("ERROR") }, finally = {})
 
@@ -135,7 +135,7 @@ if( args[2] == "pof" ) {
 
       # SECOND OF TWO
       # send a message - body_type = "thin_athletic" - "online_today_ONLY" ( may end up at early 20 year olds )
-      pof_RETURN_message_02 <- pof_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = "era674smartest01", site_password = "739heg08", age_range_str = "23:44", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), action = "message_greet_matchname", online_when = "online_today_ONLY", not_to_vst = "NONE", not_to_msg = "all_all", body_type = "thin_athletic")
+      pof_RETURN_message_02 <- pof_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = "era674smartest01", site_password = "YOURPASSWORD", age_range_str = "23:44", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), action = "message_greet_matchname", online_when = "online_today_ONLY", not_to_vst = "NONE", not_to_msg = "all_all", body_type = "thin_athletic")
 
     }, warning = function(w) {}, error = function(e) { return("ERROR") }, finally = {})
 
@@ -171,7 +171,7 @@ if( args[2] == "zk" ) {
         # just visit - online_when = "within_the_last_week" - FIREFOX
         
         # just visit - online_when = "within_the_last_week"
-        zk_RETURN_visit <- zk_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = "epoch536intel@gmail.com", site_password = "739heg08", age_range_str = run_age_now_vec_range_str, todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), action = "just_visit", online_when = "within_the_last_week", not_to_vst = "NONE", not_to_msg = "all_all", body_type = "thin_athletic")
+        zk_RETURN_visit <- zk_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = "epoch536intel@gmail.com", site_password = "YOURPASSWORD", age_range_str = run_age_now_vec_range_str, todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), action = "just_visit", online_when = "within_the_last_week", not_to_vst = "NONE", not_to_msg = "all_all", body_type = "thin_athletic")
 
       }, warning = function(w) {}, error = function(e) { return("ERROR") }, finally = {})
 
@@ -197,7 +197,7 @@ if( args[2] == "zk" ) {
 
         # uses run_age_now_vec_range_str
         # use production - action = "message_greet_matchname", online_when = "within_the_last_week"
-        zk_RETURN_message <- zk_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = "epoch536intel@gmail.com", site_password = "739heg08", age_range_str = run_age_now_vec_range_str, todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), action = "message_greet_matchname", online_when = "within_the_last_week", not_to_vst = "NONE", not_to_msg = "all_all", body_type = "thin_athletic")
+        zk_RETURN_message <- zk_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = "epoch536intel@gmail.com", site_password = "YOURPASSWORD", age_range_str = run_age_now_vec_range_str, todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), action = "message_greet_matchname", online_when = "within_the_last_week", not_to_vst = "NONE", not_to_msg = "all_all", body_type = "thin_athletic")
 
       }, warning = function(w) {}, error = function(e) { return("ERROR") }, finally = {})
 
