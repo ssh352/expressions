@@ -72,7 +72,7 @@ if %WHAT_TO_DO%==message (
 
 REM wait 40 seconds between starting up browsers
 REM %SystemRoot%\system32\timeout /T 5 /NOBREAK
-%SystemRoot%\system32\timeout /T 120 /NOBREAK
+%SystemRoot%\system32\timeout /T 80 /NOBREAK
 
 REM pof
 
@@ -91,16 +91,57 @@ REM wait 50 seconds between starting up browsers
 REM %SystemRoot%\system32\timeout /T 7 /NOBREAK
 %SystemRoot%\system32\timeout /T 60 /NOBREAK
 
+REM FOR /L ( NOTE: no-interactive: ONLY works inside a .BAT file )   L - range of numbers
+REM Conditionally perform a command for a range of numbers.
+REM http://ss64.com/nt/for_l.html
+REM * and *
+REM EnableDelayedExpansion
+REM   EnableDelayedExpansion is Disabled by default.
+REM   EnableDelayedExpansion can also be enabled by starting CMD with the /v switch.
+REM   EnableDelayedExpansion can also be set in the registry under HKLM or HKCU:
+REM http://ss64.com/nt/delayedexpansion.html
+REM * and *
+REM SETLOCAL
+REM http://ss64.com/nt/setlocal.html
+REM * and *
+REM FOR
+REM http://ss64.com/nt/for.html
+REM NOTE: IF I WANT A SPECIFIC LIST:  for %%G in (a,b) do
+
 REM zk
 
 if %WHAT_TO_DO%==visit (  
   echo VISITING zk
-  start cmd /k "Rscript --verbose next_looper_batch_jobs_submission_dev.R --args zk visit_everyone_thin_atheltic_within_last_week"
+  REM start cmd /k "Rscript --verbose next_looper_batch_jobs_submission_dev.R --args zk visit_everyone_thin_atheltic_within_last_week"
+
+  setlocal EnableDelayedExpansion 
+
+  for /l %%G in (18,1,49) do ( 
+    set _NOWAGE=%%G
+    REM wait 3 minutes
+    %SystemRoot%\system32\timeout /T 180 /NOBREAK
+    echo NOWAGE is !_NOWAGE!
+    start cmd /k "Rscript --verbose next_looper_batch_jobs_submission_dev.R --args zk visit_everyone_thin_atheltic_within_last_week !_NOWAGE!"
+  )
+  setlocal DisableDelayedExpansion
+
 )
 
 if %WHAT_TO_DO%==message (  
   echo MESSAGING zk
-  start cmd /k "Rscript --verbose next_looper_batch_jobs_submission_dev.R --args zk message_everyone_thin_atheltic_within_last_week"
+  REM start cmd /k "Rscript --verbose next_looper_batch_jobs_submission_dev.R --args zk message_everyone_thin_atheltic_within_last_week"
+
+  setlocal EnableDelayedExpansion 
+
+  for /l %%G in (18,1,49) do ( 
+    set _NOWAGE=%%G
+    REM wait 3 minutes
+    %SystemRoot%\system32\timeout /T 180 /NOBREAK
+    echo NOWAGE is !_NOWAGE!
+    start cmd /k "Rscript --verbose next_looper_batch_jobs_submission_dev.R --args zk message_everyone_thin_atheltic_within_last_week !_NOWAGE!"
+  )
+  setlocal DisableDelayedExpansion
+
 )
 
 REM
@@ -111,8 +152,8 @@ time /T
 echo WHAT_TO_DO=%WHAT_TO_DO%
 echo DELAY_TIME_START=%DELAY_TIME_START%
 
-REM 
-REM 
+REM  
+REM  
 
 
 
