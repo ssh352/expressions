@@ -72,13 +72,13 @@ if %WHAT_TO_DO%==message (
 
 REM wait 40 seconds between starting up browsers
 REM %SystemRoot%\system32\timeout /T 5 /NOBREAK
-%SystemRoot%\system32\timeout /T 60 /NOBREAK
+%SystemRoot%\system32\timeout /T 120 /NOBREAK
 
 REM pof
 
 if %WHAT_TO_DO%==visit (  
   echo VISITING pof
-  cmd /k "Rscript --verbose next_looper_batch_jobs_submission_dev.R --args pof visit_everyone_all_body_within_last_week"
+  start cmd /k "Rscript --verbose next_looper_batch_jobs_submission_dev.R --args pof visit_everyone_all_body_within_last_week"
 )
 
 if %WHAT_TO_DO%==message (  
@@ -111,8 +111,8 @@ time /T
 echo WHAT_TO_DO=%WHAT_TO_DO%
 echo DELAY_TIME_START=%DELAY_TIME_START%
 
-REM
-REM
+REM 
+REM 
 
 
 
