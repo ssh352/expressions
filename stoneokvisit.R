@@ -9,7 +9,8 @@ options(digits = 22)
 options(max.print=99999)
 options(scipen=255) 
 options(digits.secs = 6)
-options(error=NULL) # options(error = recover) 
+# options(error=NULL) 
+options(error = recover) 
 
 
 if(Sys.getenv("RSTUDIO") == "1") {
@@ -355,6 +356,8 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
       # removing 'cf event' - these are not 'the name' and not 'the url' so thes do not have 'use' to me
       # un-removal MAY be causing the last person in an age to be 'double contacted'?
       apagearefs <- str_replace(apagearefs,"[?]cf=event","")
+      # AUG 25 - MORE CLEANUP CODE
+      apagearefs <- str_replace(apagearefs,"[?]cf=regular","")
 
       # unique
       apagearefsu   <- unique(apagearefs)
@@ -410,6 +413,8 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
         # removing 'cf event' - these are not 'the name' and not 'the url' so thes do not have 'use' to me
         # un-removal MAY be causing the last person in an age to be 'double contacted'?
         apagearefs <- str_replace(apagearefs,"[?]cf=event","")
+        # AUG 25 - MORE CLEANUP CODE
+        apagearefs <- str_replace(apagearefs,"[?]cf=regular","")
 
         # unique
         apagearefsu   <- unique(apagearefs)
@@ -511,13 +516,17 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
 
     # all_all <- c(all_all,"kaykay1279") # online today - not responding
 
-    # all_all <- c(all_all,"Sarahnaden") # 28 TUESDAY - ALREADY SENT TODAYS RESPONSE - SENT RESPONSE - HOT ( SOME DIALOG) - LATER -ANS BACK TUES EVEN *** COME BACK
     # all_all <- c(all_all,"jtrybulski228") # some diag ONLINE NOW -26 MANDLEVILL AND HOT
 
     # all_all <- c(all_all,"Carpinteria01") # TUESDAY - asked her FOR A DATE - ... getting together with her x
+    #                                       NO LONGER EXISTS
 
-    # all_all <- c(all_all,"anitkiln") # PLEASE FOLLOW UP
-    # all_all <- c(all_all,"cmm303")   # PLEASE FOLLOW UP ( 33 AND BOILING HOT ) 
+    # all_all <- c(all_all,"anitkiln") # PLEASE FOLLOW UP ( NO LONGER EXISTS )
+      all_all <- c(all_all,"cmm303")   # PLEASE FOLLOW UP ( 33 AND BOILING HOT ) ( ASKED OUT: TH 28 - WAITING FOR A RESPONSE )
+
+      # 28 TUESDAY - ALREADY SENT TODAYS RESPONSE - SENT RESPONSE - HOT ( SOME DIALOG) - LATER -ANS BACK TUES EVEN *** COME BACK
+      all_all <- c(all_all, "Sarahnaden")  # HOT - 28 - SOME DIALOG
+      all_all <- c(all_all, "maria3991")  # SHE - ASKED ME OUT ( FOLLOW UP ON THIS ONE )
 
       # NOTE okcupid logic: a msg INCLUDES a vst
       #  OKCUPID IDEA: turn anonymous browsing ON WHILE sending messages $$ A-list
@@ -982,4 +991,6 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
 
 # END INSTRUCTIONS  
 # END INSTRUCTIONS    
+
+
 
