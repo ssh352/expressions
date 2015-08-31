@@ -1,13 +1,15 @@
 
+REM next_looper_batch_jobs_submission_dev.bat
 
 REM run by 
 REM > J:
 REM > cd J:\YDrive\All_NewSeduction\All_ElectronicSpeech\RSeleniumAndBrowsers\AES1
-REM > next_looper_batch_jobs_submission_dev.bat visit 39600
-REM > next_looper_batch_jobs_submission_dev.bat visit 10
+REM > next_looper_batch_jobs_submission_dev.bat visit 39600 :: 3:30 p.m.
+REM > next_looper_batch_jobs_submission_dev.bat visit 32400 :: 1:30 p.m.
+REM > next_looper_batch_jobs_submission_dev.bat visit 10  
 
-REM > next_looper_batch_jobs_submission_dev.bat message  10
-
+REM > next_looper_batch_jobs_submission_dev.bat message 36000 :: 2:30 p.m.
+REM > next_looper_batch_jobs_submission_dev.bat message 39600 :: 3:30 p.m.
 
 REM Is it possible to source a batch file in windows cmd like you can in unix?
 REM http://stackoverflow.com/questions/12825790/is-it-possible-to-source-a-batch-file-in-windows-cmd-like-you-can-in-unix
@@ -152,8 +154,8 @@ time /T
 echo WHAT_TO_DO=%WHAT_TO_DO%
 echo DELAY_TIME_START=%DELAY_TIME_START%
 
-REM  
-REM  
+REM    
+REM    
 
 
 
