@@ -19,7 +19,7 @@ if(Sys.getenv("RSTUDIO") == "1") {
   source(paste0(getwd(),"/","utilities_ext_visit_looper_dev.R"))
 }
 
-okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_the_custom_profile = FALSE, site_login = NULL, site_password = NULL, age_range_str = "18:49", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), on_exit_logoff_site = TRUE, on_exit_close_browser = TRUE, on_exit_stop_selenium_server = FALSE, action = "just_visit", online_when = "within_the_last_week", not_to_vst = "NONE", not_to_msg = "NONE") { 
+okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_the_custom_profile = FALSE, site_login = NULL, site_password = NULL, age_range_str = "18:49", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), on_exit_logoff_site = TRUE, on_exit_close_browser = TRUE, on_exit_stop_selenium_server = FALSE, action = "just_visit", online_when = "within_the_last_week", not_to_vst = "NONE", not_to_msg = "NONE", face_color = "anything") { 
   # OR action = "message_greet_matchname" "message_random_catchphrase"
   # OR not_to_msg = "all_all"
   
@@ -238,6 +238,17 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
       remDr$navigate(navigate_target)
       Sys.sleep(3 + 1 * runif(1, min = 0, max = 1)) # 10 to 15 seconds wait 
       
+      
+      # AS LONG AS ON ( https://www.okcupid.com/match PAGE ) I can do ANY_TIME
+      #
+      # CLEAR search "A-list" criteria
+      #
+      #  no error: length(webElemCLEAR_S) returns zero(0) if no elements are found
+      webElemCLEAR_S <- remDr$findElements("css selector", "button.clear-tag" )
+      lapply(webElemCLEAR_S, function(x){ x$highlightElement(); x$clickElement(); Sys.sleep(1.0) } )
+      Sys.sleep(2 + 1 * runif(1, min = 0, max = 1)) 
+      # WORKS
+      
       # OLD
       if(action == "message_greet_matchname" && online_when == "online_now") {
       
@@ -292,6 +303,8 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
       
       # right arrows and backspaces
       webElemSBA$sendKeysToElement(list("\uE014","\uE014","\uE003","\uE003"))
+      
+      # enter 'min age'
       webElemSBA$sendKeysToElement(list(as.character(agecurr)))
       Sys.sleep(2 + 1 * runif(1, min = 0, max = 1)) 
       
@@ -300,8 +313,63 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
 
       # right arrows and backspaces
       webElemSBA2$sendKeysToElement(list("\uE014","\uE014","\uE003","\uE003"))
-      webElemSBA2$sendKeysToElement(list(as.character(agecurr), key = "enter")) # enter - executes the search
+      
+      # enter 'max age'
+      webElemSBA2$sendKeysToElement(list(as.character(agecurr))) 
       Sys.sleep(2 + 1 * runif(1, min = 0, max = 1)) 
+      
+      # SEE 'JUST BELOW' - ENTER AGE then PRESS enter KEY
+      
+      bookmarkhere <- 1
+      
+      more_physical_criteria <- FALSE
+      if( !( face_color == "anything" ) ) more_physical_criteria <- TRUE # ADD MORE (anything) '||' CRITERIA HERE 
+      
+      if( !more_physical_criteria ) {
+        # just press enter now
+        
+        # if no more physical criteria just press the enter KEY
+        webElemSBA2$sendKeysToElement(list(key = "enter")) # enter - executes the search
+        Sys.sleep(2 + 1 * runif(1, min = 0, max = 1)) 
+        
+      } else { # more_physical_criteria == TRUE
+        
+        # MORE_CRITERI upper right corner graphic
+        webElemMORECRIT <-  remDr$findElement("css selector", ".toggle-advanced-filters.expand")
+        webElemMORECRIT$highlightElement()
+        webElemMORECRIT$clickElement()
+        Sys.sleep(2 + 1 * runif(1, min = 0, max = 1)) 
+        # WORKS
+        
+        if ( face_color == "white"  ) {
+          
+          # Background: choose Ethnicity
+          webElemBCKGRDICON <-  remDr$findElement("css selector", "button.advanced-filter-toggle.advanced-filter-toggle-background span.advanced-filter-toggle-icon")
+          webElemBCKGRDICON$highlightElement()
+          webElemBCKGRDICON$clickElement()
+          Sys.sleep(2 + 1 * runif(1, min = 0, max = 1)) 
+          # WORKS
+          
+          # White check box ( actually a DIV ) [X] White
+          webElemWHITECHKBOX <-  remDr$findElement("css selector", "label[for=checkbox-ethnicity-white] div.decoration")
+          webElemWHITECHKBOX$highlightElement() 
+          webElemWHITECHKBOX$clickElement() 
+          Sys.sleep(2 + 1 * runif(1, min = 0, max = 1)) 
+          # WORKS
+          
+          # Press BIG green SEARCH button [SEARCH]
+          webElemBIGREENSEARCH <-  remDr$findElement("css selector", "button.flatbutton.big.green" )
+          webElemBIGREENSEARCH$highlightElement() 
+          webElemBIGREENSEARCH$clickElement() 
+          Sys.sleep(2 + 1 * runif(1, min = 0, max = 1)) 
+          # WORKS
+          
+        }
+        
+      }
+      
+      #### webElemSBA2$sendKeysToElement(list(as.character(agecurr), key = "enter")) # enter - executes the search
+      #### Sys.sleep(2 + 1 * runif(1, min = 0, max = 1)) 
       
       # OLD 
       # remDr$navigate(navigate_target)
@@ -497,7 +565,7 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
       
       # MANUAL OVERRIDE    # OPEN MARRIAGE JUST WIERD
       all_all <- c()
-      all_all <- c(all_all,"Kat0o","cajunfaith") # prev dates
+      all_all <- c(all_all,"Kat0o","cajunfaith","aristarla") # PREVIOUS DATES
       all_all <- c(all_all,"southernkitsune")   # hot but no car
       all_all <- c(all_all,"smartsassysweet1")   # wierd swinger
       all_all <- c(all_all,"Alpha0227") # just weird
@@ -510,7 +578,7 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
     # all_all <- c(all_all,"nataleebabinn") # I sent out of the blue ( she is too hot )
       all_all <- c(all_all,"AniLevee") # Tells me that I am too old for her
 
-      all_all <- c(all_all,"lilbird987","xoxosunshinexoxo","PoopySoupy","pizzaforbrkfst") # she tells me directly that she is not interested
+      all_all <- c(all_all,"lilbird987","xoxosunshinexoxo","PoopySoupy","pizzaforbrkfst","racheltheredhead", "caprifemme27","Vaporwave-Lenin") # she tells me directly that she is not interested
 
       all_all <- c(all_all,"LadyTSydney") # direct to me - NO
 
@@ -525,8 +593,15 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
       all_all <- c(all_all,"cmm303")   # PLEASE FOLLOW UP ( 33 AND BOILING HOT ) ( ASKED OUT: TH 28 - WAITING FOR A RESPONSE )
 
       # 28 TUESDAY - ALREADY SENT TODAYS RESPONSE - SENT RESPONSE - HOT ( SOME DIALOG) - LATER -ANS BACK TUES EVEN *** COME BACK
-      all_all <- c(all_all, "Sarahnaden")  # HOT - 28 - SOME DIALOG
-      all_all <- c(all_all, "maria3991")  # SHE - ASKED ME OUT ( FOLLOW UP ON THIS ONE )
+    # all_all <- c(all_all, "Sarahnaden")  # HOT - 28 - SOME DIALOG - no longer responding - just asked here to re-talk - she is an A_list hidden browser - she is busy
+
+     all_all <- c(all_all, "maria3991") # SHE MISSED THE DATE # SHE - ASKED ME OUT - SHE FLAKED!!!
+
+     # JUST TODAY - SEP 1 - THIS EVE - I WILL MANUALLY HANDLE ( DO NOT FORGET !!)
+     # all_all <- c(all_all,"Graysonpaige","saxybitch13","NOLAmy", "mallee13","mwg70115", "Sarahnaden", "Annielynn1983")
+
+     # JUST TODAY, SAT SEPT 12
+     all_all <- c(all_all,"happyasadoginmud","StarryLyte")
 
       # NOTE okcupid logic: a msg INCLUDES a vst
       #  OKCUPID IDEA: turn anonymous browsing ON WHILE sending messages $$ A-list
@@ -704,8 +779,16 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
               c("usernametaken985","Tonia"), # some weak dialog # I care not to respond
               c("courtneyesl","Courtney"),
               c("loveecovee","Angela"),
-              c("lindsayp13","Lindsay") # BUT *SHE* IS A BITCH
-              
+              c("lindsayp13","Lindsay"),
+              c("christiangal919","Julia"),
+              c("Annielynn1983","Annie"), # BUT *SHE* IS A BITCH
+              c("mwg70115","Megan"),
+              c("NOLApink","Mae"),
+              c("mallee13","Mallora"),
+              c("sungelique504","Natasha"),
+              c("mallee13","Mallora"),
+              c("lonelyheartz","Ashley"),
+              c("aristarla","Ariana")
             )
             
             matchnames_aliases_db <- as.data.frame(t(data.frame(matchnames_aliases)), stringsAsFactors = FALSE)
@@ -980,14 +1063,14 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
 
 # visiting
 # okcupid_visit_looper_dev()
-# okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = NULL, site_password = NULL, age_range_str = "18:49", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), action = "just_visit", online_when = "within_the_last_week", not_to_vst = "NONE", not_to_msg = "NONE")
+# okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = NULL, site_password = NULL, age_range_str = "18:49", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), action = "just_visit", online_when = "within_the_last_week", not_to_vst = "NONE", not_to_msg = "NONE", face_color = "anything")
 #
 # lately ( just prev dates - SOME not visit)
-# okcupid_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = NULL, site_password = NULL, age_range_str = "18:49", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), action = "just_visit", online_when = "within_the_last_week", not_to_vst = "SOME", not_to_msg = "NONE")
+# okcupid_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = NULL, site_password = NULL, age_range_str = "18:49", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), action = "just_visit", online_when = "within_the_last_week", not_to_vst = "SOME", not_to_msg = "NONE", face_color = "anything")
 # 
 
 # messaging - not previous dates
-# okcupid_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = NULL, site_password = NULL, age_range_str = "18:49", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), action = "message_greet_matchname", online_when = "online_now", not_to_vst = "NONE", not_to_msg = "all_all")  
+# okcupid_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = NULL, site_password = NULL, age_range_str = "18:49", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), action = "message_greet_matchname", online_when = "online_now", not_to_vst = "NONE", not_to_msg = "all_all", face_color = "anything")  
 
 # END INSTRUCTIONS  
 # END INSTRUCTIONS    
