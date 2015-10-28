@@ -565,7 +565,7 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
       
       # MANUAL OVERRIDE    # OPEN MARRIAGE JUST WIERD
       all_all <- c()
-      all_all <- c(all_all,"Kat0o","cajunfaith","aristarla") # PREVIOUS DATES
+
       all_all <- c(all_all,"southernkitsune")   # hot but no car
       all_all <- c(all_all,"smartsassysweet1")   # wierd swinger
       all_all <- c(all_all,"Alpha0227") # just weird
@@ -578,9 +578,15 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
     # all_all <- c(all_all,"nataleebabinn") # I sent out of the blue ( she is too hot )
       all_all <- c(all_all,"AniLevee") # Tells me that I am too old for her
 
-      all_all <- c(all_all,"lilbird987","xoxosunshinexoxo","PoopySoupy","pizzaforbrkfst","racheltheredhead", "caprifemme27","Vaporwave-Lenin") # she tells me directly that she is not interested
+      # NOT INTERESTED LIST
+      all_all <- c(all_all,"lilbird987","xoxosunshinexoxo","PoopySoupy","pizzaforbrkfst","racheltheredhead", "caprifemme27","Vaporwave-Lenin", "theantigoneway", "mhiz_lindsey", "Lolo_nola", "Cyclon3") # she tells me directly that she is not interested
+      all_all <- c(all_all,"DerbyDevil74", "Joyceann46", "umbria24") 
 
-      all_all <- c(all_all,"LadyTSydney") # direct to me - NO
+      all_all <- c(all_all,"saxybitch13") # NOT LOOKING TO MEET
+
+      all_all <- c(all_all,"LadyTSydney","twinklepie6756","LeAnne717","Elladorado") # direct to me - NO
+
+      all_all <- c(all_all,"boxgreen","Graysonpaige", "theantigoneway", "Iwantu2wantme65",  "lbartsy", "AlexisRae2187") # Just do not care to talk to ( anymore )
 
     # all_all <- c(all_all,"kaykay1279") # online today - not responding
 
@@ -588,6 +594,8 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
 
     # all_all <- c(all_all,"Carpinteria01") # TUESDAY - asked her FOR A DATE - ... getting together with her x
     #                                       NO LONGER EXISTS
+
+      all_all <- c(all_all,"Kat0o","cajunfaith","aristarla","MOFlynn37") # PREVIOUS DATES # PREVIOUS DATES # 
 
     # all_all <- c(all_all,"anitkiln") # PLEASE FOLLOW UP ( NO LONGER EXISTS )
       all_all <- c(all_all,"cmm303")   # PLEASE FOLLOW UP ( 33 AND BOILING HOT ) ( ASKED OUT: TH 28 - WAITING FOR A RESPONSE )
@@ -598,21 +606,90 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
      all_all <- c(all_all, "maria3991") # SHE MISSED THE DATE # SHE - ASKED ME OUT - SHE FLAKED!!!
 
      # JUST TODAY - SEP 1 - THIS EVE - I WILL MANUALLY HANDLE ( DO NOT FORGET !!)
-     # all_all <- c(all_all,"Graysonpaige","saxybitch13","NOLAmy", "mallee13","mwg70115", "Sarahnaden", "Annielynn1983")
+     # all_all <- c(all_all,"saxybitch13","NOLAmy", "mallee13","mwg70115", "Sarahnaden", "Annielynn1983")
 
      # JUST TODAY, SAT SEPT 12
-     all_all <- c(all_all,"happyasadoginmud","StarryLyte")
+     # all_all <- c(all_all,"happyasadoginmud","StarryLyte")
+ 
+     # just for today # Tuesday, September 15th
+     # all_all <- c(all_all,"beckward")
+
+     # OK - SOME DIALOG - MORN SEPT 23 - TUESDAY
+     all_all <- c(all_all,"MeowDaCatSAY", "takemesrsly69", "illlizabeth", "chellie5514")
+
+     # # OUT OF TOWN OR ONGOING DIALOG - SEPT 22,23
+     all_all <- c(all_all,"chellie5514")
+
+     # WEAK PERSON - SOME DIALOG - SEPT 22 23, 24
+     all_all <- c(all_all,"takemesrsly69", "MeowDaCatSAY") 
+
+     # JUST TODAY - MON SEPT 14
+     # all_all <- c(all_all,"chunkypeaches")
+
+     all_all <- c(all_all,"Musijo","amadeleinew") # NEW PERSON - SEPTEMBER 16TH / 2ND PERSON LIKED ME
+
+     # WEAK PERSON - SOME DIALOG - SEPT 22 23, 24
+     all_all <- c(all_all,"takemesrsly69", "MeowDaCatSAY") 
+
+
+     # WEAK PERSON - SOME DIALOG - SEPT 28
+     all_all <- c(all_all,"Scarletrayven") # Mandy(I did ask out)
+
+     # WEAK PERSON - SOME VERY VERY WEAK DIALOG - SEPT 29, OCT 1, OCT 5, OCT 6
+     all_all <- c(all_all,"layla_danielle", "different9080", "Yellolotus", "BlknBlu7", "simplycurious45", "AlyEsc", "MaddieMay_xo") 
+
+     # WEAK - OCTOBER 11,12 - NEW
+     all_all <- c(all_all,"p4passion101", "Yellolotus")
+
+     # MEDIUM DIALOG - OCT 1 - RELATIONSHIP SEEKER
+     all_all <- c(all_all, "smilingrosej")
+
+    # MORN - OCT 5 - SOME CONTINUING LOUSY DIALOG
+    all_all <- c(all_all, "girlnextdoor0126")
+
+    # MORN - OCT 5 - TRUCK DRIVER - ALREADY HAS SOMEONE - CONTINUING DIALOG
+    all_all <- c(all_all, "chellie5514")
+
+    # MORN - OCT 5 - BY_SEXUAL -40 - long continuing WEAK PROFILE
+    all_all <- c(all_all, "BlknBlu7")
+
+    # MORN - OCT 5 13-- SOME VERY LONG TERM WEAK DIALOG
+    all_all <- c(all_all, "amadeleinew","flwr34","loriana1", "Hey_MollyMolly", "selveen")
+
+    # OCT 13 - SOME BETTER DIALOG
+    all_all <- c(all_all,"Peacock-101","Merrou")
+
+    # THE OCT 21 - JUST DATED - WANT TO SEE AGAIN
+    all_all <- c(all_all, "Saranescence")
+
+    # OCT 8 - 13 14 IMPLIED WE SHOULD GO OUT - SOME GOOD DIALOG
+    all_all <- c(all_all, "AlyEsc","Labchick3571","jsbutterfly")
+    
+    # OCT 15 - SHE LIKED ME
+    all_all <- c(all_all, "Lafirefly")
+    
+    # OCT 21 - WEAK DIALOG BUT VERY HOT
+    all_all <- c(all_all, "wheel_watching")
+    
+    # OCT 22 - SOME BETTER DIALOG
+    all_all <- c(all_all,"kcheezie")
+    
+    # OCT 28 - SOME NEW WEAK DIALOG
+    all_all <- c(all_all,"GoldBegetsGold","DTBlonde")
+
+    # OCT 28 - SOME NEW WEAK DIALOG AND HIGHLY MOTIVATED
+    all_all <- c(all_all,"moneymaker2017")
 
       # NOTE okcupid logic: a msg INCLUDES a vst
       #  OKCUPID IDEA: turn anonymous browsing ON WHILE sending messages $$ A-list
       
       do_not_vst <- c()
       if(not_to_vst == "NONE") {     # default
-        do_not_vst <- c(special,"Kat0o","cajunfaith") # previous dates
+        do_not_vst <- c(special,"Kat0o","cajunfaith","aristarla") # previous dates
       }
       
      if(not_to_vst == "SOME") {     # default
-       do_not_vst <- c(special,"Kat0o","cajunfaith") # previous dates
+       do_not_vst <- c(special,"Kat0o","cajunfaith","aristarla") # previous dates
      }
 
       # exclusive choices
@@ -788,7 +865,18 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
               c("sungelique504","Natasha"),
               c("mallee13","Mallora"),
               c("lonelyheartz","Ashley"),
-              c("aristarla","Ariana")
+              c("aristarla","Ariana"),
+              c("afternoon726","Trisha"),
+              c("beckward","Becca"),
+              c("Musijo","Joanna"),
+              c("Scarletrayven","Mandy"),
+              c("takemesrsly69","Allison"),
+              c("layla_danielle","Layla"),
+              c("smilingrosej","Joann"),
+              c("ursweetestpoison","Tonya"),
+              c("p4passion101", "Jessica"),
+              c("Labchick3571","Michelle"),
+              c("Cherribelle318","Cherry")
             )
             
             matchnames_aliases_db <- as.data.frame(t(data.frame(matchnames_aliases)), stringsAsFactors = FALSE)
@@ -1070,10 +1158,7 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
 # 
 
 # messaging - not previous dates
-# okcupid_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = NULL, site_password = NULL, age_range_str = "18:49", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), action = "message_greet_matchname", online_when = "online_now", not_to_vst = "NONE", not_to_msg = "all_all", face_color = "anything")  
+# okcupid_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = NULL, site_password = NULL, age_range_str = "18:49", todays_message = paste0(", thank God that it is ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How is it going?"), action = "message_greet_matchname", online_when = "online_now", not_to_vst = "NONE", not_to_msg = "all_all", face_color = "anything")  
 
 # END INSTRUCTIONS  
 # END INSTRUCTIONS    
-
-
-
