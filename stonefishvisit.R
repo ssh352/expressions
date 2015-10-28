@@ -1,4 +1,5 @@
 
+
 # pof
 # DON'T FORGET TO STARTUP PostgreSQL !!
 
@@ -352,13 +353,11 @@ pof_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_the_
             all_all <- c(all_all,"roshonda_badon10", "lilmamma20123","Southernbelle3391", "MindyMarie88", "lj6314","bpl2005","cajundancer92") # not interested
             
             # ONLY Tues, Sept 15, and SOME current DIALOG
-            all_all <- c(all_all,"eileencarmody","Sweet9881")
-            
-            # ONGOING DIALOG - SEPT 22 23
             all_all <- c(all_all,"eileencarmody")
 
+
             # MORN - SEPT 29 - WEAK DIALOG - NEW, MORN/AFT - OCT 1 - WEAK DIALOG
-            all_all <- c(all_all,"DeeAnn24", "MDTgurl", "DeeAnn24")
+            all_all <- c(all_all,"DeeAnn24", "MDTgurl")
 
             # SEPT 24 - BLACK - BUT * TOO DAMN HOT * NOT TO MAINTAIN A DIALOG
             all_all <- c(all_all,"adaseyi")
@@ -367,7 +366,7 @@ pof_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_the_
             all_all <- c(all_all,"adaseyi","Princess918")
             
             # MON OCT 12 - SOME CURRENT DIALOG 13 14
-            all_all <- c(all_all,"Smalls41")
+            all_all <- c(all_all,"Smalls41","splendorrose")
 
             # MON OCT 14 - WEAK DIALOG - TOO DAMN HOT
             all_all <- c(all_all,"heyashy_")
@@ -376,8 +375,12 @@ pof_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_the_
             all_all <- c(all_all,"DeeAnn24")
             
             # OCT 14 & 15 - ASKED OUT
-            all_all <- c(all_all,"santaynez01","splendorrose")
+            all_all <- c(all_all,"santaynez01","Sweet9881")
             
+            # OCT 21 - TODAY ONLY
+            all_all <- c(all_all,"southernmost73")
+
+
 
             # MANUAL OVERRIDE
             # all_all <- c()
