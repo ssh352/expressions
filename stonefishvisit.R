@@ -16,7 +16,7 @@ if(Sys.getenv("RSTUDIO") == "1") {
   source(paste0(getwd(),"/","utilities_ext_visit_looper_dev.R"))
 }
 
-pof_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_the_custom_profile = FALSE, site_login = NULL, site_password = NULL, age_range_str = "23:44", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), on_exit_logoff_site = TRUE, on_exit_close_browser = TRUE, on_exit_stop_selenium_server = FALSE, action = "just_visit", online_when = "within_the_last_week", not_to_vst = "NONE", not_to_msg = "NONE", body_type = "anything") { 
+pof_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_the_custom_profile = FALSE, site_login = NULL, site_password = NULL, age_range_str = "23:44", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), on_exit_logoff_site = TRUE, on_exit_close_browser = TRUE, on_exit_stop_selenium_server = FALSE, action = "just_visit", online_when = "within_the_last_week", not_to_vst = "NONE", not_to_msg = "NONE", body_type = "anything", face_color = "white", loop_forever = "no") { 
   # OR action = "message_greet_matchname" "message_random_catchphrase"
   # OR not_to_msg = "all_all"
   # CONSIDER other PARAMETERS: , online_when = "within_the_last_week", not_to_vst = "NONE", not_to_msg = "NONE"
@@ -186,458 +186,535 @@ pof_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_the_
     Sys.sleep(4 + 2 * runif(1, min = 0, max = 1)) # 5 to 10 seconds wait
     
     print("logged into pof")
+
+
+    # TOP OF PROGRAM - today_file - pof_already_messaged_today_vector
+
+    today_number <- floor((as.numeric(Sys.time()) - ( 6 * 3600 ))/ ( 24 * 3600 )) # UTC down adj
+
+    today_file <- paste0("pof_already_messaged_today_", today_number,".Rdata")
+                     
+    print(paste0("pof_already_messaged_today file: ", today_file ))
+                     
     
+
     print("Of THIS progrem, the user hand written call follows.")
     print(looper_typed_in_call) # language
 
     program_run_started <- Sys.time()
     print(paste0("Program run Starting at: ",program_run_started))
 
-    # MAGIC NUMBER 
-    # pof
-    # 45 is the maximum age for a 31 year old
-    #  else it defaults to 'a big age range'
-    # 31 YEAR OLD - SEARCH ON * age * WILL FAIL - '22 is first success' '45 is the last success'
-    #    SAFE MIN: 23 SAFE MAX 44
 
-    # agerange     <-  23:44      #  30:31  # 45:44   c(25:18,50:31) "25:18,50:31" # 
-    # agerange_str <- "23:44"     # "30:31" # 45:44    
+    if( loop_forever == "yes" ) { 
+      
+      loop_forever_vector <- 1:1000
+      
+    } 
     
-    agerange_str <- age_range_str
-    agerange     <- eval(parse(text=agerange_str))
-
-    # POF limit of 55 messages per 24 hour period to 100% NEW PEOPLE
-    true_attempted_send_message_ANDRE_this_session_run_limit <- 55 * 10 # to cover people that I previously 'New messaged'
-    true_attempted_send_message_count <- 0
-
-    usernamename_already_visited <-c() # pof is extremely page dynamic: I do not want to visit a person accidentally twice
-    for(agecurr in agerange) { # testing only 31 and 30 # 31:30    
+    if( loop_forever == "no" ) {
       
-      if(true_attempted_send_message_ANDRE_this_session_run_limit == true_attempted_send_message_count) {
-        print(paste0("sent message: Andre this session run limit reached - break from all ages loop"))
-        break;
-      }
+      loop_forever_vector <- 1
       
-      # per age
-      no_more_online_when <- FALSE
-      
-      print(Sys.time())
-      print(paste0("PORT ", curr_port))
+    }
     
-      print(paste0("beginning age ",agecurr," of ",agerange_str))
+    for(loop_index in loop_forever_vector) {
+  
+      # BEGINNING OF OLD MAIN PROGRAM
+
+      # MAGIC NUMBER 
+      # pof
+      # 45 is the maximum age for a 31 year old
+      #  else it defaults to 'a big age range'
+      # 31 YEAR OLD - SEARCH ON * age * WILL FAIL - '22 is first success' '45 is the last success'
+      #    SAFE MIN: 23 SAFE MAX 44
+  
+      # agerange     <-  23:44      #  30:31  # 45:44   c(25:18,50:31) "25:18,50:31" # 
+      # agerange_str <- "23:44"     # "30:31" # 45:44    
       
-      pagerange <-      1:20      
-      pagerange_str <- "1:20"    
-      
-      for(pagecurr in pagerange) {
+      agerange_str <- age_range_str
+      agerange     <- eval(parse(text=agerange_str))
+  
+      # POF limit of 55 messages per 24 hour period to 100% NEW PEOPLE
+      true_attempted_send_message_ANDRE_this_session_run_limit <- 55 * 10 # to cover people that I previously 'New messaged'
+      true_attempted_send_message_count <- 0
+  
+      usernamename_already_visited <-c() # pof is extremely page dynamic: I do not want to visit a person accidentally twice
+      for(agecurr in agerange) { # testing only 31 and 30 # 31:30    
         
         if(true_attempted_send_message_ANDRE_this_session_run_limit == true_attempted_send_message_count) {
-          print(paste0("sent message: Andre this session run limit reached - break from pagerange of this age loop"))
+          print(paste0("sent message: Andre this session run limit reached - break from all ages loop"))
           break;
         }
         
-        if(no_more_online_when == TRUE) {
-          print(paste0("ending age ", agecurr," of ",agerange_str))
-          break # out of the page loop # since 'online_when' THIS IS 'per age', go to the next age ( above )
-        }
+        # per age
+        no_more_online_when <- FALSE
         
-        # not 'advanced search'
+        print(Sys.time())
+        print(paste0("PORT ", curr_port))
+      
+        print(paste0("beginning age ",agecurr," of ",agerange_str))
         
-        # Fiddler TextView ( NOT USEFUL: GET ON COMMAND LINE DOES NOT WORK )
-        # agelow=42&agehigh=42&miles=50&contacted=3&viewtype=0
-        # if CARE, use selenium .submit() instead
-        # http://stackoverflow.com/questions/17530104/selenium-webdriver-submit-vs-click
-        # JUST BELOW
+        pagerange <-      1:20      
+        pagerange_str <- "1:20"    
         
-        # choose age: 18 to 18 50 miles of KNOWN_PLACE ( from 'pof' personal email to me )
-        # http://www.pof.com/lastonlinemycity.aspx # SELENIUM? add form to page and do a POST request
-        #   ALL_USERS             Online Now ... Last Online
-        #   USERS_I_HAVE_CONTACTED
-        #   USERS_I_HAVE_NOT_CONTACTED ( not much use? - can only restrict by 'age' and 'distance' )
-        #                                
-        # choose age: 18 to 18 50 miles ofKNOWN_PLACE ( from 'above' bottom of the page link followed )
-        # http://www.pof.com/lastsignup.aspx ( already on 'advanced search page' )
-        
-        # advanced search - does not have - 'new users' - NO CODE implementation yet
-
-        # default
-        if( body_type == "anything" ) {
+        for(pagecurr in pagerange) {
           
-          # age1 to age1
-          # 70002 - 50 miles
-          # Body Type: Anything DEFAULT ( but I could sort by 'Newest Users')
-          # Sort By: 'Last Visit' ( but I could sort by 'Newest Users')
-          navigate_target_age_current_page <- paste0("http://www.pof.com/advancedsearch.aspx?iama=m&minage=",agecurr,"&maxage=",agecurr,"&city=70002&seekinga=f&searchtype=&country=1&heightb=999&maritalstatus=&relationshipage_id=&starsign=&body=&smarts=&fishtype=&pets=&eyes_id=&religionmult=&starsignmult=&thnicitymult=&haircolormult=&income=&profession_id=&Family_id=&intent=&easygoing_id=&confidence_id=&openness_id=&haircolor=&religion=&miles=50&page=",pagecurr,"&count=700")
-        
-        }
+          if(true_attempted_send_message_ANDRE_this_session_run_limit == true_attempted_send_message_count) {
+            print(paste0("sent message: Andre this session run limit reached - break from pagerange of this age loop"))
+            break;
+          }
+          
+          if(no_more_online_when == TRUE) {
+            print(paste0("ending age ", agecurr," of ",agerange_str))
+            break # out of the page loop # since 'online_when' THIS IS 'per age', go to the next age ( above )
+          }
+          
+          # not 'advanced search'
+          
+          # Fiddler TextView ( NOT USEFUL: GET ON COMMAND LINE DOES NOT WORK )
+          # agelow=42&agehigh=42&miles=50&contacted=3&viewtype=0
+          # if CARE, use selenium .submit() instead
+          # http://stackoverflow.com/questions/17530104/selenium-webdriver-submit-vs-click
+          # JUST BELOW
+          
+          # choose age: 18 to 18 50 miles of KNOWN_PLACE ( from 'pof' personal email to me )
+          # http://www.pof.com/lastonlinemycity.aspx # SELENIUM? add form to page and do a POST request
+          #   ALL_USERS             Online Now ... Last Online
+          #   USERS_I_HAVE_CONTACTED
+          #   USERS_I_HAVE_NOT_CONTACTED ( not much use? - can only restrict by 'age' and 'distance' )
+          #                                
+          # choose age: 18 to 18 50 miles ofKNOWN_PLACE ( from 'above' bottom of the page link followed )
+          # http://www.pof.com/lastsignup.aspx ( already on 'advanced search page' )
+          
+          # advanced search - does not have - 'new users' - NO CODE implementation yet
   
-        if( body_type == "thin_athletic" ) {
-        
-          # SINCE I ONLY HAVE A LIMIT OF 55 NEW USERS EVER CONTACTED IN A 24 HOUR PERIOD, I MIGHT AS WELL MAKE THEM COUNT
-          # age1 to age1
-          # 70002 - 50 miles
-          # Body Type: Thin, Athletic
-          # Sort By: 'Last Visit' DEFAULT ( but I could sort by 'Newest Users')
-          navigate_target_age_current_page <- paste0("http://www.pof.com/advancedsearch.aspx?iama=m&minage=",agecurr,"&maxage=",agecurr,"&state=26&city=70002&seekinga=f&searchtype=&country=1&heightb=999&maritalstatus=&relationshipage_id=&starsign=&body=1_2&smarts=&fishtype=&pets=&eyes_id=&religionmult=&starsignmult=&thnicitymult=&haircolormult=&income=&profession_id=&Family_id=&intent=&easygoing_id=&confidence_id=&openness_id=&haircolor=&religion=&miles=50&page=",pagecurr,"&count=700")
-        
-        }
-        
-        print(paste0("body type is ", body_type))
-        print(paste0("CURRENT URL"))
-        print(navigate_target_age_current_page)
-        
-        
-        print(paste0("of age ",agecurr, " beginning page ",pagecurr," of ",pagerange_str))
-        
-        remDr$navigate(navigate_target_age_current_page)
-        Sys.sleep(5 + 3 * runif(1, min = 0, max = 1)) # 5 to 8 seconds wait ( POF catch up?) 
-        remDr$refresh() # may or may not help ( SUDDEN case of empty page ?? )
-        # NOTE: manual message management: go to a new tab of the chrome browser ( not to a new opera )
-        
-        usernamecount <- remDr$executeScript("return document.querySelectorAll('div.about').length;")[[1]] # NOTE: ADD ERROR HANDLING LATER
-        if( usernamecount == 0 ) {
-          print(paste0("no usernames found of of age ",agecurr, "ending page ",pagecurr," of ",pagerange_str))
-          print(paste0("of age ",agecurr, "ending page ",pagecurr," of ",pagerange_str))
-          break; # pagecurr in pagerange, GOTO NEXT agecurr in agerange
-          
-        } else {
-          
-          
-          usernamerange <- 1:usernamecount
-          pagerange_str <- paste0(1,":",usernamecount)
-          
-          
-          # collect the page information
-          usernameurl         <- c()
-          usernamename        <- c()
-          usernamequalities   <- list()
-          
-          for(usernamecurr in usernamerange) {
+          # default
+          if( body_type == "anything" && face_color == "anything" ) {
             
-            usernameurl[usernamecurr]        <- remDr$executeScript(paste0("return document.querySelectorAll('div.about > a.link')[",(usernamecurr - 1),"].href;"))[[1]]
+            # age1 to age1
+            # 70002 - 50 miles
+            # Body Type: Anything DEFAULT ( but I could sort by 'Newest Users')
+            # Sort By: 'Last Visit' ( but I could sort by 'Newest Users')
+            navigate_target_age_current_page <- paste0("http://www.pof.com/advancedsearch.aspx?iama=m&minage=",agecurr,"&maxage=",agecurr,"&city=70002&seekinga=f&searchtype=&country=1&heightb=999&maritalstatus=&relationshipage_id=&starsign=&body=&smarts=&fishtype=&pets=&eyes_id=&religionmult=&starsignmult=&thnicitymult=&haircolormult=&income=&profession_id=&Family_id=&intent=&easygoing_id=&confidence_id=&openness_id=&haircolor=&religion=&miles=50&page=",pagecurr,"&count=700")
+          
+          }
+    
+          # default
+          if( body_type == "anything" && face_color == "white" ) {  # SAME AS ABOVE # JUST ADDED &thnicitymult=4&
             
-            usernamename[usernamecurr]       <- remDr$executeScript(paste0("return document.querySelectorAll('div.about > a.link')[",(usernamecurr - 1),"].innerText;"))[[1]]
-            
-            usernamequalities[[usernamecurr]] <- remDr$executeScript(paste0("return document.querySelectorAll('div.about')[",(usernamecurr - 1),"].innerText;"))[[1]]
-            usernamequalities[[usernamecurr]] <- unlist(strsplit(usernamequalities[[usernamecurr]], "[ ]"))
+            # age1 to age1
+            # 70002 - 50 miles
+            # Body Type: Anything DEFAULT ( but I could sort by 'Newest Users')
+            # Sort By: 'Last Visit' ( but I could sort by 'Newest Users')
+            navigate_target_age_current_page <- paste0("http://www.pof.com/advancedsearch.aspx?iama=m&minage=",agecurr,"&maxage=",agecurr,"&city=70002&seekinga=f&searchtype=&country=1&heightb=999&maritalstatus=&relationshipage_id=&starsign=&body=&smarts=&fishtype=&pets=&eyes_id=&religionmult=&starsignmult=&thnicitymult=&haircolormult=&income=&profession_id=&Family_id=&intent=&easygoing_id=&confidence_id=&openness_id=&haircolor=&religion=&thnicitymult=4&miles=50&page=",pagecurr,"&count=700")
             
           }
           
-          # vector: will be updated if the user chose to show her first name e.g. Renee in her profile
-          usernamename_lastbetterknown <- usernamename
           
-          # per username(elements) on this page
-          for(usernamecurr in usernamerange) {
-            
-            usernameurlcurr <- usernameurl[usernamecurr]          
-            usernamenamecurr <- usernamename[usernamecurr]         
-            usernamequalitiescurr <- usernamequalities[[usernamecurr]]  
-            
-            special    <- c("robot")
-            
-            some_curr_dialog <- c()
-            
-              all_all <- c()
-              rec_all <- c()
-
-            # rec_all <- c("FitBrittany","southernredhead8","nolacountrygirl985") # HAVE SENT A good CUSTOM FIRST MESSAGE - SUN JUL 26
-            
-            # rec_all <- c("ArtisticSoulSearcher","jend1973","sungelique504","j325h", "_ImSoUnique_") #  SOME DIALOG
-            
-            # rec_all <- c("ajuan31") #  SOME DIALOG
-
-            lik_all <- c("LivyGirl10") # JUST BAD BLOCKED ANYWAYS
-            
-            all_all <- c(lik_all,rec_all,some_curr_dialog) 
-
-            all_all <- c(all_all,"roshonda_badon10", "lilmamma20123","Southernbelle3391", "MindyMarie88", "lj6314","bpl2005","cajundancer92") # not interested
-            
-            # ONLY Tues, Sept 15, and SOME current DIALOG
-            all_all <- c(all_all,"eileencarmody")
-
-
-            # MORN - SEPT 29 - WEAK DIALOG - NEW, MORN/AFT - OCT 1 - WEAK DIALOG
-            all_all <- c(all_all,"DeeAnn24", "MDTgurl")
-
-            # SEPT 24 - BLACK - BUT * TOO DAMN HOT * NOT TO MAINTAIN A DIALOG
-            all_all <- c(all_all,"adaseyi")
-
-            # OCT 5/6 - MORNING - VERY WEAK LONG TERM DIALOG
-            all_all <- c(all_all,"adaseyi","Princess918")
-            
-            # MON OCT 12 - SOME CURRENT DIALOG 13 14
-            all_all <- c(all_all,"Smalls41","splendorrose")
-
-            # MON OCT 14 - WEAK DIALOG - TOO DAMN HOT
-            all_all <- c(all_all,"heyashy_")
-
-            # MON OCT 14 - WEAK DIALOG
-            all_all <- c(all_all,"DeeAnn24")
-            
-            # OCT 14 & 15 - ASKED OUT
-            all_all <- c(all_all,"santaynez01","Sweet9881")
-            
-            # OCT 21 - TODAY ONLY
-            all_all <- c(all_all,"southernmost73")
-
-
-
-            # MANUAL OVERRIDE
-            # all_all <- c()
-            
-            do_not_vst <- c()
-            if(not_to_vst == "NONE") {     # default
-              do_not_vst <- c(special)
-            }
-            
-            # exclusive choices
-            if(not_to_msg == "NONE") {     # default
-              do_not_vst_msg <- c(do_not_vst)
-            }
-            if(not_to_msg == "all_all") {
-              do_not_vst_msg <- c(do_not_vst,all_all)
-            }  
-            
-            # ACTUALLY do not vst/msg 
-            if(usernamenamecurr %in% do_not_vst_msg) {
-              print(paste0("usernamenamecurr ", usernamenamecurr, " is explicit: do not vst/msg"))
-              print(paste0("therfore, skipping to the next user usernamenamecurr"))
-              next; # out of the 'username(elements) on page loop'
-            }
-            
-            # begin determining last online time
-            
-            usernameonlinexxxcurr <- c("UNKNOWN") 
-            
-            # NOTE: (CODE ABOVE): I HAVE "NOT DETECTED 'THIS MONTH'" ( SLIGHTLY DANGEROUS HERE)
-            #   NOT DETECTED: Online Last 30 Days
-            
-            # javascript is 'zero(0) based'
-            
-            if(sub("^\\s+", "", usernamequalitiescurr[length(usernamequalitiescurr)-1]) == "Online" && 
-                 usernamequalitiescurr[length(usernamequalitiescurr)]  == "Now" ) { 
-              usernameonlinexxxcurr <- "ONLINENOW"
-              print(paste0(usernamenamecurr, " is Online Now"))   
-            } else { }
-            
-            if(sub("^\\s+", "", usernamequalitiescurr[length(usernamequalitiescurr)-1]) == "Online" && 
-                 usernamequalitiescurr[length(usernamequalitiescurr)]  == "Today" ) { 
-              usernameonlinexxxcurr <- "ONLINETODAY"
-              print(paste0(usernamenamecurr, " is Online Today"))   
-            } else {  }
-            
-            if(sub("^\\s+", "", usernamequalitiescurr[length(usernamequalitiescurr)-2]) == "Online" && 
-                 usernamequalitiescurr[length(usernamequalitiescurr)-1]  == "This"  && 
-                 usernamequalitiescurr[length(usernamequalitiescurr)  ]  == "Week"  
-            ) { 
-              usernameonlinexxxcurr <- "ONLINETHISWEEK"
-              print(paste0(usernamenamecurr, " is Online This Week"))   
-            } else {  }
-            
-            # what online status?
-            print(paste0(usernamenamecurr, " Online status is ", usernameonlinexxxcurr)) 
-            
-            # possible kick out of the program ( !!! NOT TESTED !!! )
-            
-#             # ALPHAALPHA: NOTE ALPHAALPHA is the same as BETABETA - remove one of the two
-#             if(online_when == "online_now" &&
-#                  (
-#                   usernameonlinexxxcurr ==  "ONLINETODAY" ||
-#                   usernameonlinexxxcurr ==  "ONLINETHISWEEK" ||
-#                   usernameonlinexxxcurr ==  "UNKNOWN" 
-#                  ) 
-#             ) {
-#               print("Done with the loop: no more ONLINENOW.")
-#               no_more_online_when <- TRUE
-#               print(paste0("of age ",agecurr, " ending page ",pagecurr," of ",pagerange_str))
-#               break; # out of the 'username(elements) on page loop'
-#             }
-            
-            # NOTE: (CODE ABOVE): I HAVE "NOT DETECTED 'THIS MONTH'" ( SLIGHTLY DANGEROUS HERE)
-            #   NOT DETECTED: Online Last 30 Days
-
-            # BETABETA: NOTE ALPHAALPHA is the same as BETABETA - remove one of the two
-            if(online_when == "online_now" && 
-                 usernameonlinexxxcurr %in% c("ONLINETODAY", "ONLINETHISWEEK", "UNKNOWN")  ) {
-              print("Done(break) with the loop: only left ... ONLINETODAY ONLINETHISWEEK UNKNOWN")
-              no_more_online_when <- TRUE
-              print(paste0("of age ",agecurr, " ending page ",pagecurr," of ",pagerange_str))
-              break; # out of the 'username(elements) on page loop'
-            }
-
-            # includes "online_now"
-            if(online_when == "online_today" && 
-                 usernameonlinexxxcurr %in% c( "ONLINETHISWEEK", "UNKNOWN")  ) {
-              print("Done(break) with the loop: only left ONLINETHISWEEK UNKNOWN")
-              no_more_online_when <- TRUE
-              print(paste0("of age ",agecurr, " ending page ",pagecurr," of ",pagerange_str))
-              break; # out of the 'username(elements) on page loop'
-            }
-
-            # need two parts
-            if(online_when == "online_today_ONLY" && 
-                 ( usernameonlinexxxcurr %in% c("ONLINENOW"  ) )
-            ) {
-              print("Skipping(next) this loop: of ... ONLINENOW ... looking for ONLINETODAY")
-              no_more_online_when <- FALSE # ******** #
-              print(paste0("of age ",agecurr, " ending page ",pagecurr," of ",pagerange_str))
-              next; # ___ of the 'username(elements) on page loop'
-            }
-            if(online_when == "online_today_ONLY" && 
-                ( usernameonlinexxxcurr %in% c("ONLINETHISWEEK", "UNKNOWN")  ) 
-            ) {
-              print("Done(break) with the loop: only left ONLINETHISWEEK UNKNOWN")
-              no_more_online_when <- TRUE
-              print(paste0("of age ",agecurr, " ending page ",pagecurr," of ",pagerange_str))
-              break; # out of the 'username(elements) on page loop'
-            }
-
-
-
-            if(online_when == "within_the_last_week" && 
-            usernameonlinexxxcurr == "UNKNOWN"  ) {
-              print("Done(break) with the loop: no more ONLINENOW, ONLINETODAY, ONLINETHISWEEK")
-              no_more_online_when <- TRUE
-              print(paste0("of age ",agecurr, " ending page ",pagecurr," of ",pagerange_str))
-              break; # out of the 'username(elements) on page loop'
-            }
-            
-            
-            # actually visit the username
-            navigate_target_age_current_page_current_username <- usernameurlcurr
-            
-            # actually visit ( in pof a 'message' always includes a 'visit')
-            
-            # regular visit
-            if( !(usernamenamecurr %in% usernamename_already_visited) ) {
-              
-              print(paste0("of age ",agecurr, " of page ",pagecurr," of ",pagerange_str," begin url nav to  ", usernamenamecurr))
-              remDr$navigate(navigate_target_age_current_page_current_username)
-              Sys.sleep(3 + 1 * runif(1, min = 0, max = 1)) 
-              
-                if( action == "message_greet_matchname" ) {
-                  
-                  # , good evening this fine Monday! Are you well this evening? --Monday July 28th
-                  #", good Friday morning to you!  How are you?" -- Fri Aug 6
-                  #c(", happy Saturday afternoon! How are you today?") -> message_greet_matchname_vector 
-                  
-                  # from function call actual argument
-                  todays_message -> message_greet_matchname_vector
-                  
-                  webElemPOSSBTRNAMETEXT <- remDr$findElement("css selector", "span.headline.AboutMe")  
-                  webElemPOSSBTRNAMETEXT$highlightElement()   # works
-                  
-                  headline_about_caption <- webElemPOSSBTRNAMETEXT$getElementText()[[1]]
-                  # "About Renee"
-                  
-                  headline_about_caption_selfid <- str_replace(str_extract(headline_about_caption,"[ ].*"),"[ ]","")
-                  # [1] "Renee"
-                  
-                  if(headline_about_caption_selfid != "Me") {
-                    usernamename_lastbetterknown[usernamecurr] <- headline_about_caption_selfid 
-                  } else {
-                    usernamename_lastbetterknown[usernamecurr] <- usernamenamecurr
-                  }
-                  # transition
-                  usernamenamecurr_lastbetterknowncurr <- usernamename_lastbetterknown[usernamecurr]
-                  
-                  
-                  
-                  # OVERRIDE
-                  
-                  # THESE PEOPLE TOLD ME THEIR NAMES OR IT WAS I THEIR PROFILE
-                  # of the left side DO NOT USE THE 'ABOUT NAME' IT IS TOO COMMON e.g. Michelle
-                  matchnames_aliases <- list(
-                    c("reyesmama","Rebecca"),
-                    c("sungelique504","Natasha"),
-                    c("Princess918","Mallary"),
-                    c("splendorrose","Cherice"),
-                    c("Smalls41","Brandy")
-                  )
-                  
-                  matchnames_aliases_db <- as.data.frame(t(data.frame(matchnames_aliases)), stringsAsFactors = FALSE)
-                  
-                  if(any(str_detect(usernamenamecurr,matchnames_aliases_db[,1]))) {
-                    # as an alias  # find the alias
-                    # NOTE: could fail if TWO entries are found ( really should have tested more)
-                    matchname_to_message <- matchnames_aliases_db["V2"][matchnames_aliases_db["V1"] == usernamenamecurr]
-                  } else {
-                    matchname_to_message <- usernamenamecurr
-                  }
-                  print(paste0("Messaging her real name instead: ", matchname_to_message))
-                  
-                  # re-transition
-                  usernamenamecurr_lastbetterknowncurr <- matchname_to_message
-                  
-                  
-                  
-                  # AFTER SURE CUSTOM NAME WORKS CORRECTLY THEN REMOVE THIS LINE
-                  # current_message  <- paste0(usernamenamecurr, message_greet_matchname_vector)
-                  current_message  <- paste0(usernamenamecurr_lastbetterknowncurr, message_greet_matchname_vector)
-                  
-                  # SEND MESSEGE - PER HERE PAGE STEPS 1-3 ( OF TOTAL 6 )
-                  
-                  # AFTER SURE CUSTOM NAME WORKS CORRECTLY THEN REMOVE THIS LINE
-                  # print(paste0("Begin attempt to send message to ", usernamenamecurr))
-                  print(paste0("Begin attempt to send message to ", usernamenamecurr," aka ", usernamenamecurr_lastbetterknowncurr))
-                  
-                  writeLines(current_message)
-                  
-                  # TEMP COMMENTED OUT FOR OTHER TESTING
-                  
-                  webElemMB <- remDr$findElement("css selector", "textarea.profile")  # 1
-                  webElemMB$highlightElement()               # THAT WORKED            # 2
-                  webElemMB$sendKeysToElement(list(current_message)) # THAT WORKED            # 3
-                  
-                  webElemSMB <- remDr$findElement("css selector", "input.button.norm-green")   # 4
-                  webElemSMB$highlightElement() # THAT WORKED                                  # 5
-                  webElemSMB$clickElement() # SEEMS TO HAVE WORKED - THE PAGE CHANGED          # 6
-                  Sys.sleep(1 + 1 * runif(1, min = 0, max = 1)) 
-                  
-                  # AFTER SURE CUSTOM NAME WORKS CORRECTLY THEN REMOVE THIS LINE
-                  # print(paste0("End attempt to send message to ", usernamenamecurr))
-                  print(paste0("End attempt to send message to ", usernamenamecurr," aka ", usernamenamecurr_lastbetterknowncurr))
-                  
-                  if(action == "message_greet_matchname") {
-                    true_attempted_send_message_count <- true_attempted_send_message_count + 1
-                  }
-
-                  print(paste0("Message ",true_attempted_send_message_count," of max messages ", true_attempted_send_message_ANDRE_this_session_run_limit))
-                  if(true_attempted_send_message_ANDRE_this_session_run_limit == true_attempted_send_message_count) {
-                    print(paste0("SENT MESSAGE: ANDRE_THIS_SESSION_RUNLIMIT reached - break from username(elements) on this page loop"))
-                    break;
-                  }
-                  
-                }
-              
-              print(paste0("of age ",agecurr, " of page ",pagecurr," of ",pagerange_str,"   end url nav to  ", usernamenamecurr))
-              usernamename_already_visited <-c(usernamename_already_visited,usernamenamecurr)
-              
-            } else { # pof - do not accidentally visit a 2nd time
-              print(paste0("of age ",agecurr, " of page ",pagecurr," of ",pagerange_str," SKIPPING(already visited) url nav to  ", usernamenamecurr))
-            }
-
+          if( body_type == "thin_athletic" && face_color == "anything" ) {
+          
+            # SINCE I ONLY HAVE A LIMIT OF 55 NEW USERS EVER CONTACTED IN A 24 HOUR PERIOD, I MIGHT AS WELL MAKE THEM COUNT
+            # age1 to age1
+            # 70002 - 50 miles
+            # Body Type: Thin, Athletic
+            # Sort By: 'Last Visit' DEFAULT ( but I could sort by 'Newest Users')
+            navigate_target_age_current_page <- paste0("http://www.pof.com/advancedsearch.aspx?iama=m&minage=",agecurr,"&maxage=",agecurr,"&state=26&city=70002&seekinga=f&searchtype=&country=1&heightb=999&maritalstatus=&relationshipage_id=&starsign=&body=1_2&smarts=&fishtype=&pets=&eyes_id=&religionmult=&starsignmult=&thnicitymult=&haircolormult=&income=&profession_id=&Family_id=&intent=&easygoing_id=&confidence_id=&openness_id=&haircolor=&religion=&miles=50&page=",pagecurr,"&count=700")
           }
-
+          
+          if( body_type == "thin_athletic"  && face_color == "white" ) {  # SAME AS ABOVE # JUST ADDED &thnicitymult=4&
+            
+            # SINCE I ONLY HAVE A LIMIT OF 55 NEW USERS EVER CONTACTED IN A 24 HOUR PERIOD, I MIGHT AS WELL MAKE THEM COUNT
+            # age1 to age1
+            # 70002 - 50 miles
+            # Body Type: Thin, Athletic
+            # Sort By: 'Last Visit' DEFAULT ( but I could sort by 'Newest Users')
+            navigate_target_age_current_page <- paste0("http://www.pof.com/advancedsearch.aspx?iama=m&minage=",agecurr,"&maxage=",agecurr,"&state=26&city=70002&seekinga=f&searchtype=&country=1&heightb=999&maritalstatus=&relationshipage_id=&starsign=&body=1_2&smarts=&fishtype=&pets=&eyes_id=&religionmult=&starsignmult=&thnicitymult=&haircolormult=&income=&profession_id=&Family_id=&intent=&easygoing_id=&confidence_id=&openness_id=&haircolor=&religion=&thnicitymult=4&miles=50&page=",pagecurr,"&count=700")
+          }
+          
+          
+          
+          print(paste0("body type is ", body_type))
+          print(paste0("CURRENT URL"))
+          print(navigate_target_age_current_page)
+          
+          
+          print(paste0("of age ",agecurr, " beginning page ",pagecurr," of ",pagerange_str))
+          
+          remDr$navigate(navigate_target_age_current_page)
+          Sys.sleep(5 + 3 * runif(1, min = 0, max = 1)) # 5 to 8 seconds wait ( POF catch up?) 
+          remDr$refresh() # may or may not help ( SUDDEN case of empty page ?? )
+          # NOTE: manual message management: go to a new tab of the chrome browser ( not to a new opera )
+          
+          usernamecount <- remDr$executeScript("return document.querySelectorAll('div.about').length;")[[1]] # NOTE: ADD ERROR HANDLING LATER
+          if( usernamecount == 0 ) {
+            print(paste0("no usernames found of of age ",agecurr, "ending page ",pagecurr," of ",pagerange_str))
+            print(paste0("of age ",agecurr, "ending page ",pagecurr," of ",pagerange_str))
+            break; # pagecurr in pagerange, GOTO NEXT agecurr in agerange
+            
+          } else {
+            
+            
+            usernamerange <- 1:usernamecount
+            pagerange_str <- paste0(1,":",usernamecount)
+            
+            
+            # collect the page information
+            usernameurl         <- c()
+            usernamename        <- c()
+            usernamequalities   <- list()
+            
+            for(usernamecurr in usernamerange) {
+              
+              usernameurl[usernamecurr]        <- remDr$executeScript(paste0("return document.querySelectorAll('div.about > a.link')[",(usernamecurr - 1),"].href;"))[[1]]
+              
+              usernamename[usernamecurr]       <- remDr$executeScript(paste0("return document.querySelectorAll('div.about > a.link')[",(usernamecurr - 1),"].innerText;"))[[1]]
+              
+              usernamequalities[[usernamecurr]] <- remDr$executeScript(paste0("return document.querySelectorAll('div.about')[",(usernamecurr - 1),"].innerText;"))[[1]]
+              usernamequalities[[usernamecurr]] <- unlist(strsplit(usernamequalities[[usernamecurr]], "[ ]"))
+              
+            }
+            
+            # vector: will be updated if the user chose to show her first name e.g. Renee in her profile
+            usernamename_lastbetterknown <- usernamename
+            
+            # per username(elements) on this page
+            for(usernamecurr in usernamerange) {
+              
+              usernameurlcurr <- usernameurl[usernamecurr]          
+              usernamenamecurr <- usernamename[usernamecurr]         
+              usernamequalitiescurr <- usernamequalities[[usernamecurr]]  
+              
+              special    <- c("robot")
+              
+              some_curr_dialog <- c()
+              
+                all_all <- c()
+                rec_all <- c()
+  
+              # rec_all <- c("FitBrittany","southernredhead8","nolacountrygirl985") # HAVE SENT A good CUSTOM FIRST MESSAGE - SUN JUL 26
+              
+              # rec_all <- c("ArtisticSoulSearcher","jend1973","sungelique504","j325h", "_ImSoUnique_") #  SOME DIALOG
+              
+              # rec_all <- c("ajuan31") #  SOME DIALOG
+  
+              lik_all <- c("LivyGirl10") # JUST BAD BLOCKED ANYWAYS
+              
+              all_all <- c(lik_all,rec_all,some_curr_dialog) 
+  
+              all_all <- c(all_all,"roshonda_badon10", "lilmamma20123","Southernbelle3391", "MindyMarie88", "lj6314","bpl2005","cajundancer92") # not interested
+              
+              # ONLY Tues, Sept 15, and SOME current DIALOG
+              all_all <- c(all_all,"eileencarmody")
+  
+  
+              # MORN - SEPT 29 - WEAK DIALOG - NEW, MORN/AFT - OCT 1 - WEAK DIALOG
+              all_all <- c(all_all,"DeeAnn24", "MDTgurl")
+  
+              # SEPT 24 - BLACK - BUT * TOO DAMN HOT * NOT TO MAINTAIN A DIALOG
+              all_all <- c(all_all,"adaseyi")
+  
+              # OCT 5/6 - MORNING - VERY WEAK LONG TERM DIALOG
+              all_all <- c(all_all,"adaseyi","Princess918")
+              
+              # MON OCT 12 - SOME CURRENT DIALOG 13 14
+              all_all <- c(all_all,"Smalls41","splendorrose")
+  
+              # MON OCT 14 - WEAK DIALOG - TOO DAMN HOT
+              all_all <- c(all_all,"heyashy_")
+  
+              # MON OCT 14 - WEAK DIALOG
+              all_all <- c(all_all,"DeeAnn24")
+              
+              # OCT 14 & 15 - ASKED OUT
+              all_all <- c(all_all,"santaynez01","Sweet9881")
+              
+              # OCT 21 - TODAY ONLY
+              all_all <- c(all_all,"southernmost73")
+  
+  
+  
+              # MANUAL OVERRIDE
+              # all_all <- c()
+              
+              do_not_vst <- c()
+              if(not_to_vst == "NONE") {     # default
+                do_not_vst <- c(special)
+              }
+              
+              # exclusive choices
+              if(not_to_msg == "NONE") {     # default
+                do_not_vst_msg <- c(do_not_vst)
+              }
+              if(not_to_msg == "all_all") {
+                do_not_vst_msg <- c(do_not_vst,all_all)
+              }  
+              
+              # ACTUALLY do not vst/msg 
+              if(usernamenamecurr %in% do_not_vst_msg) {
+                print(paste0("usernamenamecurr ", usernamenamecurr, " is explicit: do not vst/msg"))
+                print(paste0("therfore, skipping to the next user usernamenamecurr"))
+                next; # out of the 'username(elements) on page loop'
+              }
+              
+              # begin determining last online time
+              
+              usernameonlinexxxcurr <- c("UNKNOWN") 
+              
+              # NOTE: (CODE ABOVE): I HAVE "NOT DETECTED 'THIS MONTH'" ( SLIGHTLY DANGEROUS HERE)
+              #   NOT DETECTED: Online Last 30 Days
+              
+              # javascript is 'zero(0) based'
+              
+              if(sub("^\\s+", "", usernamequalitiescurr[length(usernamequalitiescurr)-1]) == "Online" && 
+                   usernamequalitiescurr[length(usernamequalitiescurr)]  == "Now" ) { 
+                usernameonlinexxxcurr <- "ONLINENOW"
+                print(paste0(usernamenamecurr, " is Online Now"))   
+              } else { }
+              
+              if(sub("^\\s+", "", usernamequalitiescurr[length(usernamequalitiescurr)-1]) == "Online" && 
+                   usernamequalitiescurr[length(usernamequalitiescurr)]  == "Today" ) { 
+                usernameonlinexxxcurr <- "ONLINETODAY"
+                print(paste0(usernamenamecurr, " is Online Today"))   
+              } else {  }
+              
+              if(sub("^\\s+", "", usernamequalitiescurr[length(usernamequalitiescurr)-2]) == "Online" && 
+                   usernamequalitiescurr[length(usernamequalitiescurr)-1]  == "This"  && 
+                   usernamequalitiescurr[length(usernamequalitiescurr)  ]  == "Week"  
+              ) { 
+                usernameonlinexxxcurr <- "ONLINETHISWEEK"
+                print(paste0(usernamenamecurr, " is Online This Week"))   
+              } else {  }
+              
+              # what online status?
+              print(paste0(usernamenamecurr, " Online status is ", usernameonlinexxxcurr)) 
+              
+              # possible kick out of the program ( !!! NOT TESTED !!! )
+              
+  #             # ALPHAALPHA: NOTE ALPHAALPHA is the same as BETABETA - remove one of the two
+  #             if(online_when == "online_now" &&
+  #                  (
+  #                   usernameonlinexxxcurr ==  "ONLINETODAY" ||
+  #                   usernameonlinexxxcurr ==  "ONLINETHISWEEK" ||
+  #                   usernameonlinexxxcurr ==  "UNKNOWN" 
+  #                  ) 
+  #             ) {
+  #               print("Done with the loop: no more ONLINENOW.")
+  #               no_more_online_when <- TRUE
+  #               print(paste0("of age ",agecurr, " ending page ",pagecurr," of ",pagerange_str))
+  #               break; # out of the 'username(elements) on page loop'
+  #             }
+              
+              # NOTE: (CODE ABOVE): I HAVE "NOT DETECTED 'THIS MONTH'" ( SLIGHTLY DANGEROUS HERE)
+              #   NOT DETECTED: Online Last 30 Days
+  
+              # BETABETA: NOTE ALPHAALPHA is the same as BETABETA - remove one of the two
+              if(online_when == "online_now" && 
+                   usernameonlinexxxcurr %in% c("ONLINETODAY", "ONLINETHISWEEK", "UNKNOWN")  ) {
+                print("Done(break) with the loop: only left ... ONLINETODAY ONLINETHISWEEK UNKNOWN")
+                no_more_online_when <- TRUE
+                print(paste0("of age ",agecurr, " ending page ",pagecurr," of ",pagerange_str))
+                break; # out of the 'username(elements) on page loop'
+              }
+  
+              # includes "online_now"
+              if(online_when == "online_today" && 
+                   usernameonlinexxxcurr %in% c( "ONLINETHISWEEK", "UNKNOWN")  ) {
+                print("Done(break) with the loop: only left ONLINETHISWEEK UNKNOWN")
+                no_more_online_when <- TRUE
+                print(paste0("of age ",agecurr, " ending page ",pagecurr," of ",pagerange_str))
+                break; # out of the 'username(elements) on page loop'
+              }
+  
+              # need two parts
+              if(online_when == "online_today_ONLY" && 
+                   ( usernameonlinexxxcurr %in% c("ONLINENOW"  ) )
+              ) {
+                print("Skipping(next) this loop: of ... ONLINENOW ... looking for ONLINETODAY")
+                no_more_online_when <- FALSE # ******** #
+                print(paste0("of age ",agecurr, " ending page ",pagecurr," of ",pagerange_str))
+                next; # ___ of the 'username(elements) on page loop'
+              }
+              if(online_when == "online_today_ONLY" && 
+                  ( usernameonlinexxxcurr %in% c("ONLINETHISWEEK", "UNKNOWN")  ) 
+              ) {
+                print("Done(break) with the loop: only left ONLINETHISWEEK UNKNOWN")
+                no_more_online_when <- TRUE
+                print(paste0("of age ",agecurr, " ending page ",pagecurr," of ",pagerange_str))
+                break; # out of the 'username(elements) on page loop'
+              }
+  
+  
+  
+              if(online_when == "within_the_last_week" && 
+              usernameonlinexxxcurr == "UNKNOWN"  ) {
+                print("Done(break) with the loop: no more ONLINENOW, ONLINETODAY, ONLINETHISWEEK")
+                no_more_online_when <- TRUE
+                print(paste0("of age ",agecurr, " ending page ",pagecurr," of ",pagerange_str))
+                break; # out of the 'username(elements) on page loop'
+              }
+              
+              
+              # actually visit the username
+              navigate_target_age_current_page_current_username <- usernameurlcurr
+              
+              # actually visit ( in pof a 'message' always includes a 'visit')
+              
+              # regular visit
+              if( !(usernamenamecurr %in% usernamename_already_visited) ) {
+                
+                print(paste0("of age ",agecurr, " of page ",pagecurr," of ",pagerange_str," begin url nav to  ", usernamenamecurr))
+                remDr$navigate(navigate_target_age_current_page_current_username)
+                Sys.sleep(3 + 1 * runif(1, min = 0, max = 1)) 
+                
+                  if( action == "message_greet_matchname" ) {
+                    
+                    # , good evening this fine Monday! Are you well this evening? --Monday July 28th
+                    #", good Friday morning to you!  How are you?" -- Fri Aug 6
+                    #c(", happy Saturday afternoon! How are you today?") -> message_greet_matchname_vector 
+                    
+                    # from function call actual argument
+                    todays_message -> message_greet_matchname_vector
+                    
+                    webElemPOSSBTRNAMETEXT <- remDr$findElement("css selector", "span.headline.AboutMe")  
+                    webElemPOSSBTRNAMETEXT$highlightElement()   # works
+                    
+                    headline_about_caption <- webElemPOSSBTRNAMETEXT$getElementText()[[1]]
+                    # "About Renee"
+                    
+                    headline_about_caption_selfid <- str_replace(str_extract(headline_about_caption,"[ ].*"),"[ ]","")
+                    # [1] "Renee"
+                    
+                    if(headline_about_caption_selfid != "Me") {
+                      usernamename_lastbetterknown[usernamecurr] <- headline_about_caption_selfid 
+                    } else {
+                      usernamename_lastbetterknown[usernamecurr] <- usernamenamecurr
+                    }
+                    # transition
+                    usernamenamecurr_lastbetterknowncurr <- usernamename_lastbetterknown[usernamecurr]
+                    
+                    
+                    
+                    # OVERRIDE
+                    
+                    # THESE PEOPLE TOLD ME THEIR NAMES OR IT WAS I THEIR PROFILE
+                    # of the left side DO NOT USE THE 'ABOUT NAME' IT IS TOO COMMON e.g. Michelle
+                    matchnames_aliases <- list(
+                      c("reyesmama","Rebecca"),
+                      c("sungelique504","Natasha"),
+                      c("Princess918","Mallary"),
+                      c("splendorrose","Cherice"),
+                      c("Smalls41","Brandy")
+                    )
+                    
+                    matchnames_aliases_db <- as.data.frame(t(data.frame(matchnames_aliases)), stringsAsFactors = FALSE)
+                    
+                    if(any(str_detect(usernamenamecurr,matchnames_aliases_db[,1]))) {
+                      # as an alias  # find the alias
+                      # NOTE: could fail if TWO entries are found ( really should have tested more)
+                      matchname_to_message <- matchnames_aliases_db["V2"][matchnames_aliases_db["V1"] == usernamenamecurr]
+                    } else {
+                      matchname_to_message <- usernamenamecurr
+                    }
+                    print(paste0("Messaging her real name instead: ", matchname_to_message))
+                    
+                    # re-transition
+                    usernamenamecurr_lastbetterknowncurr <- matchname_to_message
+                    
+                    
+                    
+                    # AFTER SURE CUSTOM NAME WORKS CORRECTLY THEN REMOVE THIS LINE
+                    # current_message  <- paste0(usernamenamecurr, message_greet_matchname_vector)
+                    current_message  <- paste0(usernamenamecurr_lastbetterknowncurr, message_greet_matchname_vector)
+                    
+                    # SEND MESSEGE - PER HERE PAGE STEPS 1-3 ( OF TOTAL 6 )
+                    
+                    # AFTER SURE CUSTOM NAME WORKS CORRECTLY THEN REMOVE THIS LINE
+                    # print(paste0("Begin attempt to send message to ", usernamenamecurr))
+                    print(paste0("Begin attempt to send message to ", usernamenamecurr," aka ", usernamenamecurr_lastbetterknowncurr))
+                    
+                    writeLines(current_message)
+                    
+                    # JUST BEFORE AN ATTEMPTED MESSAGE - today_file - pof_already_messaged_today_vector
+                    
+                    if(file.exists(today_file)) {
+                      load(file = today_file, envir = environment(), verbose = TRUE) 
+                    }
+                    
+                    if( !exists("pof_already_messaged_today_vector", envir = environment()) )  pof_already_messaged_today_vector <- c()
+                    
+                    if(usernamenamecurr %in% pof_already_messaged_today_vector) { 
+                      
+                      print(paste0("Skipping attempt to send message to ", usernamenamecurr," aka ", usernamenamecurr_lastbetterknowncurr))
+                      print("  I already HAVE AUTO MESSAGED her today!")
+                      
+                      next  # halts the processing # advanced to next loop index
+                      
+                    }
+                    
+                    # TEMP COMMENTED OUT FOR OTHER TESTING
+                    
+                    webElemMB <- remDr$findElement("css selector", "textarea.profile")  # 1
+                    webElemMB$highlightElement()               # THAT WORKED            # 2
+                    webElemMB$sendKeysToElement(list(current_message)) # THAT WORKED            # 3
+                    
+                    webElemSMB <- remDr$findElement("css selector", "input.button.norm-green")   # 4
+                    webElemSMB$highlightElement() # THAT WORKED                                  # 5
+                    webElemSMB$clickElement() # SEEMS TO HAVE WORKED - THE PAGE CHANGED          # 6
+                    Sys.sleep(1 + 1 * runif(1, min = 0, max = 1)) 
+                    
+                    # AFTER SURE CUSTOM NAME WORKS CORRECTLY THEN REMOVE THIS LINE
+                    # print(paste0("End attempt to send message to ", usernamenamecurr))
+                    print(paste0("End attempt to send message to ", usernamenamecurr," aka ", usernamenamecurr_lastbetterknowncurr))
+                    
+                    if(action == "message_greet_matchname") {
+                      true_attempted_send_message_count <- true_attempted_send_message_count + 1
+                    }
+  
+                    # JUST AFTER AN ATTEMPTED MESSAGE ( AND ONLY AFTER ) - today_file - pof_already_messaged_today_vector
+                    
+                    pof_already_messaged_today_vector <- c(pof_already_messaged_today_vector,usernamenamecurr)
+                    save(list = c("pof_already_messaged_today_vector"), file = today_file, envir = environment() )
+                    
+                    print(paste0("Message ",true_attempted_send_message_count," of max messages ", true_attempted_send_message_ANDRE_this_session_run_limit))
+                    if(true_attempted_send_message_ANDRE_this_session_run_limit == true_attempted_send_message_count) {
+                      print(paste0("SENT MESSAGE: ANDRE_THIS_SESSION_RUNLIMIT reached - break from username(elements) on this page loop"))
+                      break;
+                    }
+                    
+                  }
+                
+                print(paste0("of age ",agecurr, " of page ",pagecurr," of ",pagerange_str,"   end url nav to  ", usernamenamecurr))
+                usernamename_already_visited <-c(usernamename_already_visited,usernamenamecurr)
+                
+              } else { # pof - do not accidentally visit a 2nd time
+                print(paste0("of age ",agecurr, " of page ",pagecurr," of ",pagerange_str," SKIPPING(already visited) url nav to  ", usernamenamecurr))
+              }
+  
+            }
+  
+          }
+          
+          print(paste0("of age ",agecurr, " ending page ",pagecurr," of ",pagerange_str))
+          
+          ## END or ERROR   
+          ## next;
+          ## break;
         }
         
-        print(paste0("of age ",agecurr, " ending page ",pagecurr," of ",pagerange_str))
+        print(paste0("ending age ", agecurr," of ",agerange_str))
         
-        ## END or ERROR   
-        ## next;
-        ## break;
+        print("Of THIS progrem, the user hand written call follows.")
+        print(looper_typed_in_call) # language
+        
+      ## END or ERROR   
+      ## next;
+      ## break;
+        
       }
-      
-      print(paste0("ending age ", agecurr," of ",agerange_str))
-      
-      print("Of THIS progrem, the user hand written call follows.")
-      print(looper_typed_in_call) # language
-      
-    ## END or ERROR   
-    ## next;
-    ## break;
-      
-    }
+
+      # END OF OLD MAIN PROGRAM
+
+    } # for(loop_index in loop_forever_vector)
 
     print(paste0("This Program run Started at: ",program_run_started))
     print(paste0("Program run Ending at: ",Sys.time()))
@@ -733,10 +810,10 @@ pof_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_the_
 
 # just visit
 # pof_visit_looper_dev()
-# pof_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = NULL, site_password = NULL, age_range_str = "23:44", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), action = "just_visit", online_when = "within_the_last_week", not_to_vst = "NONE", not_to_msg = "NONE", body_type = "anything") # default
+# pof_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = NULL, site_password = NULL, age_range_str = "23:44", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), action = "just_visit", online_when = "within_the_last_week", not_to_vst = "NONE", not_to_msg = "NONE", body_type = "anything", face_color = "white", loop_forever = "no") # default
 
 # send a message
-# pof_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = NULL, site_password = NULL, age_range_str = "23:44", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), action = "message_greet_matchname", online_when = "online_now", not_to_vst = "NONE", not_to_msg = "all_all", body_type = "thin_athletic")
+# pof_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = NULL, site_password = NULL, age_range_str = "23:44", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), action = "message_greet_matchname", online_when = "online_now", not_to_vst = "NONE", not_to_msg = "all_all", body_type = "thin_athletic", face_color = "white", loop_forever = "yes")
 
 # END INSTRUCTIONS  
 # END INSTRUCTIONS  
