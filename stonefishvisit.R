@@ -235,7 +235,7 @@ pof_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_the_
       agerange     <- eval(parse(text=agerange_str))
   
       # POF limit of 55 messages per 24 hour period to 100% NEW PEOPLE
-      true_attempted_send_message_ANDRE_this_session_run_limit <- 55 * 10 # to cover people that I previously 'New messaged'
+      true_attempted_send_message_ANDRE_this_session_run_limit <- 55 * 100000 # to cover people that I previously 'New messaged'
       true_attempted_send_message_count <- 0
   
       usernamename_already_visited <-c() # pof is extremely page dynamic: I do not want to visit a person accidentally twice
@@ -417,7 +417,7 @@ pof_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_the_
               all_all <- c(all_all,"adaseyi","Princess918")
               
               # MON OCT 12 - SOME CURRENT DIALOG 13 14
-              all_all <- c(all_all,"Smalls41","splendorrose")
+              all_all <- c(all_all)
   
               # MON OCT 14 - WEAK DIALOG - TOO DAMN HOT
               all_all <- c(all_all,"heyashy_")
@@ -428,10 +428,14 @@ pof_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_the_
               # OCT 14 & 15 - ASKED OUT
               all_all <- c(all_all,"santaynez01","Sweet9881")
               
-              # OCT 21 - TODAY ONLY
-              all_all <- c(all_all,"southernmost73")
+              # NOV 2 & 3,13 - HOT - SOME WEAK LONG TERM DIALOG
+              all_all <- c(all_all,"linette_2009")
   
+              # NOV 2 & 3 - ASKED OUT
+              all_all <- c(all_all,"splendorrose")
   
+              # NOV 11- WEAK DIALOG
+              all_all <- c(all_all,"labtech12","Tinastreza")
   
               # MANUAL OVERRIDE
               # all_all <- c()
@@ -603,7 +607,8 @@ pof_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_the_
                       c("sungelique504","Natasha"),
                       c("Princess918","Mallary"),
                       c("splendorrose","Cherice"),
-                      c("Smalls41","Brandy")
+                      c("Smalls41","Brandy"),
+                      c("Tinastreza","Christina")
                     )
                     
                     matchnames_aliases_db <- as.data.frame(t(data.frame(matchnames_aliases)), stringsAsFactors = FALSE)
@@ -817,3 +822,4 @@ pof_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_the_
 
 # END INSTRUCTIONS  
 # END INSTRUCTIONS  
+
