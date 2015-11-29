@@ -574,7 +574,7 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
         rec7 <- c("kittycatstevens","sunburnqueenie","Menina_Bella","sophiahelen1","clarelynew","woqueen1225","CBD34","umbria24","CaliGirlinNOLA")
         
         rec6 <- c("NOLASpringtime","Maddy_M_C","blptqt_","afaternoon726","KissKissUsagi","Scottie_Lynn","kathattack05","geminileebaby","twa-corbies")
-        rec5 <- c("breezybaby2710","gangsta_grrl","dontcrycupid","courtneyesl","cna2hair","sweet_gal67","islandplaya")
+        rec5 <- c("breezybaby2710","gangsta_grrl","dontcrycupid","cna2hair","sweet_gal67","islandplaya")
         rec4 <- c("NOLApink","Kat0o","msspecial14","msblue5159","Kira24K","ndcooper85","dezy703","kittygirrll","MLR15")
         rec3 <- c("VonKathryn","justina_4u2nv","marciauptop","Cindilou4","OoshaBoom","MsLindsay1983","suny1974")
         rec2 <- c("Missaaronharry","belledenola","FaultyVictory","BrittanyGamer87","browneyegirl8383","hphphp96")
@@ -582,7 +582,7 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
         
         rec_all <-c(rec9,rec8,rec7,rec6,rec5,rec4,rec3,rec2,rec1)
         
-        lik3 <- c("courtneyesl","autumnrose1991","sourpatchcam","sparkly_cakepop","mslblue5159")
+        lik3 <- c("autumnrose1991","sourpatchcam","sparkly_cakepop","mslblue5159")
         lik2 <- c("Adizgeguzman","BrittanieRenee","FaultyVictory","jenna3312","ArgentAura")
         lik1 <- c("Flyme2themoon","gangsta_grrl","charmanderx","kimtschelie","NOLApink","Kat0o")
         
@@ -607,7 +607,7 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
   
         # NOT INTERESTED LIST
         all_all <- c(all_all,"lilbird987","xoxosunshinexoxo","PoopySoupy","pizzaforbrkfst","racheltheredhead", "caprifemme27","Vaporwave-Lenin", "theantigoneway", "mhiz_lindsey", "Lolo_nola", "Cyclon3") # she tells me directly that she is not interested
-        all_all <- c(all_all,"DerbyDevil74", "Joyceann46", "umbria24") 
+        all_all <- c(all_all,"LifeLovinLady","DerbyDevil74", "Joyceann46", "umbria24") 
   
         all_all <- c(all_all,"saxybitch13") # NOT LOOKING TO MEET
   
@@ -658,6 +658,8 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
        # WEAK PERSON - SOME DIALOG - SEPT 22 23, 24
        all_all <- c(all_all,"takemesrsly69", "MeowDaCatSAY") 
   
+       # HEAVY WOMAN: GNERAL NOVEMBER DIALOG
+       all_all <- c(all_all,"courtneyesl")
   
        # WEAK PERSON - SOME DIALOG - SEPT 28
        all_all <- c(all_all,"Scarletrayven") # Mandy(I did ask out)
@@ -686,7 +688,7 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
       # OCT 13 - SOME BETTER DIALOG
       all_all <- c(all_all,"Peacock-101","Merrou")
   
-      # THE OCT 21 - JUST DATED - WANT TO SEE AGAIN
+      # THE OCT 21 - JUST DATED - SHE IS MOVING TO SF
       all_all <- c(all_all, "Saranescence")
   
       # OCT 8 - 13 14 IMPLIED WE SHOULD GO OUT - SOME GOOD DIALOG
@@ -698,15 +700,87 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
       # OCT 21 - WEAK DIALOG BUT VERY HOT
       all_all <- c(all_all, "wheel_watching")
       
-      # OCT 22 - SOME BETTER DIALOG
+      # OCT 22 - NO PICTURE
       all_all <- c(all_all,"kcheezie")
       
-      # OCT 28 - SOME NEW WEAK DIALOG
-      all_all <- c(all_all,"GoldBegetsGold","DTBlonde")
+      # OCT 28 - PREFER NOT TO TALK TO ANYMORE
+      all_all <- c(all_all,"DTBlonde","NOLAnoob")
   
       # OCT 28 - SOME NEW WEAK DIALOG AND HIGHLY MOTIVATED
-      all_all <- c(all_all,"moneymaker2017")
+      all_all <- c(all_all)
+      
+      # NOV 2,3,4,8 - SOME NEW WEAK DIALOG
+      all_all <- c(all_all,"antropofaga","geminileebaby","Elizabeth-1","Jesscheaux","xkryscrossedx")
   
+      # TODAY NOV 4 ONLY
+      all_all <- c(all_all,"Mustbefriends1s","hottprincess4728")
+      
+      # TODAY NOV 5 ONLY
+      # all_all <- c(all_all,"Natalief5625","illlizabeth")
+
+      # NOV 5 - STUPID FAT TEEN-AGER - A ASKED OUT - SHE DID NOT SHOW
+      all_all <- c(all_all,"yocarly")
+
+      # TODAY NOV 5 ASKED OUT ( SHE IMPLIED THAT WE SHOULD MEET )
+      all_all <- c(all_all,"sweaterwench") # NO - CRAZY LIAR FROM ATLANTA
+
+
+      
+      # NOV 11 - WEAK ASKED OUT - CONTINUE TALKING TO HER
+      all_all <- c(all_all,"mlrobi15")
+      
+      # NOV 11 - WEAK DIALOG
+      all_all <- c(all_all,"judythatsme8","februarybb","JadeLotus27")
+      
+      # NOV 11, 13 - BETTER DIALOG
+      all_all <- c(all_all,"SugarcaneMustard","Jesscheaux","hottprincess4728")
+      
+      # SUN NOV 15 - ONE CUSTOM MESSAGE WAS SENT ( MONDAY NOV 21 - RECEIVED 2ND CUSTOM MESSAGE )
+       all_all <- c(all_all,"MissBookWorm8","jeanalean","miche2767","gailforcewins","sophiahelen1", "lainey504",
+       "yeezytavghtme","candyplant","LaurenMichelle47","n-y-m-p-h-e-t","tizzaverde","nicoleerinc","jamierad")
+
+       # SUN NOV 15 - ONE CUSTOM MESSAGE WAS SENT
+       all_all <- c(all_all,"Bette_taco","sam9921","roul3tt3","boxfoxpox","susie81970","MaddiiieSunShine","roseyrides",
+       "Rachel_LeahR","jenellybeans","BookmarkNola","Di_marie22","dame-viking",
+       "bramblebull","AriaLaJune","tiffany656","Livemore83","heartontherail","sharinfun247","stuckuptown",
+       "i_am_Michelle86","ZIANOLA","BethWillowYeah","DRW70130","delasoul504","Steph8708",
+       "Upfromtheblue82","rrose_selavy88","FLSTFb14","JDTho","bbbupbb","Mustbefriends1","smorkin_labbit",
+       "sarah_lynn859","fallengt14","onepmtues","MegsInTheTardis","Verdictfashion","bete_rouge",
+       "Sanna5581","wagg90","ip23","Caballera1984","chirpy214","greeneyedlola","southernbelle326",
+       "spicyjane","ready4change227","cherijen","SaltyPaycheck","SweetandSnarky","ArtFunLuv","paigeeeb",
+       "bigeasyemi","mustlovedogs220","NOLAgirlAmy","femchefeastbank","Quenbea","kjacobs7","ktizzle-o-matic",
+       "jenren12","lapeach85","bnolan00","psychic__hearts","amicamortis","SassySparkles12","alleighrich",
+       "jennb504","New_GirlInTown","younggnfunn504","i_am_smh","alicee504","baBarbie","Mistyb7783",
+       "alittlelagniappe","breathemusic32", "indiefolkgirl","Jerseyfarmer","Quen32000","Hypnotc711",
+       "lookingupstar","Clevah_Gurl","haylidu","kathattack05","Lu6344")
+      
+       # THU NOV 20 - ONE RESPONSE FROM THE *BULK SENT*
+       all_all <- c(all_all,"RealClaire")
+      
+       # TUES - NOV 17 - FROM (SUN NOV 15 - ONE CUSTOM MESSAGE WAS SENT) - NEW WEAK DIALOG ( ALSO F BULK )
+       all_all <- c(all_all,"LifeLovinLady", "awake_and_aware")
+  
+       # SUN NOVEMBER22 - NEW JUST GOOD 1ST MESSAGE 
+
+       all_all <- c(all_all,"heartneworleans","Cryztalbaby","CatEyes201","Artomaton","SeeRedGo88",
+      "jennierose2729","Lust4life03","craftyb123","iammeltee007","kayjay725","Jennigirl1",
+      "Jessie_Lynn_88","LAGirlInNOLa","shelbyk514","shelbyshortcake","DSuzanne","bag_o_Jess34","marisalikesyou")
+
+       # NOV 23-24 SOME WEAK DIALOG
+        all_all <- c(all_all,"GothicCupcake")
+  
+       # NOV 23 - SOME VERY WEAK DIALOG - JUST TODAY ONLY
+       # all_all <- c(all_all,"crybabii","cateyebel77")
+        
+       # NOV 24 SOME BETTER DIALOG
+        all_all <- c(all_all,"heartontherail") # MASS-GOOD POEM 1 # RESPONER
+
+       # NOV 8/27 - SUNDAY - WEAK DIALOG BUT HIGHLY MOTIVATED
+       # SHE IS 'PERSON OF FEW WORDS' - ASK OUT NOW
+       all_all <- c(all_all,"innausa")
+
+       # christenelaine89 - BORDERLINE ( IF I DO NOT GET A RESPONSE BACK )
+   
         # NOTE okcupid logic: a msg INCLUDES a vst
         #  OKCUPID IDEA: turn anonymous browsing ON WHILE sending messages $$ A-list
         
@@ -849,7 +923,10 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
             # ( If the message popup is on the grid page It is included in the PAGED SCRAPED LINKS - different )
             
             # on her PERSONAL page, her PRINTED age 
-            webElemHERPAGE_AGE <- remDr$findElement("css selector", "div#basic_info div#aso_loc p.infos span:nth-child(1)")
+            # END - Sun Nov 22, 2015
+            # webElemHERPAGE_AGE <- remDr$findElement("css selector", "div#basic_info div#aso_loc p.infos span:nth-child(1)")
+            # NEW - Sun Nov 29, 2015
+            webElemHERPAGE_AGE <- remDr$findElement("css selector", "span.userinfo2015-basics-asl-age")
             # webElemHERPAGE_AGE$highlightElement()
             current_her_page_age <- as.integer(webElemHERPAGE_AGE$getElementText()[[1]])
             
@@ -903,7 +980,12 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
                 c("ursweetestpoison","Tonya"),
                 c("p4passion101", "Jessica"),
                 c("Labchick3571","Michelle"),
-                c("Cherribelle318","Cherry")
+                c("Cherribelle318","Cherry"),
+                c("xkryscrossedx","Krys"),
+                c("VintageLovely94","Trina"),
+                c("Jesscheaux","Jessica"),
+                c("awake_and_aware","May"),
+                c("heartontherail","Savanna")
               )
               
               matchnames_aliases_db <- as.data.frame(t(data.frame(matchnames_aliases)), stringsAsFactors = FALSE)
@@ -951,7 +1033,10 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
             
             # send message button  
             
-            webElemSMB <- remDr$findElement("css selector", "#footer_send_btn")
+            # SUN Nov 22, 2015 - No Longer Working
+            # webElemSMB <- remDr$findElement("css selector", "#footer_send_btn")
+            # SUN Nov 27, 2015
+            webElemSMB <- remDr$findElement("css selector", "button.actions2015-chat.flatbutton.blue")
             webElemSMB$highlightElement() # THAT WORKED
             remDr$mouseMoveToLocation(webElement = webElemSMB) 
             webElemSMB$sendKeysToElement(list(key = "enter")) 
@@ -976,6 +1061,11 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
             # *DETECT HERE*
             # IF THE MESSAGE BOX IS NOT IN THE FOREGROUND "BECAUSE OF A MESSAGE"
             # SHOULD *DETECT HERE* AND NOT BOTHER TO EXECUTE THE REMAINDER OF THE CODE
+            
+            # Sys.sleep(5.0)
+            # INDEX <- -1
+            # TEST<- remDr$findElements("css selector", "textarea" ) # TEST # FLASHES ON 5
+            # lapply(TEST, function(x){INDEX <<- INDEX + 1 ;x$highlightElement(); x$highlightElement(); print(INDEX) ;Sys.sleep(5.0) } )
             
             # MOST RELIABLE WAY TO DO IT.  NOTE: querySelectorAll also WORKS
             message_textarea <-                               "document.querySelectorAll('textarea')[5].value"
@@ -1231,4 +1321,8 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
 # END INSTRUCTIONS  
 # END INSTRUCTIONS    
 
+
+#           
+#           
+ 
 
