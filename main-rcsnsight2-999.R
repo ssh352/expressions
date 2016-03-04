@@ -507,7 +507,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
                                                           # march 21, 2015 run: "2015-01-31": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
                                                           # march 21, 2015 run: "2015-02-28": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
                                                           # march 21, 2015 run: "2015-03-31": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
-    finDate.TestTrain.Global.Latest      <- "2016-01-31"  # april  6, 2015 run: "2015-03-31": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
+    finDate.TestTrain.Global.Latest      <- "2016-02-29"  # april  6, 2015 run: "2015-03-31": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
     
     # training and TRUE tests
     list(Test2001 = list(Train=list(initDate = initData.TestTrain.Global.Earliest,finDate ="1998-12-31"),
@@ -2454,12 +2454,18 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
       , method = "gbm" 
       , verbose = FALSE # gbm TOO MUCH # default is TRUE? anyway?
       # , tuneGrid = expand.grid(interaction.depth = seq(1, 7, by = 2),n.trees = seq(500, 1000, by = 250),shrinkage = c(0.1)) 
-      , tuneGrid = expand.grid(interaction.depth = 7, n.trees = 500, shrinkage = c(0.01))
+      , tuneGrid = expand.grid(interaction.depth = 7, n.trees = seq(10,500,1), shrinkage = c(0.01))
     ) -> FitterTune
     
-    ntreesOPTIMAL <-  gbm.perf(FitterTune$finalModel, method="OOB", plot.it = FALSE)
-    print(paste0("Collected FitterTune with Optimal(OOB) Numeber of Trees: ", ntreesOPTIMAL))
+    # ntreesOPTIMAL <-  gbm.perf(FitterTune$finalModel, method="OOB", plot.it = FALSE)
+    # print(paste0("Collected FitterTune with Optimal(OOB) Number of Trees: ", ntreesOPTIMAL))
     # [1] 355
+    
+    ntreesOPTIMAL <-FitterTune$finalModel$tuneValue
+    print("")
+    print(paste0("Train VarImp: Collected FitterTune with Optimal caret repeatedcv Number of Trees. . ."))
+    print(ntreesOPTIMAL)
+    print("")
     
     bookmark_here <- 1 
     
@@ -2517,7 +2523,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     #
     #  the number of iterations,T(n.trees)
     #  the depth of each tree,K(interaction.depth)
-    #  the shrinkage (or learning rate) parameter,?(shrinkage)
+    #  the shrinkage (or learning rate) parameter,λ(shrinkage)
     #  the subsampling rate,p(bag.fraction)
     #
     #  Generalized Boosted Models: A guide to the gbm package Greg Ridgeway August 3, 2007
@@ -2541,7 +2547,11 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     train_x <- data.frame(model.data.train.CURR[,model.data.CURR.OBSERVEES.MOST.IMPORTANT.VARIABLES],stringsAsFactors=FALSE)
     save(list = c("train_x"), file = "DATA_MOST.IMPORTANT_train_x.RData")
 
-    print(paste0("USING FitterTune with Optimal(OOB) Numeber of Trees: ", ntreesOPTIMAL))
+
+    # FOR NOW: USING THE OLD ntreesOPTIMAL WITHOUT recalculating IT
+    # print(paste0("USING FitterTune with Optimal(OOB) Numeber of Trees: ", ntreesOPTIMAL))
+    print(paste0("USING Train VarImp with Optimal caret repeatedcv Number of Trees..."))
+    print(ntreesOPTIMAL)
 
     # almost the same as above but I added ica
     train( 
@@ -2552,9 +2562,9 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
       , verbose = FALSE # gbm TOO MUCH # default is TRUE? anyway?
       # , preProcess = "ica"
       # , tuneGrid = expand.grid(interaction.depth = seq(1, 7, by = 2),n.trees = seq(500, 1000, by = 250),shrinkage = c(0.1)) 
-      , tuneGrid = expand.grid(interaction.depth = 7, n.trees = ntreesOPTIMAL, shrinkage = c(0.01)) 
+      , tuneGrid = expand.grid(interaction.depth = 7, n.trees = ntreesOPTIMAL$n.trees, shrinkage = c(0.01)) 
     ) -> FitterTune
-    
+
     # DEBUG(BOTH STMTS)
     train_FitterTune <- FitterTune
     save(list = c("train_FitterTune"), file = "DATA_MOST.IMPORTANT_train_FitterTune.RData")
@@ -2885,8 +2895,8 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
 # View(model.data.test.CURR.NEWTAIL) 
 
 
-########################     
-#
+########################      
+# 
 #     
 
 
