@@ -433,6 +433,8 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = FAL
   
   require(TTR)
   require(quantmod)
+  require(performanceEstimation) # WILL dynmically load: require(gbm)
+  # require(caret) # called by ::
   
   # ^GSPC: Summary for S&P 500- Yahoo! Finance
   # https://r-forge.r-project.org/scm/viewvc.php/pkg/quantstrat/demo/faber.R?view=markup&root=blotter
@@ -648,6 +650,222 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = FAL
     load( file = "PERFECTWORLDFACTOREDMODEL.RData")
     
   }
+  
+  bigdata <- PERFECTWORLDFACTOREDMODEL
+  bigdata[,"scalesrowid"] <-  1:NROW(bigdata) # required for non MC scaling # optional(ignored) MC
+
+  # required for task@dataSource TO SEE
+  # assign("bigdata", bigdata, envir = .GlobalEnv )
+  
+  attach_me <- list(
+    
+    trainCaret = function(frmula, dat, ..., scales = NULL, scalescolname = NULL, otherArgsText = "",  trControlText = "caret::trainControl(method = 'none')", tuneGridText  = "") { 
+      
+      restargs    <- list(...) 
+      
+      scales      <- eval(parse(text=scales)) 
+      if(!is.null(scalescolname)) scalesrowid <- as.vector(unlist( dat[,scalescolname] ))
+      NROWdat     <- NROW(dat)
+      NROWscales  <- NROW(scales)
+      
+      # expecting NON-MonteCarlo
+      # if LARGE length of case weights is sent, then collectION is expected to be non-ordered by random-ish positions 
+      if(!is.null(scales) && ( NROWdat != NROWscales ) )  { 
+        samplescales <- scales[scalesrowid]
+      }
+      
+      # expecting    MonteCarlo # user may typically send '1:NROW(dat)' # function(dat) # function of sample size
+      # if SMALL length of case weights are sent, then collection is expected to be ordered by exact position
+      
+      # scalescolname IS NOT required ( and Not used) in MonteCarlo, 
+      # For user programming consisency/ease
+      #  or for an 'extra' check, scalescolname, may be sent anyways
+      if(  ( !is.null(scales)       ) && 
+           ( NROWdat == NROWscales  ) && 
+           ( if(!is.null(scalescolname)) { !is.unsorted(as.vector(unlist(dat[,scalescolname]))) } else { TRUE  } ) ) { 
+        samplescales <- scales 
+      }
+      
+      # if no case weights are sent
+      if( is.null(scales) )                               { samplescales <- NULL }
+      
+      if( NROW(samplescales) != NROW(dat) ) stop("Incorrect case weights ( scales )")
+      
+      others       <- if(nchar(otherArgsText) == 0) { NULL }  else { eval(parse(text=otherArgsText)) }
+      
+      # if it has a scalesrowid, Remove it. It is not part of the dat.
+      if(!is.null(scalescolname)) dat[,scalescolname] <- NULL
+      
+      f <- substitute(
+        do.call(caret::train,c(list(form = frmula, data = dat, weights = samplescales), others, restargs, list( tuneGrid=eval(parse( text=tuneGridText))), 
+                               list(trControl=eval(parse(text=trControlText)))  )) 
+      )
+      eval(f)
+      
+    }
+    
+  )
+  
+  pkgpos <-  which("package:me" == search())
+  if(length(pkgpos) > 0){ detach(pos = pkgpos)}
+  attach(what=attach_me, pos = 2L, name = "package:me", warn.conflicts = TRUE) 
+  
+  # if doing case weights, scales and scalescolname, are required.
+  # if doing case weights, and doing Monte Carlo, scalecolnames is not required ( and ignored )
+  
+  spExp1 <- performanceEstimation(
+    # scalescolname is not part of the formula ( non-dynamic case ), so it will be removed ( consider instead "y ~ ." )
+    PredTask(formula(bigdata[,-NCOL(bigdata)]), data = call("get",x = "bigdata", envir = environment()), taskName = 'GSFJ', copy=TRUE),c(
+      workflowVariants(wf='standardWF',wfID="CVstandGBM",   
+                       learner="trainCaret", 
+                       learner.pars=list(method="gbm", 
+                                         distribution = c('bernoulli'), 
+                                         tuneGridText  = c("data.frame(n.trees = 10, interaction.depth = 2, shrinkage = 0.25, n.minobsinnode = 2)","data.frame(n.trees = 10, interaction.depth = 7, shrinkage = 0.25, n.minobsinnode = 2)"), 
+                                         scales = "1:NROW(bigdata)", scalescolname = 'scalesrowid'))    # CONSTANT dat population size
+    ),
+    EstimationTask(metrics=c("acc","fpr"),method=CV(nReps=2,nFolds=5))
+  ) 
+  
+  
+  print('print(taskNames(spExp1))')
+  print(taskNames(spExp1))
+  print('print(workflowNames(spExp1))')
+  print(workflowNames(spExp1))
+  print('print(metricNames(spExp1))')
+  print(metricNames(spExp1))
+  print('print(topPerformers(spExp1))')
+  print(topPerformers(spExp1))
+  print('print(rankWorkflows(spExp1))')
+  print(rankWorkflows(spExp1))
+  print('plot(spExp1)')
+  plot(spExp1)
+  print('print(summary(spExp1))')
+  print(summary(spExp1))
+  # print('print(getScores(spExp1))')
+  # print(getScores(spExp1)) # LATER: must be specific
+  # print('print(estimationSummary(spExp1))')
+  # print(estimationSummary(spExp1))
+  
+  
+  # NOTE: ? workflowVariants # can send:  type=c("slide","grow")
+  ## it assumes that it is a
+  ## time series workflow because of the use of the "type" parameter,
+  ## otherwise you could make it explicit by adding wf="timeseriesWF")
+  spExp2 <- performanceEstimation(
+    # scalescolname is not part of the formula ( non-dynamic case ), so it will be removed ( consider instead "y ~ ." )
+    PredTask(formula(bigdata[,-NCOL(bigdata)]), data = call("get",x = "bigdata", envir = environment()), taskName = 'GSFJ', copy=TRUE),c(
+      workflowVariants(wf='standardWF',wfID="MCstandGBM",   
+                       learner="trainCaret", 
+                       learner.pars=list(method="gbm", 
+                                         distribution = c('bernoulli'), 
+                                         tuneGridText  = "data.frame(n.trees = 10, interaction.depth = 2, shrinkage = 0.25, n.minobsinnode = 2)", 
+                                         scales = "1:NROW(dat)", scalescolname = 'scalesrowid')),        # CONSTANT dat sample size
+      workflowVariants(wf='timeseriesWF',wfID="MCgrowGBM",  
+                       learner="trainCaret", 
+                       learner.pars=list(method="gbm", 
+                                         distribution = c('bernoulli'), 
+                                         tuneGridText  = "data.frame(n.trees = 10, interaction.depth = 2, shrinkage = 0.25, n.minobsinnode = 2)", 
+                                         scales = "1:NROW(dat)", scalescolname = 'scalesrowid'),         #  VARIABLE(GROWING) dat sample size
+                       type="grow", relearn.step=15),
+      workflowVariants(wf='timeseriesWF',wfID="MCslideGBM",  
+                       learner="trainCaret", 
+                       learner.pars=list(method="gbm", 
+                                         distribution = c('bernoulli'), 
+                                         tuneGridText  = "data.frame(n.trees = 10, interaction.depth = 2, shrinkage = 0.25, n.minobsinnode = 2)", 
+                                         scales = "1:NROW(dat)", scalescolname = 'scalesrowid'),          #  CONSTANT dat sample size
+                       type="slide", relearn.step=15)
+    ),
+    EstimationTask(metrics=c("acc","fpr"),method=MonteCarlo(nReps=5,szTrain=0.5,szTest=0.25))
+  ) 
+  
+
+  print('print(taskNames(spExp2))')
+  print(taskNames(spExp2))
+  print('print(workflowNames(spExp2))')
+  print(workflowNames(spExp2))
+  print('print(metricNames(spExp2))')
+  print(metricNames(spExp2))
+  print('print(topPerformers(spExp2))')
+  print(topPerformers(spExp2))
+  print('print(rankWorkflows(spExp2))')
+  print(rankWorkflows(spExp2))
+  print('plot(spExp2)')
+  plot(spExp2)
+  print('print(summary(spExp2))')
+  print(summary(spExp2))
+  # print('print(getScores(spExp2))')
+  # print(getScores(spExp2)) # LATER: must be specific
+  # print('print(estimationSummary(spExp2))')
+  # print(estimationSummary(spExp2))
+  
+  # merges
+  
+  spAlltasks <- mergeEstimationRes(spExp1, spExp2, by = "tasks") # default
+  
+  print('print(taskNames(spAlltasks))')
+  print(taskNames(spAlltasks))
+  print('print(workflowNames(spAlltasks))')
+  print(workflowNames(spAlltasks))
+  print('print(metricNames(spAlltasks))')
+  print(metricNames(spAlltasks))
+  print('print(topPerformers(spAlltasks))')
+  print(topPerformers(spAlltasks))
+  print('print(rankWorkflows(spAlltasks))')
+  print(rankWorkflows(spAlltasks))
+  print('plot(spAlltasks)')
+  plot(spAlltasks)
+  print('print(summary(spAlltasks))')
+  print(summary(spAlltasks))
+  # print('print(getScores(spAlltasks))')
+  # print(getScores(spAlltasks)) # # LATER: must be specific
+  # print('print(estimationSummary(spAlltasks))')
+  # print(estimationSummary(spAlltasks))
+  
+  spAllwfs <- mergeEstimationRes(spExp1, spExp2, by = "workflows")
+  
+  print('print(taskNames(spAllwfs))')
+  print(taskNames(spAllwfs))
+  print('print(workflowNames(spAllwfs))')
+  print(workflowNames(spAllwfs))
+  print('print(metricNames(spAllwfs))')
+  print(metricNames(spAllwfs))
+  print('print(topPerformers(spAllwfs))')
+  print(topPerformers(spAllwfs))
+  print('print(rankWorkflows(spAllwfs))')
+  print(rankWorkflows(spAllwfs))
+  print('plot(spAllwfs)')
+  plot(spAllwfs)
+  print('print(summary(spAllwfs))')
+  print(summary(spAllwfs))
+  # print('print(getScores(spAllwfs))')
+  # print(getScores(spAllwfs)) # LATER: must be specific
+  # print('print(estimationSummary(spAllwfs))')
+  # print(estimationSummary(spAllwfs))
+
+  spAllmtrs <- mergeEstimationRes(spExp1, spExp2, by = "metrics")
+  
+  print('print(taskNames(spAllmtrs))')
+  print(taskNames(spAllmtrs))
+  print('print(workflowNames(spAllmtrs))')
+  print(workflowNames(spAllmtrs))
+  print('print(metricNames(spAllmtrs))')
+  print(metricNames(spAllmtrs))
+  print('print(topPerformers(spAllmtrs))')
+  print(topPerformers(spAllmtrs))
+  print('print(rankWorkflows(spAllmtrs))')
+  print(rankWorkflows(spAllmtrs))
+  print('plot(spAllmtrs)')
+  plot(spAllmtrs)
+  print('print(summary(spAllmtrs))')
+  print(summary(spAllmtrs))
+  # print('print(getScores(spAllmtrs))')
+  # print(getScores(spAllmtrs)) # LATER: must be specific
+  # print('print(estimationSummary(spAllmtrs))')
+  # print(estimationSummary(spAllmtrs))
+  
+  
+  bookmarkhere <- 1 
+  
   
   options(ops)
   
