@@ -424,8 +424,8 @@ xts_treat_na_all_methods_lagsma <- function(X, NAdelayed_max_width = 57, i_X_mic
 
 
 
-
-Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = FALSE, make_new_model = FALSE, final_date_str = "2015-01-01") {
+                                                                                                            # approx midpoint of QE2
+Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new_data, make_new_model = new_derived_data, final_date_str = "2012-11-02") {
   
   ops <- options()
   options(error = recover)
@@ -434,7 +434,8 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = FAL
   require(TTR)
   require(quantmod)
   require(performanceEstimation) # WILL dynmically load: require(gbm)
-  # require(caret) # called by ::
+  # caret           called by caret::
+  # microbenchmark called by microbenchmark::microbenchmark
   
   # ^GSPC: Summary for S&P 500- Yahoo! Finance
   # https://r-forge.r-project.org/scm/viewvc.php/pkg/quantstrat/demo/faber.R?view=markup&root=blotter
@@ -700,8 +701,10 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = FAL
         do.call(caret::train,c(list(form = frmula, data = dat, weights = samplescales), others, restargs, list( tuneGrid=eval(parse( text=tuneGridText))), 
                                list(trControl=eval(parse(text=trControlText)))  )) 
       )
-      eval(f)
-      
+      returned <- eval(f)
+      # print("");print("Caret_Best_Tune...")
+      # print(returned$bestTune)
+      return(returned)
     }
     
   )
@@ -710,21 +713,57 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = FAL
   if(length(pkgpos) > 0){ detach(pos = pkgpos)}
   attach(what=attach_me, pos = 2L, name = "package:me", warn.conflicts = TRUE) 
   
+  # "tpr" - true positive rate - 2 class - predict positve given actually positive
+  # "rpp" - rate of postitive predictions - 2 class - proportion of times the model forecasted a positive class
+  # "tnr" - true negative rate - 2 class - predict negative given actually negative
+  # topPerformers: returns the 'numeric minimum' ( no matter what the measure definition may be )
+  
   # if doing case weights, scales and scalescolname, are required.
   # if doing case weights, and doing Monte Carlo, scalecolnames is not required ( and ignored )
   
-  spExp1 <- performanceEstimation(
+  # SEEMS from the code that I am trying to predict FACTOR = LEVEL = 1
+  
+  # CUSTOM: varsRootName ONLY IF I AM NOT USING:  "standardWF" | "timeseriesWF"
+  
+  # USE scales and scalesname I WOULD HAVE TO 
+  # underweight ( put in fractions for FACTOR = 1, terrible : GSPC_CLOSE__i_X_micro_change_isgain_f2 )
+  
+  con <- file("Givens_Siegel_Faber_Johnson_SinkOutput.txt")
+  sink(con) # type="output"
+  sink(con, type="message")
+  
+
+
+    spExp1 <- substitute(performanceEstimation(
     # scalescolname is not part of the formula ( non-dynamic case ), so it will be removed ( consider instead "y ~ ." )
     PredTask(formula(bigdata[,-NCOL(bigdata)]), data = call("get",x = "bigdata", envir = environment()), taskName = 'GSFJ', copy=TRUE),c(
-      workflowVariants(wf='standardWF',wfID="CVstandGBM",   
+      workflowVariants(wf='standardWF',wfID="CVstandGBM",
                        learner="trainCaret", 
-                       learner.pars=list(method="gbm", 
-                                         distribution = c('bernoulli'), 
-                                         tuneGridText  = c("data.frame(n.trees = 10, interaction.depth = 2, shrinkage = 0.25, n.minobsinnode = 2)","data.frame(n.trees = 10, interaction.depth = 7, shrinkage = 0.25, n.minobsinnode = 2)"), 
-                                         scales = "1:NROW(bigdata)", scalescolname = 'scalesrowid'))    # CONSTANT dat population size
+                       learner.pars=list(method="gbm", verbose = FALSE,
+                                         distribution  = c('bernoulli'), 
+                                         tuneGridText  = c(  # 5 trees per second
+                                                             "data.frame(n.trees = 2, interaction.depth = 18, shrinkage = 0.25, n.minobsinnode = 10)"
+                                                           , "data.frame(n.trees = 1000,  interaction.depth = 7 , shrinkage  = 0.0001, n.minobsinnode = 10)" 
+                                                           , "data.frame(n.trees = 20000, interaction.depth = 7 , shrinkage  =  0.001, n.minobsinnode = 10)"
+                                                           , "data.frame(n.trees = 20000, interaction.depth = 18, shrinkage  = 0.0001, n.minobsinnode = 10)"
+                                                           , "data.frame(n.trees = 20000, interaction.depth = 18, shrinkage  =  0.001, n.minobsinnode = 10)"
+                                                           )
+                                         , scales = "rep(1,NROW(bigdata))", scalescolname = 'scalesrowid'
+                                         )
+                       , as.is = 'verbose')    # CONSTANT dat population size
     ),
-    EstimationTask(metrics=c("acc","fpr"),method=CV(nReps=2,nFolds=5))
-  ) 
+    EstimationTask(metrics=c("tpr","rpp","tnr"),method=CV(nReps=1,nFolds=5))
+  ))
+  
+  microbenchmark::microbenchmark( {
+    spExp1 <- eval(spExp1)
+  } , times = 1, unit = 's' ) -> mres
+  print("Performance . . . ")
+  print(mres)
+  
+  
+  # print('getWorkflow("trainCaret.v1",spExp1)')
+  # print(getWorkflow("trainCaret.v1",spExp1))
   
   
   print('print(taskNames(spExp1))')
@@ -733,8 +772,8 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = FAL
   print(workflowNames(spExp1))
   print('print(metricNames(spExp1))')
   print(metricNames(spExp1))
-  print('print(topPerformers(spExp1))')
-  print(topPerformers(spExp1))
+  print('print(topPerformers(spExp1, maxs=rep(TRUE,3)))')
+  print(topPerformers(spExp1, maxs=rep(TRUE,3)))
   print('print(rankWorkflows(spExp1))')
   print(rankWorkflows(spExp1))
   print('plot(spExp1)')
@@ -746,6 +785,12 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = FAL
   # print('print(estimationSummary(spExp1))')
   # print(estimationSummary(spExp1))
   
+  sink()
+  sink(type="message")
+  close(con)
+  
+  
+  return(invisible()) # NOT doing TIME FLOW TODAY: Too SLOW
   
   # NOTE: ? workflowVariants # can send:  type=c("slide","grow")
   ## it assumes that it is a
@@ -754,20 +799,20 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = FAL
   spExp2 <- performanceEstimation(
     # scalescolname is not part of the formula ( non-dynamic case ), so it will be removed ( consider instead "y ~ ." )
     PredTask(formula(bigdata[,-NCOL(bigdata)]), data = call("get",x = "bigdata", envir = environment()), taskName = 'GSFJ', copy=TRUE),c(
-      workflowVariants(wf='standardWF',wfID="MCstandGBM",   
+      workflowVariants(wf='standardWF',wfID="MCstandGBM", 
                        learner="trainCaret", 
                        learner.pars=list(method="gbm", 
                                          distribution = c('bernoulli'), 
                                          tuneGridText  = "data.frame(n.trees = 10, interaction.depth = 2, shrinkage = 0.25, n.minobsinnode = 2)", 
                                          scales = "1:NROW(dat)", scalescolname = 'scalesrowid')),        # CONSTANT dat sample size
-      workflowVariants(wf='timeseriesWF',wfID="MCgrowGBM",  
+      workflowVariants(wf='timeseriesWF',wfID="MCgrowGBM",
                        learner="trainCaret", 
                        learner.pars=list(method="gbm", 
                                          distribution = c('bernoulli'), 
                                          tuneGridText  = "data.frame(n.trees = 10, interaction.depth = 2, shrinkage = 0.25, n.minobsinnode = 2)", 
                                          scales = "1:NROW(dat)", scalescolname = 'scalesrowid'),         #  VARIABLE(GROWING) dat sample size
                        type="grow", relearn.step=15),
-      workflowVariants(wf='timeseriesWF',wfID="MCslideGBM",  
+      workflowVariants(wf='timeseriesWF',wfID="MCslideGBM",
                        learner="trainCaret", 
                        learner.pars=list(method="gbm", 
                                          distribution = c('bernoulli'), 
@@ -775,8 +820,10 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = FAL
                                          scales = "1:NROW(dat)", scalescolname = 'scalesrowid'),          #  CONSTANT dat sample size
                        type="slide", relearn.step=15)
     ),
-    EstimationTask(metrics=c("acc","fpr"),method=MonteCarlo(nReps=5,szTrain=0.5,szTest=0.25))
+    EstimationTask(metrics=c("tpr","rpp","tnr"),method=MonteCarlo(nReps=5,szTrain=0.5,szTest=0.25))
   ) 
+  
+
   
 
   print('print(taskNames(spExp2))')
@@ -785,8 +832,8 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = FAL
   print(workflowNames(spExp2))
   print('print(metricNames(spExp2))')
   print(metricNames(spExp2))
-  print('print(topPerformers(spExp2))')
-  print(topPerformers(spExp2))
+  print('print(topPerformers(spExp2, maxs=rep(TRUE,3)))')
+  print(topPerformers(spExp1, maxs=rep(TRUE,3)))
   print('print(rankWorkflows(spExp2))')
   print(rankWorkflows(spExp2))
   print('plot(spExp2)')
@@ -883,4 +930,6 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = FAL
 # Givens_Siegel_Faber_Johnson(                 new_derived_data = TRUE ) 
 # Givens_Siegel_Faber_Johnson(                                         make_new_model = TRUE)
 
+#  LEFT_OFF: dynamic: tuneGridText # NEED vector elements # SEE hotmail
+#  LEFT_OFF: workflowVariants(varsRootName) [NA] - ONLY IF NOT USING: "standardWF" | "timeseriesWF"
 
