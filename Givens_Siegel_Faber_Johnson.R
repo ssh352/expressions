@@ -695,7 +695,16 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
       others       <- if(nchar(otherArgsText) == 0) { NULL }  else { eval(parse(text=otherArgsText)) }
       
       # if it has a scalesrowid, Remove it. It is not part of the dat.
-      if(!is.null(scalescolname)) dat[,scalescolname] <- NULL
+      if(!is.null(scalescolname)) { 
+        
+         # remove the scalescolname variable so it does not exist
+         dat[,scalescolname] <- NULL 
+         
+         # dynamically remove the scalescolname variable from the formula
+         # I do not care if the variable exists or NOT
+         frmula <- eval(substitute(update(frmula, ~ . - scalescolname_var),list(scalescolname_var = as.symbol(scalescolname))))
+         
+      }
       
       f <- substitute(
         do.call(caret::train,c(list(form = frmula, data = dat, weights = samplescales), others, restargs, list( tuneGrid=eval(parse( text=tuneGridText))), 
@@ -728,12 +737,28 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
   # USE scales and scalesname I WOULD HAVE TO 
   # underweight ( put in fractions for FACTOR = 1, terrible : GSPC_CLOSE__i_X_micro_change_isgain_f2 )
   
-  con <- file("Givens_Siegel_Faber_Johnson_SinkOutput.txt")
-  sink(con) # type="output"
-  sink(con, type="message")
+#   con <- file("Givens_Siegel_Faber_Johnson_SinkOutput.txt")
+#   sink(con) # type="output"
+#   sink(con, type="message")
   
-
-
+  print(match.call())
+  print(sesssionInfo())
+  print(search())
+  
+  print('print(str(bigdata))')
+  print(str(bigdata))
+  print('print(Hmisc::describe(bigdata))')
+  print(Hmisc::describe(bigdata))
+  
+  # WRONG : SO IGNORE # see my # issue # 5
+  #   DO NOT USE: "tpr", "rec", "sens"
+  # helper: evaluationMetrics. R#  gdata::unmatrix(cm) # 
+  
+  # only ones SEEABLE useful to ME
+  # acc, tpr(but needs fixing), tnr
+  # 
+  # https://en.wikipedia.org/wiki/Receiver_operating_characteristic
+  
     spExp1 <- substitute(performanceEstimation(
     # scalescolname is not part of the formula ( non-dynamic case ), so it will be removed ( consider instead "y ~ ." )
     PredTask(formula(bigdata[,-NCOL(bigdata)]), data = call("get",x = "bigdata", envir = environment()), taskName = 'GSFJ', copy=TRUE),c(
@@ -743,16 +768,16 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
                                          distribution  = c('bernoulli'), 
                                          tuneGridText  = c(  # 5 trees per second
                                                              "data.frame(n.trees = 2, interaction.depth = 18, shrinkage = 0.25, n.minobsinnode = 10)"
-                                                           , "data.frame(n.trees = 1000,  interaction.depth = 7 , shrinkage  = 0.0001, n.minobsinnode = 10)" 
-                                                           , "data.frame(n.trees = 20000, interaction.depth = 7 , shrinkage  =  0.001, n.minobsinnode = 10)"
-                                                           , "data.frame(n.trees = 20000, interaction.depth = 18, shrinkage  = 0.0001, n.minobsinnode = 10)"
-                                                           , "data.frame(n.trees = 20000, interaction.depth = 18, shrinkage  =  0.001, n.minobsinnode = 10)"
+                                                        #  , "data.frame(n.trees = 1000,  interaction.depth = 7 , shrinkage  = 0.0001, n.minobsinnode = 10)" 
+                                                        #  , "data.frame(n.trees = 20000, interaction.depth = 7 , shrinkage  =  0.001, n.minobsinnode = 10)"
+                                                        #  , "data.frame(n.trees = 20000, interaction.depth = 18, shrinkage  = 0.0001, n.minobsinnode = 10)"
+                                                        #  , "data.frame(n.trees = 20000, interaction.depth = 18, shrinkage  =  0.001, n.minobsinnode = 10)"
                                                            )
                                          , scales = "rep(1,NROW(bigdata))", scalescolname = 'scalesrowid'
                                          )
                        , as.is = 'verbose')    # CONSTANT dat population size
     ),
-    EstimationTask(metrics=c("tpr","rpp","tnr"),method=CV(nReps=1,nFolds=5))
+    EstimationTask(metrics=c("acc","tnr","trTime", "tsTime","totTime"),method=CV(nReps=1,nFolds=5))
   ))
   
   microbenchmark::microbenchmark( {
@@ -772,8 +797,8 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
   print(workflowNames(spExp1))
   print('print(metricNames(spExp1))')
   print(metricNames(spExp1))
-  print('print(topPerformers(spExp1, maxs=rep(TRUE,3)))')
-  print(topPerformers(spExp1, maxs=rep(TRUE,3)))
+  print('print(topPerformers(spExp1, maxs=rep(TRUE,7)))')
+  print(topPerformers(spExp1, maxs=c(TRUE,TRUE,FALSE,FALSE,FALSE))) # needs to have the same size as the number of evaluation statistics
   print('print(rankWorkflows(spExp1))')
   print(rankWorkflows(spExp1))
   print('plot(spExp1)')
@@ -785,9 +810,9 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
   # print('print(estimationSummary(spExp1))')
   # print(estimationSummary(spExp1))
   
-  sink()
-  sink(type="message")
-  close(con)
+#   sink()
+#   sink(type="message")
+#   close(con)
   
   
   return(invisible()) # NOT doing TIME FLOW TODAY: Too SLOW
@@ -820,7 +845,7 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
                                          scales = "1:NROW(dat)", scalescolname = 'scalesrowid'),          #  CONSTANT dat sample size
                        type="slide", relearn.step=15)
     ),
-    EstimationTask(metrics=c("tpr","rpp","tnr"),method=MonteCarlo(nReps=5,szTrain=0.5,szTest=0.25))
+    EstimationTask(metrics=c("acc","tnr","trTime", "tsTime","totTime"),method=MonteCarlo(nReps=5,szTrain=0.5,szTest=0.25))
   ) 
   
 
@@ -833,7 +858,7 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
   print('print(metricNames(spExp2))')
   print(metricNames(spExp2))
   print('print(topPerformers(spExp2, maxs=rep(TRUE,3)))')
-  print(topPerformers(spExp1, maxs=rep(TRUE,3)))
+  print(topPerformers(spExp1, maxs=c(TRUE,TRUE,FALSE,FALSE,FALSE)))
   print('print(rankWorkflows(spExp2))')
   print(rankWorkflows(spExp2))
   print('plot(spExp2)')
@@ -931,5 +956,5 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
 # Givens_Siegel_Faber_Johnson(                                         make_new_model = TRUE)
 
 #  LEFT_OFF: dynamic: tuneGridText # NEED vector elements # SEE hotmail
-#  LEFT_OFF: workflowVariants(varsRootName) [NA] - ONLY IF NOT USING: "standardWF" | "timeseriesWF"
+#  [NA]: workflowVariants(varsRootName) [NA] - ONLY IF NOT USING: "standardWF" | "timeseriesWF"
 
