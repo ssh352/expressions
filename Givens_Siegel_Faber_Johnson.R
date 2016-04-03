@@ -294,8 +294,10 @@ zoo_delay <- function(oftenish = xts::xts(100 *seq(7,100,14), zoo::as.Date(seq(7
 
 # INTDSRUSM193N # LAST KNOWN GOOD TO BE USED WITH FRED ( NON-SOCASTIC )
 
-xts_treat_na_all_methods_slope <- function(X, NAdelayed_max_width = 57, slope_change_col = "NAedLOCF", slope_change_width = 57) {
-  
+                                                                     #  slope_change_col INPUT column name
+# xts_treat_na_all_methods_slope <- function(X, NAdelayed_max_width = 57, slope_change_col = "NAedLOCF", slope_change_width = 57) {
+xts_treat_na_all_methods_slope <- function(X, NAdelayed_max_width = 57, slope_change_col = "NAedLOCF", slope_change_width = 57, NAedForwarded_method  = "na.approx") {    
+
   X_colname <- colnames(X)[1] # SHOULD BE JUST ONE COLUMN
   
   # seq # ## S3 method for class 'Date'
@@ -313,6 +315,15 @@ xts_treat_na_all_methods_slope <- function(X, NAdelayed_max_width = 57, slope_ch
   X__NAedApproxed <- zoo::na.approx( X__NAed, xout = zoo::as.Date(index(X__NAed)), na.rm = FALSE ) 
   colnames(X__NAedApproxed) <- paste0(X_colname,'__NAedApproxed')
   
+  if(NAedForwarded_method  == "na.approx") {
+    X__NAedForwarded <- X__NAedApproxed
+  }
+  
+  if(NAedForwarded_method  == "na.locf") {
+    X__NAedForwarded <- zoo::na.locf(X__NAed[paste0(as.character(head(index(X__NAedApproxed),1)),'::',as.character(tail(index(X__NAedApproxed),1)))], na.rm = FALSE ) 
+    X__NAedForwarded <- xts::merge.xts(X__NAedForwarded, xts(NULL, index(X__NAed)))
+  }
+
   X__NAedLOCF     <- zoo::na.locf  ( X__NAed,                                      na.rm = FALSE ) 
   colnames(X__NAedLOCF)     <- paste0(X_colname,'__NAedLOCF'    )
   
@@ -342,7 +353,8 @@ xts_treat_na_all_methods_slope <- function(X, NAdelayed_max_width = 57, slope_ch
   colnames(X__slope_changed) <- paste0(X_colname,'__',slope_change_col,'__','slope_changed')
   
   # them all
-  z <- xts::merge.xts(X__NAed, X__isNA_flag, X__NAedApproxed, X__NAedLOCF, X__slope_changed, X__NAdelayed)
+  # z <- xts::merge.xts(X__NAed, X__isNA_flag, X__NAedApproxed, X__NAedLOCF, X__slope_changed, X__NAdelayed)
+  z <-xts::merge.xts(X__NAed, X__isNA_flag, X__NAedForwarded, X__NAedLOCF, X__slope_changed, X__NAdelayed)
   
   return(z)
   
@@ -506,7 +518,7 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
     # FRED ( not volitile )  
     INTDSRUSM193N_PLUS <- merge(MSTRIDX,INTDSRUSM193N, join = "left")
     NTDSRUSM193N_PLUS <- xts_treat_na_all_methods_slope( 
-      INTDSRUSM193N_PLUS, slope_change_width = 57 ) # peopls reacion time
+      INTDSRUSM193N_PLUS, slope_change_width = 57, NAedForwarded_method  = "na.locf") # peopls reacion time
     
     # FRED ( approximately known )
     NAPM_PLUS          <- merge(MSTRIDX,NAPM         , join = "left")
@@ -742,7 +754,7 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
 #   sink(con, type="message")
   
   print(match.call())
-  print(sesssionInfo())
+  print(sessionInfo())
   print(search())
   
   print('print(str(bigdata))')
