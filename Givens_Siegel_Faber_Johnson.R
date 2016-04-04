@@ -323,6 +323,8 @@ xts_treat_na_all_methods_slope <- function(X, NAdelayed_max_width = 57, slope_ch
     X__NAedForwarded <- zoo::na.locf(X__NAed[paste0(as.character(head(index(X__NAedApproxed),1)),'::',as.character(tail(index(X__NAedApproxed),1)))], na.rm = FALSE ) 
     X__NAedForwarded <- xts::merge.xts(X__NAedForwarded, xts(NULL, index(X__NAed)))
   }
+  # NEW
+  colnames(X__NAedForwarded) <- paste0(X_colname,'__NAedApproxed') # COULD BE # colnames(X__NAedApproxed)
 
   X__NAedLOCF     <- zoo::na.locf  ( X__NAed,                                      na.rm = FALSE ) 
   colnames(X__NAedLOCF)     <- paste0(X_colname,'__NAedLOCF'    )
@@ -365,8 +367,9 @@ xts_treat_na_all_methods_slope <- function(X, NAdelayed_max_width = 57, slope_ch
 # VERSION 2 - VARIANT 4 - DONE - LAST KNOW WORKING VARIANT FOR 'GSPC' [ AND MARKET DATA ]
 
 # X would be e.g.  GSPC of 'FRED MONTHLY'                                # ONLY USES NAedApproxed
-xts_treat_na_all_methods_lagsma <- function(X, NAdelayed_max_width = 57, i_X_micro_change = 1, lagsma_change_col = "NAedApproxed", lagsma_change_width = 200) {
-  
+# xts_treat_na_all_methods_lagsma <- function(X, NAdelayed_max_width = 57, i_X_micro_change = 1, lagsma_change_col = "NAedApproxed", lagsma_change_width = 200) {
+xts_treat_na_all_methods_lagsma <- function(X, NAdelayed_max_width = 57, i_X_micro_change = 1, lagsma_change_col = "NAedApproxed", lagsma_change_width = 200, NAedForwarded_method  = "na.approx") {  
+
   X_colname <- colnames(X)[1] # SHOULD BE JUST ONE COLUMN
   
   # seq # ## S3 method for class 'Date'
@@ -382,8 +385,24 @@ xts_treat_na_all_methods_lagsma <- function(X, NAdelayed_max_width = 57, i_X_mic
   
   # so, from the comment above, do this one
   X__NAedApproxed <- zoo::na.approx( X__NAed, xout = zoo::as.Date(index(X__NAed)), na.rm = FALSE ) 
-  colnames(X__NAedApproxed) <- paste0(X_colname,'__NAedApproxed')
+  # OLD LOC
+  # colnames(X__NAedApproxed) <- paste0(X_colname,'__NAedApproxed')
   
+  if(NAedForwarded_method  == "na.approx") {
+    X__NAedApproxed <- X__NAedApproxed
+  }
+  
+  if(NAedForwarded_method  == "na.locf") {
+    
+    # SO, NOT TO BREAK THINGS
+    index_orig_X__NAedApproxed <- index(X__NAedApproxed)
+    X__NAedApproxed <- zoo::na.locf(X__NAed[paste0(as.character(head(index(X__NAedApproxed),1)),'::',as.character(tail(index(X__NAedApproxed),1)))], na.rm = FALSE ) 
+    X__NAedApproxed <- xts::merge.xts(X__NAedApproxed, xts(NULL, index_orig_X__NAedApproxed))
+  }
+  
+  # NEW LOC
+  colnames(X__NAedApproxed) <- paste0(X_colname,'__NAedApproxed')
+
   # zoo::na.approx does not do backard/forward( tail ( non-leadings) ) approximations 
   #   that should have replaced NA there.
   # but TTR::SMA requires non-NAs in the tail( non-leadings)
@@ -523,12 +542,12 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
     # FRED ( approximately known )
     NAPM_PLUS          <- merge(MSTRIDX,NAPM         , join = "left")
     NAPM_PLUS <- xts_treat_na_all_methods_lagsma(
-      NAPM_PLUS, lagsma_change_width = 57) # peopls reacion time
+      NAPM_PLUS, lagsma_change_width = 57, NAedForwarded_method  = "na.locf") # peopls reacion time
     save("NAPM_PLUS", file = "NAPM_PLUS.RData")
     
     TCU_PLUS           <- merge(MSTRIDX,TCU          , join = "left")
     TCU_PLUS <- xts_treat_na_all_methods_lagsma(
-      TCU_PLUS, lagsma_change_width = 57) # peopls reacion time
+      TCU_PLUS, lagsma_change_width = 57, NAedForwarded_method  = "na.locf") # peopls reacion time
     save("TCU_PLUS", file = "TCU_PLUS.RData")
     
     # Market data ( volitile ( but exactly known ) )
@@ -537,7 +556,7 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
     colnames(GSPC_PLUS_CLOSE)  <- 'GSPC_CLOSE'
     
     GSPC_PLUS_CLOSE <- xts_treat_na_all_methods_lagsma(
-      GSPC_PLUS_CLOSE, lagsma_change_width = 270) # Faber 9 months SMA
+      GSPC_PLUS_CLOSE, lagsma_change_width = 270, NAedForwarded_method  = "na.locf") # Faber 9 months SMA
     save("GSPC_PLUS_CLOSE", file = "GSPC_PLUS_CLOSE.RData")
     
     # quantitive easing ( not volitle )
@@ -599,7 +618,7 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
   if( make_new_model == TRUE ) {
   
     # MAY!? want to put last
-    PERFECTWORLD <- WORLD[,!grepl(".*__NAed$", colnames(WORLD)),drop = FALSE]
+    PERFECTWORLD <- WORLD[,!grepl(".*__NAed$", colnames(WORLD)),drop = FALSE] # columns with 90% NAs are not useful in makng fits
     PERFECTWORLD <- na.trim( PERFECTWORLD )
     
     within( data.frame(cbind( timeindex = as.numeric(zoo::as.Date(index(PERFECTWORLD))), PERFECTWORLD ), stringsAsFactors = FALSE), {
@@ -789,7 +808,7 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
                                          )
                        , as.is = 'verbose')    # CONSTANT dat population size
     ),
-    EstimationTask(metrics=c("acc","tnr","trTime", "tsTime","totTime"),method=CV(nReps=1,nFolds=5))
+    EstimationTask(metrics=c("acc","tnr","trTime", "tsTime","totTime"),method=CV(nReps=1,nFolds=3))
   ))
   
   microbenchmark::microbenchmark( {
@@ -857,7 +876,7 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
                                          scales = "1:NROW(dat)", scalescolname = 'scalesrowid'),          #  CONSTANT dat sample size
                        type="slide", relearn.step=15)
     ),
-    EstimationTask(metrics=c("acc","tnr","trTime", "tsTime","totTime"),method=MonteCarlo(nReps=5,szTrain=0.5,szTest=0.25))
+    EstimationTask(metrics=c("acc","tnr","trTime", "tsTime","totTime"),method=MonteCarlo(nReps=3,szTrain=0.5,szTest=0.25))
   ) 
   
 
