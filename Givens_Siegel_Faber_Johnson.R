@@ -684,8 +684,15 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
   }
   
   bigdata <- PERFECTWORLDFACTOREDMODEL
+  
+  # KEEP # sometimes TESTING
+  # bigdata <- bigdata[(NROW(bigdata)-1000):NROW(bigdata),]
+  
   bigdata[,"scalesrowid"] <-  1:NROW(bigdata) # required for non MC scaling # optional(ignored) MC
-
+  
+  # smote TESTING - my memory EXPLODES when SENT through 'pars'
+  # bigdata <- smote(formula(bigdata), data = bigdata, perc.over = 2, k = 5, perc.under = 2) #defaults
+  
   # required for task@dataSource TO SEE
   # assign("bigdata", bigdata, envir = .GlobalEnv )
   
@@ -774,12 +781,13 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
   
   print(match.call())
   print(sessionInfo())
+  print("print(search())")
   print(search())
   
   print('print(str(bigdata))')
   print(str(bigdata))
-  print('print(Hmisc::describe(bigdata))')
-  print(Hmisc::describe(bigdata))
+  ## print('print(Hmisc::describe(bigdata))')
+  ## print(Hmisc::describe(bigdata))
   
   # WRONG : SO IGNORE # see my # issue # 5
   #   DO NOT USE: "tpr", "rec", "sens"
@@ -790,9 +798,27 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
   # 
   # https://en.wikipedia.org/wiki/Receiver_operating_characteristic
   
+  # require(doParallel)
+  # require(foreach)
+  # no_cores <- detectCores()
+  # require(parallel)
+  # myclust <- makeCluster(c("localhost","localhost"))
+  
+  ########################## NOTE: CLUSTER WORK NOT IMPLEMENTED YET #############################
+  ########### Error in e$fun(obj, substitute(ex), parent.frame(), e$data) : ##############################
+  ########### worker initialization failed: there is no package called 'me' ##############################
+  
+  iscluster <- FALSE
+  # iscluster <- TRUE
+  if(isTRUE(iscluster)) assign("bigdata",bigdata ,envir = .GlobalEnv) 
+                      # reomves error: Error in assign("bigdata", envir = .GlobalEnv) : argument "value" is missing, with no default
+  
+  # data = call("get",x = "bigdata", envir = environment())
+  # data = if(isTRUE(iscluster)) {bigdata} else {call("get",x = "bigdata", envir = environment())}
+  
     spExp1 <- substitute(performanceEstimation(
     # scalescolname is not part of the formula ( non-dynamic case ), so it will be removed ( consider instead "y ~ ." )
-    PredTask(formula(bigdata[,-NCOL(bigdata)]), data = call("get",x = "bigdata", envir = environment()), taskName = 'GSFJ', copy=TRUE),c(
+    PredTask(formula(bigdata[,-NCOL(bigdata)]),  data = if(isTRUE(iscluster)) {bigdata} else {call("get",x = "bigdata", envir = environment())}, taskName = 'GSFJ', copy=TRUE),c(
       workflowVariants(wf='standardWF',wfID="CVstandGBM",
                        learner="trainCaret", 
                        learner.pars=list(method="gbm", verbose = FALSE,
@@ -804,16 +830,21 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
                                                         #  , "data.frame(n.trees = 20000, interaction.depth = 18, shrinkage  = 0.0001, n.minobsinnode = 10)"
                                                         #  , "data.frame(n.trees = 20000, interaction.depth = 18, shrinkage  =  0.001, n.minobsinnode = 10)"
                                                            )
-                                         , scales = "rep(1,NROW(bigdata))", scalescolname = 'scalesrowid'
+                                         , scales = "seq(1,NROW(bigdata))", scalescolname = 'scalesrowid'
                                          )
                        , as.is = 'verbose')    # CONSTANT dat population size
     ),
     EstimationTask(metrics=c("acc","tnr","trTime", "tsTime","totTime"),method=CV(nReps=1,nFolds=3))
+    , cluster = if(isTRUE(iscluster)) {iscluster} else{ NULL }
+      
   ))
   
   microbenchmark::microbenchmark( {
     spExp1 <- eval(spExp1)
   } , times = 1, unit = 's' ) -> mres
+  
+  # stopCluster(myclust)
+  
   print("Performance . . . ")
   print(mres)
   
@@ -835,6 +866,14 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
   print('plot(spExp1)')
   plot(spExp1)
   print('print(summary(spExp1))')
+  
+  print("print(str(bigdata))")
+  print(str(bigdata))
+  print("print(levels(bigdata[[1]]))")
+  print(levels(bigdata[[1]]))
+  print("print(table(bigdata[[1]]))")
+  print(table(bigdata[[1]]))
+  
   print(summary(spExp1))
   # print('print(getScores(spExp1))')
   # print(getScores(spExp1)) # LATER: must be specific
@@ -845,8 +884,16 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
 #   sink(type="message")
 #   close(con)
   
+  # debug(EstimationTask)
   
-  return(invisible()) # NOT doing TIME FLOW TODAY: Too SLOW
+  debug(classificationMetrics)
+  
+  # return(invisible()) # NOT doing TIME FLOW TODAY: Too SLOW
+  
+  #################################################
+  ## NOT DONE YET #########
+  # MonteCarlo MAY HOT work for CLASSIFICATION
+  #####################################################
   
   # NOTE: ? workflowVariants # can send:  type=c("slide","grow")
   ## it assumes that it is a
@@ -859,28 +906,29 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
                        learner="trainCaret", 
                        learner.pars=list(method="gbm", 
                                          distribution = c('bernoulli'), 
-                                         tuneGridText  = "data.frame(n.trees = 10, interaction.depth = 2, shrinkage = 0.25, n.minobsinnode = 2)", 
+                                         tuneGridText  = "data.frame(n.trees = 2, interaction.depth = 18, shrinkage = 0.25, n.minobsinnode = 10)", 
                                          scales = "1:NROW(dat)", scalescolname = 'scalesrowid')),        # CONSTANT dat sample size
       workflowVariants(wf='timeseriesWF',wfID="MCgrowGBM",
                        learner="trainCaret", 
                        learner.pars=list(method="gbm", 
                                          distribution = c('bernoulli'), 
-                                         tuneGridText  = "data.frame(n.trees = 10, interaction.depth = 2, shrinkage = 0.25, n.minobsinnode = 2)", 
-                                         scales = "1:NROW(dat)", scalescolname = 'scalesrowid'),         #  VARIABLE(GROWING) dat sample size
-                       type="grow", relearn.step=15),
+                                         tuneGridText  = "data.frame(n.trees = 2, interaction.depth = 18, shrinkage = 0.25, n.minobsinnode = 10)", 
+                                         scales = "seq(1,NROW(dat))", scalescolname = 'scalesrowid'),         #  VARIABLE(GROWING) dat sample size
+                       type="grow", relearn.step=3650),
       workflowVariants(wf='timeseriesWF',wfID="MCslideGBM",
                        learner="trainCaret", 
                        learner.pars=list(method="gbm", 
                                          distribution = c('bernoulli'), 
-                                         tuneGridText  = "data.frame(n.trees = 10, interaction.depth = 2, shrinkage = 0.25, n.minobsinnode = 2)", 
+                                         tuneGridText  = "data.frame(n.trees = 2, interaction.depth = 18, shrinkage = 0.25, n.minobsinnode = 2)", 
                                          scales = "1:NROW(dat)", scalescolname = 'scalesrowid'),          #  CONSTANT dat sample size
-                       type="slide", relearn.step=15)
+                       type="slide", relearn.step=3650)
     ),
     EstimationTask(metrics=c("acc","tnr","trTime", "tsTime","totTime"),method=MonteCarlo(nReps=3,szTrain=0.5,szTest=0.25))
   ) 
   
 
-  
+  # undebug(EstimationTask)
+  undebug(classificationMetrics)
 
   print('print(taskNames(spExp2))')
   print(taskNames(spExp2))
@@ -894,6 +942,14 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
   print(rankWorkflows(spExp2))
   print('plot(spExp2)')
   plot(spExp2)
+  
+  print("print(str(bigdata))")
+  print(str(bigdata))
+  print("print(levels(bigdata[[1]]))")
+  print(levels(bigdata[[1]]))
+  print("print(table(bigdata[[1]]))")
+  print(table(bigdata[[1]]))
+  
   print('print(summary(spExp2))')
   print(summary(spExp2))
   # print('print(getScores(spExp2))')
