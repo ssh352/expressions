@@ -808,16 +808,23 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
   ########### Error in e$fun(obj, substitute(ex), parent.frame(), e$data) : ##############################
   ########### worker initialization failed: there is no package called 'me' ##############################
   
+  options(parallelMap.status ="NOTPARALLEL")
+  
   iscluster <- FALSE
   # iscluster <- TRUE
+  # options(parallelMap.status ="stopped")
+  
   if(isTRUE(iscluster)) assign("bigdata",bigdata ,envir = .GlobalEnv) 
                       # reomves error: Error in assign("bigdata", envir = .GlobalEnv) : argument "value" is missing, with no default
   
   # data = call("get",x = "bigdata", envir = environment())
   # data = if(isTRUE(iscluster)) {bigdata} else {call("get",x = "bigdata", envir = environment())}
   
+  # Accuracy(ACC) ( sum(true pos + true neg) / total_population )
+  # https://en.wikipedia.org/wiki/Receiver_operating_characteristic
+  
     spExp1 <- substitute(performanceEstimation(
-    # scalescolname is not part of the formula ( non-dynamic case ), so it will be removed ( consider instead "y ~ ." )
+    # scalescolname is not part of the formula ( non-dynamic case ), so it will be removed ( consider instead "y ~ ." )  # if I pass a 'call' object to 'data' then MUST BE copy=TRUE
     PredTask(formula(bigdata[,-NCOL(bigdata)]),  data = if(isTRUE(iscluster)) {bigdata} else {call("get",x = "bigdata", envir = environment())}, taskName = 'GSFJ', copy=TRUE),c(
       workflowVariants(wf='standardWF',wfID="CVstandGBM",
                        learner="trainCaret", 
@@ -830,11 +837,11 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
                                                         #  , "data.frame(n.trees = 20000, interaction.depth = 18, shrinkage  = 0.0001, n.minobsinnode = 10)"
                                                         #  , "data.frame(n.trees = 20000, interaction.depth = 18, shrinkage  =  0.001, n.minobsinnode = 10)"
                                                            )
-                                         , scales = "seq(1,NROW(bigdata))", scalescolname = 'scalesrowid'
-                                         )
-                       , as.is = 'verbose')    # CONSTANT dat population size
+                                         , scales = "ifelse(as.integer(bigdata[[1]]) ==  1L, 1, 90)", scalescolname = 'scalesrowid'
+                                         )        # "ifelse(as.integer(bigdata[[1]]) ==  1L, 500,1)" # "seq(1,NROW(bigdata))"
+                       , as.is = 'verbose')    # CONSTANT dat population size # , pre = c('smote')
     ),
-    EstimationTask(metrics=c("acc","tnr","trTime", "tsTime","totTime"),method=CV(nReps=1,nFolds=3))
+    EstimationTask(metrics=c("auc","acc","tpr","tnr","SharpTr","trTime", "tsTime","totTime"),method=CV(nReps=1,nFolds=3))
     , cluster = if(isTRUE(iscluster)) {iscluster} else{ NULL }
       
   ))
@@ -860,7 +867,7 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
   print('print(metricNames(spExp1))')
   print(metricNames(spExp1))
   print('print(topPerformers(spExp1, maxs=rep(TRUE,7)))')
-  print(topPerformers(spExp1, maxs=c(TRUE,TRUE,FALSE,FALSE,FALSE))) # needs to have the same size as the number of evaluation statistics
+  print(topPerformers(spExp1, maxs=c(TRUE,TRUE,TRUE,TRUE,TRUE,FALSE,FALSE,FALSE))) # needs to have the same size as the number of evaluation statistics
   print('print(rankWorkflows(spExp1))')
   print(rankWorkflows(spExp1))
   print('plot(spExp1)')
@@ -886,9 +893,9 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
   
   # debug(EstimationTask)
   
-  debug(classificationMetrics)
+  # debug(classificationMetrics)
   
-  # return(invisible()) # NOT doing TIME FLOW TODAY: Too SLOW
+  return(invisible()) # NOT doing TIME FLOW TODAY: Too SLOW
   
   #################################################
   ## NOT DONE YET #########
@@ -923,12 +930,12 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
                                          scales = "1:NROW(dat)", scalescolname = 'scalesrowid'),          #  CONSTANT dat sample size
                        type="slide", relearn.step=3650)
     ),
-    EstimationTask(metrics=c("acc","tnr","trTime", "tsTime","totTime"),method=MonteCarlo(nReps=3,szTrain=0.5,szTest=0.25))
+    EstimationTask(metrics=c("auc","acc","tpr","tnr","SharpTr","trTime", "tsTime","totTime"),method=MonteCarlo(nReps=3,szTrain=0.5,szTest=0.25))
   ) 
   
 
   # undebug(EstimationTask)
-  undebug(classificationMetrics)
+  # undebug(classificationMetrics)
 
   print('print(taskNames(spExp2))')
   print(taskNames(spExp2))
@@ -937,7 +944,7 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
   print('print(metricNames(spExp2))')
   print(metricNames(spExp2))
   print('print(topPerformers(spExp2, maxs=rep(TRUE,3)))')
-  print(topPerformers(spExp1, maxs=c(TRUE,TRUE,FALSE,FALSE,FALSE)))
+  print(topPerformers(spExp1, maxs=c(TRUE,TRUE,TRUE,TRUE,TRUE,FALSE,FALSE,FALSE)))
   print('print(rankWorkflows(spExp2))')
   print(rankWorkflows(spExp2))
   print('plot(spExp2)')
