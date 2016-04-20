@@ -454,9 +454,12 @@ xts_treat_na_all_methods_lagsma <- function(X, NAdelayed_max_width = 57, i_X_mic
 
 
 
-
-                                                                                                            # approx midpoint of QE2
-Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new_data, make_new_model = new_derived_data, final_date_str = "2012-11-02") {
+# should/HAVE/be # if 'ALLDATA_saved' < final_date_str, 
+#  then GOS out and GETS  (ALLDATA_saved + 1)_through_final_date_str ( SO I DO NOT 're-get' the ENTIRE data )
+#    DOES library(quandmod) HELP WITH THIS? )
+                                                                                                                         # train_end_date_str NOT USED YET
+                                                                                                                         # approx midpoint of QE2
+Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new_data, make_new_model = new_derived_data, train_end_date_str = "2012-11-02", final_date_str = as.character(zoo::as.Date(Sys.Date())), sink_output = FALSE) {  # OLD final_date_str = "2012-11-02"
   
   ops <- options()
   options(error = recover)
@@ -619,7 +622,7 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
   
     # MAY!? want to put last
     PERFECTWORLD <- WORLD[,!grepl(".*__NAed$", colnames(WORLD)),drop = FALSE] # columns with 90% NAs are not useful in makng fits
-    PERFECTWORLD <- na.trim( PERFECTWORLD )
+    # PERFECTWORLD <- na.trim( PERFECTWORLD ) ## too early # e.g. INTDSRUSM193N__NAdelayed CARRIED only 57 days
     
     within( data.frame(cbind( timeindex = as.numeric(zoo::as.Date(index(PERFECTWORLD))), PERFECTWORLD ), stringsAsFactors = FALSE), {
       
@@ -644,6 +647,7 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
       
     }) ->  PERFECTWORLDFACTORED
     
+    # just my columns of interest
     
     PERFECTWORLDFACTORED[, c(
       'GSPC_CLOSE__i_X_micro_change_isgain_f2',
@@ -652,7 +656,7 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
       'GSPC_CLOSE__isNA_flag_f2',
       'GSPC_CLOSE__NAedApproxed__sma2_above_lagsma270_f2',
       
-      'INTDSRUSM193N__NAdelayed',
+    # 'INTDSRUSM193N__NAdelayed',  #  NAs after 57 days ( __NAdelayed SHOULD HAVE BEEN Inf ALL of them: BUT *THIS* only CURR affected )
       'INTDSRUSM193N__isNA_flag_f2',
       'INTDSRUSM193N__NAedLOCF__slope_changed_f3',
       
@@ -673,6 +677,9 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
       
     ) ] -> PERFECTWORLDFACTOREDMODEL
     
+    # here
+    PERFECTWORLDFACTOREDMODEL <- na.trim( PERFECTWORLDFACTOREDMODEL )
+    
     save(PERFECTWORLDFACTOREDMODEL, file = "PERFECTWORLDFACTOREDMODEL.RData")
     
   }
@@ -683,8 +690,26 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
     
   }
   
-  bigdata <- PERFECTWORLDFACTOREDMODEL
+  # bigdata    <- PERFECTWORLDFACTOREDMODEL[paste0('::', train_end_date_str)]
   
+  # after convert an xts to a data.frame ( with mixed_types and/or factors) 
+  # cannot really_easily convert it back to an xts object
+  bigdata_rowindex <- as.numeric(zoo::as.Date(row.names(PERFECTWORLDFACTOREDMODEL))) <= as.numeric(zoo::as.Date(train_end_date_str))
+                       
+  # train   
+  bigdata    <- PERFECTWORLDFACTOREDMODEL[bigdata_rowindex,,drop = FALSE]
+  
+  # true_train ( the more recent ( except for the last observation ) )
+  newbigdata <- PERFECTWORLDFACTOREDMODEL[local({
+    tmp <- !bigdata_rowindex; tmp[length(tmp)] <- FALSE;  return(tmp)
+  }),, drop = FALSE]
+  
+  # predict_train ( the last observation )
+  newestbigdata <- PERFECTWORLDFACTOREDMODEL[local({
+    tmp <-  rep(FALSE,length(!bigdata_rowindex)); tmp[length(tmp)] <- TRUE;  return(tmp)
+  }),, drop = FALSE]
+  
+
   # KEEP # sometimes TESTING
   # bigdata <- bigdata[(NROW(bigdata)-1000):NROW(bigdata),]
   
@@ -749,8 +774,13 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
                                list(trControl=eval(parse(text=trControlText)))  )) 
       )
       returned <- eval(f)
-      # print("");print("Caret_Best_Tune...")
-      # print(returned$bestTune)
+      print("");print("Begin Caret_Best_Tune...")
+      print(returned$bestTune)
+      print("Begin weights")
+      print(table(dat[,1]))
+      print(table(samplescales))
+      print("End Weights")
+      print("...End Caret_Best_Tune...");print("");
       return(returned)
     }
     
@@ -775,9 +805,11 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
   # USE scales and scalesname I WOULD HAVE TO 
   # underweight ( put in fractions for FACTOR = 1, terrible : GSPC_CLOSE__i_X_micro_change_isgain_f2 )
   
-#   con <- file("Givens_Siegel_Faber_Johnson_SinkOutput.txt")
-#   sink(con) # type="output"
-#   sink(con, type="message")
+  if(sink_output == TRUE) {
+    con <- file("Givens_Siegel_Faber_Johnson_SinkOutput.txt")
+    sink(con) # type="output"
+    sink(con, type="message")
+  }
   
   print(match.call())
   print(sessionInfo())
@@ -808,88 +840,99 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
   ########### Error in e$fun(obj, substitute(ex), parent.frame(), e$data) : ##############################
   ########### worker initialization failed: there is no package called 'me' ##############################
   
-  options(parallelMap.status ="NOTPARALLEL")
+  scale_iterator <- 0
+  for(myscale in c(1/(100 - seq(0,95,5)), 1, seq(5,100,5))) {
+    scale_iterator <- scale_iterator + 1
+    
+    print(paste0("Beginning"," ","scale_iterator",":"," ",scale_iterator," ","myscale",":"," ",myscale))
+    
+    options(parallelMap.status ="NOTPARALLEL")
+    
+    iscluster <- FALSE
+    # iscluster <- TRUE
+    # options(parallelMap.status ="stopped")
+    
+    if(isTRUE(iscluster)) assign("bigdata",bigdata ,envir = .GlobalEnv) 
+                        # reomves error: Error in assign("bigdata", envir = .GlobalEnv) : argument "value" is missing, with no default
+    
+    # data = call("get",x = "bigdata", envir = environment())
+    # data = if(isTRUE(iscluster)) {bigdata} else {call("get",x = "bigdata", envir = environment())}
+    
+    # Accuracy(ACC) ( sum(true pos + true neg) / total_population )
+    # https://en.wikipedia.org/wiki/Receiver_operating_characteristic
+    
+      spExp1 <- substitute(performanceEstimation(
+      # scalescolname is not part of the formula ( non-dynamic case ), so it will be removed ( consider instead "y ~ ." )  # if I pass a 'call' object to 'data' then MUST BE copy=TRUE
+      PredTask(formula(bigdata[,-NCOL(bigdata)]),  data = if(isTRUE(iscluster)) {bigdata} else {call("get",x = "bigdata", envir = environment())}, taskName = 'GSFJ', copy=TRUE),c(
+        workflowVariants(wf='standardWF',wfID="CVstandGBM", # I believe that a custom workflow can only customize
+                         learner="trainCaret", 
+                         learner.pars=list(method="gbm", verbose = FALSE,
+                                           distribution  = c('bernoulli'), 
+                                           tuneGridText  = c(  # 5 trees per second
+                                                               "data.frame(n.trees = 2, interaction.depth = 17, shrinkage = 0.25, n.minobsinnode = 10)"
+                                                          #  , "data.frame(n.trees = 1000,  interaction.depth = 7 , shrinkage  = 0.0001, n.minobsinnode = 10)" 
+                                                          #  , "data.frame(n.trees = 20000, interaction.depth = 7 , shrinkage  =  0.001, n.minobsinnode = 10)"
+                                                          #  , "data.frame(n.trees = 20000, interaction.depth = 17, shrinkage  = 0.0001, n.minobsinnode = 10)"
+                                                          #  , "data.frame(n.trees = 20000, interaction.depth = 17, shrinkage  =  0.001, n.minobsinnode = 10)"
+                                                             )
+                                           , scales = paste0("ifelse(as.integer(bigdata[[1]]) ==  1L, ", myscale,", 1)"), scalescolname = 'scalesrowid'
+                                           )        # "ifelse(as.integer(bigdata[[1]]) ==  1L, 500,1)" # "seq(1,NROW(bigdata))" # "ifelse(as.integer(bigdata[[1]]) ==  1L, 1, 90)"
+                         , as.is = 'verbose')    # CONSTANT dat population size # , pre = c('smote')
+      ),
+      EstimationTask(metrics=c("auc","acc","tpr","tnr","SharpTr","trTime", "tsTime","totTime"),method=CV(nReps=1,nFolds=3))
+      , cluster = if(isTRUE(iscluster)) {iscluster} else{ NULL }
+        
+    ))
+    
+    microbenchmark::microbenchmark( {
+      spExp1 <- eval(spExp1)
+    } , times = 1, unit = 's' ) -> mres
+    
+    # stopCluster(myclust)
+    
+    print("Performance . . . ")
+    print(mres)
+    
+    # print('getWorkflow("trainCaret.v1",spExp1)')
+    # print(getWorkflow("trainCaret.v1",spExp1))
+    
+    
+    print('print(taskNames(spExp1))')
+    print(taskNames(spExp1))
+    print('print(workflowNames(spExp1))')
+    print(workflowNames(spExp1))
+    print('print(metricNames(spExp1))')
+    print(metricNames(spExp1))
+    print('print(topPerformers(spExp1, maxs=rep(TRUE,7)))')
+    print(topPerformers(spExp1, maxs=c(TRUE,TRUE,TRUE,TRUE,TRUE,FALSE,FALSE,FALSE))) # needs to have the same size as the number of evaluation statistics
+    print('print(rankWorkflows(spExp1))')
+    print(rankWorkflows(spExp1))
+    print('plot(spExp1)')
+    plot(spExp1)
+    print('print(summary(spExp1))')
+    
+    print("print(str(bigdata))")
+    print(str(bigdata))
+    print("print(levels(bigdata[[1]]))")
+    print(levels(bigdata[[1]]))
+    print("print(table(bigdata[[1]]))")
+    print(table(bigdata[[1]]))
+    
+    print(summary(spExp1))
+    # print('print(getScores(spExp1))')
+    # print(getScores(spExp1)) # LATER: must be specific
+    # print('print(estimationSummary(spExp1))')
+    # print(estimationSummary(spExp1))
+    
+    print(paste0("Ending"," ","scale_iterator",":"," ",scale_iterator," ","myscale",":"," ",myscale))
   
-  iscluster <- FALSE
-  # iscluster <- TRUE
-  # options(parallelMap.status ="stopped")
+  }
   
-  if(isTRUE(iscluster)) assign("bigdata",bigdata ,envir = .GlobalEnv) 
-                      # reomves error: Error in assign("bigdata", envir = .GlobalEnv) : argument "value" is missing, with no default
-  
-  # data = call("get",x = "bigdata", envir = environment())
-  # data = if(isTRUE(iscluster)) {bigdata} else {call("get",x = "bigdata", envir = environment())}
-  
-  # Accuracy(ACC) ( sum(true pos + true neg) / total_population )
-  # https://en.wikipedia.org/wiki/Receiver_operating_characteristic
-  
-    spExp1 <- substitute(performanceEstimation(
-    # scalescolname is not part of the formula ( non-dynamic case ), so it will be removed ( consider instead "y ~ ." )  # if I pass a 'call' object to 'data' then MUST BE copy=TRUE
-    PredTask(formula(bigdata[,-NCOL(bigdata)]),  data = if(isTRUE(iscluster)) {bigdata} else {call("get",x = "bigdata", envir = environment())}, taskName = 'GSFJ', copy=TRUE),c(
-      workflowVariants(wf='standardWF',wfID="CVstandGBM",
-                       learner="trainCaret", 
-                       learner.pars=list(method="gbm", verbose = FALSE,
-                                         distribution  = c('bernoulli'), 
-                                         tuneGridText  = c(  # 5 trees per second
-                                                             "data.frame(n.trees = 2, interaction.depth = 18, shrinkage = 0.25, n.minobsinnode = 10)"
-                                                        #  , "data.frame(n.trees = 1000,  interaction.depth = 7 , shrinkage  = 0.0001, n.minobsinnode = 10)" 
-                                                        #  , "data.frame(n.trees = 20000, interaction.depth = 7 , shrinkage  =  0.001, n.minobsinnode = 10)"
-                                                        #  , "data.frame(n.trees = 20000, interaction.depth = 18, shrinkage  = 0.0001, n.minobsinnode = 10)"
-                                                        #  , "data.frame(n.trees = 20000, interaction.depth = 18, shrinkage  =  0.001, n.minobsinnode = 10)"
-                                                           )
-                                         , scales = "ifelse(as.integer(bigdata[[1]]) ==  1L, 1, 90)", scalescolname = 'scalesrowid'
-                                         )        # "ifelse(as.integer(bigdata[[1]]) ==  1L, 500,1)" # "seq(1,NROW(bigdata))"
-                       , as.is = 'verbose')    # CONSTANT dat population size # , pre = c('smote')
-    ),
-    EstimationTask(metrics=c("auc","acc","tpr","tnr","SharpTr","trTime", "tsTime","totTime"),method=CV(nReps=1,nFolds=3))
-    , cluster = if(isTRUE(iscluster)) {iscluster} else{ NULL }
-      
-  ))
-  
-  microbenchmark::microbenchmark( {
-    spExp1 <- eval(spExp1)
-  } , times = 1, unit = 's' ) -> mres
-  
-  # stopCluster(myclust)
-  
-  print("Performance . . . ")
-  print(mres)
-  
-  
-  # print('getWorkflow("trainCaret.v1",spExp1)')
-  # print(getWorkflow("trainCaret.v1",spExp1))
-  
-  
-  print('print(taskNames(spExp1))')
-  print(taskNames(spExp1))
-  print('print(workflowNames(spExp1))')
-  print(workflowNames(spExp1))
-  print('print(metricNames(spExp1))')
-  print(metricNames(spExp1))
-  print('print(topPerformers(spExp1, maxs=rep(TRUE,7)))')
-  print(topPerformers(spExp1, maxs=c(TRUE,TRUE,TRUE,TRUE,TRUE,FALSE,FALSE,FALSE))) # needs to have the same size as the number of evaluation statistics
-  print('print(rankWorkflows(spExp1))')
-  print(rankWorkflows(spExp1))
-  print('plot(spExp1)')
-  plot(spExp1)
-  print('print(summary(spExp1))')
-  
-  print("print(str(bigdata))")
-  print(str(bigdata))
-  print("print(levels(bigdata[[1]]))")
-  print(levels(bigdata[[1]]))
-  print("print(table(bigdata[[1]]))")
-  print(table(bigdata[[1]]))
-  
-  print(summary(spExp1))
-  # print('print(getScores(spExp1))')
-  # print(getScores(spExp1)) # LATER: must be specific
-  # print('print(estimationSummary(spExp1))')
-  # print(estimationSummary(spExp1))
-  
-#   sink()
-#   sink(type="message")
-#   close(con)
+  if(sink_output == TRUE) {
+    sink()
+    sink(type="message")
+    close(con)
+  }
   
   # debug(EstimationTask)
   
@@ -913,20 +956,20 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
                        learner="trainCaret", 
                        learner.pars=list(method="gbm", 
                                          distribution = c('bernoulli'), 
-                                         tuneGridText  = "data.frame(n.trees = 2, interaction.depth = 18, shrinkage = 0.25, n.minobsinnode = 10)", 
+                                         tuneGridText  = "data.frame(n.trees = 2, interaction.depth = 17, shrinkage = 0.25, n.minobsinnode = 10)", 
                                          scales = "1:NROW(dat)", scalescolname = 'scalesrowid')),        # CONSTANT dat sample size
       workflowVariants(wf='timeseriesWF',wfID="MCgrowGBM",
                        learner="trainCaret", 
                        learner.pars=list(method="gbm", 
                                          distribution = c('bernoulli'), 
-                                         tuneGridText  = "data.frame(n.trees = 2, interaction.depth = 18, shrinkage = 0.25, n.minobsinnode = 10)", 
+                                         tuneGridText  = "data.frame(n.trees = 2, interaction.depth = 17, shrinkage = 0.25, n.minobsinnode = 10)", 
                                          scales = "seq(1,NROW(dat))", scalescolname = 'scalesrowid'),         #  VARIABLE(GROWING) dat sample size
                        type="grow", relearn.step=3650),
       workflowVariants(wf='timeseriesWF',wfID="MCslideGBM",
                        learner="trainCaret", 
                        learner.pars=list(method="gbm", 
                                          distribution = c('bernoulli'), 
-                                         tuneGridText  = "data.frame(n.trees = 2, interaction.depth = 18, shrinkage = 0.25, n.minobsinnode = 2)", 
+                                         tuneGridText  = "data.frame(n.trees = 2, interaction.depth = 17, shrinkage = 0.25, n.minobsinnode = 2)", 
                                          scales = "1:NROW(dat)", scalescolname = 'scalesrowid'),          #  CONSTANT dat sample size
                        type="slide", relearn.step=3650)
     ),
@@ -1035,20 +1078,83 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
   
   options(ops)
   
+  
+  #######  BEGIN VERIFICATION of tpr: development branch ( TORGo development BRANCH April 2016 ) ######
+  ## evaluationMetrics.R performanceEstimation #
+  
+  ## as.matrix # F#UP#ism # trues(reality) is verticle # AND Torgos Development BRANCH Code Seems Right
+  ##                        preds(mod_res) is horizontal
+  
+  #   cm <- as.matrix(table(preds,trues))
+  #   
+  #   Browse[2]> cm
+  #   trues
+  #   preds      terrible great
+  #   terrible      564    15
+  #   great        3006  1977
+  #   
+  #   Browse[2]> sum((as.integer(trues) == 1))
+  #   [1] 3570
+  #   Browse[2]> sum((as.integer(trues) == 2))
+  #   [1] 1992
+  #   Browse[2]> sum((as.integer(preds) == 1))
+  #   [1] 579
+  #   Browse[2]> sum((as.integer(preds) == 2))
+  #   [1] 4983
+  #   Browse[2]> 
+  #     
+  #   Browse[2]> cm[posClass,posClass]
+  #   [1] 564
+  #   Browse[2]> sum(cm[,posClass])
+  #   [1] 3570
+  #   Browse[2]> cm[posClass,posClass] / sum(cm[,posClass]) # tpr
+  #   [1] 0.1579832
+  #   Browse[2]> 
+  #     
+  #   Browse[2]> cm[negClass,negClass]
+  #   [1] 1977
+  #   Browse[2]> sum(cm[,negClass])
+  #   [1] 1992
+  #   Browse[2]> cm[negClass,negClass] / sum(cm[,negClass]) # tnr
+  #   [1] 0.9924699
+  #   Browse[2]> 
+  #     
+  #   Browse[2]> sum((as.integer(trues) == 1) & (as.integer(preds) == 1)) 
+  #   [1] 564
+  #   
+  #   Browse[2]> sum((as.integer(trues) == 1) & (as.integer(preds) == 1)) +  sum((as.integer(trues) == 1) & (as.integer(preds) == 2))
+  #   [1] 3570
+  #   
+  #   # tpr #   %   positve predictions  / given truly positive
+  #   Browse[2]> 564 / 3570
+  #   [1] 0.1579832
+  
+  ## evaluationMetrics.R performanceEstimation #
+  #######  END VERIFICATION of tpr: development branch ( TORGo development BRANCH April 2016 ) ######
+  
   return(1)
   
 }
 # 
 
-
+# devtools::load_all("./performanceEstimation-develop_ParMap_windows_socket")
 # rm(list = ls(envir = .GlobalEnv), envir = .GlobalEnv)
 # debugSource(paste0(getwd(),'/','Givens_Siegel_Faber_Johnson.R'))
 # Givens_Siegel_Faber_Johnson()
-##  Givens_Siegel_Faber_Johnson(new_data = TRUE, final_date_str = as.character( Sys.Date()))
+# Givens_Siegel_Faber_Johnson(sink_output = TRUE)
+##  Givens_Siegel_Faber_Johnson(new_data = TRUE, final_date_str = as.character( Sys.Date() - 1)) # na.trim REMOVES anyways
+## Proper run ( at night AFTER the GSPC close is KNOWN )
+##  Givens_Siegel_Faber_Johnson(new_data = TRUE, final_date_str = as.character( Sys.Date() - 0))
 # Givens_Siegel_Faber_Johnson(new_data = TRUE, new_derived_data = TRUE)
 # Givens_Siegel_Faber_Johnson(                 new_derived_data = TRUE ) 
 # Givens_Siegel_Faber_Johnson(                                         make_new_model = TRUE)
 
+# Full system test ( not needed TOO often )
+# devtools::load_all("./performanceEstimation-develop_ParMap_windows_socket")
+# Givens_Siegel_Faber_Johnson(new_data = TRUE, sink_output = TRUE)
+
 #  LEFT_OFF: dynamic: tuneGridText # NEED vector elements # SEE hotmail
-#  [NA]: workflowVariants(varsRootName) [NA] - ONLY IF NOT USING: "standardWF" | "timeseriesWF"
+#  [NA]: workflowVariants(varsRootName) [NA] - ONLY IF NOT USING: "standardWF" | "timeseriesWF"  
+#
+# 
 
