@@ -468,6 +468,7 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
   require(TTR)
   require(quantmod)
   require(performanceEstimation) # WILL dynmically load: require(gbm)
+  require(caret) # prefer S3 on predict(class(train))
   # caret           called by caret::
   # microbenchmark called by microbenchmark::microbenchmark
   
@@ -677,7 +678,25 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
       
     ) ] -> PERFECTWORLDFACTOREDMODEL
     
-    # here
+    # off by 1 day 
+    # do not have the *_micro_change_* of TODAY: ( TOMORROW - TODAY ) / TODAY )
+    #  largest reason ( but may not be only
+    #     still 30 minutes after the market closes, MAY not have the GSPC close 
+    # may be better to run this in the morning
+    #
+    # bigdata and new*bigdata may be should be separated since *_micro_change_* is not needed for prediction
+    # however ( *_micro_change_* is needed for evalution ( v.s. the market ) )
+    
+    # full run AND
+    # final_date_str = as.character(zoo::as.Date(Sys.Date())
+    # seen 7:50 p.m. Central Time ( todays ^GSPC Close ) 
+    # but Tommorrows Date shows up there # SEEN 8:07 p.m. Central Time # Wed # April 20, 2016
+    # Browse[2]> zoo::as.Date(Sys.Date()) [1] "2016-04-21" 
+    #   ( but NOT full DATA )
+    #     # GSPC_CLOSE__i_X_micro_change_isgain_f2 IS NULL # 2016-04-21 # not happened yet # SO this record will get trimmed
+    #      # so trimmed back to today's date
+    
+    # here ( for now )
     PERFECTWORLDFACTOREDMODEL <- na.trim( PERFECTWORLDFACTOREDMODEL )
     
     save(PERFECTWORLDFACTOREDMODEL, file = "PERFECTWORLDFACTOREDMODEL.RData")
@@ -715,6 +734,8 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
   
   bigdata[,"scalesrowid"] <-  1:NROW(bigdata) # required for non MC scaling # optional(ignored) MC
   
+  # NOTE: INTERNAL smote MOST? LIKELY? NOT WORK with scales
+  # OUTSIDE smote MAY? WORK? # LESS LIKELY TO WORK if DATA is ORDER dependent and/or DUPLICATE dates 'do not make sense'
   # smote TESTING - my memory EXPLODES when SENT through 'pars'
   # bigdata <- smote(formula(bigdata), data = bigdata, perc.over = 2, k = 5, perc.under = 2) #defaults
   
@@ -840,8 +861,17 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
   ########### Error in e$fun(obj, substitute(ex), parent.frame(), e$data) : ##############################
   ########### worker initialization failed: there is no package called 'me' ##############################
   
+  if(!exists("spExp1List_tasks"))     spExp1List_tasks     <- NULL
+  if(!exists("spExp1List_workflows")) spExp1List_workflows <- NULL
+  if(!exists("spExp1List_metrics"))   spExp1List_metrics   <- NULL
+  
   scale_iterator <- 0
-  for(myscale in c(1/(100 - seq(0,95,5)), 1, seq(5,100,5))) {
+  myscales <- c(1/(100 - seq(0,95,5)), 1, seq(5,100,5))
+  # ANDRE - TEMPORARY OVERRIDE
+  # myscales <- c(100) # c(100, 0.01)
+  myscales <- c(0.002,0.001)
+  # ANDRE - TEMPORARY OVERRIDE
+  for(myscale in myscales) {
     scale_iterator <- scale_iterator + 1
     
     print(paste0("Beginning"," ","scale_iterator",":"," ",scale_iterator," ","myscale",":"," ",myscale))
@@ -863,13 +893,14 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
     
       spExp1 <- substitute(performanceEstimation(
       # scalescolname is not part of the formula ( non-dynamic case ), so it will be removed ( consider instead "y ~ ." )  # if I pass a 'call' object to 'data' then MUST BE copy=TRUE
-      PredTask(formula(bigdata[,-NCOL(bigdata)]),  data = if(isTRUE(iscluster)) {bigdata} else {call("get",x = "bigdata", envir = environment())}, taskName = 'GSFJ', copy=TRUE),c(
-        workflowVariants(wf='standardWF',wfID="CVstandGBM", # I believe that a custom workflow can only customize
-                         learner="trainCaret", 
+      PredTask(formula(bigdata[,-NCOL(bigdata)]),  data = if(isTRUE(iscluster)) {bigdata} else {call("get",x = "bigdata", envir = environment())}, taskName = 'GSFJDatTask', copy=TRUE),c(
+        workflowVariants(wf='standardWF', wfID="CVstandGBMwfID", # I believe that a custom workflow can only customize
+                         learner="trainCaret", .fullOutput = TRUE,
                          learner.pars=list(method="gbm", verbose = FALSE,
                                            distribution  = c('bernoulli'), 
                                            tuneGridText  = c(  # 5 trees per second
-                                                               "data.frame(n.trees = 2, interaction.depth = 17, shrinkage = 0.25, n.minobsinnode = 10)"
+                                                               "data.frame(n.trees = 2, interaction.depth = 30, shrinkage = 0.50, n.minobsinnode = 20)" # COMMON
+                                                          #    "data.frame(n.trees = 2, interaction.depth = 17, shrinkage = 0.25, n.minobsinnode = 10)" # COMMON
                                                           #  , "data.frame(n.trees = 1000,  interaction.depth = 7 , shrinkage  = 0.0001, n.minobsinnode = 10)" 
                                                           #  , "data.frame(n.trees = 20000, interaction.depth = 7 , shrinkage  =  0.001, n.minobsinnode = 10)"
                                                           #  , "data.frame(n.trees = 20000, interaction.depth = 17, shrinkage  = 0.0001, n.minobsinnode = 10)"
@@ -877,7 +908,7 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
                                                              )
                                            , scales = paste0("ifelse(as.integer(bigdata[[1]]) ==  1L, ", myscale,", 1)"), scalescolname = 'scalesrowid'
                                            )        # "ifelse(as.integer(bigdata[[1]]) ==  1L, 500,1)" # "seq(1,NROW(bigdata))" # "ifelse(as.integer(bigdata[[1]]) ==  1L, 1, 90)"
-                         , as.is = 'verbose')    # CONSTANT dat population size # , pre = c('smote')
+                         , as.is = 'verbose', varsRootName = "CVstandGBM_vars")    # CONSTANT dat population size # , pre = c('smote')
       ),
       EstimationTask(metrics=c("auc","acc","tpr","tnr","SharpTr","trTime", "tsTime","totTime"),method=CV(nReps=1,nFolds=3))
       , cluster = if(isTRUE(iscluster)) {iscluster} else{ NULL }
@@ -893,6 +924,14 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
     print("Performance . . . ")
     print(mres)
     
+    # seems only way to combine and S4 object into a 'collection'.  c() and append() do not (directly) work
+    #  some 'qualities' would be lost
+    spExp1List_tasks     <- if (is.null(spExp1List_tasks))     spExp1 else mergeEstimationRes(spExp1List_tasks,    spExp1, by="tasks") # default
+    spExp1List_workflows <- if (is.null(spExp1List_workflows)) spExp1 else mergeEstimationRes(spExp1List_workflows,spExp1, by="workflows")
+    spExp1List_metrics   <- if (is.null(spExp1List_metrics))   spExp1 else mergeEstimationRes(spExp1List_metrics,  spExp1, by="metrics")
+    
+
+  
     # print('getWorkflow("trainCaret.v1",spExp1)')
     # print(getWorkflow("trainCaret.v1",spExp1))
     
@@ -910,6 +949,7 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
     print('plot(spExp1)')
     plot(spExp1)
     print('print(summary(spExp1))')
+    print(summary(spExp1))
     
     print("print(str(bigdata))")
     print(str(bigdata))
@@ -918,7 +958,6 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
     print("print(table(bigdata[[1]]))")
     print(table(bigdata[[1]]))
     
-    print(summary(spExp1))
     # print('print(getScores(spExp1))')
     # print(getScores(spExp1)) # LATER: must be specific
     # print('print(estimationSummary(spExp1))')
@@ -928,11 +967,122 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
   
   }
   
+  print('')
+  print("Begin grand results: spExp1List_tasks")
+  print('print(taskNames(spExp1List_tasks))')
+  print(taskNames(spExp1List_tasks))
+  print('print(workflowNames(spExp1List_tasks))')
+  print(workflowNames(spExp1List_tasks))
+  print('print(metricNames(spExp1List_tasks))')
+  print(metricNames(spExp1List_tasks))
+  print('print(topPerformers(spExp1List_tasks, maxs=rep(TRUE,3)))')
+  print(topPerformers(spExp1List_tasks, maxs=c(TRUE,TRUE,TRUE,TRUE,TRUE,FALSE,FALSE,FALSE)))
+  print('print(rankWorkflows(spExp1List_tasks))')
+  print(rankWorkflows(spExp1List_tasks))
+  print('plot(spExp1List_tasks)')
+  plot(spExp1List_tasks)
+  print('print(summary(spExp1List_tasks))')
+  print(summary(spExp1List_tasks))
+  print("End grand results: spExp1List_tasks")
+  print('')
+  
+  print('')
+  print("Begin grand results: spExp1List_workflows")
+  print('print(taskNames(spExp1List_workflows))')
+  print(taskNames(spExp1List_workflows))
+  print('print(workflowNames(spExp1List_workflows))')
+  print(workflowNames(spExp1List_workflows))
+  print('print(metricNames(spExp1List_workflows))')
+  print(metricNames(spExp1List_workflows))
+  print('print(topPerformers(spExp1List_workflows, maxs=rep(TRUE,3)))')
+  print(topPerformers(spExp1List_workflows, maxs=c(TRUE,TRUE,TRUE,TRUE,TRUE,FALSE,FALSE,FALSE)))
+  print('print(rankWorkflows(spExp1List_workflows))')
+  print(rankWorkflows(spExp1List_workflows))
+  print('plot(spExp1List_workflows)')
+  plot(spExp1List_workflows)
+  print('print(summary(spExp1List_workflows))')
+  print(summary(spExp1List_workflows))
+  print("End grand results: spExp1List_workflows")
+  print('')
+  
+  print('')
+  print("Begin grand results: spExp1List_metrics")
+  print('print(taskNames(spExp1List_metrics))')
+  print(taskNames(spExp1List_metrics))
+  print('print(workflowNames(spExp1List_metrics))')
+  print(workflowNames(spExp1List_metrics))
+  print('print(metricNames(spExp1List_metrics))')
+  print(metricNames(spExp1List_metrics))
+  print('print(topPerformers(spExp1List_metrics, maxs=rep(TRUE,3)))')
+  print(topPerformers(spExp1, maxs=c(TRUE,TRUE,TRUE,TRUE,TRUE,FALSE,FALSE,FALSE)))
+  print('print(rankWorkflows(spExp1List_metrics))')
+  print(rankWorkflows(spExp1List_metrics))
+  print('plot(spExp1List_metrics)')
+  plot(spExp1List_metrics)
+  print('print(summary(spExp1List_metrics))')
+  print(summary(spExp1List_metrics))
+  print("End grand results: spExp1List_metrics")
+  print('')
+  
+  # if .fullOutput == TRUE in standardWF, then I may be able to collect MORE informtion
+  #  I may? not have? to rerun through caret::train to get a predictor(Tune)
+  #   COME BACK LATER
+  
+  tuneGrid_data_frame <- data.frame(n.trees = 2, interaction.depth = 30, shrinkage = 0.50, n.minobsinnode = 20)
+  print('')                       # n.trees = 2, interaction.depth = 30, shrinkage = 0.50, n.minobsinnode = 20 # PUT 94%
+  print('** recent Tune **')
+  print(tuneGrid_data_frame)
+  print('')
+  print('** recent train scales text **')
+  train_scales_text <- "ifelse(as.integer(bigdata[[1]]) ==   1L, 0.001, 1)" # # PUT  1L, 0.001, 1 # PUT 94%
+  print(train_scales_text)
+
+  # distribution = "bernoulli" # gbm::gbm # default and detected
+  caretTune <- train(form=formula(bigdata[,-NCOL(bigdata)]), data = bigdata[,-NCOL(bigdata)], 
+                     method    = "gbm",
+                     tuneGrid  = tuneGrid_data_frame,
+                     trControl = trainControl(method="none"),  
+                     weights   = eval(parse(text=train_scales_text))  )
+  
+  # default: type = "raw" # other type = "prob"
+  caret_true_train_predictions   <- predict(caretTune, newdata = newbigdata)
+  
+  print('')
+  print('** recent time actuals and predictions **')
+  print(tail(data.frame(newbigdta = newbigdata[[1]], caret_true_train_predictions, row.names = row.names(newbigdata)), 60))
+  print('')
+  
+  print('** recent time actuals and predictions **')
+  print(t(as.matrix(table(data.frame(newbigdta = newbigdata[[1]], caret_true_train_predictions)))))
+  print('')
+  
+  YEARRECENT <- head(data.frame(newbigdta = newbigdata[[1]], caret_true_train_predictions, row.names = row.names(newbigdata)),365)
+  print(paste0('true train YEARRECENT: ', NROW(YEARRECENT),' days'))
+  print(t(as.matrix(table((YEARRECENT)))))
+  
+  # Browse[2]> RECENT <- data.frame(newbigdta = newbigdata[[1]], caret_true_train_predictions, row.names = row.names(newbigdata))
+  # Browse[2]> sum(with(RECENT, { (newbigdta == caret_true_train_predictions) & ( caret_true_train_predictions == "terrible" ) } ))
+  # [1] 163
+  # Browse[2]> sum(with(RECENT, { (newbigdta != caret_true_train_predictions) & ( caret_true_train_predictions == "terrible" ) } ))
+  # [1] 3
+  
+  #                             newbigdta
+  # caret_true_train_predictions terrible great
+  #                    terrible      163     3
+  #                    great         627   471
+  
+  caret_predict_train_prediction <- predict(caretTune, newdata = newestbigdata)
+  
+  print("** today/tomorrow's prediction **")
+  print(tail(data.frame(newestbigdta = newestbigdata[[1]], caret_predict_train_prediction, row.names = row.names(newestbigdata))))
+  print('')
+  
   if(sink_output == TRUE) {
     sink()
     sink(type="message")
     close(con)
   }
+  
   
   # debug(EstimationTask)
   
@@ -953,20 +1103,20 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
     # scalescolname is not part of the formula ( non-dynamic case ), so it will be removed ( consider instead "y ~ ." )
     PredTask(formula(bigdata[,-NCOL(bigdata)]), data = call("get",x = "bigdata", envir = environment()), taskName = 'GSFJ', copy=TRUE),c(
       workflowVariants(wf='standardWF',wfID="MCstandGBM", 
-                       learner="trainCaret", 
+                       learner="trainCaret", .fullOutput = TRUE,
                        learner.pars=list(method="gbm", 
                                          distribution = c('bernoulli'), 
                                          tuneGridText  = "data.frame(n.trees = 2, interaction.depth = 17, shrinkage = 0.25, n.minobsinnode = 10)", 
                                          scales = "1:NROW(dat)", scalescolname = 'scalesrowid')),        # CONSTANT dat sample size
       workflowVariants(wf='timeseriesWF',wfID="MCgrowGBM",
-                       learner="trainCaret", 
+                       learner="trainCaret", .fullOutput = TRUE,
                        learner.pars=list(method="gbm", 
                                          distribution = c('bernoulli'), 
                                          tuneGridText  = "data.frame(n.trees = 2, interaction.depth = 17, shrinkage = 0.25, n.minobsinnode = 10)", 
                                          scales = "seq(1,NROW(dat))", scalescolname = 'scalesrowid'),         #  VARIABLE(GROWING) dat sample size
                        type="grow", relearn.step=3650),
       workflowVariants(wf='timeseriesWF',wfID="MCslideGBM",
-                       learner="trainCaret", 
+                       learner="trainCaret", .fullOutput = TRUE,
                        learner.pars=list(method="gbm", 
                                          distribution = c('bernoulli'), 
                                          tuneGridText  = "data.frame(n.trees = 2, interaction.depth = 17, shrinkage = 0.25, n.minobsinnode = 2)", 
@@ -992,6 +1142,8 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
   print(rankWorkflows(spExp2))
   print('plot(spExp2)')
   plot(spExp2)
+  print('print(summary(spExp2))')
+  print(summary(spExp2))
   
   print("print(str(bigdata))")
   print(str(bigdata))
@@ -1000,8 +1152,7 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
   print("print(table(bigdata[[1]]))")
   print(table(bigdata[[1]]))
   
-  print('print(summary(spExp2))')
-  print(summary(spExp2))
+
   # print('print(getScores(spExp2))')
   # print(getScores(spExp2)) # LATER: must be specific
   # print('print(estimationSummary(spExp2))')
@@ -1132,6 +1283,43 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
   ## evaluationMetrics.R performanceEstimation #
   #######  END VERIFICATION of tpr: development branch ( TORGo development BRANCH April 2016 ) ######
   
+  ## workFlows.R # standardWF #
+  
+  #   Browse[2]> table(train[[1]])
+  #   
+  #   terrible    great 
+  #   7088     4037 
+  #   
+  #   Browse[2]> table(test[[1]])
+  #   
+  #   terrible    great 
+  #   3570     1992 
+  #   
+  #   Browse[2]> table(ps)
+  #   ps
+  #   terrible    great 
+  #   5562        0 
+  #   Browse[2]> 
+  #     
+  #     # tpr 100%
+  #     
+  #     Browse[2]> sum((as.integer(test[[1]]) == 1) & (as.integer(ps) == 1))
+  #   [1] 3570
+  #   
+  #   Browse[2]> sum((as.integer(test[[1]]) == 1) & (as.integer(ps) == 1)) + sum((as.integer(test[[1]]) == 1) & (as.integer(ps) == 2))
+  #   [1] 3570
+  #   
+  #   # tnr 0% # SO tpr/tnr # WILL NOT WORK # BETTER STICK WITH ACCURACY "acc" or ANDRE: "auc"
+  #   # tnr MEANS: TRULY GET 'NEGATIVE' IF I HAD CHOSEN 'NEGATIVE' 
+  #   # ( I CAN NOT SWITCH TO 'POSITIVE' IF I HAD CHOSE NEGATIVE : NO WORK )
+  #   
+  #   Browse[2]> sum((as.integer(test[[1]]) == 2) & (as.integer(ps) == 2))
+  #   [1] 0
+  #   
+  #   Browse[2]> sum((as.integer(test[[1]]) == 2) & (as.integer(ps) == 1)) + sum((as.integer(test[[1]]) == 2) & (as.integer(ps) == 2))
+  #   [1] 1992
+  
+  
   return(1)
   
 }
@@ -1152,9 +1340,34 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
 # Full system test ( not needed TOO often )
 # devtools::load_all("./performanceEstimation-develop_ParMap_windows_socket")
 # Givens_Siegel_Faber_Johnson(new_data = TRUE, sink_output = TRUE)
+#
+# Givens_Siegel_Faber_Johnson(make_new_model = TRUE)
 
 #  LEFT_OFF: dynamic: tuneGridText # NEED vector elements # SEE hotmail
 #  [NA]: workflowVariants(varsRootName) [NA] - ONLY IF NOT USING: "standardWF" | "timeseriesWF"  
 #
+
+# varsRootName DOES WORK # BUT the CALL is position dependent
+# workflowVariants(wf,...,varsRootName,as.is=NULL)
 # 
+# Browse[2]> str(list(...))
+# List of 4
+# $ wfID        : chr "CVstandGBM"
+# $ learner     : chr "trainCaret"
+# $ .fullOutput : logi TRUE
+# $ learner.pars:List of 6
+# ..$ method       : chr "gbm"
+# ..$ verbose      : logi FALSE
+# ..$ distribution : chr "bernoulli"
+# ..$ tuneGridText : chr "data.frame(n.trees = 2, interaction.depth = 17, shrinkage = 0.25, n.minobsinnode = 10)"
+# ..$ scales       : chr "ifelse(as.integer(bigdata[[1]]) ==  1L, 1, 1)"
+# ..$ scalescolname: chr "scalesrowid"
+# Browse[2]> missing(varsRootName)
+# 
+# # working call   
+# workflowVariants(wf="standardWF",<stuff:wfID="CVstandGBM",etc>,varsRootName="AlphaWFvars",as.is="verbose")
+
+
+
+
 
