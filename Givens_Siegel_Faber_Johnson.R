@@ -409,8 +409,77 @@ xts_treat_na_all_methods_lagsma <- function(X, NAdelayed_max_width = 57, i_X_mic
   #   so I just have to estimate them.
   X__NAedApproxed <- zoo::na.locf(X__NAedApproxed,                                 na.rm = FALSE )
   
+  i_X_micro_change_adjusted <- function(X__NAedApproxed, i_X_micro_change) {
+    
+    # browser( expr = { X_colname == "GSPC_CLOSE" } )
+    
+    X__future_min__Dates <- zoo::as.Date(index(X__NAedApproxed)) + i_X_micro_change # FUTURE
+    
+    !(projectDate(X__future_min__Dates+0)$bizday %in% c(FALSE)) -> X__future_min__Dates_TF_NotWKND_NotHOLIDAY_i
+    
+    !(projectDate(X__future_min__Dates+1)$bizday %in% c(FALSE)) -> X__future_min__Dates_TF_NotWKND_NotHOLIDAY_i_1
+    
+    !(projectDate(X__future_min__Dates+2)$bizday %in% c(FALSE)) -> X__future_min__Dates_TF_NotWKND_NotHOLIDAY_i_2
+    
+    !(projectDate(X__future_min__Dates+3)$bizday %in% c(FALSE)) -> X__future_min__Dates_TF_NotWKND_NotHOLIDAY_i_3
+    
+    cbind(X__future_min__Dates_TF_NotWKND_NotHOLIDAY_i,
+          X__future_min__Dates_TF_NotWKND_NotHOLIDAY_i_1,
+          X__future_min__Dates_TF_NotWKND_NotHOLIDAY_i_2,
+          X__future_min__Dates_TF_NotWKND_NotHOLIDAY_i_3) -> X__future_min__Dates_TF_NotWKND_NotHOLIDAY
+    
+    # since the largetst value in a row can be FALSE, I would prefer to return NA for the row
+    # if any NA exists in a row , max.col will return 'NA for the row' # ( OTHERS: WOULD HAVE BEEN BETTER )
+    # SO preprocess
+
+    t(apply(  X__future_min__Dates_TF_NotWKND_NotHOLIDAY, 1, function(x) { 
+      y <- if(all(!x)) { rep(NA,NROW(x)) } else { x } 
+      return(y)
+    })) -> X__future_min__Dates_TF_NotWKND_NotHOLIDAY_post
+    
+    colnames(X__future_min__Dates_TF_NotWKND_NotHOLIDAY_post) <- colnames(X__future_min__Dates_TF_NotWKND_NotHOLIDAY)
+    
+    max.col(X__future_min__Dates_TF_NotWKND_NotHOLIDAY_post, ties.method = "first" ) -> new_i_X_micro_change_raw
+    # returns a vector of column numbers that have the ONE match THAT_IS_MAX in that row )
+    
+    new_i_X_micro_change <- new_i_X_micro_change_raw - 1 + i_X_micro_change
+    
+    return(new_i_X_micro_change)
+    
+  }
+  
+  # browser( expr = { X_colname == "GSPC_CLOSE" } )
+  
   # price returns # ( future - today ) / abs( today )
-  X__i_X_micro_change <- ( lag(X__NAedApproxed, -1 * i_X_micro_change ) - lag(X__NAedApproxed,0) ) / abs( lag(X__NAedApproxed,0) )
+  # X__i_X_micro_change <- ( lag(X__NAedApproxed, -1 * i_X_micro_change ) - lag(X__NAedApproxed,0) ) / abs( lag(X__NAedApproxed,0) )
+
+  # if my future data lands on a weekend/holiday skip forward to the next available not(weekend) and not(holiday)
+  
+  i_X_micro_change_adjustments <- i_X_micro_change_adjusted(X__NAedApproxed, i_X_micro_change)
+
+  #
+  # extract the data because any XTS subsetting of duplicates WILL remove data (that I do not want to happen)
+  #
+  # 30 seconds: time consuming
+  # 
+  sapply(as.character(zoo::as.Date(index(X__NAedApproxed)) + i_X_micro_change_adjustments), function(x,y) { 
+    as.vector(coredata(y[x]))
+  },y = X__NAedApproxed) -> X__NAedApproxed_future_list
+  
+  # BECAUSE: as.vector(coredata(y[x])) returns numeric(0) on edge cases
+  X__NAedApproxed_future_list[sapply(X__NAedApproxed_future_list, function(x){identical(x,numeric(0)) })] <- NA
+  as.vector(unlist(X__NAedApproxed_future_list)) -> X__NAedApproxed_future_coredata
+  
+  X__i_X_micro_change <- ( xts(X__NAedApproxed_future_coredata, zoo::as.Date(index(X__NAedApproxed))) - X__NAedApproxed ) / abs( X__NAedApproxed )
+  
+    # TRAINTEST and TRUETEST and PREDICT
+  #   I MUST REMOVE PREDICTIONS MADE ON SATURDAY, SUNDAY ( AND HOLIDAYS)
+  #     THESE ARE * ESSENTUALLY * THE SAME FRIDAY/NON_PREVIOUS HOLIDAY PREDICTIONS
+  #     THESE 'MESSUP' TRAIN and TEST reliablity
+  
+  # browser( expr = { X_colname == "GSPC_CLOSE" } )
+  
+  
   colnames(X__i_X_micro_change) <- paste0(X_colname,'__i_X_micro_change',i_X_micro_change)
   
   X__i_X_micro_change_isgain <- ifelse(  X__i_X_micro_change > 0, 2.0, 1.0 )
@@ -462,6 +531,12 @@ xts_treat_na_all_methods_lagsma <- function(X, NAdelayed_max_width = 57, i_X_mic
 Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new_data, make_new_model = new_derived_data, train_end_date_str = "2012-11-02", final_date_str = as.character(zoo::as.Date(Sys.Date())), sink_output = FALSE) {  # OLD final_date_str = "2012-11-02"
   
   ops <- options()
+  
+  options(width = 255)     
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  
   options(error = recover)
   Sys.setenv(TZ="UTC")
   
@@ -471,6 +546,11 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
   require(caret) # prefer S3 on predict(class(train))
   # caret           called by caret::
   # microbenchmark called by microbenchmark::microbenchmark
+  
+  require(TimeProjection) # look forward 'not weekdays' and 'not holidays'
+  # Loading required package: lubridate
+  # Loading required package: timeDate
+  # Loading required package: Matrix
   
   # ^GSPC: Summary for S&P 500- Yahoo! Finance
   # https://r-forge.r-project.org/scm/viewvc.php/pkg/quantstrat/demo/faber.R?view=markup&root=blotter
@@ -538,23 +618,10 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
     MSTRIDX <- xts(NULL, seq(as.Date("1950-01-01"),as.Date(final_date_str), by = 1))
     save("MSTRIDX", file = "MSTRIDX.RData")
     
-    # FRED ( not volitile )  
-    INTDSRUSM193N_PLUS <- merge(MSTRIDX,INTDSRUSM193N, join = "left")
-    NTDSRUSM193N_PLUS <- xts_treat_na_all_methods_slope( 
-      INTDSRUSM193N_PLUS, slope_change_width = 57, NAedForwarded_method  = "na.locf") # peopls reacion time
-    
-    # FRED ( approximately known )
-    NAPM_PLUS          <- merge(MSTRIDX,NAPM         , join = "left")
-    NAPM_PLUS <- xts_treat_na_all_methods_lagsma(
-      NAPM_PLUS, lagsma_change_width = 57, NAedForwarded_method  = "na.locf") # peopls reacion time
-    save("NAPM_PLUS", file = "NAPM_PLUS.RData")
-    
-    TCU_PLUS           <- merge(MSTRIDX,TCU          , join = "left")
-    TCU_PLUS <- xts_treat_na_all_methods_lagsma(
-      TCU_PLUS, lagsma_change_width = 57, NAedForwarded_method  = "na.locf") # peopls reacion time
-    save("TCU_PLUS", file = "TCU_PLUS.RData")
-    
     # Market data ( volitile ( but exactly known ) )
+    
+    print("Begin GSPC_PLUS_CLOSE xts_treat_na_all_methods_lagsma")
+    
     GSPC_PLUS                  <- merge(MSTRIDX,GSPC, join = "left")
     GSPC_PLUS_CLOSE            <- GSPC_PLUS[,"GSPC.Close"]
     colnames(GSPC_PLUS_CLOSE)  <- 'GSPC_CLOSE'
@@ -562,6 +629,33 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
     GSPC_PLUS_CLOSE <- xts_treat_na_all_methods_lagsma(
       GSPC_PLUS_CLOSE, lagsma_change_width = 270, NAedForwarded_method  = "na.locf") # Faber 9 months SMA
     save("GSPC_PLUS_CLOSE", file = "GSPC_PLUS_CLOSE.RData")
+    
+    print("End GSPC_PLUS_CLOSE xts_treat_na_all_methods_lagsma")
+    print("Begin INTDSRUSM193N_PLUS xts_treat_na_all_methods_lagsma")
+    
+    # FRED ( not volitile )  
+    INTDSRUSM193N_PLUS <- merge(MSTRIDX,INTDSRUSM193N, join = "left")
+    NTDSRUSM193N_PLUS <- xts_treat_na_all_methods_slope( 
+      INTDSRUSM193N_PLUS, slope_change_width = 57, NAedForwarded_method  = "na.locf") # peopls reacion time
+    
+    print("End INTDSRUSM193N_PLUS xts_treat_na_all_methods_lagsma")
+    print("Begin NAPM_PLUS xts_treat_na_all_methods_lagsma")
+    
+    # FRED ( approximately known )
+    NAPM_PLUS          <- merge(MSTRIDX,NAPM         , join = "left")
+    NAPM_PLUS <- xts_treat_na_all_methods_lagsma(
+      NAPM_PLUS, lagsma_change_width = 57, NAedForwarded_method  = "na.locf") # peopls reacion time
+    save("NAPM_PLUS", file = "NAPM_PLUS.RData")
+    
+    print("End NAPM_PLUS xts_treat_na_all_methods_lagsma")
+    print("Begin TCU_PLUS xts_treat_na_all_methods_lagsma")
+    
+    TCU_PLUS           <- merge(MSTRIDX,TCU          , join = "left")
+    TCU_PLUS <- xts_treat_na_all_methods_lagsma(
+      TCU_PLUS, lagsma_change_width = 57, NAedForwarded_method  = "na.locf") # peopls reacion time
+    save("TCU_PLUS", file = "TCU_PLUS.RData")
+    
+    print("End TCU_PLUS xts_treat_na_all_methods_lagsma")
     
     # quantitive easing ( not volitle )
     
@@ -713,19 +807,24 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
   
   # after convert an xts to a data.frame ( with mixed_types and/or factors) 
   # cannot really_easily convert it back to an xts object
-  bigdata_rowindex <- as.numeric(zoo::as.Date(row.names(PERFECTWORLDFACTOREDMODEL))) <= as.numeric(zoo::as.Date(train_end_date_str))
-                       
+  
+  alldata_rowindex_bizdays <-  (projectDate(zoo::as.Date(row.names(PERFECTWORLDFACTOREDMODEL)))$bizday == TRUE)
+  
+  bigdata_rowindex_range_days <- as.numeric(zoo::as.Date(row.names(PERFECTWORLDFACTOREDMODEL))) <= as.numeric(zoo::as.Date(train_end_date_str))
+
+  bigdata_rowindex <- bigdata_rowindex_range_days & alldata_rowindex_bizdays
+                         
   # train   
   bigdata    <- PERFECTWORLDFACTOREDMODEL[bigdata_rowindex,,drop = FALSE]
   
   # true_train ( the more recent ( except for the last observation ) )
   newbigdata <- PERFECTWORLDFACTOREDMODEL[local({
-    tmp <- !bigdata_rowindex; tmp[length(tmp)] <- FALSE;  return(tmp)
+    tmp <- (!bigdata_rowindex_range_days & alldata_rowindex_bizdays); tmp[length(tmp)] <- FALSE;  return(tmp)
   }),, drop = FALSE]
   
   # predict_train ( the last observation )
   newestbigdata <- PERFECTWORLDFACTOREDMODEL[local({
-    tmp <-  rep(FALSE,length(!bigdata_rowindex)); tmp[length(tmp)] <- TRUE;  return(tmp)
+    tmp <-  rep(FALSE,length(!bigdata_rowindex_range_days & alldata_rowindex_bizdays)); tmp[length(tmp)] <- TRUE;  return(tmp)
   }),, drop = FALSE]
   
 
@@ -1046,10 +1145,11 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
   
   # default: type = "raw" # other type = "prob"
   caret_true_train_predictions   <- predict(caretTune, newdata = newbigdata)
+  cpttp_probs                    <- predict(caretTune, newdata = newbigdata, type = "prob")
   
   print('')
   print('** recent time actuals and predictions **')
-  print(tail(data.frame(newbigdta = newbigdata[[1]], caret_true_train_predictions, row.names = row.names(newbigdata)), 60))
+  print(tail(data.frame(dayofweek = weekdays(zoo::as.Date(row.names(newbigdata))), newbigdta = newbigdata[[1]], caret_true_train_predictions, cpttp_probs, row.names = row.names(newbigdata)), 60))
   print('')
   
   print('** recent time actuals and predictions **')
@@ -1072,9 +1172,10 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
   #                    great         627   471
   
   caret_predict_train_prediction <- predict(caretTune, newdata = newestbigdata)
+  cptp_probs                     <- predict(caretTune, newdata = newestbigdata, type = "prob")
   
   print("** today/tomorrow's prediction **")
-  print(tail(data.frame(newestbigdta = newestbigdata[[1]], caret_predict_train_prediction, row.names = row.names(newestbigdata))))
+  print(tail(data.frame(dayofweek = weekdays(zoo::as.Date(row.names(newestbigdata))), newestbigdta = newestbigdata[[1]], caret_predict_train_prediction, cptp_probs, row.names = row.names(newestbigdata))))
   print('')
   
   if(sink_output == TRUE) {
@@ -1366,7 +1467,7 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
 # 
 # # working call   
 # workflowVariants(wf="standardWF",<stuff:wfID="CVstandGBM",etc>,varsRootName="AlphaWFvars",as.is="verbose")
-
+#             
 
 
 
