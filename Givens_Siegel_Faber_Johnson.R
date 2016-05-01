@@ -368,7 +368,7 @@ xts_treat_na_all_methods_slope <- function(X, NAdelayed_max_width = 57, slope_ch
 
 # X would be e.g.  GSPC of 'FRED MONTHLY'                                # ONLY USES NAedApproxed
 # xts_treat_na_all_methods_lagsma <- function(X, NAdelayed_max_width = 57, i_X_micro_change = 1, lagsma_change_col = "NAedApproxed", lagsma_change_width = 200) {
-xts_treat_na_all_methods_lagsma <- function(X, NAdelayed_max_width = 57, i_X_micro_change = 1, lagsma_change_col = "NAedApproxed", lagsma_change_width = 200, NAedForwarded_method  = "na.approx") {  
+xts_treat_na_all_methods_lagsma <- function(X, NAdelayed_max_width = 57, i_X_micro_change = 1, lagsma_change_col = "NAedApproxed", lagsma_change_width = 200, NAedForwarded_method  = "na.approx", lagsma_change_width_future_back = 14) {  
 
   X_colname <- colnames(X)[1] # SHOULD BE JUST ONE COLUMN
   
@@ -514,8 +514,31 @@ xts_treat_na_all_methods_lagsma <- function(X, NAdelayed_max_width = 57, i_X_mic
   X__lagsma <- ifelse(X__sma2 - X__smaN > 0, 2.0, 1.0 ) # to be made into a factor later
   colnames(X__lagsma) <- paste0(X_colname,'__',lagsma_change_col,'__','sma',2,                  '_above_lagsma',lagsma_change_width)
   
+  # may want to OPIMIZE how_much_future and how_much_back ( LATER ) 
+  # so CURRENTLY they are SPLIT
+  
+  v__smaN_back  <- SMA(coredata(X__to_be_sma_col)[,1], n = lagsma_change_width_future_back) 
+  v__smaN_back  <- xts(v__smaN_back, index(X__NAed))
+  colnames(v__smaN_back)   <- paste0(X_colname,'__',lagsma_change_col,'__','sma_back',lagsma_change_width_future_back)
+  # GSPC_CLOSE__NAedApproxed__sma_back14
+  
+  v__smaN_future  <- SMA(coredata(X__to_be_sma_col)[,1], n = lagsma_change_width_future_back) 
+  v__smaN_future  <- xts(v__smaN_future, index(X__NAed))
+  # extra shift is here
+  v__smaN_future <- xts(v__smaN_future,index(v__smaN_future) - lagsma_change_width_future_back)
+  #
+  colnames(v__smaN_future)   <- paste0(X_colname,'__',lagsma_change_col,'__','sma_future',lagsma_change_width_future_back)
+  # GSPC_CLOSE__NAedApproxed__sma_future14
+  
+  X__lagsma_fb <- ifelse(v__smaN_future - v__smaN_back > 0, 2.0, 1.0 ) # to be made into a factor later
+  
+  colnames(X__lagsma_fb) <- paste0(X_colname,'__',lagsma_change_col,'__','sma_future_back','_above_lagsma',lagsma_change_width_future_back)
+  # GSPC_CLOSE__NAedApproxed__sma_future_back_above_lagsma14
+  
   # them all
-  z <- xts::merge.xts(X__NAed, X__isNA_flag, X__NAedApproxed, X__i_X_micro_change, X__i_X_micro_change_isgain, X__NAedLOCF, X__smaN, X__lagsma, X__NAdelayed)
+  # z <- xts::merge.xts(X__NAed, X__isNA_flag, X__NAedApproxed, X__i_X_micro_change, X__i_X_micro_change_isgain, X__NAedLOCF, X__smaN, X__lagsma, X__NAdelayed)
+  z <- xts::merge.xts(X__NAed, X__isNA_flag, X__NAedApproxed, X__i_X_micro_change, X__i_X_micro_change_isgain, X__NAedLOCF, X__smaN, X__lagsma, X__NAdelayed, v__smaN_future, v__smaN_back,X__lagsma_fb)
+  # "GSPC_CLOSE__NAedApproxed__sma_future_back_above_lagsma14"
   
   return(z)
   
@@ -532,10 +555,10 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
   
   ops <- options()
   
-  options(width = 255)     
-  options(digits = 22) 
+  options(width=255)     
+  options(digits=5) # 22
   options(max.print=99999)
-  options(scipen=255) # Try these = width
+  options(scipen=8) # 255 # Try these = width
   
   options(error = recover)
   Sys.setenv(TZ="UTC")
@@ -557,7 +580,7 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
   
   if(new_data == TRUE ) {
     
-    # if I overshOot the past on Yahoo, thin I only return 7 years of data
+    # if I overshOot the past on Yahoo, think I only return 7 years of data
     Sys.sleep(0.67)
     GSPC <-  getSymbols("^GSPC", src = "yahoo", auto.assign = FALSE , 
                         from = as.Date("1960-01-04"), to = as.Date(final_date_str))
@@ -631,31 +654,37 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
     save("GSPC_PLUS_CLOSE", file = "GSPC_PLUS_CLOSE.RData")
     
     print("End GSPC_PLUS_CLOSE xts_treat_na_all_methods_lagsma")
-    print("Begin INTDSRUSM193N_PLUS xts_treat_na_all_methods_lagsma")
     
-    # FRED ( not volitile )  
-    INTDSRUSM193N_PLUS <- merge(MSTRIDX,INTDSRUSM193N, join = "left")
-    NTDSRUSM193N_PLUS <- xts_treat_na_all_methods_slope( 
-      INTDSRUSM193N_PLUS, slope_change_width = 57, NAedForwarded_method  = "na.locf") # peopls reacion time
-    
-    print("End INTDSRUSM193N_PLUS xts_treat_na_all_methods_lagsma")
     print("Begin NAPM_PLUS xts_treat_na_all_methods_lagsma")
     
     # FRED ( approximately known )
     NAPM_PLUS          <- merge(MSTRIDX,NAPM         , join = "left")
-    NAPM_PLUS <- xts_treat_na_all_methods_lagsma(
-      NAPM_PLUS, lagsma_change_width = 57, NAedForwarded_method  = "na.locf") # peopls reacion time
+    NAPM_PLUS <- xts_treat_na_all_methods_lagsma( NAdelayed_max_width = 128, # four months + 3 days
+                                                  NAPM_PLUS, lagsma_change_width = 57, NAedForwarded_method  = "na.locf") # peopls reacion time
     save("NAPM_PLUS", file = "NAPM_PLUS.RData")
     
     print("End NAPM_PLUS xts_treat_na_all_methods_lagsma")
+    
     print("Begin TCU_PLUS xts_treat_na_all_methods_lagsma")
     
     TCU_PLUS           <- merge(MSTRIDX,TCU          , join = "left")
-    TCU_PLUS <- xts_treat_na_all_methods_lagsma(
-      TCU_PLUS, lagsma_change_width = 57, NAedForwarded_method  = "na.locf") # peopls reacion time
+    TCU_PLUS <- xts_treat_na_all_methods_lagsma(  NAdelayed_max_width = 128, # four months plus 3 days
+                                                  TCU_PLUS, lagsma_change_width = 57, NAedForwarded_method  = "na.locf") # peopls reacion time
     save("TCU_PLUS", file = "TCU_PLUS.RData")
     
     print("End TCU_PLUS xts_treat_na_all_methods_lagsma")
+    
+
+    
+    print("Begin INTDSRUSM193N_PLUS xts_treat_na_all_methods_lagsma")
+    
+    # FRED ( not volitile )  
+    INTDSRUSM193N_PLUS <- merge(MSTRIDX,INTDSRUSM193N, join = "left")
+    NTDSRUSM193N_PLUS <- xts_treat_na_all_methods_slope(   NAdelayed_max_width = 1900,  # 5 years
+      INTDSRUSM193N_PLUS, slope_change_width = 57, NAedForwarded_method  = "na.locf") # peopls reacion time
+    
+    print("End INTDSRUSM193N_PLUS xts_treat_na_all_methods_lagsma")
+
     
     # quantitive easing ( not volitle )
     
@@ -721,8 +750,8 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
     
     within( data.frame(cbind( timeindex = as.numeric(zoo::as.Date(index(PERFECTWORLD))), PERFECTWORLD ), stringsAsFactors = FALSE), {
       
-      GSPC_CLOSE__i_X_micro_change_isgain_f2                <- factor( GSPC_CLOSE__i_X_micro_change1_isgain, levels = c('1','2'), labels = c('terrible','great'))
-      
+      # GSPC_CLOSE__i_X_micro_change_isgain_f2                <- factor( GSPC_CLOSE__i_X_micro_change1_isgain, levels = c('1','2'), labels = c('terrible','great'))
+      GSPC_CLOSE__NAedApproxed__sma_future_back_above_lagsma14_f2                <- factor( GSPC_CLOSE__NAedApproxed__sma_future_back_above_lagsma14, levels = c('1','2'), labels = c('terrible','great'))
       
       GSPC_CLOSE__isNA_flag_f2                              <- factor( GSPC_CLOSE__isNA_flag , levels = c('1','2'), labels = c('not_na','is_na'))
       GSPC_CLOSE__NAedApproxed__sma2_above_lagsma270_f2     <- factor( GSPC_CLOSE__NAedApproxed__sma2_above_lagsma270 , levels = c('1','2'), labels = c('terrible','great'))
@@ -745,30 +774,31 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
     # just my columns of interest
     
     PERFECTWORLDFACTORED[, c(
-      'GSPC_CLOSE__i_X_micro_change_isgain_f2',
+      # 'GSPC_CLOSE__i_X_micro_change_isgain_f2',
+      'GSPC_CLOSE__NAedApproxed__sma_future_back_above_lagsma14_f2',
       
       'GSPC_CLOSE__NAdelayed',
       'GSPC_CLOSE__isNA_flag_f2',
       'GSPC_CLOSE__NAedApproxed__sma2_above_lagsma270_f2',
       
-    # 'INTDSRUSM193N__NAdelayed',  #  NAs after 57 days ( __NAdelayed SHOULD HAVE BEEN Inf ALL of them: BUT *THIS* only CURR affected )
+      'INTDSRUSM193N__NAdelayed',  
       'INTDSRUSM193N__isNA_flag_f2',
-      'INTDSRUSM193N__NAedLOCF__slope_changed_f3',
+      'INTDSRUSM193N__NAedLOCF__slope_changed_f3' ,
       
-      'USMONPOL__fed_direction_f3',
+      'USMONPOL__fed_direction_f3' #,
       
-      'TCU__NAdelayed',
-      'TCU__isNA_flag_f2',
-      'TCU__NAedApproxed',
-      'TCU__NAedApproxed__sma57',
-      'TCU__NAedApproxed__sma2_above_lagsma57_f2',
+    # 'TCU__NAdelayed',
+    # 'TCU__isNA_flag_f2',
+    # 'TCU__NAedApproxed',
+    # 'TCU__NAedApproxed__sma57',
+    # 'TCU__NAedApproxed__sma2_above_lagsma57_f2',
       
-      'NAPM__NAdelayed',
-      'NAPM__isNA_flag_f2',
-      'NAPM__NAedApproxed',
-      'NAPM__NAedApproxed_above_50pct_f2', 
-      'NAPM__NAedApproxed__sma57',
-      'NAPM__NAedApproxed__sma2_above_lagsma57_f2' 
+    #  'NAPM__NAdelayed',
+    # 'NAPM__isNA_flag_f2',
+    # 'NAPM__NAedApproxed',
+    # 'NAPM__NAedApproxed_above_50pct_f2', 
+    # 'NAPM__NAedApproxed__sma57',
+    # 'NAPM__NAedApproxed__sma2_above_lagsma57_f2' 
       
     ) ] -> PERFECTWORLDFACTOREDMODEL
     
@@ -790,15 +820,21 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
     #     # GSPC_CLOSE__i_X_micro_change_isgain_f2 IS NULL # 2016-04-21 # not happened yet # SO this record will get trimmed
     #      # so trimmed back to today's date
     
-    # here ( for now )
-    PERFECTWORLDFACTOREDMODEL <- na.trim( PERFECTWORLDFACTOREDMODEL )
+    # since the forward moving average exists some near time Y values are not known
+    PERFECTWORLDFACTOREDMODEL_PRED_ZONE <- na.trim(PERFECTWORLDFACTOREDMODEL, sides = "left") # remove head data
+    # na Y values
+    PERFECTWORLDFACTOREDMODEL_PRED_ZONE <- PERFECTWORLDFACTOREDMODEL_PRED_ZONE[is.na(PERFECTWORLDFACTOREDMODEL_PRED_ZONE[[1]]),,drop = FALSE]
+    save(PERFECTWORLDFACTOREDMODEL_PRED_ZONE, file = "PERFECTWORLDFACTOREDMODEL_PRED_ZONE.Rdata")
     
+    # no na
+    PERFECTWORLDFACTOREDMODEL <- na.trim(PERFECTWORLDFACTOREDMODEL)
     save(PERFECTWORLDFACTOREDMODEL, file = "PERFECTWORLDFACTOREDMODEL.RData")
     
   }
   
   if( make_new_model == FALSE ) {
     
+    load( file = "PERFECTWORLDFACTOREDMODEL_PRED_ZONE.Rdata")
     load( file = "PERFECTWORLDFACTOREDMODEL.RData")
     
   }
@@ -817,17 +853,34 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
   # train   
   bigdata    <- PERFECTWORLDFACTOREDMODEL[bigdata_rowindex,,drop = FALSE]
   
-  # true_train ( the more recent ( except for the last observation ) )
+  #   # true_train ( the more recent ( except for the last observation ) )
+  #   newbigdata <- PERFECTWORLDFACTOREDMODEL[local({
+  #     tmp <- (!bigdata_rowindex_range_days & alldata_rowindex_bizdays); tmp[length(tmp)] <- FALSE;  return(tmp)
+  #   }),, drop = FALSE]
+  
+  # true_train ( the more recent 
+  #   so I have somthing to predict on(later) . . . 
+  #     except for the last observation if it is the PERFECTWORLDFACTOREDMODEL_PRED_ZONE last observation
   newbigdata <- PERFECTWORLDFACTOREDMODEL[local({
-    tmp <- (!bigdata_rowindex_range_days & alldata_rowindex_bizdays); tmp[length(tmp)] <- FALSE;  return(tmp)
+    tmp <- (!bigdata_rowindex_range_days & alldata_rowindex_bizdays)
+    if( tail(row.names(PERFECTWORLDFACTOREDMODEL[tmp,,drop =FALSE]),1) == tail(row.names(PERFECTWORLDFACTOREDMODEL_PRED_ZONE),1) ) {
+      # so at least I can predict one (Y today)
+      tmp[length(tmp)] <- FALSE
+    }
+    return(tmp)
   }),, drop = FALSE]
   
-  # predict_train ( the last observation )
-  newestbigdata <- PERFECTWORLDFACTOREDMODEL[local({
-    tmp <-  rep(FALSE,length(!bigdata_rowindex_range_days & alldata_rowindex_bizdays)); tmp[length(tmp)] <- TRUE;  return(tmp)
-  }),, drop = FALSE]
+  #   # predict_train ( the last observation )
+  #   newestbigdata <- PERFECTWORLDFACTOREDMODEL[local({
+  #     tmp <-  rep(FALSE,length(!bigdata_rowindex_range_days & alldata_rowindex_bizdays)); tmp[length(tmp)] <- TRUE;  return(tmp)
+  #   }),, drop = FALSE]
   
-
+  # predict_train ( the last observations )
+  # I am welome to try to predict on any recent observactions that do not have a Y value
+  # ( but still only on business days )
+  newestbigdata <- PERFECTWORLDFACTOREDMODEL_PRED_ZONE[(projectDate(zoo::as.Date(row.names(PERFECTWORLDFACTOREDMODEL_PRED_ZONE)))$bizday == TRUE),,drop = FALSE]
+  
+  
   # KEEP # sometimes TESTING
   # bigdata <- bigdata[(NROW(bigdata)-1000):NROW(bigdata),]
   
@@ -970,6 +1023,9 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
   # myscales <- c(100) # c(100, 0.01)
   myscales <- c(0.002,0.001)
   # ANDRE - TEMPORARY OVERRIDE
+  # myscales <- 0.001 # c(0.002)
+  myscales <- c(0.5,1,2)
+  #
   for(myscale in myscales) {
     scale_iterator <- scale_iterator + 1
     
@@ -992,18 +1048,19 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
     
       spExp1 <- substitute(performanceEstimation(
       # scalescolname is not part of the formula ( non-dynamic case ), so it will be removed ( consider instead "y ~ ." )  # if I pass a 'call' object to 'data' then MUST BE copy=TRUE
-      PredTask(formula(bigdata[,-NCOL(bigdata)]),  data = if(isTRUE(iscluster)) {bigdata} else {call("get",x = "bigdata", envir = environment())}, taskName = 'GSFJDatTask', copy=TRUE),c(
-        workflowVariants(wf='standardWF', wfID="CVstandGBMwfID", # I believe that a custom workflow can only customize
+      PredTask(formula(bigdata[,-NCOL(bigdata)]),  data = if(isTRUE(iscluster)) {bigdata} else {call("get",x = "bigdata", envir = environment())}, taskName = paste0('GSFJDatTask','_pos_wts_', myscale), copy=TRUE),c(
+        workflowVariants(wf='standardWF', wfID= paste0("CVstandGBMwfID",'_pos_wts_', myscale), # I believe that a custom workflow can only customize
                          learner="trainCaret", .fullOutput = TRUE,
                          learner.pars=list(method="gbm", verbose = FALSE,
                                            distribution  = c('bernoulli'), 
                                            tuneGridText  = c(  # 5 trees per second
-                                                               "data.frame(n.trees = 2, interaction.depth = 30, shrinkage = 0.50, n.minobsinnode = 20)" # COMMON
+                                                               "data.frame(n.trees = 2, interaction.depth = 30, shrinkage = 0.50, n.minobsinnode = 20)",  # COMMON
+                                                               "data.frame(n.trees = 200, interaction.depth = 30, shrinkage = 0.10, n.minobsinnode = 1)"  # EXPERIMENT                                                          
                                                           #    "data.frame(n.trees = 2, interaction.depth = 17, shrinkage = 0.25, n.minobsinnode = 10)" # COMMON
-                                                          #  , "data.frame(n.trees = 1000,  interaction.depth = 7 , shrinkage  = 0.0001, n.minobsinnode = 10)" 
-                                                          #  , "data.frame(n.trees = 20000, interaction.depth = 7 , shrinkage  =  0.001, n.minobsinnode = 10)"
-                                                          #  , "data.frame(n.trees = 20000, interaction.depth = 17, shrinkage  = 0.0001, n.minobsinnode = 10)"
-                                                          #  , "data.frame(n.trees = 20000, interaction.depth = 17, shrinkage  =  0.001, n.minobsinnode = 10)"
+                                                          #    "data.frame(n.trees = 1000,  interaction.depth = 7 , shrinkage  = 0.0001, n.minobsinnode = 10)" 
+                                                          #    "data.frame(n.trees = 20000, interaction.depth = 7 , shrinkage  =  0.001, n.minobsinnode = 10)"
+                                                          #    "data.frame(n.trees = 20000, interaction.depth = 17, shrinkage  = 0.0001, n.minobsinnode = 10)"
+                                                          #    "data.frame(n.trees = 20000, interaction.depth = 17, shrinkage  =  0.001, n.minobsinnode = 10)"
                                                              )
                                            , scales = paste0("ifelse(as.integer(bigdata[[1]]) ==  1L, ", myscale,", 1)"), scalescolname = 'scalesrowid'
                                            )        # "ifelse(as.integer(bigdata[[1]]) ==  1L, 500,1)" # "seq(1,NROW(bigdata))" # "ifelse(as.integer(bigdata[[1]]) ==  1L, 1, 90)"
@@ -1026,8 +1083,12 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
     # seems only way to combine and S4 object into a 'collection'.  c() and append() do not (directly) work
     #  some 'qualities' would be lost
     spExp1List_tasks     <- if (is.null(spExp1List_tasks))     spExp1 else mergeEstimationRes(spExp1List_tasks,    spExp1, by="tasks") # default
-    spExp1List_workflows <- if (is.null(spExp1List_workflows)) spExp1 else mergeEstimationRes(spExp1List_workflows,spExp1, by="workflows")
-    spExp1List_metrics   <- if (is.null(spExp1List_metrics))   spExp1 else mergeEstimationRes(spExp1List_metrics,  spExp1, by="metrics")
+    
+    # join by workflows all objects need to address the same tasks!
+    # spExp1List_workflows <- if (is.null(spExp1List_workflows)) spExp1 else mergeEstimationRes(spExp1List_workflows,spExp1, by="workflows")
+
+    # to join by metrics all objects need to address the same tasks!
+    # spExp1List_metrics   <- if (is.null(spExp1List_metrics))   spExp1 else mergeEstimationRes(spExp1List_metrics,  spExp1, by="metrics")
     
 
   
@@ -1051,7 +1112,7 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
     print(summary(spExp1))
     
     print("print(str(bigdata))")
-    print(str(bigdata))
+    ## print(str(bigdata))
     print("print(levels(bigdata[[1]]))")
     print(levels(bigdata[[1]]))
     print("print(table(bigdata[[1]]))")
@@ -1085,63 +1146,111 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
   print("End grand results: spExp1List_tasks")
   print('')
   
-  print('')
-  print("Begin grand results: spExp1List_workflows")
-  print('print(taskNames(spExp1List_workflows))')
-  print(taskNames(spExp1List_workflows))
-  print('print(workflowNames(spExp1List_workflows))')
-  print(workflowNames(spExp1List_workflows))
-  print('print(metricNames(spExp1List_workflows))')
-  print(metricNames(spExp1List_workflows))
-  print('print(topPerformers(spExp1List_workflows, maxs=rep(TRUE,3)))')
-  print(topPerformers(spExp1List_workflows, maxs=c(TRUE,TRUE,TRUE,TRUE,TRUE,FALSE,FALSE,FALSE)))
-  print('print(rankWorkflows(spExp1List_workflows))')
-  print(rankWorkflows(spExp1List_workflows))
-  print('plot(spExp1List_workflows)')
-  plot(spExp1List_workflows)
-  print('print(summary(spExp1List_workflows))')
-  print(summary(spExp1List_workflows))
-  print("End grand results: spExp1List_workflows")
-  print('')
-  
-  print('')
-  print("Begin grand results: spExp1List_metrics")
-  print('print(taskNames(spExp1List_metrics))')
-  print(taskNames(spExp1List_metrics))
-  print('print(workflowNames(spExp1List_metrics))')
-  print(workflowNames(spExp1List_metrics))
-  print('print(metricNames(spExp1List_metrics))')
-  print(metricNames(spExp1List_metrics))
-  print('print(topPerformers(spExp1List_metrics, maxs=rep(TRUE,3)))')
-  print(topPerformers(spExp1, maxs=c(TRUE,TRUE,TRUE,TRUE,TRUE,FALSE,FALSE,FALSE)))
-  print('print(rankWorkflows(spExp1List_metrics))')
-  print(rankWorkflows(spExp1List_metrics))
-  print('plot(spExp1List_metrics)')
-  plot(spExp1List_metrics)
-  print('print(summary(spExp1List_metrics))')
-  print(summary(spExp1List_metrics))
-  print("End grand results: spExp1List_metrics")
-  print('')
-  
+#   # CAN NOT DO # join by workflows all objects need to address the same tasks!
+#   print('')
+#   print("Begin grand results: spExp1List_workflows")
+#   print('print(taskNames(spExp1List_workflows))')
+#   print(taskNames(spExp1List_workflows))
+#   print('print(workflowNames(spExp1List_workflows))')
+#   print(workflowNames(spExp1List_workflows))
+#   print('print(metricNames(spExp1List_workflows))')
+#   print(metricNames(spExp1List_workflows))
+#   print('print(topPerformers(spExp1List_workflows, maxs=rep(TRUE,3)))')
+#   print(topPerformers(spExp1List_workflows, maxs=c(TRUE,TRUE,TRUE,TRUE,TRUE,FALSE,FALSE,FALSE)))
+#   print('print(rankWorkflows(spExp1List_workflows))')
+#   print(rankWorkflows(spExp1List_workflows))
+#   print('plot(spExp1List_workflows)')
+#   plot(spExp1List_workflows)
+#   print('print(summary(spExp1List_workflows))')
+#   print(summary(spExp1List_workflows))
+#   print("End grand results: spExp1List_workflows")
+#   print('')
+#   
+#   # CAN NOT DO # to join by metrics all objects need to address the same tasks!
+#   print('')
+#   print("Begin grand results: spExp1List_metrics")
+#   print('print(taskNames(spExp1List_metrics))')
+#   print(taskNames(spExp1List_metrics))
+#   print('print(workflowNames(spExp1List_metrics))')
+#   print(workflowNames(spExp1List_metrics))
+#   print('print(metricNames(spExp1List_metrics))')
+#   print(metricNames(spExp1List_metrics))
+#   print('print(topPerformers(spExp1List_metrics, maxs=rep(TRUE,3)))')
+#   print(topPerformers(spExp1, maxs=c(TRUE,TRUE,TRUE,TRUE,TRUE,FALSE,FALSE,FALSE)))
+#   print('print(rankWorkflows(spExp1List_metrics))')
+#   print(rankWorkflows(spExp1List_metrics))
+#   print('plot(spExp1List_metrics)')
+#   plot(spExp1List_metrics)
+#   print('print(summary(spExp1List_metrics))')
+#   print(summary(spExp1List_metrics))
+#   print("End grand results: spExp1List_metrics")
+#   print('')
+#   
   # if .fullOutput == TRUE in standardWF, then I may be able to collect MORE informtion
   #  I may? not have? to rerun through caret::train to get a predictor(Tune)
   #   COME BACK LATER
   
-  tuneGrid_data_frame <- data.frame(n.trees = 2, interaction.depth = 30, shrinkage = 0.50, n.minobsinnode = 20)
-  print('')                       # n.trees = 2, interaction.depth = 30, shrinkage = 0.50, n.minobsinnode = 20 # PUT 94%
-  print('** recent Tune **')
-  print(tuneGrid_data_frame)
-  print('')
-  print('** recent train scales text **')
-  train_scales_text <- "ifelse(as.integer(bigdata[[1]]) ==   1L, 0.001, 1)" # # PUT  1L, 0.001, 1 # PUT 94%
-  print(train_scales_text)
-
-  # distribution = "bernoulli" # gbm::gbm # default and detected
-  caretTune <- train(form=formula(bigdata[,-NCOL(bigdata)]), data = bigdata[,-NCOL(bigdata)], 
-                     method    = "gbm",
-                     tuneGrid  = tuneGrid_data_frame,
-                     trControl = trainControl(method="none"),  
-                     weights   = eval(parse(text=train_scales_text))  )
+  
+  
+  
+  best_task    <- NULL
+  best_learner <- NULL
+  
+  best_iter    <- NULL
+  best_mean    <- NULL
+  
+  measure_of_interest <- "SharpTr"
+  
+  for(nm_t in names(spExp1List_tasks)) { 
+    curr_iter <- 0
+    for(nm_l in names(spExp1List_tasks[[nm_t]])) { 
+      curr_iter <- curr_iter + 1
+      curr_mean <- mean(spExp1List_tasks[[nm_t]][[nm_l]]@iterationsScores[,measure_of_interest], na.rm = TRUE)
+      if(is.null(best_mean) || (curr_mean > best_mean) ) { best_mean <- curr_mean; best_task <- nm_t; best_learner <- nm_l; best_iter <- curr_iter }
+    } 
+  }
+  rm(nm_t,nm_l,curr_iter)
+  
+  print(paste0("Best measure of interest: ", measure_of_interest))
+  print(paste0("Best measure mean: ", best_mean))
+  print(paste0("Best best_task: ", best_task))
+  print(paste0("Best best_iter: ", best_iter))
+  
+  # performanceEstimation specific
+  best_object <- spExp1List_tasks[[best_task]][[best_learner]]@iterationsInfo[[best_iter]][["modeling"]]
+  
+  # caret and gbm specific
+  best_tune <- spExp1List_tasks[[best_task]][[best_learner]]@iterationsInfo[[best_iter]][["modeling"]][["bestTune"]]
+  print(paste0("Best best_tune . . . "))
+  print(best_tune)
+  
+  # caret and gbm specific
+  best_trees  <- spExp1List_tasks[[best_task]][[best_learner]]@iterationsInfo[[best_iter]][["modeling"]][["bestTune"]]$n.trees
+  print(paste0("Best test_trees: ", best_trees))
+  
+  # caret and gbm specific
+  print(varImp(object = best_object, numTrees = best_trees))
+  
+  # OBSOLETE ( ONE: WRONG: PREDUCTED ON THE 'train' ) ( TWO: I get my model DIRECTLY from PE )
+  #   tuneGrid_data_frame <- data.frame(n.trees = 2, interaction.depth = 30, shrinkage = 0.50, n.minobsinnode = 20)
+  #   print('')                       # n.trees = 2, interaction.depth = 30, shrinkage = 0.50, n.minobsinnode = 20 # PUT 94%
+  #   print('** recent Tune **')
+  #   print(tuneGrid_data_frame)
+  #   print('')
+  #   print('** recent train scales text **')
+  #   train_scales_text <- "ifelse(as.integer(bigdata[[1]]) ==   1L, 0.001, 1)" # # PUT  1L, 0.001, 1 # PUT 94%
+  #   print(train_scales_text)
+  # 
+  #   # distribution = "bernoulli" # gbm::gbm # default and detected
+  #   caretTune <- train(form=formula(bigdata[,-NCOL(bigdata)]), data = bigdata[,-NCOL(bigdata)], 
+  #                      method    = "gbm",
+  #                      tuneGrid  = tuneGrid_data_frame,
+  #                      trControl = trainControl(method="none"),  
+  #                      weights   = eval(parse(text=train_scales_text))  )
+  
+  
+  caretTune <- best_object
+  
   
   # default: type = "raw" # other type = "prob"
   caret_true_train_predictions   <- predict(caretTune, newdata = newbigdata)
@@ -1153,11 +1262,12 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
   print('')
   
   print('** recent time actuals and predictions **')
+  print(paste0('true train NEWBIGDATA RECENT from ', as.character(head(zoo::as.Date(row.names(newbigdata)),1)), ' to ', as.character(tail(zoo::as.Date(row.names(newbigdata)),1))))
   print(t(as.matrix(table(data.frame(newbigdta = newbigdata[[1]], caret_true_train_predictions)))))
   print('')
   
-  YEARRECENT <- head(data.frame(newbigdta = newbigdata[[1]], caret_true_train_predictions, row.names = row.names(newbigdata)),365)
-  print(paste0('true train YEARRECENT: ', NROW(YEARRECENT),' days'))
+  YEARRECENT <- tail(data.frame(newbigdta = newbigdata[[1]], caret_true_train_predictions, row.names = row.names(newbigdata)),365)
+  print(paste0('true train YEAR RECENT: ', NROW(YEARRECENT),' days'))
   print(t(as.matrix(table((YEARRECENT)))))
   
   # Browse[2]> RECENT <- data.frame(newbigdta = newbigdata[[1]], caret_true_train_predictions, row.names = row.names(newbigdata))
@@ -1174,9 +1284,16 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
   caret_predict_train_prediction <- predict(caretTune, newdata = newestbigdata)
   cptp_probs                     <- predict(caretTune, newdata = newestbigdata, type = "prob")
   
-  print("** today/tomorrow's prediction **")
-  print(tail(data.frame(dayofweek = weekdays(zoo::as.Date(row.names(newestbigdata))), newestbigdta = newestbigdata[[1]], caret_predict_train_prediction, cptp_probs, row.names = row.names(newestbigdata))))
-  print('')
+  if (NROW(newestbigdata) == NROW(caret_predict_train_prediction)) {
+    
+    print("** today/tomorrow's prediction **")
+    print(data.frame(dayofweek = weekdays(zoo::as.Date(row.names(newestbigdata))), newestbigdata = newestbigdata[[1]], caret_predict_train_prediction, cptp_probs, row.names = row.names(newestbigdata)))
+    print('')
+  
+  } else {
+    warning("skipping today/tomorrow prediction because NROWs are not matching")
+  }
+  
   
   if(sink_output == TRUE) {
     sink()
@@ -1247,7 +1364,7 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
   print(summary(spExp2))
   
   print("print(str(bigdata))")
-  print(str(bigdata))
+  ## print(str(bigdata))
   print("print(levels(bigdata[[1]]))")
   print(levels(bigdata[[1]]))
   print("print(table(bigdata[[1]]))")
@@ -1467,7 +1584,7 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
 # 
 # # working call   
 # workflowVariants(wf="standardWF",<stuff:wfID="CVstandGBM",etc>,varsRootName="AlphaWFvars",as.is="verbose")
-#             
+#                                             
 
 
 
