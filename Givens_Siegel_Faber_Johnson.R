@@ -1054,10 +1054,10 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
                          learner.pars=list(method="gbm", verbose = FALSE,
                                            distribution  = c('bernoulli'), 
                                            tuneGridText  = c(  # 5 trees per second
-                                                               "data.frame(n.trees = 2, interaction.depth = 30, shrinkage = 0.50, n.minobsinnode = 20)",  # COMMON
-                                                               "data.frame(n.trees = 200, interaction.depth = 30, shrinkage = 0.10, n.minobsinnode = 1)"  # EXPERIMENT                                                          
+                                                          #    "data.frame(n.trees = 2, interaction.depth = 30, shrinkage = 0.50, n.minobsinnode = 20)",  # COMMON
+                                                          #    "data.frame(n.trees = 200, interaction.depth = 30, shrinkage = 0.10, n.minobsinnode = 1)"  # EXPERIMENT                                                          
                                                           #    "data.frame(n.trees = 2, interaction.depth = 17, shrinkage = 0.25, n.minobsinnode = 10)" # COMMON
-                                                          #    "data.frame(n.trees = 1000,  interaction.depth = 7 , shrinkage  = 0.0001, n.minobsinnode = 10)" 
+                                                               "data.frame(n.trees = 1000,  interaction.depth = 30, shrinkage  = 0.01, n.minobsinnode = 100)" 
                                                           #    "data.frame(n.trees = 20000, interaction.depth = 7 , shrinkage  =  0.001, n.minobsinnode = 10)"
                                                           #    "data.frame(n.trees = 20000, interaction.depth = 17, shrinkage  = 0.0001, n.minobsinnode = 10)"
                                                           #    "data.frame(n.trees = 20000, interaction.depth = 17, shrinkage  =  0.001, n.minobsinnode = 10)"
@@ -1219,6 +1219,12 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
   # performanceEstimation specific
   best_object <- spExp1List_tasks[[best_task]][[best_learner]]@iterationsInfo[[best_iter]][["modeling"]]
   
+  # how to save a plot to a file
+  jpeg(filename = "GSFJ_Rplot.jpg")
+  gbm.perf(best_object$finalModel)
+  dev.off()
+  # http://www.r-bloggers.com/automatically-save-your-plots-to-a-folder/
+  
   # caret and gbm specific
   best_tune <- spExp1List_tasks[[best_task]][[best_learner]]@iterationsInfo[[best_iter]][["modeling"]][["bestTune"]]
   print(paste0("Best best_tune . . . "))
@@ -1306,6 +1312,7 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
   
   # debug(classificationMetrics)
   
+  browser()
   return(invisible()) # NOT doing TIME FLOW TODAY: Too SLOW
   
   #################################################
