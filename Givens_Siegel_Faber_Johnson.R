@@ -62,7 +62,7 @@
 # http://www.federalreserve.gov/releases/h15/update/
 #   
 
-  
+
 # Cleveland Fed has the Asset Purchase dates
 #   
 # rightish columns
@@ -88,7 +88,7 @@
 # C:\Users\NFF397N\ANDREBIGPDFS\CreditEasingBalanceSheet_CLEVELAND_FED.xls # ( SEE )
 # 
 # https://cran.r-project.org/web/packages/easingr/index.html # MARCH 10, 2016
-  
+
 
 # Downloads FRB credit easing policy tools 
 # federal agency debt 
@@ -294,10 +294,10 @@ zoo_delay <- function(oftenish = xts::xts(100 *seq(7,100,14), zoo::as.Date(seq(7
 
 # INTDSRUSM193N # LAST KNOWN GOOD TO BE USED WITH FRED ( NON-SOCASTIC )
 
-                                                                     #  slope_change_col INPUT column name
+#  slope_change_col INPUT column name
 # xts_treat_na_all_methods_slope <- function(X, NAdelayed_max_width = 57, slope_change_col = "NAedLOCF", slope_change_width = 57) {
 xts_treat_na_all_methods_slope <- function(X, NAdelayed_max_width = 57, slope_change_col = "NAedLOCF", slope_change_width = 57, NAedForwarded_method  = "na.approx") {    
-
+  
   X_colname <- colnames(X)[1] # SHOULD BE JUST ONE COLUMN
   
   # seq # ## S3 method for class 'Date'
@@ -325,7 +325,7 @@ xts_treat_na_all_methods_slope <- function(X, NAdelayed_max_width = 57, slope_ch
   }
   # NEW
   colnames(X__NAedForwarded) <- paste0(X_colname,'__NAedApproxed') # COULD BE # colnames(X__NAedApproxed)
-
+  
   X__NAedLOCF     <- zoo::na.locf  ( X__NAed,                                      na.rm = FALSE ) 
   colnames(X__NAedLOCF)     <- paste0(X_colname,'__NAedLOCF'    )
   
@@ -369,7 +369,7 @@ xts_treat_na_all_methods_slope <- function(X, NAdelayed_max_width = 57, slope_ch
 # X would be e.g.  GSPC of 'FRED MONTHLY'                                # ONLY USES NAedApproxed
 # xts_treat_na_all_methods_lagsma <- function(X, NAdelayed_max_width = 57, i_X_micro_change = 1, lagsma_change_col = "NAedApproxed", lagsma_change_width = 200) {
 xts_treat_na_all_methods_lagsma <- function(X, NAdelayed_max_width = 57, i_X_micro_change = 1, lagsma_change_col = "NAedApproxed", lagsma_change_width = 200, NAedForwarded_method  = "na.approx", lagsma_change_width_future_back = 14) {  
-
+  
   X_colname <- colnames(X)[1] # SHOULD BE JUST ONE COLUMN
   
   # seq # ## S3 method for class 'Date'
@@ -402,7 +402,7 @@ xts_treat_na_all_methods_lagsma <- function(X, NAdelayed_max_width = 57, i_X_mic
   
   # NEW LOC
   colnames(X__NAedApproxed) <- paste0(X_colname,'__NAedApproxed')
-
+  
   # zoo::na.approx does not do backard/forward( tail ( non-leadings) ) approximations 
   #   that should have replaced NA there.
   # but TTR::SMA requires non-NAs in the tail( non-leadings)
@@ -431,7 +431,7 @@ xts_treat_na_all_methods_lagsma <- function(X, NAdelayed_max_width = 57, i_X_mic
     # since the largetst value in a row can be FALSE, I would prefer to return NA for the row
     # if any NA exists in a row , max.col will return 'NA for the row' # ( OTHERS: WOULD HAVE BEEN BETTER )
     # SO preprocess
-
+    
     t(apply(  X__future_min__Dates_TF_NotWKND_NotHOLIDAY, 1, function(x) { 
       y <- if(all(!x)) { rep(NA,NROW(x)) } else { x } 
       return(y)
@@ -452,11 +452,11 @@ xts_treat_na_all_methods_lagsma <- function(X, NAdelayed_max_width = 57, i_X_mic
   
   # price returns # ( future - today ) / abs( today )
   # X__i_X_micro_change <- ( lag(X__NAedApproxed, -1 * i_X_micro_change ) - lag(X__NAedApproxed,0) ) / abs( lag(X__NAedApproxed,0) )
-
+  
   # if my future data lands on a weekend/holiday skip forward to the next available not(weekend) and not(holiday)
   
   i_X_micro_change_adjustments <- i_X_micro_change_adjusted(X__NAedApproxed, i_X_micro_change)
-
+  
   #
   # extract the data because any XTS subsetting of duplicates WILL remove data (that I do not want to happen)
   #
@@ -472,7 +472,7 @@ xts_treat_na_all_methods_lagsma <- function(X, NAdelayed_max_width = 57, i_X_mic
   
   X__i_X_micro_change <- ( xts(X__NAedApproxed_future_coredata, zoo::as.Date(index(X__NAedApproxed))) - X__NAedApproxed ) / abs( X__NAedApproxed )
   
-    # TRAINTEST and TRUETEST and PREDICT
+  # TRAINTEST and TRUETEST and PREDICT
   #   I MUST REMOVE PREDICTIONS MADE ON SATURDAY, SUNDAY ( AND HOLIDAYS)
   #     THESE ARE * ESSENTUALLY * THE SAME FRIDAY/NON_PREVIOUS HOLIDAY PREDICTIONS
   #     THESE 'MESSUP' TRAIN and TEST reliablity
@@ -492,7 +492,7 @@ xts_treat_na_all_methods_lagsma <- function(X, NAdelayed_max_width = 57, i_X_mic
   # but since I pretreated X by merging it with every date in many decades
   #  then X is no longer sparse
   # the 'looking for 'not nulls' below, returns the original intention of the function
-
+  
   v__NAdelayed <- zoo_delay(X[!is.na(coredata(X)),1], 
                             X__NAed, 
                             max_width = NAdelayed_max_width )
@@ -549,8 +549,8 @@ xts_treat_na_all_methods_lagsma <- function(X, NAdelayed_max_width = 57, i_X_mic
 # should/HAVE/be # if 'ALLDATA_saved' < final_date_str, 
 #  then GOS out and GETS  (ALLDATA_saved + 1)_through_final_date_str ( SO I DO NOT 're-get' the ENTIRE data )
 #    DOES library(quandmod) HELP WITH THIS? )
-                                                                                                                         # train_end_date_str NOT USED YET
-                                                                                                                         # approx midpoint of QE2
+# train_end_date_str NOT USED YET
+# approx midpoint of QE2
 Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new_data, make_new_model = new_derived_data, train_end_date_str = "2012-11-02", final_date_str = as.character(zoo::as.Date(Sys.Date())), sink_output = FALSE) {  # OLD final_date_str = "2012-11-02"
   
   ops <- options()
@@ -563,6 +563,10 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
   options(error = recover)
   Sys.setenv(TZ="UTC")
   
+  
+  
+  
+  
   require(TTR)
   require(quantmod)
   require(performanceEstimation) # WILL dynmically load: require(gbm)
@@ -570,10 +574,20 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
   # caret           called by caret::
   # microbenchmark called by microbenchmark::microbenchmark
   
+  library(lubridate)
+  
+  # lubridate and base::format.POSIXct
+  filename <- paste0(
+    as.integer(Sys.Date()),'.',
+    substr(x=period_to_seconds(hms(format(Sys.time(),format="%H:%M:%S")))/(24*3600),start=3,stop=1000000L)  )
+  
   require(TimeProjection) # look forward 'not weekdays' and 'not holidays'
   # Loading required package: lubridate
   # Loading required package: timeDate
   # Loading required package: Matrix
+  
+
+  
   
   # ^GSPC: Summary for S&P 500- Yahoo! Finance
   # https://r-forge.r-project.org/scm/viewvc.php/pkg/quantstrat/demo/faber.R?view=markup&root=blotter
@@ -585,7 +599,7 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
     GSPC <-  getSymbols("^GSPC", src = "yahoo", auto.assign = FALSE , 
                         from = as.Date("1960-01-04"), to = as.Date(final_date_str))
     save("GSPC", file = "GSPC.RData")
-  
+    
     # discount rate    
     Sys.sleep(0.67)
     INTDSRUSM193N <- getSymbols('INTDSRUSM193N',src='FRED', auto.assign = FALSE)
@@ -595,7 +609,7 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
     # Sys.sleep(0.67)
     # FEDFUNDS <- getSymbols('FEDFUNDS',src='FRED')
     # save("FEDFUNDS", file = "FEDFUNDS.RData", auto.assign = FALSE)
-
+    
     # manufacturing expansion/contraction
     Sys.sleep(0.67)
     NAPM <- getSymbols('NAPM',src='FRED', auto.assign = FALSE)
@@ -610,13 +624,13 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
     # I would also need to treat it by tracking the 5 year SMA(correl) to GSPC
     
     # What does Bernard Boule Say?
-  
+    
   }
   
   if(new_data == FALSE ) {
     
     load(file = "GSPC.RData")
-      
+    
     # discount rate
     load(file = 'INTDSRUSM193N.RData')
     
@@ -674,17 +688,17 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
     
     print("End TCU_PLUS xts_treat_na_all_methods_lagsma")
     
-
+    
     
     print("Begin INTDSRUSM193N_PLUS xts_treat_na_all_methods_lagsma")
     
     # FRED ( not volitile )  
     INTDSRUSM193N_PLUS <- merge(MSTRIDX,INTDSRUSM193N, join = "left")
     NTDSRUSM193N_PLUS <- xts_treat_na_all_methods_slope(   NAdelayed_max_width = 1900,  # 5 years
-      INTDSRUSM193N_PLUS, slope_change_width = 57, NAedForwarded_method  = "na.locf") # peopls reacion time
+                                                           INTDSRUSM193N_PLUS, slope_change_width = 57, NAedForwarded_method  = "na.locf") # peopls reacion time
     
     print("End INTDSRUSM193N_PLUS xts_treat_na_all_methods_lagsma")
-
+    
     
     # quantitive easing ( not volitle )
     
@@ -709,7 +723,7 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
     
     # discount rate will also hold the fed QE actions
     NTDSRUSM193N_PLUS <- merge(NTDSRUSM193N_PLUS, X__qe_in_action)
-  
+    
     # if QE is in progress, the fed_direction is always EXPANDING (3)
     NTDSRUSM193N_PLUS <- within.xts( NTDSRUSM193N_PLUS, { USMONPOL__fed_direction <- ifelse( USMONPOL__qe_in_action == 3, 3, NA) } ) 
     # If the fed directin is not in progress, the direction is determined by the slope of the discount rate (3,2,1)
@@ -726,7 +740,7 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
   }
   
   if( new_derived_data == FALSE) {
-   
+    
     load(file = "MSTRIDX.RData")
     load(file = "X__qe_in_action.RData")
     
@@ -743,7 +757,7 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
   }
   
   if( make_new_model == TRUE ) {
-  
+    
     # MAY!? want to put last
     PERFECTWORLD <- WORLD[,!grepl(".*__NAed$", colnames(WORLD)),drop = FALSE] # columns with 90% NAs are not useful in makng fits
     # PERFECTWORLD <- na.trim( PERFECTWORLD ) ## too early # e.g. INTDSRUSM193N__NAdelayed CARRIED only 57 days
@@ -785,20 +799,20 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
       'INTDSRUSM193N__isNA_flag_f2',
       'INTDSRUSM193N__NAedLOCF__slope_changed_f3' ,
       
-      'USMONPOL__fed_direction_f3' #,
+      'USMONPOL__fed_direction_f3'  ,
       
-    # 'TCU__NAdelayed',
-    # 'TCU__isNA_flag_f2',
-    # 'TCU__NAedApproxed',
-    # 'TCU__NAedApproxed__sma57',
-    # 'TCU__NAedApproxed__sma2_above_lagsma57_f2',
+        'TCU__NAdelayed',
+        'TCU__isNA_flag_f2',
+        'TCU__NAedApproxed',
+        'TCU__NAedApproxed__sma57',
+        'TCU__NAedApproxed__sma2_above_lagsma57_f2',
       
-    #  'NAPM__NAdelayed',
-    # 'NAPM__isNA_flag_f2',
-    # 'NAPM__NAedApproxed',
-    # 'NAPM__NAedApproxed_above_50pct_f2', 
-    # 'NAPM__NAedApproxed__sma57',
-    # 'NAPM__NAedApproxed__sma2_above_lagsma57_f2' 
+         'NAPM__NAdelayed',
+        'NAPM__isNA_flag_f2',
+        'NAPM__NAedApproxed',
+        'NAPM__NAedApproxed_above_50pct_f2', 
+        'NAPM__NAedApproxed__sma57',
+        'NAPM__NAedApproxed__sma2_above_lagsma57_f2' 
       
     ) ] -> PERFECTWORLDFACTOREDMODEL
     
@@ -847,9 +861,9 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
   alldata_rowindex_bizdays <-  (projectDate(zoo::as.Date(row.names(PERFECTWORLDFACTOREDMODEL)))$bizday == TRUE)
   
   bigdata_rowindex_range_days <- as.numeric(zoo::as.Date(row.names(PERFECTWORLDFACTOREDMODEL))) <= as.numeric(zoo::as.Date(train_end_date_str))
-
+  
   bigdata_rowindex <- bigdata_rowindex_range_days & alldata_rowindex_bizdays
-                         
+  
   # train   
   bigdata    <- PERFECTWORLDFACTOREDMODEL[bigdata_rowindex,,drop = FALSE]
   
@@ -933,13 +947,13 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
       # if it has a scalesrowid, Remove it. It is not part of the dat.
       if(!is.null(scalescolname)) { 
         
-         # remove the scalescolname variable so it does not exist
-         dat[,scalescolname] <- NULL 
-         
-         # dynamically remove the scalescolname variable from the formula
-         # I do not care if the variable exists or NOT
-         frmula <- eval(substitute(update(frmula, ~ . - scalescolname_var),list(scalescolname_var = as.symbol(scalescolname))))
-         
+        # remove the scalescolname variable so it does not exist
+        dat[,scalescolname] <- NULL 
+        
+        # dynamically remove the scalescolname variable from the formula
+        # I do not care if the variable exists or NOT
+        frmula <- eval(substitute(update(frmula, ~ . - scalescolname_var),list(scalescolname_var = as.symbol(scalescolname))))
+        
       }
       
       f <- substitute(
@@ -979,7 +993,7 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
   # underweight ( put in fractions for FACTOR = 1, terrible : GSPC_CLOSE__i_X_micro_change_isgain_f2 )
   
   if(sink_output == TRUE) {
-    con <- file("Givens_Siegel_Faber_Johnson_SinkOutput.txt")
+    con <- file(paste0(filename, "_GSFJ__SinkOutput", ".txt"))
     sink(con) # type="output"
     sink(con, type="message")
   }
@@ -1018,14 +1032,14 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
   if(!exists("spExp1List_metrics"))   spExp1List_metrics   <- NULL
   
   scale_iterator <- 0
-  myscales <- c(1/(100 - seq(0,95,5)), 1, seq(5,100,5))
+  # myscales <- c(1/(100 - seq(0,95,5)), 1, seq(5,100,5))
   # ANDRE - TEMPORARY OVERRIDE
   # myscales <- c(100) # c(100, 0.01)
-  myscales <- c(0.002,0.001)
+  # myscales <- c(0.002,0.001)
   # ANDRE - TEMPORARY OVERRIDE
   # myscales <- 0.001 # c(0.002)
-  myscales <- c(0.5,1,2)
-  #
+  # myscales <- c(0.5,1,2)
+  myscales <- 4 ** seq(-5,5)
   for(myscale in myscales) {
     scale_iterator <- scale_iterator + 1
     
@@ -1038,7 +1052,7 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
     # options(parallelMap.status ="stopped")
     
     if(isTRUE(iscluster)) assign("bigdata",bigdata ,envir = .GlobalEnv) 
-                        # reomves error: Error in assign("bigdata", envir = .GlobalEnv) : argument "value" is missing, with no default
+    # reomves error: Error in assign("bigdata", envir = .GlobalEnv) : argument "value" is missing, with no default
     
     # data = call("get",x = "bigdata", envir = environment())
     # data = if(isTRUE(iscluster)) {bigdata} else {call("get",x = "bigdata", envir = environment())}
@@ -1046,7 +1060,7 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
     # Accuracy(ACC) ( sum(true pos + true neg) / total_population )
     # https://en.wikipedia.org/wiki/Receiver_operating_characteristic
     
-      spExp1 <- substitute(performanceEstimation(
+    spExp1 <- substitute(performanceEstimation(
       # scalescolname is not part of the formula ( non-dynamic case ), so it will be removed ( consider instead "y ~ ." )  # if I pass a 'call' object to 'data' then MUST BE copy=TRUE
       PredTask(formula(bigdata[,-NCOL(bigdata)]),  data = if(isTRUE(iscluster)) {bigdata} else {call("get",x = "bigdata", envir = environment())}, taskName = paste0('GSFJDatTask','_pos_wts_', myscale), copy=TRUE),c(
         workflowVariants(wf='standardWF', wfID= paste0("CVstandGBMwfID",'_pos_wts_', myscale), # I believe that a custom workflow can only customize
@@ -1054,21 +1068,22 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
                          learner.pars=list(method="gbm", verbose = FALSE,
                                            distribution  = c('bernoulli'), 
                                            tuneGridText  = c(  # 5 trees per second
-                                                          #    "data.frame(n.trees = 2, interaction.depth = 30, shrinkage = 0.50, n.minobsinnode = 20)",  # COMMON
-                                                          #    "data.frame(n.trees = 200, interaction.depth = 30, shrinkage = 0.10, n.minobsinnode = 1)"  # EXPERIMENT                                                          
-                                                          #    "data.frame(n.trees = 2, interaction.depth = 17, shrinkage = 0.25, n.minobsinnode = 10)" # COMMON
-                                                               "data.frame(n.trees = 1000,  interaction.depth = 30, shrinkage  = 0.01, n.minobsinnode = 100)" 
-                                                          #    "data.frame(n.trees = 20000, interaction.depth = 7 , shrinkage  =  0.001, n.minobsinnode = 10)"
-                                                          #    "data.frame(n.trees = 20000, interaction.depth = 17, shrinkage  = 0.0001, n.minobsinnode = 10)"
-                                                          #    "data.frame(n.trees = 20000, interaction.depth = 17, shrinkage  =  0.001, n.minobsinnode = 10)"
-                                                             )
+                                             #    "data.frame(n.trees = 2, interaction.depth = 30, shrinkage = 0.50, n.minobsinnode = 20)",  # COMMON
+                                             #    "data.frame(n.trees = 200, interaction.depth = 30, shrinkage = 0.10, n.minobsinnode = 1)"  # EXPERIMENT                                                          
+                                             #    "data.frame(n.trees = 2, interaction.depth = 17, shrinkage = 0.25, n.minobsinnode = 10)" # COMMON
+                                             #    "data.frame(n.trees = 1000,  interaction.depth = 30, shrinkage  = 0.01, n.minobsinnode = 300)" 
+                                                  "data.frame(n.trees = 3000,  interaction.depth = 30, shrinkage  = 0.01, n.minobsinnode = 300)"
+                                             #    "data.frame(n.trees = 20000, interaction.depth = 7 , shrinkage  =  0.001, n.minobsinnode = 10)"
+                                             #    "data.frame(n.trees = 20000, interaction.depth = 17, shrinkage  = 0.0001, n.minobsinnode = 10)"
+                                             #    "data.frame(n.trees = 20000, interaction.depth = 17, shrinkage  =  0.001, n.minobsinnode = 10)"
+                                           )
                                            , scales = paste0("ifelse(as.integer(bigdata[[1]]) ==  1L, ", myscale,", 1)"), scalescolname = 'scalesrowid'
-                                           )        # "ifelse(as.integer(bigdata[[1]]) ==  1L, 500,1)" # "seq(1,NROW(bigdata))" # "ifelse(as.integer(bigdata[[1]]) ==  1L, 1, 90)"
+                         )        # "ifelse(as.integer(bigdata[[1]]) ==  1L, 500,1)" # "seq(1,NROW(bigdata))" # "ifelse(as.integer(bigdata[[1]]) ==  1L, 1, 90)"
                          , as.is = 'verbose', varsRootName = "CVstandGBM_vars")    # CONSTANT dat population size # , pre = c('smote')
       ),
       EstimationTask(metrics=c("auc","acc","tpr","tnr","SharpTr","trTime", "tsTime","totTime"),method=CV(nReps=1,nFolds=3))
       , cluster = if(isTRUE(iscluster)) {iscluster} else{ NULL }
-        
+      
     ))
     
     microbenchmark::microbenchmark( {
@@ -1086,12 +1101,12 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
     
     # join by workflows all objects need to address the same tasks!
     # spExp1List_workflows <- if (is.null(spExp1List_workflows)) spExp1 else mergeEstimationRes(spExp1List_workflows,spExp1, by="workflows")
-
+    
     # to join by metrics all objects need to address the same tasks!
     # spExp1List_metrics   <- if (is.null(spExp1List_metrics))   spExp1 else mergeEstimationRes(spExp1List_metrics,  spExp1, by="metrics")
     
-
-  
+    
+    
     # print('getWorkflow("trainCaret.v1",spExp1)')
     # print(getWorkflow("trainCaret.v1",spExp1))
     
@@ -1124,7 +1139,7 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
     # print(estimationSummary(spExp1))
     
     print(paste0("Ending"," ","scale_iterator",":"," ",scale_iterator," ","myscale",":"," ",myscale))
-  
+    
   }
   
   print('')
@@ -1146,46 +1161,46 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
   print("End grand results: spExp1List_tasks")
   print('')
   
-#   # CAN NOT DO # join by workflows all objects need to address the same tasks!
-#   print('')
-#   print("Begin grand results: spExp1List_workflows")
-#   print('print(taskNames(spExp1List_workflows))')
-#   print(taskNames(spExp1List_workflows))
-#   print('print(workflowNames(spExp1List_workflows))')
-#   print(workflowNames(spExp1List_workflows))
-#   print('print(metricNames(spExp1List_workflows))')
-#   print(metricNames(spExp1List_workflows))
-#   print('print(topPerformers(spExp1List_workflows, maxs=rep(TRUE,3)))')
-#   print(topPerformers(spExp1List_workflows, maxs=c(TRUE,TRUE,TRUE,TRUE,TRUE,FALSE,FALSE,FALSE)))
-#   print('print(rankWorkflows(spExp1List_workflows))')
-#   print(rankWorkflows(spExp1List_workflows))
-#   print('plot(spExp1List_workflows)')
-#   plot(spExp1List_workflows)
-#   print('print(summary(spExp1List_workflows))')
-#   print(summary(spExp1List_workflows))
-#   print("End grand results: spExp1List_workflows")
-#   print('')
-#   
-#   # CAN NOT DO # to join by metrics all objects need to address the same tasks!
-#   print('')
-#   print("Begin grand results: spExp1List_metrics")
-#   print('print(taskNames(spExp1List_metrics))')
-#   print(taskNames(spExp1List_metrics))
-#   print('print(workflowNames(spExp1List_metrics))')
-#   print(workflowNames(spExp1List_metrics))
-#   print('print(metricNames(spExp1List_metrics))')
-#   print(metricNames(spExp1List_metrics))
-#   print('print(topPerformers(spExp1List_metrics, maxs=rep(TRUE,3)))')
-#   print(topPerformers(spExp1, maxs=c(TRUE,TRUE,TRUE,TRUE,TRUE,FALSE,FALSE,FALSE)))
-#   print('print(rankWorkflows(spExp1List_metrics))')
-#   print(rankWorkflows(spExp1List_metrics))
-#   print('plot(spExp1List_metrics)')
-#   plot(spExp1List_metrics)
-#   print('print(summary(spExp1List_metrics))')
-#   print(summary(spExp1List_metrics))
-#   print("End grand results: spExp1List_metrics")
-#   print('')
-#   
+  #   # CAN NOT DO # join by workflows all objects need to address the same tasks!
+  #   print('')
+  #   print("Begin grand results: spExp1List_workflows")
+  #   print('print(taskNames(spExp1List_workflows))')
+  #   print(taskNames(spExp1List_workflows))
+  #   print('print(workflowNames(spExp1List_workflows))')
+  #   print(workflowNames(spExp1List_workflows))
+  #   print('print(metricNames(spExp1List_workflows))')
+  #   print(metricNames(spExp1List_workflows))
+  #   print('print(topPerformers(spExp1List_workflows, maxs=rep(TRUE,3)))')
+  #   print(topPerformers(spExp1List_workflows, maxs=c(TRUE,TRUE,TRUE,TRUE,TRUE,FALSE,FALSE,FALSE)))
+  #   print('print(rankWorkflows(spExp1List_workflows))')
+  #   print(rankWorkflows(spExp1List_workflows))
+  #   print('plot(spExp1List_workflows)')
+  #   plot(spExp1List_workflows)
+  #   print('print(summary(spExp1List_workflows))')
+  #   print(summary(spExp1List_workflows))
+  #   print("End grand results: spExp1List_workflows")
+  #   print('')
+  #   
+  #   # CAN NOT DO # to join by metrics all objects need to address the same tasks!
+  #   print('')
+  #   print("Begin grand results: spExp1List_metrics")
+  #   print('print(taskNames(spExp1List_metrics))')
+  #   print(taskNames(spExp1List_metrics))
+  #   print('print(workflowNames(spExp1List_metrics))')
+  #   print(workflowNames(spExp1List_metrics))
+  #   print('print(metricNames(spExp1List_metrics))')
+  #   print(metricNames(spExp1List_metrics))
+  #   print('print(topPerformers(spExp1List_metrics, maxs=rep(TRUE,3)))')
+  #   print(topPerformers(spExp1, maxs=c(TRUE,TRUE,TRUE,TRUE,TRUE,FALSE,FALSE,FALSE)))
+  #   print('print(rankWorkflows(spExp1List_metrics))')
+  #   print(rankWorkflows(spExp1List_metrics))
+  #   print('plot(spExp1List_metrics)')
+  #   plot(spExp1List_metrics)
+  #   print('print(summary(spExp1List_metrics))')
+  #   print(summary(spExp1List_metrics))
+  #   print("End grand results: spExp1List_metrics")
+  #   print('')
+  #   
   # if .fullOutput == TRUE in standardWF, then I may be able to collect MORE informtion
   #  I may? not have? to rerun through caret::train to get a predictor(Tune)
   #   COME BACK LATER
@@ -1211,6 +1226,9 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
   }
   rm(nm_t,nm_l,curr_iter)
   
+  print("print(str(bigdata))")
+  print(str(bigdata))
+  
   print(paste0("Best measure of interest: ", measure_of_interest))
   print(paste0("Best measure mean: ", best_mean))
   print(paste0("Best best_task: ", best_task))
@@ -1220,9 +1238,9 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
   best_object <- spExp1List_tasks[[best_task]][[best_learner]]@iterationsInfo[[best_iter]][["modeling"]]
   
   # how to save a plot to a file
-  jpeg(filename = "GSFJ_Rplot.jpg")
-  gbm.perf(best_object$finalModel)
-  dev.off()
+  # jpeg(filename = paste0(filename, "_GSFJ_gbm_perf_OOB", ".jpg"))
+  # gbm.perf(best_object$finalModel) # BUGGY
+  # dev.off()
   # http://www.r-bloggers.com/automatically-save-your-plots-to-a-folder/
   
   # caret and gbm specific
@@ -1295,7 +1313,7 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
     print("** today/tomorrow's prediction **")
     print(data.frame(dayofweek = weekdays(zoo::as.Date(row.names(newestbigdata))), newestbigdata = newestbigdata[[1]], caret_predict_train_prediction, cptp_probs, row.names = row.names(newestbigdata)))
     print('')
-  
+    
   } else {
     warning("skipping today/tomorrow prediction because NROWs are not matching")
   }
@@ -1351,10 +1369,10 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
     EstimationTask(metrics=c("auc","acc","tpr","tnr","SharpTr","trTime", "tsTime","totTime"),method=MonteCarlo(nReps=3,szTrain=0.5,szTest=0.25))
   ) 
   
-
+  
   # undebug(EstimationTask)
   # undebug(classificationMetrics)
-
+  
   print('print(taskNames(spExp2))')
   print(taskNames(spExp2))
   print('print(workflowNames(spExp2))')
@@ -1377,7 +1395,7 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
   print("print(table(bigdata[[1]]))")
   print(table(bigdata[[1]]))
   
-
+  
   # print('print(getScores(spExp2))')
   # print(getScores(spExp2)) # LATER: must be specific
   # print('print(estimationSummary(spExp2))')
@@ -1426,7 +1444,7 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
   # print(getScores(spAllwfs)) # LATER: must be specific
   # print('print(estimationSummary(spAllwfs))')
   # print(estimationSummary(spAllwfs))
-
+  
   spAllmtrs <- mergeEstimationRes(spExp1, spExp2, by = "metrics")
   
   print('print(taskNames(spAllmtrs))')
@@ -1566,32 +1584,7 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
 # devtools::load_all("./performanceEstimation-develop_ParMap_windows_socket")
 # Givens_Siegel_Faber_Johnson(new_data = TRUE, sink_output = TRUE)
 #
-# Givens_Siegel_Faber_Johnson(make_new_model = TRUE)
-
-#  LEFT_OFF: dynamic: tuneGridText # NEED vector elements # SEE hotmail
-#  [NA]: workflowVariants(varsRootName) [NA] - ONLY IF NOT USING: "standardWF" | "timeseriesWF"  
-#
-
-# varsRootName DOES WORK # BUT the CALL is position dependent
-# workflowVariants(wf,...,varsRootName,as.is=NULL)
-# 
-# Browse[2]> str(list(...))
-# List of 4
-# $ wfID        : chr "CVstandGBM"
-# $ learner     : chr "trainCaret"
-# $ .fullOutput : logi TRUE
-# $ learner.pars:List of 6
-# ..$ method       : chr "gbm"
-# ..$ verbose      : logi FALSE
-# ..$ distribution : chr "bernoulli"
-# ..$ tuneGridText : chr "data.frame(n.trees = 2, interaction.depth = 17, shrinkage = 0.25, n.minobsinnode = 10)"
-# ..$ scales       : chr "ifelse(as.integer(bigdata[[1]]) ==  1L, 1, 1)"
-# ..$ scalescolname: chr "scalesrowid"
-# Browse[2]> missing(varsRootName)
-# 
-# # working call   
-# workflowVariants(wf="standardWF",<stuff:wfID="CVstandGBM",etc>,varsRootName="AlphaWFvars",as.is="verbose")
-#                                             
+# Givens_Siegel_Faber_Johnson(make_new_model = TRUE)  
 
 
 
