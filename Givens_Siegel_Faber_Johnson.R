@@ -1584,7 +1584,7 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
 # devtools::load_all("./performanceEstimation-develop_ParMap_windows_socket")
 # Givens_Siegel_Faber_Johnson(new_data = TRUE, sink_output = TRUE)
 #
-# Givens_Siegel_Faber_Johnson(make_new_model = TRUE)  
+# Givens_Siegel_Faber_Johnson(make_new_model = TRUE)    
 
 
 
