@@ -10,6 +10,14 @@ options(max.print=99999)
 options(scipen=255) 
 options(digits.secs = 6)
 # options(error=NULL) 
+
+dump_and_quit <- function() {
+  # Save debugging info to file last.dump.rda
+  dump.frames(to.file = TRUE)
+  # Quit R with error status
+  q(status = 1)
+}
+# options(error = dump_and_quit)
 options(error = recover) 
 
 
@@ -19,7 +27,7 @@ if(Sys.getenv("RSTUDIO") == "1") {
   source(paste0(getwd(),"/","utilities_ext_visit_looper_dev.R"))
 }
 
-okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_the_custom_profile = FALSE, site_login = NULL, site_password = NULL, age_range_str = "18:49", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), on_exit_logoff_site = TRUE, on_exit_close_browser = TRUE, on_exit_stop_selenium_server = FALSE, action = "just_visit", online_when = "within_the_last_week", not_to_vst = "NONE", not_to_msg = "NONE", face_color = "anything", loop_forever = "no") { 
+okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_the_custom_profile = FALSE, site_login = NULL, site_password = NULL, age_range_str = "18:49", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), on_exit_logoff_site = TRUE, on_exit_close_browser = TRUE, on_exit_stop_selenium_server = FALSE, action = "just_visit", online_when = "within_the_last_week", not_to_vst = "NONE", not_to_msg = "NONE", face_color = "anything", loop_forever = "no" , age_range_str_group = "all_ages_page") { 
   # OR action = "message_greet_matchname" "message_random_catchphrase"
   # OR not_to_msg = "all_all"
   
@@ -88,7 +96,7 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
 
     if(browser == "chrome") {
       # nav to chrome://settings/ and turn off images for performance reasons
-      remDr <- google_chrome_set_no_images(remDr = remDr)
+      remDr <- google_chrome_set_no_images(remDr = remDr)  ### TEMP OFF/ON GRAPHICS #  
     }
     
     print(paste0("PORT ", curr_port))
@@ -177,7 +185,8 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
     # NOTE: DOES NOT YET ESCAPE OUT TICK MARKS('), SO DO NOT SEND OUT A TICK MARK(')
     
                                                        # NOTE: THIS MAY BE VOLITILE ( AT FIRST WAS [6]?)
-    message_textarea_begin <- "return document.getElementsByTagName(\"textarea\")[5].value = \""
+    # JANUARY 31 2016 textarea location changed from [5] to [4]
+    message_textarea_begin <- "return document.getElementsByTagName(\"textarea\")[4].value = \""
     message_textarea_end   <- "\";"
     
     # ( REMOVE AFTER DEBUGGING )
@@ -215,13 +224,22 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
       
       agerange_str <- age_range_str
       agerange     <- eval(parse(text=agerange_str))
+      age_min <- head(agerange,1)
+      age_max <- tail(agerange,1)
+      
+      if(age_range_str_group == "all_ages_page") { 
+        
+        agerange_orig <- agerange
+        agerange <- 999
+        
+      }
       
       for(agecurr in agerange) { # testing only 31 and 30 # 31:30   
         
         print(Sys.time())
         print(paste0("PORT ", curr_port))
        
-        print(paste0("beginning age ",agecurr))
+        print(paste0("beginning age ",if(age_range_str_group == "all_ages_page") agerange_str else agecurr, " of age ", agerange_str))
         
         # OLD - GET URLS - NO LONGER WORK 
         
@@ -265,6 +283,17 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
         remDr$navigate(navigate_target)
         Sys.sleep(3 + 1 * runif(1, min = 0, max = 1)) # 10 to 15 seconds wait 
         
+        try({   
+          
+          # MORE RIGHT SIDE BLUE BAR PROBLEMS
+          Sys.sleep(1 + 1 * runif(1, min = 0, max = 1))
+          webElemMAYBE_LATER <- remDr$findElement("css selector", "button.closereport" )
+          webElemMAYBE_LATER$highlightElement()
+          webElemMAYBE_LATER$clickElement()
+          Sys.sleep(2 + 1 * runif(1, min = 0, max = 1))
+          
+        }, silent = TRUE )
+        
         
         # AS LONG AS ON ( https://www.okcupid.com/match PAGE ) I can do ANY_TIME
         #
@@ -277,19 +306,46 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
         # WORKS
         
         # OLD
-        if(action == "message_greet_matchname" && online_when == "online_now") {
+        # REMOVED SUNDAY FEBRUARY 21ST
+        # if(action == "message_greet_matchname" && online_when == "online_now") {
+        # REPLACED SUNDAY FEBRUARY 21ST ( ALLOW THIS LIBERTY )
+        if(                                       online_when == "online_now") {
         
           # navigate_target <- paste0("https://www.okcupid.com/match?filter1=0,34&filter2=2,",agecurr,",",agecurr,"&filter3=3,50&filter4=5,3600&filter5=1,1&locid=0&timekey=1&matchOrderBy=MATCH&custom_search=0&fromWhoOnline=0&mygender=m&update_prefs=1&sort_type=0&sa=1&using_saved_search=&count=500")
           
           # L - last online ( NEW CODE )
           
-          webElemSBL <- remDr$findElement("css selector", "span.filter-last_login a")
+#           webElemSBL <- remDr$findElement("css selector", "span.filter-last_login a")
+#           webElemSBL$highlightElement() 
+#           webElemSBL$clickElement()
+#           Sys.sleep(2 + 1 * runif(1, min = 0, max = 1)) 
+#           
+#           # NOW 0 ( WORKS ) # DAY 1 ( WORKS )  # WEEK 2 ( WORKS )  *** 0 NOW ***
+#           # webElemSBLWHEN <- remDr$findElement("css selector", "span.filter-last_login span[data-index='0'] span") 
+# 
+#           # FEBURARY 10 2016
+#           # SETTING THE AGE ( ONLINE NOW )
+#           # SHOULD BE THIS ( BUT I AM WRONG )
+#           # webElemSBLWHEN <- remDr$findElement("css selector", "div.filter-slider-ticks span.filter-slider-tick[data-index='0'] span.filter-slider-tick-label")
+#           webElemSBLWHEN <- remDr$findElement("xpath", '//*[@id="match-filters"]/div[1]/span/span[11]/span/span/span[3]/div/div[1]/div/div[2]/span[1]/span')
+#           webElemSBLWHEN$highlightElement() 
+#           webElemSBLWHEN$clickElement() 
+#           Sys.sleep(2 + 1 * runif(1, min = 0, max = 1)) 
+#           
+          
+          # L - last online ( NEW CODE )
+          
+          # webElemSBL <- remDr$findElement("css selector", "span.filter-last_login a")
+          # UPDATED FEBRURARY 10 2016
+          webElemSBL <- remDr$findElement("css selector", "span.filter-wrapper.filter-last-login button.open-basic-filter")
           webElemSBL$highlightElement() 
           webElemSBL$clickElement()
           Sys.sleep(2 + 1 * runif(1, min = 0, max = 1)) 
           
-          # NOW 0 ( WORKS ) # DAY 1 ( WORKS )  # WEEK 2 ( WORKS )  *** 0 NOW ***
-          webElemSBLWHEN <- remDr$findElement("css selector", "span.filter-last_login span[data-index='0'] span") 
+          # NOW 0 ( WORKS ) # DAY 1 ( WORKS )  # WEEK 2 ( WORKS )  *** 2 WEEK ***
+          # FEBURARY 10 2016
+          # ONLINE WITHIN THE LAST TWO WEEKS  # last element -  1 now - 2 day - 3 week                                                        # 1 - NOW, 2 - DAY, 3 - WEEK
+          webElemSBLWHEN <- remDr$findElement("xpath", '//*[@id="match-filters"]/div[1]/span/span[11]/span/span/span[3]/div/div[1]/div/div[2]/span[1]/span')          
           webElemSBLWHEN$highlightElement() 
           webElemSBLWHEN$clickElement() 
           Sys.sleep(2 + 1 * runif(1, min = 0, max = 1)) 
@@ -302,13 +358,17 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
           
           # L - last online ( NEW CODE )
           
-          webElemSBL <- remDr$findElement("css selector", "span.filter-last_login a")
+          # webElemSBL <- remDr$findElement("css selector", "span.filter-last_login a")
+          # UPDATED FEBRURARY 10 2016
+          webElemSBL <- remDr$findElement("css selector", "span.filter-wrapper.filter-last-login button.open-basic-filter")
           webElemSBL$highlightElement() 
           webElemSBL$clickElement()
           Sys.sleep(2 + 1 * runif(1, min = 0, max = 1)) 
           
           # NOW 0 ( WORKS ) # DAY 1 ( WORKS )  # WEEK 2 ( WORKS )  *** 2 WEEK ***
-          webElemSBLWHEN <- remDr$findElement("css selector", "span.filter-last_login span[data-index='2'] span") 
+          # FEBURARY 10 2016
+          # ONLINE WITHIN THE LAST TWO WEEKS  # last element -  1 now - 2 day - 3 week                                                        # 1 - NOW, 2 - DAY, 3 - WEEK
+          webElemSBLWHEN <- remDr$findElement("xpath", '//*[@id="match-filters"]/div[1]/span/span[11]/span/span/span[3]/div/div[1]/div/div[2]/span[3]/span')          
           webElemSBLWHEN$highlightElement() 
           webElemSBLWHEN$clickElement() 
           Sys.sleep(2 + 1 * runif(1, min = 0, max = 1)) 
@@ -316,13 +376,39 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
           
         }    
         
-        # A - age ( NEW CODE ) 
         
-        webElemSB <- remDr$findElement("css selector", "span.filter-age > a")
+        # A - age ( NEW CODE ) # startupr age dialog box
+        
+        # UPDATED FEBRUARY 10 2016
+        # webElemSB <- remDr$findElement("css selector", "span.filter-age > a")
+        webElemSB <- remDr$findElement("css selector", "span.filter-wrapper.filter-age  button.open-basic-filter")
         webElemSB$highlightElement() 
         webElemSB$clickElement()
         Sys.sleep(2 + 1 * runif(1, min = 0, max = 1)) 
         
+        # if exists '[?] Only matches into my age', then make sure, force it to be unchecked
+        # PROB also COULD detect if UNCHECKED
+#         if(remDr$executeScript("return document.querySelectorAll('#checkbox-age_recip-2').length;")[[1]] != 0) {
+#           
+#           js_result <- remDr$executeScript("return document.querySelector('#checkbox-age_recip-2').checked = false;")[[1]]
+#           # checkbox # RESULT ? # 0/false/unchecked 1/true/checked  bad_css/ERROR
+#           if(js_result == FALSE) print("Only matches onto my age is now Garanteed UNCHECKED")
+#           
+#         }
+
+        try( {
+
+        # turn off: Only matches into my age Check Box # FEBRUARY 10
+        if(remDr$executeScript("return document.querySelector('#checkbox-age_recip-2').checked == true;")[[1]]) {
+          # SHOULD HAVE WORKED
+          # webElemRESTRICTAGE <- remDr$findElement("css selector", "span.checkbox-text")
+          webElemRESTRICTAGE <- remDr$findElement("xpath",'//*[@id="match-filters"]/div[1]/span/span[7]/span/span/span[3]/div/div[1]/label/div')
+          webElemRESTRICTAGE$highlightElement()
+          webElemRESTRICTAGE$clickElement()
+        }
+        
+        }, silent = TRUE)
+
         # BACKSPACE "\uE003" ( could have used .clear()? ) 
         
         webElemSBA <- remDr$findElement("css selector", "input[name=minimum_age]")
@@ -331,19 +417,60 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
         # right arrows and backspaces
         webElemSBA$sendKeysToElement(list("\uE014","\uE014","\uE003","\uE003"))
         
+        try( {
+          
+          # turn off: Only matches into my age Check Box # FEBRUARY 10
+          if(remDr$executeScript("return document.querySelector('#checkbox-age_recip-2').checked == true;")[[1]]) {
+            # SHOULD HAVE WORKED
+            # webElemRESTRICTAGE <- remDr$findElement("css selector", "span.checkbox-text")
+            webElemRESTRICTAGE <- remDr$findElement("xpath",'//*[@id="match-filters"]/div[1]/span/span[7]/span/span/span[3]/div/div[1]/label/div')
+            webElemRESTRICTAGE$highlightElement()
+            webElemRESTRICTAGE$clickElement()
+          }
+          
+        }, silent = TRUE)
+        
         # enter 'min age'
-        webElemSBA$sendKeysToElement(list(as.character(agecurr)))
+        webElemSBA$sendKeysToElement(list(as.character(if(age_range_str_group == "all_ages_page") age_min else agecurr)))
         Sys.sleep(2 + 1 * runif(1, min = 0, max = 1)) 
         
+        
+        try( {
+          
+          # turn off: Only matches into my age Check Box # FEBRUARY 10
+          if(remDr$executeScript("return document.querySelector('#checkbox-age_recip-2').checked == true;")[[1]]) {
+            # SHOULD HAVE WORKED
+            # webElemRESTRICTAGE <- remDr$findElement("css selector", "span.checkbox-text")
+            webElemRESTRICTAGE <- remDr$findElement("xpath",'//*[@id="match-filters"]/div[1]/span/span[7]/span/span/span[3]/div/div[1]/label/div')
+            webElemRESTRICTAGE$highlightElement()
+            webElemRESTRICTAGE$clickElement()
+          }
+          
+        }, silent = TRUE)
+        
+
         webElemSBA2 <- remDr$findElement("css selector", "input[name=maximum_age]")
         webElemSBA2$highlightElement()
-  
+
         # right arrows and backspaces
         webElemSBA2$sendKeysToElement(list("\uE014","\uE014","\uE003","\uE003"))
-        
+
         # enter 'max age'
-        webElemSBA2$sendKeysToElement(list(as.character(agecurr))) 
+        webElemSBA2$sendKeysToElement(list(as.character(if(age_range_str_group == "all_ages_page") age_max else agecurr))) 
         Sys.sleep(2 + 1 * runif(1, min = 0, max = 1)) 
+        
+      try( {
+        
+        # turn off: Only matches into my age Check Box # FEBRUARY 10
+        if(remDr$executeScript("return document.querySelector('#checkbox-age_recip-2').checked == true;")[[1]]) {
+          # SHOULD HAVE WORKED
+          # webElemRESTRICTAGE <- remDr$findElement("css selector", "span.checkbox-text")
+          webElemRESTRICTAGE <- remDr$findElement("xpath",'//*[@id="match-filters"]/div[1]/span/span[7]/span/span/span[3]/div/div[1]/label/div')
+          webElemRESTRICTAGE$highlightElement()
+          webElemRESTRICTAGE$clickElement()
+        }
+        
+      }, silent = TRUE)
         
         # SEE 'JUST BELOW' - ENTER AGE then PRESS enter KEY
         
@@ -361,10 +488,89 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
           
         } else { # more_physical_criteria == TRUE
           
+          # FEBRUARY 10 
+          # NOTE # HAS A TENDENCY TO RE-COME ON BY ITSELF ( WHAT IS THAT ABOUT ) 
+          # UNCHECK "Only Matches my Age" CHECK BOX ( if Exists or NOT i DO NOT CARE )
+          Sys.sleep(1 + 1 * runif(1, min = 0, max = 1)) 
+          # TOO MUCH OF A TENDENCY OF THEM TO TRY TO RECHECK IT, WHEN I AM NOT LOOKING
+
+          try( {
+            
+            # turn off: Only matches into my age Check Box # FEBRUARY 10
+            if(remDr$executeScript("return document.querySelector('#checkbox-age_recip-2').checked == true;")[[1]]) {
+              # SHOULD HAVE WORKED
+              # webElemRESTRICTAGE <- remDr$findElement("css selector", "span.checkbox-text")
+              webElemRESTRICTAGE <- remDr$findElement("xpath",'//*[@id="match-filters"]/div[1]/span/span[7]/span/span/span[3]/div/div[1]/label/div')
+              webElemRESTRICTAGE$highlightElement()
+              webElemRESTRICTAGE$clickElement()
+            }
+            
+          }, silent = TRUE)
+          
+          Sys.sleep(2 + 1 * runif(1, min = 0, max = 1)) 
+          
+          # open THAT 'more criteria' icon
+          
+          # JANUARY 31 2016
+          # SIMPLER just use the NEW reliable WAY
           # MORE_CRITERI upper right corner graphic
-          webElemMORECRIT <-  remDr$findElement("css selector", ".toggle-advanced-filters.expand")
-          webElemMORECRIT$highlightElement()
+          # webElemMORECRIT <-  remDr$findElement("css selector", ".toggle-advanced-filters.expand")
+          # FEBURARY 10 CHANGE
+          webElemMORECRIT <-  remDr$findElement("xpath", '//*[@id="match-filters"]/div[1]/button/span[1]')
+          
+          # DID WORK 10 DAYS AGON ON JANUARY 31 I HAVE NOT TESTED IT ( IT STILL COULD WORK )
+          # remDr$mouseMoveToLocation(webElement = webElemMORECRIT)
+          # webElemMORECRIT$sendKeysToElement(list(key = "enter"))
+          
+          webElemMORECRIT$highlightElement() 
           webElemMORECRIT$clickElement()
+          
+          
+          
+#           # JANUARY 31 2016
+#           # Always on page weather see-able or NOT - NOT RELIABLE
+#           # click on Maybe Later on Right Side Advertising BOOST Bar
+#           if(remDr$executeScript("return document.querySelectorAll('button.closereport').length;")[[1]] != 0) {
+#             
+#             webElemCLOSEREPORT <-  remDr$findElement("css selector", "button.closereport")
+#             webElemCLOSEREPORT$highlightElement()
+#             webElemCLOSEREPORT$clickElement()
+#             
+#             # IF THAT 'does not work'
+#             # THIS works   document.querySelector('button.closereport').click()
+#             #   AND RETURNS javascript_undefinied
+#             
+#           }
+          
+#           # JANUARY 31 2016
+#           # if exists BLUE RIGHT advertisement BAR
+#           # After "Maybe Later" is clicked, if NOT ON page, it still 
+#           # can be detected by querySelectorAll and return size '1' *BUT SETTING style.display = 'none';* WILL RETURN AN ERROR
+#           if(remDr$executeScript("return document.querySelectorAll('div.panel-boost').length;")[[1]] != 0) {
+#             
+#             # set its display ( MAY OR MAY NOT MAKE A DIFFERENCE ) ... becomes BLUE but not HIDDEN
+#             js_result <- remDr$executeScript("return document.querySelector('div.panel-boost').style.display = 'none';")[[1]]
+#             #  returns "none"
+#             if(js_result == "none") print("Boost Panel is now HIDDEN")
+#             
+#             # MANUALLY open the ADVANCED filters THE OTHER WAY
+#             
+#             # MORE_CRITERI upper right corner graphic
+#             webElemMORECRIT <-  remDr$findElement("css selector", ".toggle-advanced-filters.expand")
+#             webElemMORECRIT$highlightElement()
+#             remDr$mouseMoveToLocation(webElement = webElemMORECRIT)
+#             webElemMORECRIT$sendKeysToElement(list(key = "enter"))
+#             
+#           } else { # DO IT THE OLD WAY
+#             
+#             # MORE_CRITERI upper right corner graphic
+#             webElemMORECRIT <-  remDr$findElement("css selector", ".toggle-advanced-filters.expand")
+#             webElemMORECRIT$highlightElement()
+#             webElemMORECRIT$clickElement()
+#             
+#           }
+          
+        
           Sys.sleep(2 + 1 * runif(1, min = 0, max = 1)) 
           # WORKS
           
@@ -384,6 +590,9 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
             Sys.sleep(2 + 1 * runif(1, min = 0, max = 1)) 
             # WORKS
             
+            # TOO MUCH OF A TENDENCY OF THEM TO TRY TO RECHECK IT, WHEN I AM NOT LOOKING
+            try( { remDr$executeScript("return document.querySelector('#checkbox-age_recip-2').checked = false;")[[1]] }, silent =  TRUE )
+            
             # Press BIG green SEARCH button [SEARCH]
             webElemBIGREENSEARCH <-  remDr$findElement("css selector", "button.flatbutton.big.green" )
             webElemBIGREENSEARCH$highlightElement() 
@@ -391,10 +600,23 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
             Sys.sleep(2 + 1 * runif(1, min = 0, max = 1)) 
             # WORKS
             
+            # TOO MUCH OF A TENDENCY OF THEM TO TRY TO RECHECK IT, WHEN I AM NOT LOOKING
+            try( { remDr$executeScript("return document.querySelector('#checkbox-age_recip-2').checked = false;")[[1]] }, silent =  TRUE )
+            
+            
           }
           
         }
-        
+
+        # MAY 3 2016  CRAZY OKCUPID URL AND IMAGES DOWNLOAD ERROR: URLS AND IMAGES ARE NOT LOADING:  
+        Sys.sleep(2 + 1 * runif(1, min = 0, max = 1))
+        remDr$refresh()
+        Sys.sleep(2 + 1 * runif(1, min = 0, max = 1))
+        remDr$refresh()
+        Sys.sleep(2 + 1 * runif(1, min = 0, max = 1))
+
+        ### browser()
+
         #### webElemSBA2$sendKeysToElement(list(as.character(agecurr), key = "enter")) # enter - executes the search
         #### Sys.sleep(2 + 1 * runif(1, min = 0, max = 1)) 
         
@@ -408,7 +630,7 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
         
         # begin on the top of the page
         
-        print(paste0("beginning scroll down to the bottom of the page of : ",agecurr, " of age ", agerange_str))
+        print(paste0("beginning scroll down to the bottom of the page of : ",if(age_range_str_group == "all_ages_page") agerange_str else agecurr, " of age ", agerange_str))
         
         # OLD CODE
         # webElemSB <- remDr$findElement("css selector", "#submit_button") # THE 'SEARCH' button of 'SEARCH/CLEAR' 
@@ -422,7 +644,9 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
         alinkslength <- remDr$executeScript("return document.getElementsByTagName('a').length;")[[1]]
         Sys.sleep(0.01)
         
-        print(paste0("begin collecting all A elements of THIS SEGMENT of the page of : ",agecurr, " of age ", agerange_str))
+
+
+        print(paste0("begin collecting all A elements of THIS SEGMENT of the page of : ",if(age_range_str_group == "all_ages_page") agerange_str else agecurr, " of age ", agerange_str))
         
         apagearefs <- c()
         
@@ -441,18 +665,25 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
           getelmentsbytagname_js_command <- paste0("return ", paste("document.getElementsByTagName('a')[",0:(alinkslength -1),"].href", sep = "", collapse =" + ' ' + "),";" )
           apagearefs_superstring <-remDr$executeScript(getelmentsbytagname_js_command)[[1]]
         }
+  
         if(apagearefs_superstring != "") {
           apagearefs <- str_split(apagearefs_superstring,"[ ]")[[1]]
         }
         
-        
-        print(paste0("end collecting all A elements of THIS SEGMENT of the page of : ",agecurr, " of age ", agerange_str))
+        # MAY 3 2016
+        print("sorted uniqued 'profile' found in page As: top most area")
+        print(data.frame(sort(unique( apagearefs[str_detect(apagearefs,"profile")] ))))
+  
+        print(paste0("end collecting all A elements of THIS SEGMENT of the page of : ",if(age_range_str_group == "all_ages_page") agerange_str else agecurr, " of age ", agerange_str))
         
         # removing 'cf event' - these are not 'the name' and not 'the url' so thes do not have 'use' to me
         # un-removal MAY be causing the last person in an age to be 'double contacted'?
         apagearefs <- str_replace(apagearefs,"[?]cf=event","")
         # AUG 25 - MORE CLEANUP CODE
-        apagearefs <- str_replace(apagearefs,"[?]cf=regular","")
+        # apagearefs <- str_replace(apagearefs,"[?]cf=regular","")
+  
+        # JANUARY 31, 2016 - KEEP the [?]cf=regular"
+        # apagearefs <- str_replace(apagearefs,"[?]cf=regular","")
   
         # unique
         apagearefsu   <- unique(apagearefs)
@@ -470,7 +701,13 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
         # if not at the end of the page keep scrolling until I get there
         while( !((window.innerHeight + window.scrollY) >= document.body.offsetHeight) ) {
           
-          webElemSB$sendKeysToElement(list("\uE010")) # AGGRESSIVE PAGE DOWN
+          # MAY 3 2016
+          # remDr$refresh() # will cause the   webElemSB   to be removed
+          ##  webElemSB$sendKeysToElement(list("\uE010")) # AGGRESSIVE PAGE DOWN
+          # Detail: An element command failed because the referenced element is no longer attached to the DOM.
+          # There is (hopefully) ONE to GRAB
+          remDr$findElement("css selector", "a")$sendKeysToElement(list("\uE010")) # AGGRESSIVE PAGE DOWN
+          
           Sys.sleep(3 + 1 * runif(1, min = 0, max = 1)) # 10 to 15 seconds wait
           
           # NEW(ADJUSTED) - continue collectin links as I scroll down 
@@ -480,7 +717,8 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
           alinkslength <- remDr$executeScript("return document.getElementsByTagName('a').length;")[[1]]
           Sys.sleep(0.01)
           
-          print(paste0("begin collecting all A elements of THIS SEGMENT of the page of : ",agecurr, " of age ", agerange_str))
+          
+          print(paste0("begin collecting all A elements of THIS SEGMENT of the page of : ",if(age_range_str_group == "all_ages_page") agerange_str else agecurr, " of age ", agerange_str))
           
           apagearefs <- c()
   
@@ -503,13 +741,17 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
             apagearefs <- str_split(apagearefs_superstring,"[ ]")[[1]]
           }
   
+  
           print(paste0("end collecting all A elements of THIS SEGMENT of the page of : ",agecurr, " of age ", agerange_str))
           
           # removing 'cf event' - these are not 'the name' and not 'the url' so thes do not have 'use' to me
           # un-removal MAY be causing the last person in an age to be 'double contacted'?
           apagearefs <- str_replace(apagearefs,"[?]cf=event","")
           # AUG 25 - MORE CLEANUP CODE
-          apagearefs <- str_replace(apagearefs,"[?]cf=regular","")
+          # apagearefs <- str_replace(apagearefs,"[?]cf=regular","")
+  
+          # JANUARY 31, 2016 - KEEP the [?]cf=regular"
+          # apagearefs <- str_replace(apagearefs,"[?]cf=regular","")
   
           # unique
           apagearefsu   <- unique(apagearefs)
@@ -525,7 +767,7 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
           
         }
         
-        print(paste0("now at bottom of the page of : ",agecurr, " of age ", agerange_str))
+        print(paste0("now at bottom of the page of : ",if(age_range_str_group == "all_ages_page") agerange_str else agecurr, " of age ", agerange_str))
         
         # now at the bottom of the page, 
         
@@ -565,10 +807,9 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
         
         # Pleasant response and good person
                # NEW            # SOME DIALOG
-        rec9 <- c("ImSooUnique","iwillteachyouhow","howlokitty")
+        rec9 <- c("ImSooUnique","iwillteachyouhow")
         
-        # Pleasant response
-        rec8 <- c("howlokitty")
+        rec8 <- c()
         
         # actually they just visited me
         rec7 <- c("kittycatstevens","sunburnqueenie","Menina_Bella","sophiahelen1","clarelynew","woqueen1225","CBD34","umbria24","CaliGirlinNOLA")
@@ -607,7 +848,7 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
   
         # NOT INTERESTED LIST
         all_all <- c(all_all,"lilbird987","xoxosunshinexoxo","PoopySoupy","pizzaforbrkfst","racheltheredhead", "caprifemme27","Vaporwave-Lenin", "theantigoneway", "mhiz_lindsey", "Lolo_nola", "Cyclon3") # she tells me directly that she is not interested
-        all_all <- c(all_all,"LifeLovinLady","DerbyDevil74", "Joyceann46", "umbria24") 
+        all_all <- c(all_all,"LifeLovinLady","DerbyDevil74", "Joyceann46", "umbria24","Jen84lsu","Jen84lsu","stolendaughter") 
   
         all_all <- c(all_all,"saxybitch13") # NOT LOOKING TO MEET
   
@@ -692,13 +933,13 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
       all_all <- c(all_all, "Saranescence")
   
       # OCT 8 - 13 14 IMPLIED WE SHOULD GO OUT - SOME GOOD DIALOG
-      all_all <- c(all_all, "AlyEsc","Labchick3571","jsbutterfly")
+      all_all <- c(all_all, "AlyEsc","Labchick3571","jsbutterfly")  ### COME BACK LATER ###
       
       # OCT 15 - SHE LIKED ME
-      all_all <- c(all_all, "Lafirefly")
+      ### all_all <- c(all_all, "Lafirefly") ## BEGIN RQUOTING
       
       # OCT 21 - WEAK DIALOG BUT VERY HOT
-      all_all <- c(all_all, "wheel_watching")
+      ### all_all <- c(all_all, "wheel_watching") ### BEGIN REQUOTING
       
       # OCT 22 - NO PICTURE
       all_all <- c(all_all,"kcheezie")
@@ -710,10 +951,10 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
       all_all <- c(all_all)
       
       # NOV 2,3,4,8 - SOME NEW WEAK DIALOG
-      all_all <- c(all_all,"antropofaga","geminileebaby","Elizabeth-1","Jesscheaux","xkryscrossedx")
+      ### all_all <- c(all_all,"antropofaga","geminileebaby","xkryscrossedx") ### BEGIN REQUOTING
   
       # TODAY NOV 4 ONLY
-      all_all <- c(all_all,"Mustbefriends1s","hottprincess4728")
+      ### all_all <- c(all_all,"Mustbefriends1s")
       
       # TODAY NOV 5 ONLY
       # all_all <- c(all_all,"Natalief5625","illlizabeth")
@@ -724,60 +965,172 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
       # TODAY NOV 5 ASKED OUT ( SHE IMPLIED THAT WE SHOULD MEET )
       all_all <- c(all_all,"sweaterwench") # NO - CRAZY LIAR FROM ATLANTA
 
-
-      
       # NOV 11 - WEAK ASKED OUT - CONTINUE TALKING TO HER
       all_all <- c(all_all,"mlrobi15")
       
       # NOV 11 - WEAK DIALOG
-      all_all <- c(all_all,"judythatsme8","februarybb","JadeLotus27")
+      ### all_all <- c(all_all,"judythatsme8","februarybb","JadeLotus27")  ## BEGIN RE-QUOTING
       
       # NOV 11, 13 - BETTER DIALOG
-      all_all <- c(all_all,"SugarcaneMustard","Jesscheaux","hottprincess4728")
+      all_all <- c(all_all,"Jesscheaux","hottprincess4728")
       
-      # SUN NOV 15 - ONE CUSTOM MESSAGE WAS SENT ( MONDAY NOV 21 - RECEIVED 2ND CUSTOM MESSAGE )
-       all_all <- c(all_all,"MissBookWorm8","jeanalean","miche2767","gailforcewins","sophiahelen1", "lainey504",
-       "yeezytavghtme","candyplant","LaurenMichelle47","n-y-m-p-h-e-t","tizzaverde","nicoleerinc","jamierad")
+      # NOV 11, 13 - BETTER DIALOG
+      ### all_all <- c(all_all,"hottprincess4728") ## BEGIN REQUOTING
+      
 
-       # SUN NOV 15 - ONE CUSTOM MESSAGE WAS SENT
-       all_all <- c(all_all,"Bette_taco","sam9921","roul3tt3","boxfoxpox","susie81970","MaddiiieSunShine","roseyrides",
-       "Rachel_LeahR","jenellybeans","BookmarkNola","Di_marie22","dame-viking",
-       "bramblebull","AriaLaJune","tiffany656","Livemore83","heartontherail","sharinfun247","stuckuptown",
-       "i_am_Michelle86","ZIANOLA","BethWillowYeah","DRW70130","delasoul504","Steph8708",
-       "Upfromtheblue82","rrose_selavy88","FLSTFb14","JDTho","bbbupbb","Mustbefriends1","smorkin_labbit",
-       "sarah_lynn859","fallengt14","onepmtues","MegsInTheTardis","Verdictfashion","bete_rouge",
-       "Sanna5581","wagg90","ip23","Caballera1984","chirpy214","greeneyedlola","southernbelle326",
-       "spicyjane","ready4change227","cherijen","SaltyPaycheck","SweetandSnarky","ArtFunLuv","paigeeeb",
-       "bigeasyemi","mustlovedogs220","NOLAgirlAmy","femchefeastbank","Quenbea","kjacobs7","ktizzle-o-matic",
-       "jenren12","lapeach85","bnolan00","psychic__hearts","amicamortis","SassySparkles12","alleighrich",
-       "jennb504","New_GirlInTown","younggnfunn504","i_am_smh","alicee504","baBarbie","Mistyb7783",
-       "alittlelagniappe","breathemusic32", "indiefolkgirl","Jerseyfarmer","Quen32000","Hypnotc711",
-       "lookingupstar","Clevah_Gurl","haylidu","kathattack05","Lu6344")
+      
+#       # SUN NOV 15 - ONE CUSTOM MESSAGE WAS SENT ( MONDAY NOV 21 - RECEIVED 2ND CUSTOM MESSAGE )
+#        all_all <- c(all_all,"MissBookWorm8","jeanalean","miche2767","gailforcewins","sophiahelen1", "lainey504",
+#        "yeezytavghtme","candyplant","LaurenMichelle47","n-y-m-p-h-e-t","tizzaverde","nicoleerinc","jamierad")
+# 
+#        # SUN NOV 15 - ONE CUSTOM MESSAGE WAS SENT
+#        all_all <- c(all_all,"Bette_taco","sam9921","roul3tt3","boxfoxpox","susie81970","MaddiiieSunShine","roseyrides",
+#        "Rachel_LeahR","jenellybeans","BookmarkNola","Di_marie22","dame-viking",
+#        "bramblebull","AriaLaJune","tiffany656","Livemore83","heartontherail","sharinfun247","stuckuptown",
+#        "i_am_Michelle86","ZIANOLA","BethWillowYeah","DRW70130","delasoul504","Steph8708",
+#        "Upfromtheblue82","rrose_selavy88","FLSTFb14","JDTho","bbbupbb","Mustbefriends1","smorkin_labbit",
+#        "sarah_lynn859","fallengt14","onepmtues","MegsInTheTardis","Verdictfashion","bete_rouge",
+#        "Sanna5581","wagg90","ip23","Caballera1984","chirpy214","greeneyedlola","southernbelle326",
+#        "spicyjane","ready4change227","cherijen","SaltyPaycheck","SweetandSnarky","ArtFunLuv","paigeeeb",
+#        "bigeasyemi","mustlovedogs220","NOLAgirlAmy","femchefeastbank","Quenbea","kjacobs7","ktizzle-o-matic",
+#        "jenren12","lapeach85","bnolan00","psychic__hearts","amicamortis","SassySparkles12","alleighrich",
+#        "jennb504","New_GirlInTown","younggnfunn504","i_am_smh","alicee504","baBarbie","Mistyb7783",
+#        "alittlelagniappe","breathemusic32", "indiefolkgirl","Jerseyfarmer","Quen32000","Hypnotc711",
+#        "lookingupstar","Clevah_Gurl","haylidu","kathattack05","Lu6344")
       
        # THU NOV 20 - ONE RESPONSE FROM THE *BULK SENT*
-       all_all <- c(all_all,"RealClaire")
+       ## all_all <- c(all_all,"RealClaire") # BEGIN QUOTING
       
        # TUES - NOV 17 - FROM (SUN NOV 15 - ONE CUSTOM MESSAGE WAS SENT) - NEW WEAK DIALOG ( ALSO F BULK )
-       all_all <- c(all_all,"LifeLovinLady", "awake_and_aware")
+       ## all_all <- c(all_all,"LifeLovinLady", "awake_and_aware") ## BEGIN SENDING QUOTE
   
        # SUN NOVEMBER22 - NEW JUST GOOD 1ST MESSAGE 
 
-       all_all <- c(all_all,"heartneworleans","Cryztalbaby","CatEyes201","Artomaton","SeeRedGo88",
-      "jennierose2729","Lust4life03","craftyb123","iammeltee007","kayjay725","Jennigirl1",
-      "Jessie_Lynn_88","LAGirlInNOLa","shelbyk514","shelbyshortcake","DSuzanne","bag_o_Jess34","marisalikesyou")
+#      all_all <- c(all_all,"heartneworleans","Cryztalbaby","CatEyes201","Artomaton","SeeRedGo88",
+#      "jennierose2729","Lust4life03","craftyb123","iammeltee007","kayjay725","Jennigirl1",
+#      "Jessie_Lynn_88","LAGirlInNOLa","shelbyk514","shelbyshortcake","DSuzanne","bag_o_Jess34","marisalikesyou")
 
        # NOV 23-24 SOME WEAK DIALOG
-        all_all <- c(all_all,"GothicCupcake")
+       # all_all <- c(all_all,"GothicCupcake")
   
        # NOV 23 - SOME VERY WEAK DIALOG - JUST TODAY ONLY
        # all_all <- c(all_all,"crybabii","cateyebel77")
         
        # NOV 24 SOME BETTER DIALOG
-        all_all <- c(all_all,"heartontherail") # MASS-GOOD POEM 1 # RESPONER
+       ## all_all <- c(all_all,"heartontherail") # MASS-GOOD POEM 1 # RESPONER ## BEGIN RESENDING
 
        # NOV 8/27 - SUNDAY - WEAK DIALOG BUT HIGHLY MOTIVATED
        # SHE IS 'PERSON OF FEW WORDS' - ASK OUT NOW
-       all_all <- c(all_all,"innausa")
+       all_all <- c(all_all,"innausa") # SENT TO ME - TUES DEC 1 - n 2 weeks is wil be ok * COME BACK *
+       
+       # NOV 29 SOME LONG TERM WEAK CONVERSATION
+       ## all_all <- c(all_all,"courtneyesl") ## BEGIN REQUOTING
+       
+
+
+       # NEW MONTH OF DECEMBER #
+       # DEC 01 - NEW LIKE - FOLLOWING TWO FAMOUS QUOTES
+       ### all_all <- c(all_all,"TravelingAwesome") ## RESTART QUOTING
+
+      # PREV DATE -        WED EVE DEC 2       SAT MORN DEC 5  ( NIETHER REPONDED TO MY REQUEST FOR A 2ND DATE )
+      all_all <- c(all_all,"SugarcaneMustard", "Elizabeth-1") # NOTE: ELIZ-1:VIOLINST WAS HOT
+
+       # MONTH OF DECEMBER - SHE DOES NOT WANT TO CONTACT ME 
+       all_all <- c(all_all,"clevergirl-17","cooldj12","bonlynnkat")
+
+       # MONTH OF DECEMBER - I DO NOT WANT TO CONTACT HER
+       all_all <- c(all_all,"Jengracey8675")
+
+       # THU DEC 03 - WEAKEST DIALOG EVER POEM RESPONDERS
+       all_all <- c(all_all,"rungakutta","neesie0411","kat6801") # 
+       
+       # THU DEC 03 - WEAKEST DIALOG EVER POEM RESPONDERS
+       all_all <- c(all_all,"kat6801") # 3rd ONE: I do have a boyfriend and currently looking for another one to add.  Must be open to having a threesome with us. 
+
+       # THU DEC 03 - BETTER POEM RESPONDERS
+       all_all <- c(all_all,"kat6801","jesameca","Carlatourguide")
+
+      # THu - DEC 3 -BETTER NEW DIALOG 
+      all_all <- c(all_all,"sunshinewatcher", "nolaflowergirl","xkryscrossedx")
+
+       # THu - DEC 4 - asked OUT NO RESPNONSE
+       all_all <- c(all_all,"NOLApink")
+
+       # DEC 4 - no response - ASKED OUT - REASKED OUT - SHE - FOREVER - CANCELLED
+       all_all <- c(all_all,"superherolover")
+       
+       # DEC 5 - LIKED ME - REPSONDED - MOTIVATED - 26 AND CURVEY
+       all_all <- c(all_all,"GirlThuggery")
+       
+       # DEC 6-11 - SOME NEW WEAK DIALOG
+       all_all <- c(all_all, "kajungirl77", "leftofcenter37")
+
+
+
+       # DEC 10 - SOME OLD DIALOG RETURNING - VERY WEAK - SHE IS OUT OF A BAD RELATIONSHIP
+       all_all <- c(all_all, "StarryLyte")
+
+       # DEC 10 - JUST ASKED OUT ( SHE *ASKED ME OUT* )
+       all_all <- c(all_all, "readytoluv93")
+
+       # # #
+       ### all_all <- c(all_all, "GambitGirl","Patricia111286","ShelleyK07","Wittynwise1957")
+
+       # LATE February - NO
+       ### all_all <- c(all_all,"UptownDez","sandibeach10","lamary","UptownDez")
+
+       # February 28 - Sunday - Simple Contact
+       ### all_all <- c(all_all,"LadyNMandeville")
+
+       # Late Feb - ASKED OUT - TURNED DOWN
+       ### all_all <- c(all_all,"yoshgirl","BayouBunny","SandraB56","dj0806","yogi3784")
+
+       # Medium Conversations
+       ### all_all <- c(all_all,"SuddenlySarah49","Byugirl64","geminileebaby","south2013")
+       
+       # ASKED OUT - SUN 6 TH - IN PROGRESS
+       ### all_all <- c(all_all,"seriouspeopleonl")
+
+       # implicit asked out - SILL CONVERSATION IN PROGRESS
+        ### all_all <- c(all_all,"crazyinnola1")
+
+       # Late Feb - Long Conversations
+       ### all_all <- c(all_all,"Alycattp","Beverly1965","katzekew","FreeTimeinNOLA","Starlet19","brandiew35")
+
+       # Feb 23 - # asked out  # 60 years old ( MAYBE KEEP PERSUING? )
+       all_all <- c(all_all, "SandraB57") # asked out : waiting response TURNED DOWN - tranport problems
+
+       # Late Feb - Should make a contact
+       ### all_all <- c(all_all,"Jenbat","Phartzthecat","FunBrunette08","SisInNOLA")
+
+       ## BEGIN tuesday March 8 (really sunday March 6) ##
+
+       # medum term
+       ### all_all <- c(all_all,"cjh2016")
+
+       # Late Feb - Asked out - We dated - she accepted for Thursday March 3rd
+       all_all <- c(all_all,"PerfectlySpiced") # Date Over, End of two, Dates ( Indian Woman)
+
+       # Date in March, 2016 Bipolar and weird.  She does not want to see me again
+       all_all <- c(all_all, "leftofcenter37")
+
+       # She asked me out.  Then, I gave instructions # i reasked out: on April 19th.
+       all_all <- c(all_all,"freespirit826") # Gina RE-INPROGRESS
+
+       # a re-ask out
+       all_all <- c(all_all,"CanYouHandleHer")
+
+       # april 19, woman of few words likes me ( I sent here a simple message )
+       # all_all <- c(all_all,"ladyvibran")
+     
+       # she asked me out - april 19th for morning breakfast - could not make it
+       # I am still trying to set up
+       all_all <- c(all_all,"howlokitty")
+
+       # April 29th just today ONLY
+       all_all <- c(all_all,"weathergirlmania")
+
+       ### ( three means today only )
 
        # christenelaine89 - BORDERLINE ( IF I DO NOT GET A RESPONSE BACK )
    
@@ -809,7 +1162,7 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
         # loop and visit each name - from bottom(rev) to top ( testing ) 
         # testing - visit from the BOTTOM going UP 
         
-        print(paste0("begin visiting each profile of the page of : ",agecurr, " of age ", agerange_str))
+        print(paste0("begin visiting each profile of the page of : ",if(age_range_str_group == "all_ages_page") agerange_str else agecurr, " of age ", agerange_str))
         
         # rev(apagearefsupr)[1:2]               BOTTOM OF PAGE:  testing: reverse and first 2 names ( testing )
         # letters[1:(length(letters) %/% 2)]    TOP    OF PAGE:  50% of the unique links GOING DOWN
@@ -819,13 +1172,24 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
         print(paste0("Total possible profiles: ",apagearefsupr_total_count))    
               
         if(apagearefsupr_total_count == 0) {
+          ### browser()
           print("since Total possible profiles: 0, then SKIP AHEAD to next LOOP")
           next
         }
         
+        # FEBRUARY 23 2016
+        # missing the exact suffix "?cf=regular,age_recip_off"
+        missing_reg_recip_off_index <- which(!str_detect(apagearefsupr,"[?]cf=regular,age_recip_off"))
+        
+        # FEBRUARY 23 2016
+        # ADD IT BACK to prevent: ( current matchname: NA )
+        # NOTE: That *will* WORK but COULD cause a BUG in the future ( FALSE URL - target preferences status )
+        apagearefsupr[missing_reg_recip_off_index] <- str_c(apagearefsupr[missing_reg_recip_off_index],"?cf=regular,age_recip_off")
+
         # choose e.g. visit everyone
         apagearefsupr_reduced <- apagearefsupr[1:(length(apagearefsupr) %/% 1)]
         
+
         # choose e.g. visit only the top half
         # apagearefsupr_reduced <- apagearefsupr[1:(length(apagearefsupr) %/% 2)]
         
@@ -843,8 +1207,15 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
         # OLD
         # end_matchnames_str_locations   <- (str_locate(apagearefsupr_reduced,"[?]"     ) - 1)[,1,drop=FALSE]
         # NEW - since no more ?regular ...  just get the location of the end of the string
-        end_matchnames_str_locations   <- (str_locate(apagearefsupr_reduced,"$"     ) - 1)[,1,drop=FALSE]
+        # end_matchnames_str_locations   <- (str_locate(apagearefsupr_reduced,"$"     ) - 1)[,1,drop=FALSE]
+
+        # JANUARY 31 2016 do not collect ",age_recip_off" ( AS PART OF THE matchname )
+        # "https://www.okcupid.com/profile/nolatonycbby?cf=regular,age_recip_off"
+        end_matchnames_str_locations   <- (str_locate(apagearefsupr_reduced,"[,$]"     ) - 1)[,1,drop=FALSE]
         
+        # MAY 3, 2016 - SEE COMPLEMENT BELOW
+        # end_matchnames_str_locations   <- (str_locate(apagearefsupr_reduced,"[,?]"     ) - 1)[,1,drop=FALSE]
+
         # NOTE: (str_locate  finds 'first occurance"
         # could possible break if  "?" is found in a strange spot
         
@@ -852,8 +1223,26 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
         # TO_DO_THIS_WEEKEND [ ]
         
         # hadly S-logic
-        matchnames <- str_sub(apagearefsupr_reduced, start = cbind(begin_matchnames_str_locations, end_matchnames_str_locations))
-        
+        # matchnames <- str_sub(apagearefsupr_reduced, start = cbind(begin_matchnames_str_locations, end_matchnames_str_locations))
+
+        # JANUARY 31 2016 Replacement code
+        # (c("nolatonycbby","Mmisfits13","nolatonycbby?cf=regular","Mmisfits13?cf=regular"), "[?]cf=regular")
+        matchnames_plus_regular <- str_sub(apagearefsupr_reduced, start = cbind(begin_matchnames_str_locations, end_matchnames_str_locations))
+        # RUNTIME was different THAN test time
+        # matchnames <- matchnames_plus_regular[!str_detect(matchnames_plus_regular, "[?]cf=regular")]
+        # JANUARY 31 2016 REPATCH - in runtime, these are ONLY ALL ?cf=regular
+  
+        matchnames_could_be_more <- str_replace(str_extract(matchnames_plus_regular, "^.*[?]"),"[?]","")
+ 
+        # MAY 3 2016 ( FOR SOME REASON THIS SHOWS UP: "cf=regular?" )
+        matchnames <- str_replace(matchnames_could_be_more, "cf=regular[?]","")
+
+        # JANUARY 31 2016 Replacement code
+        # "https://www.okcupid.com/profile/nolatonycbby?cf=regular,age_recip_off"
+        # "https://www.okcupid.com/profile/nolatonycbby,age_recip_off" ( NOT USEFUL )
+        apagearefsupr_reduced_with_NOT_REGULARS_and_REGULARS <- apagearefsupr_reduced 
+        apagearefsupr_reduced <-  apagearefsupr_reduced_with_NOT_REGULARS_and_REGULARS[str_detect(apagearefsupr_reduced_with_NOT_REGULARS_and_REGULARS,"[?]cf=regular")]
+
         print(paste0("Will (try) to visit these links of age: ", agecurr))
         print(as.data.frame(sort(apagearefsupr_reduced)))
   
@@ -865,7 +1254,7 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
           # TEST ( *** REMOVE AFTER TEST *** )
           # action_ref_counter <- length(apagearefsupr_reduced)
           
-          print(paste0("begin visiting ", alink, " of the page of : ",agecurr, " of age ", agerange_str))
+          print(paste0("begin visiting ", alink, " of the page of : ",if(age_range_str_group == "all_ages_page") agerange_str else agecurr, " of age ", agerange_str))
           
           print(paste0("  current matchname: ",matchnames[action_ref_counter]))
           
@@ -901,6 +1290,41 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
           
           if(isTRUE(safe_navigate_to_new_url_success[["success"]])) {
             
+            # JANUARY 31 2016 -See her FULL profile
+            # At the bottom of her profile page ( click here +More link )
+            # webElemMORELINK <- remDr$findElement("css selector", "span i.okicon" )
+            # SHOULD BE ABOVE ( CSS SEENS CORRECT )
+            
+            # FEBUARY 10 - DOING XPATH
+            # webElemMORELINK <- remDr$findElement("xpath",'//*[@id="profile2015"]/div[4]/div[1]/div[1]/div[6]/span' )
+            # FEBUARY 10 - DOING XPATH
+            # not seen, but document.querySelectorAll('span i.okicon').length; finds 36 on the page
+            # would ONLY error here.  So just skip.  I do not care.
+            # SEEMS that ITS LOCATIONDYNAMICALLY MOVES - DYNAMIC POSITIONS ON THE PAGE
+            ### DOES NOT WORK - INSTEAD OF HITTING A LINK AT THE BOTTOM OF THE PAGE IT HITS
+            ###   AN ICON AT THE TOP OF THE PAGE ( ANTI - SCRAPING S* )
+            ### ( SKIP FOR RIGHT NOW:  I BELIEIVE THAT  'MOST OF THE ESSAY IS STILL ON THE PAGE - BUT JUST HIDDEN FROM VIEW )
+            ### webElemMORELINK_S <-  remDr$findElements("css selector", "span i.okicon" )
+            ###sapply( webElemMORELINK_S, function(x) { try( {  x$highlightElement() }, silent = TRUE )  ; try( {  x$clickElement() }, silent = TRUE ) } )
+            
+            
+            # JANUARY 31 2016 Collect her profile essay text
+            webElemESSAYS_S <- remDr$findElements("css selector", "div.essays2015-essay-content" )
+            paste0(sapply(webElemESSAYS_S, function(x){  
+              paste0(x$getElementText()," ") 
+            }, simplify = TRUE ),collapse = "    ") -> essay_text
+            
+            print(essay_text)
+            
+            # also works x$highlightElement(); Sys.sleep(1.0);
+            
+            # To return
+            # Basic Text Mining in R
+            # https://rstudio-pubs-static.s3.amazonaws.com/31867_8236987cf0a8444e962ccd2aec46d9c3.html
+            
+            # Text Mining
+            # http://www.rdatamining.com/examples/text-mining
+            
             # NOTE: DOES NOT YET ESCAPE OUT TICK MARKS('), SO DO NOT SEND OUT A TICK MARK(')
             dbGetQuery(con, paste0("insert into 
             aes_have_visited_list(
@@ -926,19 +1350,30 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
             # END - Sun Nov 22, 2015
             # webElemHERPAGE_AGE <- remDr$findElement("css selector", "div#basic_info div#aso_loc p.infos span:nth-child(1)")
             # NEW - Sun Nov 29, 2015
-            webElemHERPAGE_AGE <- remDr$findElement("css selector", "span.userinfo2015-basics-asl-age")
+            # webElemHERPAGE_AGE <- remDr$findElement("css selector", "span.userinfo2015-basics-asl-age")
+            
+            # NEW - JANUARY 31  2016 ( "Sorry, this user does not exist.")
+            webElemHERPAGE_AGE <- NULL
+            result_find <- tryCatch({ webElemHERPAGE_AGE <- remDr$findElement("css selector", "span.userinfo2015-basics-asl-age") }, warning = function(w) {}, error = function(e) { return("ERROR") }, finally = {})
+            if(class(result_find) == "character" &&  result_find == "ERROR" ) { print(paste0("Problem, User exists?: ", matchnames[action_ref_counter]," skipping ...")) ; next }
+            
+            
             # webElemHERPAGE_AGE$highlightElement()
             current_her_page_age <- as.integer(webElemHERPAGE_AGE$getElementText()[[1]])
             
-            if( current_her_page_age != agecurr  ) {
+            # if( current_her_page_age != agecurr  ) {
+            # ADJUSTED January 31, 2016
+            if( (age_range_str_group == "one_age_page" ) && (current_her_page_age != agecurr)  ) {
               
               print(paste0("      **** WRONG AGE ON PAGE of matchname ", matchnames[action_ref_counter]," of search criteria age ", agecurr," BUT SHE HAS page age ", current_her_page_age))
                      print("      **** SKIPPING send message to HER ... next loop ...")
               next
+              ## MAY 3 2016
+              ## print("      **** (BUT NOT) SKIPPING send message to HER ... X next loop X ...")
               
             }
             
-            print(paste0("begin send message ", alink, " of the page of : ",agecurr, " of age ", agerange_str))
+            print(paste0("begin send message ", alink, " of the page of : ",if(age_range_str_group == "all_ages_page") agerange_str else agecurr, " of age ", agerange_str))
             
             if( action == "message_greet_matchname" ) {
               # OLD
@@ -946,6 +1381,8 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
               # NEW expect the matchname to come first  # *** NOTE: STICK ," Ivan" at the end to add a signature  ***
               
               matchname_current <- matchnames[action_ref_counter]
+              
+              # browser( expr = { is.na(matchname_current) } ) # DEBUG
               
               # If she has a REAL name, I will use it in messages
               
@@ -985,10 +1422,22 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
                 c("VintageLovely94","Trina"),
                 c("Jesscheaux","Jessica"),
                 c("awake_and_aware","May"),
-                c("heartontherail","Savanna")
+                c("heartontherail","Savanna"),
+                c("courtneyesl","Courtney"),
+                c("Carlatourguide","Carla"),
+                c("readytoluv93","Miranda"),
+                c("thissupergirlis","Caroline"),
+                c("yogi3784","Ronda"),
+                c("brandiew35","brandie"),
+                c("CanYouHandleHer","Ann"),
+                c("freespirit826","Gina")
               )
               
               matchnames_aliases_db <- as.data.frame(t(data.frame(matchnames_aliases)), stringsAsFactors = FALSE)
+              
+              # print(paste0("DEBUG: matchname_current: ", matchname_current))
+              # print("DEBUG: matchnames_aliases_db")
+              # print(matchnames_aliases_db)
               
               if(any(str_detect(matchname_current,matchnames_aliases_db[,1]))) {
                 # as an alias  # find the alias
@@ -1068,8 +1517,9 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
             # lapply(TEST, function(x){INDEX <<- INDEX + 1 ;x$highlightElement(); x$highlightElement(); print(INDEX) ;Sys.sleep(5.0) } )
             
             # MOST RELIABLE WAY TO DO IT.  NOTE: querySelectorAll also WORKS
-            message_textarea <-                               "document.querySelectorAll('textarea')[5].value"
-            message_textarea_detect_exists <- "try{ retvalue = document.querySelectorAll('textarea')[5].value; return 0 } catch(err) { return -1 };"
+            # JANUARY 31 2016 textarea location changed from [5] to [4]
+            message_textarea <-                               "document.querySelectorAll('textarea')[4].value"
+            message_textarea_detect_exists <- "try{ retvalue = document.querySelectorAll('textarea')[4].value; return 0 } catch(err) { return -1 };"
             message_textarea_detect_exists_result <- remDr$executeScript(message_textarea_detect_exists)[[1]]
   
             if(message_textarea_detect_exists_result == -1) {
@@ -1086,7 +1536,7 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
               writeLines(paste0(message_textarea_begin,current_message,message_textarea_end))
               
               # code changed somewhere 6 --> 5  
-              # return document.getElementsByTagName("textarea")[6].value = "Hi redbeanredbean"; 
+              # return document.getElementsByTagName("textarea")[4].value = "Hi redbeanredbean"; 
               
               Sys.sleep(1 + 2 * runif(1, min = 0, max = 1))
               
@@ -1137,7 +1587,7 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
                 # <span class="okform-feedback message" style="height: 30px;">You can't send the same message twice. Be more original!</span>
                 
                 print(paste0("end message sent to ", matchnames[action_ref_counter], " the message : ", current_message))
-                print(paste0("end send message ", alink, " of the page of : ",agecurr, " of age ", agerange_str))
+                print(paste0("end send message ", alink, " of the page of : ",if(age_range_str_group == "all_ages_page") agerange_str else agecurr, " of age ", agerange_str))
                 
                 # dangerously assume - if I reached the page, sending messages are successfull
                 
@@ -1185,7 +1635,7 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
           #
           #### END "LIKE SOMEONE" "BOOKMARK AREA"  ###
           
-          print(paste0("end visiting ", alink, " of the page of : ",agecurr, " of age ", agerange_str))
+          print(paste0("end visiting ", alink, " of the page of : ",if(age_range_str_group == "all_ages_page") agerange_str else agecurr, " of age ", agerange_str))
           
           #######
           # COMMENTED OUT ( TOO MUCH TIME )
@@ -1197,7 +1647,7 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
           
         }
         
-        print(paste0("end visiting each profile of the page of : ",agecurr, " of age ", agerange_str))
+        print(paste0("end visiting each profile of the page of : ",if(age_range_str_group == "all_ages_page") agerange_str else agecurr, " of age ", agerange_str))
         
         print(paste0("ending age ", agecurr))
   
@@ -1282,11 +1732,12 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
 
 # rm(list=ls(),envir = .GlobalEnv)
 
-# setwd("J:/YDrive/All_NewSeduction/All_ElectronicSpeech/RSeleniumAndBrowsers/AES1") # getwd()
+# setwd("C:/Users/AnonymousUser/All_Romance/AES1") # getwd()
 # MAKE SURE THAT THE .R file in the tab(hover over) has the same dir path as 'setwd'
 
 # ABSOLUTE PATH IS BEST
-# debugSource('J:/YDrive/All_NewSeduction/All_ElectronicSpeech/RSeleniumAndBrowsers/AES1/okcupid_visit_looper_dev.R')
+# debugSource('C:/Users/AnonymousUser/All_Romance/AES1/okcupid_visit_looper_dev.R')
+## debugSource('C:/Users/AnonymousUser/All_Romance/AES1/utilities_ext_visit_looper_dev.R')
 
 # NOTE: Optional, but HIGHLY recommended, for performance, Turn OFF 'view google chrome images'
 # NOTE: Optional, but HIGHLY recommended, for performance, Turn OFF 'view google chrome images'
@@ -1309,20 +1760,14 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
 
 # visiting
 # okcupid_visit_looper_dev()
-# okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = NULL, site_password = NULL, age_range_str = "18:49", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), action = "just_visit", online_when = "within_the_last_week", not_to_vst = "NONE", not_to_msg = "NONE", face_color = "anything", loop_forever = "no")
+# okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = NULL, site_password = NULL, age_range_str = "18:60", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), action = "just_visit", online_when = "within_the_last_week", not_to_vst = "NONE", not_to_msg = "NONE", face_color = "anything", loop_forever = "no", age_range_str_group = "one_age_page")
 #
 # lately ( just prev dates - SOME not visit)
-# okcupid_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = NULL, site_password = NULL, age_range_str = "18:49", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), action = "just_visit", online_when = "within_the_last_week", not_to_vst = "SOME", not_to_msg = "NONE", face_color = "anything", loop_forever = "no")
+# okcupid_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = NULL, site_password = NULL, age_range_str = "18:60", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), action = "just_visit", online_when = "within_the_last_week", not_to_vst = "SOME", not_to_msg = "NONE", face_color = "anything", loop_forever = "no", age_range_str_group = "one_age_page")
 # 
 
 # messaging - not previous dates
-# okcupid_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = NULL, site_password = NULL, age_range_str = "18:49", todays_message = paste0(", thank God that it is ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How is it going?"), action = "message_greet_matchname", online_when = "online_now", not_to_vst = "NONE", not_to_msg = "all_all", face_color = "anything", loop_forever = "yes")  
+# okcupid_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = NULL, site_password = NULL, age_range_str = "18:60", todays_message = paste0(", thank God that it is ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How is it going?"), action = "message_greet_matchname", online_when = "online_now", not_to_vst = "NONE", not_to_msg = "all_all", face_color = "anything", loop_forever = "yes", age_range_str_group = "one_age_page")  
 
 # END INSTRUCTIONS  
 # END INSTRUCTIONS    
-
-
-#           
-#           
- 
-
