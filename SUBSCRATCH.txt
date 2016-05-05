@@ -1,0 +1,218 @@
+
+
+
+# based on my old stuff # REDONE
+
+# S&P 500 PE Ratio by Month
+getSymbols.multpl <- function(url = "http://www.multpl.com/table?f=m") {
+
+  # R 3.2.3
+  require(rvest)  # rvest_0.3.1
+  require(xts)    # xts_0.9-7
+
+  found <- read_html(url)
+
+  # data.frame - time is in reverse order
+  prexts <- html_table(found)[[1]]
+
+  # corrected order
+  prexts <- prexts[rev(as.integer(row.names(prexts))),,drop = FALSE]
+
+  # dates
+  row.names(prexts) <- strptime(prexts[[1]],format='%b %d, %Y')
+
+  # useless now
+  prexts <- prexts[,-1,drop = FALSE]
+
+  colnames(prexts)[1] <- "response"
+
+  # an "\n.* estimate" or "%.*" will return result as text
+
+  # remove comma ',' remove '%' and remove 'estimate' 
+  if(!is.numeric(prexts)[[1]]) { 
+    sub(",",   "", prexts[[1]]) -> prexts[[1]]
+    sub("%",   "", prexts[[1]]) -> prexts[[1]]
+    sub("\n.*","", prexts[[1]]) -> prexts[[1]] 
+    as.numeric(prexts[[1]]) -> prexts[[1]]
+  }
+
+  nowxts <- xts(prexts, zoo::as.Date(row.names(prexts)))
+
+  return(nowxts)
+
+}
+
+
+  # NOTE: INVERSELY PROPORTINAL TO 'FED BOUARD OF GOVS' INTEREST RATES
+
+# S&P 500 PE Ratio by Month
+# http://www.multpl.com/table?f=m
+getSymbols.multpl() -> X1
+# tail(X1)
+
+# S&P 500 Earnings by Month
+# http://www.multpl.com/s-p-500-earnings/table?f=m
+getSymbols.multpl("http://www.multpl.com/s-p-500-earnings/table?f=m") -> X2
+# tail(X2)
+
+S&P 500 Earnings Yield by Month ( THIS ONE )
+# http://www.multpl.com/s-p-500-earnings-yield/table/by-month
+getSymbols.multpl("http://www.multpl.com/s-p-500-earnings-yield/table/by-month") -> X3
+# tail(X3)
+
+> tail(X1)
+           response
+2015-12-01    23.74
+2016-01-01    22.17
+2016-02-01    22.01
+2016-03-01    23.37
+2016-04-01    23.95
+2016-05-04    23.70
+> tail(X2)
+           response
+2015-07-31    93.29
+2015-08-31    92.01
+2015-09-30    90.73
+2015-10-31    89.39
+2015-11-30    88.20
+2015-12-31    87.12
+> tail(X3)
+           response
+2015-12-01     4.21
+2016-01-01     4.51
+2016-02-01     4.54
+2016-03-01     4.28
+2016-04-01     4.17
+2016-05-04     4.22
+
+X3["2007-01-01::"]
+
+> plot(X3["2007-01-01::"]) # SCARY  # SINCE july 2011 falling earnings yield
+
+# S&P 500 Dividend Yield by Month
+getSymbols.multpl("http://www.multpl.com/s-p-500-dividend-yield/table?f=m") -> X4
+# tail(X4)
+
+> plot(X4["2007-01-01::"]) # SINCE july 2014 rising dividend yield
+
+# S&P 500 Historical Prices by Month
+# http://www.multpl.com/s-p-500-historical-prices/table/by-month
+getSymbols.multpl("http://www.multpl.com/s-p-500-historical-prices/table/by-month") -> X5
+# tail(X5)
+
+# He already includes TODAY
+# X rbind(X3,xts(NA_real_, Sys.Date())) # X
+
+
+> plot(X5["2007-01-01::"])
+
+X3_new_idx <- as.Date(seq(head(index(X3),1),tail(index(X3),1), 1))
+X3_NA_new_xts <- xts(rep(NA,NROW(X3_new_idx)),X3_new_idx)
+
+X3daily <- na.locf(merge.xts(X3_NA_new_xts,X3))
+X3daily <- X3daily[,-1] #  earnings yield by day
+
+
+NROW(X3[as.character(Sys.Date())]) != 1
+
+
+# NEED aprox.bizday # SEE list.txt NOTE? 
+
+approx.daily <- function(sparsxts, through_today = TRUE) {
+
+  require(xts)
+
+  if( (NROW(sparsxts[as.character(Sys.Date())]) != 1) && (through_today  == TRUE) ) {
+     rbind(sparsxts,xts(matrix(NA_real_,ncol=NCOL(sparsxts)), Sys.Date())) -> sparsxts
+  } 
+
+  sparsxts_new_idx <- as.Date(seq(head(index(sparsxts),1),tail(index(sparsxts),1), 1))
+  sparsxts_NA_new_xts <- xts(rep(NA,NROW(sparsxts_new_idx)),sparsxts_new_idx)
+
+  sparsxtsdaily <- na.locf(merge.xts(sparsxts_NA_new_xts,sparsxts))
+  sparsxtsdaily <- sparsxtsdaily[,-1] #  by day
+
+  return(sparsxtsdaily)
+
+} 
+# approx.daily(X3) -> X3D
+# > tail(X3D,60)
+
+> approx.daily(X4) -> X4D
+> tail(X4D,60)
+
+# S&P 500 Earnings by Month
+# http://www.multpl.com/s-p-500-earnings/table?f=m
+getSymbols.multpl("http://www.multpl.com/s-p-500-earnings/table?f=m") -> X6
+approx.daily(X6) -> X6D # MORE THAN 5 MONTH DELAY # I NEED SOMETHING THAT IS MORE RECENT ***
+
+
+> plot( (X3D/X4D)["2007-01-01::"] )   # earnings yield DIV dividend_yield
+
+
+# discount rate
+INTDSRUSM193N
+
+> getSymbols("INTDSRUSM193N", src = "FRED")
+
+
+> approx.daily(INTDSRUSM193N) -> INTDSRUSM193N_D
+
+> approx.daily(X5) -> X5D
+
+> plot( (X5/INTDSRUSM193N)["2007-01-01::"] )
+ 
+> plot( scale(X5/INTDSRUSM193N["2007-01-01::"]) )
+
+> plot(  scale(X5/INTDSRUSM193N["2007-01-01::"]) ) # need my axis
+> lines( scale(X5/INTDSRUSM193N["2007-01-01::"]) , col = "red")
+
+
+# S&P 500 PE Ratio by Month
+ X1
+> # approx.daily(X1) -> X1D
+
+lines( scale(X1D["2007-01-01::"]) , col = "blue")
+
+lines( scale(X5["2007-01-01::"]) , col = "green")
+
+# create a legend
+
+> legend(x ="bottom",legend=c("What","When"), col=c("red","green"), lty=c(1,1))
+
+
+# REDs - value
+
+plot(  scale(X5D["2007-01-01::"]) ,            ) # S & P 500 price
+lines( scale(X5D["2007-01-01::"]) , col = "red") 
+
+# SECOND HALF: B - AS LONG AS THIS IS 'NOT VOLITILE' ( AND A), THE STOCK MARKET GOES UP
+# RIVER 1
+lines( scale(X3D["2007-01-01::"]) , col = "orange") # Earnings Yield
+
+# TOWER 1
+lines( scale(X4D["2007-01-01::"]) , col = "gold") # Dividend Yield ( BOUNCY )
+
+# FIRST HALF: A - AS LONG AS THIS GOES UP ( AND B ), THE STOCKMARKE GOES UP 
+# TOWER 2 (TOWER 1 GOES TOWARD TOWER 2 )
+lines( scale((X4D/X3D)["2007-01-01::"]) , col = "tan3") # Dividend Yield OVER Earnings Yield ( STABLE )
+
+# RIVER 2 ( RIVER 1 AND RIVER 2 RUN PARALLEL )
+lines( scale((X3D - X4D)["2007-01-01::"]) , col = "tomato4") # 'Earnings Yield' LESS 'Dividend Yield' # True EARNY (aft DIVys)
+
+# PEOPLE ARE 'OVERCONIDENT DURING 6 MONTHS(UNJUSTIFIED PRICE UPTREND WHILE EARNINGS IS DOWNTREND) 
+#                                 6 MONTHS NEXT BUT WHEN THEY REALIZE THE 'RETURN TO UPTEND IS NOT HAPPENING', PEOPLE BECOME VOLTILE 
+lines( scale(X6D["2007-01-01::"]) , col = "seagreen4") # S&P 500 Earnings by Month
+
+# BLUEs - rates
+
+lines( scale(X1["2007-01-01::"]) , col = "slateblue4") # PEratio
+
+# PURPLE: RED & BLUE: value and rates 
+
+lines( scale((X1 * INTDSRUSM193N)["2007-01-01::"]) , col = "purple4") # PEratio mult * discount_rate
+
+> save.image()
+
+
+http://www.stat.columbia.edu/~tzheng/files/Rcolor.pdf
