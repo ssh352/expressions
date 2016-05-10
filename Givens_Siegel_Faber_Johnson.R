@@ -553,12 +553,16 @@ xts_treat_na_all_methods_lagsma <- function(X, NAdelayed_max_width = 57, i_X_mic
 # approx midpoint of QE2
 Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new_data, make_new_model = new_derived_data, train_end_date_str = "2012-11-02", final_date_str = as.character(zoo::as.Date(Sys.Date())), sink_output = FALSE) {  # OLD final_date_str = "2012-11-02"
   
+
+  
   ops <- options()
   
   options(width=255)     
   options(digits=5) # 22
   options(max.print=99999)
   options(scipen=8) # 255 # Try these = width
+  
+  options(warn=1)
   
   options(error = recover)
   Sys.setenv(TZ="UTC")
@@ -1069,10 +1073,10 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
                                            distribution  = c('bernoulli'), 
                                            tuneGridText  = c(  # 5 trees per second
                                              #    "data.frame(n.trees = 2, interaction.depth = 30, shrinkage = 0.50, n.minobsinnode = 20)",  # COMMON
-                                             #    "data.frame(n.trees = 200, interaction.depth = 30, shrinkage = 0.10, n.minobsinnode = 1)"  # EXPERIMENT                                                          
+                                                  "data.frame(n.trees = 200, interaction.depth = 30, shrinkage = 0.10, n.minobsinnode = 1)"  # EXPERIMENT                                                          
                                              #    "data.frame(n.trees = 2, interaction.depth = 17, shrinkage = 0.25, n.minobsinnode = 10)" # COMMON
                                              #    "data.frame(n.trees = 1000,  interaction.depth = 30, shrinkage  = 0.01, n.minobsinnode = 300)" 
-                                                  "data.frame(n.trees = 3000,  interaction.depth = 30, shrinkage  = 0.01, n.minobsinnode = 300)"
+                                             #    "data.frame(n.trees = 3000,  interaction.depth = 30, shrinkage  = 0.01, n.minobsinnode = 300)"
                                              #    "data.frame(n.trees = 20000, interaction.depth = 7 , shrinkage  =  0.001, n.minobsinnode = 10)"
                                              #    "data.frame(n.trees = 20000, interaction.depth = 17, shrinkage  = 0.0001, n.minobsinnode = 10)"
                                              #    "data.frame(n.trees = 20000, interaction.depth = 17, shrinkage  =  0.001, n.minobsinnode = 10)"
@@ -1305,18 +1309,29 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
   #                    terrible      163     3
   #                    great         627   471
   
-  caret_predict_train_prediction <- predict(caretTune, newdata = newestbigdata)
-  cptp_probs                     <- predict(caretTune, newdata = newestbigdata, type = "prob")
+  #   caret_predict_train_prediction <- predict(caretTune, newdata = newestbigdata)
+  #   cptp_probs                     <- predict(caretTune, newdata = newestbigdata, type = "prob")
+  #   
+  #   if (NROW(newestbigdata) == NROW(caret_predict_train_prediction)) {
+  #     
+  #     print("** today/tomorrow's prediction **")
+  #     print(data.frame(dayofweek = weekdays(zoo::as.Date(row.names(newestbigdata))), newestbigdata = newestbigdata[[1]], caret_predict_train_prediction, cptp_probs, row.names = row.names(newestbigdata)))
+  #     print('')
+  #     
+  #   } else {
+  #     warning("skipping today/tomorrow prediction because NROWs are not matching")
+  #   }
   
-  if (NROW(newestbigdata) == NROW(caret_predict_train_prediction)) {
-    
-    print("** today/tomorrow's prediction **")
-    print(data.frame(dayofweek = weekdays(zoo::as.Date(row.names(newestbigdata))), newestbigdata = newestbigdata[[1]], caret_predict_train_prediction, cptp_probs, row.names = row.names(newestbigdata)))
-    print('')
-    
-  } else {
-    warning("skipping today/tomorrow prediction because NROWs are not matching")
-  }
+  # not full data on the right side then I can not predict on IT
+  newestbigdata_garanteed_right_trimmed <- newestbigdata[row.names(newestbigdata) %in% row.names(na.trim(newestbigdata[,-1,drop = FALSE], sides = "right")),,drop = FALSE]
+  
+  if(NROW(newestbigdata_garanteed_right_trimmed) != NROW(newestbigdata))  warning("IN PREDICT: NROW(newestbigdata_garanteed_right_trimmed) != NROW(newestbigdata)")
+  
+  caret_predict_train_prediction <- predict(caretTune, newdata = newestbigdata_garanteed_right_trimmed)
+  cptp_probs                     <- predict(caretTune, newdata = newestbigdata_garanteed_right_trimmed, type = "prob")
+  
+  print(data.frame(dayofweek = weekdays(zoo::as.Date(row.names(newestbigdata_garanteed_right_trimmed))), newestbigdata = newestbigdata_garanteed_right_trimmed[[1]], caret_predict_train_prediction, cptp_probs, row.names = row.names(newestbigdata_garanteed_right_trimmed)))
+  
   
   
   if(sink_output == TRUE) {
@@ -1584,7 +1599,7 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
 # devtools::load_all("./performanceEstimation-develop_ParMap_windows_socket")
 # Givens_Siegel_Faber_Johnson(new_data = TRUE, sink_output = TRUE)
 #
-# Givens_Siegel_Faber_Johnson(make_new_model = TRUE)    
+# Givens_Siegel_Faber_Johnson(make_new_model = TRUE)       
 
 
 
