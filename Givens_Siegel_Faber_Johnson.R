@@ -545,6 +545,46 @@ xts_treat_na_all_methods_lagsma <- function(X, NAdelayed_max_width = 57, i_X_mic
 }
 
 
+# S&P 500 PE Ratio by Month
+getSymbols.multpl <- function(url = "http://www.multpl.com/table?f=m") {
+  
+  # R 3.2.3
+  require(rvest)  # rvest_0.3.1
+  require(xts)    # xts_0.9-7
+  
+  found <- read_html(url)
+  
+  # data.frame - time is in reverse order
+  prexts <- html_table(found)[[1]]
+  
+  # corrected order
+  prexts <- prexts[rev(as.integer(row.names(prexts))),,drop = FALSE]
+  
+  # dates
+  row.names(prexts) <- strptime(prexts[[1]],format='%b %d, %Y')
+  
+  # useless now
+  prexts <- prexts[,-1,drop = FALSE]
+  
+  colnames(prexts)[1] <- "response"
+  
+  # an "\n.* estimate" or "%.*" will return result as text
+  
+  # remove comma ',' remove '%' and remove 'estimate' 
+  if(!is.numeric(prexts)[[1]]) { 
+    sub(",",   "", prexts[[1]]) -> prexts[[1]]
+    sub("%",   "", prexts[[1]]) -> prexts[[1]]
+    sub("\n.*","", prexts[[1]]) -> prexts[[1]] 
+    as.numeric(prexts[[1]]) -> prexts[[1]]
+  }
+  
+  nowxts <- xts(prexts, zoo::as.Date(row.names(prexts)))
+  
+  return(nowxts)
+  
+}
+
+
 
 # should/HAVE/be # if 'ALLDATA_saved' < final_date_str, 
 #  then GOS out and GETS  (ALLDATA_saved + 1)_through_final_date_str ( SO I DO NOT 're-get' the ENTIRE data )
@@ -627,6 +667,13 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
     # NOTE, I could have 10 year bonds
     # I would also need to treat it by tracking the 5 year SMA(correl) to GSPC
     
+    # S&P 500 Earnings by Month
+    # http://www.multpl.com/s-p-500-earnings/table?f=m
+    getSymbols.multpl("http://www.multpl.com/s-p-500-earnings/table?f=m") -> SP500EARN
+    colnames(SP500EARN) <- "SP500EARN"
+    
+    save("SP500EARN", file = "SP500EARN.RData")
+    
     # What does Bernard Boule Say?
     
   }
@@ -649,6 +696,9 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
     
     # NOTE, I could have 10 year bonds
     # I would also need to treat it by tracking the 5 year SMA(correl) to GSPC
+    
+    # S&P 500 Earnings by Month
+    load(file = "SP500EARN.RData")
     
     # What does Bernard Boule Say?
     
@@ -692,7 +742,14 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
     
     print("End TCU_PLUS xts_treat_na_all_methods_lagsma")
     
+    print("Begin SP500EARN_PLUS xts_treat_na_all_methods_lagsma")
     
+    SP500EARN_PLUS           <- merge(MSTRIDX,SP500EARN          , join = "left")
+    SP500EARN_PLUS <- xts_treat_na_all_methods_lagsma(  NAdelayed_max_width = 128, # four months plus 3 days
+                                                        SP500EARN_PLUS, lagsma_change_width = 127, NAedForwarded_method  = "na.locf") # peopls reacion time
+    save("SP500EARN_PLUS", file = "SP500EARN_PLUS.RData")
+    
+    print("End SP500EARN_PLUS xts_treat_na_all_methods_lagsma")
     
     print("Begin INTDSRUSM193N_PLUS xts_treat_na_all_methods_lagsma")
     
@@ -703,7 +760,7 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
     
     print("End INTDSRUSM193N_PLUS xts_treat_na_all_methods_lagsma")
     
-    
+  
     # quantitive easing ( not volitle )
     
     rbind( 
@@ -736,7 +793,7 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
     NTDSRUSM193N_PLUS <- within.xts( NTDSRUSM193N_PLUS, { USMONPOL__qe_in_action  <- ifelse( is.na(USMONPOL__qe_in_action ),                                      2 , USMONPOL__qe_in_action ) } ) 
     save("NTDSRUSM193N_PLUS", file = "NTDSRUSM193N_PLUS.RData")
     
-    WORLD <- merge(GSPC_PLUS_CLOSE,NTDSRUSM193N_PLUS,NAPM_PLUS, TCU_PLUS)
+    WORLD <- merge(GSPC_PLUS_CLOSE, NTDSRUSM193N_PLUS, NAPM_PLUS, TCU_PLUS, SP500EARN_PLUS)
     save("WORLD", file = "WORLD.RData")
     
     bookmarkhere <- 1
@@ -755,6 +812,8 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
     load(file = "TCU_PLUS.RData")
     
     load(file = "TCU_PLUS.RData")
+    
+    load(file = "SP500EARN_PLUS.RData")
     
     load(file = "WORLD.RData")
     
@@ -782,6 +841,8 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
       TCU__isNA_flag_f2                                     <- factor( TCU__isNA_flag , levels = c('1','2'), labels = c('not_na','is_na'))
       TCU__NAedApproxed__sma2_above_lagsma57_f2             <- factor( TCU__NAedApproxed__sma2_above_lagsma57, levels = c('1','2'), labels = c('terrible','great'))
       
+      SP500EARN__isNA_flag_f2                               <- factor( SP500EARN__isNA_flag , levels = c('1','2'), labels = c('not_na','is_na'))
+      SP500EARN__NAedApproxed__sma2_above_lagsma127_f2      <- factor( SP500EARN__NAedApproxed__sma2_above_lagsma127, levels = c('1','2'), labels = c('terrible','great'))
       
       NAPM__isNA_flag_f2                                    <- factor( NAPM__isNA_flag , levels = c('1','2'), labels = c('not_na','is_na'))
       NAPM__NAedApproxed_above_50pct_f2                     <- factor( ifelse( NAPM__NAedApproxed > 50, 2, 1 ), levels = c('1','2'), labels = c('terrible','great')) 
@@ -805,18 +866,24 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
       
       'USMONPOL__fed_direction_f3'  ,
       
-        'TCU__NAdelayed',
-        'TCU__isNA_flag_f2',
-        'TCU__NAedApproxed',
-        'TCU__NAedApproxed__sma57',
-        'TCU__NAedApproxed__sma2_above_lagsma57_f2',
+      'TCU__NAdelayed',
+      'TCU__isNA_flag_f2',
+      'TCU__NAedApproxed',
+      'TCU__NAedApproxed__sma57',
+      'TCU__NAedApproxed__sma2_above_lagsma57_f2',
       
-         'NAPM__NAdelayed',
-        'NAPM__isNA_flag_f2',
-        'NAPM__NAedApproxed',
-        'NAPM__NAedApproxed_above_50pct_f2', 
-        'NAPM__NAedApproxed__sma57',
-        'NAPM__NAedApproxed__sma2_above_lagsma57_f2' 
+      'SP500EARN__NAdelayed',
+      'SP500EARN__isNA_flag_f2',
+      'SP500EARN__NAedApproxed',
+      'SP500EARN__NAedApproxed__sma127',
+      'SP500EARN__NAedApproxed__sma2_above_lagsma127_f2',
+      
+      'NAPM__NAdelayed',
+      'NAPM__isNA_flag_f2',
+      'NAPM__NAedApproxed',
+      'NAPM__NAedApproxed_above_50pct_f2', 
+      'NAPM__NAedApproxed__sma57',
+      'NAPM__NAedApproxed__sma2_above_lagsma57_f2' 
       
     ) ] -> PERFECTWORLDFACTOREDMODEL
     
@@ -1594,6 +1661,16 @@ Givens_Siegel_Faber_Johnson <- function(new_data = FALSE, new_derived_data = new
 # Givens_Siegel_Faber_Johnson(new_data = TRUE, new_derived_data = TRUE)
 # Givens_Siegel_Faber_Johnson(                 new_derived_data = TRUE ) 
 # Givens_Siegel_Faber_Johnson(                                         make_new_model = TRUE)
+
+# Givens_Siegel_Faber_Johnson( new_data = TRUE  , train_end_date_str = "1998-12-31", final_date_str = "2006-12-29", sink_output = TRUE) 
+# Givens_Siegel_Faber_Johnson(new_data = FALSE  , train_end_date_str = "1998-12-31", final_date_str = "2006-12-29", sink_output = TRUE)  # random-ish predictions
+# LAST run is HERE
+# RANDOM amount TERRIBLE/GREAT # BETTER OFF NOT GUESSING AT ALL
+# BUT LAST 365 DAYS WERE AWESOME
+
+# RECENT
+# TERRIBLE SO BAD, BETTER OFF JUST CHOOSING GREAT ( BUT GREAT IS VERY GOOD )
+#
 
 # Full system test ( not needed TOO often )
 # devtools::load_all("./performanceEstimation-develop_ParMap_windows_socket")
