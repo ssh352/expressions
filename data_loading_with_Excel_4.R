@@ -1,0 +1,2811 @@
+
+options(width = 10000) # 255    
+options(digits = 22) 
+options(max.print=99999)
+options(scipen=255) # Try these = width 
+options(warn=2)
+browseOnce <- function() {   # CLOSURE
+  old <- getOption("error")
+  function() {
+    options(error = old)
+    browser()
+  }
+}
+options(error = recover) # NULL, recover, browser # browseOnce()
+
+
+ept <- function(text = NULL, envir = parent.frame()) {
+  
+  require(stringr)
+  
+  # SHOULD DO: check for (formals,missing) arguments
+  eval(expr = parse(text = text), envir = envir)
+  
+}
+# GOOD
+
+
+# vvswitch <-function(EXPR,...) { 
+#   NOTE: an 'INPUT vector' WITH A NULL in it will (undesirably) CAUSE a LIST to be returned
+#   sapply(X = EXPR, function(X = X, ...) { switch(EXPR = X, ...) }, ...)   
+# }
+
+# vvswitch <-function(EXPR,...) { 
+# 
+#   # uses avu
+# 
+#   result <- sapply(X = EXPR, function(X = X, ...) { 
+#     switch(EXPR = X, ...) 
+#     }
+#   , ...) 
+#  
+#   op <- options()
+#   options(warn = 1)
+#   
+#   if(is.list(result)) {
+#     warning("", immediate. = TRUE, call. = TRUE)
+#     warning("BEGIN WARNING", immediate. = TRUE, call. = FALSE)
+#     warning("VVSWITCH or SAPPLY or SWITCH did not RETURN vector", immediate. = TRUE, call. = FALSE)
+#     warning("using AVU() to CORRECT now", immediate. = TRUE, call. = FALSE)
+#     warning("END WARNING", immediate. = TRUE, call. = FALSE)
+#     better_result <- avu(result)
+#   } else { # worked correctly
+#     better_result <- result
+#   }
+#  
+#   options(op)
+#   
+#   return(better_result)
+# 
+# }
+
+
+vvswitch <- function(EXPR, ...) {
+
+    result <- EXPR
+
+    for(i in seq(along=result))   # VALUE # or 'NULL', invisibly
+        result[i] <- if( is.null({ out <- switch(EXPR[i], ...)}) ) {  NA  } else { out  }
+
+    result
+}
+
+# > vvswitch(c(NA,1,2,3), "dog", "cat")
+# [1] NA    "dog" "cat" NA
+
+# switchv ( BASED ON )
+# https://github.com/cran/broman/blob/master/R/switchv.R
+
+# Feb 29, 2016 predicttrain data:
+
+# Browse[2]> str(alluniverses[4240,],list.len = 999,vec.len = 2)
+# 'data.frame':	1 obs. of  256 variables:
+#  $ NONE                                       : chr "NONE"
+#  $ predictclasses                             : chr "train"
+#  $ timends                                    : num 16860
+#  $ timends_push_to_eom                        : num 16860
+#  $ provider_global_internal_id_timepoint_exact: chr "AAIISIProDBFs__AF67C__16860"
+#  $ provider                                   : chr NA # ( WHY IS THIS ERROR HAPPENING IN MY DATA ? ) [ ]
+#  $ anonymous_internal_id                      : chr "AF67C"
+#  $ provider_global_internal_id                : chr "AAIISIProDBFs__AF67C"
+#  $ fin_instru_tk                              : chr "CHLN"
+#  $ external_id                                : chr "CHLN"
+#  $ fin_company_nm                             : chr "China Housing & Land Developme"
+#  $ country_nm                                 : chr "China"
+#  $ amer_depo_rcpt                             : num 0
+#  $ bus_sector_cd                              : chr "09"
+#  $ sector_industry_cd                         : chr "0933"
+#  $ industry_cd                                : chr "33"
+#  $ fin_exchange_cd                            : chr "M"
+# 
+#  $ market_cap                                 : num NA   # BUT IS NOT NULL
+
+
+numORdateTonum <- function(x) {
+
+  # originally in Excel
+  # "as.numeric(as.POSIXct(<.>,tz='UTC'))/86400"
+
+  # BUT unlist (in the computer program) : reduces 'collections of Dates" to "atomic components" ( numbers )
+  # but I want do be safely consistent
+
+  # input (will handle BOTH a Date and a "numeric") . . . returns a (collection of) Date(s)
+  as.Date(x, origin = "1970-01-01", tz = "UTC") -> y
+  
+  # I want numeric
+  as.numeric(as.POSIXct(y, origin = "1970-01-01", tz='UTC'))/86400
+
+}
+# "numORdateTonum(<.>)"
+
+
+
+# KEEP
+# it DOES not overwrite what is ALREADY there
+# depends upon  DESCRIPTION Imports R.utils
+R.methodsS3::setMethodS3("copyDirectoryByPattern", "default", function(from, to=".", ..., private=TRUE, recursive=TRUE
+                                                                       , pattern = NULL, tolower = FALSE, collapse_to = FALSE) {
+  # BACKWARD COMPATIBILITY: file.copy() gained argument copy.mode=TRUE in
+  # R (>= 2.13.0) [April 2013].  Due to the default, this means that when
+  # previously copying a read-only file, the new file would have write
+  # permissions, whereas now it preserved the read-only permissions.
+  # This private function silently drop argument 'copy.mode' and 'copy.date'
+  # if passed older versions of R.
+  .file.copy <- function(...) {
+    args <- list(...)
+    names <- names(args)
+    if (!is.null(names)) {
+      known <- names(formals(base::file.copy))
+      keep <- (nchar(names) == 0L | is.element(names, known))
+      args <- args[keep]
+    }
+    do.call(base::file.copy, args=args, envir=parent.frame())
+  } # .file.copy()
+  
+  # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  # Validate arguments
+  # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  # Argument 'from':
+  if (!R.utils::isDirectory(from))
+    throw("Argument 'from' is not a directory: ", from);
+  
+  # Argument 'to':
+  to <- R.utils::Arguments$getWritablePath(to, mkdirs=TRUE, absolutePath=FALSE);
+  
+  # Argument 'private':
+  private <- R.utils::Arguments$getLogical(private);
+  
+  # Argument 'recursive':
+  recursive <- R.utils::Arguments$getLogical(recursive);
+  
+  # Use relative pathnames
+  files <- list.files(from, all.files=private, pattern = pattern, full.names=FALSE);
+  files <- files[!basename(files) %in% c(".", "..")];
+  files <- file.path(from, files);
+  
+  copiedFiles <- c();
+  for (file in files) {
+    basename <- basename(file);
+    if (R.utils::isFile(file)) {
+      if (.file.copy(from=file, to=R.utils::filePath(to, if(!tolower) { basename } else { tolower(basename) } ), ...)) {
+        copiedFiles <- c(copiedFiles, file);
+      }
+    } else if (R.utils::isDirectory(file)) {
+      if (recursive) {
+        copiedFiles <- c(copiedFiles,
+                         copyDirectoryByPattern(file, to=R.utils::filePath(to, basename), ..., recursive=TRUE));
+      }
+    }
+  }
+  
+  invisible(copiedFiles);
+})
+
+
+
+# KEEP
+# depends upon  copyDirectoryByPattern
+copyAAIISIProDBFs <- function(from = "C:/Program Files (x86)/Stock Investor/Professional", to = "./Desination" ) {
+  
+  subdirs <- c("","/Dbfs","/User","/Static","/Temp","/Datadict")
+  
+  for(subdir in subdirs) {
+    
+    # it DOES not overwrite what is ALREADY there
+    copyDirectoryByPattern(from = paste0(from, subdir)
+                           , pattern = "(*\\.dbf$|\\.*DBF$|\\.*DBF$|*.chm$|ReadMe\\.txt)", to=to,  tolower = TRUE
+    )
+    
+  }
+  
+}
+
+
+massAAIISIProDBFsDB <- function(conn, from_target = "W:/New_Economics/forsight4.322/AAIISIProDBFs", 
+                                load_only_last_weekday_of_month = TRUE,
+                                only_dirs_like = "where 1 = 1 ", only_files_like = "where 1 = 1 ") {
+  
+  # often uses  is.lastWeekDayDateOfMonth
+  # uses package foreign and caroline and sqldf
+
+  require(RPostgreSQL) # needed by caroline:: AND ( sqldf::sqldf -> require(tcltk) ) 
+  # load require(DBI)  # needed by db*
+
+  # original search path
+  osp <- dbGetQuery(conn,"show search_path")[[1]]
+
+  # update search path
+  dbGetQuery(conn, paste0("set search_path to sipro_stage, ", osp) )
+   
+  orig_all_dirs <- list.files(from_target)
+
+  env <- list2env(list(tinfo=data.frame(cbind(cinfo=orig_all_dirs), stringsAsFactors = FALSE)))
+  new_all_dirs <- sqldf::sqldf(paste0("select cinfo from tinfo ", only_dirs_like, "order by cinfo"), envir = env, drv = "SQLite")[[1]]
+
+  for(that_dir in new_all_dirs) {
+
+    if( (load_only_last_weekday_of_month == TRUE)  && !is.lastWeekDayDateOfMonth(zoo::as.Date(as.numeric(that_dir))) ) { next } else { NULL }
+      
+    path_name <-paste0(from_target,"/", that_dir)
+
+    print(paste0("SOURCE: ", path_name))
+
+    orig_all_files <- list.files(path_name, pattern = "\\.dbf$")
+
+    env <- list2env(list(tinfo=data.frame(cbind(cinfo=orig_all_files), stringsAsFactors = FALSE)))
+    new_all_files <- sqldf::sqldf(paste0("select cinfo from tinfo ", only_files_like, "order by cinfo"), envir = env, drv = "SQLite")[[1]]
+
+    for(that_file in new_all_files) {
+
+      path_file_name <- paste0(path_name, "/", that_file)
+
+      # upload to R
+      data_frame_loaded <- suppressWarnings(suppressMessages(foreign::read.dbf(file = path_file_name, as.is = TRUE)))
+
+      # remove bad columns ( keep good columns )
+      data_frame_loaded <- data_frame_loaded[,!grepl("(^X\\.??$|^X\\.\\d+?$|^X_NullFlags$)", colnames(data_frame_loaded)), drop = FALSE]
+      
+      # lowercase column names
+      colnames(data_frame_loaded) <- tolower(colnames(data_frame_loaded))
+
+      # real database table name
+      dbf_file_stem <- sub("\\.dbf$", "", that_file)
+
+      # if not exists, create 'inherited form'
+
+      if(!dbExistsTable(conn,paste0(dbf_file_stem))) { 
+        dbGetQuery(conn, paste0("create table ", dbf_file_stem, "( )"))} else { NULL } 
+
+      dbf_file_stem_plus_dir <- paste0(dbf_file_stem,"_", that_dir)
+      
+      if(dbExistsTable(conn,paste0(dbf_file_stem_plus_dir))) { 
+        dbGetQuery(conn, paste0("drop table ",dbf_file_stem_plus_dir))} else { NULL } 
+      
+      # fill.null = TRUE: Should new db present fields be added to the data.frame before it is loaded?.
+      # upload to the database
+      # caroline::dbWriteTable2(conn, dbf_file_stem,  df = data_frame_loaded, , add.id= FALSE)
+
+      dbWriteTable(conn, dbf_file_stem_plus_dir, cbind(dateindex = rep(as.numeric(that_dir),NROW(data_frame_loaded)),data_frame_loaded))
+      dbGetQuery(conn, paste0("alter table " , dbf_file_stem_plus_dir, " inherit " , dbf_file_stem))
+      dbGetQuery(conn, paste0("create index ", dbf_file_stem_plus_dir, "_dateindex_idx on " , dbf_file_stem_plus_dir, "( dateindex )"))
+    
+      if("company_id" %in% dbListFields(conn, dbf_file_stem_plus_dir)) {
+        dbGetQuery(conn, paste0("create index ", dbf_file_stem_plus_dir, "_company_id_idx on " , dbf_file_stem_plus_dir, "( company_id )"))
+      }
+    }
+
+  }
+
+  # put back the search 
+  dbGetQuery(conn, paste0("set search_path to ", osp))
+
+  return(invisible())
+  
+}
+
+require(RPostgreSQL)
+drv  <- dbDriver("PostgreSQL")
+conn <- dbConnect(drv, user="postgres", password="postgres", port = 5432, dbname="finance_econ") # RPostgreSQL # 
+# dbGetQuery(conn,"select * from sipro_stage.atable")
+# dbDisconnect(conn)
+# dbUnloadDriver(drv)
+
+# massAAIISIProDBFsDB(conn)
+
+
+# # prefers schema.table ??
+# # MUST be RAN as a pgScript ( in pgAdminIII )
+# 
+# # prefers schema.table ??
+# # MUST be RAN as a pgScript ( in pgAdminIII )
+# sapply(sort(dbListTables(conn)), function(x,cn) { 
+#   if(x != "atable" ) {
+#     # browser()
+#     stmt <- paste0("DO $$ DECLARE BEGIN drop table sipro_stage.", x, " cascade; END; $$")
+#     cat(noquote(stmt),"\n")
+#     try( { dbGetQuery(cn, stmt) }, silent = TRUE )
+#   } else { 
+#     NULL 
+#   } 
+#   return(invisible())
+# }, cn = conn ) -> X; invisible(); rm(X)
+
+
+
+
+
+# depends upon  DESCRIPTION Imports foreign
+getAAIISIProDate <- function(from = "C:/Program Files (x86)/Stock Investor/Professional") {
+  
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  setup_file <- suppressWarnings(suppressMessages(foreign::read.dbf(file=paste0(from,"/","Setup.dbf"), as.is = TRUE)))
+  
+  if(length(unique(
+      as.integer(setup_file[,"MONTHDATE"])
+    , as.integer(setup_file[,"WEEKDATE"])
+    , as.integer(setup_file[,"SPLITDATE"])
+  )) != 1) stop("MONTHDATE != WEEKDATE != SPLITDATE")
+  
+  new_repository_entry_name <- as.character(as.integer(setup_file[,"MONTHDATE"]))
+  
+  Sys.setenv(TZ=oldtz)
+  
+  return(new_repository_entry_name)
+  
+}
+
+
+# KEEP - NEVER RAN
+
+# depends upon  DESCRIPTION Imports R.utils
+masscopyAAIISIProDBFs <- function(from = "L:/MyVMWareSharedFolder", to_target = "W:/New_Economics/forsight4.322") {
+  
+  paths <- paste0(from,"/",R.utils::listDirectory(pattern="Professional.*", path=from))
+  
+  for(path in paths) {
+    
+    print(paste0("SOURCE: ",path))
+    to_target_detail <- paste0(to_target,"/","AAIISIProDBFs","/",getAAIISIProDate(from = path))
+    print(paste0("DESTINATION: ",to_target_detail))
+    
+    # UNCOMMENT TO RUN
+    copyAAIISIProDBFs(from = path, to = to_target_detail)
+    
+  }
+  
+}
+
+# After, the last Friday of the month
+# On Saturday at 10:30 a.m. update SI Pro 
+#   AAII employess update the program/data about at 10:30 a.m. on Saturday ( and not a 'Holiday weekend' )
+# NEXT, run EXACTLY, the following
+# masscopyAAIISIProDBFs(from = "C:/Program Files (x86)/Stock Investor/Professional", to = "W:/New_Economics/forsight4.322")
+
+avu <- function(...) { 
+    as.vector(unlist(...)) 
+}
+
+# form of c that will drop NA ( because openxlsx assigns an empty cell as NA instead of NULL )
+# NOTE: input MUST be a vector(named or not) and 'not a list' )
+# combine vectors
+cv <- function(...) { 
+  mylist <- list(...)
+  mynewvector <- unlist(mylist)
+  return(mynewvector[!is.na(mynewvector)])
+}
+
+# begin 'joins' functions
+
+NottedNADuplicated <- function(data_frame_table = NULL, data_frame_table_column = NULL) {
+
+
+  
+    # local copy
+    olduniverses <-  get("olduniverses",envir = parent.frame())
+
+    data_frame_name_temp <- ept(get(data_frame_table, envir = parent.frame()))
+    print(paste0("Beginning NottedNADuplicated:","data_frame_name_temp:",data_frame_name_temp))
+    
+    data_frame_temp <- olduniverses[[data_frame_name_temp]]
+    
+    data_frame_table_column_name_temp <-  ept(get(data_frame_table_column, envir = parent.frame()))
+    print(paste0("  Beginning NottedNADuplicated:","data_frame_table_column_name_temp:",data_frame_table_column_name_temp))
+    
+    data_frame_table_column_items <- avu(data_frame_temp[, data_frame_table_column_name_temp, drop = FALSE])
+
+    !(duplicated(data_frame_table_column_items) | duplicated(data_frame_table_column_items, fromLast = TRUE)) ->  
+    data_frame_table_column_items_not_duplicated_switches
+
+    # illegal assignmet ( if the NROWs are different ) 
+    # data_frame_temp[, data_frame_table_column_name_temp] <- data_frame_temp[data_frame_table_column_items_not_duplicated_switches, data_frame_table_column_name_temp, drop = FALSE]
+    # BUT I CAN SKIP if next I am doing a list assignment (BELOW)anyways
+    
+    # local copy
+    # olduniverses[[data_frame_name_temp]] <- data_frame_temp
+    olduniverses[[data_frame_name_temp]] <- data_frame_temp[data_frame_table_column_items_not_duplicated_switches, , drop = FALSE]
+
+    assign(" olduniverses", olduniverses, envir = parent.frame())
+ 
+    print(paste0("  Ending NottedNADuplicated:","data_frame_table_column_name_temp:",data_frame_table_column_name_temp))
+    print(paste0("Ending NottedNADuplicated:","data_frame_name_temp:",data_frame_name_temp))
+    
+    return(invisible(NULL))
+
+}
+
+
+
+# end joins functions
+
+
+# begin attributes functions
+# 
+# toLower <- function(data_frame_table = NULL, data_frame_table_columns = NULL) {
+# 
+#     # local copy
+#     olduniverses <-  get("olduniverses",envir = parent.frame())
+# 
+#     data_frame_name_temp <- ept(get(data_frame_table, envir = parent.frame()))
+#     data_frame_temp <- olduniverses[[data_frame_name_temp]]
+#     
+#     data_frame_table_column_name_temp <-  ept(get(data_frame_table_column, envir = parent.frame()))
+#     
+#     data_frame_table_column_items <- avu(data_frame_temp[, data_frame_table_column_name_temp, drop = FALSE])
+# 
+#     !(duplicated(data_frame_table_column_items) | duplicated(data_frame_table_column_items, fromLast = TRUE)) ->  
+#     data_frame_table_column_items_not_duplicated_switches
+# 
+#     data_frame_temp[, data_frame_table_column_name_temp] <- data_frame_temp[data_frame_table_column_items_not_duplicated_switches, data_frame_table_column_name_temp, drop = FALSE]
+# 
+#     # local copy
+#     olduniverses[[data_frame_name_temp]] <- data_frame_temp
+# 
+#     assign("olduniverses", olduniverses, envir = parent.frame())
+#  
+#     return(invisible(NULL))
+# 
+# }
+
+
+# currently 'not used' - does work
+toLower <- function(data_frame_table = NULL, data_frame_table_columns = NULL) {
+
+    # local copy
+    careuniverses <-  get("careuniverses",envir = parent.frame())
+
+    data_frame_name_temp <- ept(get(data_frame_table, envir = parent.frame()))
+    data_frame_temp <- careuniverses[[data_frame_name_temp]]
+    
+    data_frame_table_column_names_temp <-  ept(get(data_frame_table_columns, envir = parent.frame()))
+    
+    for(column_name in data_frame_table_column_names_temp) {
+
+      data_frame_table_column_items <- avu(data_frame_temp[, column_name, drop = FALSE])
+
+      data_frame_table_column_items <- tolower(data_frame_table_column_items)
+
+      data_frame_temp[, column_name] <- data_frame_table_column_items
+
+    }
+
+    # local copy
+    careuniverses[[data_frame_name_temp]] <- data_frame_temp
+
+    assign("careuniverses", careuniverses, envir = parent.frame())
+ 
+    return(invisible(NULL))
+
+}
+
+
+
+asNumeric <- function(data_frame_table = NULL, data_frame_table_columns = NULL) {
+
+    # local copy
+    careuniverses <-  get("careuniverses",envir = parent.frame())
+
+    data_frame_name_temp <- ept(get(data_frame_table, envir = parent.frame()))
+    data_frame_temp <- careuniverses[[data_frame_name_temp]]
+    
+    data_frame_table_column_names_temp <-  ept(get(data_frame_table_columns, envir = parent.frame()))
+    
+    for(column_name in data_frame_table_column_names_temp) {
+
+      data_frame_table_column_items <- avu(data_frame_temp[, column_name, drop = FALSE])
+
+      data_frame_table_column_items <- as.numeric(data_frame_table_column_items)
+
+      data_frame_temp[, column_name] <- data_frame_table_column_items
+
+    }
+
+    # local copy
+    careuniverses[[data_frame_name_temp]] <- data_frame_temp
+
+    assign("careuniverses", careuniverses, envir = parent.frame())
+ 
+    return(invisible(NULL))
+
+}
+
+
+
+asNumeric1000000 <- function(data_frame_table = NULL, data_frame_table_columns = NULL) {
+
+    # local copy
+    careuniverses <-  get("careuniverses",envir = parent.frame())
+
+    data_frame_name_temp <- ept(get(data_frame_table, envir = parent.frame()))
+    data_frame_temp <- careuniverses[[data_frame_name_temp]]
+    
+    data_frame_table_column_names_temp <-  ept(get(data_frame_table_columns, envir = parent.frame()))
+    
+    for(column_name in data_frame_table_column_names_temp) {
+
+      data_frame_table_column_items <- avu(data_frame_temp[, column_name, drop = FALSE])
+
+      data_frame_table_column_items <- as.numeric(data_frame_table_column_items) * 1000000
+
+      data_frame_temp[, column_name] <- data_frame_table_column_items
+
+    }
+
+    # local copy
+    careuniverses[[data_frame_name_temp]] <- data_frame_temp
+
+    assign("careuniverses", careuniverses, envir = parent.frame())
+ 
+    return(invisible(NULL))
+
+}
+
+
+
+strSub <- function(data_frame_table = NULL, data_frame_table_columns = NULL, start = NULL, end = NULL) {
+
+    # local copy
+    careuniverses <-  get("careuniverses",envir = parent.frame())
+
+    data_frame_name_temp <- ept(get(data_frame_table, envir = parent.frame()))
+    data_frame_temp <- careuniverses[[data_frame_name_temp]]
+    
+    data_frame_table_column_names_temp <-  ept(get(data_frame_table_columns, envir = parent.frame()))
+    
+    for(column_name in data_frame_table_column_names_temp) {
+
+      data_frame_table_column_items <- avu(data_frame_temp[, column_name, drop = FALSE])
+
+      data_frame_table_column_items <-  stringr::str_sub(data_frame_table_column_items, start, end)
+
+      data_frame_temp[, column_name] <- data_frame_table_column_items
+
+    }
+
+    # local copy
+    careuniverses[[data_frame_name_temp]] <- data_frame_temp
+
+    assign("careuniverses", careuniverses, envir = parent.frame())
+ 
+    return(invisible(NULL))
+
+}
+
+strCatCols <- function(data_frame_table = NULL, data_frame_table_column_1 = NULL, data_frame_table_column_2 = NULL) {
+  # finds columns of the 2nd(_1) and 3rd(_2) argument,  puts back data to the 2nd(_1)argument
+
+  # local copy
+   careuniverses <-  get("careuniverses",envir = parent.frame())
+
+  data_frame_name_temp <- ept(get(data_frame_table, envir = parent.frame()))
+  data_frame_temp <- careuniverses[[data_frame_name_temp]]
+
+  # text column names 2nd and 3rd argument
+  data_frame_table_column_1_name_temp <- ept(get(data_frame_table_column_1, envir = parent.frame()))
+  data_frame_table_column_2_name_temp <- ept(get(data_frame_table_column_2, envir = parent.frame()))
+
+  data_frame_table_column_items <- stringr::str_c(data_frame_table_column_2_name_temp, "__", avu(data_frame_temp[, data_frame_table_column_1_name_temp, drop = FALSE]))
+
+  # put back to the second argumenet
+  data_frame_temp[, data_frame_table_column_1_name_temp] <- data_frame_table_column_items
+
+  # local copy
+  careuniverses[[data_frame_name_temp]] <- data_frame_temp
+
+  assign("careuniverses", careuniverses, envir = parent.frame())
+ 
+  return(invisible(NULL))
+
+}
+
+
+
+
+numORdateTonum <- function(data_frame_table = NULL, data_frame_table_columns = NULL) {
+
+    # local copy
+    careuniverses <-  get("careuniverses",envir = parent.frame())
+
+    data_frame_name_temp <- ept(get(data_frame_table, envir = parent.frame()))
+    data_frame_temp <- careuniverses[[data_frame_name_temp]]
+    
+    data_frame_table_column_names_temp <-  ept(get(data_frame_table_columns, envir = parent.frame()))
+    
+    for(column_name in data_frame_table_column_names_temp) {
+
+      data_frame_table_column_items <- avu(data_frame_temp[, column_name, drop = FALSE])
+
+      data_frame_table_column_items <- as.Date(data_frame_table_column_items, origin = "1970-01-01", tz = "UTC")
+      
+      data_frame_table_column_items <- as.numeric(as.POSIXct(data_frame_table_column_items, origin = "1970-01-01", tz='UTC'))/86400
+
+      data_frame_temp[, column_name] <- data_frame_table_column_items
+
+    }
+
+    # local copy
+    careuniverses[[data_frame_name_temp]] <- data_frame_temp
+
+    assign("careuniverses", careuniverses, envir = parent.frame())
+ 
+    return(invisible(NULL))
+
+}
+
+# end attributes functions
+
+
+
+GetColLitValue <- function(x, envir = parent.frame()) {
+
+  ept(ept(ept(x, envir = envir),envir = envir),envir = envir)
+
+}
+
+# NOTHING IN THE 'R' LANGUAGE will 'apply an INTERVAL' and RETURN the 'ORIGINAL ORDER'
+SportsRanking <- function(numb_of_divisions = NA, perdivisions = NULL, instances = NULL) {
+
+  # price_pct_chge_since_13w_winner ( perdivisions is "alldata"  )
+  # browser( expr = { (instances[5] == -13.43) && (instances[6] == -12) }) 
+  
+  # edge case: split (perhaps others also?) drops NA group, I NEED(REQUIRED) to keep it 
+  perdivisions[which(is.na(perdivisions))] <- "NOTAPPLICABLE"
+  
+  split(data.frame(row_id = seq_along(perdivisions),perdivisions,instances), perdivisions)  -> thedata   
+
+  # too SEE a function ( .fun = myfunction) , it MUST be defined OUTSIDE the CURRENT (SportsRanking) function
+  plyr::llply(.data = thedata, .fun =  function(x,numb_ranks = numb_ranks) { 
+    
+      if(is.character(numb_ranks) && !stringr::str_detect(numb_ranks,'^\\d+$')) { 
+
+        # CURRENLY, 'NO IMPLEMENTATION' SMALL '# OF INDUSTRIES' WOULD 'GET TOO OPTMIMISTIC RESULTS'
+        # IN GENRAL, JUST USE HARDCODED *2* AND *10* QUANTILE. ( FOR GENERAL USE JUST ONLY USE HARDCODED *10* )
+        
+        # several USEFUL hardcoded ONES                 # change datatype to numeric
+        
+        # ** remember: this goes into *quantile where 'higher' is better **
+
+        # In a 'small group': IT hurts HARD to be 2ND or LAST
+        if(numb_ranks ==  'NLT10xorNROW') numb_ranks <- max( 10, NROW(x[complete.cases(x),])) # Math Penalty for being is small group ( less competition ) 
+        
+        if(numb_ranks ==          'NROW') numb_ranks <-          NROW(x[complete.cases(x),]) # Maybe use composites/finals
+        
+        # NOT USEFUL ( small industry BIAS )
+        
+        if(numb_ranks ==   'NGT2xorNROW') numb_ranks <- min(  2, NROW(x[complete.cases(x),])) 
+        if(numb_ranks ==   'NGT5xorNROW') numb_ranks <- min(  5, NROW(x[complete.cases(x),])) 
+        if(numb_ranks ==  'NGT10xorNROW') numb_ranks <- min( 10, NROW(x[complete.cases(x),])) 
+        if(numb_ranks ==  'NGT20xorNROW') numb_ranks <- min( 20, NROW(x[complete.cases(x),])) 
+        if(numb_ranks == 'NGT100xorNROW') numb_ranks <- min(100, NROW(x[complete.cases(x),])) 
+
+      } 
+      if(is.character(numb_ranks) &&  stringr::str_detect(numb_ranks,'^\\d+$')) numb_ranks <- as.numeric(numb_ranks)
+    
+      SportsRank(x = x$instances, numb_ranks = numb_ranks) 
+      
+    }, numb_ranks =  numb_of_divisions )  -> sports_ranks
+
+  rlist::list.zip(thedata,sports_ranks) -> zipped 
+
+  plyr::llply(zipped, .fun = function(x) { do.call("cbind", x )   } )  -> stacked
+
+  rlist::list.rbind(stacked) -> rbinded # SANITY CHECK
+
+  plyr::arrange(rbinded, thedata.row_id)[,"sports_ranks"] -> returned
+
+  return(returned)
+  
+}
+
+
+
+hdquantile <- function (x, probs = seq(0, 1, 0.25), se = FALSE, na.rm = FALSE
+  , names = TRUE, weights = FALSE, outlook = "optimistic" ) {
+
+  # put in hdquantile ( seems to solve PROBLEMS )
+
+  # solves this edge case c(Inf,INF)
+  x[x == -Inf] <- .Machine$double.xmin
+  x[x ==  Inf] <- .Machine$double.xmax
+
+  # NOT A PROBLEM, put here for CODE ROBUSTNESS
+  x[is.nan(x)] <- NA
+
+  # outlook = "BLAH"
+  if( !(outlook %in% c("optimistic","pessimistic","neutral")) ) stop("outlook must be \"optimistic\", \"pessimistic\", or \"neutral\"")
+
+  if(!na.rm && !is.null(x)) {
+    if(any(is.na(x))) stop("missing values and NaN's not allowed if 'na.rm' is FALSE" )
+  }
+
+  # edge case not handled properly
+  is_nrow_is_zero <- FALSE
+  if(is.null(x)) is_nrow_is_zero <- TRUE  
+
+  # edge case not handled properly
+  if(na.rm) x[!is.na(x)] -> x
+
+  if( length(unique(x)) == 1 ) {  # length(unique(NULL)) == 0
+
+    # optimistic - behaves like stats::quantile
+    if( outlook == "optimistic" )   rep( length(probs) -1,length(probs)) -> y
+
+    # pessimistic
+    if( outlook == "pessimistic" )  rep( 1,length(probs)) -> y
+
+    if( outlook == "neutral" ) {
+
+      middle_value <- length(probs) %/% 2 + length(probs) %% 2
+      rep(middle_value,length(probs)) -> y 
+
+    }
+
+  # format headers
+  setNames( y, stringr::str_c(probs * 100,"%")) -> y; return(y)
+
+  }
+
+  Hmisc::hdquantile(x, probs = probs, se = se, na.rm = na.rm , names = names, weights = weights ) -> y
+
+  # edge case : subtle bug
+  if( all(is.na(y)) ) { y[is.na(y)] <- NA_real_ ; setNames( y, stringr::str_c(probs * 100,"%")) -> y; return(y) }
+
+  # format headers
+  setNames( y, stringr::str_replace(as.numeric(names(y)) * 100, "$", "%" ) ) -> y
+
+  # same as quantile
+  if(is_nrow_is_zero)  y[] <- NA_real_
+
+  return(y)
+
+}
+
+
+# NOT USED: matrixStats IS 30x? FASTER
+Count <- function(...) {
+  
+  if(length(alist(...)) == 0) stop("Error found in Count: Nothing sent to function call.")
+
+  as.vector(unlist(plyr::alply( cbind( ... ) , 1 ,  .fun = function(x) { 
+    
+    # sum(as.vector(unlist(plyr::llply( x , .fun = function(x) { !is.na(x) } ))))
+    # Reputation for speed    
+    colSums(cbind(as.vector(unlist(plyr::llply( x , .fun = function(x) { !is.na(x) } )))))
+    
+  })))
+  
+}
+# Count(c(1,2), c(NA,8), c(16,32))
+# [1] 2 3
+
+# NOT USED: matrixStats IS 30x? FASTER
+Sum <- function(...) {
+
+  if(length(alist(...)) == 0) stop("Error found in Sum: Nothing sent to function call.")
+  
+  as.vector(unlist(plyr::alply( cbind( ... ) , 1 ,  .fun = function(x) { 
+    
+    # sum(x , na.rm = TRUE )
+    # Reputation for speed
+    colSums(cbind(x), na.rm = TRUE)
+
+  })))
+  
+}
+# Sum(c(1,2), c(NA,8), c(16,32))
+# [1] 17 42
+
+# TO FIX [ ]
+# > SportsRank(c(NaN,5))
+# [1] NA  1 # wrong result returned should be   'NA 100'
+# TO FIX: (length(which(!is.na(x) & !is.nan(x))) == 1) && (length(x) > 1 )
+
+SportsRank <- function(x, numb_ranks = 100, outlook = "pessimistic", calc_method = "base_quantile_7") {
+  
+  if(all(is.null(x))) return(invisible(NULL))
+
+  if(all(is.na(x)))   return(rep(NA,length(x)))
+
+  # ROBUST vec_interval WOULD BE numeric(0)
+  if( numb_ranks == 1 ) {
+  
+    # high number value
+    returned <- rep(1,length(x)) 
+    return(returned)
+  
+  }
+  
+  if(outlook == "optimistic"  ) outlook_quantile <- "pessimistic"
+
+  if(outlook == "pessimistic" ) outlook_quantile <- "optimistic"
+  
+  # Hmisc (ALWAYS HANDLES DUPLICATES WELL) # DISCOVERED LATE THAT (HANDLE EXTREMES Inf,-Inf THE POOREST POSSIBLE ) 
+  if(calc_method == "my_hdquantile") {
+    vec_interval <- tail(head(    hdquantile(x = x, probs = seq(0, 1, 1/numb_ranks) , na.rm = TRUE, outlook = outlook_quantile ),-1),-1)
+  }   
+  
+  # REQUIRED TO SWITCH, BECAUSE HDQUANLEY THE_POOREST HANDLES Inf,-Inf
+  # stats ( NOT TESTED IN THIS CONTEXT FOR EDGE CASES ) ( BUT USING findInterval(or R changed) DOES NOW PROPERLY HANDLE DUPLICATES ) )
+  if(calc_method == "base_quantile_7") {
+    vec_interval <- tail(head(stats::quantile(x = x, probs = seq(0, 1, 1/numb_ranks) , na.rm = TRUE                             ),-1),-1)               
+  }                          
+  
+  if( (length(unique(x)) == 1)  && ( outlook == "pessimistic" )  ) {
+  
+    # high number value
+    returned <- rep((length( seq(0, 1, 1/numb_ranks)) -1),length(x))
+    return(returned)
+  
+  }
+  
+  if( (length(unique(x)) == 1)  && ( outlook == "optimistic" ) ) {
+  
+    # low number value
+    returned <- rep(1                                    ,length(x))
+    return(returned)
+
+  }
+  
+  # is.unsorted: undocumented function in base ( used internally by 'findInterval' )
+  # if is.unsorted == TRUE, then findInterval will fail
+  # SEE https://bugs.r-project.org/bugzilla/show_bug.cgi?id=16672
+  
+  if(is.unsorted(vec_interval)) {
+  
+    vec_interval_old <- vec_interval # for 'later' debugging ( if any )
+  
+    # SOMEWHAT fix the BUG
+    # vec_interval[order(vec_interval)] -> vec_interval
+  
+    # BETTER FIX(PATCH) - 'NOT SYSTEM' TESTED ( BECAUSE I 'CURRENTLY'/CAN_NOT/TOO_LAZY FIND/REPEAT THE PROBLEM )
+    # tested by: vec_interval <- c(1,0,3,4,-1,-2,1,6)
+    # *DID TEST* USING DATA FROM: https://bugs.r-project.org/bugzilla3/show_bug.cgi?id=16672
+    zoo::rollapply(data = vec_interval, width = length(vec_interval), FUN = function(x) { 
+      max(x) 
+    }, partial = TRUE, align = "right") -> vec_interval
+    
+    op <- options()
+    options(warn = 1)
+    
+    warning("", immediate. = TRUE, call. = TRUE)
+    warning("BEGIN WARNING", immediate. = TRUE, call. = FALSE)
+    warning("In function: SportsRank vec_interval found 'is.unsorted(vec_interval)  == TRUE'", immediate. = TRUE, call. = FALSE)
+    warning("avoid findInterval error: 'vec' must be sorted non-decreasingly[ and not contain NAs]", immediate. = TRUE, call. = FALSE)
+    warning(paste0("calc_method was ",calc_method), immediate. = TRUE, call. = FALSE)
+    warning("old vec_interval", immediate. = TRUE, call. = FALSE)
+    warning(vec_interval_old[1:min(length(vec_interval_old),5)], immediate. = TRUE, call. = FALSE)
+    warning("new vec_interval", immediate. = TRUE, call. = FALSE)
+    warning(vec_interval[1:min(length(vec_interval),5)], immediate. = TRUE, call. = FALSE)
+    warning("END WARNING", immediate. = TRUE, call. = FALSE)
+  
+    options(op)
+    
+  }
+
+  # THE COMMON 99% of the time - 'non edge-case'
+  abs(findInterval(x = x, vec = vec_interval ) + 1 - length(seq(0, 1, 1/numb_ranks)))  -> returned
+
+  return(returned)
+  
+  # KEE HERE FOR HISTORY
+  # abs(findInterval(x = x, tail(head(hdquantile(x = x, probs = seq(0, 1, 1/numb_ranks) , na.rm = TRUE, outlook = outlook_final ),-1),-1)) + 1 - length(seq(0, 1, 1/numb_ranks)))
+
+}
+
+# Get 'R Program' Code_Exe_Result/Variable Value ( from within a spreadsheet cell
+gpv <- function(x) ept(text = x, envir=parent.frame(7)) # LESS LIBERAL:  get(x = x, envir=parent.frame(7))
+
+
+
+
+Balance <- function(better_direction = NULL, composites_interest = NULL, regex = NULL, max_count = NULL, pct_of_max_count = NULL) {   
+
+  # browser( expr = {  '__alldata__sportsranking6000$' == regex } )
+  
+  # collect alluniverses variables
+  # ls(envir= parent.frame()) # alluniverses VARIABLES = ls(envir= parent.frame(4))
+
+  # collect program vaiables
+  # ls(envir= parent.frame(7))
+
+  # get the historical vector
+  composites_local_h <- get('exposes__composites_instances_h', envir= parent.frame(7)) # "\"traditionalvalue\"" AND OTHERS
+ 
+  # get the evaluated cells - detect string - cell value -> c(TRUE,FALSE)
+  composites_local_h_list_ele_detected <- plyr::llply(composites_local_h, .fun = function(x,y) { 
+    stringr::str_detect(string = ept(ept(x)), pattern = y)
+  }, y = paste0("^",composites_interest,"$") )
+  
+  # 'any TRUE' in that cell value
+  composites_local_h_list_ele_detected_any <- avu(plyr::llply(composites_local_h_list_ele_detected, .fun = any ))
+
+  # which 'vector of cells' value's cells contains at least one TRUE
+  composites_local_h_list_ele_detected_any_indexes <- which(composites_local_h_list_ele_detected_any == TRUE)
+  
+  # RESUME
+  composites_interest_indexes <- composites_local_h_list_ele_detected_any_indexes
+  
+  # get its locations ( OLD CODE )
+  # composites_interest_indexes <- which(paste0("\"",composites_interest,"\"") == composites_local_h)
+
+  # get the composites instances measures
+  measures__instances_interest <- get('measures__instances_h', envir= parent.frame(7))[composites_interest_indexes]
+
+  # Browse[2]> data.frame(measures__instances_interest)
+  #          measures__instances_interest
+  # 1 "diluted_earnings_over_price_ratio"
+  # 2    "diluted_sales_over_price_ratio" # not financial
+  # 3        "free_cash_over_price_ratio"
+  # 4       "book_value_over_price_ratio" # financial
+  # 5          "ebitda_over_entval_ratio"
+  # 6     "shareholder_yield_pct_diluted"
+  
+  if(max_count == 'max_count') {
+  
+    # dynamic: all measures found is total possible from the spreadsheet
+    max_count <- as.numeric(length(measures__instances_interest))
+  
+  } else {
+  
+    # user specified
+    max_count <- as.numeric(max_count)
+  }
+
+  pct_of_max_count <- as.numeric(pct_of_max_count) / 100.0
+  
+  # get the composites instances measures complementary conditionals
+  measures__contitionals__businesses_interest <- get('measures__contitionals__businesses_h', envir= parent.frame(7))[composites_interest_indexes]
+
+  # build the cbind statement
+  cbinds <- c()
+  iter <- 0
+  for(mi in measures__instances_interest) { 
+    iter <- iter + 1
+  
+    # browser( expr = { composites_interest == "millennialvalue" } )
+    
+    # find the exact alluniverses column names  
+                                      # (because ORDER matters)
+    composite_item_name <- ls(sorted = FALSE, envir = parent.frame())[str_detect(ls(sorted = FALSE, envir = parent.frame()),paste0('^',ept(mi),'.*',regex))]
+    if(length(composite_item_name) > 1)  { print('in Balance, multiple column names found using the same regular expression - NEED exactly ONE'); browser() }
+    if(length(composite_item_name) == 0) { print('in Balance, zero column names found using the same regular expression     - NEED exactly ONE'); browser() }
+
+    # if no restriction just add
+    if( is.na(ept(measures__contitionals__businesses_interest[iter]))) cbinds <-  c(cbinds,composite_item_name)
+
+    # something different - retrictive  
+    if(!is.na(ept(measures__contitionals__businesses_interest[iter])))  {
+
+      # enhanced composite_item_name
+      mcitem <- ept(measures__contitionals__businesses_interest[iter])
+      mcitemnew <- paste0('ifelse(',mcitem,',',composite_item_name,',NA)')
+
+      # append the append the enhanced composite_item_name
+      cbinds <- c(cbinds,mcitemnew)
+
+    }
+    
+    
+  }
+
+  # create the sentence
+  cbind_statement <- paste0('cbind(',paste0(cbinds, collapse = ', '),')')
+
+  # run it
+  ept(cbind_statement, envir = parent.frame()) -> binded
+  binded -> binded_tf
+
+  # get rid of FALSE zeros(0) in prep for rowCounts 
+  binded_tf[binded_tf == 0] <- .Machine$double.xmax; binded_tf & 1 -> binded_tf;
+
+  as.numeric(matrixStats::rowCounts(binded_tf, na.rm = TRUE)) -> total_count; rm(binded_tf);
+
+  # accumulate
+  rowSums(binded, na.rm = TRUE) -> total_sum; rm(binded);
+  
+  if(better_direction == 'lower')   -1 -> multiply_by 
+  if(better_direction == 'higher')   1 -> multiply_by 
+  if( (better_direction != 'higher') && (better_direction != 'lower')) stop("Balance NEEDS better_direction")
+  
+  # scale it : need at least 50% of the measures to 'not be NA'
+  # ifelse( ( max_count / total_count <= 2 )  & ( max_count %/% total_count  <= 2 ), multiply_by * max_count / total_count * total_sum, NA ) -> returned
+
+  ifelse( ( max_count / total_count <= (1/pct_of_max_count) )  & ( max_count %/% total_count  <= (1/pct_of_max_count) ), multiply_by * max_count / total_count * total_sum, NA ) -> returned
+  
+  return(returned)
+  
+}
+
+
+# KEEP - UTILITY
+# Length of the Count With alluniverses (lcwa)
+lcwa <- function(x)  sum(with(get("alluniverses", envir = parent.frame()),{ept(paste0(x,' & 1'))}), na.rm = TRUE)
+
+# be aware of numerics (both zero and non-zero: in context 'what do I want' )
+
+# > c(TRUE,1,55,0, FALSE,NA) & 1   
+# [1]  TRUE  TRUE  TRUE FALSE FALSE    NA
+
+# > sum( 1 & c(TRUE,1,55,0, FALSE,NA) , na.rm = TRUE)
+# [1] 3
+
+# lcwa('is_inv_is_price_chng_is_eps_well') 
+# [1] 668
+
+# OTHER UTILITES
+# str(alluniverses, list.len = 999, vec.len = 3 )
+# View(t(alluniverses[1:100,]))
+
+
+
+Sel <- function( at_what = NULL, called_at_what = NULL,  bests = NULL, univ_field_expr = NULL) {
+
+  univ_field_many <- ls(envir=parent.frame(), sort = FALSE)[stringr::str_detect(ls(envir=parent.frame(), sort = FALSE),univ_field_expr)]
+
+  for(univ_field_one in univ_field_many) {
+
+    univ_field_local <- get(univ_field_one, envir = parent.frame())
+
+    if( at_what == "lower" )     multiply <-  1     # 1 5 10 == 1 2 3
+    if( at_what == "higher"  )   multiply <- -1
+
+    for(best in ept(bests)) {
+
+      univ_field_local_rank <- ifelse(  rank( multiply * univ_field_local, ties.method = "random",  na.last = "keep") <= best, 1.0, 0.0) 
+
+      assign(paste0(univ_field_one, '__', called_at_what, best), univ_field_local_rank, envir = parent.frame())
+
+    }
+
+  }
+
+  return(NULL) # will destroy the return variable
+
+}
+
+
+
+as.Date.ti <- function(xTi, origin = "1970-01-01", tz = "UTC", offset = 0) {
+
+  base::as.Date(x = tis:::as.POSIXct.ti(
+      x = xTi, tz = tz, offset = offset
+      , origin = origin
+    )  
+  , tz = tz, origin = origin)
+}
+
+
+
+lastWeekDayDateOfMonth_nv <- function(x, origin = "1970-01-01", tz = "UTC") {
+
+  # uses: as.Date.ti
+                                      
+  fdtis <- tis::firstDayOf(tis::as.ti(base::as.Date(x = x, origin = origin, tz = tz),"monthly"))
+
+                                                       # character date; silently ignored
+  ldtis <- tis::lastDayOf(tis::as.ti(base::as.Date(x = x, origin = origin, tz = tz),"monthly"))
+
+  numeric_days_of_this_month <- seq( as.numeric(as.Date.ti(fdtis)), as.numeric(as.Date.ti(ldtis)) )
+
+  Date_last_three_days_of_this_month <-  tail(base::as.Date(x =  numeric_days_of_this_month, origin = origin, tz = tz),3)
+
+  tail(Date_last_three_days_of_this_month[ !(base::weekdays(Date_last_three_days_of_this_month) %in% c("Saturday","Sunday")) ],1)
+
+}
+
+
+lastWeekDayDateOfMonth <- function(x, origin = "1970-01-01", tz = "UTC") {
+
+  # uses: lastWeekDayDateOfMonth_nv
+
+  lastWeekDayDateOfMonth_v <- sapply(x,lastWeekDayDateOfMonth_nv, origin = origin, tz = tz, USE.NAMES = FALSE)
+
+  last_weekday_of_month <- lastWeekDayDateOfMonth_v
+
+  # because dates are ?unlist? ed
+  base::as.Date(last_weekday_of_month, origin = origin, tz = tz)
+}
+
+
+is.lastWeekDayDateOfMonth <- function(x) if( lastWeekDayDateOfMonth(x) == x ) { TRUE } else { FALSE }
+# > is.lastWeekDayDateOfMonth(zoo::as.Date("2016-05-31"))
+# [1] TRUE
+
+
+# replace and -Inf,Inf found in a data.frame with NAs
+cleanLargeValues <- function(x) {
+ 
+  if(!any(grepl("package:data.table",search()))) {
+    suppressMessages(require(data.table))
+  }
+
+  DT <- data.table(x)
+
+  # set. This avoids some internal copying.
+  for (j in 1:ncol(DT)) set(DT, which(is.infinite(DT[[j]])), j, NA) 
+
+  data.frame(DT) -> returned
+  detach(package:data.table) # prevent namespace pollution
+
+  return(returned)
+
+}
+
+
+
+cleanNaNValues <- function(x) {
+ 
+  if(!any(grepl("package:data.table",search()))) {
+    suppressMessages(require(data.table))
+  }
+
+  DT <- data.table(x)
+
+  # set. This avoids some internal copying.
+  for (j in 1:ncol(DT)) set(DT, which(is.nan(DT[[j]])), j, NA) 
+
+  data.frame(DT) -> returned
+  detach(package:data.table) # prevent namespace pollution
+
+  return(returned)
+
+}
+
+
+
+# CLEANS THE COLUMNS THAT ARE THE 'DIFFERNCE BETWEEN THE 'BEFORE' COLUMNS AND THE 'AFTER' COLUMNS
+
+cleanBADValuesSpecColumns <- function(df, before_columns, after_columns) {
+
+  df_other_b <- df[,which( ! after_columns %in% before_columns ),drop = FALSE]
+
+  iter <- 0
+  for(i in colnames(df_other_b)) {
+
+     iter <- iter + 1
+     print("BEGIN clean values")
+     print(i)
+
+     # Inf,-Inf,NaN
+     if(!is.numeric(df_other_b[[iter]])) { print(paste0("SKIPPING Not Numeric: ", i)) ; next }
+
+     no_large        <-  cleanLargeValues(df_other_b[,iter,drop = FALSE])
+     no_large_no_nan <-  cleanNaNValues(    no_large[,    ,drop = FALSE])
+
+     df[,i] <- no_large_no_nan[,,drop = FALSE]
+     
+     print(colnames(df_other_b)[iter])
+     print("END clean values")
+
+
+  }
+
+  return(df)
+
+}
+
+
+
+
+data_loading_with_Excel_4 <- function(
+    predictclasses = "train"
+  , traintest_index # required INPUT
+  , spreadsheet = "W:/New_Economics/forsight4.322/meta48calc71.xlsx"
+  , timends = 16717
+  , perspectives = "general+other"
+  , repository_location = "W:/New_Economics/forsight4.322"
+  , other_universes = list()
+  , return_at_end_ofattributes = FALSE
+  ) {
+  
+  # begin THIS function
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  # begin sheet perspectives
+  
+  spreadsheet_tab_perspectives <- openxlsx::readWorkbook(xlsxFile = spreadsheet, sheet = "perspectives")
+  
+  bookmarkhere <- 1
+  
+
+  for(rowindex in seq_along(row.names(spreadsheet_tab_perspectives))) {
+  
+    record0 <-  avu(spreadsheet_tab_perspectives[rowindex,,drop = FALSE])
+    names(record0) <- colnames(spreadsheet_tab_perspectives)
+    
+    # each column becomes a local variable
+    for(nameindex in names(record0)) {
+      assign(nameindex, record0[nameindex])
+    }
+
+    # if this record is not eligable, cleanup up the envoronment, then go to the next loop
+    if(!any(timends       %in% ept(timeends_instances_ranges))) { rm(list = names(record0)); next }
+    if(!any(perspectives  %in% ept(perspectives__plans)))       { rm(list = names(record0)); next }
+
+    
+    # accumulate ( if I need to ) 
+    if(!exists("perspectives__plans_clusterexpressions")) perspectives__plans_clusterexpressions <- c() # NULL
+                                                           # combine old with the new
+    # PERMANENT                              # cv removes NA # unique dies on NULL  # c ONE + NULL -> ONE   # setdiff  - note: setdiff : incl - excl AND removes duplicates # openxlsx return NA on empty cell
+    perspectives__plans_clusterexpressions <- cv(unique(c(perspectives__plans_clusterexpressions,setdiff(ept(perspectives__plans_clusterexpressions_includes),ept(perspectives__plans_clusterexpressions_excludes)))))
+    
+    bookmarkhere <- 1
+    
+    # clean up that last record
+    suppressWarnings(rm(list=names(record0)))
+    
+  } #  for(rowindex in seq_along(row.names(spreadsheet_tab_perspectives)))
+
+  
+  # end sheet perspectives
+  
+  # begin sheet joins
+  
+  spreadsheet_tab_joins <- openxlsx::readWorkbook(xlsxFile = spreadsheet, sheet = "joins")
+  
+
+ 
+  for(rowindex in seq_along(row.names(spreadsheet_tab_joins))) {
+  
+    record0 <-  avu(spreadsheet_tab_joins[rowindex,,drop = FALSE])
+    names(record0) <- colnames(spreadsheet_tab_joins)
+    
+    # each column becomes a local variable
+    for(nameindex in names(record0)) {
+      assign(nameindex, record0[nameindex])
+    }
+
+    
+    # if this record is not able, cleanup up the envoronment, then go to the next loop
+    if(!any(timends                                  %in% ept(timeends_instances_ranges)))   { rm(list = names(record0)); next }
+    if(!any(perspectives__plans_clusterexpressions   %in% ept(fromsheets__instances_plans))) { rm(list = names(record0)); next }
+    if(!any(predictclasses                           %in% ept(timeends__predictiteclasses))) { rm(list = names(record0)); next }
+    
+    
+    # if I do not have on make one 
+    # PERMANENT
+    if(!exists("olduniverses")) olduniverses <- list() # list()
+ 
+    if(!exists("repository_providers_timends_symbols_already_loaded")) repository_providers_timends_symbols_already_loaded <- list()
+    
+    list(
+        repository_location_el = repository_location 
+      , providers__instances_el = ept(providers__instances)
+      , timends_el =  timends
+      , fromsheets__symbols_el = ept(fromsheets__symbols)
+    ) -> list_item
+    
+    # check to see if already in the 'loaded list'
+    if(length(rlist::list.findi( repository_providers_timends_symbols_already_loaded, repository_location_el  == repository_location  && 
+                                                                       providers__instances_el == ept(providers__instances) &&
+                                                                       timends_el              == timends &&
+                                                                       fromsheets__symbols_el == ept(fromsheets__symbols)
+    )) == 0) {  # returns a vector of 'index_numbers' # a vector length of zero elemeents means 'no indexes found'
+    
+      # load load the data from external source
+    
+
+      
+      # load information table
+      if(ept(providers__instances_fmt) == "dbf") {
+        
+        print(paste0("Investigating external data of date: ", as.character(zoo::as.Date(timends)) ))
+        
+        path_file_name <- paste0(repository_location,"/", ept(providers__instances),"/", timends,"/",ept(fromsheets__symbols),".dbf")
+        print(paste0("Begin attempting to load external data: ",  path_file_name))
+
+        # data_frame_loaded <- suppressWarnings(suppressMessages(foreign::read.dbf(file = paste0(repository_location,"/", ept(providers__instances),"/", timends,"/",ept(fromsheets__symbols),".dbf"), as.is = TRUE)))
+        
+        data_frame_loaded <- suppressWarnings(suppressMessages(foreign::read.dbf(file = path_file_name, as.is = TRUE)))
+        
+        print(paste0("End attempting to load external data: ", path_file_name ))
+              
+      } # if(ept(providers__instances_fmt) == "dbf")
+      
+      # browser(expr = { !is.na(ept(fromsheets__symbols__another))  && predictclasses == "train" } )
+      
+      # regular load
+      
+      olduniverses[[ept(fromsheets__symbols)]] <- data_frame_loaded
+      rm("data_frame_loaded")
+           
+      # AAII SIPro specific # remove bad columns
+      # note: EXPECTING uppercase column names
+      keep_columns_switches <- !grepl("(^X\\.??$|^X\\.\\d+?$|^X_NullFlags$)",names(olduniverses[[ept(fromsheets__symbols)]]))
+      olduniverses[[ept(fromsheets__symbols)]] <- olduniverses[[ept(fromsheets__symbols)]][,keep_columns_switches ,drop = FALSE]
+      rm("keep_columns_switches")
+      
+      # lower case column names
+      
+      data_frame_temp <- olduniverses[[ept(fromsheets__symbols)]]
+      colnames(data_frame_temp) <- tolower(colnames(data_frame_temp))
+      olduniverses[[ept(fromsheets__symbols)]] <- data_frame_temp
+      rm("data_frame_temp")
+      
+      # add it to the list of previously loaded
+      new_element_index <- length(repository_providers_timends_symbols_already_loaded) + 1
+      
+      repository_providers_timends_symbols_already_loaded[[new_element_index]] <- list_item
+      rm("new_element_index")
+    
+    } # do not load load the date from an external source # do not add it to the list ( already on the list )
+
+
+    
+    # if copying, make a copy and give it a new name
+    
+    if( !is.na(fromsheets__symbols__another) ) {
+      
+      olduniverses[[ept(fromsheets__symbols__another)]] <- olduniverses[[ept(fromsheets__symbols)]]
+         
+      #       # AAII SIPro specific # remove bad columns
+      #       # note: EXPECTING uppercase column names
+      #       keep_columns_switches <- !grepl("(^X\\.??$|^X\\.\\d+?$|^X_NullFlags$)",names(olduniverses[[ept(fromsheets__symbols__another)]]))
+      #       olduniverses[[ept(fromsheets__symbols__another)]] <- olduniverses[[ept(fromsheets__symbols__another)]][,keep_columns_switches ,drop = FALSE]
+      #       rm("keep_columns_switches")
+      #       
+      #       # lower case column names
+      #       
+      #       data_frame_temp <- olduniverses[[ept(fromsheets__symbols__another)]]
+      #       colnames(data_frame_temp) <- tolower(colnames(data_frame_temp))
+      #       olduniverses[[ept(fromsheets__symbols__another)]] <- data_frame_temp
+      #       rm("data_frame_temp")
+      
+    }
+   
+
+    bookmarkhere <- 1
+    
+    if( !is.na(ept(fromsheets__uniqueexpressions)) & # NA - empty cell
+      stringr::str_detect(ept(fromsheets__uniqueexpressions), "<.*>") ) {
+      
+      # run the function
+      fromsheets__uniqueexpressions_new <-stringr::str_replace_all(stringr::str_replace_all(ept(fromsheets__uniqueexpressions),"<",""),">","")
+      
+      ept(fromsheets__uniqueexpressions_new)
+      rm("fromsheets__uniqueexpressions_new")
+    }
+       
+
+    
+    # paste0(repository_location,"/", providers__instances,"/", timends)
+    
+    # clean up that last record
+    suppressWarnings(rm(list=names(record0)))
+    
+    bookmarkhere <- 1
+    
+  } # for(rowindex in seq_along(row.names(spreadsheet_tab_joins)))
+
+  bookmarkhere <- 1
+  
+  # end sheet joins
+  
+  # begin sheet attributes
+  
+  spreadsheet_tab_attributes <- openxlsx::readWorkbook(xlsxFile = spreadsheet, sheet = "attributes")
+  
+  for(rowindex in seq_along(row.names(spreadsheet_tab_attributes))) {
+  
+    record0 <-  avu(spreadsheet_tab_attributes[rowindex,,drop = FALSE])
+    names(record0) <- colnames(spreadsheet_tab_attributes)
+    
+    # each column becomes a local variable
+    for(nameindex in names(record0)) {
+      assign(nameindex, record0[nameindex])
+    }
+
+    # if this record is not able, cleanup up the envoronment, then go to the next loop
+    if(!any(timends                                  %in% ept(timeends_instances_ranges)))   { rm(list = names(record0)); next }
+    if(!any(perspectives__plans_clusterexpressions   %in% ept(fromsheets__instances_plans))) { rm(list = names(record0)); next }
+    if(!any(predictclasses                           %in% ept(timeends__predictiteclasses))) { rm(list = names(record0)); next }
+
+    # assign(reduce) to columns that I car about
+    
+    if(!exists("careuniverses")) careuniverses <- list() # olduniverses
+    
+#     data_frame_name_temp <- ept(fromsheets__symbols)
+#     data_frame_temp <- olduniverses[[data_frame_name_temp]]
+#     data_frame_table_column_names_temp_new <- ept(fromattributes__clusterexpressions)
+# 
+#     if( !is.null( careuniverses[[data_frame_name_temp]] ) ) { 
+#       
+#       # data_frame_table_column_names_temp_newer <- ept(midattributes__clusterexpressions)
+#       # olduniverses[[data_frame_name_temp]][,data_frame_table_column_names_temp_new,drop = FALSE]
+#       
+#       careuniverses[[data_frame_name_temp]] <- cbind( careuniverses[[data_frame_name_temp]], olduniverses[[data_frame_name_temp]][,data_frame_table_column_names_temp_new,drop = FALSE] ) 
+#       
+#       
+#     } else { # first time 
+#       careuniverses[[data_frame_name_temp]] <- olduniverses[[data_frame_name_temp]][,data_frame_table_column_names_temp_new,drop = FALSE]
+#     }
+    
+    print(ept(fromsheets__symbols))
+    print(ept(fromattributes__clusterexpressions))
+    print(ept(midattributes__clusterexpressions))
+    print("")
+    
+    # browser( expr = { ept(fromsheets__symbols) == "si_mgdsc2"  && predictclasses == "train" } )
+    
+    data_frame_name_temp <- ept(fromsheets__symbols)
+    
+    data_frame_table_column_names_temp_new         <- ept(fromattributes__clusterexpressions)
+    data_frame_table_column_names_temp_new_indexes <- match( data_frame_table_column_names_temp_new, colnames(olduniverses[[data_frame_name_temp]]) )
+    
+    data_frame_temp_new <- olduniverses[[data_frame_name_temp]][,data_frame_table_column_names_temp_new_indexes,drop = FALSE]
+    colnames(data_frame_temp_new) <- ept(midattributes__clusterexpressions)
+    
+    
+    if( !is.null( careuniverses[[data_frame_name_temp]] ) ) { 
+      
+      careuniverses[[data_frame_name_temp]] <- cbind( careuniverses[[data_frame_name_temp]],data_frame_temp_new)
+    
+    } else { # first time
+    
+      careuniverses[[data_frame_name_temp]] <- data_frame_temp_new
+    }
+    
+    # change the datatype, subset it, lowercase it. or 'date to numeric(UNIX Epoch)'
+    
+    if( !is.na(ept(midattributes__expressions)) & # NA - empty cell
+       stringr::str_detect(ept(midattributes__expressions), "<.*>") ) {
+      
+       # run the function
+       midattributes__expression_new <-stringr::str_replace_all(stringr::str_replace_all(ept(midattributes__expressions),"<",""),">","")
+      
+       ept(midattributes__expression_new)
+       rm("midattributes__expression_new")
+    
+    }
+    
+    bookmarkhere <- 1
+    
+    
+    # clean up that last record
+    suppressWarnings(rm(list=names(record0)))
+    
+    bookmarkhere <- 1
+    
+  } # for(rowindex in seq_along(row.names(spreadsheet_tab_attributes)))
+
+  
+  # end sheet attributes
+
+  bookmarkhere <- 1
+  
+  # return to join sheets - do actual joins
+  
+  for(rowindex in seq_along(row.names(spreadsheet_tab_joins))) {
+  
+    record0 <-  avu(spreadsheet_tab_joins[rowindex,,drop = FALSE])
+    names(record0) <- colnames(spreadsheet_tab_joins)
+    
+    # each column becomes a local variable
+    for(nameindex in names(record0)) {
+      assign(nameindex, record0[nameindex])
+    }
+
+    # if this record is not able, cleanup up the envoronment, then go to the next loop
+    if(!any(timends                                  %in% ept(timeends_instances_ranges)))   { rm(list = names(record0)); next }
+    if(!any(perspectives__plans_clusterexpressions   %in% ept(fromsheets__instances_plans))) { rm(list = names(record0)); next }
+    if(!any(predictclasses                           %in% ept(timeends__predictiteclasses))) { rm(list = names(record0)); next }
+    
+
+    
+    # not part of the join flow
+    if(ept(fromsheets_currentjoinsymbol) == "NONE" && ept(fromsheets_bulkjoinsymbol) == "NONE" ) {
+      next
+    }
+    
+    # create a bulk on the left side - symbols
+    # start with on left side
+    if(is.na(ept(fromsheets__symbols__another)) &&  ept(fromsheets_currentjoinsymbol) == "INITIATE" && ept(fromsheets_bulkjoinsymbol) == "INITIATE" ) {
+      alluniverses <- careuniverses[[ept(fromsheets__symbols)]]
+      next
+    } 
+    
+    # create a bulk on the left side - symbols__another
+    if(!is.na(ept(fromsheets__symbols__another)) && ept(fromsheets_currentjoinsymbol) == "INITIATE" && ept(fromsheets_bulkjoinsymbol) == "INITIATE" ) {
+        alluniverses <- careuniverses[[ept(fromsheets__symbols__another)]]
+    }
+    
+    # has to be "INITIATE" somewhere - skip until I find it
+    if(!exists("alluniverses")) next
+    
+    # left outer join - right side
+    sides <- ept(fromsheets_currentjoinsymbol)
+    
+    # left outer join - left side
+    names(sides) <- ept(fromsheets_bulkjoinsymbol)
+    
+    # browser( expr = { ept(fromsheets__symbols) == "si_exchg"  && predictclasses == "train" } )
+    
+    # bulk join by right side - fromsheets__symbols
+    if(is.na(ept(fromsheets__symbols__another))) {
+      
+      # browser( expr = { ept(fromsheets__symbols) == "si_isq" } )
+      
+      alluniverses <- dplyr::left_join(alluniverses ,careuniverses[[ept(fromsheets__symbols)]], by =sides)
+    }
+    
+    # bulk join by right side - fromsheets__symbols__another
+    if(!is.na(ept(fromsheets__symbols__another))) {
+      alluniverses <- dplyr::left_join(alluniverses ,careuniverses[[ept(fromsheets__symbols__another)]], by =sides)
+    }
+
+
+    # clean up that last record
+    suppressWarnings(rm(list=names(record0)))
+
+  } # for(rowindex in seq_along(row.names(spreadsheet_tab_joins)))
+  
+  # end of return to join sheets - do actual joins
+  
+  # begin - return to attributes - give column names - user friendly names
+
+  # need the provider name for later from the excel sheet
+  # program input variable
+  # CREATE A NEW COLUMN
+  cbind(provider = NA, alluniverses, stringsAsFactors = FALSE) -> alluniverses
+  
+  for(rowindex in seq_along(row.names(spreadsheet_tab_attributes))) {
+    
+    record0 <-  avu(spreadsheet_tab_attributes[rowindex,,drop = FALSE])
+    names(record0) <- colnames(spreadsheet_tab_attributes)
+    
+    # each column becomes a local variable
+    for(nameindex in names(record0)) {
+      assign(nameindex, record0[nameindex])
+    }
+
+    # if this record is not able, cleanup up the envoronment, then go to the next loop
+    if(!any(timends                                  %in% ept(timeends_instances_ranges)))   { rm(list = names(record0)); next }
+    if(!any(perspectives__plans_clusterexpressions   %in% ept(fromsheets__instances_plans))) { rm(list = names(record0)); next }
+    if(!any(predictclasses                           %in% ept(timeends__predictiteclasses))) { rm(list = names(record0)); next }
+
+    # browser( expr = { ept(midattributes__symbols) == "epscon_q"  && predictclasses == "train" } )
+    
+    # old column names
+    data_frame_table_column_names_temp_new         <- ept(midattributes__clusterexpressions)
+
+    # location of old column names
+    data_frame_table_column_names_temp_new_indexes <- match(data_frame_table_column_names_temp_new, colnames(alluniverses) )
+
+    # found old column name
+    if(all(!is.na( data_frame_table_column_names_temp_new_indexes))) {
+    
+      # rename old column names to new user frienldy names
+      colnames(alluniverses)[data_frame_table_column_names_temp_new_indexes] <- ept(toattributes__clusterexpressions)
+
+    }
+    # if(!is.na( data_frame_table_column_names_temp_new_indexes)) { } # do nothing
+    
+    # before 'that last record' memory has been erased
+    # need the provider name for later from the excel sheet
+                       # program input variable
+    # UPDATE
+    alluniverses[rowindex, "provider"] <- ept(providers_instances)
+    
+    
+    
+    # clean up that last record
+    suppressWarnings(rm(list=names(record0)))
+    
+    bookmarkhere <- 1
+    
+  } # for(rowindex in seq_along(row.names(spreadsheet_tab_attributes)))
+
+  # end  - return to attributes - give column names - user friendly names
+
+  # need this new column to unquely id among future/past dataa
+  cbind(        
+    predictclasses = predictclasses,                                    # program input variable
+    timends = timends,                                                  # program input variable
+    timends_push_to_eom = as.numeric(zoo::as.Date(zoo::as.yearmon(zoo::as.Date(timends), origin = "1970-01-01", tz = "UTC"), frac = 1, origin = "1970-01-01", tz = "UTC")),
+    provider_global_internal_id_timepoint_exact = with(alluniverses, {  # from the excel sheet(already in alluniverses)
+      paste0(provider_global_internal_id,'__',timends) 
+      } 
+  ),     
+    alluniverses, stringsAsFactors = FALSE) -> alluniverses
+  
+  # PATCH
+  # if program parameter traintest_index does not exist, then add it (need for a composite SQL join later)
+  within( alluniverses, { if(!exists("traintest_index")) traintest_index <- NA } ) -> alluniverses
+
+  bookmarkhere <- 1
+  # View(data.frame(colnames(alluniverses)))
+  
+  # combine (prefix current data with program input data)
+  if(length(other_universes) > 0) { plyr::rbind.fill(  append(other_universes,list(alluniverses))  ) -> alluniverses }
+  
+  # PATCH
+  # any NAs form the 'current data' ( and should be NOT the 'program input data' 
+  # convert to the 'program sent parameter' traintest_index ( need for a composite SQL join later) )
+  traintest_index_nbr <- traintest_index
+  within( alluniverses, { ifelse(!is.na(traintest_index),traintest_index, traintest_index_nbr) -> traintest_index   } ) -> alluniverses
+  rm("traintest_index_nbr")
+  
+  # could have: mlr::capLargeValues as businessly/techically appropriate
+  #
+  # DO REMOVE Inf,-Inf HERE ***
+  # remove any Inf,-Inf #, these can reak havok on my SportsRanks
+  #
+  cleanLargeValues(alluniverses) -> alluniverses
+  cleanNaNValues(alluniverses)   -> alluniverses
+  
+  # return only attributes part
+  if(return_at_end_ofattributes == TRUE) return (alluniverses) 
+  
+
+  # begin sheet measures
+  
+  
+  spreadsheet_tab_measures <- openxlsx::readWorkbook(xlsxFile = spreadsheet, sheet = "measures")
+  
+  # programatically added column : needed for later partitioning on 'all or none'
+  # COULD? be move LATER in the program BEFORE partitioning begins?
+  cbind(NONE = "NONE", alluniverses, stringsAsFactors = FALSE) -> alluniverses
+  
+  for(rowindex in seq_along(row.names(spreadsheet_tab_measures))) {
+  
+    record0 <-  avu(spreadsheet_tab_measures[rowindex,,drop = FALSE])
+    names(record0) <- colnames(spreadsheet_tab_measures)
+    
+    # each column becomes a local variable
+    for(nameindex in names(record0)) {
+      assign(nameindex, record0[nameindex])
+    }
+
+    print(paste0("Beginning measures__instances:", ept(measures__instances), collapse = "__" ))
+    
+    
+    # if this record is not able, cleanup up the envoronment, then go to the next loop
+    if(!any(timends                                  %in% ept(timeends_instances_ranges)))   { print(paste0("    Skipping(timeends) measures__instances:", ept(measures__instances), collapse = "__" )) ; rm(list = names(record0)); next }
+    if(!any(perspectives__plans_clusterexpressions   %in% ept(measures__instances_plans)))   { print(paste0("    Skipping(perspectives__plans_clusterexpressions) measures__instances:", ept(measures__instances), collapse = "__" )) ; rm(list = names(record0)); next }
+    if(!any(predictclasses                           %in% ept(timeends__predictiteclasses))) { print(paste0("    Skipping(predictclasses) measures__instances:", ept(measures__instances), collapse = "__" )) ; rm(list = names(record0)); next }
+
+    # if this record survived the filteres above 
+    # then just add it to history of spreadsheet column names with history values
+    for(nameindex in names(record0)) {
+
+      # if the 'history' vector does does not exist, create it, then assign its first value
+      if(!exists(paste0(nameindex,'_h')))  { 
+        assign(paste0(nameindex,'_h'), get(nameindex))  # will also assign the element name
+      }  
+      else {  # if the 'history' vector already exists, then append to it.
+        ept( paste0( nameindex, '_h[', length(get(paste0(nameindex,'_h')))+1, '] <- ', nameindex ) ) 
+         # give it a acolumn element name # not '+1' because I added it above
+        ept(paste0('names(',nameindex, '_h)[', length(get(paste0(nameindex,'_h')))+0, '] <- ','"',nameindex,'"' ))
+      }
+    }
+    
+    
+    ## EXTERNAL(OTHER) DATA 'COULD' BE ADDED HERE ##
+    ## EXTERNAL(OTHER) DATA 'COULD' BE ADDED HERE ## ( PLACE 1 OF 2 ) ## LEFT_OFF ##
+    
+    # browser()
+    
+                 ## EXTERNAL DATA LOAD ##
+    
+    # YES 1. - (RETURN FROM PROGRAM HERE WHICH - ALL UNIVERSES DATA)
+    # XOR ( GIVE PROGRAMMING OPTIONS )
+    # YES 2. - alluniverses - PLYR::RBIND.FILL - A/MANY PREVIOUS 'ALL UNIVERSE HERE' 
+    # ATTRIBUTES SHEET WAS JUST COMPLETED ( BEGINNING 1ST measure 'is_united_states' BELOW )
+    
+    # str(alluniverses, list.len = 999, vec.len = 1)
+    # $ bus_sector_nm                     : chr  "Financial" ...
+    # $ fin_exchange_nm                   : chr  "Nasdaq" ...
+    # $ bus_industry_nm                   : chr  "Regional Banks" ...
+    #
+    
+    #### CURRENLTLY - NO IMPLEMENTATION
+    #### if( is.na(ept(measures__toexpresssions__withwhat))  ) {
+    #### # regular within_assign_versereassign
+    
+    # browser( expr = { "pct_prices_return" == ept(measures__instances)  && predictclasses == "test" } )
+    
+    # browser( expr = { "finalscore_alldata_www_mashup_isbest" == ept(measures__instances)  && predictclasses == "train" } )
+    
+    # NEW MEASURE - direct run - no angle bars
+    if(!stringr::str_detect(measures__toexpresssions, "<[',A-Za-z,_]+?>")) {
+      
+      u_before_columns <- colnames(alluniverses)
+      
+      within(alluniverses, {   
+        # browser( expr = { "finalscore_alldata_www_mashup_isbest" == ept(measures__instances)  && predictclasses == "train" } )
+        # browser( expr = { "company_size_level_name" == ept(measures__instances)  } ) # NOT STOPPING? WHY???
+        # browser()
+        assign(ept(measures__instances),ept(ept(measures__toexpresssions))) 
+      }) -> alluniverses
+      
+      u_after_columns  <- colnames(alluniverses)
+      alluniverses     <- cleanBADValuesSpecColumns(df = alluniverses,  before_columns = u_before_columns, after_columns = u_after_columns)
+      rm("u_before_columns","u_after_columns")
+      
+    }
+    
+    # browser( expr = { "finalscore_alldata_www_mashup_isbest" == ept(measures__instances)  && predictclasses == "train" } )
+    
+    # browser( expr = { "pct_prices_return" == ept(measures__instances)  && predictclasses == "test" } )
+    
+    ## LEFT OFF ## LEFT OFF ## 
+    
+#     NEED TO GET THE COMPOSITES REBALANCE RESULT
+# 
+#     NEED 3 GREEN LINES ( REPLACE THE OLD ONE LINE )
+#     __alldata__  __bus_sector_nm___  __bus_industry_nm___  
+# 
+#     # REPLACE THE LIGHT GREEN 
+#     within assign ept(ept # USAGE 'SOME FORM' 
+# 
+#     # WITHING A FUNCTION SO THAT I CAN DEBUG IT # OR # NOTE: ls(envir=parent.frame(3))@'within assign' # INSIDE TEXT
+#     #  TEST BY SAFELY RETURNING THE FIRST RECONIZABLE OBJECT ('USER OBJECT')
+#     #  ls(envir=parent.frame(3))[1] # result will always BE A CHARACTER [1] " olduniverses"
+#     #     use get('alluniverses', envir=parent.frame(3)) 
+#  
+#     # power ( e.g. if 5 total measures are possible ) 
+#     # if a company has 3(majority) then power is  5/3 # 5 WILL BE AN 'EARLY DETERMINED(BUT STILL DYNMICALLY) DETERMINED CONSTANT
+#     # if a company has 4           then power is  5/4
+#     # if a company has 2(minority) then power is   NA
+#     # score = SUM of ( measures_intances __ ^.*__alldata__sportsranking$ ) * power ... then SEND out to programe to THEN reduce(redundant) by technicals THEN quantiles
+# 
+#     CompositesMajorityRebalScoring <-function(
+# 
+#       , composites                 =  'exposes__composites_instances_cumvector'      # cumulative HISTORY buffer
+#       , composites_value           =  'traditionalvalue'
+#       , measures                   =  'measures__instances_cumvector'                # cumulative HISTORY buffer
+#       , universe                   =  'alluniverses' # TRY? TO GET IT DYMNIACLLAY
+#       , measuresfurther_expression =  '^.*__alldata__sportsranking$'
+#       , contitionals               =  'measures__contitionals_businesses_cumvector'  # cumulative HISTORY buffer
+# 
+#     ){  }
+    
+    # NEW MEASURE - IN-direct run - PROCESS - angle bars
+    if(stringr::str_detect(measures__toexpresssions, "<[',A-Za-z,_]+?>")) {
+    }
+    
+    #### }
+    
+#     # CURRENLTLY - NO IMPLEMENTATION ( CODE IN HERE ) DOES WORK
+#     if(!is.na(ept(measures__toexpresssions__withwhat))  ) {
+#     # DIFFERENT FROM regular within_assign_versereassign
+# 
+#       if(ept(measures__toexpresssions__withwhat) == "SELFASSIGNS") {
+#       # DO JUST within_versereassign ( within CONTENTS must/should contain assignment themselves )
+# 
+#         bookmarkhere <- 1
+#         
+#         names_alluniverses_before_selfassigns <- names(alluniverses)
+#         
+#         # measures__toexpresssions2 <- "\"{Big <- price_pct_change_well + 1000;bb <- 3}\""
+#         # within(alluniverses, { ept(ept(measures__toexpresssions2))}) -> alluniverses
+#         
+#         within(alluniverses, {     
+#           ept(ept(measures__toexpresssions))
+#         }) -> alluniverses
+#         
+#         # BUGGY ( AT LEAST IN THE DEBUGGER ) # 'SOMETIMES' will SILENTLY FAIL so run it *TWICE*
+#         
+#         within(alluniverses, {     
+#           ept(ept(measures__toexpresssions))
+#         }) -> alluniverses
+#         
+#         # ( CODE IN HERE ) DOES WORK
+#         
+#         names_alluniverses_afteralluniverses <- names(alluniverses)
+#         
+#         new_names_alluniverses_fromalluniverses <- setdiff(names_alluniverses_afteralluniverses, names_alluniverses_before_selfassigns)
+#         rm("names_alluniverses_before_selfassigns")
+#         rm("names_alluniverses_afteralluniverses")
+#         
+#         # ON FUTURE CELL USE
+#         # USE if(ept(measures__toexpresssions__withwhat) == "SELFASSIGNS")  AND THEN new_names_alluniverses_fromalluniverses on FUTURE 
+#         # TO DO PROCESSING ( CURRENLY NO IMPLEMENTATION )
+#         
+#         bookmarkhere <- 1
+# 
+#       }
+#       
+#     }
+    
+    # notNA - filled cell # HAS a condition  
+    if(!is.na(ept(measures__contitionals__technicals))  ) {
+    
+      # CONDITION - direct run - no angle bars
+      if(!stringr::str_detect(measures__contitionals__technicals, "<[',A-Za-z,_]+?>")) {
+        
+        within(alluniverses, {     
+           assign(ept(measures__instances),ept(ept(measures__contitionals__technicals)))  
+        }) -> alluniverses
+        
+      }
+      # CONDITION - IN-direct run - angle bars
+      # *** DANGER ( SHOULD ) MAKE THIS REGULAR EXPRESSON CHANGE EVERYWHERE ( [ ] DONE )
+      if( stringr::str_detect(measures__contitionals__technicals, "<[',A-Za-z,_]+?>")) {
+      
+        # *** DANGER ( SHOULD ) MAKE THIS REGULAR EXPRESSON CHANGE EVERYWHERE ( [ ] DONE )
+        # do not replace '<=' and do not replace '>='
+        measures__contitionals__technicals_new <-stringr::str_replace_all(stringr::str_replace_all(ept(measures__contitionals__technicals),"<(?!=)",""),">(?!=)","")
+      
+        within(alluniverses, {     
+          assign(ept(measures__instances),ept(measures__contitionals__technicals_new))  
+        }) -> alluniverses
+        
+        rm("measures__contitionals__technicals_new")
+        
+      }
+      
+    }
+    # NA - empty cell # does not have a condition - ASIS
+    if( is.na(ept(measures__contitionals__technicals))  ) {
+    }
+    
+    ## EXTERNAL(OTHER) DATA 'COULD' BE ADDED HERE ##
+    ## EXTERNAL(OTHER) DATA 'COULD' BE ADDED HERE ## ( PLACE 2 OF 2 )
+    # NO - "alluniverses$is_united_states                  : num  1 1 ..." HAS BEEN JUST ADDED
+    # SO THE TIME IS 'TOO LATE'
+    
+    # browser()
+
+    # process (if any) instances___expressions ( SportsRankings )
+    if(!is.na(ept(measurestypes__instances___expressions))  ) {
+    
+      # FIX EVERY WHERE AN 'NA cell check' is.na(ept(my_cell_name))[1] TO_DO [ ]
+      # excel returnes : empty cell: NA,  one element cell: FALSE, two element cell: FALSE, FALSE
+      if( is.na(ept(measurestypes__perdivisions))[1]  ) {
+      # default: if NOTHING is there'
+      #   calculate an instances___expression SportsRanking? on the 'original (unparitioned?/dirty?) data'
+      # TYPICALLY found 'VERY EARLY" in the 'measures' spreadsheet
+    
+      # if a cell in NA send "NONE" ( required by SportsRanking ( actually base::split ) )
+        
+      # temporary
+      #####measurestypes__perdivisions <- "\"NONE\""
+
+      #####within(alluniverses, {     
+      #####  assign( str_c(ept(measures__instances),"__origdata__",ept(measurestypes__instances_suffixes)),ept(ept(measurestypes__instances___expressions))) 
+      #####}) -> alluniverses
+        
+      
+      
+      
+      
+      # undo temporary
+      #####measurestypes__perdivisions <- NA
+        
+      # head(plyr::arrange(alluniverses[,c("smallplustocks_market_cap__origdata__sportsranking","smallplustocks_market_cap","external_id", "fin_company_nm")], plyr::desc(smallplustocks_market_cap)), 990)
+      
+      }
+    
+      
+      ######if(!is.na(ept(measurestypes__perdivisions))[1]  ) {
+      # if 'SOMETHINGS' are there' 
+      #   ( TYPICALLY "alldata" measures_instances WOULD HAVE BEEN calculated at this point and NOW USED )
+      # calculate an instances___expression ON 
+
+      # EACH measurestypes__perdivision FOUND IN measurestypes__perdivisions
+      #     TYPICALLY "alldata"+
+      # LOOP
+    
+      # temporary
+      if( is.na(ept(measurestypes__perdivisions))[1]  )   measurestypes__perdivisions <- "\"NONE\""
+      measurestypes__perdivisions_original <- measurestypes__perdivisions
+      
+      for(division_ite in ept(measurestypes__perdivisions)) {
+        
+        division_ite <- str_c('"',division_ite,'"') # put back SO compatiable AND consitent with the rest of the code
+        measurestypes__perdivisions <- division_ite
+      
+        # browser( expr = { "finalscore_alldata_millennialvalue" == ept(measures__instances)  && predictclasses == "train" } )
+      
+        # within(alluniverses, {    
+        #   # browser( expr = { "finalscore_alldata_millennialvalue" == ept(measures__instances)  && predictclasses == "train" } )
+        #   assign( str_c(ept(measures__instances),"__",ept(measurestypes__perdivisions),"__",ept(measurestypes__instances_suffixes)),ept(ept(measurestypes__instances___expressions))) 
+        # }) -> alluniverses
+        
+        
+
+        first_numb_of_division_ite <- TRUE
+        for(numb_of_division_ite in ept(ept(measurestypes__instances__numb_of_divisions))) {
+
+          #  ept(ept("\"alist(10,100, 'NGT100xorNROW',max(55:as.integer('555')))\"")) # THIS DOES WORK
+          
+          if( is.numeric(numb_of_division_ite) )   { rk <- numb_of_division_ite      ; suffixx <- as.character(rk) }
+          if( is.call(numb_of_division_ite) )      { rk <- eval(numb_of_division_ite); suffixx <- as.character(rk) }
+          if( is.character(numb_of_division_ite) ) { rk <- paste0("\'",numb_of_division_ite,"\'"); suffixx <- as.character(numb_of_division_ite) }
+
+          # override
+          if(first_numb_of_division_ite) suffixx <- "";  # default ON FIRST 
+          
+          expressionxx <- measurestypes__instances___expressions
+          
+          stringr::str_replace(expressionxx,'DIV',rk) -> expressionxx
+
+          if( first_numb_of_division_ite) long_suffixx <- ept(measurestypes__instances_suffixes) # default name
+          if(!first_numb_of_division_ite) long_suffixx <- paste0(ept(measurestypes__instances_suffixes),suffixx)
+
+          u_before_columns <- colnames(alluniverses)
+          
+          within(alluniverses, {    
+            # browser( expr = { "finalscore_alldata_millennialvalue" == ept(measures__instances)  && predictclasses == "train" } )
+            # assign( str_c(ept(measures__instances),"__",ept(measurestypes__perdivisions),"__",ept(measurestypes__instances_suffixes)),ept(ept(measurestypes__instances___expressions))) 
+            assign( str_c(ept(measures__instances),"__",ept(measurestypes__perdivisions),"__",long_suffixx),ept(ept(expressionxx))) 
+          }) -> alluniverses
+          
+          u_after_columns  <- colnames(alluniverses)
+          alluniverses <- cleanBADValuesSpecColumns(df = alluniverses,  before_columns = u_before_columns, after_columns = u_after_columns)
+          rm("u_before_columns","u_after_columns")
+          
+          if(first_numb_of_division_ite) first_numb_of_division_ite <- FALSE # 2nd loop +
+        }
+        rm("numb_of_division_ite")
+
+
+      }
+      rm("division_ite")
+      
+      # browser( expr = { "finalscore_alldata_millennialvalue" == ept(measures__instances)  && predictclasses == "train" } )
+      
+      # sanity check
+      # head(plyr::arrange(alluniverses[,c("smallplustocks_market_cap__bus_sector_nm__sportsranking","smallplustocks_market_cap","external_id", "fin_company_nm")], plyr::desc(smallplustocks_market_cap)), 990)
+      
+      # undo temporary
+      measurestypes__perdivisions <- measurestypes__perdivisions_original
+      rm("measurestypes__perdivisions_original")
+      if( is.na(ept(measurestypes__perdivisions))[1]  )   measurestypes__perdivisions  <- NA
+      
+      ######}
+      
+      # WORK HERE
+      # SEARCH NOTES:  use lazyeval and dplyr::mutate_ to dyamamically and a column and its values
+      # MULTITABLE or/xor SOME COMBO: dplyr::mutate_each  # R.utils::unwrap  # hdquantile+  # reshape2::melt, # reshape2::acast
+      
+    }
+
+    # (currenly ONLY to prevent the program from going TOO far )
+    # browser( expr = { "finalscore_alldata_mashup" == ept(measures__instances)  && predictclasses == "train" } )
+    
+    # browser( expr = { "pct_return_on_inv_capital_y1_betters" == ept(measures__instances)  && predictclasses == "train" } )
+    # browser( expr = { "finalscore_alldata_mashup" == ept(measures__instances)  && predictclasses == "train" } )
+    
+    # browser( expr = { "finalscore_alldata_millennialvalue" == ept(measures__instances)  && predictclasses == "train" } )
+    
+    # browser( expr = { "pct_prices_return" == ept(measures__instances)  && predictclasses == "test" } )
+
+    bookmarkhere <- 1
+    
+    print(paste0("  Ending measures__instances:", ept(measures__instances), collapse = "__" ))
+
+    # clean up that last record
+    suppressWarnings(rm(list=names(record0)))
+    
+    bookmarkhere <- 1
+
+  } # for(rowindex in seq_along(row.names(spreadsheet_tab_measures)))
+
+  # end THIS function
+  Sys.setenv(TZ=oldtz)
+  
+  bookmarkhere <- 1
+
+  # A VERY COMMON PLACE
+  # browser()
+  
+  return(alluniverses)
+  
+  # NEED YET, SPECIFIC COMPOSITE BREAK DOWN LEFT_OFF [ ]
+  
+  # View(table(alluniverses$fundamentalvalue_alldata_composite))
+  # View(table(alluniverses$earningsquality_alldata_composite))
+  # View(table(alluniverses$financialstrength_alldata_composite))
+  # View( with( alluniverses, { cbind(fundamentalvalue_alldata_composite, fundamentalvalue_alldata_composite__alldata__sportsranking,earningsquality_alldata_composite, earningsquality_alldata_composite__alldata__sportsranking,financialstrength_alldata_composite, financialstrength_alldata_composite__alldata__sportsranking,fundamentalvalue_expose_alldata_composite,fundamentalvalue_expose_alldata_composite__alldata__sportsranking2,finalscore_alldata_www_mashup, finalscore_alldata_www_mashup__alldata__sportsranking,finalscore_alldata_www_mashup__alldata__sportsranking__is_best25)[which(finalscore_alldata_www_mashup__alldata__sportsranking__is_best25 == 1),] } ) )
+  # View( with( alluniverses, { cbind(fundamentalvalue_alldata_composite, fundamentalvalue_alldata_composite__alldata__sportsranking,earningsquality_alldata_composite, earningsquality_alldata_composite__alldata__sportsranking,financialstrength_alldata_composite, financialstrength_alldata_composite__alldata__sportsranking,fundamentalvalue_expose_alldata_composite,fundamentalvalue_expose_alldata_composite__alldata__sportsranking2,finalscore_alldata_www_mashup_bad, finalscore_alldata_www_mashup_bad__alldata__sportsranking,finalscore_alldata_www_mashup_bad__alldata__sportsranking__is_worst25)[which(finalscore_alldata_www_mashup_bad__alldata__sportsranking__is_worst25 == 1),] } ) )
+  
+  
+  # View( with( alluniverses, { cbind(price_pct_chge_since_26w_betters, price_pct_chge_since_26w_betters__alldata__sportsranking,free_cash_over_price_ratio, free_cash_over_price_ratio__alldata__sportsranking,shareholder_orientation, shareholder_orientation__alldata__sportsranking,pct_return_on_inv_capital_y1_betters, pct_return_on_inv_capital_y1_betters__alldata__sportsranking,earnings_quality, earnings_quality__alldata__sportsranking, finalscore_alldata_millennialvalue__alldata__sportsranking, finalscore_alldata_millennialvalue__alldata__sportsranking__is_best25)[which(finalscore_alldata_millennialvalue__alldata__sportsranking__is_best25 == 1),]  } ) )
+  # View( with( alluniverses, { cbind(price_pct_chge_since_26w_betters, price_pct_chge_since_26w_betters__alldata__sportsranking,free_cash_over_price_ratio, free_cash_over_price_ratio__alldata__sportsranking,shareholder_orientation, shareholder_orientation__alldata__sportsranking,pct_return_on_inv_capital_y1_betters, pct_return_on_inv_capital_y1_betters__alldata__sportsranking,earnings_quality, earnings_quality__alldata__sportsranking, finalscore_alldata_millennialvalue__alldata__sportsranking, finalscore_alldata_millennialvalue__alldata__sportsranking__is_worst25)[which(finalscore_alldata_millennialvalue__alldata__sportsranking__is_worst25 == 1),]  } ) )
+  
+  # end sheet measures
+  
+  # NOT TESTED (YET)
+  # ascending (going down the page ) best to 'not so best'
+  # plyr::arrange(alluniverses[,c("external_id","internal_id","fin_company_nm","bus_sector_nm","bus_industry_nm","company_size_level_name")], desc(finalscore_alldata_mashup__alldata__sportsranking))
+  
+                                                                            # last check: END_OF_traditional_value TRUE (EXCLLENT)
+  # isFinite <- function(x) { if(is.na(x)) return(TRUE) ; is.finite (x) }   # KEEP CODE - GENERAL CHECK FOR ANY  Inf,-Inf SLIPPING IN THERE
+  # !any(sapply(as.vector(unlist(alluniverses)), isFinite))                 # KEEP CODE - GENERAL CHECK FOR ANY  Inf,-Inf SLIPPING IN THERE
+
+  # !any(sapply(as.vector(unlist(alluniverses)), is.nan))                  # last check FALSE(NOT_GREAT: STILL *SHOULD HANDLE* )
+                                                                          # KEEP CODE - GENERAL CHECK FOR ANY  NaN SLIPPING IN THERE
+
+
+}
+# data_loading_with_Excel_4()   
+
+
+
+# rm(list=ls(all.names=TRUE))  
+# debugSource(paste0(getwd(),'/data_loading_with_Excel_4.R'))     
+# universei <- data_loading_with_Excel_4(predictclasses = "train", traintest_index = 1)                                                                                                                                                             
+# universei <- data_loading_with_Excel_4(predictclasses = "test" , traintest_index = 1)   
+#
+#      
+
+
+
+data_working_from_Excel4 <- function(
+   # IF AAII has not (yet) delivered Month End Update: Error in foreign::read.dbf(file = path_file_name, as.is = TRUE) : unable to open DBF file
+    asOfDate = Sys.Date() # zoo::as.Date("2016-01-29") # Sys.Date() # zoo::as.Date("2016-01-29") # dev/testing date
+  , predicttrain_1Date  = if( asOfDate < (lastWeekDayDateOfMonth(asOfDate) + 1) ) { lastWeekDayDateOfMonth( lubridate::`%m+%`(asOfDate, base::months(-1)))  } else {  lastWeekDayDateOfMonth(asOfDate)  }
+#   predicttrain_1Date  = if( Sys.Date() < (lastWeekDayDateOfMonth(Sys.Date()) + 1) ) { lastWeekDayDateOfMonth( lubridate::`%m+%`(Sys.Date(), base::months(-1)))  } else {  lastWeekDayDateOfMonth(Sys.Date())  }
+
+  , truetest_2Date      = lastWeekDayDateOfMonth( lubridate::`%m+%`( predicttrain_1Date, base::months( -0  - 0)))
+    ,  truetrain_2Date  = lastWeekDayDateOfMonth( lubridate::`%m+%`( predicttrain_1Date, base::months(-12  - 0)) ) 
+  , truetest_1Date      = lastWeekDayDateOfMonth( lubridate::`%m+%`( predicttrain_1Date, base::months( -0  - 6)))
+    , truetrain_1Date   = lastWeekDayDateOfMonth( lubridate::`%m+%`( predicttrain_1Date, base::months(-12  - 6)) )
+
+  ,     test_2Date      = lastWeekDayDateOfMonth( lubridate::`%m+%`( predicttrain_1Date, base::months( -0  - 0 - 3)))
+    ,      train_2Date  = lastWeekDayDateOfMonth( lubridate::`%m+%`( predicttrain_1Date, base::months(-12  - 0 - 3)) ) 
+  ,     test_1Date      = lastWeekDayDateOfMonth( lubridate::`%m+%`( predicttrain_1Date, base::months( -0  - 6 - 3)))
+    ,      train_1Date  = lastWeekDayDateOfMonth( lubridate::`%m+%`( predicttrain_1Date, base::months(-12  - 6 - 3)) )
+
+  , calibtest_1Date     = lastWeekDayDateOfMonth( lubridate::`%m+%`( predicttrain_1Date, base::months( -0  - 6 - 3 - 3)))
+    , calibtrain_1Date  = lastWeekDayDateOfMonth( lubridate::`%m+%`( predicttrain_1Date, base::months(-12  - 6 - 3 - 3)) ) 
+
+  ) {
+
+  # (CURRENTLY) # ONLY THE HIGHEST LEVEL FUNCTION
+  # begin function
+  op <- options()
+  oldwd <- getwd()
+  setwd("C:/Users/AnonymousUser/Desktop/R-Portable.3.2.2/App/R-Portable/bin/x64/RDebug/Home") 
+
+  # begin THIS function
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  bookmark <- 1
+  
+  # HARD NOTE
+  # NOTE: IN THE FUTURE IF I GET BOTH 
+  # CALIB/TRAIN/TEST from the SAME big_chunk I WILL WANT TO ** stratify ***
+
+  # could be LOOPED?
+
+  # (logically late as possible)
+  
+  print(paste0("BEGIN predicttrain_1Date: ",predicttrain_1Date))
+  universe_1_predicttrain  <- data_loading_with_Excel_4('train', traintest_index = 1, timends = as.numeric(predicttrain_1Date))
+
+  print(paste0("BEGIN truetest_1Date: ",truetest_1Date))
+  universe_1_truetest    <- data_loading_with_Excel_4( 'truetest', traintest_index = 1, timends = as.numeric(truetest_1Date), return_at_end_ofattributes = TRUE)
+  print(paste0("BEGIN truetest_2Date: ",truetest_2Date))
+  universe_12_truetest   <- data_loading_with_Excel_4( 'truetest', traintest_index = 2, timends = as.numeric(truetest_2Date),   other_universes = list(universe_1_truetest))
+
+  print(paste0("BEGIN truetrain_1Date: ",truetrain_1Date))
+  universe_1_truetrain   <- data_loading_with_Excel_4('truetrain', traintest_index = 1, timends = as.numeric(truetrain_1Date), return_at_end_ofattributes = TRUE)
+  print(paste0("BEGIN truetrain_2Date: ",truetrain_2Date))
+  universe_12_truetrain  <- data_loading_with_Excel_4('truetrain', traintest_index = 2, timends = as.numeric(truetrain_2Date),   other_universes = list(universe_1_truetrain))
+
+  print(paste0("BEGIN test_1Date: ",test_1Date))
+  universe_1_test    <- data_loading_with_Excel_4( 'test', traintest_index = 1, timends = as.numeric(test_1Date), return_at_end_ofattributes = TRUE)
+  print(paste0("BEGIN test_2Date: ",test_2Date))
+  universe_12_test   <- data_loading_with_Excel_4( 'test', traintest_index = 2, timends = as.numeric(test_2Date),   other_universes = list(universe_1_test))
+
+  print(paste0("BEGIN train_1Date: ",train_1Date))
+  universe_1_train   <- data_loading_with_Excel_4('train', traintest_index = 1, timends = as.numeric(train_1Date), return_at_end_ofattributes = TRUE)
+  print(paste0("BEGIN train_2Date: ",train_2Date))
+  universe_12_train  <- data_loading_with_Excel_4('train', traintest_index = 2, timends = as.numeric(train_2Date),   other_universes = list(universe_1_train))
+
+  print(paste0("BEGIN calibtest_1Date: ",calibtest_1Date))
+  universe_1_calibtest    <- data_loading_with_Excel_4( 'calibtest', traintest_index = 1, timends = as.numeric(calibtest_1Date))
+  print(paste0("BEGIN calibtrain_1Date: ",calibtrain_1Date))
+  universe_1_calibtrain   <- data_loading_with_Excel_4('calibtrain', traintest_index = 1, timends = as.numeric(calibtrain_1Date))
+
+
+  
+  
+  # smartly combin test with train
+  # could be LOOPED?
+
+
+  # train and test area
+
+  # alone and unique
+  universe_12_test_unique_columns_location <- which(colnames(universe_12_test) %in% setdiff(colnames(universe_12_test),colnames(universe_12_train)))
+  universe_12_test_adj <- universe_12_test
+
+  # prepend test__ to the test columns ( NOW: resp__ )
+  colnames(universe_12_test_adj)[universe_12_test_unique_columns_location] <- paste0('resp__',colnames(universe_12_test_adj)[universe_12_test_unique_columns_location])
+
+  # RETURN  ( IN FUTURE - JOIN ON SOMETHING BETTER A (NOT CREATED YET) )
+  # A globala_global_internal_id- SO I CAN BRING IN EDGAR/YAHOO/GOOGLE DATA )
+
+  # bring together by 'common key(s)
+  universe_12_traintest <- plyr::join(universe_12_train, universe_12_test_adj[,c(c('provider_global_internal_id','traintest_index'),setdiff(colnames(universe_12_test_adj),colnames(universe_12_train)))], by = c('provider_global_internal_id','traintest_index'), type = "inner", match = "all")
+
+
+  # truetrain and truetest area
+
+  # alone and unique
+  universe_12_truetest_unique_columns_location <- which(colnames(universe_12_truetest) %in% setdiff(colnames(universe_12_truetest),colnames(universe_12_truetrain)))
+  universe_12_truetest_adj <- universe_12_truetest
+
+  # EXCELENT ONE TO 'BROWSE ON' ( KEEP ) # or AAPL or WMT
+  # Browse[2]> str(universe_12_traintest[universe_12_traintest$fin_instru_tk == "MSFT",], list.len = 999)
+  
+  # prepend truetest__ to the truetest columns ( NOW: resp__ )
+  colnames(universe_12_truetest_adj)[universe_12_truetest_unique_columns_location] <- paste0('resp__',colnames(universe_12_truetest_adj)[universe_12_truetest_unique_columns_location])
+
+  # RETURN  ( IN FUTURE - JOIN ON SOMETHING BETTER A (NOT CREATED YET) )
+  # A globala_global_internal_id- SO I CAN BRING IN EDGAR/YAHOO/GOOGLE DATA )
+
+  # bring together by 'common key(s)
+  universe_12_truetraintruetest <- plyr::join(universe_12_truetrain, universe_12_truetest_adj[,c(c('provider_global_internal_id','traintest_index'),setdiff(colnames(universe_12_truetest_adj),colnames(universe_12_truetrain)))], by = c('provider_global_internal_id','traintest_index'), type = "inner", match = "all")
+
+  
+  # calibtrain and calibtest area
+
+  # alone and unique
+  universe_1_calibtest_unique_columns_location <- which(colnames(universe_1_calibtest) %in% setdiff(colnames(universe_1_calibtest),colnames(universe_1_calibtrain)))
+  universe_1_calibtest_adj <- universe_1_calibtest
+
+  # prepend truetest__ to the truetest columns ( NOW: resp__ )
+  colnames(universe_1_calibtest_adj)[universe_1_calibtest_unique_columns_location] <- paste0('resp__',colnames(universe_1_calibtest_adj)[universe_1_calibtest_unique_columns_location])
+
+  # RETURN  ( IN FUTURE - JOIN ON SOMETHING BETTER A (NOT CREATED YET) )
+  # A globala_global_internal_id- SO I CAN BRING IN EDGAR/YAHOO/GOOGLE DATA )
+
+  # bring together by 'common key(s)
+  universe_1_calibtraincalibtest <- plyr::join(universe_1_calibtrain, universe_1_calibtest_adj[,c(c('provider_global_internal_id','traintest_index'),setdiff(colnames(universe_1_calibtest_adj),colnames(universe_1_calibtrain)))], by = c('provider_global_internal_id','traintest_index'), type = "inner", match = "all")
+
+  bookmarkhere <- 1
+  
+  # NEVER DONE
+  # save(list = "universecoll",file = paste0("universecoll_before_leaky_record_elim", "_", as.numeric(as.POSIXlt(Sys.time(), "GMT")),".Rdata"))
+
+  print(paste0("Begin leaky record elimination"))
+  
+  # detect leaky records
+  leaky_records_df <- sqldf::sqldf("select a.provider_global_internal_id, a.date_at_end_of_q1 from universe_12_truetraintruetest a, universe_12_traintest b where a.provider_global_internal_id = b.provider_global_internal_id and a.date_at_end_of_q1 = b.date_at_end_of_q1")
+  
+  # detect leaky truetrain records
+  leaky_truetrain_records_df <- sqldf::sqldf("select a.provider_global_internal_id, a.date_at_end_of_q1 from universe_12_truetraintruetest a, leaky_records_df b where a.provider_global_internal_id = b.provider_global_internal_id and a.date_at_end_of_q1 = b.date_at_end_of_q1")
+  
+  # detect leaky train records
+  leaky_train_records_df <- sqldf::sqldf("select a.provider_global_internal_id, a.date_at_end_of_q1 from universe_12_traintest a, leaky_records_df b where a.provider_global_internal_id = b.provider_global_internal_id and a.date_at_end_of_q1 = b.date_at_end_of_q1")
+  
+  # reduce records to those that are not leaking
+  
+  # required
+  universe_12_truetraintruetest_unleaking <- sqldf::sqldf(c("create index idx on universe_12_truetraintruetest(provider_global_internal_id, date_at_end_of_q1)","create index idx2 on leaky_truetrain_records_df(provider_global_internal_id, date_at_end_of_q1)","select a.* from universe_12_truetraintruetest a where not exists (select b.provider_global_internal_id, b.date_at_end_of_q1 from leaky_truetrain_records_df b where a.provider_global_internal_id = b.provider_global_internal_id and a.date_at_end_of_q1 = b.date_at_end_of_q1)" ))
+  
+# optional
+  universe_12_traintest_unleaking <- sqldf::sqldf(c("create index idx on universe_12_traintest(provider_global_internal_id, date_at_end_of_q1)","create index idx2 on leaky_train_records_df(provider_global_internal_id, date_at_end_of_q1)","select a.* from universe_12_traintest a where not exists (select b.provider_global_internal_id, b.date_at_end_of_q1 from leaky_train_records_df b where a.provider_global_internal_id = b.provider_global_internal_id and a.date_at_end_of_q1 = b.date_at_end_of_q1)" ))  
+
+  print(paste0("End leaky record elimination"))
+  
+  # NEVER DONE
+  # save(list = "universecoll",file = paste0("universecoll_after_leaky_record_elim", "_", as.numeric(as.POSIXlt(Sys.time(), "GMT")),".Rdata"))
+  
+  
+  # could have: mlr::capLargeValues as businessly/techically appropriate
+  # do again ( Xth(2nd) time in the program )
+  # ( NOTE: later complete.cases WILL remove NaN and 'of course' NAs )
+  cleanLargeValues(universe_1_predicttrain)                 -> universe_1_predicttrain
+  cleanNaNValues(universe_1_predicttrain)                   -> universe_1_predicttrain
+  
+  cleanLargeValues(universe_12_truetraintruetest_unleaking) -> universe_12_truetraintruetest_unleaking
+  cleanNaNValues(universe_12_truetraintruetest_unleaking)   -> universe_12_truetraintruetest_unleaking
+  
+  cleanLargeValues(universe_12_traintest_unleaking)         -> universe_12_traintest_unleaking
+  cleanNaNValues(universe_12_traintest_unleaking)           -> universe_12_traintest_unleaking
+  
+  cleanLargeValues(universe_1_calibtraincalibtest)          -> universe_1_calibtraincalibtest # NOTE: I HAVE NOT CHECKED FOR LEAKS!
+  cleanNaNValues(universe_1_calibtraincalibtest)            -> universe_1_calibtraincalibtest # NOTE: I HAVE NOT CHECKED FOR LEAKS!
+                                                                # MAY? WANT TO SIMPLY MOVE IT BACK YET ONE MORE QUARTER 
+  
+  list(
+      universe_all_predicttrain         = universe_1_predicttrain
+    , universe_all_truetraintruetest    = universe_12_truetraintruetest_unleaking
+    , universe_all_traintest            = universe_12_traintest_unleaking
+    , universe_all_calibtraincalibtest  = universe_1_calibtraincalibtest # vin-vector video ( HOW? DO I APPLY to 'train' and 'truetrain' ) )
+  ) -> returned
+
+  # end THIS function
+  Sys.setenv(TZ=oldtz)
+
+  # (CURRENTLY) # ONLY THE HIGHEST LEVEL FUNCTION
+  # end function
+  setwd(oldwd)
+  options(op)     # reset (all) initial options
+  
+  return(returned)
+
+}
+
+# rm(list=ls(all.names=TRUE))  
+# debugSource(paste0(getwd(),'/data_loading_with_Excel_4.R'))        
+# data_working_from_Excel4()        
+# # returned.Rdata
+# universecoll <- data_working_from_Excel4() 
+
+# OLD DATE DEBUGGING ( SEE IF WORKED FINE ON OLD MO DAY BEFORE TRY TO FIX: THIS MONTHS DATA )
+# universecoll_OLD <- data_working_from_Excel4(asOfDate = zoo::as.Date("2016-03-15"))
+
+# #  REM - end of month - the data.set changes ( gets shifted forward to current month )
+#       
+# save(list = "universecoll",file = paste0("universecoll", "_", as.numeric(as.POSIXlt(Sys.time(), "GMT")),".Rdata"))
+
+
+# ret <- universecoll[["universe_all_traintest"]]
+# with( ret ,{ ept(str_c("((", str_c(sprintf("earn_per_share_diluted_q%1$d",1:4), collapse = " + "), " ) / shares_common_out_average_q1 - ( ", str_c(sprintf("earn_per_share_diluted_q%1$d",5:8), collapse = " + "), " ) / shares_common_out_average_q5 ) / 1.0")) } )
+
+bookmarkhere <- 1
+
+data_processing_from_Excel4 <- function(universecoll = NULL, quickdebug = FALSE, sinkOutput = TRUE, 
+    quickdebug_TRUE_file = "universecoll_1457230118.09143.Rdata", 
+    # weights_expr = "abs(train_model_small_data[[traintest_data_list[['response_column']]]] - 6001)**1.27",
+    weights_expr = "rep(1,NROW(train_model_small_data[[traintest_data_list[['response_column']]]]))", 
+                                        
+#   tree_params = list(n.trees         =  20000, #  300  #  20000 # 300 adaptive_cv # 200 non-A
+#                    shrinkage         = 0.0005, # 0.05  # 0.0005
+#                    interaction.depth =      5, #    2  #      5
+#                    repeatedcv_number  =     5),#    2  #      5
+  
+    tree_params = list(n.trees         =  300  , #  300  #  20000 # 300 adaptive_cv # 200 non-A
+                     shrinkage         = 0.05  , # 0.05  # 0.0005
+                     interaction.depth =      2, #    2  #      5
+                     repeatedcv_number  =     2),#    2  #      5
+  
+  traintest_data_list = list(
+
+    response_column      = c('resp__pct_totals_12m_return__alldata__sportsranking6000'),
+  
+    response_aes_column  = c('resp__pct_totals_12m_return'),
+  
+    other_aes_columns    = c('fin_instru_tk','fin_company_nm','bus_industry_nm','company_size_level_name'),
+  
+    predictor_columns   =  c('price_pct_chge_since_26w_betters__alldata__sportsranking6000',
+                             'aaii_free_cash_plus_divs_over_price_ratio__alldata__sportsranking6000',
+                             'shareholder_orientation__alldata__sportsranking6000',
+                             'return_on_inv_capital__alldata__sportsranking6000',
+                             'earnings_quality__alldata__sportsranking6000'),
+  
+    predictor_aes_columns = c('price_pct_chge_since_26w_betters',
+                             'aaii_free_cash_plus_divs_over_price_ratio',
+                             'shareholder_orientation',
+                             'return_on_inv_capital',
+                             'earnings_quality'),
+    
+    composite_expression_name = c('millennial_composite'),
+    composite_expression  = c('price_pct_chge_since_26w_betters__alldata__sportsranking6000 + aaii_free_cash_plus_divs_over_price_ratio__alldata__sportsranking6000 + 
+                               shareholder_orientation__alldata__sportsranking6000 + return_on_inv_capital__alldata__sportsranking6000 + 
+                               earnings_quality__alldata__sportsranking6000'),
+    
+    test_timeends_column  = c('resp__test_timends'),
+  
+    global_join_columns   = c('provider_global_internal_id_timepoint_exact','provider_global_internal_id'),
+  
+    local_join_columns    = c('timends','traintest_index'),
+  
+    rowindex_expression   = c('rowindex <- as.numeric(seq_along(row.names(get("data",envir = parent.frame(5)))))')
+
+  ),
+
+  traintest_data_list_factors = c()
+
+  ) {
+  
+  
+  
+  
+  # if the user did not actually supply the data, then go get it ( Style? )
+  # ???  quickdebug == FALSE
+  # if(missing(universecoll)) universecoll <- data_working_from_Excel4() 
+  
+  # debugging EXPECT MODIFY OFTEN
+  # February 24 2016
+  # if(quickdebug == TRUE) load(file = "universecoll_1457230118.09143.Rdata", envir = environment())
+  if(quickdebug == TRUE) load(file = quickdebug_TRUE_file, envir = environment())
+  # quickdebug == FALSE, then the data MUST be acuired by SEARCH
+  
+  # (CURRENTLY) # ONLY THE HIGHEST LEVEL FUNCTION
+  # begin function
+  
+  options(width = 10000) # 255    
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width 
+  options(warn=2)
+  
+  op <- options()
+  oldwd <- getwd()
+  setwd("C:/Users/AnonymousUser/Desktop/R-Portable.3.2.2/App/R-Portable/bin/x64/RDebug/Home") 
+
+  # begin THIS function
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  bookmark <- 1
+  
+  # what I am interested in 
+
+  # "classic_millennial" ( actions ) # COULD BE IN EXCEL
+
+  # MAYBE not the right place ( should be higher )
+   
+  # NOTE: Inf/-Inf ALREADY HANDLED by the PREVIOUS program 
+  # treatment and/or imputation and/or complete.cases ( removes NaN and NA )
+  # package vtreat, OTHERS mlr::capLargeValues, stats::complete.cases
+       
+  # X TO BE PUT ON THE spreadsheet X - NO put LATER IN A transform
+  #   millennial_sum_of_factors <-  price_pct_chge_since_26w_betters__alldata__sportsranking6000 +
+  #                           aaii_free_cash_plus_divs_over_price_ratio__alldata__sportsranking6000 +
+  #                           shareholder_orientation__alldata__sportsranking6000 +
+  #                           return_on_inv_capital__alldata__sportsranking6000 +
+  #                           earnings_quality__alldata__sportsranking6000'),
+
+
+  # truetest_response_column_rename_expression = "colnames(WW)[which(colnames(WW) %in% 'truetest__pct_totals_12m_return__alldata__sportsranking6000')] <- 'test__pct_totals_12m_return__alldata__sportsranking6000'"  
+  
+
+  
+  # all the columns
+  # train_model_data <- ept(traintest_data_list[['traintest_data_expression']])
+  
+  calibtraincalibtest_data_expression <- "universecoll[['universe_all_calibtraincalibtest']]"
+  calibtrain_model_data <- ept(calibtraincalibtest_data_expression)
+  
+  traintest_data_expression <- "universecoll[['universe_all_traintest']]"
+  train_model_data <- ept(traintest_data_expression)
+  
+  truetraintruetest_data_expression <- "universecoll[['universe_all_truetraintruetest']]"
+  truetrain_model_data <- ept(truetraintruetest_data_expression)
+  
+  # SPECIAL
+  predicttrain_data_expression <- "universecoll[['universe_all_predicttrain']]"
+  predicttrain_model_data <- ept(predicttrain_data_expression)
+  # required for CORRECT gbm::predict.gbm  Y=X1+X2
+  predicttrain_model_data[,traintest_data_list$response_column] <- NA
+  
+
+  # SHOULD VALIDATE EACH VECTOR to make sure those rows exist
+  
+  validate_traintest_cols_exist <- function(x,l,isTrainOnly = FALSE) {
+    
+    x_name <- as.character(substitute(x))
+    
+    print(paste0(x_name,' Verifying: response_column'))
+    if(!any((colnames(x) %in% l$response_column))) stop()
+    if(isTrainOnly != TRUE) {                                     # train AND test
+      print(paste0(x_name,' Verifying: response_aes_column'))
+      if(!any((colnames(x) %in% l$response_aes_column))) stop()
+    }
+    print(paste0(x_name,' Verifying: other_aes_columns'))
+    if(!any((colnames(x) %in% l$other_aes_columns))) stop()
+    print(paste0(x_name,' Verifying: predictor_columns'))
+    if(!any((colnames(x) %in% l$predictor_columns))) stop()
+    print(paste0(x_name,' Verifying: predictor_aes_columns'))
+    if(!any((colnames(x) %in% l$predictor_aes_columns))) stop()
+    if(isTrainOnly != TRUE) {                                     # train AND test
+      print(paste0(x_name,' Verifying: test_timeends_column'))
+      if(!any((colnames(x) %in% l$test_timeends_column))) stop()
+    }
+    print(paste0(x_name,' Verifying: global_join_columns'))
+    if(!any((colnames(x) %in% l$global_join_columns))) stop()
+    print(paste0(x_name,' Verifying: local_join_columns'))
+    if(!any((colnames(x) %in% l$local_join_columns))) stop()
+  }
+  validate_traintest_cols_exist(  calibtrain_model_data,traintest_data_list)
+  validate_traintest_cols_exist(       train_model_data,traintest_data_list)
+  validate_traintest_cols_exist(   truetrain_model_data,traintest_data_list)
+  validate_traintest_cols_exist(predicttrain_model_data,traintest_data_list,isTrainOnly = TRUE)
+  
+  # now reduce columns collection
+  the_traintest_model_data_columns <- with( traintest_data_list, { 
+                                c(response_column,
+                                response_aes_column,
+                                other_aes_columns,
+                                predictor_columns, 
+                                predictor_aes_columns,
+                                test_timeends_column,
+                                global_join_columns,
+                                local_join_columns) } )
+  
+  the_train_model_data_columns <- with( traintest_data_list, { 
+                                c(response_column,
+                                # response_aes_column,
+                                other_aes_columns,
+                                predictor_columns, 
+                                predictor_aes_columns,
+                                # test_timeends_column,
+                                global_join_columns,
+                                local_join_columns) } )
+  
+  # now add actually reduce those to just those columns
+  calibtrain_model_data_temp     <- calibtrain_model_data[  ,the_traintest_model_data_columns,drop = FALSE]
+  train_model_data_temp          <- train_model_data[       ,the_traintest_model_data_columns,drop = FALSE]
+  truetrain_model_data_temp      <- truetrain_model_data[   ,the_traintest_model_data_columns,drop = FALSE]
+  predicttrain_model_data_temp   <- predicttrain_model_data[,the_train_model_data_columns,drop = FALSE]
+  
+
+  # now add actually add the composite expression1 column
+  # within( train_model_data_temp, { ept(traintest_data_list$composite_expression1)} ) -> train_model_data_temp
+  
+  # now add actually rowindex column ( note sure how useful (here) )
+  within( calibtrain_model_data_temp  , { ept(traintest_data_list$rowindex_expression)} ) -> calibtrain_model_data_temp
+  within( train_model_data_temp       , { ept(traintest_data_list$rowindex_expression)} ) -> train_model_data_temp
+  within( truetrain_model_data_temp   , { ept(traintest_data_list$rowindex_expression)} ) -> truetrain_model_data_temp
+  within( predicttrain_model_data_temp, { ept(traintest_data_list$rowindex_expression)} ) -> predicttrain_model_data_temp
+  
+  # View(train_model_data_temp[train_model_data_temp$fin_instru_tk == 'AAPL',]) # 2 records
+  # View(train_model_data_temp) # FROM 10000 TO 4000(complete.cases(BELOW) DIFFICULT: lots of holes )
+  
+  # Do imputation/vtreatment HERE
+  # Do imputation/vtreatment HER
+  
+  
+  if(sinkOutput == TRUE ) {
+    print("SINK is beginning.")
+    con <- file("SinkOutput.txt")
+    sink(con) # type="output"
+    sink(con, type="message")
+  }
+  
+  # just what is (almost) sent to train
+  
+  # now reduce columns collection                                     # add back the rowindex                                                      
+  calibtrain_model_small_data_columns    <- with( traintest_data_list, { c(response_column,predictor_columns,'rowindex') } )
+  train_model_small_data_columns         <- with( traintest_data_list, { c(response_column,predictor_columns,'rowindex') } )
+  truetrain_model_small_data_columns     <- with( traintest_data_list, { c(response_column,predictor_columns,'rowindex') } )
+  predicttrain_model_small_data_columns  <- with( traintest_data_list, { c(response_column,predictor_columns,'rowindex') } )
+  
+  # row counts (rc)
+  calibtrain_model_rc_before_completed_cases   <- NROW(calibtrain_model_data_temp)
+    print(paste0("calibtrain_model_rc_before_completed_cases: ",       calibtrain_model_rc_before_completed_cases))
+  train_model_rc_before_completed_cases        <- NROW(train_model_data_temp)
+    print(paste0("train_model_rc_before_completed_cases: ",                 train_model_rc_before_completed_cases))
+  truetrain_model_rc_before_completed_cases    <- NROW(truetrain_model_data_temp)
+    print(paste0("truetrain_model_rc_before_completed_cases: ",         truetrain_model_rc_before_completed_cases))
+  predicttrain_model_rc_before_completed_cases <- NROW(predicttrain_model_data_temp)
+    print(paste0("predicttrain_model_rc_before_completed_cases: ",   predicttrain_model_rc_before_completed_cases))
+  
+  # all the columns of model interest + 'rowindex' - incomplete_row_cases
+  calibtrain_model_small_data     <- calibtrain_model_data_temp[complete.cases(  calibtrain_model_data_temp),                         calibtrain_model_small_data_columns,drop = FALSE]
+  train_model_small_data               <- train_model_data_temp[complete.cases(       train_model_data_temp),                              train_model_small_data_columns,drop = FALSE]
+  truetrain_model_small_data       <- truetrain_model_data_temp[complete.cases(   truetrain_model_data_temp),                          truetrain_model_small_data_columns,drop = FALSE] 
+  # y value is not KNOWN yet ( the future )
+  predicttrain_model_small_data <- predicttrain_model_data_temp[complete.cases(predicttrain_model_data_temp[,-1,drop = FALSE]),     predicttrain_model_small_data_columns,drop = FALSE] 
+
+  # NOTE: train_model_small_data; from 10000 down to 4000 records  many holes in the data.
+
+  # row counts (rc)
+  calibtrain_model_rc_after_completed_cases   <- NROW(calibtrain_model_small_data)
+    print(paste0("calibtrain_model_rc_after_completed_cases: ",       calibtrain_model_rc_after_completed_cases))
+  train_model_rc_after_completed_cases        <- NROW(train_model_small_data)
+    print(paste0("train_model_rc_after_completed_cases: ",                 train_model_rc_after_completed_cases))
+  truetrain_model_rc_after_completed_cases    <- NROW(truetrain_model_small_data)
+    print(paste0("truetrain_model_rc_after_completed_cases: ",         truetrain_model_rc_after_completed_cases))
+  predicttrain_model_rc_after_completed_cases <- NROW(predicttrain_model_small_data)
+    print(paste0("predicttrain_model_rc_after_completed_cases: ",   predicttrain_model_rc_after_completed_cases))
+  
+  # here because I do not want EXTRA factor values(levels) (elim by complete.cases) accidentally 
+  #  sent to the modeller
+
+  for(factori in traintest_data_list_factors) {
+
+    calibtrain_model_small_data[[factori]]     <- as.factor(  calibtrain_model_small_data[[factori]])
+    train_model_small_data[[factori]]          <- as.factor(       train_model_small_data[[factori]])
+    truetrain_model_small_data[[factori]]      <- as.factor(   truetrain_model_small_data[[factori]])
+    predicttrain_model_small_data[[factori]]   <- as.factor(predicttrain_model_small_data[[factori]])
+  }
+  
+  # gather truetrain data necessary for true testing
+  truetrainnewdata <- truetrain_model_small_data[,-NCOL(truetrain_model_small_data),drop = FALSE]
+  
+  # FUTURE gather predicttrain data necessar for predicting
+  predicttrainnewdata <- predicttrain_model_small_data[,-NCOL(predicttrain_model_small_data),drop = FALSE]
+
+  quarter_idx_all <- unique(truetrain_model_data_temp[["traintest_index"]])
+  quarter_idx_all_ordered <- quarter_idx_all[order(quarter_idx_all)]
+  
+  bookmark <- 1 # LEFT_OFF # build the caret
+
+  gbmmodels <- c()
+  
+  gbmmodels <- c("carettrainedGBM", gbmmodels)
+  
+
+  
+  print(paste0("Begin ",gbmmodels[1]))
+
+  gbmGrid <- expand.grid( n.trees=  seq(10,tree_params[["n.trees"]],10), # 200 trees # 20000 ( prod choice )
+                      interaction.depth = tree_params[["interaction.depth"]], 
+                      shrinkage = tree_params[["shrinkage"]],    # 0.0005 ( prod choice )
+                      n.minobsinnode = 10)
+  
+  microbenchmark::microbenchmark( {
+    
+    set.seed(2)
+    
+    training_input <- train_model_small_data[,-NCOL(train_model_small_data),drop = FALSE] # remove "rowindex"
+                                    # resp__pct_totals_12m_return__alldata__sportsranking6000 ~ .,
+    carettrainedGBM <- caret::train(formula(training_input), 
+                    data = training_input,
+                    distribution='gaussian',
+                    verbose = FALSE,
+                    method = "gbm",  # gbm_2.1-06 ( LAST KNOWN )
+                    # weights = abs(train_model_small_data[[traintest_data_list[["response_column"]]]] - 6001)**1.27, # 60000
+                    # weights = ept("abs(train_model_small_data[[traintest_data_list[['response_column']]]] - 6001)**1.27"), # 60000 
+                    weights = ept(weights_expr),
+                    tuneGrid =  gbmGrid, # number = 10,  repeats = 3 # COMMON choice 
+                    trControl = caret::trainControl(method = "repeatedcv" # "adaptive_cv" # 
+                      , number = tree_params[["repeatedcv_number"]], repeats = 1  # adaptive_cv repeats = 2
+                      , preProcOptions = NULL # NEW closer perfomance NEAR gbm::gbm # ???
+                      , verboseIter = FALSE
+                      , returnResamp = "all"
+  #                   , adaptive = list(min = 2, # AND repeats = 2
+  #                                     alpha = 0.05,
+  #                                     method = "gls",
+  #                                     complete = TRUE
+  #                                 )
+                      
+                      )
+                    # trControl = caret::trainControl(method = "none",  returnResamp = "all")
+                    # COMMON CHOICE
+                    # trControl = caret::trainControl(method = "repeatedcv", number = 5,   repeats = 1,  verboseIter = FALSE,  returnResamp = "all")
+                    )
+    rm("training_input")
+  
+  }, times = 1L, unit = "s") -> bench_result # 5? minutes # 4000 trees
+  
+  # print(bench_result)
+  
+  print("")
+  print(paste0("Relative Influence: ",gbmmodels[1]))
+  print(summary(carettrainedGBM, plotit = FALSE))
+  print("")
+  
+  print("carettrainedGBM best tuned n.trees")
+  print(carettrainedGBM$finalModel$tuneValue$n.trees)
+  
+  # recession sight# gbm into gbm(OOB) into gbm
+  ops <- options()
+  options(warn = 1)
+  # NOT USED
+  perfedOOBcarettrainedGBM <- gbm::gbm.perf(carettrainedGBM$finalModel, method="OOB", plot.it = FALSE) # , plot.it = TRUE
+  # optiman number of trees
+  options(ops)
+  print("perfedOOB carettrainedGBM best tuned n.trees")
+  print(perfedOOBcarettrainedGBM)
+  
+  #  ? caret::predict.train
+  ## S3 method for class 'train'
+  # predict(object, newdata = NULL, type = "raw", na.action = na.omit, ...)
+  
+  # caret stays caret
+  assign("carettrainedGBM_truetrainnewdata_predicted",caret::predict.train(carettrainedGBM, truetrainnewdata))
+  
+  # gather predictions
+  caret_gbm_predicted_small_data <- cbind(carettrainedGBM_truetrainnewdata_predicted, truetrain_model_small_data)
+
+  # no 1.x 1.y # default left_join and match_all
+  caret_gbm_predicted_all_data <- plyr::join(x = caret_gbm_predicted_small_data, truetrain_model_data_temp, by = "rowindex")
+
+  # remove 2nd column name duplicates
+  caret_gbm_predicted_all_data <- caret_gbm_predicted_all_data[, !duplicated(colnames(caret_gbm_predicted_all_data)),drop = FALSE]
+
+  # add back in the composite
+  within( caret_gbm_predicted_all_data, { ept(paste0(traintest_data_list[["composite_expression_name"]]," <- ",traintest_data_list[["composite_expression"]]) )}) -> caret_gbm_predicted_all_data_w_math
+  
+  caret_gbm_predicted_all_data_w_math <- DataCombine::MoveFront(caret_gbm_predicted_all_data_w_math, 
+    c(traintest_data_list$response_aes_column,"carettrainedGBM_truetrainnewdata_predicted",traintest_data_list[["composite_expression_name"]],traintest_data_list$other_aes_columns)
+  )                                                                                                                                 
+
+  for( quarter_idx in quarter_idx_all_ordered ) {
+
+    assign(paste0("caret_gbm_predicted_all_data_w_math_filtered","_",quarter_idx),dplyr::filter(caret_gbm_predicted_all_data_w_math, traintest_index == quarter_idx))
+
+    for( top_n in c(2,5,10,25,50) ) {
+
+      current <- plyr::arrange(get(paste0("caret_gbm_predicted_all_data_w_math_filtered","_",quarter_idx)), ept(traintest_data_list[["composite_expression_name"]]))
+      print(paste0("carettrainedGBM * composite top_n: * ",top_n," of quarter ",quarter_idx))
+      print(head(current,top_n))
+      print(paste0("carettrainedGBM * composite top_n: * ",top_n," of quarter ",quarter_idx))
+      print(paste0("carettrainedGBM * composite top_n mean *: ",mean(head(current,top_n)[[ traintest_data_list[["response_aes_column"]] ]]  )))
+      print("")
+      
+      current <- plyr::arrange(get(paste0("caret_gbm_predicted_all_data_w_math_filtered","_",quarter_idx)), ept("carettrainedGBM_truetrainnewdata_predicted"))
+      print(paste0("carettrainedGBM * carettrainedGBM_truetrainnewdata_predicted top_n *: ",top_n," of quarter ",quarter_idx))
+      print(head(current,top_n))
+      print(paste0("carettrainedGBM * carettrainedGBM_truetrainnewdata_predicted top_n *: ",top_n," of quarter ",quarter_idx))
+      print(paste0("carettrainedGBM * carettrainedGBM_truetrainnewdata_predicted top_n mean *: ",mean(head(current,top_n)[[ traintest_data_list[["response_aes_column"]] ]]  )))
+      print("")
+      
+      bookmarkhere <- 1
+      
+    }
+    print("")
+    
+  }
+  print("")
+
+  print(paste0("End ",gbmmodels[1]))
+  print("")
+  print("")
+  print("")
+  print("")
+  
+  
+  gbmmodels <- c("gbmtrainedGBM", gbmmodels)
+  
+  print(paste0("Begin ",gbmmodels[1]))
+  
+  microbenchmark::microbenchmark( {
+    
+    set.seed(2)
+
+    training_input <- train_model_small_data[,-NCOL(train_model_small_data),drop = FALSE] # remove "rowindex"
+    
+    
+    # avoind rstudio? MAGICALLY SHOWS UP bug # 'package:stats' may not be available when loading"
+    # I HATE to PUT this HERE
+    op <- options()
+    options(warn = 1)
+                              # resp__pct_totals_12m_return__alldata__sportsranking6000 ~ .
+    gbmtrainedGBM <- gbm::gbm(formula(training_input),  # gbm_2.1-06 ( LAST KNOWN )
+                      data = training_input,
+                      # distribution='gaussian',
+                      verbose = FALSE,
+                      # weights = abs(train_model_small_data[[traintest_data_list[["response_column"]]]] - 6001)**1.27, # 60000
+                      # weights = ept("abs(train_model_small_data[[traintest_data_list[['response_column']]]] - 6001)**1.27"), # 60000
+                      weights = ept(weights_expr),
+                      n.trees=tree_params[["n.trees"]],              # 20000 200
+                      cv.folds = tree_params[["repeatedcv_number"]], # 5 2
+                      # <none>
+                      # cv.folds = 5, # COMMON
+                      interaction.depth = tree_params[["interaction.depth"]], # 5 2
+                      shrinkage = tree_params[["shrinkage"]],         # 0.0005 0.05
+                      n.minobsinnode = 10)
+    
+    options(op)
+    
+    rm("training_input")
+  
+  }, times = 1L, unit = "s") -> bench_result # 8 minutes
+  
+  # print(bench_result)
+  
+  print("")
+  print(paste0("Relative Influence: ",gbmmodels[1]))
+  print(summary(gbmtrainedGBM, plotit = FALSE))
+  print("")
+  
+  # get OPTIMAL number of trees
+  perfedcvgbmtrainedGBM <-gbm::gbm.perf(gbmtrainedGBM,method="cv", plot.it = FALSE) # , plot.it = TRUE
+  
+  print("perfedcv gbmtrainedGBM best tuned n.trees")
+  print(perfedcvgbmtrainedGBM)
+  
+  # gbm into gbm
+  ## S3 method for class 'gbm' # DANGER; caret MUST load GBM first
+  # gbm::predict.gbm # NAMESPACE # not exported # S3method(predict,gbm)
+  assign("gbmtrainedGBM_truetrainnewdata_perfedcvgbmtrainedGBM_predicted",predict(gbmtrainedGBM,truetrainnewdata,perfedcvgbmtrainedGBM))
+  
+  # gather predictions
+  gbm_gbm_predicted_small_data <- cbind(gbmtrainedGBM_truetrainnewdata_perfedcvgbmtrainedGBM_predicted, truetrain_model_small_data)
+
+  # no 1.x 1.y # default left_join and match_all
+  gbm_gbm_predicted_all_data <- plyr::join(x = gbm_gbm_predicted_small_data, truetrain_model_data_temp, by = "rowindex")
+
+  # remove 2nd column name duplicates
+  gbm_gbm_predicted_all_data <- gbm_gbm_predicted_all_data[, !duplicated(colnames(gbm_gbm_predicted_all_data)),drop = FALSE]
+
+  # add back in the composite
+  within( gbm_gbm_predicted_all_data, { ept(paste0(traintest_data_list[["composite_expression_name"]]," <- ",traintest_data_list[["composite_expression"]]) )}) -> gbm_gbm_predicted_all_data_w_math
+  
+  gbm_gbm_predicted_all_data_w_math <- DataCombine::MoveFront(gbm_gbm_predicted_all_data_w_math, 
+    c(traintest_data_list$response_aes_column,"gbmtrainedGBM_truetrainnewdata_perfedcvgbmtrainedGBM_predicted",traintest_data_list[["composite_expression_name"]],traintest_data_list$other_aes_columns)
+  )  
+  
+  for( quarter_idx in quarter_idx_all_ordered ) {
+
+    assign(paste0("gbm_gbm_predicted_all_data_w_math_filtered","_",quarter_idx),dplyr::filter(gbm_gbm_predicted_all_data_w_math, traintest_index == quarter_idx))
+
+    for( top_n in c(2,5,10,25,50) ) {
+
+      current <- plyr::arrange(get(paste0("gbm_gbm_predicted_all_data_w_math_filtered","_",quarter_idx)), ept(traintest_data_list[["composite_expression_name"]]))
+      print(paste0("gbmtrainedGBM * composite top_n *: ",top_n," of quarter ",quarter_idx))
+      print(head(current,top_n))
+      print(paste0("gbmtrainedGBM * composite top_n *: ",top_n," of quarter ",quarter_idx))
+      print(paste0("gbmtrainedGBM * composite top_n mean *: ",mean(head(current,top_n)[[ traintest_data_list[["response_aes_column"]] ]]  )))
+      print("")
+      
+      current <- plyr::arrange(get(paste0("gbm_gbm_predicted_all_data_w_math_filtered","_",quarter_idx)), ept("gbmtrainedGBM_truetrainnewdata_perfedcvgbmtrainedGBM_predicted"))
+      print(paste0("gbmtrainedGBM * gbmtrainedGBM_truetrainnewdata_perfedcvgbmtrainedGBM_predicted top_n *: ",top_n," of quarter ",quarter_idx))
+      print(head(current,top_n))
+      print(paste0("gbmtrainedGBM * gbmtrainedGBM_truetrainnewdata_perfedcvgbmtrainedGBM_predicted top_n *: ",top_n," of quarter ",quarter_idx))
+      print(paste0("gbmtrainedGBM * gbmtrainedGBM_truetrainnewdata_perfedcvgbmtrainedGBM_predicted top_n mean *: ",mean(head(current,top_n)[[ traintest_data_list[["response_aes_column"]] ]]  )))
+      print("")
+
+      bookmarkhere <- 1
+      
+    }
+    print("")
+    
+  }
+  print("")
+  
+  
+  print(paste0("End ",gbmmodels[1]))
+  print("")
+  print("")
+  print("")
+  print("")
+
+  print(sessionInfo())
+  
+  if(sinkOutput == TRUE ) {
+    sink()
+    sink(type="message")
+    close(con)
+    print("SINK has ended.")
+  }
+
+  
+  # 'cbinding/sorting/Viewing' # LEFT_OFF
+  
+  bookmark <- 1
+  
+
+  
+  # Maybe some data treating here
+  
+  # end THIS function
+  Sys.setenv(TZ=oldtz)
+
+  # (CURRENTLY) # ONLY THE HIGHEST LEVEL FUNCTION
+  # end function
+  setwd(oldwd)
+  options(op)     # reset (all) initial options
+  
+}
+
+# method1
+# rm(list=ls(all.names=TRUE))
+# debugSource(paste0(getwd(),'/data_loading_with_Excel_4.R'))
+# results <- data_processing_from_Excel4(quickdebug = TRUE, quickdebug_TRUE_file = "universecoll_1457230118.09143.Rdata") # HARD CODE SLOW DATA LOAD
+
+
+# method2 ( CURRENT )
+# February 24
+# load(file = "universecoll_1457230118.09143.Rdata")
+## X rm(list=ls(all.names=TRUE)) X
+# gdata::keep(universecoll, all=TRUE, sure = TRUE); debugSource(paste0(getwd(),'/data_loading_with_Excel_4.R'))
+# put down a breakpoint
+# results <- data_processing_from_Excel4(universecoll = universecoll, sinkOutput = FALSE)
+
+
+bookmarkhere <- 1   
+
+# 
+#              
+#                                                                                                                               
+
+
+
+
+
+
+
