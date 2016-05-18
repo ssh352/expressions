@@ -232,7 +232,7 @@ alter table attributes_cleans_profiles_details
 create table attributes_cleans_profiles_actuals
 (
   attributes_cleans_profiles_actuals_id smallint not null,
-  timeends character varying(63),
+  timeend character varying(63),
   last_modified_date double precision,
   attributes_cleans_profiles_id smallint not null
 )
