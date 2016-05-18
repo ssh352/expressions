@@ -1,465 +1,449 @@
-
-
-------------- begin sipro.sql ----------------
-
---show search_path;
-
---set search_path=sipro_stage,"$user", public;
-
-set search_path="$user", public;
-
---select count(*) from sipro_stage.alsmast
---union
-select count(*) from sipro_stage.alsmast_14911;
-
---select count(*) from alsmast;
-
--- 
-
+--
+-- PostgreSQL database dump
 --
 
-show search_path;
---"$user", public
+-- Dumped from database version 9.5.2
+-- Dumped by pg_dump version 9.5.2
 
-set search_path to sipro_data_store,"$user", public;
-
--- attributes_profiles --
-
---drop table attributes_cleans_profiles cascade;
---drop table attributes_profiles_dependents cascade;
---drop table attributes_cleans_profiles cascade;
---drop table attributes_cleans cascade;
-
--- attributes_profiles --
-
---drop table attributes_profiles;
-
-create table attributes_profiles
-(
-  attributes_profiles_id smallint not null,
-  timeends_range character varying(63),
-  last_modified_date double precision,
-  attributes_expression character varying(253),
-  attributes_cleans_profiles_id smallint not null,
-  table_nm character varying(63),
-  column_nm character varying(63)
-)
-with (
-  oids=false
-);
-alter table attributes_profiles
-  owner to postgres;
-
---drop index attributes_profiles_pk_idx;
-
-create unique index attributes_profiles_pk_idx
-  on attributes_profiles
-  using btree
-  (attributes_profiles_id);
-  
---alter table attributes_profiles drop constraint attributes_profiles_pk;
-
-alter table attributes_profiles
-  add constraint attributes_profiles_pk primary key (attributes_profiles_id);
-
---alter table table attributes_profiles drop constraint attributes_cleans_profiles_fk;
-
-alter table attributes_profiles
-  add constraint attributes_cleans_profiles_fk 
-    foreign key (attributes_cleans_profiles_id) references attributes_cleans_profiles(attributes_cleans_profiles_id) 
-      on delete cascade on update cascade;
-
---set search_path to "$user", public;
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SET check_function_bodies = false;
+SET client_min_messages = warning;
+SET row_security = off;
 
 --
-
--- attributes_profiles_dependents
-
--- drop table attributes_profiles_dependents;
-
-create table attributes_profiles_dependents
-(
-  attributes_profiles_dependents_id smallint not null,
-  timeends_range character varying(63),
-  last_modified_date double precision,
-  dependent_id smallint not null,
-  superior_id  smallint not null
-)
-with (
-  oids=false
-);
-alter table attributes_profiles_dependents
-  owner to postgres;
-
---drop index attributes_profiles_dependents_pk_idx;
-
-create unique index attributes_profiles_dependents_pk_idx
-  on attributes_profiles_dependents
-  using btree
-  (attributes_profiles_dependents_id);
-  
---alter table attributes_profiles_dependents drop constraint attributes_profiles_dependents_pk;
-
-alter table attributes_profiles_dependents
-  add constraint attributes_profiles_dependents_pk primary key (attributes_profiles_dependents_id);
-
---alter table attributes_profiles_dependents drop constraint superior_id_fk;
-
-alter table  attributes_profiles_dependents
-  add constraint superior_id_fk 
-    foreign key (superior_id) references attributes_profiles(attributes_profiles_id) 
-      on delete cascade on update cascade;
-
---alter table attributes_profiles_dependents drop constraint dependent_id_fk;
-
-alter table  attributes_profiles_dependents
-  add constraint dependent_id_fk 
-    foreign key (dependent_id) references attributes_profiles(attributes_profiles_id) 
-      on delete cascade on update cascade;
-
+-- Name: sipro_data_store; Type: SCHEMA; Schema: -; Owner: postgres
 --
 
--- attributes_cleans_profiles
+CREATE SCHEMA sipro_data_store;
 
--- drop table attributes_cleans_profiles;
 
-create table attributes_cleans_profiles
-(
-  attributes_cleans_profiles_id smallint not null,
-  timeends_range character varying(63),
-  last_modified_date double precision,
-  attributes_cleans_profiles_nm character varying(63)
-)
-with (
-  oids=false
-);
-alter table attributes_cleans_profiles
-  owner to postgres;
-
---drop index attributes_cleans_profiles_pk_idx;
-
-create unique index attributes_cleans_profiles_pk_idx
-  on attributes_cleans_profiles
-  using btree
-  (attributes_cleans_profiles_id);
-  
---alter table attributes_cleans_profiles drop constraint attributes_cleans_profiles_pk;
-
-alter table attributes_cleans_profiles
-  add constraint attributes_cleans_profiles_pk primary key (attributes_cleans_profiles_id);
+ALTER SCHEMA sipro_data_store OWNER TO postgres;
 
 --
-
--- attributes_cleans
-
--- drop table attributes_cleans;
-
-create table attributes_cleans
-(
-  attributes_cleans_id smallint not null,
-  timeends_range character varying(63),
-  last_modified_date double precision,
-  attributes_cleans_nm  character varying(63)
-)
-with (
-  oids=false
-);
-alter table attributes_cleans
-  owner to postgres;
-
---drop index attributes_cleans_pk_idx;
-
-create unique index attributes_cleans_pk_idx
-  on attributes_cleans
-  using btree
-  (attributes_cleans_id);
-  
---alter table attributes_cleans drop constraint attributes_cleans_pk;
-
-alter table attributes_cleans
-  add constraint attributes_cleans_pk primary key (attributes_cleans_id);
-
--- attributes_cleans_profiles_details
-
--- drop table attributes_cleans_profiles_details;
-
-create table attributes_cleans_profiles_details
-(
-  attributes_cleans_profiles_details_id smallint not null,
-  timeends_range character varying(63),
-  last_modified_date double precision,
-  attributes_cleans_profiles_id smallint not null,
-  order_id smallint not null,
-  attributes_cleans_id smallint not null
-)
-with (
-  oids=false
-);
-alter table attributes_cleans_profiles_details
-  owner to postgres;
-
---drop index attributes_cleans_profiles_details_pk_idx;
-
-create unique index attributes_cleans_profiles_details_pk_idx
-  on attributes_cleans_profiles_details
-  using btree
-  (attributes_cleans_profiles_details_id);
-  
---alter table attributes_cleans_profiles_details drop constraint attributes_cleans_profiles_details_pk;
-
-alter table attributes_cleans_profiles_details
-  add constraint attributes_cleans_profiles_details_pk primary key (attributes_cleans_profiles_details_id);
-
---alter table attributes_cleans_profiles_details drop constraint attributes_cleans_profiles_fk2;
-
-alter table attributes_cleans_profiles_details
-  add constraint attributes_cleans_profiles_fk2 
-    foreign key (attributes_cleans_profiles_id) references attributes_cleans_profiles(attributes_cleans_profiles_id) 
-      on delete cascade on update cascade;
-
---alter table attributes_cleans_profiles_details drop constraint attributes_cleans_id_fk;
-
-alter table attributes_cleans_profiles_details
-  add constraint attributes_cleans_id_fk 
-    foreign key (attributes_cleans_id) references attributes_cleans(attributes_cleans_id) 
-      on delete cascade on update cascade;
-
+-- Name: SCHEMA sipro_data_store; Type: COMMENT; Schema: -; Owner: postgres
 --
 
+COMMENT ON SCHEMA sipro_data_store IS 'aaii stockinvestor pro data store';
 
---drop table attributes_cleans_profiles_actuals;
 
-create table attributes_cleans_profiles_actuals
-(
-  attributes_cleans_profiles_actuals_id smallint not null,
-  timeend character varying(63),
-  last_modified_date double precision,
-  attributes_cleans_profiles_id smallint not null
-)
-with (
-  oids=false
+SET search_path = sipro_data_store, pg_catalog;
+
+SET default_tablespace = '';
+
+SET default_with_oids = false;
+
+--
+-- Name: atable; Type: TABLE; Schema: sipro_data_store; Owner: postgres
+--
+
+CREATE TABLE atable (
+    acolumn "char"[] NOT NULL
 );
-alter table attributes_cleans_profiles_actuals
-  owner to postgres;
 
---drop index attributes_cleans_profiles_actuals_pk_idx;
 
-create unique index attributes_cleans_profiles_actuals_pk_idx
-  on attributes_cleans_profiles_actuals
-  using btree
-  (attributes_cleans_profiles_actuals_id);
-  
---alter table attributes_cleans_profiles_actuals drop constraint attributes_cleans_profiles_actuals_pk;
+ALTER TABLE atable OWNER TO postgres;
 
-alter table attributes_cleans_profiles_actuals
-  add constraint attributes_cleans_profiles_actuals_pk primary key (attributes_cleans_profiles_actuals_id);
+--
+-- Name: attributes_cleans; Type: TABLE; Schema: sipro_data_store; Owner: postgres
+--
 
---alter table table attributes_cleans_profiles_actuals drop constraint attributes_cleans_profiles_fk;
-
-alter table attributes_cleans_profiles_actuals
-  add constraint attributes_cleans_profiles_fk 
-    foreign key (attributes_cleans_profiles_id) references attributes_cleans_profiles(attributes_cleans_profiles_id) 
-      on delete cascade on update cascade;
-
---set search_path to "$user", public;
-
-----
----- TABLE CREATION not in ORDER
-
--- Schema: sipro_data_store
-
--- DROP SCHEMA sipro_data_store;
-
-CREATE SCHEMA sipro_data_store
-  AUTHORIZATION postgres;
-
-COMMENT ON SCHEMA sipro_data_store
-  IS 'aaii stockinvestor pro data store';
-
--- Table: sipro_data_store.attributes_cleans
-
--- DROP TABLE sipro_data_store.attributes_cleans;
-
-CREATE TABLE sipro_data_store.attributes_cleans
-(
-  attributes_cleans_id smallint NOT NULL,
-  timeends_range character varying(63),
-  last_modified_date double precision,
-  attributes_cleans_nm character varying(63),
-  CONSTRAINT attributes_cleans_pk PRIMARY KEY (attributes_cleans_id)
-)
-WITH (
-  OIDS=FALSE
+CREATE TABLE attributes_cleans (
+    attributes_cleans_id bigint NOT NULL,
+    timeend integer NOT NULL,
+    last_modified_date integer,
+    attributes_cleans_nm text
 );
-ALTER TABLE sipro_data_store.attributes_cleans
-  OWNER TO postgres;
 
--- Index: sipro_data_store.attributes_cleans_pk_idx
 
--- DROP INDEX sipro_data_store.attributes_cleans_pk_idx;
+ALTER TABLE attributes_cleans OWNER TO postgres;
 
-CREATE UNIQUE INDEX attributes_cleans_pk_idx
-  ON sipro_data_store.attributes_cleans
-  USING btree
-  (attributes_cleans_id);
+--
+-- Name: attributes_cleans_attributes_cleans_id_seq; Type: SEQUENCE; Schema: sipro_data_store; Owner: postgres
+--
 
--- Table: sipro_data_store.attributes_cleans_profiles
+CREATE SEQUENCE attributes_cleans_attributes_cleans_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
 
--- DROP TABLE sipro_data_store.attributes_cleans_profiles;
 
-CREATE TABLE sipro_data_store.attributes_cleans_profiles
-(
-  attributes_cleans_profiles_id smallint NOT NULL,
-  timeends_range character varying(63),
-  last_modified_date double precision,
-  attributes_cleans_profiles_nm character varying(63),
-  CONSTRAINT attributes_cleans_profiles_pk PRIMARY KEY (attributes_cleans_profiles_id)
-)
-WITH (
-  OIDS=FALSE
+ALTER TABLE attributes_cleans_attributes_cleans_id_seq OWNER TO postgres;
+
+--
+-- Name: attributes_cleans_attributes_cleans_id_seq; Type: SEQUENCE OWNED BY; Schema: sipro_data_store; Owner: postgres
+--
+
+ALTER SEQUENCE attributes_cleans_attributes_cleans_id_seq OWNED BY attributes_cleans.attributes_cleans_id;
+
+
+--
+-- Name: attributes_cleans_profiles; Type: TABLE; Schema: sipro_data_store; Owner: postgres
+--
+
+CREATE TABLE attributes_cleans_profiles (
+    attributes_cleans_profiles_id bigint NOT NULL,
+    timeend integer NOT NULL,
+    last_modified_date integer,
+    attributes_cleans_profiles_nm text
 );
-ALTER TABLE sipro_data_store.attributes_cleans_profiles
-  OWNER TO postgres;
 
--- Index: sipro_data_store.attributes_cleans_profiles_pk_idx
 
--- DROP INDEX sipro_data_store.attributes_cleans_profiles_pk_idx;
+ALTER TABLE attributes_cleans_profiles OWNER TO postgres;
 
-CREATE UNIQUE INDEX attributes_cleans_profiles_pk_idx
-  ON sipro_data_store.attributes_cleans_profiles
-  USING btree
-  (attributes_cleans_profiles_id);
+--
+-- Name: attributes_cleans_profiles_actuals; Type: TABLE; Schema: sipro_data_store; Owner: postgres
+--
 
--- Table: sipro_data_store.attributes_cleans_profiles_actuals
-
--- DROP TABLE sipro_data_store.attributes_cleans_profiles_actuals;
-
-CREATE TABLE sipro_data_store.attributes_cleans_profiles_actuals
-(
-  attributes_cleans_profiles_actuals_id smallint NOT NULL,
-  timeends character varying(63),
-  last_modified_date double precision,
-  attributes_cleans_profiles_id smallint NOT NULL,
-  CONSTRAINT attributes_cleans_profiles_actuals_pk PRIMARY KEY (attributes_cleans_profiles_actuals_id),
-  CONSTRAINT attributes_cleans_profiles_fk FOREIGN KEY (attributes_cleans_profiles_id)
-      REFERENCES sipro_data_store.attributes_cleans_profiles (attributes_cleans_profiles_id) MATCH SIMPLE
-      ON UPDATE CASCADE ON DELETE CASCADE
-)
-WITH (
-  OIDS=FALSE
+CREATE TABLE attributes_cleans_profiles_actuals (
+    attributes_cleans_profiles_actuals_id bigint NOT NULL,
+    timeend integer NOT NULL,
+    last_modified_date integer,
+    attributes_cleans_profiles_id bigint NOT NULL
 );
-ALTER TABLE sipro_data_store.attributes_cleans_profiles_actuals
-  OWNER TO postgres;
 
--- Index: sipro_data_store.attributes_cleans_profiles_actuals_pk_idx
 
--- DROP INDEX sipro_data_store.attributes_cleans_profiles_actuals_pk_idx;
+ALTER TABLE attributes_cleans_profiles_actuals OWNER TO postgres;
 
-CREATE UNIQUE INDEX attributes_cleans_profiles_actuals_pk_idx
-  ON sipro_data_store.attributes_cleans_profiles_actuals
-  USING btree
-  (attributes_cleans_profiles_actuals_id);
+--
+-- Name: attributes_cleans_profiles_ac_attributes_cleans_profiles_ac_seq; Type: SEQUENCE; Schema: sipro_data_store; Owner: postgres
+--
 
--- Table: sipro_data_store.attributes_cleans_profiles_details
+CREATE SEQUENCE attributes_cleans_profiles_ac_attributes_cleans_profiles_ac_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
 
--- DROP TABLE sipro_data_store.attributes_cleans_profiles_details;
 
-CREATE TABLE sipro_data_store.attributes_cleans_profiles_details
-(
-  attributes_cleans_profiles_details_id smallint NOT NULL,
-  timeends_range character varying(63),
-  last_modified_date double precision,
-  attributes_cleans_profiles_id smallint NOT NULL,
-  order_id smallint NOT NULL,
-  attributes_cleans_id smallint NOT NULL,
-  CONSTRAINT attributes_cleans_profiles_details_pk PRIMARY KEY (attributes_cleans_profiles_details_id),
-  CONSTRAINT attributes_cleans_id_fk FOREIGN KEY (attributes_cleans_id)
-      REFERENCES sipro_data_store.attributes_cleans (attributes_cleans_id) MATCH SIMPLE
-      ON UPDATE CASCADE ON DELETE CASCADE,
-  CONSTRAINT attributes_cleans_profiles_fk2 FOREIGN KEY (attributes_cleans_profiles_id)
-      REFERENCES sipro_data_store.attributes_cleans_profiles (attributes_cleans_profiles_id) MATCH SIMPLE
-      ON UPDATE CASCADE ON DELETE CASCADE
-)
-WITH (
-  OIDS=FALSE
+ALTER TABLE attributes_cleans_profiles_ac_attributes_cleans_profiles_ac_seq OWNER TO postgres;
+
+--
+-- Name: attributes_cleans_profiles_ac_attributes_cleans_profiles_ac_seq; Type: SEQUENCE OWNED BY; Schema: sipro_data_store; Owner: postgres
+--
+
+ALTER SEQUENCE attributes_cleans_profiles_ac_attributes_cleans_profiles_ac_seq OWNED BY attributes_cleans_profiles_actuals.attributes_cleans_profiles_actuals_id;
+
+
+--
+-- Name: attributes_cleans_profiles_attributes_cleans_profiles_id_seq; Type: SEQUENCE; Schema: sipro_data_store; Owner: postgres
+--
+
+CREATE SEQUENCE attributes_cleans_profiles_attributes_cleans_profiles_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE attributes_cleans_profiles_attributes_cleans_profiles_id_seq OWNER TO postgres;
+
+--
+-- Name: attributes_cleans_profiles_attributes_cleans_profiles_id_seq; Type: SEQUENCE OWNED BY; Schema: sipro_data_store; Owner: postgres
+--
+
+ALTER SEQUENCE attributes_cleans_profiles_attributes_cleans_profiles_id_seq OWNED BY attributes_cleans_profiles.attributes_cleans_profiles_id;
+
+
+--
+-- Name: attributes_cleans_profiles_details; Type: TABLE; Schema: sipro_data_store; Owner: postgres
+--
+
+CREATE TABLE attributes_cleans_profiles_details (
+    attributes_cleans_profiles_details_id bigint NOT NULL,
+    timeend integer NOT NULL,
+    last_modified_date integer,
+    attributes_cleans_profiles_id bigint NOT NULL,
+    order_id bigint NOT NULL,
+    attributes_cleans_id bigint NOT NULL
 );
-ALTER TABLE sipro_data_store.attributes_cleans_profiles_details
-  OWNER TO postgres;
 
--- Index: sipro_data_store.attributes_cleans_profiles_details_pk_idx
 
--- DROP INDEX sipro_data_store.attributes_cleans_profiles_details_pk_idx;
+ALTER TABLE attributes_cleans_profiles_details OWNER TO postgres;
 
-CREATE UNIQUE INDEX attributes_cleans_profiles_details_pk_idx
-  ON sipro_data_store.attributes_cleans_profiles_details
-  USING btree
-  (attributes_cleans_profiles_details_id);
+--
+-- Name: attributes_cleans_profiles_de_attributes_cleans_profiles_de_seq; Type: SEQUENCE; Schema: sipro_data_store; Owner: postgres
+--
 
-- Table: sipro_data_store.attributes_profiles
+CREATE SEQUENCE attributes_cleans_profiles_de_attributes_cleans_profiles_de_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
 
--- DROP TABLE sipro_data_store.attributes_profiles;
 
-CREATE TABLE sipro_data_store.attributes_profiles
-(
-  attributes_profiles_id smallint NOT NULL,
-  timeends_range character varying(63),
-  last_modified_date double precision,
-  attributes_expression character varying(253),
-  attributes_cleans_profiles_id smallint NOT NULL,
-  table_nm character varying(63),
-  column_nm character varying(63),
-  CONSTRAINT attributes_profiles_pk PRIMARY KEY (attributes_profiles_id),
-  CONSTRAINT attributes_cleans_profiles_fk FOREIGN KEY (attributes_cleans_profiles_id)
-      REFERENCES sipro_data_store.attributes_cleans_profiles (attributes_cleans_profiles_id) MATCH SIMPLE
-      ON UPDATE CASCADE ON DELETE CASCADE
-)
-WITH (
-  OIDS=FALSE
+ALTER TABLE attributes_cleans_profiles_de_attributes_cleans_profiles_de_seq OWNER TO postgres;
+
+--
+-- Name: attributes_cleans_profiles_de_attributes_cleans_profiles_de_seq; Type: SEQUENCE OWNED BY; Schema: sipro_data_store; Owner: postgres
+--
+
+ALTER SEQUENCE attributes_cleans_profiles_de_attributes_cleans_profiles_de_seq OWNED BY attributes_cleans_profiles_details.attributes_cleans_profiles_details_id;
+
+
+--
+-- Name: attributes_profiles; Type: TABLE; Schema: sipro_data_store; Owner: postgres
+--
+
+CREATE TABLE attributes_profiles (
+    attributes_profiles_id bigint NOT NULL,
+    timeend integer NOT NULL,
+    last_modified_date integer,
+    attributes_expression text,
+    attributes_cleans_profiles_id bigint NOT NULL,
+    schema_nm text,
+    table_nm text,
+    column_nm text
 );
-ALTER TABLE sipro_data_store.attributes_profiles
-  OWNER TO postgres;
 
--- Index: sipro_data_store.attributes_profiles_pk_idx
 
--- DROP INDEX sipro_data_store.attributes_profiles_pk_idx;
+ALTER TABLE attributes_profiles OWNER TO postgres;
 
-CREATE UNIQUE INDEX attributes_profiles_pk_idx
-  ON sipro_data_store.attributes_profiles
-  USING btree
-  (attributes_profiles_id);
+--
+-- Name: attributes_profiles_attributes_profiles_id_seq; Type: SEQUENCE; Schema: sipro_data_store; Owner: postgres
+--
 
-- Table: sipro_data_store.attributes_profiles_dependents
+CREATE SEQUENCE attributes_profiles_attributes_profiles_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
 
--- DROP TABLE sipro_data_store.attributes_profiles_dependents;
 
-CREATE TABLE sipro_data_store.attributes_profiles_dependents
-(
-  attributes_profiles_dependents_id smallint NOT NULL,
-  timeends_range character varying(63),
-  last_modified_date double precision,
-  dependent_id smallint NOT NULL,
-  superior_id smallint NOT NULL,
-  CONSTRAINT attributes_profiles_dependents_pk PRIMARY KEY (attributes_profiles_dependents_id),
-  CONSTRAINT dependent_id_fk FOREIGN KEY (dependent_id)
-      REFERENCES sipro_data_store.attributes_profiles (attributes_profiles_id) MATCH SIMPLE
-      ON UPDATE CASCADE ON DELETE CASCADE,
-  CONSTRAINT superior_id_fk FOREIGN KEY (superior_id)
-      REFERENCES sipro_data_store.attributes_profiles (attributes_profiles_id) MATCH SIMPLE
-      ON UPDATE CASCADE ON DELETE CASCADE
-)
-WITH (
-  OIDS=FALSE
+ALTER TABLE attributes_profiles_attributes_profiles_id_seq OWNER TO postgres;
+
+--
+-- Name: attributes_profiles_attributes_profiles_id_seq; Type: SEQUENCE OWNED BY; Schema: sipro_data_store; Owner: postgres
+--
+
+ALTER SEQUENCE attributes_profiles_attributes_profiles_id_seq OWNED BY attributes_profiles.attributes_profiles_id;
+
+
+--
+-- Name: attributes_profiles_dependents; Type: TABLE; Schema: sipro_data_store; Owner: postgres
+--
+
+CREATE TABLE attributes_profiles_dependents (
+    attributes_profiles_dependents_id bigint NOT NULL,
+    timeend integer NOT NULL,
+    last_modified_date integer,
+    dependent_id bigint NOT NULL,
+    superior_id bigint NOT NULL
 );
-ALTER TABLE sipro_data_store.attributes_profiles_dependents
-  OWNER TO postgres;
 
--- Index: sipro_data_store.attributes_profiles_dependents_pk_idx
 
--- DROP INDEX sipro_data_store.attributes_profiles_dependents_pk_idx;
+ALTER TABLE attributes_profiles_dependents OWNER TO postgres;
 
-CREATE UNIQUE INDEX attributes_profiles_dependents_pk_idx
-  ON sipro_data_store.attributes_profiles_dependents
-  USING btree
-  (attributes_profiles_dependents_id);
+--
+-- Name: attributes_profiles_dependent_attributes_profiles_dependent_seq; Type: SEQUENCE; Schema: sipro_data_store; Owner: postgres
+--
 
-------------- end sipro.sql ----------------
+CREATE SEQUENCE attributes_profiles_dependent_attributes_profiles_dependent_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE attributes_profiles_dependent_attributes_profiles_dependent_seq OWNER TO postgres;
+
+--
+-- Name: attributes_profiles_dependent_attributes_profiles_dependent_seq; Type: SEQUENCE OWNED BY; Schema: sipro_data_store; Owner: postgres
+--
+
+ALTER SEQUENCE attributes_profiles_dependent_attributes_profiles_dependent_seq OWNED BY attributes_profiles_dependents.attributes_profiles_dependents_id;
+
+
+--
+-- Name: attributes_cleans_id; Type: DEFAULT; Schema: sipro_data_store; Owner: postgres
+--
+
+ALTER TABLE ONLY attributes_cleans ALTER COLUMN attributes_cleans_id SET DEFAULT nextval('attributes_cleans_attributes_cleans_id_seq'::regclass);
+
+
+--
+-- Name: attributes_cleans_profiles_id; Type: DEFAULT; Schema: sipro_data_store; Owner: postgres
+--
+
+ALTER TABLE ONLY attributes_cleans_profiles ALTER COLUMN attributes_cleans_profiles_id SET DEFAULT nextval('attributes_cleans_profiles_attributes_cleans_profiles_id_seq'::regclass);
+
+
+--
+-- Name: attributes_cleans_profiles_actuals_id; Type: DEFAULT; Schema: sipro_data_store; Owner: postgres
+--
+
+ALTER TABLE ONLY attributes_cleans_profiles_actuals ALTER COLUMN attributes_cleans_profiles_actuals_id SET DEFAULT nextval('attributes_cleans_profiles_ac_attributes_cleans_profiles_ac_seq'::regclass);
+
+
+--
+-- Name: attributes_cleans_profiles_details_id; Type: DEFAULT; Schema: sipro_data_store; Owner: postgres
+--
+
+ALTER TABLE ONLY attributes_cleans_profiles_details ALTER COLUMN attributes_cleans_profiles_details_id SET DEFAULT nextval('attributes_cleans_profiles_de_attributes_cleans_profiles_de_seq'::regclass);
+
+
+--
+-- Name: attributes_profiles_id; Type: DEFAULT; Schema: sipro_data_store; Owner: postgres
+--
+
+ALTER TABLE ONLY attributes_profiles ALTER COLUMN attributes_profiles_id SET DEFAULT nextval('attributes_profiles_attributes_profiles_id_seq'::regclass);
+
+
+--
+-- Name: attributes_profiles_dependents_id; Type: DEFAULT; Schema: sipro_data_store; Owner: postgres
+--
+
+ALTER TABLE ONLY attributes_profiles_dependents ALTER COLUMN attributes_profiles_dependents_id SET DEFAULT nextval('attributes_profiles_dependent_attributes_profiles_dependent_seq'::regclass);
+
+
+--
+-- Name: attributes_cleans_pk; Type: CONSTRAINT; Schema: sipro_data_store; Owner: postgres
+--
+
+ALTER TABLE ONLY attributes_cleans
+    ADD CONSTRAINT attributes_cleans_pk PRIMARY KEY (attributes_cleans_id, timeend);
+
+
+--
+-- Name: attributes_cleans_profiles_actuals_pk; Type: CONSTRAINT; Schema: sipro_data_store; Owner: postgres
+--
+
+ALTER TABLE ONLY attributes_cleans_profiles_actuals
+    ADD CONSTRAINT attributes_cleans_profiles_actuals_pk PRIMARY KEY (attributes_cleans_profiles_actuals_id, timeend);
+
+
+--
+-- Name: attributes_cleans_profiles_details_pk; Type: CONSTRAINT; Schema: sipro_data_store; Owner: postgres
+--
+
+ALTER TABLE ONLY attributes_cleans_profiles_details
+    ADD CONSTRAINT attributes_cleans_profiles_details_pk PRIMARY KEY (attributes_cleans_profiles_details_id, timeend);
+
+
+--
+-- Name: attributes_cleans_profiles_pk; Type: CONSTRAINT; Schema: sipro_data_store; Owner: postgres
+--
+
+ALTER TABLE ONLY attributes_cleans_profiles
+    ADD CONSTRAINT attributes_cleans_profiles_pk PRIMARY KEY (attributes_cleans_profiles_id, timeend);
+
+
+--
+-- Name: attributes_profiles_dependents_pk; Type: CONSTRAINT; Schema: sipro_data_store; Owner: postgres
+--
+
+ALTER TABLE ONLY attributes_profiles_dependents
+    ADD CONSTRAINT attributes_profiles_dependents_pk PRIMARY KEY (attributes_profiles_dependents_id, timeend);
+
+
+--
+-- Name: attributes_profiles_pk; Type: CONSTRAINT; Schema: sipro_data_store; Owner: postgres
+--
+
+ALTER TABLE ONLY attributes_profiles
+    ADD CONSTRAINT attributes_profiles_pk PRIMARY KEY (attributes_profiles_id, timeend);
+
+
+--
+-- Name: attributes_cleans_pk_idx; Type: INDEX; Schema: sipro_data_store; Owner: postgres
+--
+
+CREATE UNIQUE INDEX attributes_cleans_pk_idx ON attributes_cleans USING btree (attributes_cleans_id, timeend);
+
+
+--
+-- Name: attributes_cleans_profiles_actuals_pk_idx; Type: INDEX; Schema: sipro_data_store; Owner: postgres
+--
+
+CREATE UNIQUE INDEX attributes_cleans_profiles_actuals_pk_idx ON attributes_cleans_profiles_actuals USING btree (attributes_cleans_profiles_actuals_id, timeend);
+
+
+--
+-- Name: attributes_cleans_profiles_details_pk_idx; Type: INDEX; Schema: sipro_data_store; Owner: postgres
+--
+
+CREATE UNIQUE INDEX attributes_cleans_profiles_details_pk_idx ON attributes_cleans_profiles_details USING btree (attributes_cleans_profiles_details_id, timeend);
+
+
+--
+-- Name: attributes_cleans_profiles_pk_idx; Type: INDEX; Schema: sipro_data_store; Owner: postgres
+--
+
+CREATE UNIQUE INDEX attributes_cleans_profiles_pk_idx ON attributes_cleans_profiles USING btree (attributes_cleans_profiles_id, timeend);
+
+
+--
+-- Name: attributes_profiles_dependents_pk_idx; Type: INDEX; Schema: sipro_data_store; Owner: postgres
+--
+
+CREATE UNIQUE INDEX attributes_profiles_dependents_pk_idx ON attributes_profiles_dependents USING btree (attributes_profiles_dependents_id, timeend);
+
+
+--
+-- Name: attributes_profiles_pk_idx; Type: INDEX; Schema: sipro_data_store; Owner: postgres
+--
+
+CREATE UNIQUE INDEX attributes_profiles_pk_idx ON attributes_profiles USING btree (attributes_profiles_id, timeend);
+
+
+--
+-- Name: attributes_cleans_id_fk; Type: FK CONSTRAINT; Schema: sipro_data_store; Owner: postgres
+--
+
+ALTER TABLE ONLY attributes_cleans_profiles_details
+    ADD CONSTRAINT attributes_cleans_id_fk FOREIGN KEY (attributes_cleans_id, timeend) REFERENCES attributes_cleans(attributes_cleans_id, timeend) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: attributes_cleans_profiles_fk; Type: FK CONSTRAINT; Schema: sipro_data_store; Owner: postgres
+--
+
+ALTER TABLE ONLY attributes_cleans_profiles_actuals
+    ADD CONSTRAINT attributes_cleans_profiles_fk FOREIGN KEY (attributes_cleans_profiles_id, timeend) REFERENCES attributes_cleans_profiles(attributes_cleans_profiles_id, timeend) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: attributes_cleans_profiles_fk; Type: FK CONSTRAINT; Schema: sipro_data_store; Owner: postgres
+--
+
+ALTER TABLE ONLY attributes_profiles
+    ADD CONSTRAINT attributes_cleans_profiles_fk FOREIGN KEY (attributes_cleans_profiles_id, timeend) REFERENCES attributes_cleans_profiles(attributes_cleans_profiles_id, timeend) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: attributes_cleans_profiles_fk2; Type: FK CONSTRAINT; Schema: sipro_data_store; Owner: postgres
+--
+
+ALTER TABLE ONLY attributes_cleans_profiles_details
+    ADD CONSTRAINT attributes_cleans_profiles_fk2 FOREIGN KEY (attributes_cleans_profiles_id, timeend) REFERENCES attributes_cleans_profiles(attributes_cleans_profiles_id, timeend) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: dependent_id_fk; Type: FK CONSTRAINT; Schema: sipro_data_store; Owner: postgres
+--
+
+ALTER TABLE ONLY attributes_profiles_dependents
+    ADD CONSTRAINT dependent_id_fk FOREIGN KEY (dependent_id, timeend) REFERENCES attributes_profiles(attributes_profiles_id, timeend) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: superior_id_fk; Type: FK CONSTRAINT; Schema: sipro_data_store; Owner: postgres
+--
+
+ALTER TABLE ONLY attributes_profiles_dependents
+    ADD CONSTRAINT superior_id_fk FOREIGN KEY (superior_id, timeend) REFERENCES attributes_profiles(attributes_profiles_id, timeend) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- PostgreSQL database dump complete
+--
+
