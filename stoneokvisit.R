@@ -17,9 +17,10 @@ dump_and_quit <- function() {
   # Quit R with error status
   q(status = 1)
 }
-# options(error = dump_and_quit)
-options(error = recover) 
-
+# options(error = dump_and_quit) # NOTHING
+options(error = recover) # 90 PERCENT #
+# options(error = browser) # DOES NOTHING
+## options(error = browser()) # ?? # BAD ???
 
 if(Sys.getenv("RSTUDIO") == "1") {
   debugSource(paste0(getwd(),"/","utilities_ext_visit_looper_dev.R"))
@@ -473,7 +474,21 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
       }, silent = TRUE)
         
         # SEE 'JUST BELOW' - ENTER AGE then PRESS enter KEY
-        
+
+        # 'if the small message box, is still open, this may obscure the WHITE_ONLY choice'
+        # SO CLOSE IT BY THE xing out the Upper right corner X
+
+        try( {
+          
+            cat(paste0("BEGIN TRY TO FIND SMALL MESSAGEBOX","\n"))
+            webElemSMALLMSGBOXES <- remDr$findElements("css",'a.minimize')
+            cat(paste0("BEGIN TRY MINIMIZING SMALL MESSAGEBOX","\n"))
+            webElemSMALLMSGBOXES[[1]]$highlightElement()
+            webElemSMALLMSGBOXES[[1]]$clickElement()
+            cat(paste0("END TRY MINIMIZING SMALL MESSAGEBOX","\n"))
+          
+        }, silent = TRUE)
+
         bookmarkhere <- 1
         
         more_physical_criteria <- FALSE
@@ -1120,17 +1135,37 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
        # a re-ask out
        all_all <- c(all_all,"CanYouHandleHer")
 
-       # april 19, woman of few words likes me ( I sent here a simple message )
-       # all_all <- c(all_all,"ladyvibran")
-     
        # she asked me out - april 19th for morning breakfast - could not make it
        # I am still trying to set up
        all_all <- c(all_all,"howlokitty")
 
-       # April 29th just today ONLY
-       all_all <- c(all_all,"weathergirlmania")
+       # May 11th just today ONLY
+       # all_all <- c(all_all,"smilingnsinging","Krysjoon")
+       
+       # Preparing for Friday, May 13th # DOES NOT EXIST: Russia/Montana/Louisian
+       all_all <- c(all_all,"lindacherry28") # text conversations: 
+
+       # From May 11, for friends, asking out 'in person' - waiting her confermation
+       # all_all <- c(all_all,"flawer123") # SHE IS TOUGH: KEEP TRYING
+
+       # NO MORE
+       all_all <- c(all_all,"Litgoddess1")
+
+       # for May 13 Fri, follow up ONE on ONE ( kOOKY personality ) SHE FAKED
+       all_all <- c(all_all,"CanyouhearGod")
 
        ### ( three means today only )
+
+       # She could not make the 1st date: handling manully ( SHE CHANGED HER USERNAME)
+       all_all <- c(all_all,"carlaj25","cJo525")
+
+       # TODAY ONLY # MONDAY # MAY 16TH
+       # all_all <- c(all_all,"Moscato89","alderfae","smilingnsinging")
+
+       # TODAY ONLY # FRIDAY MAY 20 # Laura_Kristin85(30 and not fat)
+       # all_all <- c(all_all,"kathyb53","weathergirlmania","Alycattp","too_tall_bbw11",
+       #            "Laura_Kristin85","smilingnsinging","Moscato89","rainwater51")
+
 
        # christenelaine89 - BORDERLINE ( IF I DO NOT GET A RESPONSE BACK )
    
@@ -1771,3 +1806,119 @@ okcupid_visit_looper_dev <- function(curr_port = 4444, browser = "firefox", use_
 
 # END INSTRUCTIONS  
 # END INSTRUCTIONS    
+
+# NO GITHUB 
+# okcupid
+# , site_login = "time861wiz", site_password = "739heg08", 
+# 
+
+  # lately ( just prev dates - SOME not visit)
+  # okcupid_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = "time861wiz", site_password = "739heg08", age_range_str = "18:60", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), action = "just_visit", online_when = "within_the_last_week", not_to_vst = "SOME", not_to_msg = "NONE", face_color = "anything", loop_forever = "no", age_range_str_group = "one_age_page")
+
+# MAIN USE
+# lately ( just prev dates - SOME not visit) , face_color = "white"
+# okcupid_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = "time861wiz", site_password = "739heg08", age_range_str = "18:60", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), action = "just_visit", online_when = "within_the_last_week", not_to_vst = "SOME", not_to_msg = "NONE", face_color = "white", loop_forever = "no", age_range_str_group = "one_age_page")
+
+  # messaging - not previous dates
+  # okcupid_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = "time861wiz", site_password = "739heg08", age_range_str = "18:60", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), action = "message_greet_matchname", online_when = "online_now", not_to_vst = "NONE", not_to_msg = "all_all", face_color = "anything", loop_forever = "yes", age_range_str_group = "one_age_page")  
+
+# MAIN USE -
+# messaging - not previous dates , face_color = "white"
+# okcupid_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = "time861wiz", site_password = "739heg08", age_range_str = "18:60", todays_message = paste0(", GLORIUS ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you tonight?"), action = "message_greet_matchname", online_when = "online_now", not_to_vst = "NONE", not_to_msg = "all_all", face_color = "white", loop_forever = "yes", age_range_str_group = "one_age_page")  
+
+####
+# NOTE AFTER TESTING     [ ] of new FEATURE  , age_range_str_group = "all_ages_page"
+#      CHANGE (ABOVE AND BELOW) DEFAULTS   [ ] from   , age_range_str_group = "one_age_page"   TO    , age_range_str_group = "all_ages_page"
+###
+
+# TESTING - MAIN USE - MESSAGING EVERY ONE
+# messaging - not previous dates , face_color = "white"                                                                                                                                                                                                                                                                                                                                                                                                          # TESTING NEW
+# okcupid_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = "time861wiz", site_password = "739heg08", age_range_str = "18:60", todays_message = paste0(", GLORIUS ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you tonight?"), action = "message_greet_matchname", online_when = "online_now", not_to_vst = "NONE", not_to_msg = "all_all", face_color = "white", loop_forever = "yes", age_range_str_group = "all_ages_page")  
+
+# TESTING - MAIN USE - VISITING - THIS WEEK
+# lately ( just prev dates - SOME not visit) , face_color = "white"
+# okcupid_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = "time861wiz", site_password = "739heg08", age_range_str = "18:60", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), action = "just_visit", online_when = "within_the_last_week", not_to_vst = "SOME", not_to_msg = "NONE", face_color = "white", loop_forever = "no", age_range_str_group = "one_age_page")
+
+# 
+
+# TESTING - MAIN USE - VISITING  - ages 38 - 60 - ONLINE NOW, , loop_forever = "yes"
+# lately ( just prev dates - SOME not visit) , face_color = "white", age_range_str_group = "all_ages_page" 
+# okcupid_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = "time861wiz", site_password = "739heg08", age_range_str = "18:60", todays_message = paste0(", happy ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), "! How are you today?"), action = "just_visit", online_when = "online_now", not_to_vst = "SOME", not_to_msg = "all_all", face_color = "white", loop_forever = "yes", age_range_str_group = "all_ages_page")
+
+# TESTING - MAIN USE - MESSAGING  - ages 38 - 60 - ONLINE NOW, , loop_forever = "yes"
+# lately ( just prev dates - SOME not visit) , face_color = "white", age_range_str_group = "all_ages_page" 
+# okcupid_visit_looper_dev(curr_port = 4444, browser = "chrome", use_the_custom_profile = FALSE, site_login = "time861wiz", site_password = "739heg08", age_range_str = "18:60", todays_message = paste0(", what a perfect ", weekdays(Sys.time() + 60 * 60 * dynamic_UTC_offset()), ". How is it going this evening?"), action = "message_greet_matchname", online_when = "online_now", not_to_vst = "SOME", not_to_msg = "all_all", face_color = "white", loop_forever = "yes", age_range_str_group = "all_ages_page")
+
+
+#                 
+#                          
+ 
+
+
+## LEFT OFF - SAVE THIS [ ] NOTEPAD ++ AND GITHUB [ ]
+######### last work inprogress ( HERE ESSAYS ) ##################
+
+# # text diving helpers
+# 
+# # uses: tm
+# 
+# essay <- "I'm just a girl in the world\n\nI try really hard not to give a fuck, but I'm really bad at it.\n\nJean jacket weather is better weather.     Working for a jewelry designer and studying the books hard.     Falling down with grace\nBaking\nCooking\nHiking and falling down\nClimbing trees and getting stuck\nReading\nGeography\nLaughing at you and other people\nPhotography\nGrowing plants     Archer\nHBO\nTina n Amy\nIndie film Paul Rudd\n\nChinatown\nThird man\nHarry Potter in all ways\nLots and lots and lots of books\nRichard avedon\nMargaret white\nAnsel Adams\nPiassco\n\nNetflix\n\nWhite girl movies etc etc     Zuko, my puppy\nBlunts\nNetflix\niPhone future device\nCandy\nMy legs     How many blunts are too many blunts, global scale ethnic conflicts, tequila and how much I can drink of it, carrots and hummus, Zuko, total world domination.     Who knows     If you got the goods "
+# 
+# # clean up (and remvoe carriage returns)the document 
+# 
+# clean <- function(x) {
+#   gsub('[,.;:\'"()]','',x) -> x
+#   
+#   gsub("[\r\n]", " ", x) -> x
+#   
+#   return(x)
+#   
+# }
+# 
+# clean(essay) -> essay_cleaned
+# 
+# # do a word cont
+# 
+# word_count_simple <- function(lines) {
+#   chunks <- strsplit(clean(lines),'\\s')
+#   words <- do.call(c, chunks)
+#   table(words) -> x
+#   
+#   x[!(names(x) %in% "")] -> x
+#   
+#   return(x)
+# }
+# 
+# word_count_simple(essay_cleaned) -> essay_cleaned_counted
+# 
+# stop_words <- tm::stopwords('english')
+# 
+# logical_index_of_her_stop_words <- sapply( names(essay_cleaned_counted), function(x) {  any( tolower(x)  %in%stop_words )  } )
+# 
+# essay_cleaned_counted_non_stop <- essay_cleaned_counted[!logical_index_of_her_stop_words]
+# 
+# essay_cleaned_counted_non_stop_priority_ordered <- essay_cleaned_counted_non_stop [order(essay_cleaned_counted_non_stop , decreasing = TRUE)]
+# 
+# # almost every WORD appears JUST once
+# 
+# # From functional programming to MapReduce in R
+# # https://cartesianfaith.com/2015/09/17/from-functional-programming-to-mapreduce-in-r/
+# # AND
+# # remove all line breaks (enter symbols) from the string using R
+# # http://stackoverflow.com/questions/21781014/remove-all-line-breaks-enter-symbols-from-the-string-using-r
+# 
+# 
+# From functional programming to MapReduce in R
+# Thursday 17th
+# Sep 2015
+# Posted by Brian Lee Yung Rowe
+# https://cartesianfaith.com/2015/09/17/from-functional-programming-to-mapreduce-in-r/
+#   
+#   ############### END OF TEXT DIVING #########################   
+#                                
+
+
+
+
+
+
