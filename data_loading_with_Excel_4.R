@@ -14,6 +14,83 @@ browseOnce <- function() {   # CLOSURE
 options(error = recover) # NULL, recover, browser # browseOnce()
 
 
+# BORROWED FROM ( tip from rdocumentation.org )
+# https://github.com/cran/qdap/blob/master/R/left_just.R
+left_just <-function(dataframe, column = NULL, keep.class = FALSE) {
+    df.class <- function(dataframe) {
+        sapply(1:ncol(dataframe), function(i) {
+            x <- class(dataframe[, i])
+            x[length(x)]
+        })
+    }
+    CLASS <- df.class(dataframe)
+    left.j <- function(x) {
+        n <- max(nchar(x))
+        return(sprintf(paste("%-", n, "s", sep = ""), x))
+    }
+    if (is.null(column)) column <- colnames(dataframe)
+    lj <- function(DF2, column) {
+        if (is.null(column)) column <- colnames(DF2)
+        Q <- max(nchar(c(as.character(DF2[, column]), column)))
+        DF2 <- data.frame(rbind(colnames(DF2), do.call(cbind,
+            lapply(DF2, as.character))), check.names = FALSE)
+        DF2[, column] <- left.j(as.character(DF2[, column]))     
+        if (is.character(column)) {
+            col <- names(DF2)[which(names(DF2) == column)]
+                names(DF2)[which(names(DF2) == column)] <- sprintf(paste("%-", 
+                Q, "s", sep = ""), col)
+        } else {
+            if (is.numeric(column)) {
+                col <- names(DF2)[column]
+                    names(DF2)[column] <- sprintf(paste("%-", Q, "s", 
+                    sep = ""), col)
+            }
+        }
+        DF2 <- data.frame(DF2[-1, , drop = FALSE], check.names = FALSE)
+        rownames(DF2) <- NULL
+        return(DF2)
+    }
+    if (length(column) < 2) {
+        if (!is.data.frame(dataframe)) {
+            y <- as.character(substitute(dataframe))
+            dataframe <- data.frame(dataframe, check.names = FALSE)
+            y <- if (y[1]%in%c("[", "$")) y[2] else y[1]
+            names(dataframe) <- y
+        }
+        DF3 <- lj(DF2=dataframe, column=column)
+    } else { 
+        if (!is.numeric(column)) column <- match(column, names(dataframe))
+        dat <- dataframe[, -c(column), drop=FALSE]
+        ndf <- colnames(dataframe)
+        LIST <- lapply(column, function(x) {
+            lj(DF2=dataframe[, x, drop=FALSE], column = NULL)
+        })
+        dat2 <- data.frame(cbind(do.call('cbind', LIST), dat), checknames=FALSE)
+        NAMES <- colnames(dat2)
+        STrim <- function (x) gsub("^\\s+|\\s+$|\\.+$", "", x)
+        newloc <- match(ndf, STrim(NAMES))
+        DF3 <- dat2[, newloc]
+    }
+    if (keep.class) {
+        colClasses <- function(d, colClasses) {
+            colClasses <- rep(colClasses, len=length(d))
+            d[] <- lapply(seq_along(d), function(i) switch(colClasses[i], 
+                numeric=as.numeric(d[[i]]), 
+                character=as.character(d[[i]]), 
+                Date=as.Date(d[[i]], origin='1970-01-01'), 
+                POSIXct=as.POSIXct(d[[i]], origin='1970-01-01'), 
+                factor=as.factor(d[[i]]),
+                methods::as(d[[i]], colClasses[i]) ))
+            d
+        }
+        DF3 <- colClasses(DF3, CLASS)
+    }
+    colnames(DF3) <- gsub("\\.(?=\\.*$)", " ", colnames(DF3), perl=TRUE)
+    return(DF3)
+}
+
+
+
 ept <- function(text = NULL, envir = parent.frame()) {
   
   require(stringr)
@@ -265,7 +342,7 @@ massAAIISIProDBFsDB <- function(conn, from_target = "W:/New_Economics/forsight4.
       # upload to the database
       # caroline::dbWriteTable2(conn, dbf_file_stem,  df = data_frame_loaded, , add.id= FALSE)
 
-      dbWriteTable(conn, dbf_file_stem_plus_dir, cbind(dateindex = rep(as.numeric(that_dir),NROW(data_frame_loaded)),data_frame_loaded))
+      dbWriteTable(conn, dbf_file_stem_plus_dir, cbind(dateindex = rep(as.integer(that_dir),NROW(data_frame_loaded)),data_frame_loaded))
       dbGetQuery(conn, paste0("alter table " , dbf_file_stem_plus_dir, " inherit " , dbf_file_stem))
       dbGetQuery(conn, paste0("create index ", dbf_file_stem_plus_dir, "_dateindex_idx on " , dbf_file_stem_plus_dir, "( dateindex )"))
     
@@ -290,8 +367,29 @@ conn <- dbConnect(drv, user="postgres", password="postgres", port = 5432, dbname
 # dbDisconnect(conn)
 # dbUnloadDriver(drv)
 
+# fill the sipro_stage schema
 # massAAIISIProDBFsDB(conn)
 
+# from other tools, get the output(way to recreate) the sipro_data_store schema
+# 
+# C:\Users\AnonymousUser\Documents\UnxUtils\usr\local\wbin>tail -f --lines=40 "C:\Users\AnonymousUser\Documents\pgadmin.log"
+#
+# set PATH=C:\Users\AnonymousUser\Documents\BINARIES\graphviz-2.38\release\bin;%PATH%
+# W:\New_Economics\forsight4.322>java -jar schemaSpy_5.0.0.jar -dp "C:\Program Files (x86)\PostgreSQL\pgJDBC\postgresql-9.4.1208.jar" -t pgsql -host localhost -db finance_econ -s sipro_data_store -u postgres -p postgres -o "C:\Users\AnonymousUser\Desktop\R-Portable.3.2.2\App\R-Portable\bin\x64\RDebug\Home\schemaSpy_meta"
+#
+# C:\Program Files\PostgreSQL\9.5>"%PGSQL%\bin\pg_dump" --host=localhost --port=5432 --username=postgres --no-password --dbname=finance_econ  --schema=sipro_data_store  --schema-only               --file="C:\Users\AnonymousUser\Desktop\R-Portable.3.2.2\App\R-Portable\bin\x64\RDebug\Home\pg_dump_out_YYMMDDHHMM.txt"
+#
+# lately
+# C:\Program Files\PostgreSQL\9.5>"%PGSQL%\bin\pg_dump" --host=localhost --port=5432 --username=postgres --no-password --dbname=finance_econ  --schema=sipro_data_store                               --file="C:\Users\AnonymousUser\Desktop\R-Portable.3.2.2\App\R-Portable\bin\x64\RDebug\Home\pg_dump_out_YYMMDDHHMM.txt"
+# 
+# most late
+# C:\Program Files\PostgreSQL\9.5>"%PGSQL%\bin\pg_dump" --host=localhost --port=5432 --username=postgres --no-password --dbname=finance_econ  --schema=sipro_data_store                   --inserts --file="C:\Users\AnonymousUser\Desktop\R-Portable.3.2.2\App\R-Portable\bin\x64\RDebug\Home\pg_dump_out_YYMMDDHHMM.txt"
+#
+# the script contains COPY
+# finance_econ=# \i C:/Users/AnonymousUser/Desktop/R-Portable.3.2.2/App/R-Portable/bin/x64/RDebug/Home/pg_dump_out_YYMMDDHHMM.txt
+# 
+# BUT BETTER ( if the script contains INSERT ) ... use pgAdminIII Query window
+#
 
 # # prefers schema.table ??
 # # MUST be RAN as a pgScript ( in pgAdminIII )
@@ -309,6 +407,268 @@ conn <- dbConnect(drv, user="postgres", password="postgres", port = 5432, dbname
 #   } 
 #   return(invisible())
 # }, cn = conn ) -> X; invisible(); rm(X)
+
+massAAIISIProIterScreenFScore  <- function(conn, asOfDate = Sys.Date()) { 
+
+  ost <- dbGetQuery(conn,"show time zone")[[1]]
+
+  osp <- dbGetQuery(conn,"show search_path")[[1]]
+
+  # update search path
+  dbGetQuery(conn, paste0("set search_path to sipro_stage, ", osp) )
+
+  # update time zone
+  dbGetQuery(conn, "set time zone 'utc'")
+  print(dbGetQuery(conn, "show time zone"))
+  
+  # previous last weekday of last month 
+  interested_Date <- if( asOfDate < (lastWeekDayDateOfMonth(asOfDate) + 1) ) { lastWeekDayDateOfMonth( lubridate::`%m+%`(asOfDate, base::months(-1)))  } else {  lastWeekDayDateOfMonth(asOfDate)  }
+    
+
+  "
+  with allofit as (
+  -- BEGIN PIOTROSKI
+  select
+  --set search_path=sipro_stage, pg_catalog, public; show search_path;
+  scrn.dateindex, 
+  scrn.company_id, 
+  scrn.company, 
+  scrn.ticker, 
+  scrn.sp, 
+  scrn.mktcap,
+  scrn.f_score_winner,
+  case when rtns2.later_dateindex is not null then 't'::boolean else 'f'::boolean end later_dateindex_found,
+  rtns2.later_dateindex,
+  rtns2.later_company_id, 
+  rtns2.later_price, 
+  rtns2.later_prchg_52w, 
+  rtns2.later_prchg_52w_eq_neg_100,
+  rtns2.later_price_back, 
+  rtns2.later_dividends_accm_back,
+  rtns2.later_price_back_eq_zero, 
+  rtns2.later_divs_ret_chg,
+  rtns2.later_price_a_divs_ret_chg,   
+  -- if I can not figure out an 'effective price and dividends return change'
+  --  then just return -100.00 ( assume the company when 'out of business'): Patrick OS 
+  --      coalesce(NULL,x): right side of a left outer join
+  --    but note: this may be TOO conservative, the company(ticker) may have been brought out and engulfed ( e.g. HPQ )
+  --      but sipro does not seem to have that DIRECT engulfed information
+  coalesce(rtns2.later_eff_price_a_divs_ret_chg,-100.00) later_eff_price_a_divs_ret_chg,
+  case when scrn.sp = '500' then scrn.mktcap / scrn.sp500_tot_mktcap_wt * coalesce(rtns2.later_eff_price_a_divs_ret_chg,-100.00) 
+       else null end later_eff_price_a_divs_ret_chg_if_sp500_mktcap_wt
+
+  from (
+    select 
+    ci2.dateindex, 
+    ci2.company_id, 
+    ci2.company, 
+    ci2.ticker, 
+    ci2.sp, 
+    -- if sp500, then total market cap weight
+    -- NOTE: inline: ci_s is not related(joinable?) to ci 
+    (select sum(mktcap::numeric(15,2)) from si_psd_15705 psd_s, si_ci_15705 ci_s where psd_s.company_id = ci_s.company_id and ci_s.sp = '500' ) sp500_tot_mktcap_wt,
+    psd2.mktcap,
+    case when ci2.adr = 'f' and ci2.exchange != 'O' and perc2.rpbvps::smallint <= 20 and rat2.fscore_y1::smallint >= 8 then 't'::boolean else 'f'::boolean end f_score_winner 
+    from (
+      select ci.* from (      -- = '500' : S&P 500 Index, S&P MidCap 400, S&P SmallCap 600: mutually exclusive
+      select dateindex, company_id, company, ticker, exchange, sp, adr from si_ci_15705 
+        where company_id 
+          in ( select company_id from si_ci_15705 where company_id is not null 
+                 group by company_id having count(company_id) = 1 
+             ) 
+          --and adr = 'f'           -- f_score 1 of 4
+          --and  exchange != 'O'    -- f_score 2 of 4
+                               ) ci 
+       ) ci2, (
+      select psd.* from ( 
+      select company_id, mktcap::numeric(15,2) from si_psd_15705
+        where company_id 
+          in ( select company_id from si_psd_15705 where company_id is not null 
+                 group by company_id having count(company_id) = 1 
+             ) 
+                                    ) psd
+      ) psd2, (
+      select perc.* from (
+      select company_id, rpbvps::smallint from si_perc_15705
+        where company_id 
+          in ( select company_id from si_perc_15705 where company_id is not null 
+                 group by company_id having count(company_id) = 1 
+             ) 
+         --and rpbvps::smallint <= 20      -- f_score 3 of 4
+                                    ) perc
+      ) perc2, (
+      select rat.* from (
+      select company_id, fscore_y1::integer from si_rat_15705
+        where company_id 
+          in ( select company_id from si_rat_15705 where company_id is not null 
+                 group by company_id having count(company_id) = 1 
+             ) 
+          --and fscore_y1::smallint >= 8   -- f_score 4 of 4
+                                        ) rat
+      ) rat2
+    where 
+      ci2.company_id = psd2.company_id and
+      ci2.company_id = perc2.company_id and 
+      ci2.company_id = rat2.company_id
+  ) scrn
+  left outer join (
+  select  
+    rtns.dateindex later_dateindex,
+    rtns.company_id later_company_id, 
+    rtns.price later_price, 
+    rtns.prchg_52w later_prchg_52w, 
+    rtns.prchg_52w_eq_neg_100 later_prchg_52w_eq_neg_100,
+    rtns.price_back later_price_back, 
+    rtns.dividends_accm_back later_dividends_accm_back,
+    rtns.price_back_eq_zero later_price_back_eq_zero, 
+    rtns.divs_ret_chg later_divs_ret_chg,
+    rtns.price_a_divs_ret_chg later_price_a_divs_ret_chg,   
+    rtns.eff_price_a_divs_ret_chg later_eff_price_a_divs_ret_chg
+  from (
+    select 
+    psd.dateindex,
+    psd.company_id, 
+    psd.price, 
+    psd.prchg_52w, 
+    psd.prchg_52w_eq_neg_100, 
+    psd.price_back, isq.dividends_accm_back,
+    psd.price_back::numeric(15,2) = 0.00::numeric(15,2) price_back_eq_zero,
+                    --researved for BETTER_FUTURE_FIX edge case detection and correction
+                    --price back(ABOVE: 199 cases of 8000 (16070)) one year is zero, 
+                    --  then I CAN NOT calculate the 'relative percent % return on dividends'
+                    --  so for RIGHT NOW ( this edge case, just make 'relative dividends return change' to be NULL )
+                    (isq.dividends_accm_back / nullif(psd.price_back::numeric(15,2),0.00::numeric(15,2))) * 100 divs_ret_chg,
+    psd.prchg_52w + (isq.dividends_accm_back / nullif(psd.price_back::numeric(15,2),0.00::numeric(15,2))) * 100 price_a_divs_ret_chg,
+    -- ULTIMATE ANSWER: eff_price_a_divs_ret_chg
+    -- patch fix(FROM LINE ABOVE): if the absolute accumulated dividends is JUST zero, 
+    --  then 'relative (price and dividends return)' is JUST 'relative price return' 
+    --  otherwise: TRY to calculate the (relative price return) PLUS 'relative dividends return change'
+    -- NOTE: this (indirectly) does not TRUELY handle: prchg_52w::numeric(15,2) = -100.00::numeric(15,2)
+    --   but a 'poor company' may not pay dividends anyways
+    psd.prchg_52w::numeric(15,2) + case when isq.dividends_accm_back = 0.00::numeric(15,2) then 0.00 
+                                           else (isq.dividends_accm_back / nullif(psd.price_back::numeric(15,2),0.00::numeric(15,2))) * 100 
+                                           end eff_price_a_divs_ret_chg
+    from (
+      select 
+      dateindex,
+      company_id, 
+      price::numeric(15,2), 
+      prchg_52w::numeric(15,2), 
+                             prchg_52w::numeric(15,2) = -100.00::numeric(15,2) prchg_52w_eq_neg_100,
+                             -- prchg_52w_eq_neg_100( ABOVE: 4 cases of 9871 (16070)) is -100
+                             --   then I can not calclulate the ABSOLUTE price_back
+                             --      this problem cascades UP such that I 
+                             --      can not calculate the 'relative percent % return on dividends'
+      price::numeric/(nullif(prchg_52w::numeric(15,2),  -100.00::numeric(15,2))/100.00::numeric(15,2) + 1.00) price_back 
+      from 
+      si_psd_16070 
+        where company_id 
+          in ( select company_id from si_ci_16070 where company_id is not null 
+                 group by company_id having count(company_id) = 1 
+             )
+      ) psd,(
+      select 
+      company_id, 
+      coalesce(dps_q1::numeric(15,2),0.00::numeric(15,2))   + 
+      coalesce(dps_q2::numeric(15,2),0.00::numeric(15,2))   + 
+      coalesce(dps_q3::numeric(15,2),0.00::numeric(15,2))   + 
+      coalesce(dps_q4::numeric(15,2),0.00::numeric(15,2))   dividends_accm_back
+      from 
+        si_isq_16070 
+        where company_id 
+          in ( select company_id from si_ci_16070 where company_id is not null 
+                 group by company_id having count(company_id) = 1 
+             ) 
+      ) isq
+    where 
+      psd.company_id = isq.company_id
+  ) rtns  -- rtns where rtns.price_back_eq_zero = 't' or rtns.prchg_52w_eq_neg_100 = 't';
+                        -- 199 cases                     -- 4 cases  ( of 9871 cases in 16070 )
+  ) rtns2
+  on scrn.company_id = rtns2.later_company_id where 1 = 1
+  -- END PIOTROSKI
+  )
+  select to_timestamp(dateindex*3600*24)::date || ' ' || company_id || ' ' || mktcap || ' ' || ticker || ' ' || company as who, avg(later_price_a_divs_ret_chg) effective_ret 
+    from allofit where allofit.f_score_winner = 't' group by grouping sets ((who), ()) 
+  union all
+  select 'sp500' who, sum(later_eff_price_a_divs_ret_chg_if_sp500_mktcap_wt) 
+    from allofit
+  " -> sqlstring
+
+  sqlstring_all <- sqlstring
+  
+  sqlstring_all <- gsub("_15705", "_XXXXXX"  ,  sqlstring_all)
+  sqlstring_all <- gsub("_16070", "_YYYYYY"  ,  sqlstring_all)
+    
+  MoreDates_iter <- 1
+  MoreDates <- TRUE
+  while(MoreDates) {
+    # going from the *present* going backwards in time
+    MoreDates_iter <- MoreDates_iter - 1
+  
+    # screen date
+    new_interested_Date_integer        <- as.integer(lastWeekDayDateOfMonth( lubridate::`%m+%`( zoo::as.Date(interested_Date), base::months(MoreDates_iter))))
+  
+    # later date
+    new_later_interested_Date_integer  <- as.integer(lastWeekDayDateOfMonth( lubridate::`%m+%`( zoo::as.Date(interested_Date), base::months(MoreDates_iter+12))))
+  
+    # if no initial screen date then exit
+    if(!dbExistsTable(conn, paste0("si_ci_", new_interested_Date_integer))) { 
+      print(paste0("no initial source table ",zoo::as.Date(new_interested_Date_integer) ," ", new_interested_Date_integer))
+      break 
+    }
+  
+    # if not a 'later table' then create it ( at least I will have the company predictions)
+    # dbExistsTable # fails with zero record tables
+      if(dbGetQuery(conn, paste0("select count(*) from information_schema.tables  
+          where table_type in ('LOCAL TEMPORARY','BASE TABLE') and table_name = '","si_ci_", new_later_interested_Date_integer,"'")) == 0) {
+        
+        # empty stubs so I can run the query
+        dbGetQuery(conn, paste0("create temporary table ", "si_ci_",   new_later_interested_Date_integer, " as select * from ", "si_ci_",   new_interested_Date_integer, " where 1 = 0" ))
+        dbGetQuery(conn, paste0("create temporary table ", "si_psd_",  new_later_interested_Date_integer, " as select * from ", "si_psd_",  new_interested_Date_integer, " where 1 = 0" ))  
+        dbGetQuery(conn, paste0("create temporary table ", "si_perc_", new_later_interested_Date_integer, " as select * from ", "si_perc_", new_interested_Date_integer, " where 1 = 0" ))
+        dbGetQuery(conn, paste0("create temporary table ", "si_rat_",  new_later_interested_Date_integer, " as select * from ", "si_rat_",  new_interested_Date_integer, " where 1 = 0" ))
+        dbGetQuery(conn, paste0("create temporary table ", "si_isq_",  new_later_interested_Date_integer, " as select * from ", "si_isq_",  new_interested_Date_integer, " where 1 = 0" ))
+      
+      }
+      
+      sqlstring_all <- gsub("_XXXXXX", paste0("_", new_interested_Date_integer      ),  sqlstring_all)
+      sqlstring_all <- gsub("_YYYYYY", paste0("_", new_later_interested_Date_integer),  sqlstring_all)
+  
+      print(paste0("new_interested_Date_integer: ",       as.character(zoo::as.Date(new_interested_Date_integer))))
+      print(paste0("new_later_interested_Date_integer: ", as.character(zoo::as.Date(new_later_interested_Date_integer))))
+      
+      result <- dbGetQuery(conn, sqlstring_all)
+      print(left_just(result))
+      
+      # back to original
+      sqlstring_all <- gsub(paste0("_", new_interested_Date_integer      ), "_XXXXXX",  sqlstring_all)
+      sqlstring_all <- gsub(paste0("_", new_later_interested_Date_integer), "_YYYYYY",  sqlstring_all)
+
+  }
+  
+  # update search path
+  dbGetQuery(conn, paste0("set search_path to ", osp))
+  
+  # update time zone
+  dbGetQuery(conn, paste0("set time zone '",ost,"'"))
+
+  return(invisible())
+  
+}
+
+# testing
+# massAAIISIProIterScreenFScore(conn, asOfDate = zoo::as.Date(15705) + 2)
+# testing
+# massAAIISIProIterScreenFScore(conn, asOfDate = zoo::as.Date("2011-12-30") + 2)
+# testing
+# massAAIISIProIterScreenFScore(conn, asOfDate = zoo::as.Date("2012-12-31") + 2) # HERE #
+# testing
+# massAAIISIProIterScreenFScore(conn, asOfDate = zoo::as.Date("2013-12-31") + 2) # HERE #
+# testing
+# massAAIISIProIterScreenFScore(conn, asOfDate = zoo::as.Date("2014-12-31") + 2)
+# running
+# massAAIISIProIterScreenFScore(conn)
 
 
 
@@ -2799,9 +3159,9 @@ data_processing_from_Excel4 <- function(universecoll = NULL, quickdebug = FALSE,
 
 bookmarkhere <- 1   
 
-# 
-#              
-#                                                                                                                               
+#      
+#                   
+#                                                                                                                                             
 
 
 
