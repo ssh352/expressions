@@ -396,6 +396,13 @@ conn <- dbConnect(drv, user="postgres", password="postgres", port = 5432, dbname
 # 
 # # prefers schema.table ??
 # # MUST be RAN as a pgScript ( in pgAdminIII )
+
+# ost <- dbGetQuery(conn,"show time zone")[[1]]
+# osp <- dbGetQuery(conn,"show search_path")[[1]]
+# # update search path
+# dbGetQuery(conn, paste0("set search_path to sipro_stage, ", osp) )
+# # update time zone
+# dbGetQuery(conn, "set time zone 'utc'")
 # sapply(sort(dbListTables(conn)), function(x,cn) { 
 #   if(x != "atable" ) {
 #     # browser()
@@ -406,10 +413,37 @@ conn <- dbConnect(drv, user="postgres", password="postgres", port = 5432, dbname
 #     NULL 
 #   } 
 #   return(invisible())
-# }, cn = conn ) -> X; invisible(); rm(X)
+# }, cn = conn ) -> X; invisible(); rm(X) 
+# # update search path
+# dbGetQuery(conn, paste0("set search_path to ", osp))
+# # update time zone
+# dbGetQuery(conn, paste0("set time zone '",ost,"'"))
+  
+  
 
-massAAIISIProIterScreenFScore  <- function(conn, asOfDate = Sys.Date()) { 
+massAAIISIProIterScreenFScore  <- function(conn, 
+                                           asOfDate = Sys.Date(), 
+                                           earliest_asOfDate = Sys.Date() - 365 * 10 + 3,
+                                           fscore     = "fscore_y1",
+                                           fscore_min =         "8",
+                                           print_sqlstring = FALSE
+                                           ) { 
 
+  # # ANDRE some experince: falls below $2.00/share 
+  # #  then gets de-listed but does not go 'Over-The-Counter'
+  # 
+  # This data no longer exists!
+  # Why?
+  # 1) The entity/company is now private ( GETS ABSORBED: Happens )
+  # 2) This entity was delisted
+  # 3) This entity has filed for bankruptcy
+  # If none of these reasons seem applicable, please let us 
+  # 
+  # http://www.wikinvest.com/stock/Banks.com_Inc_(BNX)
+  # 
+  # BNX is defunct.
+  # http://seekingalpha.com/symbol/BNX
+  
   ost <- dbGetQuery(conn,"show time zone")[[1]]
 
   osp <- dbGetQuery(conn,"show search_path")[[1]]
@@ -511,10 +545,15 @@ massAAIISIProIterScreenFScore  <- function(conn, asOfDate = Sys.Date()) {
       ci2.company_id = perc2.company_id and 
       ci2.company_id = rat2.company_id
   ) scrn
+  -- note: if the future value (means no future company record) does not exist, 
+  -- by left outer join rules its RIGHT side empty value is SQL(NULL), R(NA)
+  --   that means effective_ret is NULL/NA ( I have 'NOT YET' changed this to some OTHER value
+  --   e.g. 0.00, -100.00 or galaxy, universe, sector, or industry average or whatever.
   left outer join (
   select  
     rtns.dateindex later_dateindex,
     rtns.company_id later_company_id, 
+    rtns.ticker later_ticker, 
     rtns.price later_price, 
     rtns.prchg_52w later_prchg_52w, 
     rtns.prchg_52w_eq_neg_100 later_prchg_52w_eq_neg_100,
@@ -528,6 +567,7 @@ massAAIISIProIterScreenFScore  <- function(conn, asOfDate = Sys.Date()) {
     select 
     psd.dateindex,
     psd.company_id, 
+    ci.ticker,
     psd.price, 
     psd.prchg_52w, 
     psd.prchg_52w_eq_neg_100, 
@@ -563,7 +603,7 @@ massAAIISIProIterScreenFScore  <- function(conn, asOfDate = Sys.Date()) {
       from 
       si_psd_16070 
         where company_id 
-          in ( select company_id from si_ci_16070 where company_id is not null 
+          in ( select company_id from si_psd_16070 where company_id is not null 
                  group by company_id having count(company_id) = 1 
              )
       ) psd,(
@@ -576,16 +616,32 @@ massAAIISIProIterScreenFScore  <- function(conn, asOfDate = Sys.Date()) {
       from 
         si_isq_16070 
         where company_id 
+          in ( select company_id from si_isq_16070 where company_id is not null 
+                 group by company_id having count(company_id) = 1 
+             ) 
+      ) isq ,(  -- need ci.ticker because at 15184 - 2011-07-29 -> old company_id changed to the new company_id
+      select    -- so future performance joins on ticker to ticker_later in a 12 month span ( to determine future returns )
+      company_id, 
+      ticker
+      from 
+        si_ci_16070 
+        where company_id 
           in ( select company_id from si_ci_16070 where company_id is not null 
                  group by company_id having count(company_id) = 1 
              ) 
-      ) isq
+      ) ci
     where 
-      psd.company_id = isq.company_id
+      -- psd.company_id = isq.company_id
+      ci.company_id  = psd.company_id and
+      ci.company_id  = isq.company_id and
+      psd.company_id = isq.company_id 
   ) rtns  -- rtns where rtns.price_back_eq_zero = 't' or rtns.prchg_52w_eq_neg_100 = 't';
                         -- 199 cases                     -- 4 cases  ( of 9871 cases in 16070 )
-  ) rtns2
-  on scrn.company_id = rtns2.later_company_id where 1 = 1
+  ) rtns2 -- at 2011-07-29(15184) the company_id changes 
+          -- so all past companies back and 'through and including' 2010-07-30(14820) match on ticker = later_ticker
+  on ( select case when (14819+1) < substr('_15705', 2, 6)::int and substr('_15705', 2, 6)::int < (15185-1) then  scrn.ticker       else  scrn.company_id       end )  = 
+     ( select case when (14819+1) < substr('_15705', 2, 6)::int and substr('_15705', 2, 6)::int < (15185-1) then rtns2.later_ticker else rtns2.later_company_id end ) 
+     where 1 = 1
   -- END PIOTROSKI
   )
   select to_timestamp(dateindex*3600*24)::date || ' ' || company_id || ' ' || mktcap || ' ' || ticker || ' ' || company as who, avg(later_price_a_divs_ret_chg) effective_ret 
@@ -600,6 +656,20 @@ massAAIISIProIterScreenFScore  <- function(conn, asOfDate = Sys.Date()) {
   sqlstring_all <- gsub("_15705", "_XXXXXX"  ,  sqlstring_all)
   sqlstring_all <- gsub("_16070", "_YYYYYY"  ,  sqlstring_all)
     
+  # if(fscore == "fscore_y1") # then, do nothing, this is the default 
+  if(fscore == "fscore_12m") { 
+    sqlstring_all <- gsub("fscore_y1", "fscore_12m",  sqlstring_all)
+  }
+  print(paste0("fscore == " ,"'", fscore,"'"))
+  print("")
+  
+  # if(fscore_min == "8") # then, do nothing, this is the default
+  if(fscore_min == "9") {
+    sqlstring_all <- gsub(paste0(fscore,"::smallint >= 8"), paste0(fscore,"::smallint >= 9"),  sqlstring_all)
+  }
+  print(paste0("fscore_min ==  " ,"'", fscore_min,"'"))
+  print("")
+  
   MoreDates_iter <- 1
   MoreDates <- TRUE
   while(MoreDates) {
@@ -609,14 +679,26 @@ massAAIISIProIterScreenFScore  <- function(conn, asOfDate = Sys.Date()) {
     # screen date
     new_interested_Date_integer        <- as.integer(lastWeekDayDateOfMonth( lubridate::`%m+%`( zoo::as.Date(interested_Date), base::months(MoreDates_iter))))
   
+    # if earlier than earliest_asOfDate
+    if(zoo::as.Date(new_interested_Date_integer) < earliest_asOfDate) { 
+      print(paste0(zoo::as.Date(new_interested_Date_integer) ," ", new_interested_Date_integer,
+                          " new_interested_Date is earlier than earliest_asOfDate: "," ", 
+                          earliest_asOfDate, " ", as.integer(earliest_asOfDate), " so stopping."
+      ))
+      break 
+    }
+    
+    # if no initial screen date then exit
+    if(!dbExistsTable(conn, paste0("si_ci_", new_interested_Date_integer))) { 
+      print(paste0("no initial source table: ",zoo::as.Date(new_interested_Date_integer) ," ", new_interested_Date_integer))
+      break 
+    }
+    
+    
     # later date
     new_later_interested_Date_integer  <- as.integer(lastWeekDayDateOfMonth( lubridate::`%m+%`( zoo::as.Date(interested_Date), base::months(MoreDates_iter+12))))
   
-    # if no initial screen date then exit
-    if(!dbExistsTable(conn, paste0("si_ci_", new_interested_Date_integer))) { 
-      print(paste0("no initial source table ",zoo::as.Date(new_interested_Date_integer) ," ", new_interested_Date_integer))
-      break 
-    }
+
   
     # if not a 'later table' then create it ( at least I will have the company predictions)
     # dbExistsTable # fails with zero record tables
@@ -635,8 +717,11 @@ massAAIISIProIterScreenFScore  <- function(conn, asOfDate = Sys.Date()) {
       sqlstring_all <- gsub("_XXXXXX", paste0("_", new_interested_Date_integer      ),  sqlstring_all)
       sqlstring_all <- gsub("_YYYYYY", paste0("_", new_later_interested_Date_integer),  sqlstring_all)
   
-      print(paste0("new_interested_Date_integer: ",       as.character(zoo::as.Date(new_interested_Date_integer))))
-      print(paste0("new_later_interested_Date_integer: ", as.character(zoo::as.Date(new_later_interested_Date_integer))))
+      #  "2012-12-31" == 15705
+      if(print_sqlstring == TRUE) print(writeLines(sqlstring_all))
+      
+      print(paste0("new_interested_Date: ",       as.character(zoo::as.Date(new_interested_Date_integer)), " ", new_interested_Date_integer))
+      print(paste0("new_later_interested_Date: ", as.character(zoo::as.Date(new_later_interested_Date_integer)), " ", new_later_interested_Date_integer))
       
       result <- dbGetQuery(conn, sqlstring_all)
       print(left_just(result))
@@ -657,7 +742,7 @@ massAAIISIProIterScreenFScore  <- function(conn, asOfDate = Sys.Date()) {
   
 }
 
-# testing
+# testing 
 # massAAIISIProIterScreenFScore(conn, asOfDate = zoo::as.Date(15705) + 2)
 # testing
 # massAAIISIProIterScreenFScore(conn, asOfDate = zoo::as.Date("2011-12-30") + 2)
@@ -669,9 +754,20 @@ massAAIISIProIterScreenFScore  <- function(conn, asOfDate = Sys.Date()) {
 # massAAIISIProIterScreenFScore(conn, asOfDate = zoo::as.Date("2014-12-31") + 2)
 # running
 # massAAIISIProIterScreenFScore(conn)
-
-
-
+# 
+# con <- file(paste0("OUTPUT_fscore_12m", ".txt"));sink(con);sink(con, type="message")
+# 
+# massAAIISIProIterScreenFScore(conn, fscore = "fscore_12m")
+# 
+# sink();sink(type="message");close(con)
+#  
+# massAAIISIProIterScreenFScore(conn, fscore = "fscore_12m", fscore_min = "9")
+#
+# massAAIISIProIterScreenFScore(conn, asOfDate = zoo::as.Date("2012-12-31") + 2, earliest_asOfDate =  zoo::as.Date("2012-12-31") -1, print_sqlstring = TRUE)
+# 
+# FUTURE NAs
+# massAAIISIProIterScreenFScore(conn, asOfDate = zoo::as.Date("2011-02-28") + 2, earliest_asOfDate =  zoo::as.Date("2011-02-28") -1, print_sqlstring = TRUE)
+# 
 
 
 # depends upon  DESCRIPTION Imports foreign
@@ -3160,8 +3256,8 @@ data_processing_from_Excel4 <- function(universecoll = NULL, quickdebug = FALSE,
 bookmarkhere <- 1   
 
 #      
-#                   
-#                                                                                                                                             
+#                    
+#                                                                                                                                                                   
 
 
 
