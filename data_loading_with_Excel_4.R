@@ -420,6 +420,97 @@ conn <- dbConnect(drv, user="postgres", password="postgres", port = 5432, dbname
 # dbGetQuery(conn, paste0("set time zone '",ost,"'"))
   
   
+# WAS not worth the TIME: I forgot that I already indexed by company_id
+massAAIIinstallOtherCommonIndexes <- function(conn, 
+  tabl_regex_expr    = "_\\d+$", #  specific month  _######$
+  interested_columns = c("adr","country","exchange", "ind_2_dig", "ind_3_dig","mg_code", "mktcap") 
+  ) { 
+
+  # make sure autovacuum is turned on(default) ***IMPORTANT **
+  # select * from pg_settings where name like 'autovacuum%';
+
+  ost <- dbGetQuery(conn,"show time zone")[[1]]
+  osp <- dbGetQuery(conn,"show search_path")[[1]]
+  
+  # update search path
+  dbGetQuery(conn, paste0("set search_path to sipro_stage") )
+  # update time zone
+  dbGetQuery(conn, "set time zone 'utc'")
+
+  tables <- dbListTables(conn)
+  
+   #  specific month  _######$
+  interested_tables <- sort(tables[grepl(tabl_regex_expr,tables)])
+  interested_tables_length <- length(interested_tables)
+  interested_tables_length_index <- 0
+  for (interested_table in interested_tables) {
+    interested_tables_length_index <- interested_tables_length_index + 1
+    cat(paste0("Begin interested_table: ", interested_table, 
+             " number ", interested_tables_length_index,
+             " of ", interested_tables_length,
+             "\n"))
+    
+    for( interested_column in interested_columns) {
+       cat(paste0("  Begin interested_column: ", interested_column, " of ", interested_table,"\n"))
+
+      if(interested_column %in% dbListFields(conn, interested_table)) {
+          col_exists_ind <- 1 
+      } else {
+          col_exists_ind <- 0 
+      }
+      
+      #       stmt_col_exists <- gsub("your_table", interested_table, gsub("your_column", interested_column,"
+      #           select count(*) 
+      #             from information_schema.columns 
+      #               where table_name='your_table' and column_name='your_column'
+      #       "))
+    
+      #       col_exists_ind <- NULL
+      #       col_exists_ind <- dbGetQuery(conn, stmt_col_exists)[[1]]
+      
+      # column exists indicator
+      if(col_exists_ind == 1) {
+      
+        stmt_col_index_create <-  gsub("your_table", interested_table, gsub("your_column", interested_column,
+                                  "create index if not exists your_table_your_column_idx on your_table(your_column)"))
+        cat(noquote(stmt_col_index_create),"\n")
+        try( { dbGetQuery(conn, stmt_col_index_create) }, silent = TRUE )
+    
+      }
+      
+      # little extra
+      if(interested_column == "mg_code" && col_exists_ind == 1) {
+        
+        stmt_col_substr_index_create <- gsub("your_table", interested_table, gsub("your_column", interested_column, 
+                                        "create index if not exists your_table__your_column_substr_1_2_idx on your_table(substring(your_column,1,2))"))
+        cat(noquote(stmt_col_substr_index_create),"\n")  
+        try( { dbGetQuery(conn, stmt_col_substr_index_create) }, silent = TRUE )
+
+      }
+      
+    cat(paste0("  End interested_column: ", interested_column,"\n"))
+    }
+    
+  cat(paste0("End interested_table: ", interested_table,"\n"))
+  }
+
+  # update search path
+  dbGetQuery(conn, paste0("set search_path to ", osp))
+  # update time zone
+  dbGetQuery(conn, paste0("set time zone '",ost,"'"))
+  
+  return(invisible())
+
+}
+
+# con <- file(paste0("OUTPUT_massAAIIinstallCommonIndexes", ".txt"));sink(con);sink(con, type="message")
+# 
+# massAAIIinstallOtherCommonIndexes(conn)
+# 
+# sink();sink(type="message");close(con)
+
+
+
 
 massAAIISIProIterScreenFScore  <- function(conn, 
                                            asOfDate = Sys.Date(), 
@@ -3256,8 +3347,8 @@ data_processing_from_Excel4 <- function(universecoll = NULL, quickdebug = FALSE,
 bookmarkhere <- 1   
 
 #      
-#                    
-#                                                                                                                                                                   
+#                        
+#                                                                                                                                                                           
 
 
 
