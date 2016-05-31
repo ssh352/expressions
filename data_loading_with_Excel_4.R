@@ -861,6 +861,487 @@ massAAIISIProIterScreenFScore  <- function(conn,
 # 
 
 
+
+massAAIISIProIterScreenOSME  <- function(conn, 
+                                           asOfDate = Sys.Date(), 
+                                           earliest_asOfDate = Sys.Date() - 365 * 10 + 3,
+                                           print_sqlstring = FALSE
+                                           ) { 
+
+  # # ANDRE some experince: falls below $2.00/share 
+  # #  then gets de-listed but does not go 'Over-The-Counter'
+  # 
+  # This data no longer exists!
+  # Why?
+  # 1) The entity/company is now private ( GETS ABSORBED: Happens )
+  # 2) This entity was delisted
+  # 3) This entity has filed for bankruptcy
+  # If none of these reasons seem applicable, please let us 
+  # 
+  # http://www.wikinvest.com/stock/Banks.com_Inc_(BNX)
+  # 
+  # BNX is defunct.
+  # http://seekingalpha.com/symbol/BNX
+  
+  ost <- dbGetQuery(conn,"show time zone")[[1]]
+
+  osp <- dbGetQuery(conn,"show search_path")[[1]]
+
+  # update search path
+  dbGetQuery(conn, paste0("set search_path to sipro_stage, ", osp) )
+
+  # update time zone
+  dbGetQuery(conn, "set time zone 'utc'")
+  print(dbGetQuery(conn, "show time zone"))
+  
+  # previous last weekday of last month 
+  interested_Date <- if( asOfDate < (lastWeekDayDateOfMonth(asOfDate) + 1) ) { lastWeekDayDateOfMonth( lubridate::`%m+%`(asOfDate, base::months(-1)))  } else {  lastWeekDayDateOfMonth(asOfDate)  }
+    
+  "
+  with allofit as (
+  -- BEGIN PIOTROSKI
+  select
+  --set search_path=sipro_stage, pg_catalog, public; show search_path;
+  scrn.dateindex, 
+  scrn.company_id, 
+  scrn.company, 
+  scrn.ticker, 
+  scrn.sp, 
+  scrn.mktcap,
+  scrn.me_pctrk,
+  case when rtns2.later_dateindex is not null then 't'::boolean else 'f'::boolean end later_dateindex_found,
+  rtns2.later_dateindex,
+  rtns2.later_company_id, 
+  rtns2.later_price, 
+  rtns2.later_prchg_52w, 
+  rtns2.later_prchg_52w_eq_neg_100,
+  rtns2.later_price_back, 
+  rtns2.later_dividends_accm_back,
+  rtns2.later_price_back_eq_zero, 
+  rtns2.later_divs_ret_chg,
+  rtns2.later_price_a_divs_ret_chg,   
+  -- if I can not figure out an 'effective price and dividends return change'
+  --  then just return -100.00 ( assume the company when 'out of business'): Patrick OS 
+  --      coalesce(NULL,x): right side of a left outer join
+  --    but note: this may be TOO conservative, the company(ticker) may have been brought out and engulfed ( e.g. HPQ )
+  --      but sipro does not seem to have that DIRECT engulfed information
+  coalesce(rtns2.later_eff_price_a_divs_ret_chg,-100.00) later_eff_price_a_divs_ret_chg,
+  case when scrn.sp = '500' then scrn.mktcap / scrn.sp500_tot_mktcap_wt * coalesce(rtns2.later_eff_price_a_divs_ret_chg,-100.00) 
+  else null end later_eff_price_a_divs_ret_chg_if_sp500_mktcap_wt
+
+  from (
+
+  select
+  scrn4.dateindex, 
+  scrn4.company_id, 
+  scrn4.company, 
+  scrn4.ticker, 
+  scrn4.sp, 
+  scrn4.adr,
+  scrn4.exchange,
+  scrn4.sp500_tot_mktcap_wt,
+  scrn4.mktcap,
+  scrn4.me_value,
+    scrn4.me_value_pctrk,
+  scrn4.me_earn_qual,
+    scrn4.me_earn_qual_pctrk,
+  scrn4.me_shr_orien,
+    scrn4.me_shr_orien_pctrk,
+  scrn4.equity_q1,
+  scrn4.me_ret_inv_cap,
+    scrn4.me_ret_inv_cap_pctrk,
+  scrn4.me_26w_prc_momntm,
+    scrn4.me_26w_prc_momntm_pctrk,
+
+  scrn4.me_value_pctrk + scrn4.me_earn_qual_pctrk + scrn4.me_shr_orien_pctrk + scrn4.me_ret_inv_cap_pctrk + scrn4.me_26w_prc_momntm_pctrk me_pctrk
+
+  from (
+  select 
+  scrn3.dateindex, 
+  scrn3.company_id, 
+  scrn3.company, 
+  scrn3.ticker, 
+  scrn3.sp, 
+  scrn3.adr,
+  scrn3.exchange,
+  scrn3.sp500_tot_mktcap_wt,
+  scrn3.mktcap,
+  scrn3.me_value,
+          -- ** SOLUTION ** --
+          -- ONLY NOT obfuscates 'my criteria'        # partitions twice(boolean): once on 'my criteria' and once not on 'my criteria'
+
+         -- value criteria: higher # is better ( lesser # rank )
+         case when                                     scrn3.me_value is not null and scrn3.adr = 'f' and scrn3.exchange != 'O' and scrn3.mktcap >= 200.00 
+         then       percent_rank() over (partition by (scrn3.me_value is not null and scrn3.adr = 'f' and scrn3.exchange != 'O' and scrn3.mktcap >= 200.00 ) order by scrn3.me_value desc) * 100.00 
+         else null end  me_value_pctrk,
+
+  scrn3.me_earn_qual,
+
+         -- earn_qual criteria: higher # is better ( lesser # rank )
+         case when                                     scrn3.me_earn_qual is not null and scrn3.adr = 'f' and scrn3.exchange != 'O' and scrn3.mktcap >= 200.00 
+         then       percent_rank() over (partition by (scrn3.me_earn_qual is not null and scrn3.adr = 'f' and scrn3.exchange != 'O' and scrn3.mktcap >= 200.00 ) order by scrn3.me_earn_qual desc) * 100.00 
+         else null end  me_earn_qual_pctrk,
+
+  scrn3.me_shr_orien,
+
+         -- me_shr_orien criteria: LOWER(-1 at source) # is better ( lesser # rank )
+         case when                                     scrn3.me_shr_orien is not null and scrn3.adr = 'f' and scrn3.exchange != 'O' and scrn3.mktcap >= 200.00 
+         then       percent_rank() over (partition by (scrn3.me_shr_orien is not null and scrn3.adr = 'f' and scrn3.exchange != 'O' and scrn3.mktcap >= 200.00 ) order by scrn3.me_shr_orien desc) * 100.00 
+         else null end  me_shr_orien_pctrk,
+
+  scrn3.equity_q1,
+
+  scrn3.me_ret_inv_cap,
+
+         -- earn_qual criteria: higher # is better ( lesser # rank )
+         case when                                     scrn3.me_ret_inv_cap is not null and scrn3.adr = 'f' and scrn3.exchange != 'O' and scrn3.mktcap >= 200.00 
+         then       percent_rank() over (partition by (scrn3.me_ret_inv_cap is not null and scrn3.adr = 'f' and scrn3.exchange != 'O' and scrn3.mktcap >= 200.00 ) order by scrn3.me_ret_inv_cap desc) * 100.00 
+         else null end  me_ret_inv_cap_pctrk,
+
+  scrn3.me_26w_prc_momntm,
+
+         -- me_me_26w_prc_momntm: higher # is better ( lesser # rank )
+         case when                                     scrn3.me_26w_prc_momntm is not null and scrn3.adr = 'f' and scrn3.exchange != 'O' and scrn3.mktcap >= 200.00 
+         then       percent_rank() over (partition by (scrn3.me_26w_prc_momntm is not null and scrn3.adr = 'f' and scrn3.exchange != 'O' and scrn3.mktcap >= 200.00 ) order by scrn3.me_26w_prc_momntm desc) * 100.00 
+         else null end  me_26w_prc_momntm_pctrk
+
+  from (
+      select 
+      ci2.dateindex, 
+      ci2.company_id, 
+      ci2.company, 
+      ci2.ticker, 
+      ci2.sp, 
+      ci2.adr,
+      ci2.exchange,
+
+      -- if sp500, then total market cap weight
+      -- NOTE: inline: ci_s is not related(joinable?) to ci 
+      (select sum(mktcap::numeric(15,2)) from si_psd_15705 psd_s, si_ci_15705 ci_s where psd_s.company_id = ci_s.company_id and ci_s.sp = '500' ) sp500_tot_mktcap_wt,
+
+      -- value criteria: higher # is better ( lesser # rank )
+      case when ( dividends_accm  + fcfps_accm ) = 0.00::numeric(15,2) and psd2.mktcap = 0.00::numeric(15,2) then null else ( dividends_accm  + fcfps_accm )/ nullif(psd2.mktcap, 0.00::numeric(15,2))  end me_value,
+
+      -- earn_qual criteria: higher # is better ( lesser # rank )
+      ( cfq2.tco_accm - isq2.netinc_accm ) / nullif(psd2.mktcap, 0.00::numeric(15,2)) me_earn_qual,
+
+      -- shr_orien criteria: LOWER(-1 at source) # is better ( lesser # rank )
+                     -1.0 * cfq2.tcf_accm / nullif(psd2.mktcap, 0.00::numeric(15,2)) me_shr_orien,
+
+      bsq2.equity_q1,
+
+      -- me_ret_inv_cap: higher # is better ( lesser # rank )
+             isq2.epsdc_accm * psd2.shr_aq1  / nullif(bsq2.book_den, 0.00::numeric(15,2)) me_ret_inv_cap,
+
+      -- me_me_26w_prc_momntm: higher # is better ( lesser # rank )
+      psd2.prchg_26w me_26w_prc_momntm,
+
+      psd2.mktcap
+      from (
+        select ci.* from (      -- = '500' : S&P 500 Index, S&P MidCap 400, S&P SmallCap 600: mutually exclusive
+        select dateindex, company_id, company, ticker, exchange, sp, adr
+        from si_ci_15705 
+          where company_id 
+            in ( select company_id from si_ci_15705 where company_id is not null 
+                   group by company_id having count(company_id) = 1 
+               ) 
+                                      ) ci 
+         ) ci2, (
+        select psd.* from ( 
+        select company_id, mktcap::numeric(15,2), shr_aq1::numeric(15,2), prchg_26w::numeric(15,2)
+        from si_psd_15705
+          where company_id 
+            in ( select company_id from si_psd_15705 where company_id is not null 
+                   group by company_id having count(company_id) = 1 
+               ) 
+                                      ) psd
+        ) psd2, (
+        select isq.* from (
+        select company_id,
+        coalesce(dps_q1::numeric(15,2),0.00::numeric(15,2))   + 
+        coalesce(dps_q2::numeric(15,2),0.00::numeric(15,2))   + 
+        coalesce(dps_q3::numeric(15,2),0.00::numeric(15,2))   + 
+        coalesce(dps_q4::numeric(15,2),0.00::numeric(15,2))   dividends_accm,
+        coalesce(netinc_q1::numeric(15,2),0.00::numeric(15,2))   + 
+        coalesce(netinc_q2::numeric(15,2),0.00::numeric(15,2))   + 
+        coalesce(netinc_q3::numeric(15,2),0.00::numeric(15,2))   + 
+        coalesce(netinc_q4::numeric(15,2),0.00::numeric(15,2))   netinc_accm,
+        coalesce(epsdc_q1::numeric(15,2),0.00::numeric(15,2))   + 
+        coalesce(epsdc_q2::numeric(15,2),0.00::numeric(15,2))   + 
+        coalesce(epsdc_q3::numeric(15,2),0.00::numeric(15,2))   + 
+        coalesce(epsdc_q4::numeric(15,2),0.00::numeric(15,2))   epsdc_accm
+        from si_isq_15705
+          where company_id 
+            in ( select company_id from si_isq_15705 where company_id is not null 
+                   group by company_id having count(company_id) = 1 
+               ) 
+                                      ) isq
+        ) isq2, (
+        select cfq.* from (
+        select company_id,
+        coalesce(fcfps_q1::numeric(15,2),0.00::numeric(15,2))   + 
+        coalesce(fcfps_q2::numeric(15,2),0.00::numeric(15,2))   + 
+        coalesce(fcfps_q3::numeric(15,2),0.00::numeric(15,2))   + 
+        coalesce(fcfps_q4::numeric(15,2),0.00::numeric(15,2))   fcfps_accm,
+        coalesce(tco_q1::numeric(15,2),0.00::numeric(15,2))   + 
+        coalesce(tco_q2::numeric(15,2),0.00::numeric(15,2))   + 
+        coalesce(tco_q3::numeric(15,2),0.00::numeric(15,2))   + 
+        coalesce(tco_q4::numeric(15,2),0.00::numeric(15,2))   tco_accm,
+        coalesce(tcf_q1::numeric(15,2),0.00::numeric(15,2))   + 
+        coalesce(tcf_q2::numeric(15,2),0.00::numeric(15,2))   + 
+        coalesce(tcf_q3::numeric(15,2),0.00::numeric(15,2))   + 
+        coalesce(tcf_q4::numeric(15,2),0.00::numeric(15,2))   tcf_accm
+        from si_cfq_15705
+          where company_id 
+            in ( select company_id from si_cfq_15705 where company_id is not null 
+                   group by company_id having count(company_id) = 1 
+               ) 
+                                       ) cfq
+        ) cfq2, (
+        select bsq.* from (
+        select company_id, coalesce(equity_q1::numeric(15,2),0.00::numeric(15,2)) equity_q1, -- sanity check
+                           --I do not like: equity can be negative
+                           --abs value: punish a company for having negative equity ( andre patch )
+                           abs(coalesce(equity_q1::numeric(15,2),0.00::numeric(15,2))) +    
+                           coalesce(liab_q1::numeric(15,2),0.00::numeric(15,2))    -
+                           coalesce(cash_q1::numeric(15,2),0.00::numeric(15,2))    book_den
+        from si_bsq_15705
+          where company_id 
+            in ( select company_id from si_bsq_15705 where company_id is not null 
+                   group by company_id having count(company_id) = 1 
+               ) 
+                                      ) bsq
+        ) bsq2
+      where 
+        ci2.company_id = psd2.company_id and
+        ci2.company_id = isq2.company_id and 
+        ci2.company_id = cfq2.company_id and
+        ci2.company_id = bsq2.company_id
+        
+  ) scrn3  -- order by scrn3.mktcap desc              -- just for testing visualization: production does not have these restrictions
+  ) scrn4  -- order by me_pctrk nulls last -- limit 5      -- order by scrn4.me_ret_inv_cap_pctrk nulls last -- where scrn4.me_value_pctrk2 < 1.00 order by scrn4.me_value_pctrk2  -- where scrn4.me_value_pctrk is not null  -- just for testing visualization: production does not have these restrictions
+  ) scrn
+  -- note: if the future value (means no future company record) does not exist, 
+  -- by left outer join rules its RIGHT side empty value is SQL(NULL), R(NA)
+  --   that means effective_ret is NULL/NA ( I have 'NOT YET' changed this to some OTHER value
+  --   e.g. 0.00, -100.00 or galaxy, universe, sector, or industry average or whatever.
+  left outer join (
+  select  
+  rtns.dateindex later_dateindex,
+  rtns.company_id later_company_id, 
+  rtns.ticker later_ticker, 
+  rtns.price later_price, 
+  rtns.prchg_52w later_prchg_52w, 
+  rtns.prchg_52w_eq_neg_100 later_prchg_52w_eq_neg_100,
+  rtns.price_back later_price_back, 
+  rtns.dividends_accm_back later_dividends_accm_back,
+  rtns.price_back_eq_zero later_price_back_eq_zero, 
+  rtns.divs_ret_chg later_divs_ret_chg,
+  rtns.price_a_divs_ret_chg later_price_a_divs_ret_chg,   
+  rtns.eff_price_a_divs_ret_chg later_eff_price_a_divs_ret_chg
+  from (
+  select 
+  psd.dateindex,
+  psd.company_id, 
+  ci.ticker,
+  psd.price, 
+  psd.prchg_52w, 
+  psd.prchg_52w_eq_neg_100, 
+  psd.price_back, isq.dividends_accm_back,
+  psd.price_back::numeric(15,2) = 0.00::numeric(15,2) price_back_eq_zero,
+              --researved for BETTER_FUTURE_FIX edge case detection and correction
+              --price back(ABOVE: 199 cases of 8000 (16070)) one year is zero, 
+              --  then I CAN NOT calculate the 'relative percent % return on dividends'
+              --  so for RIGHT NOW ( this edge case, just make 'relative dividends return change' to be NULL )
+              (isq.dividends_accm_back / nullif(psd.price_back::numeric(15,2),0.00::numeric(15,2))) * 100 divs_ret_chg,
+  psd.prchg_52w + (isq.dividends_accm_back / nullif(psd.price_back::numeric(15,2),0.00::numeric(15,2))) * 100 price_a_divs_ret_chg,
+  -- ULTIMATE ANSWER: eff_price_a_divs_ret_chg
+  -- patch fix(FROM LINE ABOVE): if the absolute accumulated dividends is JUST zero, 
+  --  then 'relative (price and dividends return)' is JUST 'relative price return' 
+  --  otherwise: TRY to calculate the (relative price return) PLUS 'relative dividends return change'
+  -- NOTE: this (indirectly) does not TRUELY handle: prchg_52w::numeric(15,2) = -100.00::numeric(15,2)
+  --   but a 'poor company' may not pay dividends anyways
+  psd.prchg_52w::numeric(15,2) + case when isq.dividends_accm_back = 0.00::numeric(15,2) then 0.00 
+                                     else (isq.dividends_accm_back / nullif(psd.price_back::numeric(15,2),0.00::numeric(15,2))) * 100 
+                                     end eff_price_a_divs_ret_chg
+  from (
+  select 
+  dateindex,
+  company_id, 
+  price::numeric(15,2), 
+  prchg_52w::numeric(15,2), 
+                       prchg_52w::numeric(15,2) = -100.00::numeric(15,2) prchg_52w_eq_neg_100,
+                       -- prchg_52w_eq_neg_100( ABOVE: 4 cases of 9871 (16070)) is -100
+                       --   then I can not calclulate the ABSOLUTE price_back
+                       --      this problem cascades UP such that I 
+                       --      can not calculate the 'relative percent % return on dividends'
+  price::numeric/(nullif(prchg_52w::numeric(15,2),  -100.00::numeric(15,2))/100.00::numeric(15,2) + 1.00) price_back 
+  from 
+  si_psd_16070 
+  where company_id 
+    in ( select company_id from si_psd_16070 where company_id is not null 
+           group by company_id having count(company_id) = 1 
+       )
+  ) psd,(
+  select 
+  company_id, 
+  coalesce(dps_q1::numeric(15,2),0.00::numeric(15,2))   + 
+  coalesce(dps_q2::numeric(15,2),0.00::numeric(15,2))   + 
+  coalesce(dps_q3::numeric(15,2),0.00::numeric(15,2))   + 
+  coalesce(dps_q4::numeric(15,2),0.00::numeric(15,2))   dividends_accm_back
+  from 
+  si_isq_16070 
+  where company_id 
+    in ( select company_id from si_isq_16070 where company_id is not null 
+           group by company_id having count(company_id) = 1 
+       ) 
+  ) isq ,(  -- need ci.ticker because at 15184 - 2011-07-29 -> old company_id changed to the new company_id
+  select    -- so future performance joins on ticker to ticker_later in a 12 month span ( to determine future returns )
+  company_id, 
+  ticker
+  from 
+  si_ci_16070 
+  where company_id 
+    in ( select company_id from si_ci_16070 where company_id is not null 
+           group by company_id having count(company_id) = 1 
+       ) 
+  ) ci
+  where 
+  -- psd.company_id = isq.company_id
+  ci.company_id  = psd.company_id and
+  ci.company_id  = isq.company_id and
+  psd.company_id = isq.company_id 
+  ) rtns  -- rtns where rtns.price_back_eq_zero = 't' or rtns.prchg_52w_eq_neg_100 = 't';
+                  -- 199 cases                     -- 4 cases  ( of 9871 cases in 16070 )
+  ) rtns2 -- at 2011-07-29(15184) the company_id changes 
+    -- so all past companies back and 'through and including' 2010-07-30(14820) match on ticker = later_ticker
+  on ( select case when (14819+1) < substr('_15705', 2, 6)::int and substr('_15705', 2, 6)::int < (15185-1) then  scrn.ticker       else  scrn.company_id       end )  = 
+  ( select case when (14819+1) < substr('_15705', 2, 6)::int and substr('_15705', 2, 6)::int < (15185-1) then rtns2.later_ticker else rtns2.later_company_id end ) 
+  where 1 = 1
+  -- END PIOTROSKI
+  )
+  select * from ( select to_timestamp(dateindex*3600*24)::date || ' ' ||  me_pctrk ||' ' || company_id || ' ' || mktcap || ' ' || ticker || ' ' ||  company as who, later_price_a_divs_ret_chg effective_ret 
+  -- , avg(later_price_a_divs_ret_chg) effective_ret 
+  from allofit order by me_pctrk nulls last limit 5 ) all_me
+  -- group by grouping sets ((who), ()) 
+  union all
+  select NULL who, ( select avg(later_price_a_divs_ret_chg) from ( select later_price_a_divs_ret_chg from allofit  order by me_pctrk nulls last limit 5) sum_me) effective_ret
+  union all
+  select 'sp500' who, sum(later_eff_price_a_divs_ret_chg_if_sp500_mktcap_wt) 
+  from allofit
+  
+  
+  
+  " -> sqlstring
+
+  sqlstring_all <- sqlstring
+  
+  sqlstring_all <- gsub("_15705", "_XXXXXX"  ,  sqlstring_all)
+  sqlstring_all <- gsub("_16070", "_YYYYYY"  ,  sqlstring_all)
+    
+  MoreDates_iter <- 1
+  MoreDates <- TRUE
+  while(MoreDates) {
+    # going from the *present* going backwards in time
+    MoreDates_iter <- MoreDates_iter - 1
+  
+    # screen date
+    new_interested_Date_integer        <- as.integer(lastWeekDayDateOfMonth( lubridate::`%m+%`( zoo::as.Date(interested_Date), base::months(MoreDates_iter))))
+  
+    # if earlier than earliest_asOfDate
+    if(zoo::as.Date(new_interested_Date_integer) < earliest_asOfDate) { 
+      print(paste0(zoo::as.Date(new_interested_Date_integer) ," ", new_interested_Date_integer,
+                          " new_interested_Date is earlier than earliest_asOfDate: "," ", 
+                          earliest_asOfDate, " ", as.integer(earliest_asOfDate), " so stopping."
+      ))
+      break 
+    }
+    
+    # if no initial screen date then exit
+    if(!dbExistsTable(conn, paste0("si_ci_", new_interested_Date_integer))) { 
+      print(paste0("no initial source table: ",zoo::as.Date(new_interested_Date_integer) ," ", new_interested_Date_integer))
+      break 
+    }
+    
+    
+    # later date
+    new_later_interested_Date_integer  <- as.integer(lastWeekDayDateOfMonth( lubridate::`%m+%`( zoo::as.Date(interested_Date), base::months(MoreDates_iter+12))))
+  
+
+  
+    # if not a 'later table' then create it ( at least I will have the company predictions)
+    # dbExistsTable # fails with zero record tables
+      if(dbGetQuery(conn, paste0("select count(*) from information_schema.tables  
+          where table_type in ('LOCAL TEMPORARY','BASE TABLE') and table_name = '","si_ci_", new_later_interested_Date_integer,"'")) == 0) {
+        
+        # empty stubs so I can run the query
+        dbGetQuery(conn, paste0("create temporary table ", "si_ci_",   new_later_interested_Date_integer, " as select * from ", "si_ci_",   new_interested_Date_integer, " where 1 = 0" ))
+        dbGetQuery(conn, paste0("create temporary table ", "si_psd_",  new_later_interested_Date_integer, " as select * from ", "si_psd_",  new_interested_Date_integer, " where 1 = 0" ))  
+        dbGetQuery(conn, paste0("create temporary table ", "si_cfq_", new_later_interested_Date_integer, " as select * from ", "si_perc_", new_interested_Date_integer, " where 1 = 0" ))
+        dbGetQuery(conn, paste0("create temporary table ", "si_bsq_",  new_later_interested_Date_integer, " as select * from ", "si_rat_",  new_interested_Date_integer, " where 1 = 0" ))
+        dbGetQuery(conn, paste0("create temporary table ", "si_isq_",  new_later_interested_Date_integer, " as select * from ", "si_isq_",  new_interested_Date_integer, " where 1 = 0" ))
+      
+      }
+      
+      sqlstring_all <- gsub("_XXXXXX", paste0("_", new_interested_Date_integer      ),  sqlstring_all)
+      sqlstring_all <- gsub("_YYYYYY", paste0("_", new_later_interested_Date_integer),  sqlstring_all)
+  
+      #  "2012-12-31" == 15705
+      if(print_sqlstring == TRUE) print(writeLines(sqlstring_all))
+      
+      print(paste0("new_interested_Date: ",       as.character(zoo::as.Date(new_interested_Date_integer)), " ", new_interested_Date_integer))
+      print(paste0("new_later_interested_Date: ", as.character(zoo::as.Date(new_later_interested_Date_integer)), " ", new_later_interested_Date_integer))
+      
+      result <- dbGetQuery(conn, sqlstring_all)
+      print(left_just(result))
+      
+      # back to original
+      sqlstring_all <- gsub(paste0("_", new_interested_Date_integer      ), "_XXXXXX",  sqlstring_all)
+      sqlstring_all <- gsub(paste0("_", new_later_interested_Date_integer), "_YYYYYY",  sqlstring_all)
+
+  }
+  
+  # update search path
+  dbGetQuery(conn, paste0("set search_path to ", osp))
+  
+  # update time zone
+  dbGetQuery(conn, paste0("set time zone '",ost,"'"))
+
+  return(invisible())
+  
+}
+
+# testing 
+# massAAIISIProIterScreenOSME(conn, asOfDate = zoo::as.Date(15705) + 2)
+# testing
+# massAAIISIProIterScreenOSME(conn, asOfDate = zoo::as.Date("2011-12-30") + 2)
+# testing
+# massAAIISIProIterScreenOSME(conn, asOfDate = zoo::as.Date("2012-12-31") + 2) # HERE #
+# testing
+# massAAIISIProIterScreenOSME(conn, asOfDate = zoo::as.Date("2013-12-31") + 2) # HERE #
+# testing
+# massAAIISIProIterScreenOSME(conn, asOfDate = zoo::as.Date("2014-12-31") + 2)
+# running
+# massAAIISIProIterScreenOSME(conn)
+# 
+# con <- file(paste0("OUTPUT_OSME", ".txt"));sink(con);sink(con, type="message")
+# 
+# massAAIISIProIterScreenOSME(conn)
+# 
+# sink();sink(type="message");close(con)
+#  
+
+#
+# massAAIISIProIterScreenOSME(conn, asOfDate = zoo::as.Date("2012-12-31") + 2, earliest_asOfDate =  zoo::as.Date("2012-12-31") -1, print_sqlstring = TRUE)
+# 
+# FUTURE NAs
+# massAAIISIProIterScreenOSME(conn, asOfDate = zoo::as.Date("2011-02-28") + 2, earliest_asOfDate =  zoo::as.Date("2011-02-28") -1, print_sqlstring = TRUE)
+# 
+
+
+
+
+
 # depends upon  DESCRIPTION Imports foreign
 getAAIISIProDate <- function(from = "C:/Program Files (x86)/Stock Investor/Professional") {
   
@@ -3348,11 +3829,6 @@ bookmarkhere <- 1
 
 #      
 #                        
-#                                                                                                                                                                           
-
-
-
-
-
+#                                                                                                                                                                             
 
 
