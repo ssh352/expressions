@@ -512,13 +512,28 @@ massAAIIinstallOtherCommonIndexes <- function(conn,
 
 
 
+# massAAIISIProIterScreenFScore  <- function(conn, 
+#                                            asOfDate = Sys.Date(), 
+#                                            earliest_asOfDate = Sys.Date() - 365 * 10 + 3,
+#                                            fscore     = "fscore_y1",
+#                                            fscore_min =         "8",
+#                                            print_sqlstring = FALSE
+#                                            ) { 
 massAAIISIProIterScreenFScore  <- function(conn, 
-                                           asOfDate = Sys.Date(), 
+                                           asOfDate          = Sys.Date(), 
                                            earliest_asOfDate = Sys.Date() - 365 * 10 + 3,
-                                           fscore     = "fscore_y1",
-                                           fscore_min =         "8",
-                                           print_sqlstring = FALSE
+                                           fscore            = "fscore_y1", # fscore          = "fscore_12m" # current ONLY other
+                                           fscore_rexprval   = ">= 8",      # fscore_rexprval = "<= 1",  # MAKE sure all 4 are unique
+                                           rpbvps_rexprval   = "<= 20",     # rpbvps_rexprval = "> 80"   # MAKE sure all 4 are unique
+                                           mktcap_rexprval   = "> 0.01",    # mktcap_rexprval = "> 200.01"
+                                           print_sqlstring   = FALSE
                                            ) { 
+
+  print("print(args(massAAIISIProIterScreenFScore))")
+  print(args(massAAIISIProIterScreenFScore))
+  
+  print("print(match.call())")
+  print( match.call())
 
   # # ANDRE some experince: falls below $2.00/share 
   # #  then gets de-listed but does not go 'Over-The-Counter'
@@ -593,7 +608,8 @@ massAAIISIProIterScreenFScore  <- function(conn,
     -- NOTE: inline: ci_s is not related(joinable?) to ci 
     (select sum(mktcap::numeric(15,2)) from si_psd_15705 psd_s, si_ci_15705 ci_s where psd_s.company_id = ci_s.company_id and ci_s.sp = '500' ) sp500_tot_mktcap_wt,
     psd2.mktcap,
-    case when ci2.adr = 'f' and ci2.exchange != 'O' and perc2.rpbvps::smallint <= 20 and rat2.fscore_y1::smallint >= 8 then 't'::boolean else 'f'::boolean end f_score_winner 
+    -- case when ci2.adr = 'f' and ci2.exchange != 'O' and perc2.rpbvps::smallint <= 20 and rat2.fscore_y1::smallint >= 8                        then 't'::boolean else 'f'::boolean end f_score_winner  
+       case when ci2.adr = 'f' and ci2.exchange != 'O' and perc2.rpbvps::smallint <= 20 and rat2.fscore_y1::smallint >= 8 and psd2.mktcap > 0.01 then 't'::boolean else 'f'::boolean end f_score_winner
     from (
       select ci.* from (      -- = '500' : S&P 500 Index, S&P MidCap 400, S&P SmallCap 600: mutually exclusive
       select dateindex, company_id, company, ticker, exchange, sp, adr from si_ci_15705 
@@ -735,12 +751,14 @@ massAAIISIProIterScreenFScore  <- function(conn,
      where 1 = 1
   -- END PIOTROSKI
   )
-  select to_timestamp(dateindex*3600*24)::date || ' ' || company_id || ' ' || mktcap || ' ' || ticker || ' ' || company as who, avg(later_price_a_divs_ret_chg) effective_ret 
-    from allofit where allofit.f_score_winner = 't' group by grouping sets ((who), ()) 
+  select to_timestamp(dateindex*3600*24)::date || ' ' || company_id || ' ' || mktcap || ' ' || ticker || ' ' || company as who, later_price_a_divs_ret_chg effective_ret 
+  from allofit where allofit.f_score_winner = 't'
+  union all
+  select NULL who, ( select avg(later_price_a_divs_ret_chg) from ( select later_price_a_divs_ret_chg from allofit where allofit.f_score_winner = 't') sum_me) effective_ret
   union all
   select 'sp500' who, sum(later_eff_price_a_divs_ret_chg_if_sp500_mktcap_wt) 
-    from allofit
-  " -> sqlstring
+  from allofit
+  " -> sqlstring 
 
   sqlstring_all <- sqlstring
   
@@ -754,11 +772,32 @@ massAAIISIProIterScreenFScore  <- function(conn,
   print(paste0("fscore == " ,"'", fscore,"'"))
   print("")
   
-  # if(fscore_min == "8") # then, do nothing, this is the default
-  if(fscore_min == "9") {
-    sqlstring_all <- gsub(paste0(fscore,"::smallint >= 8"), paste0(fscore,"::smallint >= 9"),  sqlstring_all)
+#   # if(fscore_min == "8") # then, do nothing, this is the default
+#   if(fscore_min == "9") {
+#     sqlstring_all <- gsub(paste0(fscore,"::smallint >= 8"), paste0(fscore,"::smallint >= 9"),  sqlstring_all)
+#   }
+#   print(paste0("fscore_min ==  " ,"'", fscore_min,"'"))
+#   print("")
+  
+  # if(fscore_rexprval == ">= 8") # then, do nothing, this is the default
+  if(fscore_rexprval != ">= 8") {
+    sqlstring_all <- gsub(paste0(fscore, "::smallint >= 8"), paste0(fscore, "::smallint ", fscore_rexprval),  sqlstring_all)
   }
-  print(paste0("fscore_min ==  " ,"'", fscore_min,"'"))
+  print(paste0("fscore_rexprval ==  " ,"'", fscore_rexprval,"'"))
+  print("")
+
+  # if(rpbvps_rexprval == "<= 20") # then, do nothing, this is the default
+  if(rpbvps_rexprval != "<= 20") {
+    sqlstring_all <- gsub(paste0("rpbvps", "::smallint <= 20"), paste0("rpbvps", "::smallint ", rpbvps_rexprval),  sqlstring_all)
+  }
+  print(paste0("rpbvps_rexprval ==  " ,"'", rpbvps_rexprval,"'"))
+  print("")
+
+  # if(mktcap_rexprval == "> 0.01") # then, do nothing, this is the default
+  if(mktcap_rexprval != "> 0.01") {
+    sqlstring_all <- gsub(paste0("mktcap ", "> 0.01"), paste0("mktcap ", mktcap_rexprval),  sqlstring_all)
+  }
+  print(paste0("mktcap_rexprval ==  " ,"'", mktcap_rexprval,"'"))
   print("")
   
   MoreDates_iter <- 1
@@ -855,18 +894,29 @@ massAAIISIProIterScreenFScore  <- function(conn,
 # massAAIISIProIterScreenFScore(conn, fscore = "fscore_12m", fscore_min = "9")
 #
 # massAAIISIProIterScreenFScore(conn, asOfDate = zoo::as.Date("2012-12-31") + 2, earliest_asOfDate =  zoo::as.Date("2012-12-31") -1, print_sqlstring = TRUE)
-# 
+#
 # FUTURE NAs
 # massAAIISIProIterScreenFScore(conn, asOfDate = zoo::as.Date("2011-02-28") + 2, earliest_asOfDate =  zoo::as.Date("2011-02-28") -1, print_sqlstring = TRUE)
+#   
 # 
+# massAAIISIProIterScreenFScore(conn, asOfDate = zoo::as.Date("2012-12-31") + 2, earliest_asOfDate =  zoo::as.Date("2012-12-31") -1, fscore = "fscore_12m", fscore_rexprval = "<= 1", rpbvps_rexprval =  "> 80", mktcap_rexprval = "> 200.01", print_sqlstring = TRUE)      
+
+
 
 
 
 massAAIISIProIterScreenOSME  <- function(conn, 
                                            asOfDate = Sys.Date(), 
                                            earliest_asOfDate = Sys.Date() - 365 * 10 + 3,
+                                           me_pctrk_ord_expr = "asc nulls last limit 5",
                                            print_sqlstring = FALSE
                                            ) { 
+
+  print("print(args(massAAIISIProIterScreenOSME))")
+  print(args(massAAIISIProIterScreenOSME))
+
+  print("print(match.call())")
+  print( match.call())
 
   # # ANDRE some experince: falls below $2.00/share 
   # #  then gets de-listed but does not go 'Over-The-Counter'
@@ -1222,10 +1272,10 @@ massAAIISIProIterScreenOSME  <- function(conn,
   )
   select * from ( select to_timestamp(dateindex*3600*24)::date || ' ' ||  me_pctrk ||' ' || company_id || ' ' || mktcap || ' ' || ticker || ' ' ||  company as who, later_price_a_divs_ret_chg effective_ret 
   -- , avg(later_price_a_divs_ret_chg) effective_ret 
-  from allofit order by me_pctrk nulls last limit 5 ) all_me
+  from allofit order by me_pctrk asc nulls last limit 5) all_me
   -- group by grouping sets ((who), ()) 
   union all
-  select NULL who, ( select avg(later_price_a_divs_ret_chg) from ( select later_price_a_divs_ret_chg from allofit  order by me_pctrk nulls last limit 5) sum_me) effective_ret
+  select NULL who, ( select avg(later_price_a_divs_ret_chg) from ( select later_price_a_divs_ret_chg from allofit order by me_pctrk asc nulls last limit 5) sum_me) effective_ret
   union all
   select 'sp500' who, sum(later_eff_price_a_divs_ret_chg_if_sp500_mktcap_wt) 
   from allofit
@@ -1239,6 +1289,13 @@ massAAIISIProIterScreenOSME  <- function(conn,
   sqlstring_all <- gsub("_15705", "_XXXXXX"  ,  sqlstring_all)
   sqlstring_all <- gsub("_16070", "_YYYYYY"  ,  sqlstring_all)
     
+  # if(me_pctrk_ord_expr == "asc nulls last limit 5") # then, do nothing, this is the default
+  if(me_pctrk_ord_expr != "asc nulls last limit 5") {
+    sqlstring_all <- gsub(paste0("me_pctrk ", "asc nulls last limit 5"), paste0("me_pctrk ",  me_pctrk_ord_expr),  sqlstring_all)
+  }
+  print(paste0("me_pctrk_ord_expr ==  " ,"'", me_pctrk_ord_expr,"'"))
+  print("")
+  
   MoreDates_iter <- 1
   MoreDates <- TRUE
   while(MoreDates) {
@@ -1337,6 +1394,7 @@ massAAIISIProIterScreenOSME  <- function(conn,
 # FUTURE NAs
 # massAAIISIProIterScreenOSME(conn, asOfDate = zoo::as.Date("2011-02-28") + 2, earliest_asOfDate =  zoo::as.Date("2011-02-28") -1, print_sqlstring = TRUE)
 # 
+# massAAIISIProIterScreenOSME(conn, asOfDate = zoo::as.Date("2012-12-31") + 2, earliest_asOfDate =  zoo::as.Date("2012-12-31") -1, me_pctrk_ord_expr = "desc nulls last limit 5", print_sqlstring = TRUE)
 
 
 
@@ -3828,7 +3886,12 @@ data_processing_from_Excel4 <- function(universecoll = NULL, quickdebug = FALSE,
 bookmarkhere <- 1   
 
 #      
-#                        
-#                                                                                                                                                                             
+#                          
+#                                                                                                                                                                                              
+
+
+
+
+
 
 
