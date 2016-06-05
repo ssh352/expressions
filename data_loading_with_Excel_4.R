@@ -369,7 +369,10 @@ conn <- dbConnect(drv, user="postgres", password="postgres", port = 5432, dbname
 
 # fill the sipro_stage schema
 # massAAIISIProDBFsDB(conn)
-
+#
+# just a particular month
+# massAAIISIProDBFsDB(conn, only_dirs_like = "where cinfo = 16952 ")
+#
 # from other tools, get the output(way to recreate) the sipro_data_store schema
 # 
 # C:\Users\AnonymousUser\Documents\UnxUtils\usr\local\wbin>tail -f --lines=40 "C:\Users\AnonymousUser\Documents\pgadmin.log"
@@ -508,6 +511,10 @@ massAAIIinstallOtherCommonIndexes <- function(conn,
 # massAAIIinstallOtherCommonIndexes(conn)
 # 
 # sink();sink(type="message");close(con)
+#
+# just one month
+# massAAIIinstallOtherCommonIndexes(conn, tabl_regex_expr = "16952")
+#
 
 
 
@@ -1395,6 +1402,394 @@ massAAIISIProIterScreenOSME  <- function(conn,
 # massAAIISIProIterScreenOSME(conn, asOfDate = zoo::as.Date("2011-02-28") + 2, earliest_asOfDate =  zoo::as.Date("2011-02-28") -1, print_sqlstring = TRUE)
 # 
 # massAAIISIProIterScreenOSME(conn, asOfDate = zoo::as.Date("2012-12-31") + 2, earliest_asOfDate =  zoo::as.Date("2012-12-31") -1, me_pctrk_ord_expr = "desc nulls last limit 5", print_sqlstring = TRUE)
+
+
+massAAIISIProIterMktSheets  <- function(conn, 
+                                           asOfDate = Sys.Date(), 
+                                           earliest_asOfDate = Sys.Date() - 365 * 10 + 3,
+                                           print_sqlstring = FALSE
+                                           ) { 
+
+  print("print(args(massAAIISIProIterMktSheets))")
+  print(args(massAAIISIProIterMktSheets))
+
+  print("print(match.call())")
+  print( match.call())
+
+  # # ANDRE some experince: falls below $2.00/share 
+  # #  then gets de-listed but does not go 'Over-The-Counter'
+  # 
+  # This data no longer exists!
+  # Why?
+  # 1) The entity/company is now private ( GETS ABSORBED: Happens )
+  # 2) This entity was delisted
+  # 3) This entity has filed for bankruptcy
+  # If none of these reasons seem applicable, please let us 
+  # 
+  # http://www.wikinvest.com/stock/Banks.com_Inc_(BNX)
+  # 
+  # BNX is defunct.
+  # http://seekingalpha.com/symbol/BNX
+  
+  ost <- dbGetQuery(conn,"show time zone")[[1]]
+
+  osp <- dbGetQuery(conn,"show search_path")[[1]]
+
+  # update search path
+  dbGetQuery(conn, paste0("set search_path to sipro_stage, ", osp) )
+
+  # update time zone
+  dbGetQuery(conn, "set time zone 'utc'")
+  print(dbGetQuery(conn, "show time zone"))
+  
+  # previous last weekday of last month 
+  interested_Date <- if( asOfDate < (lastWeekDayDateOfMonth(asOfDate) + 1) ) { lastWeekDayDateOfMonth( lubridate::`%m+%`(asOfDate, base::months(-1)))  } else {  lastWeekDayDateOfMonth(asOfDate)  }
+    
+  "
+
+  with earn as 
+    ( select ci2.dateindex, ci2.company_id, ci2.sp, ci2.ticker, ci2.company, date2.perend_rct,
+        case when date2.perend_rct = date2.perend_q1 then                isq2.netinc_q1 * psd2.mktcap
+             when date2.perend_rct = date2.perend_q2 then                isq2.netinc_q2 * psd2.mktcap
+             when date2.perend_rct = date2.perend_q3 then                isq2.netinc_q3 * psd2.mktcap
+             when date2.perend_rct = date2.perend_q4 then                isq2.netinc_q4 * psd2.mktcap
+        end netinc_rct,
+        case when date2.perend_rct = date2.perend_q1 then cfq2.fcfps_q1 * psd2.shr_aq1 * psd2.mktcap 
+             when date2.perend_rct = date2.perend_q2 then cfq2.fcfps_q2 * psd2.shr_aq2 * psd2.mktcap
+             when date2.perend_rct = date2.perend_q3 then cfq2.fcfps_q3 * psd2.shr_aq3 * psd2.mktcap
+             when date2.perend_rct = date2.perend_q4 then cfq2.fcfps_q4 * psd2.shr_aq4 * psd2.mktcap
+        end fcf_rct
+    from
+                ( 
+      select dateindex, company_id, 
+        perend_q1, perend_q2, perend_q3, perend_q4,
+        greatest(perend_q1, perend_q2, perend_q3, perend_q4) perend_rct 
+       from ( select dateindex, company_id, perend_q1, perend_q2, perend_q3, perend_q4 from ( select * from si_date_16952 where company_id in ( select company_id from si_date_16952 where company_id is not null  group by company_id having count(company_id) = 1  ) ) si_date_16952 
+              union all
+              select dateindex, company_id, perend_q1, perend_q2, perend_q3, perend_q4 from ( select * from si_date_16584 where company_id in ( select company_id from si_date_16584 where company_id is not null  group by company_id having count(company_id) = 1  ) ) si_date_16584 
+       ) si_date_many
+       ) date2, ( 
+       select dateindex, company_id, ticker, company, sp  
+       from ( select dateindex, company_id, ticker, company, sp from ( select * from si_ci_16952 where company_id in ( select company_id from si_ci_16952 where company_id is not null  group by company_id having count(company_id) = 1  ) ) si_ci_16952 
+              union all
+              select dateindex, company_id, ticker, company, sp from ( select * from si_ci_16584 where company_id in ( select company_id from si_ci_16584 where company_id is not null  group by company_id having count(company_id) = 1  ) ) si_ci_16584 
+       ) si_ci_many
+       ) ci2,  ( 
+       select dateindex, company_id, 
+       coalesce(netinc_q1::numeric(15,2),0.00::numeric(15,2)) netinc_q1,
+       coalesce(netinc_q2::numeric(15,2),0.00::numeric(15,2)) netinc_q2,
+       coalesce(netinc_q3::numeric(15,2),0.00::numeric(15,2)) netinc_q3,
+       coalesce(netinc_q4::numeric(15,2),0.00::numeric(15,2)) netinc_q4
+       from ( select dateindex, company_id, netinc_q1, netinc_q2, netinc_q3, netinc_q4 from ( select * from si_isq_16952 where company_id in ( select company_id from si_isq_16952 where company_id is not null  group by company_id having count(company_id) = 1  ) ) si_isq_16952 
+              union all
+              select dateindex, company_id, netinc_q1, netinc_q2, netinc_q3, netinc_q4 from ( select * from si_isq_16584 where company_id in ( select company_id from si_isq_16584 where company_id is not null  group by company_id having count(company_id) = 1  ) ) si_isq_16584 
+       ) si_isq_many
+       ) isq2, ( 
+       select dateindex, company_id, 
+       coalesce(fcfps_q1::numeric(15,2),0.00::numeric(15,2)) fcfps_q1,
+       coalesce(fcfps_q2::numeric(15,2),0.00::numeric(15,2)) fcfps_q2,
+       coalesce(fcfps_q3::numeric(15,2),0.00::numeric(15,2)) fcfps_q3,
+       coalesce(fcfps_q4::numeric(15,2),0.00::numeric(15,2)) fcfps_q4
+       from ( select dateindex, company_id, fcfps_q1, fcfps_q2, fcfps_q3, fcfps_q4 from ( select * from si_cfq_16952 where company_id in ( select company_id from si_cfq_16952 where company_id is not null  group by company_id having count(company_id) = 1  ) ) si_cfq_16952 
+              union all
+              select dateindex, company_id, fcfps_q1, fcfps_q2, fcfps_q3, fcfps_q4 from ( select * from si_cfq_16584 where company_id in ( select company_id from si_cfq_16584 where company_id is not null  group by company_id having count(company_id) = 1  ) ) si_cfq_16584 
+       ) si_cfq_many
+       ) cfq2, ( 
+       select dateindex, company_id, mktcap::numeric(15,2) mktcap,
+       coalesce(shr_aq1::numeric(15,2),0.00::numeric(15,2)) shr_aq1,
+       coalesce(shr_aq2::numeric(15,2),0.00::numeric(15,2)) shr_aq2,
+       coalesce(shr_aq3::numeric(15,2),0.00::numeric(15,2)) shr_aq3,
+       coalesce(shr_aq4::numeric(15,2),0.00::numeric(15,2)) shr_aq4
+       from ( select dateindex, company_id, mktcap, shr_aq1, shr_aq2, shr_aq3, shr_aq4 from ( select * from si_psd_16952 where company_id in ( select company_id from si_psd_16952 where company_id is not null  group by company_id having count(company_id) = 1  ) ) si_psd_16952 
+              union all
+              select dateindex, company_id, mktcap, shr_aq1, shr_aq2, shr_aq3, shr_aq4 from ( select * from si_psd_16584 where company_id in ( select company_id from si_psd_16584 where company_id is not null  group by company_id having count(company_id) = 1  ) ) si_psd_16584 
+       ) si_psd_many
+       ) psd2
+
+-- not implemented: out of time
+--
+-- at 2011-07-29(15184) the company_id changes 
+-- so all past companies back and 'through and including' 2010-07-30(14820) match on ticker = later_ticker
+--
+-- NEED to add 'ticker' BACK UP to the 'xxx2' tables above
+--
+-- select case when (14819+1) < substr('_16952', 2, 6)::int and substr('_16952', 2, 6)::int < (15185-1) then  scrn.ticker       else  scrn.company_id       end  = 
+-- select case when (14819+1) < substr('_16952', 2, 6)::int and substr('_16952', 2, 6)::int < (15185-1) then  rtns2.later_ticker else rtns2.later_company_id end 
+--
+    where ( 
+--      select case when (14819+1) < substr('_16952', 2, 6)::int and substr('_16952', 2, 6)::int < (15185-1) 
+--        then
+--         ci2.sp = '500' and
+--         ci2.ticker = date2.ticker  and 
+--           ci2.dateindex =  date2.dateindex and 
+--         ci2.ticker =  isq2.ticker  and 
+--           ci2.dateindex =   isq2.dateindex and
+--         ci2.ticker =  cfq2.ticker  and 
+--           ci2.dateindex =   cfq2.dateindex and
+--         ci2.ticker =  psd2.ticker  and 
+--           ci2.dateindex =   psd2.dateindex 
+--        else
+        ci2.sp = '500' and
+        ci2.company_id = date2.company_id  and 
+          ci2.dateindex =  date2.dateindex and 
+        ci2.company_id =  isq2.company_id  and 
+          ci2.dateindex =   isq2.dateindex and
+        ci2.company_id =  cfq2.company_id  and 
+          ci2.dateindex =   cfq2.dateindex and
+        ci2.company_id =  psd2.company_id  and 
+          ci2.dateindex =   psd2.dateindex 
+--        end
+    )
+    order by date2.perend_rct desc, netinc_rct desc )
+  --select avg(earn2.netinc_rct) from (
+  --GOOD 1174
+  --select avg(netinc_rct) from ( select dateindex, perend_rct, ticker, netinc_rct from earn where earn.sp = '500' and earn.dateindex = 16952 limit 2 ) earn2
+  --GOOD COST HD
+  --select ticker from ( select dateindex, perend_rct, ticker, netinc_rct from earn where earn.sp = '500' and earn.dateindex = 16952 limit 2 ) earn2
+  -- ANSWER 1088.5000000000000000
+  -- select avg(netinc_rct) 
+  -- from ( select dateindex, perend_rct, ticker, netinc_rct from earn where earn.dateindex = 16584 and earn.ticker in (   
+  --   select ticker from ( select dateindex, perend_rct, ticker, netinc_rct from earn where earn.sp = '500' and earn.dateindex = 16952 limit 2 ) earn3
+  -- )) earn2 
+  -- CORRECT
+  -- R > ( 1579 + 598 ) / 2.0    [1] 1088.5
+  -- OUTPUT
+  -- select dateindex, perend_rct, ticker, netinc_rct from earn where earn.dateindex = 16584 and earn.ticker in ( 'COST', 'HD' );
+  --16584;'2015-05-03';'HD';1579.00
+  --16584;'2015-02-15';'COST';598.00
+  -- select avg(netinc_rct) 
+  -- from ( select dateindex, perend_rct, ticker, netinc_rct from earn where earn.dateindex = 16952 and earn.ticker in (   
+  --   select ticker from ( select dateindex, perend_rct, ticker, netinc_rct from earn where earn.sp = '500' and earn.dateindex = 16952 limit 2 ) earn_now
+  -- )) earn_now_now 
+  -- union
+  -- select avg(netinc_rct) 
+  -- from ( select dateindex, perend_rct, ticker, netinc_rct from earn where earn.dateindex = 16584 and earn.ticker in (   
+  --   select ticker from ( select dateindex, perend_rct, ticker, netinc_rct from earn where earn.sp = '500' and earn.dateindex = 16952 limit 2 ) earn_now
+  -- )) earn_earlier 
+  -- 1088.5000000000000000
+  -- 1174.0000000000000000
+  
+  select to_timestamp(16952*3600*24)::date as_of_dt, 'avg_fcf_limit_0020_sp500' what, avg(fcf_rct) results, sum(fcf_rct)/avg(fcf_rct) how_many
+  from ( select dateindex, perend_rct, company_id, ticker, fcf_rct from earn 
+    where earn.dateindex = 16952 and earn.company_id in (   
+      select company_id from ( select dateindex, perend_rct, company_id, ticker, fcf_rct from earn 
+      where earn.sp = '500' and earn.dateindex = 16952 limit 20 ) earn_now
+  )) earn_earlier 
+  
+  union all
+  select to_timestamp(16584*3600*24)::date as_of_dt, 'avg_fcf_limit_0020_sp500' what, avg(fcf_rct) results, sum(fcf_rct)/avg(fcf_rct) how_many
+  from ( select dateindex, perend_rct, company_id, ticker, fcf_rct from earn 
+    where earn.dateindex = 16584 and earn.company_id in (   
+      select company_id from ( select dateindex, perend_rct, company_id, ticker, fcf_rct from earn 
+      where earn.sp = '500' and earn.dateindex = 16952 limit 20 ) earn_now
+  )) earn_earlier 
+  
+  union all
+  select to_timestamp(16952*3600*24)::date as_of_dt, 'avg_fcf_limit_0050_sp500' what, avg(fcf_rct) results, sum(fcf_rct)/avg(fcf_rct) how_many
+  from ( select dateindex, perend_rct, company_id, ticker, fcf_rct from earn 
+    where earn.dateindex = 16952 and earn.company_id in (   
+      select company_id from ( select dateindex, perend_rct, company_id, ticker, fcf_rct from earn 
+      where earn.sp = '500' and earn.dateindex = 16952 limit 50 ) earn_now
+  )) earn_earlier 
+  
+  union all
+  select to_timestamp(16584*3600*24)::date as_of_dt, 'avg_fcf_limit_0050_sp500' what, avg(fcf_rct) results, sum(fcf_rct)/avg(fcf_rct) how_many
+  from ( select dateindex, perend_rct, company_id, ticker, fcf_rct from earn 
+    where earn.dateindex = 16584 and earn.company_id in (   
+      select company_id from ( select dateindex, perend_rct, company_id, ticker, fcf_rct from earn 
+      where earn.sp = '500' and earn.dateindex = 16952 limit 50 ) earn_now
+  )) earn_earlier 
+  
+  union all
+  select to_timestamp(16952*3600*24)::date as_of_dt, 'avg_fcf_limit_0100_sp500' what, avg(fcf_rct) results, sum(fcf_rct)/avg(fcf_rct) how_many
+  from ( select dateindex, perend_rct, company_id, ticker, fcf_rct from earn 
+    where earn.dateindex = 16952 and earn.company_id in (   
+      select company_id from ( select dateindex, perend_rct, company_id, ticker, fcf_rct from earn 
+      where earn.sp = '500' and earn.dateindex = 16952 limit 100 ) earn_now
+  )) earn_earlier 
+  
+  union all
+  select to_timestamp(16584*3600*24)::date as_of_dt, 'avg_fcf_limit_0100_sp500' what, avg(fcf_rct) results, sum(fcf_rct)/avg(fcf_rct) how_many
+  from ( select dateindex, perend_rct, company_id, ticker, fcf_rct from earn 
+    where earn.dateindex = 16584 and earn.company_id in (   
+      select company_id from ( select dateindex, perend_rct, company_id, ticker, fcf_rct from earn 
+      where earn.sp = '500' and earn.dateindex = 16952 limit 100 ) earn_now
+  )) earn_earlier 
+  
+  union all
+  select to_timestamp(16952*3600*24)::date as_of_dt, 'avg_fcf_limit_0500_sp500' what, avg(fcf_rct) results, sum(fcf_rct)/avg(fcf_rct) how_many
+  from ( select dateindex, perend_rct, company_id, ticker, fcf_rct from earn 
+    where earn.dateindex = 16952 and earn.company_id in (   
+      select company_id from ( select dateindex, perend_rct, company_id, ticker, fcf_rct from earn 
+      where earn.sp = '500' and earn.dateindex = 16952 limit 500 ) earn_now
+  )) earn_earlier 
+  
+  union all
+  select to_timestamp(16584*3600*24)::date as_of_dt, 'avg_fcf_limit_0500_sp500' what, avg(fcf_rct) results, sum(fcf_rct)/avg(fcf_rct) how_many
+  from ( select dateindex, perend_rct, company_id, ticker, fcf_rct from earn 
+    where earn.dateindex = 16584 and earn.company_id in (   
+      select company_id from ( select dateindex, perend_rct, company_id, ticker, fcf_rct from earn 
+      where earn.sp = '500' and earn.dateindex = 16952 limit 500 ) earn_now
+  )) earn_earlier 
+  
+  
+  union all
+  select to_timestamp(16952*3600*24)::date as_of_dt, 'avg_netinc_limit_0020_sp500' what, avg(netinc_rct) results, sum(netinc_rct)/avg(netinc_rct) how_many
+  from ( select dateindex, perend_rct, company_id, ticker, netinc_rct from earn 
+    where earn.dateindex = 16952 and earn.company_id in (   
+      select company_id from ( select dateindex, perend_rct, company_id, ticker, netinc_rct from earn 
+      where earn.sp = '500' and earn.dateindex = 16952 limit 20 ) earn_now
+  )) earn_earlier 
+  
+  union all
+  select to_timestamp(16584*3600*24)::date as_of_dt, 'avg_netinc_limit_0020_sp500' what, avg(netinc_rct) results, sum(netinc_rct)/avg(netinc_rct) how_many
+  from ( select dateindex, perend_rct, company_id, ticker, netinc_rct from earn 
+    where earn.dateindex = 16584 and earn.company_id in (   
+      select company_id from ( select dateindex, perend_rct, company_id, ticker, netinc_rct from earn 
+      where earn.sp = '500' and earn.dateindex = 16952 limit 20 ) earn_now
+  )) earn_earlier 
+  
+  union all
+  select to_timestamp(16952*3600*24)::date as_of_dt, 'avg_netinc_limit_0050_sp500' what, avg(netinc_rct) results, sum(netinc_rct)/avg(netinc_rct) how_many
+  from ( select dateindex, perend_rct, company_id, ticker, netinc_rct from earn 
+    where earn.dateindex = 16952 and earn.company_id in (   
+      select company_id from ( select dateindex, perend_rct, company_id, ticker, netinc_rct from earn 
+      where earn.sp = '500' and earn.dateindex = 16952 limit 50 ) earn_now
+  )) earn_earlier 
+  
+  union all
+  select to_timestamp(16584*3600*24)::date as_of_dt, 'avg_netinc_limit_0050_sp500' what, avg(netinc_rct) results, sum(netinc_rct)/avg(netinc_rct) how_many
+  from ( select dateindex, perend_rct, company_id, ticker, netinc_rct from earn 
+    where earn.dateindex = 16584 and earn.company_id in (   
+      select company_id from ( select dateindex, perend_rct, company_id, ticker, netinc_rct from earn 
+      where earn.sp = '500' and earn.dateindex = 16952 limit 50 ) earn_now
+  )) earn_earlier 
+  
+  union all
+  select to_timestamp(16952*3600*24)::date as_of_dt, 'avg_netinc_limit_0100_sp500' what, avg(netinc_rct) results, sum(netinc_rct)/avg(netinc_rct) how_many
+  from ( select dateindex, perend_rct, company_id, ticker, netinc_rct from earn 
+    where earn.dateindex = 16952 and earn.company_id in (   
+      select company_id from ( select dateindex, perend_rct, company_id, ticker, netinc_rct from earn 
+      where earn.sp = '500' and earn.dateindex = 16952 limit 100 ) earn_now
+  )) earn_earlier 
+  
+  union all
+  select to_timestamp(16584*3600*24)::date as_of_dt, 'avg_netinc_limit_0100_sp500' what, avg(netinc_rct) results, sum(netinc_rct)/avg(netinc_rct) how_many
+  from ( select dateindex, perend_rct, company_id, ticker, netinc_rct from earn 
+    where earn.dateindex = 16584 and earn.company_id in (   
+      select company_id from ( select dateindex, perend_rct, company_id, ticker, netinc_rct from earn 
+      where earn.sp = '500' and earn.dateindex = 16952 limit 100 ) earn_now
+  )) earn_earlier 
+  
+  union all
+  select to_timestamp(16952*3600*24)::date as_of_dt, 'avg_netinc_limit_0500_sp500' what, avg(netinc_rct) results, sum(netinc_rct)/avg(netinc_rct) how_many
+  from ( select dateindex, perend_rct, company_id, ticker, netinc_rct from earn 
+    where earn.dateindex = 16952 and earn.company_id in (   
+      select company_id from ( select dateindex, perend_rct, company_id, ticker, netinc_rct from earn 
+      where earn.sp = '500' and earn.dateindex = 16952 limit 500 ) earn_now
+  )) earn_earlier 
+  
+  union all
+  select to_timestamp(16584*3600*24)::date as_of_dt, 'avg_netinc_limit_0500_sp500' what, avg(netinc_rct) results, sum(netinc_rct)/avg(netinc_rct) how_many
+  from ( select dateindex, perend_rct, company_id, ticker, netinc_rct from earn 
+    where earn.dateindex = 16584 and earn.company_id in (   
+      select company_id from ( select dateindex, perend_rct, company_id, ticker, netinc_rct from earn 
+      where earn.sp = '500' and earn.dateindex = 16952 limit 500 ) earn_now
+  )) earn_earlier 
+  
+  union all
+  select to_timestamp(16952*3600*24)::date as_of_dt, 'sp500_tot_mktcap_adj' what, 
+  (select sum(mktcap::numeric(15,2)) from si_psd_16952 psd_s, si_ci_16952 ci_s where psd_s.company_id = ci_s.company_id and ci_s.sp = '500' ) * 500 /  (select sum(mktcap::numeric(15,2) * price::numeric(15,2) ) / avg(mktcap::numeric(15,2) * price::numeric(15,2) ) from si_psd_16952 psd_s, si_ci_16952 ci_s where psd_s.company_id = ci_s.company_id and ci_s.sp = '500' ) results,
+  (select sum(mktcap::numeric(15,2) * price::numeric(15,2) ) / avg(mktcap::numeric(15,2) * price::numeric(15,2) ) from si_psd_16952 psd_s, si_ci_16952 ci_s where psd_s.company_id = ci_s.company_id and ci_s.sp = '500' ) how_many
+
+  " -> sqlstring
+
+  sqlstring_all <- sqlstring
+  
+  sqlstring_all <- gsub("16952", "XXXXXX"  ,  sqlstring_all)
+  sqlstring_all <- gsub("16584", "YYYYYY"  ,  sqlstring_all)
+  
+  MoreDates_iter <- 1
+  MoreDates <- TRUE
+  while(MoreDates) {
+    # going from the *present* going backwards in time
+    MoreDates_iter <- MoreDates_iter - 1
+  
+    # screen date
+    new_interested_Date_integer        <- as.integer(lastWeekDayDateOfMonth( lubridate::`%m+%`( zoo::as.Date(interested_Date), base::months(MoreDates_iter))))
+  
+    # if earlier than earliest_asOfDate
+    if(zoo::as.Date(new_interested_Date_integer) < earliest_asOfDate) { 
+      print(paste0(zoo::as.Date(new_interested_Date_integer) ," ", new_interested_Date_integer,
+                          " new_interested_Date is earlier than earliest_asOfDate: "," ", 
+                          earliest_asOfDate, " ", as.integer(earliest_asOfDate), " so stopping."
+      ))
+      break 
+    }
+    
+    # if no initial screen date then exit
+    if(!dbExistsTable(conn, paste0("si_ci_", new_interested_Date_integer))) { 
+      print(paste0("no initial source table: ",zoo::as.Date(new_interested_Date_integer) ," ", new_interested_Date_integer))
+      break 
+    }
+    
+    
+    # later date ( THIS IS ACTUALLY 'new earlier interested Date integer'
+    # new_later_interested_Date_integer  <- as.integer(lastWeekDayDateOfMonth( lubridate::`%m+%`( zoo::as.Date(interested_Date), base::months(MoreDates_iter+12))))
+    # later date ( THIS IS ACTUALLY 'new earlier interested Date integer'
+    new_later_interested_Date_integer  <- as.integer(lastWeekDayDateOfMonth( lubridate::`%m+%`( zoo::as.Date(interested_Date), base::months(MoreDates_iter-12))))
+
+    # if not a 'later table' then create it ( at least I will have the company predictions)
+    # dbExistsTable # fails with zero record tables
+      if(dbGetQuery(conn, paste0("select count(*) from information_schema.tables  
+          where table_type in ('LOCAL TEMPORARY','BASE TABLE') and table_name = '","si_ci_", new_later_interested_Date_integer,"'")) == 0) {
+        
+        # empty stubs so I can run the query
+        dbGetQuery(conn, paste0("create temporary table ", "si_ci_",   new_later_interested_Date_integer, " as select * from ", "si_ci_",   new_interested_Date_integer, " where 1 = 0" ))
+        dbGetQuery(conn, paste0("create temporary table ", "si_psd_",  new_later_interested_Date_integer, " as select * from ", "si_psd_",  new_interested_Date_integer, " where 1 = 0" ))  
+        dbGetQuery(conn, paste0("create temporary table ", "si_cfq_", new_later_interested_Date_integer, " as select * from ", "si_cfq_", new_interested_Date_integer, " where 1 = 0" ))
+        dbGetQuery(conn, paste0("create temporary table ", "si_date_",  new_later_interested_Date_integer, " as select * from ", "si_date_",  new_interested_Date_integer, " where 1 = 0" ))
+        dbGetQuery(conn, paste0("create temporary table ", "si_isq_",  new_later_interested_Date_integer, " as select * from ", "si_isq_",  new_interested_Date_integer, " where 1 = 0" ))
+      
+      }
+      
+      sqlstring_all <- gsub("XXXXXX", paste0(new_interested_Date_integer      ),  sqlstring_all)
+      sqlstring_all <- gsub("YYYYYY", paste0(new_later_interested_Date_integer),  sqlstring_all)
+  
+      #  "2012-12-31" == 15705
+      if(print_sqlstring == TRUE) print(writeLines(sqlstring_all))
+      
+      print(paste0("new_interested_Date: ",       as.character(zoo::as.Date(new_interested_Date_integer)), " ", new_interested_Date_integer))
+      print(paste0("new_later_interested_Date: ", as.character(zoo::as.Date(new_later_interested_Date_integer)), " ", new_later_interested_Date_integer))
+      
+      result <- dbGetQuery(conn, sqlstring_all)
+      print(left_just(result))
+      
+      # back to original
+      sqlstring_all <- gsub(paste0(new_interested_Date_integer      ), "XXXXXX",  sqlstring_all)
+      sqlstring_all <- gsub(paste0(new_later_interested_Date_integer), "YYYYYY",  sqlstring_all)
+
+  }
+  
+  # update search path
+  dbGetQuery(conn, paste0("set search_path to ", osp))
+  
+  # update time zone
+  dbGetQuery(conn, paste0("set time zone '",ost,"'"))
+
+  return(invisible())
+  
+}
+
+# con <- file(paste0("OUTPUT_fcf_netinc", ".txt"));sink(con);sink(con, type="message")
+# 
+# massAAIISIProIterMktSheets(conn)
+# 
+# sink();sink(type="message");close(con)
+#  # 
+# massAAIISIProIterMktSheets(conn, asOfDate = zoo::as.Date("2012-12-31") + 2, earliest_asOfDate =  zoo::as.Date("2012-12-31") -1, print_sqlstring = TRUE)
+
+
 
 
 
@@ -3886,8 +4281,8 @@ data_processing_from_Excel4 <- function(universecoll = NULL, quickdebug = FALSE,
 bookmarkhere <- 1   
 
 #      
-#                          
-#                                                                                                                                                                                              
+#                           
+#                                                                                                                                                                                                          
 
 
 
