@@ -292,7 +292,7 @@ massAAIISIProDBFsDB <- function(conn, from_target = "W:/New_Economics/forsight4.
   osp <- dbGetQuery(conn,"show search_path")[[1]]
 
   # update search path
-  dbGetQuery(conn, paste0("set search_path to sipro_stage, ", osp) )
+  dbGetQuery(conn, paste0("set search_path to sipro_stage"))
    
   orig_all_dirs <- list.files(from_target)
 
@@ -394,6 +394,28 @@ conn <- dbConnect(drv, user="postgres", password="postgres", port = 5432, dbname
 # BUT BETTER ( if the script contains INSERT ) ... use pgAdminIII Query window
 #
 
+
+# because PostgreSQL dbListTables reads all tables in all schemas and does not know about 'search_path'
+#  NOTE: dbExistsTable looks in the current schema only "SELECT current_schema()"
+dbListTablesOneSearchPath <- function(conn, ...) {
+
+  out <- dbGetQuery(conn, paste0("select tablename from pg_tables where schemaname !='information_schema'", 
+    "and schemaname !='pg_catalog'", 
+    " and schemaname =","'",gsub(" ","",dbGetQuery(conn,"show search_path")[[1]], fixed = TRUE),"'", ...))
+    
+  if (is.null(out) || nrow(out) == 0) 
+    out <- character(0) 
+  else 
+    out <- out[,1]
+  
+  out
+  
+} 
+# based off of 
+# https://github.com/cran/RPostgreSQL/blob/master/R/PostgreSQL.R
+
+
+
 # # prefers schema.table ??
 # # MUST be RAN as a pgScript ( in pgAdminIII )
 # 
@@ -403,10 +425,10 @@ conn <- dbConnect(drv, user="postgres", password="postgres", port = 5432, dbname
 # ost <- dbGetQuery(conn,"show time zone")[[1]]
 # osp <- dbGetQuery(conn,"show search_path")[[1]]
 # # update search path
-# dbGetQuery(conn, paste0("set search_path to sipro_stage, ", osp) )
+# dbGetQuery(conn, paste0("set search_path to sipro_stage"))
 # # update time zone
 # dbGetQuery(conn, "set time zone 'utc'")
-# sapply(sort(dbListTables(conn)), function(x,cn) { 
+# sapply(sort(dbListTablesOneSearchPath(conn)), function(x,cn) { 
 #   if(x != "atable" ) {
 #     # browser()
 #     stmt <- paste0("DO $$ DECLARE BEGIN drop table sipro_stage.", x, " cascade; END; $$")
@@ -424,7 +446,7 @@ conn <- dbConnect(drv, user="postgres", password="postgres", port = 5432, dbname
   
   
 # WAS not worth the TIME: I forgot that I already indexed by company_id
-massAAIIinstallOtherCommonIndexes <- function(conn, 
+massAAIIinstallOtherCommonColumnsIndexes <- function(conn, 
   tabl_regex_expr    = "_\\d+$", #  specific month  _######$
   interested_columns = c("adr","country","exchange", "ind_2_dig", "ind_3_dig","mg_code", "mktcap") 
   ) { 
@@ -440,7 +462,7 @@ massAAIIinstallOtherCommonIndexes <- function(conn,
   # update time zone
   dbGetQuery(conn, "set time zone 'utc'")
 
-  tables <- dbListTables(conn)
+  tables <- dbListTablesOneSearchPath(conn)
   
    #  specific month  _######$
   interested_tables <- sort(tables[grepl(tabl_regex_expr,tables)])
@@ -462,17 +484,8 @@ massAAIIinstallOtherCommonIndexes <- function(conn,
           col_exists_ind <- 0 
       }
       
-      #       stmt_col_exists <- gsub("your_table", interested_table, gsub("your_column", interested_column,"
-      #           select count(*) 
-      #             from information_schema.columns 
-      #               where table_name='your_table' and column_name='your_column'
-      #       "))
-    
-      #       col_exists_ind <- NULL
-      #       col_exists_ind <- dbGetQuery(conn, stmt_col_exists)[[1]]
-      
-      # column exists indicator
-      if(col_exists_ind == 1) {
+      # column exists indicator 
+      if(any(interested_column == c("adr","country","exchange", "ind_2_dig", "ind_3_dig","mg_code", "mktcap")) && col_exists_ind == 1) {
       
         stmt_col_index_create <-  gsub("your_table", interested_table, gsub("your_column", interested_column,
                                   "create index if not exists your_table_your_column_idx on your_table(your_column)"))
@@ -494,6 +507,111 @@ massAAIIinstallOtherCommonIndexes <- function(conn,
     cat(paste0("  End interested_column: ", interested_column,"\n"))
     }
     
+
+    if(grepl("^si_ci_\\d+$",interested_table) && 
+       any("si_ci_AND_company_id_unq_AND_ticker_unq" == interested_columns) && 
+      !any("company_id_unq" == dbListFields(conn, interested_table)) &&
+      !any("ticker_unq" == dbListFields(conn, interested_table)) 
+    ) {
+
+      cat(paste0("  Begin interested_column: ", "si_ci_AND_company_id_unq_AND_ticker_unq", " of ", interested_table,"\n"))
+
+      stmt_action <-  gsub("your_table", interested_table, "
+
+        alter table your_table add company_id_unq text; 
+
+        update your_table set company_id_unq = company_id 
+        where company_id in ( select company_id from your_table group by company_id having count(company_id) = 1); 
+
+        create index your_table_company_id_unq_idx on your_table(company_id_unq); 
+
+        alter table your_table add ticker_unq text;
+
+        update your_table set ticker_unq = ticker 
+        where company_id_unq is not null; 
+
+        create index your_table_ticker_unq_idx on your_table(ticker_unq);  
+
+      ")
+
+      cat(noquote(stmt_action),"\n") 
+      try( { dbGetQuery(conn, stmt_action) }, silent = TRUE ) 
+
+      cat(paste0("  End interested_column: ", "si_ci_AND_company_id_unq_AND_ticker_unq","\n")) 
+      
+    }
+    
+    if(!grepl("^si_ci_\\d+$",interested_table) && grepl("\\d+$",interested_table) &&
+      any("not_si_ci_AND_company_id_unq_AND_ticker_unq" == interested_columns) && 
+       any("company_id"     == dbListFields(conn, interested_table)) &&
+      !any("company_id_unq" == dbListFields(conn, interested_table)) &&
+      !any("ticker_unq" == dbListFields(conn, interested_table)) 
+      # && interested_table == "si_cfq_16952"
+    ) {
+
+      cat(paste0("  Begin interested_column: ", "not_si_ci_AND_company_id_unq_AND_ticker_unq", " of ", interested_table,"\n"))
+
+      my_epoch <- gsub("^[a-z_]+_","",interested_table)
+
+      stmt_action <-  gsub("your_table", interested_table, " 
+
+        alter table your_table add company_id_unq text; 
+
+        update your_table set company_id_unq = company_id 
+        where company_id in ( select company_id from your_table group by company_id having count(company_id) = 1) and company_id in (select company_id_unq from si_ci_my_epoch); 
+
+        create index your_table_company_id_unq_idx on your_table(company_id_unq); 
+
+        alter table your_table add ticker_unq text; 
+
+        update your_table trg set ticker_unq = ci.ticker_unq 
+        from si_ci_my_epoch ci where 
+        trg.company_id_unq is not null and  -- too extra safe 
+        trg.company_id_unq = ci.company_id_unq; 
+
+        create index your_table_ticker_unq_idx on your_table(ticker_unq); 
+
+      ")
+      
+      stmt_action <-  gsub("my_epoch", my_epoch, stmt_action)
+      
+      cat(noquote(stmt_action),"\n") 
+      try( { dbGetQuery(conn, stmt_action) }, silent = TRUE ) 
+
+      cat(paste0("  End interested_column: ", "not_si_ci_AND_company_id_unq_AND_ticker_unq","\n")) 
+      
+    }
+    
+    if(grepl("\\d+$",interested_table) &&
+      any("dateindexeom" == interested_columns) && 
+       any("dateindex"    == dbListFields(conn, interested_table)) &&
+      !any("dateindexeom" == dbListFields(conn, interested_table)) 
+      # && interested_table == "si_cfq_16952"
+    ) {
+
+      cat(paste0("  Begin interested_column: ", "dateindexeom", " of ", interested_table,"\n")) 
+
+      stmt_action <-  gsub("your_table", interested_table, " 
+
+        alter table your_table add dateindexeom integer;
+
+        update your_table tbl set dateindexeom = ( select extract( 
+          'epoch' from ( select date_trunc('month', to_timestamp(tbl.dateindex*3600*24)::date) + 
+          interval '1 month' - interval '1 day' )
+        ) / ( 3600*24 ) );
+
+        create index your_table_dateindexeom_idx on your_table(dateindexeom);
+
+      ")
+      
+
+      cat(noquote(stmt_action),"\n") 
+      try( { dbGetQuery(conn, stmt_action) }, silent = TRUE ) 
+
+      cat(paste0("  End interested_column: ", "dateindexeom","\n")) 
+      
+    }
+
   cat(paste0("End interested_table: ", interested_table,"\n"))
   }
 
@@ -506,15 +624,115 @@ massAAIIinstallOtherCommonIndexes <- function(conn,
 
 }
 
-# con <- file(paste0("OUTPUT_massAAIIinstallCommonIndexes", ".txt"));sink(con);sink(con, type="message")
+# con <- file(paste0("OUTPUT_massAAIIinstallCommonColumnsIndexes", ".txt"));sink(con);sink(con, type="message")
 # 
-# massAAIIinstallOtherCommonIndexes(conn)
+# massAAIIinstallOtherCommonColumnsIndexes(conn)
+# massAAIIinstallOtherCommonColumnsIndexes(conn, interested_columns = "si_ci_AND_company_id_unq_AND_ticker_unq")
+# massAAIIinstallOtherCommonColumnsIndexes(conn, interested_columns = "not_si_ci_AND_company_id_unq_AND_ticker_unq")
+# massAAIIinstallOtherCommonColumnsIndexes(conn,interested_columns = "dateindexeom")
 # 
+
 # sink();sink(type="message");close(con)
-#
+# 
 # just one month
-# massAAIIinstallOtherCommonIndexes(conn, tabl_regex_expr = "16952")
+# massAAIIinstallOtherCommonColumnsIndexes(conn, tabl_regex_expr = "16952")
 #
+# massAAIIinstallOtherCommonColumnsIndexes(conn, tabl_regex_expr = "16952", interested_columns = "si_ci_AND_company_id_unq_AND_ticker_unq")
+#
+# massAAIIinstallOtherCommonColumnsIndexes(conn, tabl_regex_expr = "16952", interested_columns = "not_si_ci_AND_company_id_unq_AND_ticker_unq")
+#
+# massAAIIinstallOtherCommonColumnsIndexes(conn, tabl_regex_expr = "16952", interested_columns = "dateindexeom")
+#
+
+
+
+massAAIIinstallOtherAddParentColumns <- function(conn, 
+  not_parent_tabl_regex_expr    = "_\\d+$", 
+      parent_tabl_regex_expr    = "",
+       child_tabl_epoch         = "16952"
+  ) { 
+
+
+  # make sure autovacuum is turned on(default) ***IMPORTANT **
+  # select * from pg_settings where name like 'autovacuum%';
+
+  ost <- dbGetQuery(conn,"show time zone")[[1]]
+  osp <- dbGetQuery(conn,"show search_path")[[1]]
+  
+  # update search path
+  dbGetQuery(conn, paste0("set search_path to sipro_stage") )
+  # update time zone
+  dbGetQuery(conn, "set time zone 'utc'")
+
+  tables <- dbListTablesOneSearchPath(conn)
+  
+  interested_tables <- sort(tables[!grepl(not_parent_tabl_regex_expr,tables) & grepl(parent_tabl_regex_expr,tables)])
+  interested_tables_length <- length(interested_tables)
+  interested_tables_length_index <- 0
+  for (interested_table in interested_tables) {
+    interested_tables_length_index <- interested_tables_length_index + 1
+    cat(paste0("Begin interested_table: ", interested_table, 
+             " number ", interested_tables_length_index,
+             " of ", interested_tables_length,
+             "\n"))
+    
+    if( 1 == 1
+    ) {
+
+      your_epoch <- child_tabl_epoch
+      
+      cat(paste0("  Begin child_tabl_epoch: ", your_epoch, " of ", interested_table,"\n"))
+
+      stmt_action <-  gsub("your_table", interested_table, " 
+
+        select  string_agg('alter table your_table add \"' || column_name || '\" ' || data_type || '; ' ,  E'\n' order by ordinal_position) 
+        from information_schema.columns 
+        where table_name = 'your_table_your_epoch';
+
+      ")
+      
+      stmt_action <-  gsub("your_epoch",your_epoch, stmt_action)
+      
+      cat(noquote(stmt_action),"\n") 
+      dynSQLresult <- try( { dbGetQuery(conn, stmt_action) }, silent = TRUE ) 
+      
+      dynSQLresult_usable <- as.vector(unlist(dynSQLresult))
+      
+      cat(noquote(dynSQLresult_usable),"\n") 
+      try( { dbGetQuery(conn, dynSQLresult_usable) }, silent = TRUE )  
+
+      cat(paste0("  End child_tabl_epoch: ", your_epoch, " of ", interested_table,"\n")) 
+      
+    }
+    
+  cat(paste0("End interested_table: ", interested_table,"\n"))
+  }
+
+  # update search path
+  dbGetQuery(conn, paste0("set search_path to ", osp))
+  # update time zone
+  dbGetQuery(conn, paste0("set time zone '",ost,"'"))
+  
+  return(invisible())
+
+}
+
+# Once Only Ever run.  Later add new columns to the PARENT manually by hand
+
+# con <- file(paste0("OUTPUT_massAAIIinstallOtherAddParentColumns", ".txt"));sink(con);sink(con, type="message")
+# massAAIIinstallOtherAddParentColumns(conn)
+# sink();sink(type="message");close(con)
+
+# testing 
+# massAAIIinstallOtherAddParentColumns(conn, not_parent_tabl_regex_expr = "_\\d+$",  parent_tabl_regex_expr = "usrpts", child_tabl_epoch = "16952")
+# alter table usrpts drop column "row.names"; 
+# alter table usrpts drop column "dateindex"; 
+# alter table usrpts drop column "rptid"; 
+# alter table usrpts drop column "aaii_id"; 
+# alter table usrpts drop column "name"; 
+# alter table usrpts drop column "descr"; 
+# alter table usrpts drop column "dateindexeom"; 
+
 
 
 
@@ -1791,6 +2009,119 @@ massAAIISIProIterMktSheets  <- function(conn,
 
 
 
+library(quantmod)
+# getSymbols.PostgreSQL {{{
+"getSymbols.PostgreSQL" <- function(Symbols,env,return.class='xts',
+                               db.fields=c('date','o','h','l','c','v','a'),
+                               field.names = NULL,
+                               user=NULL,password=NULL,dbname=NULL,host='localhost',port=5432,options="",search_path=NULL,
+                               ...) {
+     importDefaults("getSymbols.PostgreSQL")
+     this.env <- environment()
+     for(var in names(list(...))) {
+        # import all named elements that are NON formals
+        assign(var, list(...)[[var]], this.env)
+     }
+     if(!hasArg(verbose)) verbose <- FALSE
+     if(!hasArg(auto.assign)) auto.assign <- TRUE
+
+     if(!requireNamespace("DBI", quietly=TRUE))
+       stop("package:",dQuote("DBI"),"cannot be loaded.")
+     if(!requireNamespace("RPostgreSQL", quietly=TRUE))
+       stop("package:",dQuote("RPostgreSQL"),"cannot be loaded.")
+
+        if(is.null(user) || is.null(password) || is.null(dbname)) {
+          stop(paste(
+              'At least one connection argument (',sQuote('user'),
+              sQuote('password'),sQuote('dbname'),
+              ") is not set"))
+        }
+        con <- DBI::dbConnect(RPostgreSQL::PostgreSQL(),user=user,password=password,dbname=dbname,host=host,port=port,options=options)
+
+        if(!is.null(search_path)) { 
+          dbGetQuery(con, paste0("set search_path to ", search_path) )
+        }
+
+        db.Symbols <- DBI::dbListTables(con)
+        if(length(Symbols) != sum(tolower(Symbols) %in% tolower(db.Symbols))) {
+          missing.db.symbol <- Symbols[!tolower(Symbols) %in% tolower(db.Symbols)]
+                warning(paste('could not load symbol(s): ',paste(missing.db.symbol,collapse=', ')))
+                Symbols <- Symbols[tolower(Symbols) %in% tolower(db.Symbols)]
+        }
+        for(i in seq_along(Symbols)) {
+            if(verbose) {
+                cat(paste('Loading ',Symbols[[i]],paste(rep('.',10-nchar(Symbols[[i]])),collapse=''),sep=''))
+            }
+            query <- paste0("SELECT ",paste(db.fields,collapse=',')," FROM \"",
+              if(any(Symbols[[i]] == tolower(db.Symbols))) { tolower(Symbols[[i]]) } else { toupper(Symbols[[i]]) }  
+            , "\" ORDER BY date")
+            rs <- DBI::dbSendQuery(con, query)
+            fr <- DBI::fetch(rs, n=-1)
+            #fr <- data.frame(fr[,-1],row.names=fr[,1])
+            fr <- xts(as.matrix(fr[,-1]),
+                      order.by=as.Date(fr[,1],origin='1970-01-01'),
+                      src=dbname,updated=Sys.time())
+            colnames(fr) <- paste(Symbols[[i]],
+                                  c('Open','High','Low','Close','Volume','Adjusted'),
+                                  sep='.')
+            fr <- convert.time.series(fr=fr,return.class=return.class)
+            if(auto.assign)
+              assign(Symbols[[i]],fr,env)
+            if(verbose) cat('done\n')
+        }
+        DBI::dbDisconnect(con)
+        if(auto.assign)
+          return(Symbols)
+        return(fr)
+}
+"getSymbols.PostgreSQL" <- getSymbols.PostgreSQL 
+# }}}
+
+
+convert.time.series <- quantmod:::convert.time.series
+library(RPostgreSQL)
+
+# 
+# set search_path to sipro_stage
+# create table xxxx( -- note psql will automatically make UPPER to lower UPON CREATE
+# date date, 
+# o numeric(15,2),
+# h numeric(15,2),
+# l numeric(15,2),
+# c numeric(15,2),
+# v numeric(15,2),
+# a numeric(15,2)
+# );
+# 
+# insert into XXXX(date,o,h,l,c,v,a) 
+#   values('1970-01-01',1.0,2.0,3.0,4.0,5.0,6.0);
+# 
+# postgres=# select * from  XXXX;
+#     date    |  o   |  h   |  l   |  c   |  v   |  a
+# ------------+------+------+------+------+------+------
+#  1970-01-01 | 1.00 | 2.00 | 3.00 | 4.00 | 5.00 | 6.00
+# (1 row)
+
+
+# if UPPERCASE table name
+# getSymbols.PostgreSQL("XXXX", env =  environment(), user="postgres", password="postgres", dbname="finance_econ", search_path="sipro_stage")
+
+# if lowercase table name
+# getSymbols.PostgreSQL("xxxx", env =  environment(), user="postgres", password="postgres", dbname="finance_econ", search_path="sipro_stage")
+
+# [1] "xxxx"
+# > str(xxxx)
+# An 'xts' object on 1970-01-01/1970-01-01 containing:
+#   Data: num [1, 1:6] 1 2 3 4 5 6
+#  - attr(*, "dimnames")=List of 2
+#   ..$ : NULL
+#   ..$ : chr [1:6] "xxxx.Open" "xxxx.High" "xxxx.Low" "xxxx.Close" ...
+#   Indexed by objects of class: [Date] TZ: UTC
+#   xts Attributes:  
+# List of 2
+#  $ src    : chr "finance_econ"
+#  $ updated: POSIXct[1:1], format: "2016-06-05 21:46:25"
+#   
 
 
 
@@ -4282,7 +4613,7 @@ bookmarkhere <- 1
 
 #      
 #                           
-#                                                                                                                                                                                                          
+#                                                                                                                                                                                                                                           
 
 
 
@@ -4290,3 +4621,4 @@ bookmarkhere <- 1
 
 
 
+ 
