@@ -1,0 +1,68 @@
+# contrib/plr/Makefile
+
+# pl/r
+
+$(info )
+$(info Your R_HOME environment variable should be set. It is R_HOME="$(R_HOME)")
+$(info )
+
+r_libdir1x = ${R_HOME}/bin/x64
+r_libdir2x = ${R_HOME}/bin/x64
+r_includespec = -I${R_HOME}/include
+
+MODULE_big	= plr
+
+SRCS	  += plr.c pg_conversion.c pg_backend_support.c pg_userfuncs.c pg_rsupport.c
+OBJS		:= $(SRCS:.c=.o) $(WIN32RES)
+
+EXTENSION	 = plr
+DATA       = plr--8.3.0.16.sql plr--unpackaged--8.3.0.16.sql
+DATA_built = plr.sql
+PGFILEDESC = "PL/R - R Procedural Language for PostgreSQL"
+
+REGRESS		= plr
+
+EXTRA_CLEAN	= doc/html/* doc/plr-US.aux doc/plr-*.log doc/plr-*.out doc/plr-*.pdf doc/plr-*.tex-pdf
+
+SHLIB_LINK  += -L$(r_libdir1x) -L$(r_libdir2x) -lR
+
+# pl/r
+PG_CPPFLAGS	+= $(r_includespec)
+DOCS		= README.plr
+
+ifdef USE_PGXS
+ifndef PG_CONFIG
+PG_CONFIG := pg_config
+endif
+PGXS := $(shell $(PG_CONFIG) --pgxs)
+include $(PGXS)
+else
+subdir = contrib/plr
+top_builddir = ../..
+include $(top_builddir)/src/Makefile.global
+include $(top_srcdir)/contrib/contrib-global.mk
+endif
+
+# ifeq ($(PORTNAME), darwin)
+# 	DYSUFFIX = dylib
+# 	DLPREFIX = libR
+# else
+# 	ifeq ($(PORTNAME), win32)
+# 		DLPREFIX = R
+# 	else
+# 		DLPREFIX = libR
+# 	endif
+# endif
+
+DLSUFFIX = ".dll"
+
+# pl/r
+
+override CFLAGS += override CFLAGS += -Og -g3
+
+override CPPFLAGS := -I"$(srcdir)" -I"$(r_includespec)" $(CPPFLAGS)
+override CPPFLAGS += -DDLSUFFIX=\"$(DLSUFFIX)\" 
+#                                                  -Xlinker --verbose  -Q
+
+
+
