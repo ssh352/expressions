@@ -645,6 +645,110 @@ massAAIIinstallOtherCommonColumnsIndexes <- function(conn,
 #
 
 
+# NOTE: IF ZERO records exist, then this error, ( IGNORABLE for right now )
+# alter table table_99999 add constraint table_99999_column_chk check (column = ) 
+massAAIIinstallPartitionCheckConstraints <- function(conn, 
+  tabl_regex_expr             = "_\\d+$", #  specific month  _######$
+  checked_col                 = "dateindex",
+  checked_val_pre             = "", # SQL  pre-surround
+  checked_val_post            = ""  # SQL post-surround
+  ) { 
+  
+  # SQL QUERIES
+  # set constraint_exclusion = partition; -- default
+  # set constraint_exclusion = on;        -- all tables (MAYBE USEFULE IN 'UNION's)
+  
+  # make sure autovacuum is turned on(default) ***IMPORTANT **
+  # select * from pg_settings where name like 'autovacuum%';
+
+  ost <- dbGetQuery(conn,"show time zone")[[1]]
+  osp <- dbGetQuery(conn,"show search_path")[[1]]
+  
+  # update search path
+  dbGetQuery(conn, paste0("set search_path to sipro_stage") )
+  # update time zone
+  dbGetQuery(conn, "set time zone 'utc'")
+
+  tables <- dbListTablesOneSearchPath(conn)
+  
+   #  specific month  _######$
+  interested_tables <- sort(tables[grepl(tabl_regex_expr,tables)])
+  interested_tables_length <- length(interested_tables)
+  interested_tables_length_index <- 0
+  for (interested_table in interested_tables) {
+    interested_tables_length_index <- interested_tables_length_index + 1
+    cat(paste0("Begin interested_table: ", interested_table, 
+             " number ", interested_tables_length_index,
+             " of ", interested_tables_length,
+             "\n"))
+  
+    interested_column <- checked_col
+  
+    cat(paste0("  Begin interested_column: ", interested_column, " of ", interested_table,"\n"))
+  
+    if(interested_column %in% dbListFields(conn, interested_table)) {
+    
+      # NOT USED
+      # my_epoch <- gsub("^[a-z_]+_","",interested_table)
+      # gsub("my_epoch", my_epoch, )
+      
+      stmt_col_index_create <-  gsub("your_table", interested_table, gsub("your_column", interested_column,
+        "select your_column from your_table limit 1"))
+      cat(noquote(stmt_col_index_create),"\n")
+      my_result <- try( { dbGetQuery(conn, stmt_col_index_create) }, silent = TRUE )
+      if(class(my_result) == "try-error") {    
+        cat(paste0("  ERROR FAILURE: ", interested_column, " of ", interested_table,"\n"))
+        next 
+      } else {
+        my_result <- as.vector(unlist(my_result))
+      }
+        
+      
+      your_value <- paste0(checked_val_pre, my_result, checked_val_post)
+    
+      # alter table t_1980 add constraint t_1980_year_chk check (year = 1980) not valid;
+      
+      stmt_col_index_create <-  gsub("your_value", your_value, gsub("your_table", interested_table, gsub("your_column", interested_column,
+       "alter table your_table add constraint your_table_your_column_chk check (your_column = your_value)"))) #  not valid ( almost zero resources to validate )
+      cat(noquote(stmt_col_index_create),"\n")
+       try( { dbGetQuery(conn, stmt_col_index_create) }, silent = TRUE )
+
+    }
+    cat(paste0("  End interested_column: ", interested_column,"\n"))
+  
+    cat(paste0("End interested_table: ", interested_table,"\n"))
+  }
+
+  # update search path
+  dbGetQuery(conn, paste0("set search_path to ", osp))
+  # update time zone
+  dbGetQuery(conn, paste0("set time zone '",ost,"'"))
+  
+  return(invisible())
+   
+}
+
+# NOTE: IF ZERO records exist, then this error, ( IGNORABLE for right now )
+# alter table table_99999 add constraint table_99999_column_chk check (column = ) 
+
+# con <- file(paste0("OUTPUT_massAAIIinstallPartitionCheckConstraints", ".txt"));sink(con);sink(con, type="message")
+#
+# # dateindex
+# massAAIIinstallPartitionCheckConstraints(conn)
+#
+# # dateindexeom ( AFTER massAAIIinstallOtherCommonColumnsIndexes, THEN run)
+# massAAIIinstallPartitionCheckConstraints(conn, checked_col = "dateindexeom")
+#
+# sink();sink(type="message");close(con)
+# 
+# just one month 16952
+#  
+# massAAIIinstallPartitionCheckConstraints(conn, tabl_regex_expr = "16952")
+# # dateindexeom ( AFTER massAAIIinstallOtherCommonColumnsIndexes, THEN run)
+# massAAIIinstallPartitionCheckConstraints(conn, tabl_regex_expr = "16952", checked_col = "dateindexeom")
+#
+#
+
 
 massAAIIinstallOtherAddParentColumns <- function(conn, 
   not_parent_tabl_regex_expr    = "_\\d+$", 
@@ -732,6 +836,18 @@ massAAIIinstallOtherAddParentColumns <- function(conn,
 # alter table usrpts drop column "name"; 
 # alter table usrpts drop column "descr"; 
 # alter table usrpts drop column "dateindexeom"; 
+
+#
+# OUTPUT_massAAIIinstallOtherAddParentColumns_Error_fixes_or_NOT.txt
+#
+# ERROR:  syntax error at or near "NA"
+# LAST ERROR WAS errorlog_16769   ( NOTHING TO DO ( CURRENTLY ) )
+# error_log no longer exists ( and I do not use ), su not bothering to child_INHERITS
+#
+# ( NOTHING TO DO ( CURRENTLY ) )
+# ERROR:  child table "si_mgav2_14911" has different type for column "avm_03m"
+# so I currently do not need si_mgav2 # so not bothering to child_INHERITS
+#
 
 
 
@@ -4612,8 +4728,8 @@ data_processing_from_Excel4 <- function(universecoll = NULL, quickdebug = FALSE,
 bookmarkhere <- 1   
 
 #      
-#                           
-#                                                                                                                                                                                                                                           
+#                            
+#                                                                                                                                                                                                                                                    
 
 
 
