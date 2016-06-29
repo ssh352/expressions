@@ -848,6 +848,379 @@ createAAIIDataStoreSIProRetDateTable <- function(conn, new_month_inserted = " 1 
 
 
 
+# SHOULD WORK
+createAAIIDataStoreSIProSomeTables <- function(conn) {
+
+  ost  <- dbGetQuery(conn,"show time zone")[[1]]
+  osp  <- dbGetQuery(conn,"show search_path")[[1]]
+  oswm <- dbGetQuery(conn,"show work_mem")[[1]]
+  
+  # update session work memory
+  dbGetQuery(conn, paste0("set work_mem to '1200MB'"))
+  # update search path
+  dbGetQuery(conn, paste0("set search_path to sipro_data_store,sipro_stage") )
+  # update time zone
+  dbGetQuery(conn, "set time zone 'utc'")
+
+  dbGetQuery(conn, paste0("
+  
+  create table sipro_data_store.si_ci as select * from sipro_stage.si_ci;
+  -- 90 seconds
+
+
+  -- index: sipro_data_store.si_ci_adr_idx
+
+  -- drop index sipro_data_store.si_ci_adr_idx;
+
+  create index si_ci_adr_idx
+    on sipro_data_store.si_ci
+    using btree
+    (adr);
+
+  -- index: sipro_data_store.si_ci_company_id_idx
+
+  -- drop index sipro_data_store.si_ci_company_id_idx;
+
+  create index si_ci_company_id_idx
+    on sipro_data_store.si_ci
+    using btree
+    (company_id collate pg_catalog.default);
+
+  -- index: sipro_data_store.si_ci_company_id_unq_idx
+
+  -- drop index sipro_data_store.si_ci_company_id_unq_idx;
+
+  create index si_ci_company_id_unq_idx
+    on sipro_data_store.si_ci
+    using btree
+    (company_id_unq collate pg_catalog.default);
+
+  -- index: sipro_data_store.si_ci_country_idx
+
+  -- drop index sipro_data_store.si_ci_country_idx;
+
+  create index si_ci_country_idx
+    on sipro_data_store.si_ci
+    using btree
+    (country collate pg_catalog.default);
+
+  -- index: sipro_data_store.si_ci_dateindex_idx
+
+  -- drop index sipro_data_store.si_ci_dateindex_idx;
+
+  create index si_ci_dateindex_idx
+    on sipro_data_store.si_ci
+    using btree
+    (dateindex);
+
+  -- index: sipro_data_store.si_ci_dateindexeom_idx
+
+  -- drop index sipro_data_store.si_ci_dateindexeom_idx;
+
+  create index si_ci_dateindexeom_idx
+    on sipro_data_store.si_ci
+    using btree
+    (dateindexeom);
+
+  -- index: sipro_data_store.si_ci_exchange_idx
+
+  -- drop index sipro_data_store.si_ci_exchange_idx;
+
+  create index si_ci_exchange_idx
+    on sipro_data_store.si_ci
+    using btree
+    (exchange collate pg_catalog.default);
+
+  -- index: sipro_data_store.si_ci_ind_2_dig_idx
+
+  -- drop index sipro_data_store.si_ci_ind_2_dig_idx;
+
+  create index si_ci_ind_2_dig_idx
+    on sipro_data_store.si_ci
+    using btree
+    (ind_2_dig collate pg_catalog.default);
+
+  -- index: sipro_data_store.si_ci_ind_3_dig_idx
+
+  -- drop index sipro_data_store.si_ci_ind_3_dig_idx;
+
+  create index si_ci_ind_3_dig_idx
+    on sipro_data_store.si_ci
+    using btree
+    (ind_3_dig collate pg_catalog.default);
+
+  -- index: sipro_data_store.si_ci_ticker_unq_idx
+
+  -- drop index sipro_data_store.si_ci_ticker_unq_idx;
+
+  create index si_ci_ticker_unq_idx
+    on sipro_data_store.si_ci
+    using btree
+    (ticker_unq collate pg_catalog.default);
+
+  -- 52.3 seconds
+  -- ____
+
+  ----------------
+  ----------------
+
+  create table sipro_data_store.si_psd as select * from sipro_stage.si_psd;
+  -- 88 seconds
+
+
+  -- index: sipro_data_store.si_psd_company_id_idx
+
+  -- drop index sipro_data_store.si_psd_company_id_idx;
+
+  create index si_psd_company_id_idx
+    on sipro_data_store.si_psd
+    using btree
+    (company_id collate pg_catalog.default);
+
+  -- index: sipro_data_store.si_psd_company_id_unq_idx
+
+  -- drop index sipro_data_store.si_psd_company_id_unq_idx;
+
+  create index si_psd_company_id_unq_idx
+    on sipro_data_store.si_psd
+    using btree
+    (company_id_unq collate pg_catalog.default);
+
+  -- index: sipro_data_store.si_psd_dateindex_idx
+
+  -- drop index sipro_data_store.si_psd_dateindex_idx;
+
+  create index si_psd_dateindex_idx
+    on sipro_data_store.si_psd
+    using btree
+    (dateindex);
+
+  -- index: sipro_data_store.si_psd_dateindexeom_idx
+
+  -- drop index sipro_data_store.si_psd_dateindexeom_idx;
+
+  create index si_psd_dateindexeom_idx
+    on sipro_data_store.si_psd
+    using btree
+    (dateindexeom);
+
+  -- index: sipro_data_store.si_psd_mktcap_idx
+
+  -- drop index sipro_data_store.si_psd_mktcap_idx;
+
+  create index si_psd_mktcap_idx
+    on sipro_data_store.si_psd
+    using btree
+    (mktcap collate pg_catalog.default);
+
+  -- index: sipro_data_store.si_psd_ticker_unq_idx
+
+  -- drop index sipro_data_store.si_psd_ticker_unq_idx;
+
+  create index si_psd_ticker_unq_idx
+    on sipro_data_store.si_psd
+    using btree
+    (ticker_unq collate pg_catalog.default);
+
+  -- 37 seconds
+
+  ----------------------
+  ----------------------
+
+  create table sipro_data_store.si_isq as select * from sipro_stage.si_isq;
+  -- 145 seconds
+
+
+  -- index: sipro_data_store.si_isq_company_id_idx
+
+  -- drop index sipro_data_store.si_isq_company_id_idx;
+
+  create index si_isq_company_id_idx
+    on sipro_data_store.si_isq
+    using btree
+    (company_id collate pg_catalog.default);
+
+  -- index: sipro_data_store.si_isq_company_id_unq_idx
+
+  -- drop index sipro_data_store.si_isq_company_id_unq_idx;
+
+  create index si_isq_company_id_unq_idx
+    on sipro_data_store.si_isq
+    using btree
+    (company_id_unq collate pg_catalog.default);
+
+  -- index: sipro_data_store.si_isq_dateindex_idx
+
+  -- drop index sipro_data_store.si_isq_dateindex_idx;
+
+  create index si_isq_dateindex_idx
+    on sipro_data_store.si_isq
+    using btree
+    (dateindex);
+
+  -- index: sipro_data_store.si_isq_dateindexeom_idx
+
+  -- drop index sipro_data_store.si_isq_dateindexeom_idx;
+
+  create index si_isq_dateindexeom_idx
+    on sipro_data_store.si_isq
+    using btree
+    (dateindexeom);
+
+  -- index: sipro_data_store.si_isq_ticker_unq_idx
+
+  -- drop index sipro_data_store.si_isq_ticker_unq_idx;
+
+  create index si_isq_ticker_unq_idx
+    on sipro_data_store.si_isq
+    using btree
+    (ticker_unq collate pg_catalog.default);
+
+  -- _38_ seconds
+
+
+  ----------
+  ----------
+
+
+  ------------------------------------------
+  ---- BEGIN company_id_unq patch  ---------
+  ----
+
+  alter table sipro_data_store.si_ci add column company_id_unq_orig text;
+  -- instantaneously
+
+  update sipro_data_store.si_ci set company_id_unq_orig = company_id_unq;
+  -- 5 minutes
+
+  update sipro_data_store.si_ci ci 
+  set company_id_unq = ci_f.company_id_unq
+  from sipro_data_store.si_ci ci_f
+  where ci.ticker_unq = ci_f.ticker_unq
+  and   ci.dateindex   in (
+                           14911,
+                           14943,
+                           14974,
+                           15005,
+                           15033,
+                           15064,
+                           15093,
+                           15125,
+                           15155
+                          )
+  and ci_f.dateindex = 15184;
+  -- 21 seconds
+
+
+  ---- GOOD one to COPY psd DOES NOT SHOW UP IN WORDS
+
+  alter table sipro_data_store.si_psd add column company_id_unq_orig text;
+
+  update sipro_data_store.si_psd set company_id_unq_orig = company_id_unq;
+
+  update sipro_data_store.si_psd psd 
+  set company_id_unq = psd_f.company_id_unq
+  from sipro_data_store.si_psd psd_f
+  where psd.ticker_unq = psd_f.ticker_unq
+  and   psd.dateindex   in (
+                           14911,
+                           14943,
+                           14974,
+                           15005,
+                           15033,
+                           15064,
+                           15093,
+                           15125,
+                           15155
+                          )
+  and psd_f.dateindex = 15184;
+
+  ----
+
+  alter table sipro_data_store.si_isq add column company_id_unq_orig text;
+
+  update sipro_data_store.si_isq set company_id_unq_orig = company_id_unq;
+
+  update sipro_data_store.si_isq isq 
+  set company_id_unq = isq_f.company_id_unq
+  from sipro_data_store.si_isq isq_f
+  where isq.ticker_unq = isq_f.ticker_unq
+  and   isq.dateindex   in (
+                           14911,
+                           14943,
+                           14974,
+                           15005,
+                           15033,
+                           15064,
+                           15093,
+                           15125,
+                           15155
+                          )
+  and isq_f.dateindex = 15184;
+
+  ----
+  ----  END company_id_unq patch  ---------
+  -----------------------------------------
+  
+  "))
+  
+  dbSendQuery(conn, "vacuum analyze sipro_data_store.si_ci(company_id_unq)")
+
+  dbSendQuery(conn, "vacuum analyze sipro_data_store.si_psd(company_id_unq)")
+
+  dbSendQuery(conn, "vacuum analyze sipro_data_store.si_isq(company_id_unq)")
+  
+  # update search path
+  dbGetQuery(conn, paste0("set search_path to ", osp))
+  # update time zone
+  dbGetQuery(conn, paste0("set time zone '",ost,"'"))
+  # update session work memory
+  dbGetQuery(conn, paste0("set work_mem to '",oswm,"'"))
+  
+  return(invisible())
+
+} 
+
+# INIT RAN ONCE
+# createAAIIDataStoreSIProSomeTables(conn)
+#
+# PER EACH NEW abc TABLE
+#   create table sipro_data_store.si_abc as select * from sipro_stage.si_abc;
+#     
+#   ... COULD BE MANY INDEXES ...
+#   create index si_isq_column_idx
+#   on sipro_data_store.si_isq
+#   using btree
+#   (column);
+#
+#
+# alter table sipro_data_store.si_abc add column company_id_unq_orig text;
+#
+# update sipro_data_store.si_abc set company_id_unq_orig = company_id_unq;
+#
+# update sipro_data_store.si_abc abc 
+# set company_id_unq = abc_f.company_id_unq
+# from sipro_data_store.si_abc abc_f
+# where abc.ticker_unq = abc_f.ticker_unq
+# and   abc.dateindex   in (
+#                          14911,
+#                          14943,
+#                          14974,
+#                          15005,
+#                          15033,
+#                          15064,
+#                          15093,
+#                          15125,
+#                          15155
+#                         )
+# and abc_f.dateindex = 15184;
+#
+# 
+# vacuum analyze sipro_data_store.si_abc(company_id_unq);
+# 
+
+
+
 
 
 massAAIIinstallOtherAddParentColumns <- function(conn, 
@@ -4829,7 +5202,7 @@ bookmarkhere <- 1
 
 #      
 #                             
-#                                                                                                                                                                                                                                                     
+#                                                                                                                                                                                                                                                      
 
 
  
