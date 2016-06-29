@@ -1,4 +1,6 @@
 
+# data_loading_with_Excel_4.R
+
 options(width = 10000) # 255    
 options(digits = 22) 
 options(max.print=99999)
@@ -748,6 +750,104 @@ massAAIIinstallPartitionCheckConstraints <- function(conn,
 # massAAIIinstallPartitionCheckConstraints(conn, tabl_regex_expr = "16952", checked_col = "dateindexeom")
 #
 #
+
+
+
+# WORKS
+createAAIIDataStoreSIProRetDateTable <- function(conn, new_month_inserted = " 1 = 1 " ) {
+
+  ost  <- dbGetQuery(conn,"show time zone")[[1]]
+  osp  <- dbGetQuery(conn,"show search_path")[[1]]
+  oswm <- dbGetQuery(conn,"show work_mem")[[1]]
+  
+  # update session work memory
+  dbGetQuery(conn, paste0("set work_mem to '1200MB'"))
+  # update search path
+  dbGetQuery(conn, paste0("set search_path to sipro_stage") ) # BLINDLY CREATE TO SCHEMA sipro_data_store
+  # update time zone
+  dbGetQuery(conn, "set time zone 'utc'")
+
+  dbGetQuery(conn, paste0("
+  
+  -- BEGIN VERY KEEP --
+  -- BEGIN VERY KEEP --
+
+  ", if(new_month_inserted == " 1 = 1 ") { " create table sipro_data_store.si_retdate as " } else { " insert into sipro_data_store.si_retdate "  },
+  " select 
+  dateindex,
+  dateindexf12meom,
+  case 
+    when extract(dow from mldom.f12mldom) = 0  then (extract('epoch' from mldom.f12mldom - interval '2 day') /(3600*24))::int
+    when extract(dow from mldom.f12mldom) = 6  then (extract('epoch' from mldom.f12mldom - interval '1 day') /(3600*24))::int
+  else (extract('epoch' from mldom.f12mldom) /(3600*24))::int end dateindexf12mlwd,
+  dateindexf09meom,
+  case 
+    when extract(dow from mldom.f09mldom) = 0  then (extract('epoch' from mldom.f09mldom - interval '2 day') /(3600*24))::int
+    when extract(dow from mldom.f09mldom) = 6  then (extract('epoch' from mldom.f09mldom - interval '1 day') /(3600*24))::int
+  else (extract('epoch' from mldom.f09mldom) /(3600*24))::int end dateindexf09mlwd,
+  dateindexf06meom,
+  case 
+    when extract(dow from mldom.f06mldom) = 0  then (extract('epoch' from mldom.f06mldom - interval '2 day') /(3600*24))::int
+    when extract(dow from mldom.f06mldom) = 6  then (extract('epoch' from mldom.f06mldom - interval '1 day') /(3600*24))::int
+  else (extract('epoch' from mldom.f06mldom) /(3600*24))::int end dateindexf06mlwd,
+  dateindexf03meom,
+  case 
+    when extract(dow from mldom.f03mldom) = 0  then (extract('epoch' from mldom.f03mldom - interval '2 day') /(3600*24))::int
+    when extract(dow from mldom.f03mldom) = 6  then (extract('epoch' from mldom.f03mldom - interval '1 day') /(3600*24))::int
+  else (extract('epoch' from mldom.f03mldom) /(3600*24))::int end dateindexf03mlwd
+  from (
+  select 
+    dateindex,
+                          f1m_and_b1d.f1m_and_b1d + interval '12 month'                             f12mldom, -- future12m last day of month
+    (extract('epoch' from f1m_and_b1d.f1m_and_b1d + interval '12 month')  /(3600*24))::int dateindexf12meom,
+                          f1m_and_b1d.f1m_and_b1d + interval '09 month'                             f09mldom,
+    (extract('epoch' from f1m_and_b1d.f1m_and_b1d + interval '09 month')  /(3600*24))::int dateindexf09meom,
+                          f1m_and_b1d.f1m_and_b1d + interval '06 month'                             f06mldom,
+    (extract('epoch' from f1m_and_b1d.f1m_and_b1d + interval '06 month')  /(3600*24))::int dateindexf06meom,
+                          f1m_and_b1d.f1m_and_b1d + interval '03 month'                             f03mldom,
+    (extract('epoch' from f1m_and_b1d.f1m_and_b1d + interval '03 month')  /(3600*24))::int dateindexf03meom
+  from (
+  -- forward 1 month and back 1 day
+  select date_trunc('month', to_timestamp(dateindex*3600*24)::date) + interval '1 month' - interval '1 day'  f1m_and_b1d, 
+         dateindex 
+  from ( select distinct on (dateindex) dateindex from si_ci where ", new_month_inserted, ") f1m_and_b1d -- PostgreSQL proprietary - returns just one of each
+  ) f1m_and_b1d -- where dateindex = 16952 -- WORKS - just load the (current) month 
+  ) mldom; 
+  -- WORKS - INSTANTANEIOUS
+
+  ---- set search_path to sipro_stage,sipro_data_store;
+  ---- set time zone 'utc';
+
+  ---- select * from sipro_data_store.si_retdate;
+
+  -- END VERY KEEP --
+  -- END VERY KEEP --
+  
+  "))
+  
+  dbSendQuery(conn, paste0("vacuum analyze sipro_data_store.si_retdate"))
+  
+  
+  # update search path
+  dbGetQuery(conn, paste0("set search_path to ", osp))
+  # update time zone
+  dbGetQuery(conn, paste0("set time zone '",ost,"'"))
+  # update session work memory
+  dbGetQuery(conn, paste0("set work_mem to '",oswm,"'"))
+  
+  return(invisible())
+
+} 
+
+# JUST ONCE - BIG INITIALIZATION
+# createAAIIDataStoreSIProRetDateTable(conn)
+
+# ADD A NEW RECORD EVERY TIME
+# createAAIIDataStoreSIProRetDateTable(conn, new_month_inserted = " dateindex = 16952 ")
+# 
+
+
+
 
 
 massAAIIinstallOtherAddParentColumns <- function(conn, 
@@ -4728,13 +4828,8 @@ data_processing_from_Excel4 <- function(universecoll = NULL, quickdebug = FALSE,
 bookmarkhere <- 1   
 
 #      
-#                            
-#                                                                                                                                                                                                                                                    
-
-
-
-
-
+#                             
+#                                                                                                                                                                                                                                                     
 
 
  
