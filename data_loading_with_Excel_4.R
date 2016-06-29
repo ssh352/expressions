@@ -1219,6 +1219,56 @@ createAAIIDataStoreSIProSomeTables <- function(conn) {
 # vacuum analyze sipro_data_store.si_abc(company_id_unq);
 # 
 
+# SHOULD WORK 
+createAAIIDataStoreSIProSomeTablesNewMonthInserted <- function(conn, new_month_inserted = " 1 = 0 " ) {
+
+  ost  <- dbGetQuery(conn,"show time zone")[[1]]
+  osp  <- dbGetQuery(conn,"show search_path")[[1]]
+  oswm <- dbGetQuery(conn,"show work_mem")[[1]]
+  
+  # update session work memory
+  dbGetQuery(conn, paste0("set work_mem to '1200MB'"))
+
+  # update search path
+  dbGetQuery(conn, paste0("set search_path to sipro_stage") ) # BLINDLY CREATE TO SCHEMA sipro_data_store
+
+  # update time zone
+  dbGetQuery(conn, "set time zone 'utc'")
+
+  dbGetQuery(conn, 
+  paste0("
+
+  insert into  sipro_data_store.si_ci as select * from sipro_stage.si_ci   where ", new_month_inserted, "; 
+ 
+  insert into  sipro_data_store.si_psd as select * from sipro_stage.si_psd where ", new_month_inserted, "; 
+
+  insert into  sipro_data_store.si_isq as select * from sipro_stage.si_isq where ", new_month_inserted, "; 
+
+   "))
+
+  dbSendQuery(conn, "vacuum analyze sipro_data_store.si_ci")
+
+  dbSendQuery(conn, "vacuum analyze sipro_data_store.si_psd")
+
+  dbSendQuery(conn, "vacuum analyze sipro_data_store.si_isq")
+
+  # update search path
+  dbGetQuery(conn, paste0("set search_path to ", osp))
+
+  # update time zone
+  dbGetQuery(conn, paste0("set time zone '",ost,"'"))
+
+  # update session work memory
+  dbGetQuery(conn, paste0("set work_mem to '",oswm,"'"))
+  
+  return(invisible())
+
+} 
+
+# SHOULD WORK -- PER NEW MONTH
+# createAAIIDataStoreSIProSomeTablesNewMonthInserted(conn, new_month_inserted = " dateindex = 16952 ")
+
+
 
 
 
@@ -5201,8 +5251,5 @@ data_processing_from_Excel4 <- function(universecoll = NULL, quickdebug = FALSE,
 bookmarkhere <- 1   
 
 #      
-#                             
-#                                                                                                                                                                                                                                                      
-
-
- 
+#                              
+#                                                                                                                                                                                                                                                        
