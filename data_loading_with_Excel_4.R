@@ -839,7 +839,7 @@ createAAIIDataStoreSIProRetDateTable <- function(conn, new_month_inserted = " 1 
 
 } 
 
-# JUST ONCE - BIG INITIALIZATION
+# JUST ONCE - BIG INITIALIZATION - could take up to 60 seconds to run
 # createAAIIDataStoreSIProRetDateTable(conn)
 
 # ADD A NEW RECORD EVERY TIME
@@ -1282,6 +1282,11 @@ createAAIIDataStoreSIProSomeTablesNewMonthInserted <- function(conn, new_month_i
 # MAYBE FUTURE?
 # use within 366 future date ranges
 #
+##  ## AFTER VACATION ## FIX ### LEFT_OFF # FAILING TO JOIN ON THE CORRECT
+### 5 CHARACTER NEW company_id ### I AM SEEIN STILL THE OLD 8 CHARACTER IDS
+#
+# AFTER THIS FIX(ABOVE): LOAD END OF JUNE DATA 
+#
 createAAIIDataStoreSIProReturnsTable <- function(conn) {
 
   ost  <- dbGetQuery(conn,"show time zone")[[1]]
@@ -1297,17 +1302,40 @@ createAAIIDataStoreSIProReturnsTable <- function(conn) {
 
   dbGetQuery(conn, 
   paste0("
+
+  -- BUT 'ONLY GOOD' SOLUTION': REGENERATE *EVERYTHING* EVERY NEW MONTH
+  -- for (TESTING) a SINGLE MONTH --
+
+  --REPLACE
+  --from 
+  --                si_retdate retdate
+  --           join si_ci ci 
+  --WITH
+  --from 
+  --                ( select * from si_retdate where dateindex = 15705 ) retdate
+  --           join ( select * from si_ci where dateindex = 15705 ) ci 
+  --
+
+  set search_path to sipro_data_store,sipro_stage;
+  set time zone 'utc';
+  set work_mem to '1200MB';
+  set constraint_exclusion = on;
+  
+  show search_path;
+  
   create table sipro_data_store.si_returns as
   -- explain --analyze
-  select retdate.dateindex retdate_dateindex, 
+  select  
+    retdate.dateindex retdate_dateindex, 
+    ( extract( 'epoch' from ( date_trunc('month', to_timestamp(retdate.dateindex*3600*24)::date) + interval '1 month' - interval '1 day'  )) / ( 3600 * 24 ) )::integer retdate_dateindexeom,
     ci.dateindex         now_dateindex,
-    ci.dateindexeom      now_dateindexeom,
+    ( extract( 'epoch' from ( date_trunc('month', to_timestamp(ci.dateindex*3600*24)::date) + interval '1 month' - interval '1 day'  )) / ( 3600 * 24 ) )::integer now_dateindexeom,
     ci.company_id_unq    now_company_id_unq,
     ci.ticker_unq        now_ticker_unq,
     ci.company           now_company,
     psd.price            now_price,
     w52.dateindex        w52_dateindex,
-    w52.dateindexeom     w52_dateindexeom,
+    ( extract( 'epoch' from ( date_trunc('month', to_timestamp(w52.dateindex*3600*24)::date) + interval '1 month' - interval '1 day'  )) / ( 3600 * 24 ) )::integer w52_dateindexeom,
     w52.company_id_unq   w52_company_id_unq,
     w52.ticker_unq       w52_ticker_unq,
     w52.company          w52_company,
@@ -1319,7 +1347,7 @@ createAAIIDataStoreSIProReturnsTable <- function(conn) {
     w52.pradchg_52w      w52_pradchg_52w,
     w52.pradchg_52w_ann  w52_pradchg_52w_ann,
     w26.dateindex        w26_dateindex,
-    w26.dateindexeom     w26_dateindexeom,
+    ( extract( 'epoch' from ( date_trunc('month', to_timestamp(w26.dateindex*3600*24)::date) + interval '1 month' - interval '1 day'  )) / ( 3600 * 24 ) )::integer w26_dateindexeom,
     w26.company_id_unq   w26_company_id_unq,
     w26.ticker_unq       w26_ticker_unq,
     w26.company          w26_company,
@@ -1331,7 +1359,7 @@ createAAIIDataStoreSIProReturnsTable <- function(conn) {
     w26.pradchg_26w      w26_pradchg_26w,
     w26.pradchg_26w_ann  w26_pradchg_26w_ann,
     w13.dateindex        w13_dateindex,
-    w13.dateindexeom     w13_dateindexeom,
+    ( extract( 'epoch' from ( date_trunc('month', to_timestamp(w13.dateindex*3600*24)::date) + interval '1 month' - interval '1 day'  )) / ( 3600 * 24 ) )::integer w13_dateindexeom,
     w13.company_id_unq   w13_company_id_unq,
     w13.ticker_unq       w13_ticker_unq,
     w13.company          w13_company,
@@ -1345,20 +1373,13 @@ createAAIIDataStoreSIProReturnsTable <- function(conn) {
   from 
                   si_retdate retdate
              join si_ci ci 
-             -- REPLACEMENT partial generation ( not useful )
-             --     ( select * from si_retdate where dateindex = 15705  ) retdate
-             -- join ( select * from si_ci where dateindex  = 15705  ) ci 
-             
                 on retdate.dateindex = ci.dateindex 
-                
-                
-                
                 
         left join si_psd psd
                 on ci.dateindex      = psd.dateindex
                and ci.company_id_unq = psd.company_id_unq
-
-        left join lateral ( select cif.dateindex, cif.dateindexeom, cif.company_id_unq, cif.ticker_unq, cif.company,
+  
+        left join lateral ( select cif.dateindex, cif.company_id_unq, cif.ticker_unq, cif.company,
         fut.pricebck,
         fut.prchg_52w,
         fut.prchg_52w_ann,
@@ -1369,7 +1390,7 @@ createAAIIDataStoreSIProReturnsTable <- function(conn) {
         from
                 
                    si_ci cif 
-
+  
         left join (
            select fut_i.dateindex, fut_i.company_id_unq, 
                   fut_i.pricebck, 
@@ -1377,33 +1398,33 @@ createAAIIDataStoreSIProReturnsTable <- function(conn) {
                   fut_i.prchg_52w_ann,
                   fut_i.price,
                   fut_i.divaccmf4q,
-
+  
                   fut_i.prchg_52w + 
                     case 
                     when  fut_i.divaccmf4q = 0.00::numeric(15,2) then 0.00 
                     else (fut_i.divaccmf4q / nullif(fut_i.pricebck,0.00::numeric(15,2))) 
                     end * 100 pradchg_52w,
-
+  
                 ( fut_i.prchg_52w + 
                     case 
                     when  fut_i.divaccmf4q = 0.00::numeric(15,2) then 0.00 
                     else (fut_i.divaccmf4q / nullif(fut_i.pricebck,0.00::numeric(15,2))) 
                     end * 100 ) * 1 pradchg_52w_ann
-
+  
            from (
            select psd.dateindex, psd.company_id_unq,
-
+  
            psd.price::numeric(15,2)/(nullif(psd.prchg_52w::numeric(15,2),-100.00::numeric(15,2))/100.00::numeric(15,2) + 1.00) pricebck,
            psd.prchg_52w::numeric(15,2),
            psd.prchg_52w::numeric(15,2) * 1 prchg_52w_ann,
-
+  
            coalesce(isq.dps_q1::numeric(15,2),0.00::numeric(15,2))   + 
            coalesce(isq.dps_q2::numeric(15,2),0.00::numeric(15,2))   + 
            coalesce(isq.dps_q3::numeric(15,2),0.00::numeric(15,2))   + 
            coalesce(isq.dps_q4::numeric(15,2),0.00::numeric(15,2))   divaccmf4q,
-
+  
            psd.price::numeric(15,2)
-
+  
            from
            si_isq isq full outer join si_psd psd 
            on  isq.company_id_unq = psd.company_id_unq
@@ -1411,13 +1432,13 @@ createAAIIDataStoreSIProReturnsTable <- function(conn) {
            ) fut_i
            ) fut on cif.dateindex      = fut.dateindex 
                 and cif.company_id_unq = fut.company_id_unq 
-
+  
            where ci.company_id_unq       = cif.company_id_unq
            and retdate.dateindexf12mlwd  = cif.dateindex
-
+  
            ) w52 on (true)
-
-        left join lateral ( select cif.dateindex, cif.dateindexeom, cif.company_id_unq, cif.ticker_unq, cif.company,
+  
+        left join lateral ( select cif.dateindex, cif.company_id_unq, cif.ticker_unq, cif.company,
         fut.pricebck,
         fut.prchg_26w,
         fut.prchg_26w_ann,
@@ -1428,7 +1449,7 @@ createAAIIDataStoreSIProReturnsTable <- function(conn) {
         from
                 
                    si_ci cif 
-
+  
         left join (
            select fut_i.dateindex, fut_i.company_id_unq, 
                   fut_i.pricebck, 
@@ -1436,31 +1457,31 @@ createAAIIDataStoreSIProReturnsTable <- function(conn) {
                   fut_i.prchg_26w_ann,
                   fut_i.price,
                   fut_i.divaccmf2q,
-
+  
                   fut_i.prchg_26w + 
                     case 
                     when  fut_i.divaccmf2q = 0.00::numeric(15,2) then 0.00 
                     else (fut_i.divaccmf2q / nullif(fut_i.pricebck,0.00::numeric(15,2))) 
                     end * 100 pradchg_26w,
-
+  
                 ( fut_i.prchg_26w + 
                     case 
                     when  fut_i.divaccmf2q = 0.00::numeric(15,2) then 0.00 
                     else (fut_i.divaccmf2q / nullif(fut_i.pricebck,0.00::numeric(15,2))) 
                     end * 100 ) * 2  pradchg_26w_ann
-
+  
            from (
            select psd.dateindex, psd.company_id_unq,
-
+  
            psd.price::numeric(15,2)/(nullif(psd.prchg_26w::numeric(15,2),-100.00::numeric(15,2))/100.00::numeric(15,2) + 1.00) pricebck,
            psd.prchg_26w::numeric(15,2),
            psd.prchg_26w::numeric(15,2) * 2 prchg_26w_ann,
-
+  
            coalesce(isq.dps_q1::numeric(15,2),0.00::numeric(15,2))   + 
            coalesce(isq.dps_q2::numeric(15,2),0.00::numeric(15,2))   divaccmf2q,
-
+  
            psd.price::numeric(15,2)
-
+  
            from
            si_isq isq full outer join si_psd psd 
            on  isq.company_id_unq = psd.company_id_unq
@@ -1468,13 +1489,13 @@ createAAIIDataStoreSIProReturnsTable <- function(conn) {
            ) fut_i
            ) fut on cif.dateindex      = fut.dateindex 
                 and cif.company_id_unq = fut.company_id_unq 
-
+  
            where ci.company_id_unq       = cif.company_id_unq
            and retdate.dateindexf12mlwd  = cif.dateindex
-
+  
            ) w26 on (true)
            
-        left join lateral ( select cif.dateindex, cif.dateindexeom, cif.company_id_unq, cif.ticker_unq, cif.company,
+        left join lateral ( select cif.dateindex, cif.company_id_unq, cif.ticker_unq, cif.company,
         fut.pricebck,
         fut.prchg_13w,
         fut.prchg_13w_ann,
@@ -1485,7 +1506,7 @@ createAAIIDataStoreSIProReturnsTable <- function(conn) {
         from
                 
                    si_ci cif 
-
+  
         left join (
            select fut_i.dateindex, fut_i.company_id_unq, 
                   fut_i.pricebck, 
@@ -1493,30 +1514,30 @@ createAAIIDataStoreSIProReturnsTable <- function(conn) {
                   fut_i.prchg_13w_ann,
                   fut_i.price,
                   fut_i.divaccmf1q,
-
+  
                   fut_i.prchg_13w + 
                     case 
                     when  fut_i.divaccmf1q = 0.00::numeric(15,2) then 0.00 
                     else (fut_i.divaccmf1q / nullif(fut_i.pricebck,0.00::numeric(15,2))) 
                     end * 100 pradchg_13w,
-
+  
                 ( fut_i.prchg_13w + 
                     case 
                     when  fut_i.divaccmf1q = 0.00::numeric(15,2) then 0.00 
                     else (fut_i.divaccmf1q / nullif(fut_i.pricebck,0.00::numeric(15,2))) 
                     end * 100 ) * 4 pradchg_13w_ann
-
+  
            from (
            select psd.dateindex, psd.company_id_unq,
-
+  
            psd.price::numeric(15,2)/(nullif(psd.prchg_13w::numeric(15,2),-100.00::numeric(15,2))/100.00::numeric(15,2) + 1.00) pricebck,
            psd.prchg_13w::numeric(15,2),
            psd.prchg_13w::numeric(15,2) * 4 prchg_13w_ann,
-
+  
            coalesce(isq.dps_q1::numeric(15,2),0.00::numeric(15,2))   divaccmf1q,
-
+  
            psd.price::numeric(15,2)
-
+  
            from
            si_isq isq full outer join si_psd psd 
            on  isq.company_id_unq = psd.company_id_unq
@@ -1524,38 +1545,77 @@ createAAIIDataStoreSIProReturnsTable <- function(conn) {
            ) fut_i
            ) fut on cif.dateindex      = fut.dateindex 
                 and cif.company_id_unq = fut.company_id_unq 
-
+  
            where ci.company_id_unq       = cif.company_id_unq
            and retdate.dateindexf12mlwd  = cif.dateindex
-
+  
            ) w13 on (true)
+  order by 2,1  -- retdate_dateindexoem, retdate_dateindex
   ;
   -- 5:45
+  -- 10:42 COLD START
+
   
    "))
 
   
   dbGetQuery(conn, paste0("
 
-  create index si_returns_now_dateindex_idx
-    on sipro_data_store.si_returns
-    using btree
+  -- Index: sipro_data_store.si_returns_now_company_id_unq_idx
+  
+  -- DROP INDEX sipro_data_store.si_returns_now_company_id_unq_idx;
+  
+  CREATE INDEX si_returns_now_company_id_unq_idx
+    ON sipro_data_store.si_returns
+    USING btree
+    (now_company_id_unq);
+  
+  -- Index: sipro_data_store.si_returns_now_ticker_unq_idx
+  
+  -- DROP INDEX sipro_data_store.si_returns_now_ticker_unq_idx;
+  
+  CREATE INDEX si_returns_now_ticker_unq_idx
+    ON sipro_data_store.si_returns
+    USING btree
+    (now_ticker_unq);
+  
+  -- Index: sipro_data_store.si_returns_retdate_dateindex_idx
+  
+  -- DROP INDEX sipro_data_store.si_returns_retdate_dateindex_idx;
+  
+  CREATE INDEX si_returns_retdate_dateindex_idx
+    ON sipro_data_store.si_returns
+    USING btree
+    (retdate_dateindex);
+  
+  -- Index: sipro_data_store.si_returns_retdate_dateindexeom_idx
+  
+  -- DROP INDEX sipro_data_store.si_returns_retdate_dateindexeom_idx;
+  
+  CREATE INDEX si_returns_retdate_dateindexeom_idx
+    ON sipro_data_store.si_returns
+    USING btree
+    (retdate_dateindexeom);
+  
+  -- Index: sipro_data_store.si_returns_now_dateindex_idx
+  
+  -- DROP INDEX sipro_data_store.si_returns_now_dateindex_idx;
+  
+  CREATE INDEX si_returns_now_dateindex_idx
+    ON sipro_data_store.si_returns
+    USING btree
     (now_dateindex);
-
-  create index si_returns_now_dateindexeom_idx
-    on sipro_data_store.si_returns
-    using btree
+  
+  -- Index: sipro_data_store.si_returns_now_dateindexeom_idx
+  
+  -- DROP INDEX sipro_data_store.si_returns_now_dateindexeom_idx;
+  
+  CREATE INDEX si_returns_now_dateindexeom_idx
+    ON sipro_data_store.si_returns
+    USING btree
     (now_dateindexeom);
-
-  create index si_returns_now_ticker_unq_idx
-    on sipro_data_store.si_returns
-    using btree
-    (now_ticker_unq collate pg_catalog.default);
-
-  create index si_returns_now_company_id_unq_idx
-    on sipro_data_store.si_returns
-    using btree
-    (now_company_id_unq collate pg_catalog.default);
+  
+  -- 25 seconds
 
   "))
 
@@ -5561,4 +5621,12 @@ bookmarkhere <- 1
 
 #      
 #                              
-#                                                                                                                                                                                                                                                        
+#                                                                                                                                                                                                                                                          
+
+
+
+
+
+
+
+ 
