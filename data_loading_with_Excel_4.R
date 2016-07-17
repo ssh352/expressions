@@ -958,8 +958,40 @@ createAAIIDataStoreSIProSomeTables <- function(conn) {
     using btree
     (ticker_unq collate pg_catalog.default);
 
+  -- index: sipro_data_store.si_ci_sp_idx
+
+  -- drop index sipro_data_store.si_ci_sp_idx;
+
+  create index si_ci_sp_idx
+    on sipro_data_store.si_ci
+    using btree
+    (sp);
+
+  -- 7 seconds
+
+  -- index: sipro_data_store.si_ci_company_not_lk_ishares_idx
+
+  -- drop index sipro_data_store.si_ci_company_not_lk_ishares_idx;
+
+  create index si_ci_company_not_lk_ishares_idx
+    on sipro_data_store.si_ci
+    using btree
+    (company)
+    where company !~~ '%ishares%'::text;
+
   -- 52.3 seconds
-  -- ____
+
+  -- index: sipro_data_store.si_ci_sp_500_idx
+
+  -- drop index sipro_data_store.si_ci_sp_500_idx;
+
+  create index si_ci_sp_500_idx
+    on sipro_data_store.si_ci
+    using btree
+    (sp) 
+    where sp = '500';
+
+  -- 1 second
 
   ----------------
   ----------------
@@ -1022,6 +1054,56 @@ createAAIIDataStoreSIProSomeTables <- function(conn) {
     using btree
     (ticker_unq collate pg_catalog.default);
 
+  -- index: sipro_data_store.si_psd_mktcap_gr_1600_idx
+  
+  -- drop index sipro_data_store.si_psd_mktcap_gr_1600_idx;
+  
+  create index si_psd_mktcap_gr_1600_idx
+    on sipro_data_store.si_psd
+    using btree
+    (mktcap)
+    where mktcap::numeric(15,2) >= 1600::numeric;
+  
+  -- index: sipro_data_store.si_psd_mktcap_gr_200_idx
+  
+  -- drop index sipro_data_store.si_psd_mktcap_gr_200_idx;
+  
+  create index si_psd_mktcap_gr_200_idx
+    on sipro_data_store.si_psd
+    using btree
+    (mktcap)
+    where mktcap::numeric(15,2) >= 200::numeric;
+  
+  -- index: sipro_data_store.si_psd_mktcap_gr_200_lt_1600_idx
+  
+  -- drop index sipro_data_store.si_psd_mktcap_gr_200_lt_1600_idx;
+  
+  create index si_psd_mktcap_gr_200_lt_1600_idx
+    on sipro_data_store.si_psd
+    using btree
+    (mktcap)
+    where mktcap::numeric(15,2) >= 200::numeric and mktcap::numeric(15,2) < 1600::numeric;
+  
+  -- index: sipro_data_store.si_psd_mktcap_gr_25_idx
+  
+  -- drop index sipro_data_store.si_psd_mktcap_gr_25_idx;
+  
+  create index si_psd_mktcap_gr_25_idx
+    on sipro_data_store.si_psd
+    using btree
+    (mktcap)
+    where mktcap::numeric(15,2) >= 25::numeric;
+  
+  -- index: sipro_data_store.si_psd_mktcap_gr_25_lt_200_idx
+  
+  -- drop index sipro_data_store.si_psd_mktcap_gr_25_lt_200_idx;
+  
+  create index si_psd_mktcap_gr_25_lt_200_idx
+    on sipro_data_store.si_psd
+    using btree
+    (mktcap)
+    where mktcap::numeric(15,2) >= 25::numeric and mktcap::numeric(15,2) < 200::numeric;
+  
   -- 37 seconds
 
   ----------------------
@@ -1081,6 +1163,457 @@ createAAIIDataStoreSIProSomeTables <- function(conn) {
 
   ----------
   ----------
+
+----
+
+  create table sipro_data_store.si_mgdsc as select * from sipro_stage.si_mgdsc;
+  -- 19 seconds
+
+  -- index: sipro_data_store.si_mgdsc_dateindex_idx
+
+  -- drop index sipro_data_store.si_mgdsc_dateindex_idx;
+
+  create index si_mgdsc_dateindex_idx
+    on sipro_data_store.si_mgdsc
+    using btree
+    (dateindex);
+
+  -- index: sipro_data_store.si_mgdsc_dateindexeom_idx
+
+  -- drop index sipro_data_store.si_mgdsc_dateindexeom_idx;
+
+  create index si_mgdsc_dateindexeom_idx
+    on sipro_data_store.si_mgdsc
+    using btree
+    (dateindexeom);
+
+  -- index: sipro_data_store.si_mgdsc_mg_code_idx
+
+  -- drop index sipro_data_store.si_mgdsc_mg_code_idx;
+
+  create index si_mgdsc_mg_code_idx
+    on sipro_data_store.si_mgdsc
+    using btree
+    (mg_code);
+
+  -- index: sipro_data_store.si_mgdsc_mg_desc_idx
+
+  -- drop index sipro_data_store.si_mgdsc_mg_desc_idx;
+
+  create index si_mgdsc_mg_desc_idx
+    on sipro_data_store.si_mgdsc
+    using btree
+    (mg_desc);
+
+  -- 1 seconds
+
+----
+
+  create table sipro_data_store.si_exchg as select * from sipro_stage.si_exchg;
+  -- 1 seconds
+
+  -- index: sipro_data_store.si_exchg_dateindex_idx
+
+  -- drop index sipro_data_store.si_exchg_dateindex_idx;
+
+  create index si_exchg_dateindex_idx
+    on sipro_data_store.si_exchg
+    using btree
+    (dateindex);
+
+  -- index: sipro_data_store.si_exchg_dateindexeom_idx
+
+  -- drop index sipro_data_store.si_exchg_dateindexeom_idx;
+
+  create index si_exchg_dateindexeom_idx
+    on sipro_data_store.si_exchg
+    using btree
+    (dateindexeom);
+
+  -- index: sipro_data_store.si_exchg_exchg_code_idx
+
+  -- drop index sipro_data_store.si_exchg_exchg_code_idx;
+
+  create index si_exchg_exchg_code_idx
+    on sipro_data_store.si_exchg
+    using btree
+    (exchg_code);
+
+  -- index: sipro_data_store.si_exchg_exchg_desc_idx
+
+  -- drop index sipro_data_store.si_exchg_exchg_desc_idx;
+
+  create index si_exchg_exchg_desc_idx
+    on sipro_data_store.si_exchg
+    using btree
+    (exchg_desc);
+
+  -- 1 seconds
+
+----
+
+  create table sipro_data_store.si_psdd as select * from sipro_stage.si_psdd;
+  -- 101 seconds
+
+  -- index: sipro_data_store.si_psdd_company_id_idx
+
+  -- drop index sipro_data_store.si_psdd_company_id_idx;
+
+  create index si_psdd_company_id_idx
+    on sipro_data_store.si_psdd
+    using btree
+    (company_id);
+
+  -- index: sipro_data_store.si_psdd_company_id_unq_idx
+
+  -- drop index sipro_data_store.si_psdd_company_id_unq_idx;
+
+  create index si_psdd_company_id_unq_idx
+    on sipro_data_store.si_psdd
+    using btree
+    (company_id_unq);
+
+  -- index: sipro_data_store.si_psdd_dateindex_idx
+
+  -- drop index sipro_data_store.si_psdd_dateindex_idx;
+
+  create index si_psdd_dateindex_idx
+    on sipro_data_store.si_psdd
+    using btree
+    (dateindex);
+
+  -- index: sipro_data_store.si_psdd_dateindexeom_idx
+
+  -- drop index sipro_data_store.si_psdd_dateindexeom_idx;
+
+  create index si_psdd_dateindexeom_idx
+    on sipro_data_store.si_psdd
+    using btree
+    (dateindexeom);
+
+  -- index: sipro_data_store.si_psdd_ticker_unq_idx
+
+  -- drop index sipro_data_store.si_psdd_ticker_unq_idx;
+
+  create index si_psdd_ticker_unq_idx
+    on sipro_data_store.si_psdd
+    using btree
+    (ticker_unq);
+
+  --  42 seconds
+
+----
+
+
+  create table sipro_data_store.si_psdc as select * from sipro_stage.si_psdc;
+  -- 120 seconds
+
+  -- index: sipro_data_store.si_psdc_company_id_idx
+
+  -- drop index sipro_data_store.si_psdc_company_id_idx;
+
+  create index si_psdc_company_id_idx
+    on sipro_data_store.si_psdc
+    using btree
+    (company_id);
+
+  -- index: sipro_data_store.si_psdc_company_id_unq_idx
+
+  -- drop index sipro_data_store.si_psdc_company_id_unq_idx;
+
+  create index si_psdc_company_id_unq_idx
+    on sipro_data_store.si_psdc
+    using btree
+    (company_id_unq);
+
+  -- index: sipro_data_store.si_psdc_dateindex_idx
+
+  -- drop index sipro_data_store.si_psdc_dateindex_idx;
+
+  create index si_psdc_dateindex_idx
+    on sipro_data_store.si_psdc
+    using btree
+    (dateindex);
+
+  -- index: sipro_data_store.si_psdc_dateindexeom_idx
+
+  -- drop index sipro_data_store.si_psdc_dateindexeom_idx;
+
+  create index si_psdc_dateindexeom_idx
+    on sipro_data_store.si_psdc
+    using btree
+    (dateindexeom);
+
+  -- index: sipro_data_store.si_psdc_ticker_unq_idx
+
+  -- drop index sipro_data_store.si_psdc_ticker_unq_idx;
+
+  create index si_psdc_ticker_unq_idx
+    on sipro_data_store.si_psdc
+    using btree
+    (ticker_unq);
+
+  -- 51 seconds
+
+----
+
+  create table sipro_data_store.si_date as select * from sipro_stage.si_date;
+  -- ?? seconds
+
+  -- index: sipro_data_store.si_date_company_id_idx
+
+  -- drop index sipro_data_store.si_date_company_id_idx;
+
+  create index si_date_company_id_idx
+    on sipro_data_store.si_date
+    using btree
+    (company_id);
+
+  -- index: sipro_data_store.si_date_company_id_unq_idx
+
+  -- drop index sipro_data_store.si_date_company_id_unq_idx;
+
+  create index si_date_company_id_unq_idx
+    on sipro_data_store.si_date
+    using btree
+    (company_id_unq);
+
+  -- index: sipro_data_store.si_date_dateindex_idx
+
+  -- drop index sipro_data_store.si_date_dateindex_idx;
+
+  create index si_date_dateindex_idx
+    on sipro_data_store.si_date
+    using btree
+    (dateindex);
+
+  -- index: sipro_data_store.si_date_dateindexeom_idx
+
+  -- drop index sipro_data_store.si_date_dateindexeom_idx;
+
+  create index si_date_dateindexeom_idx
+    on sipro_data_store.si_date
+    using btree
+    (dateindexeom);
+
+  -- index: sipro_data_store.si_date_ticker_unq_idx
+
+  -- drop index sipro_data_store.si_date_ticker_unq_idx;
+
+  create index si_date_ticker_unq_idx
+    on sipro_data_store.si_date
+    using btree
+    (ticker_unq);
+
+  -- 44 seconds
+
+----
+
+  create table sipro_data_store.si_bsq as select * from sipro_stage.si_bsq;
+  -- 180 seconds
+
+  -- index: sipro_data_store.si_bsq_company_id_idx
+
+  -- drop index sipro_data_store.si_bsq_company_id_idx;
+
+  create index si_bsq_company_id_idx
+    on sipro_data_store.si_bsq
+    using btree
+    (company_id);
+
+  -- index: sipro_data_store.si_bsq_company_id_unq_idx
+
+  -- drop index sipro_data_store.si_bsq_company_id_unq_idx;
+
+  create index si_bsq_company_id_unq_idx
+    on sipro_data_store.si_bsq
+    using btree
+    (company_id_unq);
+
+  -- index: sipro_data_store.si_bsq_dateindex_idx
+
+  -- drop index sipro_data_store.si_bsq_dateindex_idx;
+
+  create index si_bsq_dateindex_idx
+    on sipro_data_store.si_bsq
+    using btree
+    (dateindex);
+
+  -- index: sipro_data_store.si_bsq_dateindexeom_idx
+
+  -- drop index sipro_data_store.si_bsq_dateindexeom_idx;
+
+  create index si_bsq_dateindexeom_idx
+    on sipro_data_store.si_bsq
+    using btree
+    (dateindexeom);
+
+  -- index: sipro_data_store.si_bsq_ticker_unq_idx
+
+  -- drop index sipro_data_store.si_bsq_ticker_unq_idx;
+
+  create index si_bsq_ticker_unq_idx
+    on sipro_data_store.si_bsq
+    using btree
+    (ticker_unq);
+
+  -- 60 seconds
+
+----
+
+  create table sipro_data_store.si_cfq as select * from sipro_stage.si_cfq;
+  -- 70 seconds
+
+  -- index: sipro_data_store.si_cfq_company_id_idx
+
+  -- drop index sipro_data_store.si_cfq_company_id_idx;
+
+  create index si_cfq_company_id_idx
+    on sipro_data_store.si_cfq
+    using btree
+    (company_id);
+
+  -- index: sipro_data_store.si_cfq_company_id_unq_idx
+
+  -- drop index sipro_data_store.si_cfq_company_id_unq_idx;
+
+  create index si_cfq_company_id_unq_idx
+    on sipro_data_store.si_cfq
+    using btree
+    (company_id_unq);
+
+  -- index: sipro_data_store.si_cfq_dateindex_idx
+
+  -- drop index sipro_data_store.si_cfq_dateindex_idx;
+
+  create index si_cfq_dateindex_idx
+    on sipro_data_store.si_cfq
+    using btree
+    (dateindex);
+
+  -- index: sipro_data_store.si_cfq_dateindexeom_idx
+
+  -- drop index sipro_data_store.si_cfq_dateindexeom_idx;
+
+  create index si_cfq_dateindexeom_idx
+    on sipro_data_store.si_cfq
+    using btree
+    (dateindexeom);
+
+  -- index: sipro_data_store.si_cfq_ticker_unq_idx
+
+  -- drop index sipro_data_store.si_cfq_ticker_unq_idx;
+
+  create index si_cfq_ticker_unq_idx
+    on sipro_data_store.si_cfq
+    using btree
+    (ticker_unq);
+
+  -- 30 seconds
+
+----
+
+  create table sipro_data_store.si_mlt as select * from sipro_stage.si_mlt;
+  -- 61 seconds
+
+  -- index: sipro_data_store.si_mlt_company_id_idx
+
+  -- drop index sipro_data_store.si_mlt_company_id_idx;
+
+  create index si_mlt_company_id_idx
+    on sipro_data_store.si_mlt
+    using btree
+    (company_id);
+
+  -- index: sipro_data_store.si_mlt_company_id_unq_idx
+
+  -- drop index sipro_data_store.si_mlt_company_id_unq_idx;
+
+  create index si_mlt_company_id_unq_idx
+    on sipro_data_store.si_mlt
+    using btree
+    (company_id_unq);
+
+  -- index: sipro_data_store.si_mlt_dateindex_idx
+
+  -- drop index sipro_data_store.si_mlt_dateindex_idx;
+
+  create index si_mlt_dateindex_idx
+    on sipro_data_store.si_mlt
+    using btree
+    (dateindex);
+
+  -- index: sipro_data_store.si_mlt_dateindexeom_idx
+
+  -- drop index sipro_data_store.si_mlt_dateindexeom_idx;
+
+  create index si_mlt_dateindexeom_idx
+    on sipro_data_store.si_mlt
+    using btree
+    (dateindexeom);
+
+  -- index: sipro_data_store.si_mlt_ticker_unq_idx
+
+  -- drop index sipro_data_store.si_mlt_ticker_unq_idx;
+
+  create index si_mlt_ticker_unq_idx
+    on sipro_data_store.si_mlt
+    using btree
+    (ticker_unq);
+
+  -- 32 seconds
+
+----
+
+  create table sipro_data_store.si_rat as select * from sipro_stage.si_rat;
+  -- 84 seconds
+
+  -- index: sipro_data_store.si_rat_company_id_idx
+
+  -- drop index sipro_data_store.si_rat_company_id_idx;
+
+  create index si_rat_company_id_idx
+    on sipro_data_store.si_rat
+    using btree
+    (company_id);
+
+  -- index: sipro_data_store.si_rat_company_id_unq_idx
+
+  -- drop index sipro_data_store.si_rat_company_id_unq_idx;
+
+  create index si_rat_company_id_unq_idx
+    on sipro_data_store.si_rat
+    using btree
+    (company_id_unq);
+
+  -- index: sipro_data_store.si_rat_dateindex_idx
+
+  -- drop index sipro_data_store.si_rat_dateindex_idx;
+
+  create index si_rat_dateindex_idx
+    on sipro_data_store.si_rat
+    using btree
+    (dateindex);
+
+  -- index: sipro_data_store.si_rat_dateindexeom_idx
+
+  -- drop index sipro_data_store.si_rat_dateindexeom_idx;
+
+  create index si_rat_dateindexeom_idx
+    on sipro_data_store.si_rat
+    using btree
+    (dateindexeom);
+
+  -- index: sipro_data_store.si_rat_ticker_unq_idx
+
+  -- drop index sipro_data_store.si_rat_ticker_unq_idx;
+
+  create index si_rat_ticker_unq_idx
+    on sipro_data_store.si_rat
+    using btree
+    (ticker_unq);
+
+  -- 39 seconds
 
 
   ------------------------------------------
@@ -1158,6 +1691,189 @@ createAAIIDataStoreSIProSomeTables <- function(conn) {
                           )
   and isq_f.dateindex = 15184;
 
+
+
+  alter table sipro_data_store.si_psdd add column company_id_unq_orig text;
+  -- instantaneously
+
+  update sipro_data_store.si_psdd set company_id_unq_orig = company_id_unq;
+  -- 05:33 minutes 
+
+  update sipro_data_store.si_psdd psdd 
+  set company_id_unq = psdd_f.company_id_unq
+  from sipro_data_store.si_psdd psdd_f
+  where psdd.ticker_unq = psdd_f.ticker_unq
+  and   psdd.dateindex   in (
+                           14911,
+                           14943,
+                           14974,
+                           15005,
+                           15033,
+                           15064,
+                           15093,
+                           15125,
+                           15155
+                          )
+  and psdd_f.dateindex = 15184;
+  -- 28  seconds
+
+
+
+  alter table sipro_data_store.si_psdc add column company_id_unq_orig text;
+  -- instantaneously
+
+  update sipro_data_store.si_psdc set company_id_unq_orig = company_id_unq;
+  -- 07:54  minutes
+
+  update sipro_data_store.si_psdc psdc 
+  set company_id_unq = psdc_f.company_id_unq
+  from sipro_data_store.si_psdc psdc_f
+  where psdc.ticker_unq = psdc_f.ticker_unq
+  and   psdc.dateindex   in (
+                           14911,
+                           14943,
+                           14974,
+                           15005,
+                           15033,
+                           15064,
+                           15093,
+                           15125,
+                           15155
+                          )
+  and psdc_f.dateindex = 15184;
+  -- 01:51 minutes
+
+
+
+  alter table sipro_data_store.si_date add column company_id_unq_orig text;
+  -- instantaneously
+
+  update sipro_data_store.si_date set company_id_unq_orig = company_id_unq;
+  --  19.8 secs
+
+  update sipro_data_store.si_date si_date 
+  set company_id_unq = si_date_f.company_id_unq
+  from sipro_data_store.si_date si_date_f
+  where si_date.ticker_unq = si_date_f.ticker_unq
+  and   si_date.dateindex   in (
+                           14911,
+                           14943,
+                           14974,
+                           15005,
+                           15033,
+                           15064,
+                           15093,
+                           15125,
+                           15155
+                          )
+  and si_date_f.dateindex = 15184;
+  -- 01:37 minutes
+
+
+
+  alter table sipro_data_store.si_bsq add column company_id_unq_orig text;
+  -- instantaneously
+
+  update sipro_data_store.si_bsq set company_id_unq_orig = company_id_unq;
+  -- 8:45 minutes
+
+  update sipro_data_store.si_bsq si_bsq 
+  set company_id_unq = si_bsq_f.company_id_unq
+  from sipro_data_store.si_bsq si_bsq_f
+  where si_bsq.ticker_unq = si_bsq_f.ticker_unq
+  and   si_bsq.dateindex   in (
+                           14911,
+                           14943,
+                           14974,
+                           15005,
+                           15033,
+                           15064,
+                           15093,
+                           15125,
+                           15155
+                          )
+  and si_bsq_f.dateindex = 15184;
+  -- 1:37 minutes
+
+
+
+  alter table sipro_data_store.si_cfq add column company_id_unq_orig text;
+  -- instantaneously
+
+  update sipro_data_store.si_cfq set company_id_unq_orig = company_id_unq;
+  -- 04:22 minutes
+
+  update sipro_data_store.si_cfq si_cfq 
+  set company_id_unq = si_cfq_f.company_id_unq
+  from sipro_data_store.si_cfq si_cfq_f
+  where si_cfq.ticker_unq = si_cfq_f.ticker_unq
+  and   si_cfq.dateindex   in (
+                           14911,
+                           14943,
+                           14974,
+                           15005,
+                           15033,
+                           15064,
+                           15093,
+                           15125,
+                           15155
+                          )
+  and si_cfq_f.dateindex = 15184;
+  --  1:55 minutes
+
+
+
+  alter table sipro_data_store.si_mlt add column company_id_unq_orig text;
+  -- instantaneously
+
+  update sipro_data_store.si_mlt set company_id_unq_orig = company_id_unq;
+  -- 5:18 minutes
+
+  update sipro_data_store.si_mlt si_mlt 
+  set company_id_unq = si_mlt_f.company_id_unq
+  from sipro_data_store.si_mlt si_mlt_f
+  where si_mlt.ticker_unq = si_mlt_f.ticker_unq
+  and   si_mlt.dateindex   in (
+                           14911,
+                           14943,
+                           14974,
+                           15005,
+                           15033,
+                           15064,
+                           15093,
+                           15125,
+                           15155
+                          )
+  and si_mlt_f.dateindex = 15184;
+  --  1:11 minutes
+
+
+
+  alter table sipro_data_store.si_rat add column company_id_unq_orig text;
+  -- instantaneously
+
+  update sipro_data_store.si_rat set company_id_unq_orig = company_id_unq;
+  -- 4:56 minutes
+
+  update sipro_data_store.si_rat si_rat 
+  set company_id_unq = si_rat_f.company_id_unq
+  from sipro_data_store.si_rat si_rat_f
+  where si_rat.ticker_unq = si_rat_f.ticker_unq
+  and   si_rat.dateindex   in (
+                           14911,
+                           14943,
+                           14974,
+                           15005,
+                           15033,
+                           15064,
+                           15093,
+                           15125,
+                           15155
+                          )
+  and si_rat_f.dateindex = 15184;
+  -- 1:38 minutes
+
+
   ----
   ----  END company_id_unq patch  ---------
   -----------------------------------------
@@ -1169,6 +1885,24 @@ createAAIIDataStoreSIProSomeTables <- function(conn) {
   dbSendQuery(conn, "vacuum analyze sipro_data_store.si_psd(company_id_unq)")
 
   dbSendQuery(conn, "vacuum analyze sipro_data_store.si_isq(company_id_unq)")
+  
+  
+  dbSendQuery(conn, "vacuum analyze sipro_data_store.si_psdd(company_id_unq)")
+
+  dbSendQuery(conn, "vacuum analyze sipro_data_store.si_psdc(company_id_unq)")
+
+  dbSendQuery(conn, "vacuum analyze sipro_data_store.si_date(company_id_unq)")
+
+  dbSendQuery(conn, "vacuum analyze sipro_data_store.si_bsq(company_id_unq)")
+
+  dbSendQuery(conn, "vacuum analyze sipro_data_store.si_cfq(company_id_unq)")
+
+  dbSendQuery(conn, "vacuum analyze sipro_data_store.si_mlt(company_id_unq)")
+
+  dbSendQuery(conn, "vacuum analyze sipro_data_store.si_rat(company_id_unq)")
+
+  
+  
   
   # update search path
   dbGetQuery(conn, paste0("set search_path to ", osp))
@@ -5621,7 +6355,7 @@ bookmarkhere <- 1
 
 #      
 #                              
-#                                                                                                                                                                                                                                                          
+#                                                                                                                                                                                                                                                                 
 
 
 
