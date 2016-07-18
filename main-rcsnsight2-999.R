@@ -135,7 +135,7 @@ pullAheadZOOData <- function(zooobj,monthsPullAhead) {
 # THEREFORE, if I change this value I MUST delete the .Rdata files 
 #            then get BRAND NEW data from the external source
 
-retrieveSymbolsQuantmodRdata <- function(
+retrieveSymbolsQuantmodRdata_OLD <- function(
   # "^GSPC" 
   finSymbol # financial Symbol 
   # "1950-03-01"
@@ -219,6 +219,108 @@ retrieveSymbolsQuantmodRdata <- function(
   }
 }
 
+# WARNING
+# NOTE:  subtractOffDaysSpec = # is persistently stored on .RData
+# THEREFORE, if I change this value I MUST delete the .Rdata files 
+#            then get BRAND NEW data from the external source
+
+
+retrieveSymbolsQuantmodRdata <- function(
+  # "^GSPC" 
+  finSymbol # financial Symbol 
+  # "1950-03-01"
+  , finSymbolRemoteSource = "Quantmod_yahoo"
+  # NEW
+  , finSymbolRemoteSourcePath = NULL
+  , finSymbolNewCoreDatum = NULL
+  , finSymbolNewIndexStr  = NULL
+  # RESUME
+  , finSymbolAttributes = c("Close")
+  , initDate 
+  # some minor testing 1980 
+  , subtractOffDaysSpec        # if the date received is the 'first of the month'       
+  #   then I want it to be the last of the previous month: (0 or -1) days           
+  # index ^GSPC
+  , intlCurrency = "USD"
+  , interpolate = FALSE 
+) {
+  require("xts")
+  require("Holidays")
+  require("TimeWarp")
+  require("quantmod")
+  require("FinancialInstrument")
+  # just in case is an index
+  finSymbolNOIndex <- sub("\\^","", finSymbol)
+  if( file.exists(paste0(getwd(),"/",finSymbolNOIndex,".Rdata"))){
+    load(file = paste0(getwd(),"/",finSymbolNOIndex,".Rdata"), envir = environment())
+    return(get(finSymbolNOIndex))
+  } else {
+    initDateSafelyBackOneMo <- as.character(dateWarp(as.Date(initDate), -1, by='months'))
+    if(finSymbolRemoteSource == "Quantmod_yahoo") {
+      # YAHOO delay requirement
+      Sys.sleep(0.80)
+      suppressWarnings(suppressMessages(getSymbols(finSymbol,from=initDateSafelyBackOneMo,src='yahoo', index.class=c("POSIXt","POSIXct"))))
+    } 
+    if(finSymbolRemoteSource == "Quantmod_FRED") {
+      # NO KNOWN delay requirement # NO Sys.sleep
+      suppressWarnings(suppressMessages(getSymbols(finSymbol,from=initDateSafelyBackOneMo, src = "FRED", index.class=c("POSIXt","POSIXct") )))
+    } 
+    if(finSymbolRemoteSource == "Quantmod_FRED_RData") {
+      # NO KNOWN delay requirement # NO Sys.sleep
+      load(file = finSymbolRemoteSourcePath)
+      assign(finSymbol, rbind(get(finSymbol),xts(finSymbolNewCoreDatum,zoo::as.Date(finSymbolNewIndexStr))) )
+    } 
+    if( !(finSymbolRemoteSource %in% c("Quantmod_yahoo","Quantmod_FRED","Quantmod_FRED_RData")) ) {
+      stop(paste0("retrieveRdata does not know finSymbolRemoteSource = ", finSymbolRemoteSource))
+    }
+    # remove 'index-ing' symbols, then save a raw file
+    save(list = c(finSymbolNOIndex),file = paste0(getwd(),"/",finSymbolNOIndex,"_RAW.Rdata"))
+    symbols <- c(finSymbolNOIndex)
+    # register to be like a stock
+    currency(intlCurrency)
+    stock(symbols[1], currency=intlCurrency,multiplier=1)  # FinancialInstrument ( NOT REALLY A STOCK )
+    symbol <- symbols
+    x <- get(symbol)
+    # SOMETIMES by luck always the last calendar day of the month
+    index(x) <- dateWarp(date=index(x),spec=subtractOffDaysSpec,by="days") # subtract off DaysSpec (0 or -1) days
+    x <- to.monthly(x,indexAt='lastof',drop.time=TRUE) # faber.R
+    x <- x[paste0(substr(initDate,1,7),'::')]
+    indexFormat(x) <- '%Y-%m-%d'
+    # benchmark specific
+    x <- x[,paste0("x.",finSymbolAttributes)]  # remove quantmod o/h ( remove(keep) non-desired attributes )
+    for(X in paste0("x.",finSymbolAttributes)) {
+      x[,X] <- as.numeric(x[,X])              # garantee numeric
+    }
+    colnames(x)<-gsub("x",symbol,colnames(x))
+    
+    # fill in missing values
+    if( interpolate == TRUE ) {
+      
+      # create month-end calendar dates from the first through the last
+      xts( ,order.by = as.Date(c(dateSeq(from = index(first(x)), to = index(last(x)) , by="months", k.by = 1 ) - 1,index(last(x)))) ) -> monthsxts
+      
+      # make lots of NAs
+      merge.xts(monthsxts,x, join="left")            -> x
+      
+      # merge.xt will prefix column(s)? with an "X".  Remove this "X"
+      sub("^X","",colnames(x)) -> colnames(x)
+      
+      # interpolate(na.approx) to locf(na.locf) 
+      na.locf(merge.xts(monthsxts,x, join="left")) -> x
+      
+      # merge.xt will prefix column(s)? with an "X".  Remove this "X"
+      sub("^X","",colnames(x)) -> colnames(x)
+      
+    }
+    
+    assign(symbol,x)
+    save(list = c(finSymbolNOIndex),file = paste0(getwd(),"/",finSymbolNOIndex,".Rdata"))
+    return(get(symbol))
+  }
+}
+
+
+
 bookmark_here <- 1
 
 
@@ -245,11 +347,11 @@ getSymbols.multpl <- function(
   #   http://www.multpl.com/s-p-500-real-earnings-growth/table/by-quarter
   #   
   #   S&P 500 PE Ratio by Month ( MATH) ( SandP.500.PE.Ratio )
-  #   Price to earnings ratio, based on trailing twelve month “as reported”
+  #   Price to earnings ratio, based on trailing twelve month âas reportedâ
   #   http://www.multpl.com/table?f=m
   
   #   S&P 500 Book Value Per Share by Quarter ( "SandP.500.BV.Per.Share" )
-  #   S&P 500 book value per share — non-inflation adjusted current dollars. 
+  #   S&P 500 book value per share â non-inflation adjusted current dollars. 
   #   http://www.multpl.com/s-p-500-book-value/table/by-quarter
   
   # web site and owner
@@ -281,7 +383,7 @@ getSymbols.multpl <- function(
   
   require(XML)     # NEED readHTMLTable
   # Hadley Wickham # web scraping 
-  require(rvest)   # imports XML  masked from ‘package:XML’: xml
+  require(rvest)   # imports XML  masked from âpackage:XMLâ: xml
   # IF uncommented : require(XML), USE: XML::xml to access XML::xml
   require(xts)     # as.xts STUFF
   
@@ -503,11 +605,11 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     #  2. incomplete data exists of current month 
     # THEREFORE
     # this IS       the end of the PREVIOUS MONTH
-    # finDate.TestTrain.Global.Latest    <- "2015-02-28"  # 2014-12-31(perfect) 
+    # finDate.TestTrain.Global.Latest    <- "2016-06-30"  # 2014-12-31(perfect) 
                                                           # march 21, 2015 run: "2015-01-31": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
                                                           # march 21, 2015 run: "2015-02-28": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
                                                           # march 21, 2015 run: "2015-03-31": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
-    finDate.TestTrain.Global.Latest      <- "2016-02-29"  # april  6, 2015 run: "2015-03-31": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
+    finDate.TestTrain.Global.Latest      <- "2016-06-30"  # april  6, 2015 run: "2015-03-31": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
     
     # training and TRUE tests
     list(Test2001 = list(Train=list(initDate = initData.TestTrain.Global.Earliest,finDate ="1998-12-31"),
@@ -1490,6 +1592,73 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     
     "INDPRO.DELAYONE.ABS.ADJUSTNOW" -> ALL.OBSERVEES["INDPRO.DELAYONE.ABS.ADJUSTNOW"]
     
+    
+    # ISM Manufacturing Index
+    # -----------------------
+    #   
+    #   Institute for Supply Management Data To Be Removed from FRED
+    # Posted on June 16, 2016
+    # 
+    # On June 24, FRED will no longer include data from the Institute for Supply Management. 
+    # All 22 series from the Manufacturing ISM Report on Business and the 
+    # Non-Manufacturing ISM Report on Business will 
+    # be deleted from the FRED database, 
+    # https://news.research.stlouisfed.org/2016/06/institute-for-supply-management-data-to-be-removed-from-fred/
+    #   
+    #   Posted in FRED Announcements
+    # https://news.research.stlouisfed.org/category/fred-announcements/
+    #   
+    #   ( BEST PAGE - JUST ONE MONTH )
+    # ISM Manufacturing Index: Continuing Expansion in June
+    # July 1, 2016
+    # by Jill Mislinski
+    # http://www.advisorperspectives.com/dshort/updates/ISM-Manufacturing
+    # 
+    # "The June PMI® registered 53.2 percent, an increase of 1.9 percentage points 
+    # from the May reading of 51.3 percent.
+    # 
+    # Today the Institute for Supply Management published its 
+    # 
+    # monthly Manufacturing Report for June. 
+    # registered 53.2
+    # 
+    # http://www.ism.ws/ISMReport/MfgROB.cfm?navItemNumber=12942
+    # 
+    # REDIRECTS TO ( ORIGINAL )
+    # GOOGLE SEARCH ( TOP LINK ): 'June 2016 Manufacturing ISM Report On Business'
+    # '          Manufacturing ISM Report On Business'
+    # https://www.instituteforsupplymanagement.org/ISMReport/MfgROB.cfm?navItemNumber=12942
+    # June 2016 Manufacturing ISM Report On Business
+    # FOR RELEASE: July 1, 2016
+    # 
+    # PMI registered 53.2 percent
+    # 
+    # Apr 2016	 50.8
+    # May 2016	 51.3
+    # Jun 2016	 53.2
+    # 
+    # The latest headline PMI was 53.2 percent, 
+    # an increase of 1.9 percent from the previous month and above the Investing.com forecast of 51.4.
+    # 
+    # ISM Manufacturing Index: Continuing Expansion in June
+    # July 1, 2016
+    # by Jill Mislinski
+    # http://www.advisorperspectives.com/dshort/updates/ISM-Manufacturing # SHOWS ONLY THE MOST RECENT
+    # 
+    # # OLD FRED
+    # > load(file="W:\\New_Economics\\rcsnsight1.320\\Data160603\\NAPM_RAW.Rdata")
+    # 
+    # > tail(NAPM)
+    # NAPM
+    # 2015-12-01 48.0
+    # 2016-01-01 48.2
+    # 2016-02-01 49.5
+    # 2016-03-01 51.8
+    # 2016-04-01 50.8
+    # 2016-05-01 51.3
+    # 
+    # SO 2016-06-01   53.2    REPORTED ON  2016-07-01
+    
     #     Title:               ISM Manufacturing: PMI Composite Index
     #     Series ID:           NAPM
     #     Source:              Institute for Supply Management
@@ -1505,15 +1674,31 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     # economy is generally expanding; below 50 percent that it is generally
     # declining.  
     
+    # OLD
+    # retrieveSymbolsQuantmodRdata(
+    #     finSymbol = "NAPM"
+    #   , finSymbolRemoteSource = "Quantmod_FRED"
+    #   , finSymbolAttributes = c("Close")
+    #   , initDate = "1950-03-01"
+    #   , subtractOffDaysSpec = -1
+    # ) -> NAPM.DELAYONE.ABS             # head "1948-01-01"
+    #                                    # Monthly
+    #                                    # ( Last Updated: 2015-04-01 9:06 AM CDT - ??? date - typically 1 month late WITH 1 month old date  )
+    
+    # NEW
+    
     retrieveSymbolsQuantmodRdata(
-        finSymbol = "NAPM"
-      , finSymbolRemoteSource = "Quantmod_FRED"
+      finSymbol = "NAPM"
+      , finSymbolRemoteSource = "Quantmod_FRED_RData"
+      , finSymbolRemoteSourcePath = "./Data160603/NAPM_RAW.Rdata"
+      , finSymbolNewCoreDatum = 53.2
+      , finSymbolNewIndexStr  = "2016-06-01" # would have been recorded on "2016-07-01"
       , finSymbolAttributes = c("Close")
       , initDate = "1950-03-01"
       , subtractOffDaysSpec = -1
     ) -> NAPM.DELAYONE.ABS             # head "1948-01-01"
-                                       # Monthly
-                                       # ( Last Updated: 2015-04-01 9:06 AM CDT - ??? date - typically 1 month late WITH 1 month old date  )
+    # Monthly
+    # ( Last Updated: 2015-04-01 9:06 AM CDT - ??? date - typically 1 month late WITH 1 month old date  )
     
     # really meant for a monthly
     as.integer(diff.mondate(c(
@@ -2523,7 +2708,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     #
     #  the number of iterations,T(n.trees)
     #  the depth of each tree,K(interaction.depth)
-    #  the shrinkage (or learning rate) parameter,λ(shrinkage)
+    #  the shrinkage (or learning rate) parameter,Î»(shrinkage)
     #  the subsampling rate,p(bag.fraction)
     #
     #  Generalized Boosted Models: A guide to the gbm package Greg Ridgeway August 3, 2007
@@ -2671,14 +2856,32 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     #   Cut/Move all .Rdata files into DataYYMMDD
     # Copy     all .R     files into DataYYMMDD
     # 
-    # HARD NOTE: Any modification of 'data loading' and 'massaging'
-    # then I HAVE TO RE-GET the DATA from the SOURCE ( ** IMPORTANT ** )
+    
     # 
     # DON'T FORGET THAT in R Studio
     # setwd(""W:/New_Economics/rcsnsight1.320"") # getwd()
     # 
     # CHECK THAT THE LOADED .R FILE IN THE TAB (hover over) 
     # HAS THE SAME PATH AS THE 'setwd'
+    
+    # modify the NAPM entry to point to the last months(last_time) entry
+    #
+    # retrieveSymbolsQuantmodRdata(
+    #   finSymbol = "NAPM"
+    #   , finSymbolRemoteSource = "Quantmod_FRED_RData"
+    #   , finSymbolRemoteSourcePath = "./Data160603/NAPM_RAW.Rdata" # ( UPDATE THIS: 1 OF 3)
+    #   , finSymbolNewCoreDatum = 53.2 # ( UPDATE THIS: 2 OF 3)
+    #   , finSymbolNewIndexStr  = "2016-06-01" # would have been recorded on "2016-07-01" # ( UPDATE THIS: 3 OF 3)
+    #   , finSymbolAttributes = c("Close")
+    #   , initDate = "1950-03-01"
+    #   , subtractOffDaysSpec = -1
+    # ) -> NAPM.DELAYONE.ABS             # head "1948-01-01"
+    # Monthly
+    # ( Last Updated: 2015-04-01 9:06 AM CDT - ??? date - typically 1 month late WITH 1 month old date  )
+    
+    # HARD NOTE: Any modification of 'data loading' and 'massaging'
+    # then I HAVE TO RE-GET the DATA from the SOURCE ( ** IMPORTANT ** )
+
     # 
     # *** VERY VERY VERY IMPORTANT  ***
     # CHANGE "finDate.TestTrain.Global.Latest      <- "YYYY-MM-DD"
@@ -2897,6 +3100,6 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
 
 ########################      
 # 
-#     
+#       
 
 
