@@ -931,6 +931,15 @@ createAAIIDataStoreSIProSomeTables <- function(conn) {
     using btree
     (exchange collate pg_catalog.default);
 
+  -- index: sipro_data_store.si_ci_exchange_nma_idx
+  
+  -- drop index sipro_data_store.si_ci_exchange_nma_idx; 
+  
+  create index si_ci_exchange_nma_idx
+    on sipro_data_store.si_ci
+    (exchange) 
+    where exchange in ('n','m','a');
+
   -- index: sipro_data_store.si_ci_ind_2_dig_idx
 
   -- drop index sipro_data_store.si_ci_ind_2_dig_idx;
@@ -3345,6 +3354,10 @@ massAAIISIProIterScreenOSME  <- function(conn,
 # massAAIISIProIterScreenOSME(conn, asOfDate = zoo::as.Date("2013-12-31") + 2) # HERE #
 # testing
 # massAAIISIProIterScreenOSME(conn, asOfDate = zoo::as.Date("2014-12-31") + 2)
+
+#  "new_interested_Date: 2014-07-31 16282" ( STARTED TO *TANK* BADLY )
+# massAAIISIProIterScreenOSME(conn, asOfDate = zoo::as.Date("2016-06-15"))
+
 # running
 # massAAIISIProIterScreenOSME(conn)
 # 
@@ -6355,7 +6368,7 @@ bookmarkhere <- 1
 
 #      
 #                              
-#                                                                                                                                                                                                                                                                 
+#                                                                                                                                                                                                                                                                     
 
 
 
