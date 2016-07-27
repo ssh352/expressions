@@ -1732,7 +1732,7 @@ createAAIIDataStoreSIProSomeTables <- function(conn) {
   -- instantaneously
 
   update sipro_data_store.si_psdc set company_id_unq_orig = company_id_unq;
-  -- 07:54  minutes
+  -- 07:54  minutes ( SOME AS LONG AS 23 MINUTES ) -- ARE THEY WORTH IT?
 
   update sipro_data_store.si_psdc psdc 
   set company_id_unq = psdc_f.company_id_unq
@@ -2381,7 +2381,769 @@ createAAIIDataStoreSIProReturnsTable <- function(conn) {
 # createAAIIDataStoreSIProReturnsTable(conn)
 
 
+## SHOULD WORK
+## WOULD TAKE 50 TO 60 MINUTES TO RUN
+##   AFTER THE RUN, probably NEEDS SOME INDEXES
+ReCreateAAIIOneBigRealTable <- function(conn) {
 
+  ost  <- dbGetQuery(conn,"show time zone")[[1]]
+  osp  <- dbGetQuery(conn,"show search_path")[[1]]
+  oswm <- dbGetQuery(conn,"show work_mem")[[1]]
+  
+  # update session work memory
+  dbGetQuery(conn, paste0("set work_mem to '1200MB'"))
+  # update search path
+  dbGetQuery(conn, paste0("set search_path to sipro_data_store,sipro_stage") )
+  # update time zone
+  dbGetQuery(conn, "set time zone 'utc'")
+  
+  dbSendQuery(conn, "
+    
+  -- UNTESTED ( SHOULD WORK )
+  drop table if exists sipro_data_store.si_finecon;
+    
+  create table sipro_data_store.si_finecon1
+  as
+  select  
+    ci.dateindex_ci,
+    ci.company_id_ci,
+    ci.company,
+    ci.ticker_ci,
+    ci.exchange,
+    ci.sic,
+    ci.sp,
+    ci.adr,
+    ci.ind_2_dig,
+    ci.ind_3_dig,
+    ci.country,
+    ci.employees,
+    ci.company_id_unq_ci,
+    ci.ticker_unq_ci,
+    ci.dateindexeom_ci,
+    ci.company_id_unq_orig_ci,
+    psd.dateindex_psd,
+    psd.company_id_psd,
+    psd.split_date,
+    psd.split_fact,
+    psd.price_date,  -- should have gone with si_returns
+    price,
+    psd.shr_aq1,
+    psd.shr_aq2,
+    psd.shr_aq3,
+    psd.shr_aq4,
+    psd.shr_aq5,
+    psd.shr_aq6,
+    psd.shr_aq7,
+    psd.shr_aq8,
+    psd.beta,      -- NEW
+    psd.mktcap,
+    psd.mktcap_q1,
+    psd.mktcap_q2,
+    psd.mktcap_q3,
+    psd.mktcap_q4,
+    psd.mktcap_q5,
+    psd.mktcap_q6,
+    psd.mktcap_q7,
+    psd.mktcap_q8,
+    psd.shr_dq1,  -- NEW
+    psd.shr_dq2,
+    psd.shr_dq3,
+    psd.shr_dq4,
+    psd.shr_dq5,
+    psd.shr_dq6,
+    psd.shr_dq7,
+    psd.shr_dq8,
+    psd.shr_dq9,
+    psd.shr_dq10,
+    psd.company_id_unq_psd,
+    psd.ticker_unq_psd,
+    psd.dateindexeom_psd,
+    psd.company_id_unq_orig_psd
+  from 
+  sipro_data_store.si_ci  ci  full outer join 
+  sipro_data_store.si_psd psd 
+  on 
+  ci.dateindex_ci       = psd.dateindex_psd       and 
+  ci.company_id_unq_ci  = psd.company_id_unq_psd;
+  -- 40 SECONDS ( USED 4 INDEXES )
+
+  create table sipro_data_store.si_finecon2
+  as
+  select finecon1.*,
+   isq.dateindex_isq,
+   isq.company_id_isq,
+   isq.sales_q1,
+   isq.sales_q2,
+   isq.sales_q3,
+   isq.sales_q4,
+   isq.sales_q5,
+   isq.sales_q6,
+   isq.sales_q7,
+   isq.sales_q8,
+   isq.cgs_q1,
+   isq.cgs_q2,
+   isq.cgs_q3,
+   isq.cgs_q4,
+   isq.cgs_q5,
+   isq.cgs_q6,
+   isq.cgs_q7,
+   isq.cgs_q8,
+   isq.gross_q1,
+   isq.gross_q2,
+   isq.gross_q3,
+   isq.gross_q4,
+   isq.gross_q5,
+   isq.gross_q6,
+   isq.gross_q7,
+   isq.gross_q8,
+   isq.dep_q1,
+   isq.dep_q2,
+   isq.dep_q3,
+   isq.dep_q4,
+   isq.dep_q5,
+   isq.dep_q6,
+   isq.dep_q7,
+   isq.dep_q8,
+   isq.int_q1,
+   isq.int_q2,
+   isq.int_q3,
+   isq.int_q4,
+   isq.int_q5,
+   isq.int_q6,
+   isq.int_q7,
+   isq.int_q8,
+   isq.intno_q1,
+   isq.intno_q2,
+   isq.intno_q3,
+   isq.intno_q4,
+   isq.intno_q5,
+   isq.intno_q6,
+   isq.intno_q7,
+   isq.intno_q8,
+   isq.uninc_q1,
+   isq.uninc_q2,
+   isq.uninc_q3,
+   isq.uninc_q4,
+   isq.uninc_q5,
+   isq.uninc_q6,
+   isq.uninc_q7,
+   isq.uninc_q8,
+   isq.totexp_q1,
+   isq.totexp_q2,
+   isq.totexp_q3,
+   isq.totexp_q4,
+   isq.totexp_q5,
+   isq.totexp_q6,
+   isq.totexp_q7,
+   isq.totexp_q8,
+   isq.gopinc_q1,
+   isq.gopinc_q2,
+   isq.gopinc_q3,
+   isq.gopinc_q4,
+   isq.gopinc_q5,
+   isq.gopinc_q6,
+   isq.gopinc_q7,
+   isq.gopinc_q8,
+   isq.othinc_q1,
+   isq.othinc_q2,
+   isq.othinc_q3,
+   isq.othinc_q4,
+   isq.othinc_q5,
+   isq.othinc_q6,
+   isq.othinc_q7,
+   isq.othinc_q8,
+   isq.pti_q1,
+   isq.pti_q2,
+   isq.pti_q3,
+   isq.pti_q4,
+   isq.pti_q5,
+   isq.pti_q6,
+   isq.pti_q7,
+   isq.pti_q8,
+   isq.inctax_q1,
+   isq.inctax_q2,
+   isq.inctax_q3,
+   isq.inctax_q4,
+   isq.inctax_q5,
+   isq.inctax_q6,
+   isq.inctax_q7,
+   isq.inctax_q8,
+   isq.adjust_q1,
+   isq.adjust_q2,
+   isq.adjust_q3,
+   isq.adjust_q4,
+   isq.adjust_q5,
+   isq.adjust_q6,
+   isq.adjust_q7,
+   isq.adjust_q8,
+   isq.nit_q1,
+   isq.nit_q2,
+   isq.nit_q3,
+   isq.nit_q4,
+   isq.nit_q5,
+   isq.nit_q6,
+   isq.nit_q7,
+   isq.nit_q8,
+   isq.iac_q1,
+   isq.iac_q2,
+   isq.iac_q3,
+   isq.iac_q4,
+   isq.iac_q5,
+   isq.iac_q6,
+   isq.iac_q7,
+   isq.iac_q8,
+   isq.xord_q1,
+   isq.xord_q2,
+   isq.xord_q3,
+   isq.xord_q4,
+   isq.xord_q5,
+   isq.xord_q6,
+   isq.xord_q7,
+   isq.xord_q8,
+   isq.netinc_q1,
+   isq.netinc_q2,
+   isq.netinc_q3,
+   isq.netinc_q4,
+   isq.netinc_q5,
+   isq.netinc_q6,
+   isq.netinc_q7,
+   isq.netinc_q8,
+   isq.epscon_q1,
+   isq.epscon_q2,
+   isq.epscon_q3,
+   isq.epscon_q4,
+   isq.epscon_q5,
+   isq.epscon_q6,
+   isq.epscon_q7,
+   isq.epscon_q8,
+   isq.eps_q1,
+   isq.eps_q2,
+   isq.eps_q3,
+   isq.eps_q4,
+   isq.eps_q5,
+   isq.eps_q6,
+   isq.eps_q7,
+   isq.eps_q8,
+   isq.epsdc_q1,
+   isq.epsdc_q2,
+   isq.epsdc_q3,
+   isq.epsdc_q4,
+   isq.epsdc_q5,
+   isq.epsdc_q6,
+   isq.epsdc_q7,
+   isq.epsdc_q8,
+   isq.epsd_q1,
+   isq.epsd_q2,
+   isq.epsd_q3,
+   isq.epsd_q4,
+   isq.epsd_q5,
+   isq.epsd_q6,
+   isq.epsd_q7,
+   isq.epsd_q8,
+   isq.dps_q1,
+   isq.dps_q2,
+   isq.dps_q3,
+   isq.dps_q4,
+   isq.dps_q5,
+   isq.dps_q6,
+   isq.dps_q7,
+   isq.dps_q8,
+   isq.divnq,
+   isq.divnqxdt,
+   isq.divnqpdt,
+   isq.ebit_q1,
+   isq.ebit_q2,
+   isq.ebit_q3,
+   isq.ebit_q4,
+   isq.ebit_q5,
+   isq.ebit_q6,
+   isq.ebit_q7,
+   isq.ebit_q8,
+   isq.ebitda_q1,
+   isq.ebitda_q2,
+   isq.ebitda_q3,
+   isq.ebitda_q4,
+   isq.ebitda_q5,
+   isq.ebitda_q6,
+   isq.ebitda_q7,
+   isq.ebitda_q8,
+   isq.dpst_q1,
+   isq.dpst_q2,
+   isq.dpst_q3,
+   isq.dpst_q4,
+   isq.dpst_q5,
+   isq.dpst_q6,
+   isq.dpst_q7,
+   isq.dpst_q8,
+   isq.epsnd_q1,
+   isq.epsnd_q2,
+   isq.epsnd_q3,
+   isq.epsnd_q4,
+   isq.epsnd_q5,
+   isq.epsnd_q6,
+   isq.epsnd_q7,
+   isq.epsnd_q8,
+   isq.epsnd_q9,
+   isq.epsnd_q10,
+   isq.company_id_unq_isq,
+   isq.ticker_unq_isq,
+   isq.dateindexeom_isq,
+   isq.company_id_unq_orig_isq
+  from 
+  sipro_data_store.si_finecon1 finecon1 full outer join 
+  sipro_data_store.si_isq isq 
+  on 
+  finecon1.dateindex_ci      = isq.dateindex_isq      and 
+  finecon1.company_id_unq_ci = isq.company_id_unq_isq;
+  --    SECONDS ( USED 2 INDEXES - ONLY ISQ HAS INDEXES )
+
+  drop table sipro_data_store.si_finecon1;
+  --
+
+  create table sipro_data_store.si_finecon3
+  as
+  select  finecon2.*,
+   bsq.dateindex_bsq,
+   bsq.company_id_bsq,
+   bsq.ar_q1,
+   bsq.ar_q2,
+   bsq.ar_q3,
+   bsq.ar_q4,
+   bsq.ar_q5,
+   bsq.ar_q6,
+   bsq.ar_q7,
+   bsq.ar_q8,
+   bsq.ca_q1,
+   bsq.ca_q2,
+   bsq.ca_q3,
+   bsq.ca_q4,
+   bsq.ca_q5,
+   bsq.ca_q6,
+   bsq.ca_q7,
+   bsq.ca_q8,
+   bsq.assets_q1,
+   bsq.assets_q2,
+   bsq.assets_q3,
+   bsq.assets_q4,
+   bsq.assets_q5,
+   bsq.assets_q6,
+   bsq.assets_q7,
+   bsq.assets_q8,
+   bsq.ap_q1,
+   bsq.ap_q2,
+   bsq.ap_q3,
+   bsq.ap_q4,
+   bsq.ap_q5,
+   bsq.ap_q6,
+   bsq.ap_q7,
+   bsq.ap_q8,
+   bsq.stdebt_q1,
+   bsq.stdebt_q2,
+   bsq.stdebt_q3,
+   bsq.stdebt_q4,
+   bsq.stdebt_q5,
+   bsq.stdebt_q6,
+   bsq.stdebt_q7,
+   bsq.stdebt_q8,
+   bsq.ocl_q1,
+   bsq.ocl_q2,
+   bsq.ocl_q3,
+   bsq.ocl_q4,
+   bsq.ocl_q5,
+   bsq.ocl_q6,
+   bsq.ocl_q7,
+   bsq.ocl_q8,
+   bsq.cl_q1,
+   bsq.cl_q2,
+   bsq.cl_q3,
+   bsq.cl_q4,
+   bsq.cl_q5,
+   bsq.cl_q6,
+   bsq.cl_q7,
+   bsq.cl_q8,
+   bsq.ltdebt_q1,
+   bsq.ltdebt_q2,
+   bsq.ltdebt_q3,
+   bsq.ltdebt_q4,
+   bsq.ltdebt_q5,
+   bsq.ltdebt_q6,
+   bsq.ltdebt_q7,
+   bsq.ltdebt_q8,
+   bsq.oltl_q1,
+   bsq.oltl_q2,
+   bsq.oltl_q3,
+   bsq.oltl_q4,
+   bsq.oltl_q5,
+   bsq.oltl_q6,
+   bsq.oltl_q7,
+   bsq.oltl_q8,
+   bsq.liab_q1,
+   bsq.liab_q2,
+   bsq.liab_q3,
+   bsq.liab_q4,
+   bsq.liab_q5,
+   bsq.liab_q6,
+   bsq.liab_q7,
+   bsq.liab_q8,
+   bsq.equity_q1,
+   bsq.equity_q2,
+   bsq.equity_q3,
+   bsq.equity_q4,
+   bsq.equity_q5,
+   bsq.equity_q6,
+   bsq.equity_q7,
+   bsq.equity_q8,
+   bsq.bvps_q1,
+   bsq.bvps_q2,
+   bsq.bvps_q3,
+   bsq.bvps_q4,
+   bsq.bvps_q5,
+   bsq.bvps_q6,
+   bsq.bvps_q7,
+   bsq.bvps_q8,
+   bsq.minor_q1,
+   bsq.minor_q2,
+   bsq.minor_q3,
+   bsq.minor_q4,
+   bsq.minor_q5,
+   bsq.minor_q6,
+   bsq.minor_q7,
+   bsq.minor_q8,
+   bsq.work_q1,
+   bsq.work_q2,
+   bsq.work_q3,
+   bsq.work_q4,
+   bsq.work_q5,
+   bsq.work_q6,
+   bsq.work_q7,
+   bsq.work_q8,
+   bsq.entval_q1,
+   bsq.entval_q2,
+   bsq.entval_q3,
+   bsq.entval_q4,
+   bsq.entval_q5,
+   bsq.entval_q6,
+   bsq.entval_q7,
+   bsq.entval_q8,
+   bsq.company_id_unq_bsq,
+   bsq.ticker_unq_bsq,
+   bsq.dateindexeom_bsq,
+   bsq.company_id_unq_orig_bsq
+  from 
+  sipro_data_store.si_finecon2 finecon2 full outer join 
+  sipro_data_store.si_bsq bsq 
+  on 
+  finecon2.dateindex_ci      = bsq.dateindex_bsq   and 
+  finecon2.company_id_unq_ci = bsq.company_id_unq_bsq;
+  -- 134 SECONDS
+
+  drop table sipro_data_store.si_finecon2;
+  --
+
+  create table sipro_data_store.si_finecon4
+  as
+  select finecon3.*,
+   cfq.dateindex_cfq,
+   cfq.company_id_cfq,
+   cfq.tco_q1,
+   cfq.tco_q2,
+   cfq.tco_q3,
+   cfq.tco_q4,
+   cfq.tco_q5,
+   cfq.tco_q6,
+   cfq.tco_q7,
+   cfq.tco_q8,
+   cfq.ce_q1,
+   cfq.ce_q2,
+   cfq.ce_q3,
+   cfq.ce_q4,
+   cfq.ce_q5,
+   cfq.ce_q6,
+   cfq.ce_q7,
+   cfq.ce_q8,
+   cfq.tci_q1,
+   cfq.tci_q2,
+   cfq.tci_q3,
+   cfq.tci_q4,
+   cfq.tci_q5,
+   cfq.tci_q6,
+   cfq.tci_q7,
+   cfq.tci_q8,
+   cfq.tcf_q1,
+   cfq.tcf_q2,
+   cfq.tcf_q3,
+   cfq.tcf_q4,
+   cfq.tcf_q5,
+   cfq.tcf_q6,
+   cfq.tcf_q7,
+   cfq.tcf_q8,
+   cfq.dep_cf_q1,
+   cfq.dep_cf_q2,
+   cfq.dep_cf_q3,
+   cfq.dep_cf_q4,
+   cfq.dep_cf_q5,
+   cfq.dep_cf_q6,
+   cfq.dep_cf_q7,
+   cfq.dep_cf_q8,
+   cfq.cfps_q1,
+   cfq.cfps_q2,
+   cfq.cfps_q3,
+   cfq.cfps_q4,
+   cfq.cfps_q5,
+   cfq.cfps_q6,
+   cfq.cfps_q7,
+   cfq.cfps_q8,
+   cfq.fcfps_q1,
+   cfq.fcfps_q2,
+   cfq.fcfps_q3,
+   cfq.fcfps_q4,
+   cfq.fcfps_q5,
+   cfq.fcfps_q6,
+   cfq.fcfps_q7,
+   cfq.fcfps_q8,
+   cfq.company_id_unq_cfq,
+   cfq.ticker_unq_cfq,
+   cfq.dateindexeom_cfq,
+   cfq.company_id_unq_orig_cfq
+  from 
+  sipro_data_store.si_finecon3 finecon3 full outer join 
+  sipro_data_store.si_cfq cfq 
+  on 
+  finecon3.dateindex_ci      = cfq.dateindex_cfq       and 
+  finecon3.company_id_unq_ci = cfq.company_id_unq_cfq;
+  -- 182/210 SECONDS
+
+  drop table sipro_data_store.si_finecon3;
+  --
+
+  create table sipro_data_store.si_finecon5
+  as
+  select finecon4.*,
+   rat.dateindex_rat,
+   rat.company_id_rat,
+   rat.roic_y1,
+   rat.company_id_unq_rat,
+   rat.ticker_unq_rat,
+   rat.dateindexeom_rat,
+   rat.company_id_unq_orig_rat     
+  from 
+  sipro_data_store.si_finecon4 finecon4 full outer join 
+  sipro_data_store.si_rat rat 
+  on 
+  finecon4.dateindex_ci      = rat.dateindex_rat      and 
+  finecon4.company_id_unq_ci = rat.company_id_unq_rat;
+  -- 318 SECONDS
+
+  drop table sipro_data_store.si_finecon4;
+  --
+
+  create table sipro_data_store.si_finecon6
+  as
+  select finecon5.*,
+   mlt.dateindex_mlt,
+   mlt.company_id_mlt,
+   mlt.shy,
+   mlt.company_id_unq_mlt,
+   mlt.ticker_unq_mlt,
+   mlt.dateindexeom_mlt,
+   mlt.company_id_unq_orig_mlt
+  from 
+  sipro_data_store.si_finecon5 finecon5 full outer join 
+  sipro_data_store.si_mlt mlt 
+  on 
+  finecon5.dateindex_ci      = mlt.dateindex_mlt       and 
+  finecon5.company_id_unq_ci = mlt.company_id_unq_mlt;
+  -- 231 SECONDS
+
+  drop table sipro_data_store.si_finecon5;
+  --
+
+  create table sipro_data_store.si_finecon7
+  as
+  select  finecon6.*,
+    date.dateindex_date,
+    date.company_id_date,
+    date.perend_q1,
+    date.perlen_q1,
+    date.pertyp_q1,
+    date.updtyp_q1,
+    date.company_id_unq_date,
+    date.ticker_unq_date,
+    date.dateindexeom_date,
+    date.company_id_unq_orig_date
+  from 
+  sipro_data_store.si_finecon6 finecon6 full outer join 
+  sipro_data_store.si_date date 
+  on 
+  finecon6.dateindex_ci      = date.dateindex_date       and 
+  finecon6.company_id_unq_ci = date.company_id_unq_date;
+  -- 242 SECONDS
+
+  drop table sipro_data_store.si_finecon6;
+  --
+
+  create table sipro_data_store.si_finecon8
+  as
+  select  finecon7.*,
+    psdc.dateindex_psdc,
+    psdc.company_id_psdc,
+    psdc.company_id_unq_psdc,
+    psdc.ticker_unq_psdc,
+    psdc.dateindexeom_psdc,
+    psdc.company_id_unq_orig_psdc
+  from 
+  sipro_data_store.si_finecon7 finecon7 full outer join 
+  sipro_data_store.si_psdc psdc 
+  on 
+  finecon7.dateindex_ci      = psdc.dateindex_psdc      and 
+  finecon7.company_id_unq_ci = psdc.company_id_unq_psdc;
+  -- 262 SECONDS
+
+  drop table sipro_data_store.si_finecon7;
+  --
+
+  create table sipro_data_store.si_finecon9
+  as
+  select  finecon8.*,
+    psdd.dateindex_psdd,
+    psdd.company_id_psdd,
+    psdd.company_id_unq_psdd,
+    psdd.ticker_unq_psdd,
+    psdd.dateindexeom_psdd,
+    psdd.company_id_unq_orig_psdd
+  from 
+  sipro_data_store.si_finecon8 finecon8 full outer join 
+  sipro_data_store.si_psdd psdd 
+  on 
+  finecon8.dateindex_ci      = psdd.dateindex_psdd       and 
+  finecon8.company_id_unq_ci = psdd.company_id_unq_psdd;
+  -- 300 SECONDS  -- 
+  -- 
+
+  drop table sipro_data_store.si_finecon8;
+  --
+
+  create table sipro_data_store.si_finecon10
+  as
+  select  finecon9.*,
+    returns.retdate_dateindex,
+    returns.retdate_dateindexeom,
+    returns.now_dateindex,
+    returns.now_dateindexeom,
+    returns.now_company_id_unq,
+    returns.now_ticker_unq,
+    returns.now_company,
+    returns.now_price,
+    returns.w52_dateindex,
+    returns.w52_dateindexeom,
+    returns.w52_company_id_unq,
+    returns.w52_ticker_unq,
+    returns.w52_company,
+    returns.w52_prchg_52w_ann,
+    returns.w52_pradchg_52w_ann,
+    returns.w52_divaccmf4q,
+    returns.w26_dateindex,
+    returns.w26_dateindexeom,
+    returns.w26_company_id_unq,
+    returns.w26_ticker_unq,
+    returns.w26_company,
+    returns.w26_prchg_26w_ann,
+    returns.w26_pradchg_26w_ann,
+    returns.w26_divaccmf2q,
+    returns.w13_dateindex,
+    returns.w13_dateindexeom,
+    returns.w13_company_id_unq,
+    returns.w13_ticker_unq,
+    returns.w13_company,
+    returns.w13_prchg_13w_ann,
+    returns.w13_pradchg_13w_ann,
+    returns.w13_divaccmf1q
+  from 
+  sipro_data_store.si_finecon9 finecon9 full outer join 
+  sipro_data_store.si_returns returns 
+  on 
+  finecon9.dateindex_ci      = returns.now_dateindex       and 
+  finecon9.company_id_unq_ci = returns.now_company_id_unq;
+  -- 555 SECONDS
+
+  drop table sipro_data_store.si_finecon9;
+  --
+
+  create table sipro_data_store.si_finecon11
+  as
+  select  finecon10.*,
+    exchg.dateindex_exchg,
+    exchg.exchg_code,
+    exchg.exchg_desc,
+    exchg.dateindexeom_exchg
+  from 
+  sipro_data_store.si_finecon10 finecon10 full outer join 
+  sipro_data_store.si_exchg exchg 
+  on 
+  finecon10.dateindex_ci      = exchg.dateindex_exchg and
+  finecon10.exchange          = exchg.exchg_code;
+  -- 706 SECONDS
+
+  drop table sipro_data_store.si_finecon10;
+  --
+
+  create table sipro_data_store.si_finecon12
+  as
+  select  finecon11.*,
+    mgdsc.dateindex_mgdsc dateindex_mgdsc_sect,
+    mgdsc.mg_code mg_code_sect,
+    mgdsc.mg_desc mg_desc_sect,
+    mgdsc.dateindexeom_mgdsc dateindexeom_mgdsc_sect
+  from 
+  sipro_data_store.si_finecon11 finecon11 full outer join 
+  sipro_data_store.si_mgdsc mgdsc 
+  on 
+  finecon11.dateindex_ci      = mgdsc.dateindex_mgdsc and
+  finecon11.ind_2_dig         = mgdsc.mg_code;
+  -- 370 SECONDS
+
+  drop table sipro_data_store.si_finecon11;
+  --
+
+  create table sipro_data_store.si_finecon13
+  as
+  select  finecon12.*,
+    mgdsc.dateindex_mgdsc dateindex_mgdsc_ind,
+    mgdsc.mg_code mg_code_ind,
+    mgdsc.mg_desc mg_desc_ind,
+    mgdsc.dateindexeom_mgdsc dateindexeom_mgdsc_ind
+  from 
+  sipro_data_store.si_finecon12 finecon12 full outer join 
+  sipro_data_store.si_mgdsc mgdsc 
+  on 
+  finecon12.dateindex_ci      = mgdsc.dateindex_mgdsc and
+  finecon12.ind_3_dig         = mgdsc.mg_code;
+  -- 360 SECONDS
+
+  drop table sipro_data_store.si_finecon12;
+  --
+
+  alter table sipro_data_store.si_finecon13 rename to si_finecon;
+
+  ")
+
+  # update search path
+  dbGetQuery(conn, paste0("set search_path to ", osp))
+
+  # update time zone
+  dbGetQuery(conn, paste0("set time zone '",ost,"'"))
+
+  # update session work memory
+  dbGetQuery(conn, paste0("set work_mem to '",oswm,"'"))
+  
+  return(invisible())
+
+} 
+
+## SHOULD WORK
+## WOULD TAKE 50 TO 60 MINUTES TO RUN
+##   AFTER THE RUN, probably NEEDS SOME INDEXES
+## ReCreateAAIIOneBigRealTable(conn)
 
 
 
@@ -6367,8 +7129,8 @@ data_processing_from_Excel4 <- function(universecoll = NULL, quickdebug = FALSE,
 bookmarkhere <- 1   
 
 #      
-#                              
-#                                                                                                                                                                                                                                                                     
+#                               
+#                                                                                                                                                                                                                                                                        
 
 
 
