@@ -2234,7 +2234,7 @@ createAAIIDataStoreSIProReturnsTable <- function(conn) {
                 and cif.company_id_unq = fut.company_id_unq 
   
            where ci.company_id_unq       = cif.company_id_unq
-           and retdate.dateindexf12mlwd  = cif.dateindex
+           and retdate.dateindexf06mlwd  = cif.dateindex
   
            ) w26 on (true)
            
@@ -2290,7 +2290,7 @@ createAAIIDataStoreSIProReturnsTable <- function(conn) {
                 and cif.company_id_unq = fut.company_id_unq 
   
            where ci.company_id_unq       = cif.company_id_unq
-           and retdate.dateindexf12mlwd  = cif.dateindex
+           and retdate.dateindexf03mlwd  = cif.dateindex
   
            ) w13 on (true)
   order by 2,1  -- retdate_dateindexoem, retdate_dateindex
