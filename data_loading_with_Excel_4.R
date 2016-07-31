@@ -767,7 +767,7 @@ createAAIIDataStoreSIProRetDateTable <- function(conn, new_month_inserted = " 1 
   # update time zone
   dbGetQuery(conn, "set time zone 'utc'")
 
-  dbGetQuery(conn, paste0("
+  to_be_query <- paste0("
   
   -- BEGIN VERY KEEP --
   -- BEGIN VERY KEEP --
@@ -798,14 +798,14 @@ createAAIIDataStoreSIProRetDateTable <- function(conn, new_month_inserted = " 1 
   from (
   select 
     dateindex,
-                          f1m_and_b1d.f1m_and_b1d + interval '12 month'                             f12mldom, -- future12m last day of month
-    (extract('epoch' from f1m_and_b1d.f1m_and_b1d + interval '12 month')  /(3600*24))::int dateindexf12meom,
-                          f1m_and_b1d.f1m_and_b1d + interval '09 month'                             f09mldom,
-    (extract('epoch' from f1m_and_b1d.f1m_and_b1d + interval '09 month')  /(3600*24))::int dateindexf09meom,
-                          f1m_and_b1d.f1m_and_b1d + interval '06 month'                             f06mldom,
-    (extract('epoch' from f1m_and_b1d.f1m_and_b1d + interval '06 month')  /(3600*24))::int dateindexf06meom,
-                          f1m_and_b1d.f1m_and_b1d + interval '03 month'                             f03mldom,
-    (extract('epoch' from f1m_and_b1d.f1m_and_b1d + interval '03 month')  /(3600*24))::int dateindexf03meom
+                          date_trunc('month', f1m_and_b1d.f1m_and_b1d) + interval '13 month' - interval '1 day'                            f12mldom, -- future12m last day of month
+    (extract('epoch' from date_trunc('month', f1m_and_b1d.f1m_and_b1d) + interval '13 month' - interval '1 day')  /(3600*24))::int dateindexf12meom,
+                          date_trunc('month', f1m_and_b1d.f1m_and_b1d) + interval '10 month' - interval '1 day'                             f09mldom,
+    (extract('epoch' from date_trunc('month', f1m_and_b1d.f1m_and_b1d) + interval '10 month' - interval '1 day')  /(3600*24))::int dateindexf09meom,
+                          date_trunc('month', f1m_and_b1d.f1m_and_b1d) + interval '07 month' - interval '1 day'                             f06mldom,
+    (extract('epoch' from date_trunc('month', f1m_and_b1d.f1m_and_b1d) + interval '07 month' - interval '1 day')  /(3600*24))::int dateindexf06meom,
+                          date_trunc('month', f1m_and_b1d.f1m_and_b1d) + interval '04 month' - interval '1 day'                             f03mldom,
+    (extract('epoch' from date_trunc('month', f1m_and_b1d.f1m_and_b1d) + interval '04 month' - interval '1 day')  /(3600*24))::int dateindexf03meom
   from (
   -- forward 1 month and back 1 day
   select date_trunc('month', to_timestamp(dateindex*3600*24)::date) + interval '1 month' - interval '1 day'  f1m_and_b1d, 
@@ -823,7 +823,9 @@ createAAIIDataStoreSIProRetDateTable <- function(conn, new_month_inserted = " 1 
   -- END VERY KEEP --
   -- END VERY KEEP --
   
-  "))
+  ")
+  
+  dbGetQuery(conn, to_be_query)
   
   dbSendQuery(conn, paste0("vacuum analyze sipro_data_store.si_retdate"))
   
