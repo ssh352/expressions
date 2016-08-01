@@ -1614,7 +1614,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     # by Jill Mislinski
     # http://www.advisorperspectives.com/dshort/updates/ISM-Manufacturing
     # 
-    # "The June PMI® registered 53.2 percent, an increase of 1.9 percentage points 
+    # "The June PMIï¿½ registered 53.2 percent, an increase of 1.9 percentage points 
     # from the May reading of 51.3 percent.
     # 
     # Today the Institute for Supply Management published its 
@@ -1637,13 +1637,18 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     # May 2016	 51.3
     # Jun 2016	 53.2
     # 
-    # The latest headline PMI was 53.2 percent, 
+    # The latest headline PMI was 53.2 percent, ( JUL 01 2016 )
     # an increase of 1.9 percent from the previous month and above the Investing.com forecast of 51.4.
     # 
+    # 52.6 ( AUG 01 2016 ) REPORTS  X.Y.Z ON DAY MONTH 01, YEAR FOR 'MONTH-1': OLD_FRED AS YEAR-'MONTH-1'-01
+    #
     # ISM Manufacturing Index: Continuing Expansion in June
     # July 1, 2016
     # by Jill Mislinski
     # http://www.advisorperspectives.com/dshort/updates/ISM-Manufacturing # SHOWS ONLY THE MOST RECENT
+    #    LINK TO THE real report
+    #  GOOGLE SEARCH: "Latest Manufacturing ROB" ( HAS IT HERE )
+    #  of ISM Report On Business / Latest Manufacturing ROB
     # 
     # # OLD FRED
     # > load(file="W:\\New_Economics\\rcsnsight1.320\\Data160603\\NAPM_RAW.Rdata")
@@ -1690,9 +1695,9 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     retrieveSymbolsQuantmodRdata(
       finSymbol = "NAPM"
       , finSymbolRemoteSource = "Quantmod_FRED_RData"
-      , finSymbolRemoteSourcePath = "./Data160603/NAPM_RAW.Rdata"
-      , finSymbolNewCoreDatum = 53.2
-      , finSymbolNewIndexStr  = "2016-06-01" # would have been recorded on "2016-07-01"
+      , finSymbolRemoteSourcePath = "./Data160717/NAPM_RAW.Rdata"
+      , finSymbolNewCoreDatum = 52.6
+      , finSymbolNewIndexStr  = "2016-07-01" # "2016-06-01" would have been recorded on "July 1st 2016 news as FOR_JUNE"
       , finSymbolAttributes = c("Close")
       , initDate = "1950-03-01"
       , subtractOffDaysSpec = -1
@@ -2871,7 +2876,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     #   , finSymbolRemoteSource = "Quantmod_FRED_RData"
     #   , finSymbolRemoteSourcePath = "./Data160603/NAPM_RAW.Rdata" # ( UPDATE THIS: 1 OF 3)
     #   , finSymbolNewCoreDatum = 53.2 # ( UPDATE THIS: 2 OF 3)
-    #   , finSymbolNewIndexStr  = "2016-06-01" # would have been recorded on "2016-07-01" # ( UPDATE THIS: 3 OF 3)
+    #   , finSymbolNewIndexStr  = "2016-06-01" # "2016-06-01" would have been recorded on "July 1st 2016 news as FOR_JUNE"" # ( UPDATE THIS: 3 OF 3)
     #   , finSymbolAttributes = c("Close")
     #   , initDate = "1950-03-01"
     #   , subtractOffDaysSpec = -1
@@ -3100,6 +3105,6 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
 
 ########################      
 # 
-#       
+#          
 
 
