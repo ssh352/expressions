@@ -279,6 +279,20 @@ copyAAIISIProDBFs <- function(from = "C:/Program Files (x86)/Stock Investor/Prof
   
 }
 
+# 1. startup SIPro, update to last friday of the month( e.g. June 29, 2016 )
+# 2. Manuaylly copy the files from "C:/Program Files (x86)/Stock Investor/Professional"
+#    to "L:/MyVMWareSharedFolder/Professional160630" YYMMDD
+# 3. Determine target directory name: > as.integer(zoo::as.Date("2016-06-30")) [1] 16982
+#   Run the following ( the program will create the target folder for me, 
+#   but I need to type  as SPECIFIC folder number UTF:days_since_birth_of_UNIX  
+#
+# copyAAIISIProDBFs(
+#     from = "L:/MyVMWareSharedFolder/Professional160630"
+#   , to   = "W:/New_Economics/forsight4.322/AAIISIProDBFs/16982"
+# )
+
+
+
 
 massAAIISIProDBFsDB <- function(conn, from_target = "W:/New_Economics/forsight4.322/AAIISIProDBFs", 
                                 load_only_last_weekday_of_month = TRUE,
@@ -345,7 +359,23 @@ massAAIISIProDBFsDB <- function(conn, from_target = "W:/New_Economics/forsight4.
       # caroline::dbWriteTable2(conn, dbf_file_stem,  df = data_frame_loaded, , add.id= FALSE)
 
       dbWriteTable(conn, dbf_file_stem_plus_dir, cbind(dateindex = rep(as.integer(that_dir),NROW(data_frame_loaded)),data_frame_loaded))
-      dbGetQuery(conn, paste0("alter table " , dbf_file_stem_plus_dir, " inherit " , dbf_file_stem))
+      
+      # rule a 'potential child table' can not 'alter potential_child interit' wrt a potential_parent table
+      # unless a child table has the same ( or more ) columns that also exist in the parent
+      
+      # CHANGE AUGUST 20 2016
+      # Removal of alter table alsmast_16982 inherit alsmast
+      # company_id_unq text, # SOME parents ( all parent tables with 'company_id' )
+      # ticker_unq text,     # SOME parents ( all parent tables with 'company_id' )
+      # dateindexeom integer # ALL parents
+      # 
+      # SINCE parent has the column, the child is 
+      # "alter table alsmast_16982 inherit alsmast"
+      # ERROR:  child table is missing column "dateindexeom"
+      print(paste0("NOT DONE (PLEASE DO LATER): ", "alter table " , dbf_file_stem_plus_dir, " inherit " , dbf_file_stem))
+
+      # dbGetQuery(conn, paste0("alter table " , dbf_file_stem_plus_dir, " inherit " , dbf_file_stem))
+      
       dbGetQuery(conn, paste0("create index ", dbf_file_stem_plus_dir, "_dateindex_idx on " , dbf_file_stem_plus_dir, "( dateindex )"))
     
       if("company_id" %in% dbListFields(conn, dbf_file_stem_plus_dir)) {
@@ -444,7 +474,7 @@ dbListTablesOneSearchPath <- function(conn, ...) {
 # # update search path
 # dbGetQuery(conn, paste0("set search_path to ", osp))
 # # update time zone
-# dbGetQuery(conn, paste0("set time zone '",ost,"'"))
+# dbGetQuery(conn, paste0("set time zone '",ost,"'")) 
   
   
 # WAS not worth the TIME: I forgot that I already indexed by company_id
@@ -698,10 +728,28 @@ massAAIIinstallPartitionCheckConstraints <- function(conn,
         "select your_column from your_table limit 1"))
       cat(noquote(stmt_col_index_create),"\n")
       my_result <- try( { dbGetQuery(conn, stmt_col_index_create) }, silent = TRUE )
+      
+      # UPDATE OF AUGUST 20 2016
+      # if 'select from zero rows limit 1' will return 'zero rows'
+      if(NROW(my_result) != 1) {
+        print(paste0("PRODUCES NO RECORDS: ", stmt_col_index_create ))
+        print(paste0("SO a constraint will not be made.  ... ")) 
+
+        your_value <- "SOMETHING"
+        # COPY FROM BELOW
+        stmt_col_index_create <-  gsub("your_value", your_value, gsub("your_table", interested_table, gsub("your_column", interested_column,
+       "alter table your_table add constraint your_table_your_column_chk check (your_column = your_value)"))) #  not valid ( almost zero resources to validate )
+
+        print(paste0("  ", stmt_col_index_create))
+        print(paste0("    SO next(skipping) ..."))
+        print("")
+        
+        next
+      } 
       if(class(my_result) == "try-error") {    
         cat(paste0("  ERROR FAILURE: ", interested_column, " of ", interested_table,"\n"))
         next 
-      } else {
+      } else { # not "try-error" and NOT NEXT for any other reason ABOVE
         my_result <- as.vector(unlist(my_result))
       }
         
@@ -2428,7 +2476,11 @@ ReCreateAAIIOneBigRealTable <- function(conn) {
     psd.split_date,
     psd.split_fact,
     psd.price_date,  -- should have gone with si_returns
-    price,
+    psd.price,
+    psd.prchg_04w,
+    psd.prchg_13w,
+    psd.prchg_26w,
+    psd.prchg_52w,
     psd.shr_aq1,
     psd.shr_aq2,
     psd.shr_aq3,
@@ -2707,6 +2759,14 @@ ReCreateAAIIOneBigRealTable <- function(conn) {
   select  finecon2.*,
    bsq.dateindex_bsq,
    bsq.company_id_bsq,
+   bsq.cash_q1,
+   bsq.cash_q2,
+   bsq.cash_q3,
+   bsq.cash_q4,
+   bsq.cash_q5,
+   bsq.cash_q6,
+   bsq.cash_q7,
+   bsq.cash_q8,
    bsq.ar_q1,
    bsq.ar_q2,
    bsq.ar_q3,
@@ -7132,7 +7192,7 @@ bookmarkhere <- 1
 
 #      
 #                               
-#                                                                                                                                                                                                                                                                        
+#                                                                                                                                                                                                                                                                           
 
 
 
