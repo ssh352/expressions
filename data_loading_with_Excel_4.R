@@ -432,7 +432,7 @@ conn <- dbConnect(drv, user="postgres", password="postgres", port = 5432, dbname
 dbListTablesOneSearchPath <- function(conn, ...) {
 
   out <- dbGetQuery(conn, paste0("select tablename from pg_tables where schemaname !='information_schema'", 
-    "and schemaname !='pg_catalog'", 
+    " and schemaname !='pg_catalog'", 
     " and schemaname =","'",gsub(" ","",dbGetQuery(conn,"show search_path")[[1]], fixed = TRUE),"'", ...))
     
   if (is.null(out) || nrow(out) == 0) 
@@ -798,8 +798,81 @@ massAAIIinstallPartitionCheckConstraints <- function(conn,
 # massAAIIinstallPartitionCheckConstraints(conn, tabl_regex_expr = "16952", checked_col = "dateindexeom")
 #
 #
+# THEN do ( becuase I could_not/did_not do earlier )
+# Since 'inherit' removed from massAAIISIProDBFsDB, then do it HERE
+# massAAIIinstallTablesInherit(conn, tabl_regex_expr = "16982" )
 
+# Since 'inherit' removed from massAAIISIProDBFsDB, then do it HERE
+massAAIIinstallTablesInherit <- function(conn, 
+  tabl_regex_expr    = "_\\d+$" #  specific month  _######$
+  ) { 
 
+  # make sure autovacuum is turned on(default) ***IMPORTANT **
+  # select * from pg_settings where name like 'autovacuum%';
+
+  ost <- dbGetQuery(conn,"show time zone")[[1]]
+  osp <- dbGetQuery(conn,"show search_path")[[1]]
+  
+  # update search path
+  dbGetQuery(conn, paste0("set search_path to sipro_stage") )
+  # update time zone
+  dbGetQuery(conn, "set time zone 'utc'")
+
+  tables <- dbListTablesOneSearchPath(conn)
+  
+   #  specific month  _######$
+  interested_tables <- sort(tables[grepl(tabl_regex_expr,tables)])
+  interested_tables_length <- length(interested_tables)
+  interested_tables_length_index <- 0
+
+  for (interested_table in interested_tables) {
+    interested_tables_length_index <- interested_tables_length_index + 1
+    cat(paste0("Begin interested_table: ", interested_table, 
+             " number ", interested_tables_length_index,
+             " of ", interested_tables_length,
+             "\n"))
+    
+    dbf_file_stem_plus_dir <- interested_table
+    dbf_file_stem          <- substring(dbf_file_stem_plus_dir, 1, regexpr("_\\d+$", dbf_file_stem_plus_dir) - 1)
+
+    # ORDER of substitution DOES MATTER
+    stmt <-  gsub("dbf_file_stem", dbf_file_stem, gsub("dbf_file_stem_plus_dir", dbf_file_stem_plus_dir,
+    "alter table dbf_file_stem_plus_dir inherit dbf_file_stem"))
+    cat(noquote(stmt),"\n")
+    my_result <- try( { dbGetQuery(conn, stmt) }, silent = TRUE )
+
+    if(class(my_result) == "try-error") {    
+      cat(paste0("  ERROR FAILURE: ", dbf_file_stem_plus_dir, " of ", dbf_file_stem,"\n"))
+      next 
+    }
+     
+    cat(paste0("End interested_table: ", interested_table,"\n"))
+      
+  }
+
+  # update search path
+  dbGetQuery(conn, paste0("set search_path to ", osp))
+  
+  # update time zone
+  dbGetQuery(conn, paste0("set time zone '",ost,"'"))
+  
+  return(invisible())
+
+}
+
+# massAAIIinstallTablesInherit(conn, tabl_regex_expr = "16982" )
+
+# set search_path to sipro_data_store,sipro_stage;
+# set time zone 'utc';
+# set work_mem to '1200MB';
+# set constraint_exclusion = on;
+
+# JUST UPDATE
+# create table  sipro_data_store.si_retdate_old as select * from  sipro_data_store.si_retdate;
+# DONE
+
+  # (IF) HAD DONE INSERT
+  # #  # alter table sipro_data_store.si_retdate rename to si_retdate_old;
 
 # WORKS
 createAAIIDataStoreSIProRetDateTable <- function(conn, new_month_inserted = " 1 = 1 " ) {
@@ -890,12 +963,77 @@ createAAIIDataStoreSIProRetDateTable <- function(conn, new_month_inserted = " 1 
 } 
 
 # JUST ONCE - BIG INITIALIZATION - could take up to 60 seconds to run
-# createAAIIDataStoreSIProRetDateTable(conn)
+# createAAIIDataStoreSIProRetDateTable(conn) # UNTESTED
 
 # ADD A NEW RECORD EVERY TIME
 # createAAIIDataStoreSIProRetDateTable(conn, new_month_inserted = " dateindex = 16952 ")
+
+##
+
+# createAAIIDataStoreSIProRetDateTable(conn, new_month_inserted = " dateindex = 16982 ")
+# 30 SECONDS ( WORKS )
+# DONE
+
+# createAAIIDataStoreSIProRetDateTable(conn, new_month_inserted = " dateindex = 17011 ")
+# DONE ( AFTER THE FIRST - THIS IS INSTANANEOUS )
+
+
+
+# set search_path to sipro_data_store,sipro_stage;
+# set time zone 'utc';
+# set work_mem to '1200MB';
+# set constraint_exclusion = on;
 # 
 
+    ## NO - INDEXES . . . OF THE . . SAME NAME 
+    # alter table sipro_data_store.si_ci rename to si_ci_old;  
+    # alter table sipro_data_store.si_psd rename to si_psd_old;
+    # alter table sipro_data_store.si_isq rename to si_isq_old;
+    # 
+    # alter table sipro_data_store.si_mgdsc rename to si_mgdsc_old;
+    # alter table sipro_data_store.si_exchg rename to si_exchg_old;
+    # alter table sipro_data_store.si_psdd rename to si_psdd_old;
+    # 
+    # alter table sipro_data_store.si_psdc rename to si_psdc_old;
+    # alter table sipro_data_store.si_date rename to si_date_old;
+    # alter table sipro_data_store.si_bsq rename to si_bsq_old;
+    # 
+    # alter table sipro_data_store.si_cfq rename to si_cfq_old;
+    # alter table sipro_data_store.si_mlt rename to si_mlt_old;
+    # alter table sipro_data_store.si_rat rename to si_rat_old;
+
+    # drop table sipro_data_store.si_ci_old;
+    # drop table sipro_data_store.si_psd_old;
+    # drop table sipro_data_store.si_isq_old;
+    # 
+    # drop table sipro_data_store.si_mgdsc_old;
+    # drop table sipro_data_store.si_exchg_old;
+    # drop table sipro_data_store.si_psdd_old;
+    # 
+    # drop table sipro_data_store.si_psdc_old;
+    # drop table sipro_data_store.si_date_old;
+    # drop table sipro_data_store.si_bsq_old;
+    # 
+    # drop table sipro_data_store.si_cfq_old;
+    # drop table sipro_data_store.si_mlt_old;
+    # drop table sipro_data_store.si_rat_old;
+
+# drop table sipro_data_store.si_ci;
+# drop table sipro_data_store.si_psd;
+# drop table sipro_data_store.si_isq;
+# 
+# drop table sipro_data_store.si_mgdsc;
+# drop table sipro_data_store.si_exchg;
+# drop table sipro_data_store.si_psdd;
+# 
+# drop table sipro_data_store.si_psdc;
+# drop table sipro_data_store.si_date;
+# drop table sipro_data_store.si_bsq;
+# 
+# drop table sipro_data_store.si_cfq;
+# drop table sipro_data_store.si_mlt;
+# drop table sipro_data_store.si_rat;
+# DONE
 
 
 # SHOULD WORK
@@ -914,6 +1052,9 @@ createAAIIDataStoreSIProSomeTables <- function(conn) {
 
   dbGetQuery(conn, paste0("
   
+  ----------------
+  ----------------
+
   create table sipro_data_store.si_ci as select * from sipro_stage.si_ci;
   -- 90 seconds
 
@@ -1219,11 +1360,8 @@ createAAIIDataStoreSIProSomeTables <- function(conn) {
 
   -- _38_ seconds
 
-
   ----------
   ----------
-
-----
 
   create table sipro_data_store.si_mgdsc as select * from sipro_stage.si_mgdsc;
   -- 19 seconds
@@ -1266,7 +1404,8 @@ createAAIIDataStoreSIProSomeTables <- function(conn) {
 
   -- 1 seconds
 
-----
+  --------
+  --------
 
   create table sipro_data_store.si_exchg as select * from sipro_stage.si_exchg;
   -- 1 seconds
@@ -1309,7 +1448,8 @@ createAAIIDataStoreSIProSomeTables <- function(conn) {
 
   -- 1 seconds
 
-----
+  --------------
+  ---------------
 
   create table sipro_data_store.si_psdd as select * from sipro_stage.si_psdd;
   -- 101 seconds
@@ -1361,8 +1501,8 @@ createAAIIDataStoreSIProSomeTables <- function(conn) {
 
   --  42 seconds
 
-----
-
+  ---------------
+  ---------------
 
   create table sipro_data_store.si_psdc as select * from sipro_stage.si_psdc;
   -- 120 seconds
@@ -1414,7 +1554,8 @@ createAAIIDataStoreSIProSomeTables <- function(conn) {
 
   -- 51 seconds
 
-----
+  --------------
+  --------------
 
   create table sipro_data_store.si_date as select * from sipro_stage.si_date;
   -- ?? seconds
@@ -1466,7 +1607,8 @@ createAAIIDataStoreSIProSomeTables <- function(conn) {
 
   -- 44 seconds
 
-----
+  -------------------
+  -------------------
 
   create table sipro_data_store.si_bsq as select * from sipro_stage.si_bsq;
   -- 180 seconds
@@ -1518,7 +1660,8 @@ createAAIIDataStoreSIProSomeTables <- function(conn) {
 
   -- 60 seconds
 
-----
+  --------------
+  --------------
 
   create table sipro_data_store.si_cfq as select * from sipro_stage.si_cfq;
   -- 70 seconds
@@ -1570,7 +1713,8 @@ createAAIIDataStoreSIProSomeTables <- function(conn) {
 
   -- 30 seconds
 
-----
+  --------------
+  --------------
 
   create table sipro_data_store.si_mlt as select * from sipro_stage.si_mlt;
   -- 61 seconds
@@ -1622,7 +1766,8 @@ createAAIIDataStoreSIProSomeTables <- function(conn) {
 
   -- 32 seconds
 
-----
+  ----------
+  -----------
 
   create table sipro_data_store.si_rat as select * from sipro_stage.si_rat;
   -- 84 seconds
@@ -1675,9 +1820,89 @@ createAAIIDataStoreSIProSomeTables <- function(conn) {
   -- 39 seconds
 
 
+  "))
+  
+
+  # update search path
+  dbGetQuery(conn, paste0("set search_path to ", osp))
+  # update time zone
+  dbGetQuery(conn, paste0("set time zone '",ost,"'"))
+  # update session work memory
+  dbGetQuery(conn, paste0("set work_mem to '",oswm,"'"))
+  
+  return(invisible())
+
+} 
+
+# createAAIIDataStoreSIProSomeTables(conn)
+# DONE 4:53 - 5:12 ( 17 MINUTES )
+
+
+# INIT RAN ONCE
+# createAAIIDataStoreSIProSomeTables(conn)
+#
+# PER EACH NEW abc TABLE
+#   create table sipro_data_store.si_abc as select * from sipro_stage.si_abc;
+#     
+#   ... COULD BE MANY INDEXES ...
+#   create index si_isq_column_idx
+#   on sipro_data_store.si_isq
+#   using btree
+#   (column);
+#
+#
+# alter table sipro_data_store.si_abc add column company_id_unq_orig text;
+#
+# update sipro_data_store.si_abc set company_id_unq_orig = company_id_unq;
+#
+# update sipro_data_store.si_abc abc 
+# set company_id_unq = abc_f.company_id_unq
+# from sipro_data_store.si_abc abc_f
+# where abc.ticker_unq = abc_f.ticker_unq
+# and   abc.dateindex   in (
+#                          14911,
+#                          14943,
+#                          14974,
+#                          15005,
+#                          15033,
+#                          15064,
+#                          15093,
+#                          15125,
+#                          15155
+#                         )
+# and abc_f.dateindex = 15184;
+#
+# 
+# vacuum analyze sipro_data_store.si_abc(company_id_unq);
+# 
+
+
+
+
+### ( REALLY! SHOULD! BE MADE permanent in sipro_stage )
+### ( THIS IS A BIG MONTH_END/MONTH_END WASTE OF TIME TO REDO IT HERE @ END OF 'EVERY MONTH' )
+#
+createAAIIDataOldDateCompanyIDUnqPatch <- function(conn) {
+
+  ost  <- dbGetQuery(conn,"show time zone")[[1]]
+  osp  <- dbGetQuery(conn,"show search_path")[[1]]
+  oswm <- dbGetQuery(conn,"show work_mem")[[1]]
+  
+  # update session work memory
+  dbGetQuery(conn, paste0("set work_mem to '1200MB'"))
+
+  # update search path
+  dbGetQuery(conn, paste0("set search_path to sipro_data_store,sipro_stage") )
+
+  # update time zone
+  dbGetQuery(conn, "set time zone 'utc'")
+
+  dbGetQuery(conn, paste0("
+
   ------------------------------------------
   ---- BEGIN company_id_unq patch  ---------
-  ----
+  ---- ( REALLY! SHOULD! BE MADE permanent in sipro_stage )
+  ---- ( THIS IS A BIG MONTH_END/MONTH_END WASTE OF TIME TO REDO IT HERE @ END OF 'EVERY MONTH' )
 
   alter table sipro_data_store.si_ci add column company_id_unq_orig text;
   -- instantaneously
@@ -1936,9 +2161,12 @@ createAAIIDataStoreSIProSomeTables <- function(conn) {
   ----
   ----  END company_id_unq patch  ---------
   -----------------------------------------
-  
+
+
   "))
-  
+
+
+
   dbSendQuery(conn, "vacuum analyze sipro_data_store.si_ci(company_id_unq)")
 
   dbSendQuery(conn, "vacuum analyze sipro_data_store.si_psd(company_id_unq)")
@@ -1946,27 +2174,33 @@ createAAIIDataStoreSIProSomeTables <- function(conn) {
   dbSendQuery(conn, "vacuum analyze sipro_data_store.si_isq(company_id_unq)")
   
   
+  ## si_mgdsc
+  
+  ## si_exchg
+    
   dbSendQuery(conn, "vacuum analyze sipro_data_store.si_psdd(company_id_unq)")
 
+  
   dbSendQuery(conn, "vacuum analyze sipro_data_store.si_psdc(company_id_unq)")
 
   dbSendQuery(conn, "vacuum analyze sipro_data_store.si_date(company_id_unq)")
-
+  
   dbSendQuery(conn, "vacuum analyze sipro_data_store.si_bsq(company_id_unq)")
 
+  
   dbSendQuery(conn, "vacuum analyze sipro_data_store.si_cfq(company_id_unq)")
 
   dbSendQuery(conn, "vacuum analyze sipro_data_store.si_mlt(company_id_unq)")
-
+  
   dbSendQuery(conn, "vacuum analyze sipro_data_store.si_rat(company_id_unq)")
 
-  
-  
-  
+
   # update search path
   dbGetQuery(conn, paste0("set search_path to ", osp))
+
   # update time zone
   dbGetQuery(conn, paste0("set time zone '",ost,"'"))
+
   # update session work memory
   dbGetQuery(conn, paste0("set work_mem to '",oswm,"'"))
   
@@ -1974,45 +2208,13 @@ createAAIIDataStoreSIProSomeTables <- function(conn) {
 
 } 
 
-# INIT RAN ONCE
-# createAAIIDataStoreSIProSomeTables(conn)
-#
-# PER EACH NEW abc TABLE
-#   create table sipro_data_store.si_abc as select * from sipro_stage.si_abc;
-#     
-#   ... COULD BE MANY INDEXES ...
-#   create index si_isq_column_idx
-#   on sipro_data_store.si_isq
-#   using btree
-#   (column);
-#
-#
-# alter table sipro_data_store.si_abc add column company_id_unq_orig text;
-#
-# update sipro_data_store.si_abc set company_id_unq_orig = company_id_unq;
-#
-# update sipro_data_store.si_abc abc 
-# set company_id_unq = abc_f.company_id_unq
-# from sipro_data_store.si_abc abc_f
-# where abc.ticker_unq = abc_f.ticker_unq
-# and   abc.dateindex   in (
-#                          14911,
-#                          14943,
-#                          14974,
-#                          15005,
-#                          15033,
-#                          15064,
-#                          15093,
-#                          15125,
-#                          15155
-#                         )
-# and abc_f.dateindex = 15184;
-#
-# 
-# vacuum analyze sipro_data_store.si_abc(company_id_unq);
-# 
 
-# SHOULD WORK 
+# createAAIIDataOldDateCompanyIDUnqPatch(conn)
+
+
+
+
+# SHOULD WORK ( NOT USED )
 createAAIIDataStoreSIProSomeTablesNewMonthInserted <- function(conn, new_month_inserted = " 1 = 0 " ) {
 
   ost  <- dbGetQuery(conn,"show time zone")[[1]]
@@ -2037,6 +2239,28 @@ createAAIIDataStoreSIProSomeTablesNewMonthInserted <- function(conn, new_month_i
 
   insert into  sipro_data_store.si_isq as select * from sipro_stage.si_isq where ", new_month_inserted, "; 
 
+
+  insert into  sipro_data_store.si_mgdsc as select * from sipro_stage.si_mgdsc   where ", new_month_inserted, "; 
+ 
+  insert into  sipro_data_store.si_exchg as select * from sipro_stage.si_exchg where ", new_month_inserted, "; 
+
+  insert into  sipro_data_store.si_psdd as select * from sipro_stage.si_psdd where ", new_month_inserted, "; 
+
+
+  insert into  sipro_data_store.si_psdc as select * from sipro_stage.si_psdc   where ", new_month_inserted, "; 
+ 
+  insert into  sipro_data_store.si_date as select * from sipro_stage.si_date where ", new_month_inserted, "; 
+
+  insert into  sipro_data_store.si_bsq as select * from sipro_stage.si_bsq where ", new_month_inserted, "; 
+
+
+
+  insert into  sipro_data_store.si_cfq as select * from sipro_stage.si_cfq   where ", new_month_inserted, "; 
+ 
+  insert into  sipro_data_store.si_mlt as select * from sipro_stage.si_mlt where ", new_month_inserted, "; 
+
+  insert into  sipro_data_store.si_rat as select * from sipro_stage.si_rat where ", new_month_inserted, "; 
+
    "))
 
   dbSendQuery(conn, "vacuum analyze sipro_data_store.si_ci")
@@ -2044,7 +2268,31 @@ createAAIIDataStoreSIProSomeTablesNewMonthInserted <- function(conn, new_month_i
   dbSendQuery(conn, "vacuum analyze sipro_data_store.si_psd")
 
   dbSendQuery(conn, "vacuum analyze sipro_data_store.si_isq")
+  
+  
+  dbSendQuery(conn, "vacuum analyze sipro_data_store.si_mgdsc")
 
+  dbSendQuery(conn, "vacuum analyze sipro_data_store.si_exchg")
+
+  dbSendQuery(conn, "vacuum analyze sipro_data_store.si_psdd")
+  
+  
+  dbSendQuery(conn, "vacuum analyze sipro_data_store.si_psdc")
+
+  dbSendQuery(conn, "vacuum analyze sipro_data_store.si_date")
+
+  dbSendQuery(conn, "vacuum analyze sipro_data_store.si_bsq")
+  
+  
+  dbSendQuery(conn, "vacuum analyze sipro_data_store.si_cfq")
+
+  dbSendQuery(conn, "vacuum analyze sipro_data_store.si_mlt")
+
+  dbSendQuery(conn, "vacuum analyze sipro_data_store.si_rat")
+
+ 
+
+  
   # update search path
   dbGetQuery(conn, paste0("set search_path to ", osp))
 
@@ -2057,6 +2305,7 @@ createAAIIDataStoreSIProSomeTablesNewMonthInserted <- function(conn, new_month_i
   return(invisible())
 
 } 
+# SHOULD WORK ( NOT USED )
 # SHOULD WORK -- EACH NEW MONTH -
 # createAAIIDataStoreSIProSomeTablesNewMonthInserted(conn, new_month_inserted = " dateindex = 16952 ")
 
@@ -2939,6 +3188,14 @@ ReCreateAAIIOneBigRealTable <- function(conn) {
    cfq.tcf_q6,
    cfq.tcf_q7,
    cfq.tcf_q8,
+   cfq.ncc_q1,
+   cfq.ncc_q2,
+   cfq.ncc_q3,
+   cfq.ncc_q4,
+   cfq.ncc_q5,
+   cfq.ncc_q6,
+   cfq.ncc_q7,
+   cfq.ncc_q8,
    cfq.dep_cf_q1,
    cfq.dep_cf_q2,
    cfq.dep_cf_q3,
@@ -7192,12 +7449,4 @@ bookmarkhere <- 1
 
 #      
 #                               
-#                                                                                                                                                                                                                                                                           
-
-
-
-
-
-
-
- 
+#                                                                                                                                                                                                                                                                            
