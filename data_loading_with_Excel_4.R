@@ -2310,24 +2310,16 @@ createAAIIDataStoreSIProSomeTablesNewMonthInserted <- function(conn, new_month_i
 # createAAIIDataStoreSIProSomeTablesNewMonthInserted(conn, new_month_inserted = " dateindex = 16952 ")
 
 
+# (CURRENLTY) HAS no INDEXES ( BUT THE R CODE BELOW DOES CREATE INDEXES )
+# alter table sipro_data_store.si_returns rename to si_returns_old;
+# DONE
 
 
 
 # CURRENTLY
 # MUST BE REGENERATED *ANEW* EACH MONTH ( so I get the just past date fractional data)
 #
-# MAYBE FUTURE?
-# OR MUST RUN MANY SMALLER 'insert into table sipro_data_store.si_returns' 
-# OVER the last years times to capture
-# the partial year returns ( e.g. 13w, 26w)
-#
-# MAYBE FUTURE?
-# use within 366 future date ranges
-#
-##  ## AFTER VACATION ## FIX ### LEFT_OFF # FAILING TO JOIN ON THE CORRECT
-### 5 CHARACTER NEW company_id ### I AM SEEIN STILL THE OLD 8 CHARACTER IDS
-#
-# AFTER THIS FIX(ABOVE): LOAD END OF JUNE DATA 
+
 #
 createAAIIDataStoreSIProReturnsTable <- function(conn) {
 
@@ -2680,6 +2672,15 @@ createAAIIDataStoreSIProReturnsTable <- function(conn) {
 # createAAIIDataStoreSIProReturnsTable(conn)
 
 
+# createAAIIDataStoreSIProReturnsTable(conn)
+# DONE 7:25:25 - 7:33 ( 8 MINUTES )
+
+# HAS INDEXES
+# drop table sipro_data_store.si_finecon;
+#    DONE
+
+
+
 ## SHOULD WORK
 ## WOULD TAKE 50 TO 60 MINUTES TO RUN
 ##   AFTER THE RUN, probably NEEDS SOME INDEXES
@@ -2738,7 +2739,7 @@ ReCreateAAIIOneBigRealTable <- function(conn) {
     psd.shr_aq6,
     psd.shr_aq7,
     psd.shr_aq8,
-    psd.beta,      -- NEW
+    psd.beta,       
     psd.mktcap,
     psd.mktcap_q1,
     psd.mktcap_q2,
@@ -2748,7 +2749,7 @@ ReCreateAAIIOneBigRealTable <- function(conn) {
     psd.mktcap_q6,
     psd.mktcap_q7,
     psd.mktcap_q8,
-    psd.shr_dq1,  -- NEW
+    psd.shr_dq1,   
     psd.shr_dq2,
     psd.shr_dq3,
     psd.shr_dq4,
@@ -7449,4 +7450,12 @@ bookmarkhere <- 1
 
 #      
 #                               
-#                                                                                                                                                                                                                                                                            
+#                                                                                                                                                                                                                                                                             
+
+
+
+
+
+
+
+ 
