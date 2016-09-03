@@ -91,7 +91,16 @@ hdntile  <- function(  x  = NULL                     # required: 'subset (groupe
   # aaii sipro 4.0
   # x[[newcolname]] <-  cut((as.numeric(posneg))*x[[measurecol]], hdquantile((as.numeric(posneg))*x[[measurecol]], seq(0, 1, as.numeric(1.0/as.numeric(buckets))) , na.rm = TRUE ), labels=FALSE , include.lowest=T) 
   
+  
+  ops <- options()
+  # garanteed print warnings as they occur
+  options(warn=1)
+  ##### WARNING #####
   # aaii sipro 4.5 # some cases NAs set to zero see? aaii magazine: April 2016 ( and the Readme.txt )
+  ###################
+  # if there is a cut error at e.g. buckets_iter == 100 quantiles,
+  # then go an try to calculate the next lower quantile. i.e. buckets_iter == 99
+  # keep going until I do not get a 'cut error.'
   At_Least_One_Error <- FALSE
   for(buckets_iter in buckets:1) {
     
@@ -109,7 +118,21 @@ hdntile  <- function(  x  = NULL                     # required: 'subset (groupe
     } 
     
   }
-  if(class(RESULT) == "try-error") browser()
+  # if(class(RESULT) == "try-error") browser()
+  
+  # if has reached this far (buckets_iter == 1), and still a cut error',
+  # then just assign 'values of 1' ( quantile: all equally bad ) to each company and continue
+  # e.g. cut will still fail at . . .  
+  #    'buckets_iter == 1' && x[[measurecol]] == c(0,0)
+  if(class(RESULT) == "try-error") {
+    
+    # e.g. x[[newcolname]] == c(1,1)
+    x[[newcolname]] <-  rep(1,length(x[[measurecol]]))
+    warning(paste0("cut error in LAST POSSIBLE hdntile: ",measurecol," from quantile ", buckets," to COULD NOT DO quantile ", buckets_iter))
+    warning(paste0("SETTING all quantile values to ONE: 1"))
+    
+  }
+  options(ops)
   
   # pass-through  ( will be NA - hdquantile default )
   # monopolyntilevalue <- NA
@@ -192,7 +215,7 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
 #   
 #   if(getOption("RepositoryStyle") == "Installed")  {
 #     
-#     options(AAIIBase = "L:/MyVMWareSharedFolder/Professional160429_SI_PRO_45")    
+#     options(AAIIBase = "L:/MyVMWareSharedFolder/Professional160831")    
 #     
 #   }
   
@@ -206,7 +229,7 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
   
   if(getLocalOption("RepositoryStyle", optionlist = OPTIONLIST) == "Installed")  {
     
-    OPTIONLIST <- localoptions(AAIIBase = "L:/MyVMWareSharedFolder/Professional160429_SI_PRO_45", optionlist = OPTIONLIST)
+    OPTIONLIST <- localoptions(AAIIBase = "L:/MyVMWareSharedFolder/Professional160831", optionlist = OPTIONLIST)
     
   }
   
