@@ -605,11 +605,11 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     #  2. incomplete data exists of current month 
     # THEREFORE
     # this IS       the end of the PREVIOUS MONTH
-    # finDate.TestTrain.Global.Latest    <- "2016-06-30"  # 2014-12-31(perfect) 
+    # finDate.TestTrain.Global.Latest    <- "2016-08-31"  # 2014-12-31(perfect) 
                                                           # march 21, 2015 run: "2015-01-31": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
                                                           # march 21, 2015 run: "2015-02-28": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
                                                           # march 21, 2015 run: "2015-03-31": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
-    finDate.TestTrain.Global.Latest      <- "2016-06-30"  # april  6, 2015 run: "2015-03-31": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
+    finDate.TestTrain.Global.Latest      <- "2016-08-31"  # april  6, 2015 run: "2015-03-31": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
     
     # training and TRUE tests
     list(Test2001 = list(Train=list(initDate = initData.TestTrain.Global.Earliest,finDate ="1998-12-31"),
@@ -1695,9 +1695,9 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     retrieveSymbolsQuantmodRdata(
       finSymbol = "NAPM"
       , finSymbolRemoteSource = "Quantmod_FRED_RData"
-      , finSymbolRemoteSourcePath = "./Data160717/NAPM_RAW.Rdata"
-      , finSymbolNewCoreDatum = 52.6
-      , finSymbolNewIndexStr  = "2016-07-01" # "2016-06-01" would have been recorded on "July 1st 2016 news as FOR_JUNE"
+      , finSymbolRemoteSourcePath = "./Data160801/NAPM_RAW.Rdata"
+      , finSymbolNewCoreDatum = 49.4
+      , finSymbolNewIndexStr  = "2016-08-01" # "2016-06-01" would have been recorded on "July 1st 2016 news as FOR_JUNE"
       , finSymbolAttributes = c("Close")
       , initDate = "1950-03-01"
       , subtractOffDaysSpec = -1
@@ -2854,6 +2854,22 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
 
     # BEGIN INSTRUCTIONS
     # BEGIN INSTRUCTIONS
+
+    # NOTE: OCCASIONAL ERROR 
+    # [1] ""
+    # [1] "Train VarImp: Collected FitterTune with Optimal caret repeatedcv Number of Trees. . ."
+    #     n.trees interaction.depth shrinkage
+    # 490     499                 7      0.01
+    # [1] ""
+    # AVOID (THAT) ERROR (ABOVE) BY THE FOLLOWING
+    #
+    # *** HIGH RECOMMENDED ***
+    # ( MAKE SURE THE RSTUDIO_VERSION_IS_JUST_GREATER_AND_CLOSE_TO_THE_R_VERSION )
+    #
+    # ** HIGH RECOMMENDED ***
+    # ( ONLY ONE ONE R/RSTUDIO PROGRAM AT A TIME, 
+    # IF 2 RUN AT A TIME OCASSIONAL DLL CLASHING MAY HAPPEN!? )
+    
     # 
     # MANAGE THE OLD
     # In W:\New_Economics\rcsnsight1.320
