@@ -4232,11 +4232,11 @@ ReCreateAAIIOneBigRealTable <- function(conn) {
   sipro_data_store.si_mgdsc mgdsc 
   on 
   finecon11.dateindex         = mgdsc.dateindex and
-  finecon11.ind_2_dig         = mgdsc.mg_code;
+  finecon11.ind_2_dig         = substring(mgdsc.mg_code from 1 for 2) and char_length(mgdsc.mg_code) = 2;
   -- 08:28 SECONDS
 
   drop table sipro_data_store.si_finecon11;
-  --
+  -- 
 
   create table sipro_data_store.si_finecon13
   as
@@ -4248,7 +4248,8 @@ ReCreateAAIIOneBigRealTable <- function(conn) {
   sipro_data_store.si_mgdsc mgdsc 
   on 
   finecon12.dateindex         = mgdsc.dateindex and
-  finecon12.ind_3_dig         = mgdsc.mg_code;
+  finecon12.ind_3_dig         = mgdsc.mg_code
+  order by dateindex, mg_desc_sect, mg_desc_ind;  -- LAST ONE ** ORDERS ***
 
   -- 10:20 SECONDS
 
@@ -8268,8 +8269,8 @@ data_processing_from_Excel4 <- function(universecoll = NULL, quickdebug = FALSE,
 bookmarkhere <- 1   
 
 #      
-#                               
-#                                                                                                                                                                                                                                                                                  
+#                                
+#                                                                                                                                                                                                                                                                                        
 
 
 
