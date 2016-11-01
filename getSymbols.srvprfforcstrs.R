@@ -348,6 +348,9 @@ getSymbols.srvprfforcstrs.test <- function() {
     
       require(RSQLite) # 
 
+      require(xgboost)
+      require(caret) # xgbTree will 'use plyr'
+
        this.env <- environment()
        for(var in names(list(...))) {
           # import all named elements that are NON formals
@@ -699,6 +702,9 @@ getSymbols.srvprfforcstrs.test <- function() {
        prediction <- result_all2_redux__days_wd_days_last_gspc_rdcqf3
        predicton_redux <- prediction[,c(colnames(prediction)[1],c("release_date_year", "release_date_month", "release_date_day"),grep("_cqfrd0t1$",colnames(prediction)[-1], value = TRUE))]  
        
+       # FIX: SOMEHOW IN THE LAST TO ELEMENTS, BOTH OF THE *SAME DATE* IN THE INDEX
+       # ZOO COMPAINS ... SO FIX ... [ ] LEFT_OFF
+       
        # locf on the interior values only
        as.xts(with(as.zoo(predicton_redux), {  
          
@@ -733,16 +739,81 @@ getSymbols.srvprfforcstrs.test <- function() {
        
        prediction_true_test <- na.trim(prediction_inner_zone[index(prediction_inner_zone) == release_yyyy_mm_dd,]["2004-01-01::",!colnames(prediction_inner_zone) %in% c("release_date_year","release_date_month","release_date_day")], sides = "both" )  # should never be 'left'
        
-       # locf 
        
+       # help from GRACE\R_USER_3.3.1\scratchW.txt
+       
+       # need yet! LEFT_OFF ( but SEE BELOW )
+       #
+       # prediction_prediction
+       #
+       # if the date is greater than the max date in prediction_true_test
+       # and
+       # the date is on or after the quarters release date
+       # and
+       # the date is on or before the end of its quarter end date
+       # 
+       # this is not right (yet)
+       # 
+       # prediction_idx_tf <- unlist(lapply( index(prediction_inner_zone), function(x) { if( 
+       #  (max(index(prediction_true_test)) < x) && 
+       #  (index(predicton_redux[(as.yearqtr(index(predicton_redux)) == as.yearqtr(x)) && (!is.na(predicton_redux$release_date_day)),])  <= x ) && 
+       #  (x <= as.Date(as.yearmon(x),frac = 1)) ) { TRUE } else { FALSE } 
+       #} ))   
+       #
+       # MORE
+       # 
+       
+       # if the forecasters can not predict the change in the gcpc
+       #   (then the sitation 'may not' be worth figuring out the prediction_prediction
        
        # caret xgboost tree with early stopping 
        # train - through December 2003
        # real world test - January 2003 throught the latest that I have full dda
        #   should by(prediction day) loop by mid month date that is not a lwd and not an end of month day
        
+
+       #LEFT_OFF
+       
+       xgb.ctrl <- trainControl(method = "repeatedcv",   # 10 fold cross validation
+                                number = 5,              # do 5 repititions of cv 
+                                repeats =1)              # for k-fold, the number of complete sets   
        
        
+       xgb.grid <- expand.grid( nrounds = 500,         #the maximum number of iterations
+                                max_depth = c(2,6,10),
+                                eta = c(0.01,0.1),     # shrinkage
+                                gamma = 0.0, 
+                                colsample_bytree = 1.0, 
+                                min_child_weight = 1.0
+       )
+       
+       bookmarkhere <- 1 
+       
+       xgb.tune <-train(as.formula(paste0(colnames(prediction_train)[1]," ~ .")), 
+         data = prediction_train,
+         method    ="xgbTree",   
+         trControl = xgb.ctrl,
+         tuneGrid = xgb.grid)
+       
+       bookmarkhere <- 1 
+       
+       # how much  better or not are other tuning parameters
+       ggplot(xgb.tune) + theme(legend.position = "top")
+       
+       xgb.predicted.prediction_train     = predict(xgb.tune, newdata = prediction_train[,-1])
+       
+       xgb.predicted.prediction_true_test = predict(xgb.tune, newdata = prediction_true_test[,-1])
+       
+       # GO BACK LATER AN GETS *REAL DATES* INSTEAD OF seq_along
+       # FIX [ ] LEFT_OFF
+       
+       # super fit ( what I trained on ) # green = actual # red = predicted
+       plot( seq_along(              prediction_train[,1]),           prediction_train[,1],  type = "l", col ="green" )
+       lines(seq_along(xgb.predicted.prediction_train), xgb.predicted.prediction_train,      type = "l", col ="red"   )
+       
+       # real world test                 # green = actual # red = predicted
+       plot( seq_along(              prediction_true_test[,1]),           prediction_true_test[,1],  type = "l", col ="green" )
+       lines(seq_along(xgb.predicted.prediction_true_test), xgb.predicted.prediction_true_test,      type = "l", col ="red"   )
        
        bookmarkhere <- 1 # left_Off
            # 
@@ -785,6 +856,6 @@ getSymbols.srvprfforcstrs.test <- function() {
 # print(tail(result[['prediction_train']]))
 # print(head(result[['prediction_true_test']]))
 # print(tail(result[['prediction_true_test']]))
-#                          
-#                                          
+#                           
+#                                           
             
