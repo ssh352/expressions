@@ -605,11 +605,11 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     #  2. incomplete data exists of current month 
     # THEREFORE
     # this IS       the end of the PREVIOUS MONTH
-    # finDate.TestTrain.Global.Latest    <- "2016-09-30"  # 2014-12-31(perfect) 
+    # finDate.TestTrain.Global.Latest    <- "2016-10-31"  # 2014-12-31(perfect) 
                                                           # march 21, 2015 run: "2015-01-31": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
                                                           # march 21, 2015 run: "2015-02-28": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
                                                           # march 21, 2015 run: "2015-03-31": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
-    finDate.TestTrain.Global.Latest      <- "2016-09-30"  # april  6, 2015 run: "2015-03-31": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
+    finDate.TestTrain.Global.Latest      <- "2016-10-31"  # april  6, 2015 run: "2015-03-31": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
     
     # training and TRUE tests
     list(Test2001 = list(Train=list(initDate = initData.TestTrain.Global.Earliest,finDate ="1998-12-31"),
@@ -1695,45 +1695,67 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     # ) -> NAPM.DELAYONE.ABS             # head "1948-01-01"
     #                                    # Monthly
     #                                    # ( Last Updated: 2015-04-01 9:06 AM CDT - ??? date - typically 1 month late WITH 1 month old date  )
+
+    #     I SCREWED UP
+    #     Maybe Quandl has the wrong data
+    #     REMOVE NAPM - not a siqnficant indicator ( not worth the headache )
+    #     
+    #     > load(file=".\\Data161005\\NAPM_RAW.Rdata")
+    #     > ls()
+    #     > library(quantmod)
+    #     
+    #     > tail(NAPM) NOT: 
+    #       NAPM
+    #     2016-04-01 50.8 quandle-ISM/MAN_PMI
+    #     2016-05-01 51.3 quandle-ISM/MAN_PMI
+    #     2016-06-01 53.2 quandle-ISM/MAN_PMI
+    #     2016-07-01 52.6 quandle-ISM/MAN_PMI
+    #     2016-08-01 49.4 quandle-ISM/MAN_PMI
+    #     2016-09-01 52.8 WRONG - NO WHERE:? 
+    #     https://www.instituteforsupplymanagement.org/ismreport/mfgrob.cfm?SSO=1
+    #     PMI  Sep 51.5
+    #     PMI  Oct 51.9
+    #     Prod Sep 52.8 ** SO SCREWED UP: SINCE NAPM is SO low IN the INDICATOR ... remove it ( not worthe headache )
+    #     Prod Oct 54.6
     
-    # NEW
-    
-    retrieveSymbolsQuantmodRdata(
-      finSymbol = "NAPM"
-      , finSymbolRemoteSource = "Quantmod_FRED_RData"
-      , finSymbolRemoteSourcePath = "./Data160903/NAPM_RAW.Rdata"
-      , finSymbolNewCoreDatum = 52.8
-      , finSymbolNewIndexStr  = "2016-09-01" # "2016-06-01" would have been recorded on "July 1st 2016 news as FOR_JUNE"
-      , finSymbolAttributes = c("Close")
-      , initDate = "1950-03-01"
-      , subtractOffDaysSpec = -1
-    ) -> NAPM.DELAYONE.ABS             # head "1948-01-01"
-    # Monthly
-    # ( Last Updated: 2015-04-01 9:06 AM CDT - ??? date - typically 1 month late WITH 1 month old date  )
-    
-    # really meant for a monthly
-    as.integer(diff.mondate(c(
-      as.mondate(tail(index(NAPM.DELAYONE.ABS),1), displayFormat="%Y-%m-%d",timeunits="months"),
-      as.mondate(finDate.TestTrain.Global.Latest, displayFormat="%Y-%m-%d",timeunits="months")
-    ))) -> pullAheadZOODataMonthShiftAmount
-    
-    merge.xts(MaxAllTestTrainMonthEnds,NAPM.DELAYONE.ABS) -> NAPM.DELAYONE.ABS
-    NAPM.DELAYONE.ABS[MaxAllTestTrainMonthEndsRange] -> NAPM.DELAYONE.ABS
-    
-    assign("NAPM.DELAYONE.ABS", value=NAPM.DELAYONE.ABS, envir = .GlobalEnv)
-    
-    # if HAD BEEN a Daily
-    max(pullAheadZOODataMonthShiftAmount,0) -> pullAheadZOODataMonthShiftAmount
-    
-    pullAheadZOOData(NAPM.DELAYONE.ABS,pullAheadZOODataMonthShiftAmount) -> NAPM.DELAYONE.ABS.ADJUSTNOW
-    print(paste0("NAPM pullAheadZOOData should be DELAYONE"," Actual: ",pullAheadZOODataMonthShiftAmount))
-    
-    merge.xts(MaxAllTestTrainMonthEnds,NAPM.DELAYONE.ABS.ADJUSTNOW) -> NAPM.DELAYONE.ABS.ADJUSTNOW
-    NAPM.DELAYONE.ABS.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> NAPM.DELAYONE.ABS.ADJUSTNOW
-    
-    assign("NAPM.DELAYONE.ABS.ADJUSTNOW", value=NAPM.DELAYONE.ABS.ADJUSTNOW, envir = .GlobalEnv)
-    
-    "NAPM.DELAYONE.ABS.ADJUSTNOW" -> ALL.OBSERVEES["NAPM.DELAYONE.ABS.ADJUSTNOW"]
+    #     # NEW
+    #     
+    #     retrieveSymbolsQuantmodRdata(
+    #       finSymbol = "NAPM"
+    #       , finSymbolRemoteSource = "Quantmod_FRED_RData"
+    #       , finSymbolRemoteSourcePath = "./Data160903/NAPM_RAW.Rdata"
+    #       , finSymbolNewCoreDatum = 52.8
+    #       , finSymbolNewIndexStr  = "2016-09-01" # "2016-06-01" would have been recorded on "July 1st 2016 news as FOR_JUNE"
+    #       , finSymbolAttributes = c("Close")
+    #       , initDate = "1950-03-01"
+    #       , subtractOffDaysSpec = -1
+    #     ) -> NAPM.DELAYONE.ABS             # head "1948-01-01"
+    #     # Monthly
+    #     # ( Last Updated: 2015-04-01 9:06 AM CDT - ??? date - typically 1 month late WITH 1 month old date  )
+    #     
+    #     # really meant for a monthly
+    #     as.integer(diff.mondate(c(
+    #       as.mondate(tail(index(NAPM.DELAYONE.ABS),1), displayFormat="%Y-%m-%d",timeunits="months"),
+    #       as.mondate(finDate.TestTrain.Global.Latest, displayFormat="%Y-%m-%d",timeunits="months")
+    #     ))) -> pullAheadZOODataMonthShiftAmount
+    #     
+    #     merge.xts(MaxAllTestTrainMonthEnds,NAPM.DELAYONE.ABS) -> NAPM.DELAYONE.ABS
+    #     NAPM.DELAYONE.ABS[MaxAllTestTrainMonthEndsRange] -> NAPM.DELAYONE.ABS
+    #     
+    #     assign("NAPM.DELAYONE.ABS", value=NAPM.DELAYONE.ABS, envir = .GlobalEnv)
+    #     
+    #     # if HAD BEEN a Daily
+    #     max(pullAheadZOODataMonthShiftAmount,0) -> pullAheadZOODataMonthShiftAmount
+    #     
+    #     pullAheadZOOData(NAPM.DELAYONE.ABS,pullAheadZOODataMonthShiftAmount) -> NAPM.DELAYONE.ABS.ADJUSTNOW
+    #     print(paste0("NAPM pullAheadZOOData should be DELAYONE"," Actual: ",pullAheadZOODataMonthShiftAmount))
+    #     
+    #     merge.xts(MaxAllTestTrainMonthEnds,NAPM.DELAYONE.ABS.ADJUSTNOW) -> NAPM.DELAYONE.ABS.ADJUSTNOW
+    #     NAPM.DELAYONE.ABS.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> NAPM.DELAYONE.ABS.ADJUSTNOW
+    #     
+    #     assign("NAPM.DELAYONE.ABS.ADJUSTNOW", value=NAPM.DELAYONE.ABS.ADJUSTNOW, envir = .GlobalEnv)
+    #     
+    #     "NAPM.DELAYONE.ABS.ADJUSTNOW" -> ALL.OBSERVEES["NAPM.DELAYONE.ABS.ADJUSTNOW"]
     
     bookmark_here <- 1
     
@@ -2628,7 +2650,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     
     trainControl(## 10-fold CV
         method = "repeatedcv"  # randomForest ( could have been: 'oob' )
-      , number = 5, # 10 ? trainControl ( "repeatedcv" default seems to be '10' anyways ) # QUICK 5
+      , number = 5  # 10 ? trainControl ( "repeatedcv" default seems to be '10' anyways ) # QUICK 5
       ## repeated ten times    
       , repeats = 1 # 3 CHANGE FROM 10 ( OR 5 ) DOWN TO 1 ( speed )                      # QUICK 1
     ) -> fitControl
@@ -2700,7 +2722,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     # THIS IS 'GOOD'
     trainControl(## 10-fold CV
       method = "repeatedcv"  # randomForest ( could have been: 'oob' )
-      , number = 5, # 10 ? trainControl ( "repeatedcv" default seems to be '10' anyways ) # QUICK 5
+      , number = 5  # 10 ? trainControl ( "repeatedcv" default seems to be '10' anyways ) # QUICK 5
       ## repeated ten times    
       , repeats = 1 # 3 CHANGE FROM 10 ( OR 5 ) DOWN TO 1 ( speed ) # QUICK 1
       # , preProcOptions = list(ICAcomp = 2)
@@ -2891,20 +2913,22 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     # CHECK THAT THE LOADED .R FILE IN THE TAB (hover over) 
     # HAS THE SAME PATH AS THE 'setwd'
     
-    # modify the NAPM entry to point to the last months(last_time) entry
-    #
-    # retrieveSymbolsQuantmodRdata(
-    #   finSymbol = "NAPM"
-    #   , finSymbolRemoteSource = "Quantmod_FRED_RData"
-    #   , finSymbolRemoteSourcePath = "./Data160603/NAPM_RAW.Rdata" # ( UPDATE THIS: 1 OF 3)
-    #   , finSymbolNewCoreDatum = 53.2 # ( UPDATE THIS: 2 OF 3)
-    #   , finSymbolNewIndexStr  = "2016-06-01" # "2016-06-01" would have been recorded on "July 1st 2016 news as FOR_JUNE"" # ( UPDATE THIS: 3 OF 3)
-    #   , finSymbolAttributes = c("Close")
-    #   , initDate = "1950-03-01"
-    #   , subtractOffDaysSpec = -1
-    # ) -> NAPM.DELAYONE.ABS             # head "1948-01-01"
-    # Monthly
-    # ( Last Updated: 2015-04-01 9:06 AM CDT - ??? date - typically 1 month late WITH 1 month old date  )
+    ## ## NO LONG USE NAPM ## ##
+    ## modify the NAPM entry to point to the last months(last_time) entry
+    ##
+    ## retrieveSymbolsQuantmodRdata(
+    ##   finSymbol = "NAPM"
+    ##   , finSymbolRemoteSource = "Quantmod_FRED_RData"
+    ##   , finSymbolRemoteSourcePath = "./Data160603/NAPM_RAW.Rdata" # ( UPDATE THIS: 1 OF 3)
+    ##   , finSymbolNewCoreDatum = 53.2 # ( UPDATE THIS: 2 OF 3)
+    ##   , finSymbolNewIndexStr  = "2016-06-01" # "2016-06-01" would have been recorded on "July 1st 2016 news as FOR_JUNE"" # ( UPDATE THIS: 3 OF 3)
+    ##   , finSymbolAttributes = c("Close")
+    ##   , initDate = "1950-03-01"
+    ##   , subtractOffDaysSpec = -1
+    ## ) -> NAPM.DELAYONE.ABS             # head "1948-01-01"
+    ## Monthly
+    ## ( Last Updated: 2015-04-01 9:06 AM CDT - ??? date - typically 1 month late WITH 1 month old date  )
+    ## ##
     
     # HARD NOTE: Any modification of 'data loading' and 'massaging'
     # then I HAVE TO RE-GET the DATA from the SOURCE ( ** IMPORTANT ** )
