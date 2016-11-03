@@ -605,11 +605,11 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     #  2. incomplete data exists of current month 
     # THEREFORE
     # this IS       the end of the PREVIOUS MONTH
-    # finDate.TestTrain.Global.Latest    <- "2016-08-31"  # 2014-12-31(perfect) 
+    # finDate.TestTrain.Global.Latest    <- "2016-09-30"  # 2014-12-31(perfect) 
                                                           # march 21, 2015 run: "2015-01-31": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
                                                           # march 21, 2015 run: "2015-02-28": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
                                                           # march 21, 2015 run: "2015-03-31": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
-    finDate.TestTrain.Global.Latest      <- "2016-08-31"  # april  6, 2015 run: "2015-03-31": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
+    finDate.TestTrain.Global.Latest      <- "2016-09-30"  # april  6, 2015 run: "2015-03-31": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
     
     # training and TRUE tests
     list(Test2001 = list(Train=list(initDate = initData.TestTrain.Global.Earliest,finDate ="1998-12-31"),
@@ -1653,7 +1653,13 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     # # OLD FRED
     # > load(file="W:\\New_Economics\\rcsnsight1.320\\Data160603\\NAPM_RAW.Rdata")
     # 
-    # > tail(NAPM)
+    # # THIS IS NOT THE
+    # ISM Manufacturing: PMI Composite Index
+    # https://www.quandl.com/data/FRED/NAPM-ISM-Manufacturing-PMI-Composite-Index # FRED/NAPM
+    
+    # THIS IS THE DEFAULT *OVERALL* PMI  ( not 'Production' SUBITEM )
+    #                PMI Composite Index ( SEEN NOV 03 2016)
+    # > tail(NAPM) # https://www.quandl.com/data/ISM/MAN_PMI-PMI-Composite-Index # ISM/MAN_PMI
     # NAPM
     # 2015-12-01 48.0
     # 2016-01-01 48.2
@@ -1695,9 +1701,9 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     retrieveSymbolsQuantmodRdata(
       finSymbol = "NAPM"
       , finSymbolRemoteSource = "Quantmod_FRED_RData"
-      , finSymbolRemoteSourcePath = "./Data160801/NAPM_RAW.Rdata"
-      , finSymbolNewCoreDatum = 49.4
-      , finSymbolNewIndexStr  = "2016-08-01" # "2016-06-01" would have been recorded on "July 1st 2016 news as FOR_JUNE"
+      , finSymbolRemoteSourcePath = "./Data160903/NAPM_RAW.Rdata"
+      , finSymbolNewCoreDatum = 52.8
+      , finSymbolNewIndexStr  = "2016-09-01" # "2016-06-01" would have been recorded on "July 1st 2016 news as FOR_JUNE"
       , finSymbolAttributes = c("Close")
       , initDate = "1950-03-01"
       , subtractOffDaysSpec = -1
