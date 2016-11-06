@@ -924,9 +924,9 @@ getSymbols.srvprfforcstrs.test <- function() {
   # + more
   # getSymbols.srvprfforcstrs(c("CPI","NGDP","INDPROD","TBOND","UNEMP","RCONSUM"), responses = c("median","mean"), pctchg = TRUE)
   # + everything else
-  # getSymbols.srvprfforcstrs(c("CPI","NGDP","INDPROD","TBOND","UNEMP","RCONSUM","CPROF","RNRESIN","REXPORT","TBILL"), responses = c("median","mean"), pctchg = TRUE)
+    getSymbols.srvprfforcstrs(c("CPI","NGDP","INDPROD","TBOND","UNEMP","RCONSUM","CPROF","RNRESIN","REXPORT","TBILL"), responses = c("median","mean"), pctchg = TRUE)
     # Play
-    getSymbols.srvprfforcstrs(c("CPROF","RNRESIN","REXPORT","TBILL"), responses = c("median","mean"), pctchg = TRUE)
+  # getSymbols.srvprfforcstrs(c("CPROF","RNRESIN","REXPORT","TBILL"), responses = c("median","mean"), pctchg = TRUE)
   
   
 }
@@ -941,6 +941,6 @@ getSymbols.srvprfforcstrs.test <- function() {
 # print(tail(result[['prediction_train']]))
 # print(head(result[['prediction_true_test']]))
 # print(tail(result[['prediction_true_test']]))
-#                                 
+#                                  
 #                                                        
             
