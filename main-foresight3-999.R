@@ -215,7 +215,7 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
 #   
 #   if(getOption("RepositoryStyle") == "Installed")  {
 #     
-#     options(AAIIBase = "L:/MyVMWareSharedFolder/Professional160831")    
+#     options(AAIIBase = "L:/MyVMWareSharedFolder/Professional161031")    
 #     
 #   }
   
@@ -229,7 +229,7 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
   
   if(getLocalOption("RepositoryStyle", optionlist = OPTIONLIST) == "Installed")  {
     
-    OPTIONLIST <- localoptions(AAIIBase = "L:/MyVMWareSharedFolder/Professional160831", optionlist = OPTIONLIST)
+    OPTIONLIST <- localoptions(AAIIBase = "L:/MyVMWareSharedFolder/Professional161031", optionlist = OPTIONLIST)
     
   }
   
