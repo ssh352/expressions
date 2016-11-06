@@ -796,10 +796,12 @@ getSymbols.srvprfforcstrs.test <- function() {
        #   train won't automatically get randomForest to create them. Add importance = TRUE to the train call and it should work.
        # http://stackoverflow.com/questions/18578861/variable-importance-using-the-caret-package-error-randomforest-algorithm
        
+       set.seed(2.0)
+       
        rf.tune <-train(as.formula(paste0(colnames(prediction_train)[1]," ~ .")),
          data = prediction_train,
          importance = TRUE )
-       print("RandomForest(rf) boot method variable importance")
+       writeLines("RandomForest(rf) boot method variable importance")
        print(varImp(rf.tune))
        
        xgb.tune <-train(as.formula(paste0(colnames(prediction_train)[1]," ~ .")), 
@@ -874,10 +876,14 @@ getSymbols.srvprfforcstrs.test <- function() {
        # print("")
        # print(prediction_true_test_predicted_diagram)
        
-       print("")
+       writeLines("")
        print(table(prediction_true_test_predicted_diagram))
        
-       print("")
+       writeLines("")
+       writeLines("Total number of cases.")
+       writeLines(as.character(NROW(prediction_true_test_predicted_diagram)))
+       
+       writeLines("")
        print(addmargins(prop.table(table(prediction_true_test_predicted_diagram))))
        
        print(confusionMatrix(table(prediction_true_test_predicted_diagram)))
@@ -910,7 +916,10 @@ getSymbols.srvprfforcstrs.test <- function() {
        
   } #}}}
   
-  getSymbols.srvprfforcstrs(c("CPI","NGDP"), responses = c("median","mean"), pctchg = TRUE)
+  # WORKS
+  # getSymbols.srvprfforcstrs(c("CPI","NGDP"), responses = c("median","mean"), pctchg = TRUE)
+  # + INDPROD
+  getSymbols.srvprfforcstrs(c("CPI","NGDP","INDPROD","TBOND","UNEMP","RCONSUM"), responses = c("median","mean"), pctchg = TRUE)
   
 }
 
@@ -924,6 +933,6 @@ getSymbols.srvprfforcstrs.test <- function() {
 # print(tail(result[['prediction_train']]))
 # print(head(result[['prediction_true_test']]))
 # print(tail(result[['prediction_true_test']]))
-#                              
-#                                                   
+#                                 
+#                                                       
             
