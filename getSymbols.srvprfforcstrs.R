@@ -804,6 +804,10 @@ getSymbols.srvprfforcstrs.test <- function() {
        writeLines("RandomForest(rf) boot method variable importance")
        print(varImp(rf.tune))
        
+       writeLines("")
+       writeLines("Total number of tuning(prediction_train) observations.")
+       writeLines(as.character(NROW(prediction_train)))
+       
        xgb.tune <-train(as.formula(paste0(colnames(prediction_train)[1]," ~ .")), 
          data = prediction_train,
          method    ="xgbTree",   
@@ -814,9 +818,8 @@ getSymbols.srvprfforcstrs.test <- function() {
        
        # how much  better or not are other tuning parameters
        if(file.exists("srvprfforcstrs_xgboost.png")) unlink("rvprfforcstrs_xgboost.png")
-       png('srvprfforcstrs_xgboost.png')
        ggplot(xgb.tune) + theme(legend.position = "top")
-       dev.off()
+       ggsave('srvprfforcstrs_xgboost.png')
        
        
        xgb.predicted.prediction_train     = predict(xgb.tune, newdata = prediction_train[,-1])
@@ -918,8 +921,13 @@ getSymbols.srvprfforcstrs.test <- function() {
   
   # WORKS
   # getSymbols.srvprfforcstrs(c("CPI","NGDP"), responses = c("median","mean"), pctchg = TRUE)
-  # + INDPROD
-  getSymbols.srvprfforcstrs(c("CPI","NGDP","INDPROD","TBOND","UNEMP","RCONSUM"), responses = c("median","mean"), pctchg = TRUE)
+  # + more
+  # getSymbols.srvprfforcstrs(c("CPI","NGDP","INDPROD","TBOND","UNEMP","RCONSUM"), responses = c("median","mean"), pctchg = TRUE)
+  # + everything else
+  # getSymbols.srvprfforcstrs(c("CPI","NGDP","INDPROD","TBOND","UNEMP","RCONSUM","CPROF","RNRESIN","REXPORT","TBILL"), responses = c("median","mean"), pctchg = TRUE)
+    # Play
+    getSymbols.srvprfforcstrs(c("CPROF","RNRESIN","REXPORT","TBILL"), responses = c("median","mean"), pctchg = TRUE)
+  
   
 }
 
@@ -934,5 +942,5 @@ getSymbols.srvprfforcstrs.test <- function() {
 # print(head(result[['prediction_true_test']]))
 # print(tail(result[['prediction_true_test']]))
 #                                 
-#                                                       
+#                                                        
             
