@@ -209,13 +209,13 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
   
 #   if(getOption("RepositoryStyle") == "InstalledTest")  {
 #     
-#     options(AAIIBase = "L:/MyVMWareSharedFolder/ProfessionalTest") 
+#     options(AAIIBase = "W:/New_Economics/forsight4.322/AAIISIProDBFs/14911") 
 #     
 #   }
 #   
 #   if(getOption("RepositoryStyle") == "Installed")  {
 #     
-#     options(AAIIBase = "L:/MyVMWareSharedFolder/Professional161031")    
+#     options(AAIIBase = "W:/New_Economics/forsight4.322/AAIISIProDBFs/17105 ")    
 #     
 #   }
   
@@ -223,54 +223,54 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
   
   if(getLocalOption("RepositoryStyle", optionlist = OPTIONLIST) == "InstalledTest")  {
     
-    OPTIONLIST <- localoptions(AAIIBase = "L:/MyVMWareSharedFolder/ProfessionalTest", optionlist = OPTIONLIST)
+    OPTIONLIST <- localoptions(AAIIBase = "W:/New_Economics/forsight4.322/AAIISIProDBFs/14911", optionlist = OPTIONLIST)
     
   }
   
   if(getLocalOption("RepositoryStyle", optionlist = OPTIONLIST) == "Installed")  {
     
-    OPTIONLIST <- localoptions(AAIIBase = "L:/MyVMWareSharedFolder/Professional161031", optionlist = OPTIONLIST)
+    OPTIONLIST <- localoptions(AAIIBase = "W:/New_Economics/forsight4.322/AAIISIProDBFs/17105", optionlist = OPTIONLIST)
     
   }
   
 
   # default .dbf file locations
   
-  OPTIONLIST <- localoptions(AAIISIPro40PathFileNotOptim_SETUP =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/Setup.dbf"), optionlist = OPTIONLIST)
+  OPTIONLIST <- localoptions(AAIISIPro40PathFileNotOptim_SETUP =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/setup.dbf"), optionlist = OPTIONLIST)
   OPTIONLIST <- localoptions(AAIISIPro40PathFile_SETUP         =  paste0(getLocalOption("AAIISIPro40PathFileNotOptim_SETUP", optionlist = OPTIONLIST)), optionlist = OPTIONLIST)
   
-  OPTIONLIST <- localoptions(AAIISIPro40PathFileNotOptim_SI_CI =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/Static/si_ci.dbf"), optionlist = OPTIONLIST)
+  OPTIONLIST <- localoptions(AAIISIPro40PathFileNotOptim_SI_CI =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/si_ci.dbf"), optionlist = OPTIONLIST)
   OPTIONLIST <- localoptions(AAIISIPro40PathFile_SI_CI         =  paste0(getLocalOption("AAIISIPro40PathFileNotOptim_SI_CI", optionlist = OPTIONLIST)), optionlist = OPTIONLIST)
   
-  OPTIONLIST <- localoptions(AAIISIPro40PathFileNotOptim_SI_MGDSC =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/Static/SI_MGDSC.DBF"), optionlist = OPTIONLIST)
+  OPTIONLIST <- localoptions(AAIISIPro40PathFileNotOptim_SI_MGDSC =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/si_mgdsc.dbf"), optionlist = OPTIONLIST)
   OPTIONLIST <- localoptions(AAIISIPro40PathFile_SI_MGDSC         =  paste0(getLocalOption("AAIISIPro40PathFileNotOptim_SI_MGDSC", optionlist = OPTIONLIST)), optionlist = OPTIONLIST)
   
-  OPTIONLIST <- localoptions(AAIISIPro40PathFileNotOptim_SI_EXCHG =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/Static/SI_EXCHG.DBF"), optionlist = OPTIONLIST)
+  OPTIONLIST <- localoptions(AAIISIPro40PathFileNotOptim_SI_EXCHG =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/si_exchg.dbf"), optionlist = OPTIONLIST)
   OPTIONLIST <- localoptions(AAIISIPro40PathFile_SI_EXCHG         =  paste0(getLocalOption("AAIISIPro40PathFileNotOptim_SI_EXCHG", optionlist = OPTIONLIST)), optionlist = OPTIONLIST)
   
-  OPTIONLIST <- localoptions(AAIISIPro40PathFileNotOptim_SI_PSD   =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/Dbfs/si_psd.dbf"), optionlist = OPTIONLIST)
+  OPTIONLIST <- localoptions(AAIISIPro40PathFileNotOptim_SI_PSD   =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/si_psd.dbf"), optionlist = OPTIONLIST)
   OPTIONLIST <- localoptions(AAIISIPro40PathFile_SI_PSD           =  paste0(getLocalOption("AAIISIPro40PathFileNotOptim_SI_PSD", optionlist = OPTIONLIST)), optionlist = OPTIONLIST)
   
   # NEW_KID 
-  OPTIONLIST <- localoptions(AAIISIPro40PathFileNotOptim_SI_PSDD  =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/Dbfs/si_psdd.dbf"), optionlist = OPTIONLIST)
+  OPTIONLIST <- localoptions(AAIISIPro40PathFileNotOptim_SI_PSDD  =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/si_psdd.dbf"), optionlist = OPTIONLIST)
   OPTIONLIST <- localoptions(AAIISIPro40PathFile_SI_PSDD          =  paste0(getLocalOption("AAIISIPro40PathFileNotOptim_SI_PSDD", optionlist = OPTIONLIST)), optionlist = OPTIONLIST)
 
-  OPTIONLIST <- localoptions(AAIISIPro40PathFileNotOptim_SI_PSDC   =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/Dbfs/si_psdc.dbf"), optionlist = OPTIONLIST)
+  OPTIONLIST <- localoptions(AAIISIPro40PathFileNotOptim_SI_PSDC   =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/si_psdc.dbf"), optionlist = OPTIONLIST)
   OPTIONLIST <- localoptions(AAIISIPro40PathFile_SI_PSDC           =  paste0(getLocalOption("AAIISIPro40PathFileNotOptim_SI_PSDC", optionlist = OPTIONLIST)), optionlist = OPTIONLIST)
   
-  OPTIONLIST <- localoptions(AAIISIPro40PathFileNotOptim_SI_DATE  =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/Static/si_date.dbf"), optionlist = OPTIONLIST)
+  OPTIONLIST <- localoptions(AAIISIPro40PathFileNotOptim_SI_DATE  =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/si_date.dbf"), optionlist = OPTIONLIST)
   OPTIONLIST <- localoptions(AAIISIPro40PathFile_SI_DATE          =  paste0(getLocalOption("AAIISIPro40PathFileNotOptim_SI_DATE", optionlist = OPTIONLIST)), optionlist = OPTIONLIST)
   
-  OPTIONLIST <- localoptions(AAIISIPro40PathFileNotOptim_SI_ISQ   =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/Static/si_isq.dbf"), optionlist = OPTIONLIST)
+  OPTIONLIST <- localoptions(AAIISIPro40PathFileNotOptim_SI_ISQ   =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/si_isq.dbf"), optionlist = OPTIONLIST)
   OPTIONLIST <- localoptions(AAIISIPro40PathFile_SI_ISQ           =  paste0(getLocalOption("AAIISIPro40PathFileNotOptim_SI_ISQ", optionlist = OPTIONLIST)), optionlist = OPTIONLIST)
   
-  OPTIONLIST <- localoptions(AAIISIPro40PathFileNotOptim_SI_BSQ   =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/Static/si_bsq.dbf"), optionlist = OPTIONLIST)
+  OPTIONLIST <- localoptions(AAIISIPro40PathFileNotOptim_SI_BSQ   =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/si_bsq.dbf"), optionlist = OPTIONLIST)
   OPTIONLIST <- localoptions(AAIISIPro40PathFile_SI_BSQ           =  paste0(getLocalOption("AAIISIPro40PathFileNotOptim_SI_BSQ", optionlist = OPTIONLIST)), optionlist = OPTIONLIST)
   
-  OPTIONLIST <- localoptions(AAIISIPro40PathFileNotOptim_SI_CFQ   =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/Static/si_cfq.dbf"), optionlist = OPTIONLIST)
+  OPTIONLIST <- localoptions(AAIISIPro40PathFileNotOptim_SI_CFQ   =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/si_cfq.dbf"), optionlist = OPTIONLIST)
   OPTIONLIST <- localoptions(AAIISIPro40PathFile_SI_CFQ           =  paste0(getLocalOption("AAIISIPro40PathFileNotOptim_SI_CFQ", optionlist = OPTIONLIST)), optionlist = OPTIONLIST)
   
-  OPTIONLIST <- localoptions(AAIISIPro40PathFileNotOptim_SI_MLT   =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/Dbfs/si_mlt.dbf"), optionlist = OPTIONLIST)
+  OPTIONLIST <- localoptions(AAIISIPro40PathFileNotOptim_SI_MLT   =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/si_mlt.dbf"), optionlist = OPTIONLIST)
   OPTIONLIST <- localoptions(AAIISIPro40PathFile_SI_MLT           =  paste0(getLocalOption("AAIISIPro40PathFileNotOptim_SI_MLT", optionlist = OPTIONLIST)), optionlist = OPTIONLIST)
   
   # end of default .dbf file locations
@@ -280,43 +280,41 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
     OPTIONLIST <- localoptions(AAIISIPro40PathFileOptim_SETUP =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/SETUP.RData"), optionlist = OPTIONLIST)
     OPTIONLIST <- localoptions(AAIISIPro40PathFile_SETUP         =  paste0(getLocalOption("AAIISIPro40PathFileOptim_SETUP", optionlist = OPTIONLIST)), optionlist = OPTIONLIST)
     
-    OPTIONLIST <- localoptions(AAIISIPro40PathFileOptim_SI_CI =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/Static/SI_CI.RData"), optionlist = OPTIONLIST)
+    OPTIONLIST <- localoptions(AAIISIPro40PathFileOptim_SI_CI =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/SI_CI.RData"), optionlist = OPTIONLIST)
     OPTIONLIST <- localoptions(AAIISIPro40PathFile_SI_CI         =  paste0(getLocalOption("AAIISIPro40PathFileOptim_SI_CI", optionlist = OPTIONLIST)), optionlist = OPTIONLIST)
     
-    OPTIONLIST <- localoptions(AAIISIPro40PathFileOptim_SI_MGDSC =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/Static/SI_MGDSC.RData"), optionlist = OPTIONLIST)
+    OPTIONLIST <- localoptions(AAIISIPro40PathFileOptim_SI_MGDSC =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/SI_MGDSC.RData"), optionlist = OPTIONLIST)
     OPTIONLIST <- localoptions(AAIISIPro40PathFile_SI_MGDSC         =  paste0(getLocalOption("AAIISIPro40PathFileOptim_SI_MGDSC", optionlist = OPTIONLIST)), optionlist = OPTIONLIST)
     
-    OPTIONLIST <- localoptions(AAIISIPro40PathFileOptim_SI_EXCHG =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/Static/SI_EXCHG.RData"), optionlist = OPTIONLIST)
+    OPTIONLIST <- localoptions(AAIISIPro40PathFileOptim_SI_EXCHG =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/SI_EXCHG.RData"), optionlist = OPTIONLIST)
     OPTIONLIST <- localoptions(AAIISIPro40PathFile_SI_EXCHG         =  paste0(getLocalOption("AAIISIPro40PathFileOptim_SI_EXCHG", optionlist = OPTIONLIST)), optionlist = OPTIONLIST)
     
-    OPTIONLIST <- localoptions(AAIISIPro40PathFileOptim_SI_PSD   =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/Dbfs/SI_PSD.RData"), optionlist = OPTIONLIST)
+    OPTIONLIST <- localoptions(AAIISIPro40PathFileOptim_SI_PSD   =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/SI_PSD.RData"), optionlist = OPTIONLIST)
     OPTIONLIST <- localoptions(AAIISIPro40PathFile_SI_PSD           =  paste0(getLocalOption("AAIISIPro40PathFileOptim_SI_PSD", optionlist = OPTIONLIST)), optionlist = OPTIONLIST)
     
     # NEW_KID ( POTENTIAL: BUT DO I USE )
-    OPTIONLIST <- localoptions(AAIISIPro40PathFileOptim_SI_PSDD =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/Dbfs/SI_PSDD.RData"), optionlist = OPTIONLIST)
+    OPTIONLIST <- localoptions(AAIISIPro40PathFileOptim_SI_PSDD =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/SI_PSDD.RData"), optionlist = OPTIONLIST)
     OPTIONLIST <- localoptions(AAIISIPro40PathFile_SI_PSDD          =  paste0(getLocalOption("AAIISIPro40PathFileOptim_SI_PSDD", optionlist = OPTIONLIST)), optionlist = OPTIONLIST)
 
-    OPTIONLIST <- localoptions(AAIISIPro40PathFileOptim_SI_PSDC   =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/Dbfs/SI_PSDC.RData"), optionlist = OPTIONLIST)
+    OPTIONLIST <- localoptions(AAIISIPro40PathFileOptim_SI_PSDC   =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/SI_PSDC.RData"), optionlist = OPTIONLIST)
     OPTIONLIST <- localoptions(AAIISIPro40PathFile_SI_PSDC           =  paste0(getLocalOption("AAIISIPro40PathFileOptim_SI_PSDC", optionlist = OPTIONLIST)), optionlist = OPTIONLIST)
     
-    OPTIONLIST <- localoptions(AAIISIPro40PathFileOptim_SI_DATE  =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/Static/SI_DATE.RData"), optionlist = OPTIONLIST)
+    OPTIONLIST <- localoptions(AAIISIPro40PathFileOptim_SI_DATE  =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/SI_DATE.RData"), optionlist = OPTIONLIST)
     OPTIONLIST <- localoptions(AAIISIPro40PathFile_SI_DATE          =  paste0(getLocalOption("AAIISIPro40PathFileOptim_SI_DATE", optionlist = OPTIONLIST)), optionlist = OPTIONLIST)
     
-    OPTIONLIST <- localoptions(AAIISIPro40PathFileOptim_SI_ISQ   =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/Static/SI_ISQ.RData"), optionlist = OPTIONLIST)
+    OPTIONLIST <- localoptions(AAIISIPro40PathFileOptim_SI_ISQ   =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/SI_ISQ.RData"), optionlist = OPTIONLIST)
     OPTIONLIST <- localoptions(AAIISIPro40PathFile_SI_ISQ           =  paste0(getLocalOption("AAIISIPro40PathFileOptim_SI_ISQ", optionlist = OPTIONLIST)), optionlist = OPTIONLIST)
     
-    OPTIONLIST <- localoptions(AAIISIPro40PathFileOptim_SI_BSQ   =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/Static/SI_BSQ.RData"), optionlist = OPTIONLIST)
+    OPTIONLIST <- localoptions(AAIISIPro40PathFileOptim_SI_BSQ   =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/SI_BSQ.RData"), optionlist = OPTIONLIST)
     OPTIONLIST <- localoptions(AAIISIPro40PathFile_SI_BSQ           =  paste0(getLocalOption("AAIISIPro40PathFileOptim_SI_BSQ", optionlist = OPTIONLIST)), optionlist = OPTIONLIST)
     
-    OPTIONLIST <- localoptions(AAIISIPro40PathFileOptim_SI_CFQ   =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/Static/SI_CFQ.RData"), optionlist = OPTIONLIST)
+    OPTIONLIST <- localoptions(AAIISIPro40PathFileOptim_SI_CFQ   =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/SI_CFQ.RData"), optionlist = OPTIONLIST)
     OPTIONLIST <- localoptions(AAIISIPro40PathFile_SI_CFQ           =  paste0(getLocalOption("AAIISIPro40PathFileOptim_SI_CFQ", optionlist = OPTIONLIST)), optionlist = OPTIONLIST)
     
-    OPTIONLIST <- localoptions(AAIISIPro40PathFileOptim_SI_MLT   =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/Dbfs/SI_MLT.RData"), optionlist = OPTIONLIST)
+    OPTIONLIST <- localoptions(AAIISIPro40PathFileOptim_SI_MLT   =  paste0(getLocalOption("AAIIBase", optionlist = OPTIONLIST),"/SI_MLT.RData"), optionlist = OPTIONLIST)
     OPTIONLIST <- localoptions(AAIISIPro40PathFile_SI_MLT           =  paste0(getLocalOption("AAIISIPro40PathFileOptim_SI_MLT", optionlist = OPTIONLIST)), optionlist = OPTIONLIST)
     
   }
-  
-
   
   require(Hmisc)
 
@@ -4834,6 +4832,15 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
   # Help->About "Current(Weekly) data as of"
   # save the latest ProfessionalYYMMDD to L:/MyVMWareSharedFolder
   #
+  # SEE W:\R-Portable.3.2.2\App\R-Portable\bin\x64\RDebug\Home\data_loading_with_Excel_4.R
+  # #
+  # 'SEARCH FOR' and DO
+  # #
+  # copyAAIISIProDBFs(
+  #    from = "L:/MyVMWareSharedFolder/Professional161031"
+  #  , to   = "W:/New_Economics/forsight4.322/AAIISIProDBFs/17105"
+  # )
+  # 
   # DON'T FORGET THAT in R Studio
   # setwd("W:/New_Economics/forsight3.311") # getwd()
   #
