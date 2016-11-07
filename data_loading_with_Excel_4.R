@@ -288,7 +288,7 @@ copyAAIISIProDBFs <- function(from = "C:/Program Files (x86)/Stock Investor/Prof
 #
 # copyAAIISIProDBFs(
 #     from = "L:/MyVMWareSharedFolder/Professional160630"
-#   , to   = "W:/New_Economics/forsight4.322/AAIISIProDBFs/16982"
+#   , to   = "W:/AAIISIProDBFs/16982"
 # )
 
 
