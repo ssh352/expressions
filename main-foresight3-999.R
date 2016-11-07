@@ -209,13 +209,13 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
   
 #   if(getOption("RepositoryStyle") == "InstalledTest")  {
 #     
-#     options(AAIIBase = "W:/New_Economics/forsight4.322/AAIISIProDBFs/14911") 
+#     options(AAIIBase = "W:/AAIISIProDBFs/14911") 
 #     
 #   }
 #   
 #   if(getOption("RepositoryStyle") == "Installed")  {
 #     
-#     options(AAIIBase = "W:/New_Economics/forsight4.322/AAIISIProDBFs/17105 ")    
+#     options(AAIIBase = "W:/AAIISIProDBFs/17105 ")    
 #     
 #   }
   
@@ -223,13 +223,13 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
   
   if(getLocalOption("RepositoryStyle", optionlist = OPTIONLIST) == "InstalledTest")  {
     
-    OPTIONLIST <- localoptions(AAIIBase = "W:/New_Economics/forsight4.322/AAIISIProDBFs/14911", optionlist = OPTIONLIST)
+    OPTIONLIST <- localoptions(AAIIBase = "W:/AAIISIProDBFs/14911", optionlist = OPTIONLIST)
     
   }
   
   if(getLocalOption("RepositoryStyle", optionlist = OPTIONLIST) == "Installed")  {
     
-    OPTIONLIST <- localoptions(AAIIBase = "W:/New_Economics/forsight4.322/AAIISIProDBFs/17105", optionlist = OPTIONLIST)
+    OPTIONLIST <- localoptions(AAIIBase = "W:/AAIISIProDBFs/17105", optionlist = OPTIONLIST)
     
   }
   
@@ -4838,7 +4838,7 @@ main_foresight3_999 <- function(pauseat=NULL, RDPG=FALSE) {
   # #
   # copyAAIISIProDBFs(
   #    from = "L:/MyVMWareSharedFolder/Professional161031"
-  #  , to   = "W:/New_Economics/forsight4.322/AAIISIProDBFs/17105"
+  #  , to   = "W:/AAIISIProDBFs/16982/17105"
   # )
   # 
   # DON'T FORGET THAT in R Studio
