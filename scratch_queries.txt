@@ -961,22 +961,22 @@ select
   , avg(sq.w13_pradchg_13w_ann) w13_pradchg_13w_ann
 from
 ( select 
-      to_timestamp(dateindex_ci*3600*24)::date start_date 
-    , ticker_ci 
-    , percent_rank() over (partition by dateindex_ci order by ( 
+      to_timestamp(dateindex*3600*24)::date start_date 
+    , ticker 
+    , percent_rank() over (partition by dateindex order by ( 
         coalesce(prchg_52w::numeric(15,2), 0.00) 
       ) desc nulls last ) < 0.005 mill_inv_price_pct_chge_since_52w_best_10  
-    , percent_rank() over (partition by dateindex_ci order by ( 
+    , percent_rank() over (partition by dateindex order by ( 
         coalesce(prchg_26w::numeric(15,2), 0.00) 
       ) desc nulls last ) < 0.005 mill_inv_price_pct_chge_since_26w_best_10  
-    , percent_rank() over (partition by dateindex_ci order by ( 
+    , percent_rank() over (partition by dateindex order by ( 
         coalesce(prchg_13w::numeric(15,2), 0.00) 
       ) desc nulls last ) < 0.005 mill_inv_price_pct_chge_since_13w_best_10
     , w52_pradchg_52w_ann
     , w26_pradchg_26w_ann
     , w13_pradchg_13w_ann
   from sipro_data_store.si_finecon 
-  where adr = 'f' and exchange != 'O' and mktcap::numeric(15,2) >= 200.00 and company_id_unq_ci is not null and company !~~ any(array['%iShares%','%Vanguard%','SPDR','%PowerShares%','%Fund%'])
+  where adr = 'f' and exchange != 'O' and mktcap::numeric(15,2) >= 200.00 and company_id_unq is not null and company !~~ any(array['%iShares%','%Vanguard%','SPDR','%PowerShares%','%Fund%'])
   -- and dateindex_ci in (16465,16555)
 ) sq group by cube(sq.start_date, sq.mill_inv_price_pct_chge_since_13w_best_10, mill_inv_price_pct_chge_since_26w_best_10, mill_inv_price_pct_chge_since_52w_best_10)
 ) rq where rq.start_date is null
@@ -4279,6 +4279,59 @@ from
 --? ( SEE BELOW )
 
 
+-- NOT USING, I NEED RELATIVE TO SALES
+      , trunc(least(case when 
+         ( fcfps_q1::numeric(15,2) * nullif( shr_aq1::numeric(15,2), 0.00) + fcfps_q2::numeric(15,2) * nullif( shr_aq2::numeric(15,2), 0.00)  +
+            fcfps_q3::numeric(15,2) * nullif( shr_aq3::numeric(15,2), 0.00) + fcfps_q4::numeric(15,2) * nullif( shr_aq4::numeric(15,2), 0.00) )  / 
+              nullif( price::numeric(15,2), 0.00)  
+        is not null then
+        percent_rank() over (partition by dateindex order by ( 
+          ( 
+              fcfps_q1::numeric(15,2) * nullif( shr_aq1::numeric(15,2), 0.00) 
+            + fcfps_q2::numeric(15,2) * nullif( shr_aq2::numeric(15,2), 0.00)  
+         -- + fcfps_q3::numeric(15,2) * nullif( shr_aq3::numeric(15,2), 0.00) 
+         -- + fcfps_q4::numeric(15,2) * nullif( shr_aq4::numeric(15,2), 0.00) 
+          )  / 
+              nullif( price::numeric(15,2), 0.00)  
+        ) desc nulls last )  
+        else null end,0.99)::numeric * 10.00,0)::int + 1 
+        fcf_over_price_ratio
+      , trunc(least(case when 
+         ( cgs_q1::numeric(15,2) / nullif( shr_aq1::numeric(15,2), 0.00) + cgs_q2::numeric(15,2) / nullif( shr_aq2::numeric(15,2), 0.00)  +
+            cgs_q3::numeric(15,2) / nullif( shr_aq3::numeric(15,2), 0.00) + cgs_q4::numeric(15,2) / nullif( shr_aq4::numeric(15,2), 0.00) ) * (-1.0) / 
+              nullif( price::numeric(15,2), 0.00)  
+        is not null then
+        percent_rank() over (partition by dateindex order by ( 
+          ( (
+              cgs_q1::numeric(15,2) / nullif( shr_aq1::numeric(15,2), 0.00) 
+            + cgs_q2::numeric(15,2) / nullif( shr_aq2::numeric(15,2), 0.00)  
+         -- + cgs_q3::numeric(15,2) / nullif( shr_aq3::numeric(15,2), 0.00) 
+         -- + cgs_q4::numeric(15,2) / nullif( shr_aq4::numeric(15,2), 0.00)
+            ) * (-1.0) 
+          )  / 
+              nullif( price::numeric(15,2), 0.00)  
+        ) desc nulls last )  
+        else null end,0.99)::numeric * 10.00,0)::int + 1 
+        neg_cgs_over_price_ratio  
+      , trunc(least(case when 
+         ( ( sales_q1::numeric(15,2) - cgs_q1::numeric(15,2) ) / nullif( shr_aq1::numeric(15,2), 0.00) + 
+           ( sales_q2::numeric(15,2) - cgs_q2::numeric(15,2) ) / nullif( shr_aq2::numeric(15,2), 0.00) +
+           ( sales_q3::numeric(15,2) - cgs_q3::numeric(15,2) ) / nullif( shr_aq3::numeric(15,2), 0.00) + 
+           ( sales_q4::numeric(15,2) - cgs_q4::numeric(15,2) ) / nullif( shr_aq4::numeric(15,2), 0.00) )  / 
+              nullif( price::numeric(15,2), 0.00)  
+        is not null then
+        percent_rank() over (partition by dateindex order by ( 
+          ( 
+              ( sales_q1::numeric(15,2) - cgs_q1::numeric(15,2) ) / nullif( shr_aq1::numeric(15,2), 0.00) 
+            + ( sales_q1::numeric(15,2) - cgs_q1::numeric(15,2) ) / nullif( shr_aq2::numeric(15,2), 0.00)  
+         -- + ( sales_q1::numeric(15,2) - cgs_q1::numeric(15,2) ) / nullif( shr_aq3::numeric(15,2), 0.00) 
+         -- + ( sales_q1::numeric(15,2) - cgs_q1::numeric(15,2) ) / nullif( shr_aq4::numeric(15,2), 0.00) 
+          )  / 
+              nullif( price::numeric(15,2), 0.00)  
+        ) desc nulls last )  
+        else null end,0.99)::numeric * 10.00,0)::int + 1 
+        sales_less_cgs_over_price_ratio  
+
 
 -- ( ranks 1 through 1000 )
 -- sales_over_price_ratio
@@ -4294,6 +4347,24 @@ from
 
 --DONE in PgAdminIII on NOV 09 2016
 
+-- REQUIRED: beceause all this time, I had the WRONG where CLAUSE
+-- drop index sipro_data_store.si_finecon_jamesos_partial_idx2;
+CREATE INDEX si_finecon_jamesos_partial_idx2
+  ON sipro_data_store.si_finecon
+  USING btree
+  (adr, exchange COLLATE pg_catalog."default", mktcap COLLATE pg_catalog."default", company_id_unq COLLATE pg_catalog."default", company COLLATE pg_catalog."default")
+  WHERE adr = false AND exchange <> 'O'::text AND mktcap::numeric(15,2) >= 200.00 AND ((company !~~ '%iShares%'::text) AND (company !~~ '%Vanguard%'::text) AND (company !~~ 'SPDR'::text) AND (company !~~ '%PowerShares%'::text) AND (company !~~ '%Fund%'::text))
+
+-- drop index sipro_data_store.si_finecon_jamesos_partial_idx3;
+CREATE INDEX si_finecon_jamesos_partial_idx3
+  ON sipro_data_store.si_finecon
+  USING btree
+  (adr, exchange COLLATE pg_catalog."default", mktcap COLLATE pg_catalog."default", company_id_unq COLLATE pg_catalog."default", company COLLATE pg_catalog."default")
+  WHERE adr = false AND exchange <> 'O'::text AND mktcap::numeric(15,2) >= 200.00 AND ((company !~~ '%iShares%'::text) AND (company !~~ '%Vanguard%'::text) AND (company !~~ 'SPDR'::text) AND (company !~~ '%PowerShares%'::text) AND (company !~~ '%Fund%'::text))  
+  AND (company !~~ '%Holding%'::text) AND (mg_desc_ind !~~ '%Investment Service%'::text)
+
+
+-- drop table sipro_data_store.my_0001_cnt_in_pctrank;
 create table sipro_data_store.my_0001_cnt_in_pctrank as
 --FULL QUERY
 select sqe.* from (
@@ -4360,8 +4431,11 @@ select sqe.* from (
       , mg_desc_ind
       , mg_desc_sect
       , trunc(least(case when 
-         ( sales_q1::numeric(15,2) / nullif( shr_aq1::numeric(15,2), 0.00) + sales_q2::numeric(15,2) / nullif( shr_aq2::numeric(15,2), 0.00)  +
-            sales_q3::numeric(15,2) / nullif( shr_aq3::numeric(15,2), 0.00) + sales_q4::numeric(15,2) / nullif( shr_aq4::numeric(15,2), 0.00) )  / 
+         (   sales_q1::numeric(15,2) / nullif( shr_aq1::numeric(15,2), 0.00) 
+           + sales_q2::numeric(15,2) / nullif( shr_aq2::numeric(15,2), 0.00)  
+        -- + sales_q3::numeric(15,2) / nullif( shr_aq3::numeric(15,2), 0.00) 
+        -- + sales_q4::numeric(15,2) / nullif( shr_aq4::numeric(15,2), 0.00) 
+        )  / 
               nullif( price::numeric(15,2), 0.00)  
         is not null then
         percent_rank() over (partition by dateindex order by ( 
@@ -4376,26 +4450,110 @@ select sqe.* from (
         else null end,0.99)::numeric * 1000.00,0)::int + 1 
         sales_over_price_ratio  
       , trunc(least(case when 
-         ( fcfps_q1::numeric(15,2) / nullif( shr_aq1::numeric(15,2), 0.00) + fcfps_q2::numeric(15,2) / nullif( shr_aq2::numeric(15,2), 0.00)  +
-            fcfps_q3::numeric(15,2) / nullif( shr_aq3::numeric(15,2), 0.00) + fcfps_q4::numeric(15,2) / nullif( shr_aq4::numeric(15,2), 0.00) )  / 
+         (  
+            fcfps_q1::numeric(15,2) * nullif( shr_aq1::numeric(15,2), 0.00) 
+          + fcfps_q2::numeric(15,2) * nullif( shr_aq2::numeric(15,2), 0.00) 
+       -- + fcfps_q3::numeric(15,2) * nullif( shr_aq3::numeric(15,2), 0.00) 
+       -- + fcfps_q4::numeric(15,2) * nullif( shr_aq4::numeric(15,2), 0.00) 
+         )  / 
               nullif( price::numeric(15,2), 0.00)  
         is not null then
         percent_rank() over (partition by dateindex order by ( 
           ( 
-              fcfps_q1::numeric(15,2) / nullif( shr_aq1::numeric(15,2), 0.00) 
-            + fcfps_q2::numeric(15,2) / nullif( shr_aq2::numeric(15,2), 0.00)  
-         -- + fcfps_q3::numeric(15,2) / nullif( shr_aq3::numeric(15,2), 0.00) 
-         -- + fcfps_q4::numeric(15,2) / nullif( shr_aq4::numeric(15,2), 0.00) 
+              fcfps_q1::numeric(15,2) * nullif( shr_aq1::numeric(15,2), 0.00) 
+            + fcfps_q2::numeric(15,2) * nullif( shr_aq2::numeric(15,2), 0.00)  
+         -- + fcfps_q3::numeric(15,2) * nullif( shr_aq3::numeric(15,2), 0.00) 
+         -- + fcfps_q4::numeric(15,2) * nullif( shr_aq4::numeric(15,2), 0.00) 
           )  / 
               nullif( price::numeric(15,2), 0.00)  
         ) desc nulls last )  
-        else null end,0.99)::numeric * 50.00,0)::int + 1 
+        else null end,0.99)::numeric * 10.00,0)::int + 1 
         fcf_over_price_ratio
+      , trunc(least(case when 
+         ( 
+              cgs_q1::numeric(15,2) / nullif( shr_aq1::numeric(15,2), 0.00) 
+            + cgs_q2::numeric(15,2) / nullif( shr_aq2::numeric(15,2), 0.00) 
+         -- + cgs_q3::numeric(15,2) / nullif( shr_aq3::numeric(15,2), 0.00) 
+         -- + cgs_q4::numeric(15,2) / nullif( shr_aq4::numeric(15,2), 0.00) 
+         ) * (-1.0) / 
+              nullif( price::numeric(15,2), 0.00)  
+        is not null then
+        percent_rank() over (partition by dateindex order by ( 
+          ( (
+              cgs_q1::numeric(15,2) / nullif( shr_aq1::numeric(15,2), 0.00) 
+            + cgs_q2::numeric(15,2) / nullif( shr_aq2::numeric(15,2), 0.00)  
+         -- + cgs_q3::numeric(15,2) / nullif( shr_aq3::numeric(15,2), 0.00) 
+         -- + cgs_q4::numeric(15,2) / nullif( shr_aq4::numeric(15,2), 0.00) 
+         ) * (-1.0)  )  / 
+              nullif( price::numeric(15,2), 0.00)  
+        ) desc nulls last )  
+        else null end,0.99)::numeric * 10.00,0)::int + 1 
+        neg_cgs_over_price_ratio  
+      , trunc(least(case when 
+         (   ( sales_q1::numeric(15,2) - cgs_q1::numeric(15,2) ) / nullif( shr_aq1::numeric(15,2), 0.00)  
+           + ( sales_q2::numeric(15,2) - cgs_q2::numeric(15,2) ) / nullif( shr_aq2::numeric(15,2), 0.00) 
+        -- + ( sales_q3::numeric(15,2) - cgs_q3::numeric(15,2) ) / nullif( shr_aq3::numeric(15,2), 0.00)  
+        -- + ( sales_q4::numeric(15,2) - cgs_q4::numeric(15,2) ) / nullif( shr_aq4::numeric(15,2), 0.00) 
+        )  / 
+              nullif( price::numeric(15,2), 0.00)  
+        is not null then
+        percent_rank() over (partition by dateindex order by ( 
+          ( 
+              ( sales_q1::numeric(15,2) - cgs_q1::numeric(15,2) ) / nullif( shr_aq1::numeric(15,2), 0.00) 
+            + ( sales_q1::numeric(15,2) - cgs_q1::numeric(15,2) ) / nullif( shr_aq2::numeric(15,2), 0.00)  
+         -- + ( sales_q1::numeric(15,2) - cgs_q1::numeric(15,2) ) / nullif( shr_aq3::numeric(15,2), 0.00) 
+         -- + ( sales_q1::numeric(15,2) - cgs_q1::numeric(15,2) ) / nullif( shr_aq4::numeric(15,2), 0.00) 
+         )  / 
+              nullif( price::numeric(15,2), 0.00)  
+        ) desc nulls last )  
+        else null end,0.99)::numeric * 10.00,0)::int + 1 
+        sales_less_cgs_over_price_ratio 
+      , trunc(least(case when 
+         (  
+            (
+              cgs_q1::numeric(15,2) * nullif( shr_aq1::numeric(15,2), 0.00) 
+            + cgs_q2::numeric(15,2) * nullif( shr_aq2::numeric(15,2), 0.00)  
+         -- + cgs_q3::numeric(15,2) * nullif( shr_aq3::numeric(15,2), 0.00) 
+         -- + cgs_q4::numeric(15,2) * nullif( shr_aq4::numeric(15,2), 0.00) 
+            ) / (
+              nullif( 
+                  sales_q1::numeric(15,2) 
+                + sales_q2::numeric(15,2) 
+                + sales_q3::numeric(15,2) 
+                + sales_q4::numeric(15,2)
+              , 0.0)
+            ) * (-1.0)
+         )  
+        is not null then
+        percent_rank() over (partition by dateindex order by ( 
+          ( 
+            (
+              cgs_q1::numeric(15,2) * nullif( shr_aq1::numeric(15,2), 0.00) 
+            + cgs_q2::numeric(15,2) * nullif( shr_aq2::numeric(15,2), 0.00)  
+         -- + cgs_q3::numeric(15,2) * nullif( shr_aq3::numeric(15,2), 0.00) 
+         -- + cgs_q4::numeric(15,2) * nullif( shr_aq4::numeric(15,2), 0.00) 
+            ) / (
+              nullif( 
+                  sales_q1::numeric(15,2) 
+                + sales_q2::numeric(15,2) 
+                + sales_q3::numeric(15,2) 
+                + sales_q4::numeric(15,2)
+              , 0.0)
+            ) * (-1.0)
+          )  
+        ) desc nulls last )  
+        else null end,0.99)::numeric * 10.00,0)::int + 1 
+        neg_cgs_over_sales
       , w52_pradchg_52w_ann
       , w26_pradchg_26w_ann
       , w13_pradchg_13w_ann
     from sipro_data_store.si_finecon 
-    where adr = 'f' and exchange != 'O' and mktcap::numeric(15,2) >= 200.00 and company_id_unq is not null and company !~~ any(array['%iShares%','%Vanguard%','SPDR','%PowerShares%','%Fund%'])
+    where adr = 'f' and exchange != 'O' and mktcap::numeric(15,2) >= 200.00 
+    and company_id_unq is not null 
+    -- AND company NOT LIKE '%iShares%' and company NOT LIKE '%Vanguard%' and company NOT LIKE 'SPDR' and company NOT LIKE '%PowerShares%' and company NOT LIKE '%Fund%'
+    -- SAME
+    AND ((company !~~ '%iShares%'::text) AND (company !~~ '%Vanguard%'::text) AND (company !~~ 'SPDR'::text) AND (company !~~ '%PowerShares%'::text) AND (company !~~ '%Fund%'::text))
+    AND (company !~~ '%Holding%'::text) AND (mg_desc_ind !~~ '%Investment Service%'::text)
     -- -- try to stop DIP_AT_3_PERCENT_PROBLEM
     -- LAST - KEEPER - NOT COMMENTED OUT (26%@13w)
     -- BUT NOTICE 6_MO_SALES range in 6_MO_PRICE_CHANGE range
@@ -4542,7 +4700,7 @@ create table sipro_data_store.my_0001_cnt_in_pctrank as
 
 
 
-
+-- drop table sipro_data_store.my_0001_winners;
 create table sipro_data_store.my_0001_winners as
 --COPY -- 85,000 rows (SQL EXTRACT FROM ABOVE)
   select sqi.* from (  -- BEGIN find my 0001 WINNERS
@@ -4555,8 +4713,11 @@ create table sipro_data_store.my_0001_winners as
       , mg_desc_ind
       , mg_desc_sect
       , trunc(least(case when 
-         ( sales_q1::numeric(15,2) / nullif( shr_aq1::numeric(15,2), 0.00) + sales_q2::numeric(15,2) / nullif( shr_aq2::numeric(15,2), 0.00)  +
-            sales_q3::numeric(15,2) / nullif( shr_aq3::numeric(15,2), 0.00) + sales_q4::numeric(15,2) / nullif( shr_aq4::numeric(15,2), 0.00) )  / 
+         (   sales_q1::numeric(15,2) / nullif( shr_aq1::numeric(15,2), 0.00) 
+           + sales_q2::numeric(15,2) / nullif( shr_aq2::numeric(15,2), 0.00)  
+        -- + sales_q3::numeric(15,2) / nullif( shr_aq3::numeric(15,2), 0.00) 
+        -- + sales_q4::numeric(15,2) / nullif( shr_aq4::numeric(15,2), 0.00) 
+        )  / 
               nullif( price::numeric(15,2), 0.00)  
         is not null then
         percent_rank() over (partition by dateindex order by ( 
@@ -4571,27 +4732,111 @@ create table sipro_data_store.my_0001_winners as
         else null end,0.99)::numeric * 1000.00,0)::int + 1 
         sales_over_price_ratio  
       , trunc(least(case when 
-         ( fcfps_q1::numeric(15,2) / nullif( shr_aq1::numeric(15,2), 0.00) + fcfps_q2::numeric(15,2) / nullif( shr_aq2::numeric(15,2), 0.00)  +
-            fcfps_q3::numeric(15,2) / nullif( shr_aq3::numeric(15,2), 0.00) + fcfps_q4::numeric(15,2) / nullif( shr_aq4::numeric(15,2), 0.00) )  / 
+         (  
+            fcfps_q1::numeric(15,2) * nullif( shr_aq1::numeric(15,2), 0.00) 
+          + fcfps_q2::numeric(15,2) * nullif( shr_aq2::numeric(15,2), 0.00) 
+       -- + fcfps_q3::numeric(15,2) * nullif( shr_aq3::numeric(15,2), 0.00) 
+       -- + fcfps_q4::numeric(15,2) * nullif( shr_aq4::numeric(15,2), 0.00) 
+         )  / 
               nullif( price::numeric(15,2), 0.00)  
         is not null then
         percent_rank() over (partition by dateindex order by ( 
           ( 
-              fcfps_q1::numeric(15,2) / nullif( shr_aq1::numeric(15,2), 0.00) 
-            + fcfps_q2::numeric(15,2) / nullif( shr_aq2::numeric(15,2), 0.00)  
-         -- + fcfps_q3::numeric(15,2) / nullif( shr_aq3::numeric(15,2), 0.00) 
-         -- + fcfps_q4::numeric(15,2) / nullif( shr_aq4::numeric(15,2), 0.00) 
+              fcfps_q1::numeric(15,2) * nullif( shr_aq1::numeric(15,2), 0.00) 
+            + fcfps_q2::numeric(15,2) * nullif( shr_aq2::numeric(15,2), 0.00)  
+         -- + fcfps_q3::numeric(15,2) * nullif( shr_aq3::numeric(15,2), 0.00) 
+         -- + fcfps_q4::numeric(15,2) * nullif( shr_aq4::numeric(15,2), 0.00) 
           )  / 
               nullif( price::numeric(15,2), 0.00)  
         ) desc nulls last )  
-        else null end,0.99)::numeric * 50.00,0)::int + 1 
+        else null end,0.99)::numeric * 10.00,0)::int + 1 
         fcf_over_price_ratio
+      , trunc(least(case when 
+         ( 
+              cgs_q1::numeric(15,2) / nullif( shr_aq1::numeric(15,2), 0.00) 
+            + cgs_q2::numeric(15,2) / nullif( shr_aq2::numeric(15,2), 0.00) 
+         -- + cgs_q3::numeric(15,2) / nullif( shr_aq3::numeric(15,2), 0.00) 
+         -- + cgs_q4::numeric(15,2) / nullif( shr_aq4::numeric(15,2), 0.00) 
+         ) * (-1.0) / 
+              nullif( price::numeric(15,2), 0.00)  
+        is not null then
+        percent_rank() over (partition by dateindex order by ( 
+          ( (
+              cgs_q1::numeric(15,2) / nullif( shr_aq1::numeric(15,2), 0.00) 
+            + cgs_q2::numeric(15,2) / nullif( shr_aq2::numeric(15,2), 0.00)  
+         -- + cgs_q3::numeric(15,2) / nullif( shr_aq3::numeric(15,2), 0.00) 
+         -- + cgs_q4::numeric(15,2) / nullif( shr_aq4::numeric(15,2), 0.00) 
+         ) * (-1.0)  )  / 
+              nullif( price::numeric(15,2), 0.00)  
+        ) desc nulls last )  
+        else null end,0.99)::numeric * 10.00,0)::int + 1 
+        neg_cgs_over_price_ratio  
+      , trunc(least(case when 
+         (   ( sales_q1::numeric(15,2) - cgs_q1::numeric(15,2) ) / nullif( shr_aq1::numeric(15,2), 0.00)  
+           + ( sales_q2::numeric(15,2) - cgs_q2::numeric(15,2) ) / nullif( shr_aq2::numeric(15,2), 0.00) 
+        -- + ( sales_q3::numeric(15,2) - cgs_q3::numeric(15,2) ) / nullif( shr_aq3::numeric(15,2), 0.00)  
+        -- + ( sales_q4::numeric(15,2) - cgs_q4::numeric(15,2) ) / nullif( shr_aq4::numeric(15,2), 0.00) 
+        )  / 
+              nullif( price::numeric(15,2), 0.00)  
+        is not null then
+        percent_rank() over (partition by dateindex order by ( 
+          ( 
+              ( sales_q1::numeric(15,2) - cgs_q1::numeric(15,2) ) / nullif( shr_aq1::numeric(15,2), 0.00) 
+            + ( sales_q1::numeric(15,2) - cgs_q1::numeric(15,2) ) / nullif( shr_aq2::numeric(15,2), 0.00)  
+         -- + ( sales_q1::numeric(15,2) - cgs_q1::numeric(15,2) ) / nullif( shr_aq3::numeric(15,2), 0.00) 
+         -- + ( sales_q1::numeric(15,2) - cgs_q1::numeric(15,2) ) / nullif( shr_aq4::numeric(15,2), 0.00) 
+         )  / 
+              nullif( price::numeric(15,2), 0.00)  
+        ) desc nulls last )  
+        else null end,0.99)::numeric * 10.00,0)::int + 1 
+        sales_less_cgs_over_price_ratio  
+      , trunc(least(case when 
+         (  
+            (
+              cgs_q1::numeric(15,2) * nullif( shr_aq1::numeric(15,2), 0.00) 
+            + cgs_q2::numeric(15,2) * nullif( shr_aq2::numeric(15,2), 0.00)  
+         -- + cgs_q3::numeric(15,2) * nullif( shr_aq3::numeric(15,2), 0.00) 
+         -- + cgs_q4::numeric(15,2) * nullif( shr_aq4::numeric(15,2), 0.00) 
+            ) / (
+              nullif( 
+                  sales_q1::numeric(15,2) 
+                + sales_q2::numeric(15,2) 
+                + sales_q3::numeric(15,2) 
+                + sales_q4::numeric(15,2)
+              , 0.0)
+            ) * (-1.0)
+         )  
+        is not null then
+        percent_rank() over (partition by dateindex order by ( 
+          ( 
+            (
+              cgs_q1::numeric(15,2) * nullif( shr_aq1::numeric(15,2), 0.00) 
+            + cgs_q2::numeric(15,2) * nullif( shr_aq2::numeric(15,2), 0.00)  
+         -- + cgs_q3::numeric(15,2) * nullif( shr_aq3::numeric(15,2), 0.00) 
+         -- + cgs_q4::numeric(15,2) * nullif( shr_aq4::numeric(15,2), 0.00) 
+            ) / (
+              nullif( 
+                  sales_q1::numeric(15,2) 
+                + sales_q2::numeric(15,2) 
+                + sales_q3::numeric(15,2) 
+                + sales_q4::numeric(15,2)
+              , 0.0)
+            ) * (-1.0)
+          )  
+        ) desc nulls last )  
+        else null end,0.99)::numeric * 10.00,0)::int + 1 
+        neg_cgs_over_sales
       , w52_pradchg_52w_ann
       , w26_pradchg_26w_ann
       , w13_pradchg_13w_ann
     from sipro_data_store.si_finecon 
-    where adr = 'f' and exchange != 'O' and mktcap::numeric(15,2) >= 200.00 and company_id_unq is not null and company !~~ any(array['%iShares%','%Vanguard%','SPDR','%PowerShares%','%Fund%'])
-    -- -- try to stop DIP_AT_3_PERCENT_PROBLEM
+    where adr = 'f' and exchange != 'O' and mktcap::numeric(15,2) >= 200.00 and company_id_unq is not null 
+    -- AND company NOT LIKE '%iShares%' and company NOT LIKE '%Vanguard%' and company NOT LIKE 'SPDR' and company NOT LIKE '%PowerShares%' and company NOT LIKE '%Fund%'
+    -- SAME
+    AND ((company !~~ '%iShares%'::text) AND (company !~~ '%Vanguard%'::text) AND (company !~~ 'SPDR'::text) AND (company !~~ '%PowerShares%'::text) AND (company !~~ '%Fund%'::text))
+    --
+    AND (company !~~ '%Holding%'::text) AND (mg_desc_ind !~~ '%Investment Service%'::text)
+    -- try to stop DIP_AT_3_PERCENT_PROBLEM
     -- LAST - KEEPER - NOT COMMENTED OUT (26%@13w)
     -- BUT NOTICE 6_MO_SALES range in 6_MO_PRICE_CHANGE range
     and prchg_26w::numeric(15,2) > 0 -- better
@@ -4628,7 +4873,10 @@ create table sipro_data_store.my_0001_winners as
     -- and coalesce(tco_q1::numeric(15,2), 0.00) > coalesce(netinc_q1::numeric(15,2), 0.00) and  coalesce(tco_q2::numeric(15,2), 0.00) > coalesce(netinc_q2::numeric(15,2), 0.00)
     -- and dateindex_ci in (16465,16555)
   ) sqi   -- I did not see any *pattern* of industry or sector
+order by sales_over_price_ratio , neg_cgs_over_sales
 
+--  FOUND
+--  order by sales_over_price_ratio , neg_cgs_over_price_ratio(8-10) # companies with strong sales ARE ALSO sending out cogs 
 
 -- -- Table: sipro_data_store.my_0001_winners
 -- 
@@ -4667,6 +4915,12 @@ create table sipro_data_store.my_0001_winners as
 -----------------------
 -----------------------
 
+-- only 25ct, ENERGY SEEMS  TOO_VOLITILE TO PREDICT
+-- ANY PRICE-BOTTOM_SCRAPERS?
+-- 25ct,avg49,sd105
+--select count(w13_pradchg_13w_ann), avg(w13_pradchg_13w_ann), stddev_pop(w13_pradchg_13w_ann)  from 
+--sipro_data_store.my_0001_winners
+--where sales_over_price_ratio <= 1 and neg_cgs_over_sales <= 3
 
 
 
