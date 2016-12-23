@@ -16,6 +16,38 @@ browseOnce <- function() {   # CLOSURE
 options(error = recover) # NULL, recover, browser # browseOnce()
 
 
+# > debugSource(paste0(getwd(),'/data_loading_with_Excel_4.R'))
+# Loading required package: RPostgreSQL
+# Loading required package: DBI
+# Loading required package: xts
+# Loading required package: zoo
+# 
+# Attaching package: ‘zoo’
+# 
+# The following objects are masked from ‘package:base’:
+# 
+#     as.Date, as.Date.numeric
+# 
+# Loading required package: TTR
+# Version 0.4-0 included new data defaults. See ?getSymbols.
+# > sessionInfo()
+# R version 3.2.2 (2015-08-14)
+# Platform: x86_64-w64-mingw32/x64 (64-bit)
+# Running under: Windows 8 x64 (build 9200)
+# 
+# locale:
+# [1] LC_COLLATE=English_United States.1252  LC_CTYPE=English_United States.1252    LC_MONETARY=English_United States.1252 LC_NUMERIC=C                           LC_TIME=English_United States.1252    
+# 
+# attached base packages:
+# [1] stats     graphics  grDevices utils     datasets  methods   base     
+# 
+# other attached packages:
+# [1] quantmod_0.4-5  TTR_0.23-0      xts_0.9-7       zoo_1.7-12      RPostgreSQL_0.4 DBI_0.3.1      
+# 
+# loaded via a namespace (and not attached):
+# [1] tools_3.2.2       R.methodsS3_1.7.0 grid_3.2.2        lattice_0.20-33  
+
+
 # BORROWED FROM ( tip from rdocumentation.org )
 # https://github.com/cran/qdap/blob/master/R/left_just.R
 left_just <-function(dataframe, column = NULL, keep.class = FALSE) {
@@ -290,8 +322,30 @@ copyAAIISIProDBFs <- function(from = "C:/Program Files (x86)/Stock Investor/Prof
 #     from = "L:/MyVMWareSharedFolder/Professional160630"
 #   , to   = "W:/AAIISIProDBFs/16982"
 # )
+#
+# XOR directly WITHOUT the intermediary
+# 
+# copyAAIISIProDBFs(
+#     from = "C:/Program Files (x86)/Stock Investor/Professional"
+#   , to   = "W:/AAIISIProDBFs/17135" # 2016-11-30 # ( OR w/o an Intermediate Directory )
+# )
+# WORKS!
+# *[ ]* FUTURE: ADD the automatic creation of the target dir (17135)
+# (would have to read the setup.dbf )
+# THEN, IT WOULD BE 'READY' FOR PRODUCTION
 
+# getAAIISIProDate() 
 
+# BACK FROM 2016 CHRISTMAS VACATION
+# From the SI pro http://www.aaii.com/stock-investor-pro/archives
+#  Download and install Dec 31, 2016
+
+# TRY running this EXACTLY
+# debugSource(paste0(getwd(),'/data_loading_with_Excel_4.R'))
+# copyAAIISIProDBFs(
+#     from = "C:/Program Files (x86)/Stock Investor/Professional"
+#   , to   = paste("W:/AAIISIProDBFs/",getAAIISIProDate()) # 
+# )
 
 
 massAAIISIProDBFsDB <- function(conn, from_target = "W:/New_Economics/forsight4.322/AAIISIProDBFs", 
@@ -5782,7 +5836,8 @@ library(RPostgreSQL)
 
 
 
-
+# USED DIRECTOY IN masscopyAAIISIProDBFs
+#
 # depends upon  DESCRIPTION Imports foreign
 getAAIISIProDate <- function(from = "C:/Program Files (x86)/Stock Investor/Professional") {
   
