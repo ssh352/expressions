@@ -1531,6 +1531,7 @@ set force_parallel_mode = on;
 
 set force_parallel_mode = off; 
 
+-- BELOW: SHOULD HAVE MADE THE DATATYPES numeric FRIENDLIER WITH FUNCTIONS --
 
 -- [ ] KEEP
 library(stringr)
@@ -1779,70 +1780,47 @@ alter table if exists sipro_data_store.si_finecon
 show all;
 
 -- ACTUAL RUN --
-
-
--- alter table if exists sipro_data_store.si_finecon
---     drop if exists m001_m002_prch_ann,
---     drop if exists m002_m003_prch_ann,
---     drop if exists m003_m004_prch_ann,
---     drop if exists m004_m005_prch_ann,
---     drop if exists m005_m006_prch_ann,
---     drop if exists m006_m007_prch_ann,
---     drop if exists m007_m008_prch_ann,
---     drop if exists m008_m009_prch_ann,
---     drop if exists m009_m010_prch_ann,
---     drop if exists m010_m011_prch_ann,
---     drop if exists m011_m012_prch_ann,
---     drop if exists m012_m013_prch_ann
-
-
-alter table if exists sipro_data_store.si_finecon
-    add if not exists m001_m002_prch_ann float,
-    add if not exists m002_m003_prch_ann float,
-    add if not exists m003_m004_prch_ann float,
-    add if not exists m004_m005_prch_ann float,
-    add if not exists m005_m006_prch_ann float,
-    add if not exists m006_m007_prch_ann float,
-    add if not exists m007_m008_prch_ann float,
-    add if not exists m008_m009_prch_ann float,
-    add if not exists m009_m010_prch_ann float,
-    add if not exists m010_m011_prch_ann float,
-    add if not exists m011_m012_prch_ann float,
-    add if not exists m012_m013_prch_ann float
-
-
-update sipro_data_store.si_finecon fc set
-    m001_m002_prch_ann = sq.m001_m002_prch_ann,
-    m002_m003_prch_ann = sq.m002_m003_prch_ann,
-    m003_m004_prch_ann = sq.m003_m004_prch_ann,
-    m004_m005_prch_ann = sq.m004_m005_prch_ann,
-    m005_m006_prch_ann = sq.m005_m006_prch_ann,
-    m006_m007_prch_ann = sq.m006_m007_prch_ann,
-    m007_m008_prch_ann = sq.m007_m008_prch_ann,
-    m008_m009_prch_ann = sq.m008_m009_prch_ann,
-    m009_m010_prch_ann = sq.m009_m010_prch_ann,
-    m010_m011_prch_ann = sq.m010_m011_prch_ann,
-    m011_m012_prch_ann = sq.m011_m012_prch_ann,
-    m012_m013_prch_ann = sq.m012_m013_prch_ann
-from (
-select dateindex, company_id_unq, dateindexeom, ticker_unq,
-    (price_m001::float - price_m002::float) / nullif(abs(price_m002::float),0) * 100 * 12 m001_m002_prch_ann,
-    (price_m002::float - price_m003::float) / nullif(abs(price_m003::float),0) * 100 * 12 m002_m003_prch_ann,
-    (price_m003::float - price_m004::float) / nullif(abs(price_m004::float),0) * 100 * 12 m003_m004_prch_ann,
-    (price_m004::float - price_m005::float) / nullif(abs(price_m005::float),0) * 100 * 12 m004_m005_prch_ann,
-    (price_m005::float - price_m006::float) / nullif(abs(price_m006::float),0) * 100 * 12 m005_m006_prch_ann,
-    (price_m006::float - price_m007::float) / nullif(abs(price_m007::float),0) * 100 * 12 m006_m007_prch_ann,
-    (price_m007::float - price_m008::float) / nullif(abs(price_m008::float),0) * 100 * 12 m007_m008_prch_ann,
-    (price_m008::float - price_m009::float) / nullif(abs(price_m009::float),0) * 100 * 12 m008_m009_prch_ann,
-    (price_m009::float - price_m010::float) / nullif(abs(price_m010::float),0) * 100 * 12 m009_m010_prch_ann,
-    (price_m010::float - price_m011::float) / nullif(abs(price_m011::float),0) * 100 * 12 m010_m011_prch_ann,
-    (price_m011::float - price_m012::float) / nullif(abs(price_m012::float),0) * 100 * 12 m011_m012_prch_ann,
-    (price_m012::float - price_m013::float) / nullif(abs(price_m013::float),0) * 100 * 12 m012_m013_prch_ann
-  from sipro_data_store.si_psdc order by dateindexeom
-) sq
-where fc.dateindex = sq.dateindex and fc.company_id_unq = sq.company_id_unq;
+-- ALREADY DONE
 
 
 
+-- true sortino ratio
+-- calculates across the column values
 
+drop function tsortino(risk_free_float numeric, actual_columns numeric[]);
+
+create or replace function tsortino(numeric, numeric[]) returns numeric as $$
+  -- if an empty colun value exists, then I do not want it to calculate a resulting value
+  select case when array_length(array_agg(v),1) > count(v) then null else 
+    (avg(v) - $1) / nullif(stddev_pop(case when v > 0 then 0 else v end ),0)
+  end from unnest($2) g(v)
+$$ language sql;
+
+select t.a,t.b,t.c from ( select 1.0 a, 2.0 b, null c union select -8.0, -16.0, -32.0 ) t;
+
+  a   |   b   |   c
+------+-------+-------
+ -8.0 | -16.0 | -32.0
+  1.0 |   2.0 |
+(2 rows)
+
+select tsortino(0, array[t.a,t.b,t.c]) from ( select 1.0 a, 2.0 b, null c union select -8.0, -16.0, -32.0 ) t;
+
+      tsortino
+---------------------
+ -1.8708286933869707
+                     -- 2nd ROW is null becuase ( if an empty colun value exists, then I do not want it to calculate a resulting value )
+(2 rows)
+
+explain
+select tsortino(0, array[m001_m002_prch_ann::numeric, m002_m003_prch_ann::numeric, m003_m004_prch_ann::numeric]) prch_ann_p3m_tsortinoo 
+from sipro_data_store.si_finecon where dateindex = 17044;
+-- instant response -- index scan
+
+-- ALL many HUNDREDS OF THOUSANDS ( left off )
+-- 38 SECONDS -- ANONYMOUST
+select tsortino(0, array[m001_m002_prch_ann::numeric, m002_m003_prch_ann::numeric, m003_m004_prch_ann::numeric]) prch_ann_p3m_tsortinoo 
+from sipro_data_store.si_finecon;
+
+-- LEFT_OFF ... VACATION 
 
