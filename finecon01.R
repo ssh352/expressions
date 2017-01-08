@@ -128,21 +128,26 @@ verify_connection <- function () {
   
   verify_connection_inner <- function () {
     
-    # Depends: DBI
-    require(RPostgreSQL)
-    
-    if(!exists("drv", envir = .GlobalEnv)) { drv <<- dbDriver("PostgreSQL") }
-    if(!exists("con", envir = .GlobalEnv)) { 
-      con <<- dbConnect(drv, user="postgres", password="postgres", dbname="finance_econ") # RPostgreSQL
-      dbGetQuery(con, "set search_path to fe_data_store, public;")
-    }
+    # # Depends: DBI
+    # require(RPostgreSQL)
+    # 
+    # if(!exists("drv", envir = .GlobalEnv)) { drv <<- dbDriver("PostgreSQL") }
+    # if(!exists("con", envir = .GlobalEnv)) { 
+    #   con <<- dbConnect(drv, user="postgres", password="postgres", dbname="finance_econ") # RPostgreSQL
+    #   dbGetQuery(con, "set search_path to fe_data_store, public;")
+    # }
     
     # Depends: Matrix
     # Suggests:	DBI, RPostgreS(on the fly loaded)
     require(PivotalR) #                                     # OSUser
-    if(!exists("cid", envir = .GlobalEnv)) cid <<- db.connect(user = "postgres", dbname = "finance_econ", default.schemas = c("fe_data_store","public")) 
-    
+    if(!exists("cid", envir = .GlobalEnv)) {
+      cid <<- db.connect(user = "postgres", dbname = "finance_econ", default.schemas = c("fe_data_store","public"))
+      con <<- PivotalR:::.localVars$db[[1]]$conn
+    }
   }
+  
+  
+  
   verify_connection_inner()
   
   Sys.setenv(TZ=oldtz)
@@ -601,9 +606,11 @@ finecon01 <- function () {
 
 ##  rm(list=ls(all.names=TRUE))
 ## 
-# rm(list=setdiff(ls(all.names=TRUE),c("drv","con","cid")))
+# rm(list=setdiff(ls(all.names=TRUE),c("con","cid")))
 # debugSource(paste0(getwd(),'/finecon01.R'))
-# finecon01()
+# PLACE BREAKPOINT
+# verify_company_basics(dateindex = c(15764))
+# .... finecon01()
 
 # after downloading the 'end of the last friday of the month'
 # http://www.aaii.com/stock-investor-pro/archives
@@ -616,7 +623,7 @@ finecon01 <- function () {
 # copyAAIISIProDBFs(
 #    from = "C:/Program Files (x86)/Stock Investor/Professional"
 #    , to   = paste0("W:/AAIISIProDBFs/",getAAIISIProDate()) # 
-#  )            
+#  )              
 
  
 
