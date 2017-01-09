@@ -368,6 +368,130 @@ optimize <- function(tb = NULL, colz = c("dateindex","company_id")) {
 
 
 
+# version 2 meant for real world data
+
+# takes in a data.frame or a matrix 
+#   composed of columns of characters, logicals, integers, numerics, and Dates 
+#   but if take in a matrix the 'row names' are expected to be unique
+# output is a data.frame that is AAII-ized # financize(df, round_to_decimal_places=1)
+# and PostgreSQL-ized
+# CURRENTLY, DOES NOT convert row.names to a column VALUE ( POSSIBLE TO DO )
+# SEE? data.table
+
+# if char_col_to_numeric = TRUE than those column names that match the pattern *char_col_rexpr*
+#   are tried
+#     1. as.numeric(x)
+#     2. round(x, digits=round_to_decimal_places)
+#     3. x[char_col_numeric_limit < x] <- NA_real_ 
+
+financize <- function(df
+                      , int_col_rexpr = "^perlen_q.*$"
+                      , stringsAsFactors = FALSE       # untested # most likely upsiszed to a database to be an integer?
+                      , char_col_rexpr = "^pertyp_q.*$"
+                      , num_col_rexpr = "price|mktcap|^.*_q.*$"
+                      , round_to_decimal_places = 1
+                      , char_col_numeric_limit = 999999.9 # PostgreSQL # exact(actually an integer) # numeric(7,1) # SHOULD fit MOST aaii sipro data
+) {
+  
+  ops <- options()
+  options(warn=1)
+  
+  # uses # xts::xtsible, xts::xts
+  
+  require(stringi) # stri_flatten
+  require(stringr) # str_detect
+  
+  
+  col__names <- colnames(df)
+  df_local <- df
+  
+  # non-xts row.names
+  row__names <- rownames(df) # NULL if an xts object
+  #     xts row.names
+  if(xts::xtsible(xts::xts(,try({ zoo::as.Date(row.names(data.frame(df, stringsAsFactors = FALSE)))}, silent = TRUE)))) {
+    row__names <- row.names(data.frame(df, stringsAsFactors = FALSE))
+  }
+  
+  col__names_iter <- 0
+  data.frame(
+    lapply( as.data.frame(df, stringsAsFactors = FALSE), #head(diamonds), 
+            function(x) { 
+              print(str_c("Begin: ",col__names[col__names_iter], collapse = " "))
+              col__names_iter <<- col__names_iter + 1
+              if(xts::xtsible(x)) { # detects Date 
+                return(as.integer(x)) # convert Dates to integer
+              }
+              if(is.integer(x)) {
+                return(x)
+              }
+              if(is.logical(x)) {
+                return(as.integer(x)) # TRUE ->  1, FALSE -> 0  # On PostgreSQL ... final .. smallint (or by extension: tinyint)
+              }
+              if(str_detect(col__names[col__names_iter], int_col_rexpr)) return(as.integer(x))
+              #
+              if(is.factor(x)) { # package foreign DOES not change characters to factors
+                if(stringsAsFactors == FALSE) return(as.character(x))
+              }
+              if(str_detect(col__names[col__names_iter], char_col_rexpr)) return(as.character(x))
+              #
+              # ONLY characters are REMAINING
+              if(str_detect(col__names[col__names_iter], num_col_rexpr)) {
+                out <- try( { as.numeric(x) }, silent = TRUE)
+                if ( !"try-error" %in% class(out))  { 
+                  x <- out 
+                } else { 
+                  warning(stri_c("numeric(x) conversion failed for column: " %s+% col__names[col__names_iter])) 
+                  return(x)
+                }
+                if(!is.null(round_to_decimal_places)) {
+                  out <- try( { round(x, digits=round_to_decimal_places)  }, silent = TRUE)
+                  if ( !"try-error" %in% class(out)) { 
+                    x <- out 
+                  } else { 
+                    warning(stri_c("round(x, digits=round_to_decimal_places) conversion failed for column: " %s+% col__names[col__names_iter])) 
+                    return(x)
+                  }
+                }
+                if(!is.null(char_col_numeric_limit)) {
+                  over_the_limit_tf <- {char_col_numeric_limit < x}
+                  print(stringi::stri_c("  Note, these many NAs found in x: " %s+% sum(is.na(x)), ignore_null = TRUE))
+                  if(any(over_the_limit_tf, na.rm = TRUE)) {                           #  NROW(x[!is.na(x)][x[!is.na(x)] > char_col_numeric_limit]) # SAME
+                    warning(stri_c("  Note, these many OVER THE LIMIT found in x: " %s+% sum(over_the_limit_tf, na.rm = TRUE), ignore_null = TRUE))
+                    print(stri_c("over_the_limit_tf <- x[" %s+% char_col_numeric_limit %s+% " < x] records found for column: " %s+% col__names[col__names_iter]))
+                    print(stri_c("Printing those " %s+% sum(over_the_limit_tf, na.rm = TRUE) %s+% " (column_ids)(if any) records Now."))
+                    if("company_id" %in% col__names) { print(cbind(df[,"company_id",drop = FALSE],x = x)[!is.na(x) &  { x > 999999.9 },,drop = FALSE])  }
+                    out <- try( { x[char_col_numeric_limit < x] <- NA_real_ ; x }, silent = TRUE)
+                    if ( !"try-error" %in% class(out)) { 
+                      print(stri_c("  SUCCESS for ... over_the_limit_tf <- x[char_col_numeric_limit < x] records found for column: " %s+% col__names[col__names_iter]))
+                      x <- out 
+                    } else { 
+                      warning(stri_c("Conversion ACTUALLY failed for ... x[char_col_numeric_limit < x] <- NA_real_ conversion failed for column: " %s+% col__names[col__names_iter])) 
+                      return(x)
+                    }
+                  }
+                }
+              }
+              print(str_c("End: ",col__names[col__names_iter], collapse = " "))
+              return(x) # all done
+            } 
+    )
+    , stringsAsFactors = stringsAsFactors) -> new_df
+  row.names(new_df) <- row__names
+  options(ops)
+  return(new_df)
+}
+
+# si_si_bsq_df <- list()
+# si_si_bsq_df$x <- foreign::read.dbf(file = "W:/AAIISIProDBFs/15764/si_bsq.dbf", as.is = TRUE)
+# colnames(si_si_bsq_df$x) <- tolower(colnames(si_si_bsq_df$x))
+# financize(si_si_bsq_df$x) ->  output_df_x 
+# str(output_df_x , list.len = 9999)
+# str(si_si_bsq_df$x. list.len = 9999)
+# View (output_df_x)
+
+
+
+
 verify_company_basics <- function (dateindex = NULL) {
   
   # R version 3.3.2 (2016-10-31) # sessionInfo()
@@ -426,7 +550,7 @@ verify_company_basics <- function (dateindex = NULL) {
       # c("setup","si_ci","si_exchg","si_mgdsc",
       #   "si_bsq","si_isq","si_cfq",
       #   "si_date","si_psd","si_psdc","si_psdd",
-      #   "si_mlt","si_mlt",
+      #   "si_mlt","si_rat",
       #   "si_ee")
       
       si_tbl <- c("si_ci","si_exchg","si_mgdsc")
@@ -445,7 +569,8 @@ verify_company_basics <- function (dateindex = NULL) {
         # 
         si_si_tbl_df[, !str_detect(colnames(si_si_tbl_df),"^x\\.?+")   & 
                        !str_detect(colnames(si_si_tbl_df),"^repno$")   & 
-                       !str_detect(colnames(si_si_tbl_df),"^lastmod$")
+                       !str_detect(colnames(si_si_tbl_df),"^lastmod$") &
+                       !str_detect(colnames(si_si_tbl_df),"^updated$")
         , drop = FALSE] -> si_si_tbl_df
         
         # unique ids
@@ -623,9 +748,9 @@ finecon01 <- function () {
 # copyAAIISIProDBFs(
 #    from = "C:/Program Files (x86)/Stock Investor/Professional"
 #    , to   = paste0("W:/AAIISIProDBFs/",getAAIISIProDate()) # 
-#  )              
-
+#  )                 
+ 
  
 
 
- 
+  
