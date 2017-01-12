@@ -1824,3 +1824,358 @@ from sipro_data_store.si_finecon;
 
 -- LEFT_OFF ... VACATION 
 
+
+
+------------------------------------------------------------------
+------------------------------------------------------------------
+------------- begin figure out updates ----------------------------
+
+set search_path to fe_data_store,public;
+
+set time zone 'utc';
+--set work_mem to  '1200MB';
+   set work_mem to '2047MB';
+set constraint_exclusion = on;
+-- postgresql 9.6
+set max_parallel_workers_per_gather to 4; -- not 'written in docs'
+
+
+# verify_company_basics(dateindex = c(15155)) -> si_all_g_df
+# rm(list=setdiff(ls(all.names=TRUE),c("si_all_g_df","con","cid")))
+# update_from_future_new_company_ids(si_all_g_df,15155) -> OUTPUT
+
+
+select trg.company_id trg_ci, trg.ticker trg_tk, trg.company trg_c, trg.street trg_st, src.street src_st, src.ticker src_tk, src.company src_c, src.company_id src_ci
+        from src, trg 
+      where trg.company_id != src.company_id and
+            trg.ticker     != src.ticker and
+            trg.company      = src.company
+order by 3
+-- BUT THIS WORKS
+
+
+select trg.company_id trg_ci, trg.ticker trg_tk, trg.company trg_c, trg.street trg_st, src.street src_st, src.ticker src_tk, src.company src_c, src.company_id src_ci
+        from src, trg 
+      where trg.company_id != src.company_id and
+            trg.ticker      = src.ticker
+order by 3
+-- 9608
+
+
+select trg.company_id trg_ci, trg.ticker trg_tk, trg.company trg_c, trg.street trg_st
+        from trg 
+where company like  '%United Bancorp, Inc.%';
+
+  trg_ci  | trg_tk |        trg_c         |         trg_st
+----------+--------+----------------------+-------------------------
+ 90944L10 | UBMI   | United Bancorp, Inc. | 2723 South State Street
+ 90991110 | UBCP   | United Bancorp, Inc. | 201 South 4th Street
+(2 rows)
+
+               update trg
+                 set company_id =    src.company_id
+               from src
+                 where trg.company_id != src.company_id and
+                       trg.ticker      = src.ticker;
+-- 9608
+
+select count(1)
+               from src, trg
+                 where trg.company_id  = src.company_id and
+                       trg.ticker      = src.ticker;
+--9608
+
+select count(1)
+               from trg;
+--9847
+
+select trg.company_id trg_ci, trg.ticker trg_tk, trg.company trg_c, trg.street trg_st
+        from trg 
+where company like  '%United Bancorp, Inc.%';
+
+ trg_ci | trg_tk |        trg_c         |         trg_st
+--------+--------+----------------------+-------------------------
+ A0DD1  | UBCP   | United Bancorp, Inc. | 201 South 4th Street
+ AA911  | UBMI   | United Bancorp, Inc. | 2723 South State Street
+(2 rows)
+
+
+-- VERY GOOD
+select trg.company_id trg_ci, trg.ticker trg_tk, trg.company trg_c, trg.street trg_st
+from trg
+where trg.company_id
+not in ( 
+  -- un-accounted-for targets  _UNMATCHED_ _OR_ _NEW_COMPANIES_
+  select src.company_id
+     from trg, src
+      where trg.company_id = src.company_id and
+            trg.ticker     = src.ticker -- 9608
+) 
+order by 3;
+-- 239
+
+
+select count(1) 
+        from src, trg
+      where trg.company_id != src.company_id and
+            trg.ticker     != src.ticker and
+            trg.company     = src.company  -- 117
+and
+trg.company_id
+not in ( 
+  -- un-accounted-for targets  _UNMATCHED_ _OR_ _NEW_COMPANIES_
+  select src1.company_id
+     from trg trg1, src src1
+      where trg1.company_id = src1.company_id and
+            trg1.ticker     = src1.ticker -- 9608
+) 
+-- 117
+
+select trg.trg_ci, trg. trg_tk, trg.trg_c, trg.trg_st, src.street src_st, src.ticker src_tk, src.company src_c, src.company_id src_ci
+from src left join lateral (
+  -- un-accounted-for targets  _UNMATCHED_ _OR_ _NEW_COMPANIES_
+  select trg.company_id trg_ci, trg.ticker trg_tk, trg.company trg_c, trg.street trg_st
+     from trg, src
+      where trg.company_id  != src.company_id and
+            trg.ticker      != src.ticker and
+            trg.company_id  = src.company_id
+) trg on (true)
+order by 3;
+--10188 ( I can see the entir src side )
+
+update trg
+set   company_id = src.company_id
+from src left join lateral (
+  -- un-accounted-for targets  _UNMATCHED_ _OR_ _NEW_COMPANIES_
+  select trg.company_id trg_ci, trg.ticker trg_tk, trg.company trg_c, trg.street trg_st
+     from trg
+      where trg.company_id = src.company_id and
+            trg.ticker     = src.ticker 
+) trg on (true) where trg
+
+
+select src.company_id trg_ci, src.ticker trg_tk, src.company trg_c, src.street trg_st
+from src
+where src.company_id
+not in ( 
+  -- un-accounted-for targets  _UNMATCHED_ _OR_ _NEW_COMPANIES_
+  select trg.company_id
+     from trg, src
+      where trg.company_id = src.company_id and
+            trg.ticker     = src.ticker -- 9608
+) 
+order by 3;
+-- 580
+
+
+select trg.company_id trg_ci, trg.ticker trg_tk, trg.company trg_c, trg.street trg_st, src.street src_st, src.ticker src_tk, src.company src_c, src.company_id src_ci
+from trg, src
+where 
+trg.company_id
+not in ( 
+  -- un-accounted-for targets  _UNMATCHED_ _OR_ _NEW_COMPANIES_
+  select src.company_id
+     from trg, src
+      where trg.company_id = src.company_id and
+            trg.ticker     = src.ticker -- 9608
+) 
+and
+src.company_id
+not in ( 
+  -- un-accounted-for targets  _UNMATCHED_ _OR_ _NEW_COMPANIES_
+  select trg.company_id
+     from trg, src
+      where trg.company_id = src.company_id and
+            trg.ticker     = src.ticker -- 9608
+) 
+and 
+trg.company_id = src.company_id and
+trg.ticker     = src.ticker;
+-- zero
+> 9847 - 239
+[1] 9608
+
+select trg.company_id trg_ci, trg.ticker trg_tk, trg.company trg_c, trg.street trg_st, src.street src_st, src.ticker src_tk, src.company src_c, src.company_id src_ci
+        from src, trg
+      where trg.company_id != src.company_id and
+            trg.ticker     != src.ticker and
+            trg.company     = src.company
+order by 3;
+- NOT RIGHT SOME DUPS
+-- 117 NOT RIGHT SOME DUPS
+
+
+
+select trg.company_id trg_ci, trg.ticker trg_tk, trg.company trg_c, trg.street trg_st, src.street src_st, src.ticker src_tk, src.company src_c, src.company_id src_ci
+        from src, trg
+      where ( trg.company_id != src.company_id and trg.company  = src.company ) and
+            ( trg.ticker     != src.ticker     and  trg.company  = src.company )
+order by 3;
+-- 117 NOT RIGHT SOME DUPS
+
+select trg.company_id trg_ci, trg.ticker trg_tk, trg.company trg_c, trg.street trg_st, src.street src_st, src.ticker src_tk, src.company src_c, src.company_id src_ci
+        from src, trg
+      where trg.company_id != src.company_id and
+            trg.company     = src.company
+order by 3;
+--117 rows
+
+
+select trg.company_id trg_ci, trg.ticker trg_tk, trg.company trg_c, trg.street trg_st, src.street src_st, src.ticker src_tk, src.company src_c, src.company_id src_ci
+        from src, trg
+      where trg.company_id != src.company_id and
+            trg.ticker     != src.ticker and
+            trg.company     = src.company  -- 117
+and trg.company in -- DUPLICATES COPANY NAMES
+(select trg.company 
+from trg
+where trg.company
+in ( -- eliminates duplicate company names
+     -- un-accounted-for targets  _UNMATCHED_ _OR_ _NEW_COMPANIES_
+  select src.company
+     from trg, src
+      where trg.company_id = src.company_id and
+            trg.ticker     = src.ticker 
+)
+)
+order by 3
+
+explain
+select trg.company_id trg_ci, trg.ticker trg_tk, trg.company trg_c, trg.street trg_st, src.street src_st, src.ticker src_tk, src.company src_c, src.company_id src_ci
+        from src, trg
+      where trg.company_id != src.company_id and
+            trg.ticker     != src.ticker and
+            trg.company     = src.company  -- 117
+and trg.company not in -- IN -> NOT_IN -> ELMINTATES DUPLICATED COMPANY NAMES
+(select trg.company 
+from trg
+where trg.company
+in ( 
+     -- un-accounted-for targets  _UNMATCHED_ _OR_ _NEW_COMPANIES_
+  select src.company
+     from trg, src
+      where trg.company_id = src.company_id and
+            trg.ticker     = src.ticker 
+  )
+)
+order by 3
+--99 rows ( 5 second query )
+
+-- KEEP ( horribly inefficient but gets the job done )
+explain
+update trg
+set company_id = src.company_id
+        from src
+      where trg.company_id != src.company_id and
+            trg.ticker     != src.ticker and
+            trg.company     = src.company  -- 117
+and trg.company not in -- IN -> NOT_IN -> ELMINTATES DUPLICATED COMPANY NAMES
+(select trg.company 
+from trg
+where trg.company
+in ( 
+  select src.company
+     from trg, src
+      where trg.company_id = src.company_id and
+            trg.ticker     = src.ticker 
+  )
+) -- 99 rows ( 5 second update )
+
+
+
+select trg.company_id trg_ci, trg.ticker trg_tk, trg.company trg_c, trg.street trg_st, src.street src_st, src.ticker src_tk, src.company src_c, src.company_id src_ci
+        from src, trg
+      where -- trg.company_id != src.company_id and
+            trg.ticker      = src.ticker and -- 9608
+            trg.company     = src.company
+order by 3;
+--9577
+
+select trg.company_id trg_ci, trg.ticker trg_tk, trg.company trg_c, trg.street trg_st, src.street src_st, src.ticker src_tk, src.company src_c, src.company_id src_ci
+        from src, trg
+      where trg.company_id  = src.company_id and
+            trg.ticker     != src.ticker and
+            trg.company    != src.company
+order by 3;
+-- zero ... OTHER zero
+
+
+
+update trg
+  set company_id =    src.company_id
+        from src
+      where trg.company_id != src.company_id and
+            trg.ticker     != src.ticker and
+            trg.company     = src.company;
+-- 116 affected
+
+select trg.company_id trg_ci, trg.ticker trg_tk, trg.company trg_c, trg.street trg_st
+        from trg 
+where company like  '%United Bancorp, Inc.%';
+
+ trg_ci | trg_tk |        trg_c         |         trg_st
+--------+--------+----------------------+-------------------------
+ A0DD1  | UBMI   | United Bancorp, Inc. | 2723 South State Street
+ AA911  | UBCP   | United Bancorp, Inc. | 201 South 4th Street
+(2 rows)
+-- GOOD ( NO CHANGE )
+
+
+select trg.company_id trg_ci, trg.ticker trg_tk, trg.company trg_c, trg.street trg_st, src.street src_st, src.ticker src_tk, src.company src_c, src.company_id src_ci
+        from src, trg 
+      where trg.company_id != src.company_id and
+            trg.ticker     != src.ticker and
+            trg.company      = src.company
+order by 3;
+
+ trg_ci | trg_tk |             trg_c              |      trg_st      |           src_st            | src_tk |             src_c              | src_ci
+--------+--------+--------------------------------+------------------+-----------------------------+--------+--------------------------------+--------
+ AA29B  | EDD    | Morgan Stanley Emerging Market | 522 Fifth Avenue | 1221 Avenue of The Americas | MSF    | Morgan Stanley Emerging Market | ACE79
+(1 row)
+
+
+update trg
+  set company_id =    src.company_id
+        from src
+      where trg.company_id != src.company_id and
+            trg.ticker     != src.ticker and
+            trg.company     = src.company;
+-- 1 row affected
+
+select trg.street src_st, trg.ticker src_tk, trg.company src_c, trg.company_id src_ci
+        from trg
+where company like  '%Morgan Stanley Emerging Market%';
+
+
+---
+
+select src.street src_st, src.ticker src_tk, src.company src_c, src.company_id src_ci
+        from src
+where company like  '%United Bancorp, Inc.%';
+
+         src_st          | src_tk |        src_c         | src_ci
+-------------------------+--------+----------------------+--------
+ 201 South 4th Street    | UBCP   | United Bancorp, Inc. | A0DD1
+ 2723 South State Street | UBMI   | United Bancorp, Inc. | AA911
+(2 rows)
+
+select src.street src_st, src.ticker src_tk, src.company src_c, src.company_id src_ci
+        from src
+where company like  '%Morgan Stanley Emerging Market%';
+
+           src_st            | src_tk |             src_c              | src_ci
+-----------------------------+--------+--------------------------------+--------
+ 522 FIFTH AVENUE            | MSD    | Morgan Stanley Emerging Market | AA29B
+ 1221 Avenue of The Americas | MSF    | Morgan Stanley Emerging Market | ACE79
+ 522 Fifth Avenue            | EDD    | Morgan Stanley Emerging Market | AE694
+(3 rows)
+
+------------- end figure out updates ----------------------------
+------------------------------------------------------------------
+------------------------------------------------------------------
+
+
+
+
+
+
