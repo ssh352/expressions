@@ -807,6 +807,7 @@ verify_si_finecon_exists <- function () {
     
     verify_connection()
     db.q("create table if not exists si_finecon2();", conn.id = cid)
+    db.q("alter table si_finecon2 add if not exists dateindex_company_id_orig text;", conn.id = cid)
     db.q("alter table si_finecon2 add if not exists dateindex_company_id text;", conn.id = cid)
     db.q("alter table si_finecon2 add if not exists dateindex    int;", conn.id = cid)
     db.q("alter table si_finecon2 add if not exists dateindexlwd int;", conn.id = cid)
@@ -831,6 +832,10 @@ verify_si_finecon_exists <- function () {
     # PostgreSQL automatically creates an index for each unique constraint and primary key constraint to enforce uniqueness.
     # https://www.postgresql.org/message-id/4C6BA0F6020000250003481C@gw.wicourts.gov
     
+    
+
+    try( { db.q("create unique index if not exists si_finecon2_dateindex_company_id_orig_both_key      on si_finecon2(dateindex_company_id_orig);", conn.id = cid) }, silent = TRUE )
+    
     # just SIMPLY
     # will ERROR OUT ( will not allow to add a second primary key )
     try( { db.q("alter table if exists si_finecon2 add primary key(dateindex_company_id );", conn.id = cid) }, silent = TRUE ) # only be on
@@ -842,10 +847,14 @@ verify_si_finecon_exists <- function () {
     # can be many
     
     # WILL JUST KEEP ADDING MORE
-    try( { db.q("create unique index if not exists si_finecon2_dateindex_company_id_key      on si_finecon2(dateindex,company_id);", conn.id = cid) }, silent = TRUE )
-    # si_finecon2_dateindex_company_id_key
+    try( { db.q("create unique index if not exists si_finecon2_dateindex_company_id_key       on si_finecon2(dateindex, company_id);", conn.id = cid) }, silent = TRUE )
+    # can be many
+    try( { db.q("create unique index if not exists si_finecon2_dateindex_company_id_orig_key  on si_finecon2(dateindex, company_id_orig);", conn.id = cid) }, silent = TRUE )
     # can be many
 
+    # PROTECT against a LOSS of INTEGRITY
+    try( { db.q("create unique index if not exists si_finecon2_dateindex_ticker_id_key        on si_finecon2(dateindex, ticker);", conn.id = cid) }, silent = TRUE )
+    
     try( { db.q("
       
       -- drop function if exists si_finecon2_bef_row_ins_upd();
@@ -1359,7 +1368,8 @@ upsert <-  function(value = NULL, keys = NULL) { # vector of primary key values
       # non-NA only concerted about matches(in common(f/full)) AND matches(datatypes) that are not equal
      .[(!is.na(.$upsert_meta)) & (.$upsert_meta !=.$fc_meta),,drop = FALSE] } %>% { 
        # convert to an iteratable list
-       as.list( data.frame(t(.), stringsAsFactors = FALSE) ) 
+       # as.list( data.frame(t(.), stringsAsFactors = FALSE) ) 
+       { split(as.data.frame(., stringsAsFactors = F)[,, drop = F], seq_along(as.data.frame(., stringsAsFactors = F)[,1, drop = T])) }
         } -> upsert_col_type_changes
              #from #in_common #to
 
@@ -1385,7 +1395,22 @@ upsert <-  function(value = NULL, keys = NULL) { # vector of primary key values
   # part2
   # to fc, sql_update ON CONFLICT DO UPDATE ( given columns/info from value )  
   
+# LEFT_OFF
+  
+# 
+# -- detect if it has the column *dateindex_company_id_orig* ( si_ci )
+# insert into si_finecon2(dateindex_company_id_orig, dateindex_company_id, dateindex, company_id, company_id_orig, ticker, company) 
+#                  select dateindex_company_id_orig, dateindex_company_id, dateindex, company_id, company_id_orig, ticker, company
+#                    from upsert_temp 
+#                      on conflict (dateindex_company_id_orig) 
+#                        do update set (dateindex_company_id_orig, dateindex, company_id, company_id_orig, ticker, company) = (excluded.dateindex_company_id_orig, excluded.dateindex, excluded.company_id, excluded.company_id_orig, excluded.ticker, excluded.company);
+# 
+# -- detect if (upsert_temp)  does not have the column *dateindex_company_id_orig* ( use dateindex_company_id )
+# -- REPLACE: on conflict (dateindex_company_id_orig)  WITH on conflict (dateindex_company_id) 
 
+  
+  
+  
   drop_upsert_temp()
   
 
@@ -1506,7 +1531,9 @@ verify_company_basics <- function (dateindex = NULL) {
         # save before updating with new(future) values
         if(si_tbl_i == "si_ci") {
           { si_si_tbl_df } %>%
-          insert_df(., .$company_id, "company_id_orig", match("company_id", colnames(.)) - 1 ) -> si_si_tbl_df
+          insert_df(.,      .$company_id                 , "company_id_orig"          , match("company_id", colnames(.)) - 1 ) -> si_si_tbl_df
+          { si_si_tbl_df } %>%
+          insert_df(.,str_c(.$dateindex,'_',.$company_id), "dateindex_company_id_orig", match("company_id", colnames(.)) - 1 ) -> si_si_tbl_df
         }
           
         # remove duplicated company_id, ticker ( will NOT be loaded into the PostgreSQL database)
@@ -1543,6 +1570,7 @@ verify_company_basics <- function (dateindex = NULL) {
           # SHOULD *MAKE* THIS INTO A FUNCTION
           # currenly ONLY for tables that have company_id ( and dateindex )
 
+        # generate column: dateindex_company_id on ...
         if("company_id" %in% colnames(si_si_tbl_df)) {
 
           "company_id" -> keys
@@ -1550,8 +1578,6 @@ verify_company_basics <- function (dateindex = NULL) {
           with( si_si_tbl_df, { eval(parse(text=eval(parse(text=('str_c(c("dateindex",keys), collapse = " %s+% \'_\' %s+% ")'))))) } ) -> si_si_tbl_df[,si_si_tbl_df_primary_key]
           DataCombine::MoveFront(si_si_tbl_df,si_si_tbl_df_primary_key) -> si_si_tbl_df
 
-          
-          
         }
         
         # si_TBL VARIABLES
@@ -1810,11 +1836,20 @@ finecon01 <- function () {
   Sys.setenv(TZ=oldtz)
   options(ops)
 }
-#    
+#     
 
 
-           
+# # AFTER I GET 'mktcap' LOADED
+# jamesos [ ] newer one
+# -- drop index sipro_data_store.si_finecon_jamesos_partial_idx3;
+# CREATE INDEX si_finecon_jamesos_partial_idx3
+#   ON sipro_data_store.si_finecon
+#   USING btree
+#   (adr, exchange COLLATE pg_catalog."default", mktcap COLLATE pg_catalog."default", company_id_unq COLLATE pg_catalog."default", company COLLATE pg_catalog."default")
+#   WHERE adr = false AND exchange <> 'O'::text AND mktcap::numeric(15,2) >= 200.00 AND ((company !~~ '%iShares%'::text) AND (company !~~ '%Vanguard%'::text) AND (company !~~ 'SPDR'::text) AND (company !~~ '%PowerShares%'::text) AND (company !~~ '%Fund%'::text))  
+#   AND (company !~~ '%Holding%'::text) AND (mg_desc_ind !~~ '%Investment Service%'::text)
  
+  
 
 
   
