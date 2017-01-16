@@ -681,7 +681,7 @@ insert_df <- function(df = NULL, val = NULL, nm = NULL, pos = 0 ) {
   
 }
 
-insert_df(iris[1:26,],letters,"Let",3)
+# insert_df(iris[1:26,],letters,"Let",3)
 # DataCombine::MoveFront
 # insert_df(iris[1:26,],letters,"Let",0)
 ##   Let Sepal.Length Sepal.Width Petal.Length Petal.Width Species
@@ -726,9 +726,17 @@ verify_connection <- function () {
     
     # Depends: Matrix
     # Suggests:	DBI, RPostgreS(on the fly loaded)
+    
+    # set search_path to fe_data_store,public;
+    # set time zone 'utc';
+    # set work_mem to '2047MB';
+    # set constraint_exclusion = on;
+    # set max_parallel_workers_per_gather to 4;
+    #
     require(PivotalR) #                                     # OSUser
+    require(stringr)
     if(!exists("cid", envir = .GlobalEnv)) {
-      cid <<- db.connect(user = "postgres", dbname = "finance_econ", default.schemas = c("fe_data_store","public"))
+      cid <<- db.connect(user = "postgres", dbname = "finance_econ", default.schemas = "fe_data_store,public")
       con <<- PivotalR:::.localVars$db[[1]]$conn
       
       db.q(str_c("set time zone 'utc';"), nrows =  -1, conn.id = cid)
@@ -795,19 +803,70 @@ verify_si_finecon_exists <- function () {
     # 
     # select r_version();
     
-    verify_connection()
-    db("create table if not exists si_finecon2();", conn.id = cid)
-    db("alter table si_finecon2 add if not exists dateindex    int;", conn.id = cid)
-    db("alter table si_finecon2 add if not exists dateindexlwd int;", conn.id = cid)
-    db("alter table si_finecon2 add if not exists dateindexeom int;", conn.id = cid)
-    db("alter table si_finecon2 add if not exists company_id_orig  text;", conn.id = cid)
-    db("alter table si_finecon2 add if not exists company_id  text;", conn.id = cid)
-    db("alter table si_finecon2 add if not exists ticker  text;", conn.id = cid)
-    db("alter table si_finecon2 add if not exists company text;", conn.id = cid)
-    
     # create table if not exists si_finecon2();
     
+    verify_connection()
+    db.q("create table if not exists si_finecon2();", conn.id = cid)
+    db.q("alter table si_finecon2 add if not exists dateindex_company_id text;", conn.id = cid)
+    db.q("alter table si_finecon2 add if not exists dateindex    int;", conn.id = cid)
+    db.q("alter table si_finecon2 add if not exists dateindexlwd int;", conn.id = cid)
+    db.q("alter table si_finecon2 add if not exists dateindexeom int;", conn.id = cid)
+    db.q("alter table si_finecon2 add if not exists company_id_orig  text;", conn.id = cid)
+    db.q("alter table si_finecon2 add if not exists company_id  text;", conn.id = cid)
+    db.q("alter table si_finecon2 add if not exists ticker  text;", conn.id = cid)
+    db.q("alter table si_finecon2 add if not exists company text;", conn.id = cid)
+    # 
+    # db.q("create unique index if not exists si_finecon2_dateindex_company_id_both_unqpkidx on si_finecon2(dateindex_company_id);", conn.id = cid)
+    # db.q("alter table si_finecon2 add primary key(dateindex_company_id) using index si_finecon2_dateindex_company_id_both_unqpkidx;", conn.id = cid)
+    # 
+    # db.q("create unique index if not exists si_fincon2_dateindex_company_id_unqkey on si_finecon2(dateindex_company_id);", conn.id = cid)
+    # db.q("alter table si_finecon2 drop constraint        if exists si_fincon2_dateindex_company_id_unqkey;", conn.id = cid)
+    # db.q("alter table si_finecon2 add  constraint unique(dateindex, company_id) using si_fincon2_dateindex_company_id_unqkey;", conn.id = cid)
+    # 
+    
+    # db.q("drop index if exists si_fincon2_dateindex_company_id_unqidx;", conn.id = cid)
+    # db.q("create unique index si_fincon2_dateindex_company_id_unqidx on si_finecon2(dateindex, company_id);", conn.id = cid)
+    
+    # Re: Are Indices automatically generated for primary keys?
+    # PostgreSQL automatically creates an index for each unique constraint and primary key constraint to enforce uniqueness.
+    # https://www.postgresql.org/message-id/4C6BA0F6020000250003481C@gw.wicourts.gov
+    
+    # just SIMPLY
+    # will ERROR OUT ( will not allow to add a second primary key )
+    try( { db.q("alter table if exists si_finecon2 add primary key(dateindex_company_id );", conn.id = cid) }, silent = TRUE ) # only be on
+    # si_finecon2_pkey
+    # singleton
 
+    # try( { db.q("alter table if exists si_finecon2 add      unique(dateindex, company_id);", conn.id = cid) }, silent = TRUE )
+    # si_finecon2_dateindex_company_id_key
+    # can be many
+    
+    # WILL JUST KEEP ADDING MORE
+    try( { db.q("create unique index if not exists si_finecon2_dateindex_company_id_key      on si_finecon2(dateindex,company_id);", conn.id = cid) }, silent = TRUE )
+    # si_finecon2_dateindex_company_id_key
+    # can be many
+
+    try( { db.q("
+      
+      -- drop function if exists si_finecon2_bef_row_ins_upd();
+      create or replace function si_finecon2_bef_row_ins_upd() returns trigger as 
+      $body$
+          begin
+              new.dateindex_company_id := new.dateindex || '_' || new.company_id;
+              return new;
+          end;
+      $body$ 
+      language plpgsql;
+      
+      
+      drop trigger if exists si_finecon2_bef_row_ins_upd on si_finecon2;
+      create trigger si_finecon2_bef_row_ins_upd before insert or update of dateindex, company_id on si_finecon2
+          for each row 
+          execute procedure si_finecon2_bef_row_ins_upd();
+      
+    ", conn.id = cid) }, silent = TRUE )
+
+    
   }
   verify_si_finecon_exists_inner()
   
@@ -978,7 +1037,7 @@ optimize <- function(tb = NULL, colz = c("dateindex","company_id")) {
 #     3. x[char_col_numeric_limit < x] <- NA_real_ 
 
 financize <- function(df
-                      , int_col_rexpr = "^perlen_q.*$"
+                      , int_col_rexpr = "sic|employees|^perlen_q.*$"
                       , stringsAsFactors = FALSE       # untested # most likely upsiszed to a database to be an integer?
                       , char_col_rexpr = "^pertyp_q.*$"
                       , num_col_rexpr = "price|mktcap|^.*_q.*$"
@@ -1147,6 +1206,198 @@ lcase_a_remove_useless_columns <- function(df) {
 
 }
 
+# not used ( but works )
+get_db_data_types <- function(name = NULL) {
+
+  require(stringr) #  0 = 1 normally returnes a zero column data.frame
+  rs <- dbSendQuery(con,str_c("select * from ",name," where 0 = 1;"))
+  info <- dbColumnInfo(rs)
+  dbClearResult(rs)
+  return(info)
+}
+
+
+
+# NOTE: keys MUST be entered in lowercase
+upsert <-  function(value = NULL, keys = NULL) { # vector of primary key values
+
+  require(magrittr)
+  require(RPostgreSQL)
+  require(PivotalR)
+  require(stringi)
+  require(stringr)
+  require(R.rsp)
+  
+  options() -> Ops
+  options(warn=1)
+  
+  # cleanup and prepare
+                # note: if I send "dateindex", then all records are removed(rm_df_dups)
+                # LATER?, I may want to liberalzed this function "to 'all dups per group'"
+  { value } %>% rm_df_dups(., keys) %>% lcase_a_remove_useless_columns(.) %>% financize(.) -> value
+  
+  # compare inbound
+  with(value,{sapply(ls(sort=FALSE),function(x){class(get(x))})}) -> value_meta
+  
+  # to what is in the database
+  db.data.frame("si_finecon2", conn.id = cid, verbose = FALSE) -> ptr_si_finecon2  # class (db.#)
+  col.types(ptr_si_finecon2) -> fc_meta
+      names(ptr_si_finecon2) -> names(fc_meta) 
+  
+  # to fc, add new columns ( of 'new columns' from 'value' that do not exist in 'fc' )
+  
+  # names(with types) in value that are 'value only'(setdiff) that need to (soon) be new columns in 'fc'
+  value_meta[names(value_meta) %in% setdiff(names(value_meta),names(fc_meta))] -> fc_new_columns
+
+  # change "numeric"(R) to "numeric(7,1)"(PostgreSQL)
+  "text"          -> fc_new_columns[fc_new_columns == "character"] 
+  "numeric(7,1)"  -> fc_new_columns[fc_new_columns == "numeric"]  
+  "smallint"      -> fc_new_columns[names(fc_new_columns) %in% c("drp_avail","adr")] 
+   
+  clean_text <- function(x) { 
+    require(stringi)
+    require(stringr)
+    stri_split_lines1(x) -> lines
+    str_c(lines[!str_detect(lines,"^debug at <text>")],collapse = "\n") 
+  }
+  # writeLines(clean_text(my_string))
+  
+  # actually add columns
+  # if any columns exist to add
+  # EXPECTED 'IF-THEN' to be extended
+  if(length(fc_new_columns) > 0L) {
+  
+    # try: stop the rstudio debugger from going inside the string
+    # try( { try( { 
+    
+    str_trim(str_c(rstring('
+    alter table if exists si_finecon2
+      <% for (i in seq_along(fc_new_columns)) { -%>
+          <% sprintf("add %1$s %2$s", 
+               names(fc_new_columns)[i], fc_new_columns[i]) -> res
+          -%><%= str_c("    ",res) %><%=if(i  < length(fc_new_columns)) ", \n" -%><%=if(i == length(fc_new_columns)) "  \n" -%>
+      <% } %>
+    ;                     
+    ')))  %>% clean_text(.) -> add_columns_sql # 
+              # remove at the beginning
+              # debug at <text>#30: .base_paste0 <- base::paste0\n\n 
+    
+    # %>% str_replace(.,"^.*(\n\n)","") -> add_columns_sql
+    # }, silent = TRUE) }, silent = TRUE)
+    
+    db.q(add_columns_sql, conn.id = cid)
+    
+  } else {
+    warning("in call to function upsert, no new columns were found to add.  Is this correct?")
+  }
+  
+  # add a primary key column ( needed for PivotalR ) 
+  str_c(c("dateindex",keys), collapse = "_")  -> value_primary_key
+  with( value, { eval(parse(text=eval(parse(text=('str_c(c("dateindex",keys), collapse = " %s+% \'_\' %s+% ")'))))) } ) -> value[,value_primary_key]
+  DataCombine::MoveFront(value,value_primary_key) -> value
+  
+  # upload 'value' into the database 
+  
+  # eventually
+  {function() { db.q("drop table if exists upsert_temp", conn.id = cid) }} -> drop_upsert_temp
+  #
+  drop_upsert_temp()
+  # # upsert into the database
+  # SEEMS must CREATE A pk THIS WAY
+  as.db.data.frame(value, "upsert_temp", conn.id = cid, verbose = FALSE, key = value_primary_key) -> ptr_upsert_temp
+  
+  # db.q(str_c("create unique index upsert_temp_unqpkidx on upsert_temp(" %s+% value_primary_key %s+% ");"), conn.id = cid)
+  try( { db.q(str_c("alter table if exists upsert_temp add primary key(" %s+% value_primary_key %s+% ");"), conn.id = cid) }, silent = TRUE )
+  # upsert_temp_<value_primary_key>_pkey ( singleton )
+  
+  # db.q(str_c("alter table upsert_temp add constraint upsert_temp_unqkey unique(" %s+%  "dateindex, " %s+% str_c(keys,collapse = ", ", sep = "") %s+% ");"), conn.id = cid)
+  # db.q(str_c("create unique index upsert_temp_unqidx on upsert_temp(" %s+%  "dateindex, " %s+% str_c(keys,collapse = ", ", sep = "") %s+% ");"), conn.id = cid)
+  
+  # try( { db.q(str_c("alter table if exists upsert_temp add unique(" %s+%  "dateindex, " %s+% str_c(keys,collapse = ", ", sep = "") %s+% ");"), conn.id = cid) }, silent = TRUE )
+  try( { db.q("create unique index if not exists upsert_temp_keyz_key on upsert_temp(dateindex, company_id);", conn.id = cid) }, silent = TRUE )
+  # upsert_temp_keyz_key ( can be many )
+  
+  bm <- 1
+  
+  # par1
+  # ? db.data.frame HELP ( indirect way of doing it)
+  # to 'value in the database' change 'double precision' to 'numeric(7,1)'  
+  
+  # eventually
+  # col.types(ptr_upsert_temp) -> upsert_meta
+  #     names(ptr_upsert_temp) -> names(upsert_meta)
+  
+  # IF I NEED TO ( change ) a data.type here
+  # make another table
+  # as.list(col.types(ptr_upsert_temp)) -> LL; names(ptr_upsert_temp) -> names(LL); LL
+  # as.db.data.frame(ptr_upsert_temp[,], table.name ="upsert_temp_greater", field.types = LL) -> ptr_upsert_temp_gr
+  
+  # upsert ( these columns have a different data type )
+  # of upsert_temp these colums are what I want to change  dataypes to match what is in si_finecon2
+
+  # REQUIRED refresh?!
+  # ovewrite
+  db.data.frame("upsert_temp", conn.id = cid, verbose = FALSE) -> ptr_upsert_temp  # class (db.#)
+  col.types(ptr_upsert_temp) -> upsert_meta
+      names(ptr_upsert_temp) -> names(upsert_meta)
+
+  # to what is in the database ( RE-calculate fc_meta: REDONE from above )
+  # REQUIRED refresh?!
+  db.data.frame("si_finecon2", conn.id = cid, verbose = FALSE) -> ptr_si_finecon2  # class (db.#)
+  col.types(ptr_si_finecon2) -> fc_meta
+      names(ptr_si_finecon2) -> names(fc_meta) 
+
+  # prepare for together
+  data.frame(upsert_meta, in_common_names  = names(upsert_meta), stringsAsFactors = FALSE) -> upsert_df 
+  data.frame(fc_meta    , in_common_names  = names(fc_meta),     stringsAsFactors = FALSE) -> fc_df 
+
+  # together
+  plyr::join(upsert_df, fc_df, by = c("in_common_names"), type = "full", match = "all" )-> upsert_fc_df
+
+  # query
+  { upsert_fc_df } %>% {
+      # non-NA only concerted about matches(in common(f/full)) AND matches(datatypes) that are not equal
+     .[(!is.na(.$upsert_meta)) & (.$upsert_meta !=.$fc_meta),,drop = FALSE] } %>% { 
+       # convert to an iteratable list
+       as.list( data.frame(t(.), stringsAsFactors = FALSE) ) 
+        } -> upsert_col_type_changes
+             #from #in_common #to
+
+  print("upsert_temp from ... to column type changes")
+  print(upsert_col_type_changes)
+  
+
+  # actual change
+  0 -> i
+  str_trim(str_c(rstring('
+  alter table if exists upsert_temp
+    <% for (change_i in upsert_col_type_changes) { -%>
+        <% i + 1 -> i; sprintf("alter column %1$s set data type %2$s", 
+             change_i[2], change_i[3]) -> res
+        -%><%= str_c("    ",res) %><%=if(i  < length(upsert_col_type_changes)) ", \n" -%><%=if(i == length(upsert_col_type_changes)) "  \n" -%>
+    <% } %>
+  ;                     
+  ')))  %>% clean_text(.) -> upsert_col_type_changes_sql #
+
+  db.q(upsert_col_type_changes_sql, conn.id = cid)
+  
+
+  # part2
+  # to fc, sql_update ON CONFLICT DO UPDATE ( given columns/info from value )  
+  
+
+  drop_upsert_temp()
+  
+
+  
+
+
+  
+
+  options(ops)
+  return(invisible(NULL))
+   
+}
 
 
 verify_company_basics <- function (dateindex = NULL) {
@@ -1282,11 +1533,27 @@ verify_company_basics <- function (dateindex = NULL) {
         
         # speed
 
-        # keys, DFIs, and more DFI keys: ... speed
-        if(any(colnames(si_si_tbl_df) %in% "company_id")) optimize(si_si_tbl_df)               -> si_si_tbl_df
-        if(any(colnames(si_si_tbl_df) %in% "exchg_code")) optimize(si_si_tbl_df, "exchg_code") -> si_si_tbl_df
-        if(any(colnames(si_si_tbl_df) %in% "mg_code"))    optimize(si_si_tbl_df, "mg_code")     -> si_si_tbl_df
+        ##  keys, DFIs, and more DFI keys: ... speed
+        # if(any(colnames(si_si_tbl_df) %in% "company_id")) optimize(si_si_tbl_df)               -> si_si_tbl_df
+        # if(any(colnames(si_si_tbl_df) %in% "exchg_code")) optimize(si_si_tbl_df, "exchg_code") -> si_si_tbl_df
+        # if(any(colnames(si_si_tbl_df) %in% "mg_code"))    optimize(si_si_tbl_df, "mg_code")    -> si_si_tbl_df
           
+        # create a primary key and move it to the front
+        
+          # SHOULD *MAKE* THIS INTO A FUNCTION
+          # currenly ONLY for tables that have company_id ( and dateindex )
+
+        if("company_id" %in% colnames(si_si_tbl_df)) {
+
+          "company_id" -> keys
+          str_c(c("dateindex",keys), collapse = "_") -> si_si_tbl_df_primary_key
+          with( si_si_tbl_df, { eval(parse(text=eval(parse(text=('str_c(c("dateindex",keys), collapse = " %s+% \'_\' %s+% ")'))))) } ) -> si_si_tbl_df[,si_si_tbl_df_primary_key]
+          DataCombine::MoveFront(si_si_tbl_df,si_si_tbl_df_primary_key) -> si_si_tbl_df
+
+          
+          
+        }
+        
         # si_TBL VARIABLES
         assign(si_tbl_i,si_si_tbl_df)
         rm(si_si_tbl_df)
@@ -1294,52 +1561,52 @@ verify_company_basics <- function (dateindex = NULL) {
       }
       
       # join key of exchange
-      si_exchg$x$exchg_code  -> si_exchg$x$exchange
+      si_exchg$exchg_code  -> si_exchg$exchange
       
       # outer join
-      plyr::join_all(list(si_ci$x,si_exchg$x), by = c("dateindex","exchange"), type = "full") -> si_all_df
+      plyr::join_all(list(si_ci,si_exchg), by = c("dateindex","exchange"), type = "full") -> si_all_df
       
-      optimize(si_all_df) -> si_all_df
+      # optimize(si_all_df) -> si_all_df
       
       rm(si_ci)
       rm(si_exchg)
       
       # join key of industry
-      si_all_df$x$ind_3_dig -> si_all_df$x$industry_code
-       si_mgdsc$x$mg_code  ->   si_mgdsc$x$industry_code
+      si_all_df$ind_3_dig -> si_all_df$industry_code
+       si_mgdsc$mg_code  ->   si_mgdsc$industry_code
       
       # left join because mg_code has codes that are sectors and not industries ( creates orphans )
       # left join becuase orphan industries are meaningless
-      plyr::join_all(list(si_all_df$x,si_mgdsc$x), by = c("dateindex","industry_code"), type = "left") -> si_all_df
+      plyr::join_all(list(si_all_df,si_mgdsc), by = c("dateindex","industry_code"), type = "left") -> si_all_df
       si_all_df$mg_desc -> si_all_df$industry_desc 
       within( si_all_df, { rm("mg_code","mg_desc") }) -> si_all_df
       si_all_df$rn_si_mgdsc -> si_all_df$rn_si_mgdsc_ind; within(si_all_df, { rm("rn_si_mgdsc") } ) -> si_all_df 
-      within(  si_mgdsc$x , { rm("industry_code") }) -> si_mgdsc$x
+      within(  si_mgdsc , { rm("industry_code") }) -> si_mgdsc
 
-      optimize(si_all_df) -> si_all_df
+      # optimize(si_all_df) -> si_all_df
       
       # join key of sector
-      si_all_df$x$ind_2_dig            ->  si_all_df$x$sector_code
-      str_sub(si_mgdsc$x$mg_code,1,2)  ->  si_mgdsc$x$sector_code
+      si_all_df$ind_2_dig            ->  si_all_df$sector_code
+      str_sub(si_mgdsc$mg_code,1,2)  ->  si_mgdsc$sector_code
       
       # get rid of duplicated sectors ( each industry has its sector rementioned )
-      si_mgdsc$x -> si_mgdsc  
+      si_mgdsc -> si_mgdsc  
       # SPECIAL
       si_mgdsc$rn_si_mgdsc -> si_mgdsc$rn_si_mgdsc_sect
       si_mgdsc[with( si_mgdsc, { !stri_duplicated(sector_code) } ),,drop = FALSE] -> si_mgdsc
         
-      optimize(si_mgdsc,c("mg_code")) -> si_mgdsc
+      # optimize(si_mgdsc,c("mg_code")) -> si_mgdsc
       
       # left join becuase orphan sectors are meaningless
-      plyr::join_all(list(si_all_df$x,si_mgdsc$x), by = c("dateindex","sector_code"), type = "left")  -> si_all_df
+      plyr::join_all(list(si_all_df,si_mgdsc), by = c("dateindex","sector_code"), type = "left")  -> si_all_df
       si_all_df$mg_desc -> si_all_df$sector_desc 
       within( si_all_df, { rm("mg_code","mg_desc") }) -> si_all_df
       # SPECIAL 
       within(si_all_df, { rm("rn_si_mgdsc") } ) -> si_all_df
-      within(  si_mgdsc$x , { rm("sector_code") }) -> si_mgdsc$x
+      within(  si_mgdsc , { rm("sector_code") }) -> si_mgdsc
 
       financize(si_all_df) -> si_all_df
-       optimize(si_all_df) -> si_all_df
+      # optimize(si_all_df) -> si_all_df
       
       rm("si_mgdsc")
       
@@ -1399,11 +1666,12 @@ update_from_future_new_company_ids <- function(df = NULL, ref = NULL) {
   
 
   # just work with the core
-  if("DFI" %in% class(df)) df <- df$x
+  # if("DFI" %in% class(df)) df <- df$x
   
                     # must be a data.frame ALONE
+                                                    # temporary table becaue I did not give a name
   trg_db_temp    <- as.db.data.frame(as.data.frame(df), conn.id = cid, key = "company_id", verbose = FALSE)
-  trg_db_temp_nm <- trg_db_temp@.content
+  trg_db_temp_nm <- trg_db_temp@.content # temporary table
   db.q(str_c("drop table if exists trg"), conn.id = cid)
   db.q(str_c("create table if not exists trg as select * from ", trg_db_temp_nm, collapse = ""), conn.id = cid)
   db.q(str_c("drop index if exists trg_company_id_idx"), conn.id = cid)
@@ -1433,8 +1701,9 @@ update_from_future_new_company_ids <- function(df = NULL, ref = NULL) {
       ## setNames(.,tolower(colnames(.))) %>%
       rm_df_dups(.,c("company_id","ticker"))  -> trg_db
     
+                                             # no name ... becomes a temporary
     src_db_temp    <- as.db.data.frame(trg_db, conn.id = cid, key = "company_id", verbose = FALSE)
-    src_db_temp_nm <- src_db_temp@.content
+    src_db_temp_nm <- src_db_temp@.content # temporary table
     db.q(str_c("drop table if exists src"), conn.id = cid)
     db.q(str_c("create table if not exists src as select * from ", src_db_temp_nm, collapse = ""), conn.id = cid)
     db.q(str_c("drop index if exists src_company_id_idx"), conn.id = cid)
@@ -1444,10 +1713,12 @@ update_from_future_new_company_ids <- function(df = NULL, ref = NULL) {
     db.q(str_c("drop index if exists src_company_idx"), conn.id = cid)
     db.q(str_c("create index if not exists src_company_idx on src(company)"), conn.id = cid)
     
+    # not worth my time to write a trigger affecting dateindex_company_id
     # UPDATE 1
     db.q(str_c("
                update trg
-                 set company_id =    src.company_id
+                 set company_id =                     src.company_id,
+           dateindex_company_id = dateindex || '_' || src.company_id  
                from src
                  where trg.company_id != src.company_id and
                        trg.ticker      = src.ticker
@@ -1455,10 +1726,12 @@ update_from_future_new_company_ids <- function(df = NULL, ref = NULL) {
     
     ## MAY? WANT TO SHUT OFF DURING DEVELOPMENT ( THIS TAKES 5 SECONDS TO RUN)
     
+    # not worth my time to write a trigger affecting dateindex_company_id
     # UPDATE 2 ( UPDATE 1 IS REQUIRED )
     db.q(str_c("
               update trg
-              set company_id = src.company_id
+              set company_id          =                     src.company_id,
+        dateindex_company_id          = dateindex || '_' || src.company_id
                       from src
                     where trg.company_id != src.company_id and
                           trg.ticker     != src.ticker and
@@ -1476,8 +1749,9 @@ update_from_future_new_company_ids <- function(df = NULL, ref = NULL) {
               ) -- 99 rows ( 5 second update in PgAdminIII)
                "), nrows =  -1, conn.id = cid)
     
-    ci_tk <- db.q(str_c("select company_id, ticker from trg"), nrows =  -1, conn.id = cid)
-    df[,"company_id"] <- ci_tk[,"company_id"]
+    ci_tk <- db.q(str_c("select dateindex_company_id, company_id, ticker from trg"), nrows =  -1, conn.id = cid)
+    df[,"company_id"]           <- ci_tk[,"company_id"]
+    df[,"dateindex_company_id"] <- ci_tk[,"dateindex_company_id"]
     
     print(str_c("Done looking in direction at ... ", zoo::as.Date(lwd)," ",lwd," Maybe in "))
   }
@@ -1485,39 +1759,28 @@ update_from_future_new_company_ids <- function(df = NULL, ref = NULL) {
   db.q(str_c("drop table if exists trg"), conn.id = cid)
   db.q(str_c("drop table if exists src"), conn.id = cid)
   
-  optimize(df) -> df
+  # optimize(df) -> df
 
   return(df)
   
 }
-# and   ci.dateindex   in (
-#   14911,
-#   14943,
-#   14974,
-#   15005,
-#   15033,
-#   15064,
-#   15093,
-#   15125,
-#   15155
-# )
-# and ci_f.dateindex = 15184;
 
-## NOT THIS TEST verify_company_basics(dateindex = c(15764)) -> si_all_g_df
-# verify_company_basics(dateindex = c(15155)) -> si_all_g_df
+
 # rm(list=setdiff(ls(all.names=TRUE),c("si_all_g_df","con","cid")))
+# 
+# verify_company_basics(dateindex = c(15155)) -> si_all_g_df
+# 
 # update_from_future_new_company_ids(si_all_g_df,15155) -> si_all_g_df
+# 
 #   PROPER WAY TO RUN ... BACKWARDS (THIS MONTH AND GO BACK THREE DAYS)
 #   SO INITIAL LOADING IS FROM *NOW* TO *EARLIEST*
-# LEFT_oFF
-#   FAR FUTURE: LOOP THROUGH and UPDATE COMPANY IDS
-# NEXT_TIME
-#   CAROLINE_LIKE LOAD (update) si_finecon2 # START? si_isq
-#   update_si_fe(
-#       dateindex = c(15155,15184)
-#     , tbls_regex = c("^si_ci$","^si_isq$")
-#     , cols_regx = c("AAA_q.*|","|")
-#   ) # or "|" separators
+# 
+#
+# A WORK IN PROGRESS
+# upsert(si_all_g_df, keys = c("company_id"))
+  # NEXT_TIME
+  #   CAROLINE_LIKE LOAD (update) si_finecon2 # START? si_isq
+
 #
 
 finecon01 <- function () {
@@ -1539,36 +1802,18 @@ finecon01 <- function () {
   
   finecon01_inner <- function () {
     
+  # LATER GUTS
+    
   }
   finecon01_inner()
   
   Sys.setenv(TZ=oldtz)
   options(ops)
 }
-# finecon01()
+#    
 
 
-##  rm(list=ls(all.names=TRUE))
-## 
-# rm(list=setdiff(ls(all.names=TRUE),c("con","cid")))
-# debugSource(paste0(getwd(),'/finecon01.R'))
-# PLACE BREAKPOINT
-# verify_company_basics(dateindex = c(15764))
-# .... finecon01()
-
-# after downloading the 'end of the last friday of the month'
-# http://www.aaii.com/stock-investor-pro/archives
-# and installing
-
-# per END_OF_MONTH
-#
-# ** CAN be a Postgresql function call **
-# will CREATE the target directory
-# copyAAIISIProDBFs(
-#    from = "C:/Program Files (x86)/Stock Investor/Professional"
-#    , to   = paste0("W:/AAIISIProDBFs/",getAAIISIProDate()) # 
-#  )                            
-  
+           
  
 
 
