@@ -2,553 +2,6 @@
 
 # finecon01.R   
 
-# A SIDE-WORK IN PROGRESS
-sqldf2 <-
-  function (x, stringsAsFactors = FALSE, row.names = FALSE, envir = parent.frame(),
-            method = getOption("sqldf.method"), file.format = list(),
-            dbname, drv = getOption("sqldf.driver"), user, password = "",
-            host = "localhost", port, dll = getOption("sqldf.dll"), connection = getOption("sqldf.connection"),
-            verbose = isTRUE(getOption("sqldf.verbose")))
-  {
-    as.POSIXct.numeric <- function(x, ...) structure(x, class = c("POSIXct",
-                                                                  "POSIXt"))
-    as.POSIXct.character <- function(x) structure(as.numeric(x),
-                                                  class = c("POSIXct", "POSIXt"))
-    as.Date.character <- function(x) structure(as.numeric(x),
-                                               class = "Date")
-    as.Date2 <- function(x) UseMethod("as.Date2")
-    as.Date2.character <- function(x) as.Date.character(x)
-    as.Date.numeric <- function(x, origin = "1970-01-01", ...) base::as.Date.numeric(x,
-                                                                                     origin = origin, ...)
-    as.dates.character <- function(x) structure(as.numeric(x),
-                                                class = c("dates", "times"))
-    as.times.character <- function(x) structure(as.numeric(x),
-                                                class = "times")
-    backquote.maybe <- function(nam) {
-      if (drv == "h2") {
-        nam
-      }
-      else if (drv == "mysql") {
-        nam
-      }
-      else if (drv == "pgsql") {
-        nam
-      }
-      else if (drv == "postgresql") {
-        nam
-      }
-      else {
-        if (regexpr(".", nam, fixed = TRUE)) {
-          paste("`", nam, "`", sep = "")
-        }
-        else nam
-      }
-    }
-    name__class <- function(data, ...) {
-      if (is.null(data))
-        return(data)
-      cls <- sub(".*__([^_]+)|.*", "\\1", names(data))
-      f <- function(i) {
-        if (cls[i] == "") {
-          data[[i]]
-        }
-        else {
-          fun_name <- paste("as", cls[i], sep = ".")
-          fun <- mget(fun_name, envir = environment(),
-                      mode = "function", ifnotfound = NA, inherits = TRUE)[[1]]
-          if (identical(fun, NA))
-            data[[i]]
-          else {
-            names(data)[i] <<- sub("__[^_]+$", "", names(data)[i])
-            fun(data[[i]])
-          }
-        }
-      }
-      data[] <- lapply(1:NCOL(data), f)
-      data
-    }
-    colClass <- function(data, cls) {
-      if (is.null(data))
-        return(data)
-      if (is.list(cls))
-        cls <- unlist(cls)
-      cls <- rep(cls, length = length(data))
-      f <- function(i) {
-        if (cls[i] == "") {
-          data[[i]]
-        }
-        else {
-          fun_name <- paste("as", cls[i], sep = ".")
-          fun <- mget(fun_name, envir = environment(),
-                      mode = "function", ifnotfound = NA, inherits = TRUE)[[1]]
-          if (identical(fun, NA))
-            data[[i]]
-          else {
-            names(data)[i] <<- sub("__[^_]+$", "", names(data)[i])
-            fun(data[[i]])
-          }
-        }
-      }
-      data[] <- lapply(1:NCOL(data), f)
-      data
-    }
-    overwrite <- FALSE
-    request.open <- missing(x) && is.null(connection)
-    request.close <- missing(x) && !is.null(connection)
-    request.con <- !missing(x) && !is.null(connection)
-    request.nocon <- !missing(x) && is.null(connection)
-    dfnames <- fileobjs <- character(0)
-    if (!is.list(method))
-      method <- list(method, NULL)
-    to.df <- method[[1]]
-    to.db <- method[[2]]
-    if (request.close || request.nocon) {
-      on.exit({
-        dbPreExists <- attr(connection, "dbPreExists")
-        dbname <- attr(connection, "dbname")
-        if (!missing(dbname) && !is.null(dbname) && dbname ==
-            ":memory:") {
-          if (verbose) {
-            cat("sqldf: dbDisconnect(connection)\n")
-          }
-          dbDisconnect(connection)
-        } else if (!dbPreExists && drv == "sqlite") {
-          if (verbose) {
-            cat("sqldf: dbDisconnect(connection)\n")
-            cat("sqldf: file.remove(dbname)\n")
-          }
-          dbDisconnect(connection)
-          file.remove(dbname)
-        } else {
-          for (nam in dfnames) {
-            nam2 <- backquote.maybe(nam)
-            if (verbose) {
-              cat("sqldf: dbRemoveTable(connection, ",
-                  nam2, ")\n")
-            }
-            dbRemoveTable(connection, nam2)
-          }
-          for (fo in fileobjs) {
-            if (verbose) {
-              cat("sqldf: dbRemoveTable(connection, ",
-                  fo, ")\n")
-            }
-            dbRemoveTable(connection, fo)
-          }
-          if (verbose) {
-            cat("sqldf: dbDisconnect(connection)\n")
-          }
-          dbDisconnect(connection)
-        }
-      }, add = TRUE)
-      if (request.close) {
-        if (identical(connection, getOption("sqldf.connection")))
-          options(sqldf.connection = NULL)
-        return()
-      }
-    }
-    if (request.open || request.nocon) {
-      if (is.null(drv) || drv == "") {
-        drv <- if ("package:RPostgreSQL" %in% search()) {
-          "PostgreSQL"
-        }
-        else if ("package:RpgSQL" %in% search()) {
-          "pgSQL"
-        }
-        else if ("package:RMySQL" %in% search()) {
-          "MySQL"
-        }
-        else if ("package:RH2" %in% search()) {
-          "H2"
-        }
-        else "SQLite"
-      }
-      drv <- sub("^[Rr]", "", drv)
-      pkg <- paste("R", drv, sep = "")
-      if (verbose) {
-        if (!is.loaded(pkg))
-          cat("sqldf: library(", pkg, ")\n", sep = "")
-        library(pkg, character.only = TRUE)
-      }
-      else library(pkg, character.only = TRUE)
-      drv <- tolower(drv)
-      if (drv == "mysql") {
-        if (verbose)
-          cat("sqldf: m <- dbDriver(\"MySQL\")\n")
-        m <- dbDriver("MySQL")
-        if (missing(dbname) || is.null(dbname)) {
-          dbname <- getOption("RMySQL.dbname")
-          if (is.null(dbname))
-            dbname <- "test"
-        }
-        connection <- if (missing(dbname) || dbname == ":memory:") {
-          dbConnect(m)
-        }
-        else dbConnect(m, dbname = dbname)
-        dbPreExists <- TRUE
-      }
-      else if (drv == "postgresql") {
-        if (verbose)
-          cat("sqldf: m <- dbDriver(\"PostgreSQL\")\n")
-        m <- dbDriver("PostgreSQL")
-        if (missing(user) || is.null(user)) {
-          user <- getOption("sqldf.RPostgreSQL.user")
-          if (is.null(user))
-            user <- "postgres"
-        }
-        if (missing(password) || is.null(password)) {
-          password <- getOption("sqldf.RPostgreSQL.password")
-          if (is.null(password))
-            password <- "postgres"
-        }
-        if (missing(dbname) || is.null(dbname)) {
-          dbname <- getOption("sqldf.RPostgreSQL.dbname")
-          if (is.null(dbname))
-            dbname <- "test"
-        }
-        if (missing(host) || is.null(host)) {
-          host <- getOption("sqldf.RPostgreSQL.host")
-          if (is.null(host))
-            host <- "localhost"
-        }
-        if (missing(port) || is.null(port)) {
-          port <- getOption("sqldf.RPostgreSQL.port")
-          if (is.null(port))
-            port <- 5432
-        }
-        connection.args <- list(m, user = user, password,
-                                dbname = dbname, host = host, port = port)
-        connection.args.other <- getOption("sqldf.RPostgreSQL.other")
-        if (!is.null(connection.args.other))
-          connection.args <- modifyList(connection.args,
-                                        connection.args.other)
-        connection <- do.call("dbConnect", connection.args)
-        if (verbose) {
-          cat(sprintf("sqldf: connection <- dbConnect(m, user='%s', password=<...>, dbname = '%s', host = '%s', port = '%s', ...)\n",
-                      user, dbname, host, port))
-          if (!is.null(connection.args.other)) {
-            cat("other connection arguments:\n")
-            print(connection.args.other)
-          }
-        }
-        dbPreExists <- TRUE
-      }
-      else if (drv == "pgsql") {
-        if (verbose)
-          cat("sqldf: m <- dbDriver(\"pgSQL\")\n")
-        m <- dbDriver("pgSQL")
-        if (missing(dbname) || is.null(dbname)) {
-          dbname <- getOption("RpgSQL.dbname")
-          if (is.null(dbname))
-            dbname <- "test"
-        }
-        connection <- dbConnect(m, dbname = dbname)
-        dbPreExists <- TRUE
-      }
-      else if (drv == "h2") {
-        if (verbose)
-          cat("sqldf: m <- dbDriver(\"H2\")\n")
-        m <- dbDriver("H2")
-        if (missing(dbname) || is.null(dbname))
-          dbname <- ":memory:"
-        dbPreExists <- dbname != ":memory:" && file.exists(dbname)
-        connection <- if (missing(dbname) || is.null(dbname) ||
-                          dbname == ":memory:") {
-          dbConnect(m, "jdbc:h2:mem:", "sa", "")
-        }
-        else {
-          jdbc.string <- paste("jdbc:h2", dbname, sep = ":")
-          dbConnect(m, jdbc.string)
-        }
-      }
-      else {
-        if (verbose)
-          cat("sqldf: m <- dbDriver(\"SQLite\")\n")
-        m <- dbDriver("SQLite")
-        if (missing(dbname) || is.null(dbname))
-          dbname <- ":memory:"
-        dbPreExists <- dbname != ":memory:" && file.exists(dbname)
-        dll <- getOption("sqldf.dll")
-        if (length(dll) != 1 || identical(dll, FALSE) ||
-            nchar(dll) == 0) {
-          dll <- FALSE
-        }
-        else {
-          if (dll == basename(dll))
-            dll <- Sys.which(dll)
-        }
-        options(sqldf.dll = dll)
-        if (!identical(dll, FALSE)) {
-          if (verbose) {
-            cat("sqldf: connection <- dbConnect(m, dbname = \"",
-                dbname, "\", loadable.extensions = TRUE\n",
-                sep = "")
-            cat("sqldf: select load_extension('", dll,
-                "')\n", sep = "")
-          }
-          connection <- dbConnect(m, dbname = dbname, loadable.extensions = TRUE)
-          s <- sprintf("select load_extension('%s')", dll)
-          dbGetQuery(connection, s)
-        }
-        else {
-          if (verbose) {
-            cat("sqldf: connection <- dbConnect(m, dbname = \"",
-                dbname, "\")\n", sep = "")
-          }
-          connection <- dbConnect(m, dbname = dbname)
-        }
-        if (verbose)
-          cat("sqldf: initExtension(connection)\n")
-        initExtension(connection)
-      }
-      attr(connection, "dbPreExists") <- dbPreExists
-      if (missing(dbname) && drv == "sqlite")
-        dbname <- ":memory:"
-      attr(connection, "dbname") <- dbname
-      if (request.open) {
-        options(sqldf.connection = connection)
-        return(connection)
-      }
-    }
-    if (request.con) {
-      drv <- if (inherits(connection, "PostgreSQLConnection"))
-        "PostgreSQL"
-      else if (inherits(connection, "pgSQLConnection"))
-        "pgSQL"
-      else if (inherits(connection, "MySQLConnection"))
-        "MySQL"
-      else if (inherits(connection, "H2Connection"))
-        "H2"
-      else "SQLite"
-      drv <- tolower(drv)
-      # ANDRE FIX: IF A CONNECTION WAS EXTERNALLY PROVIDED THEN 
-      # ASSUME THAT THE DATABASE DOES NOT NEED TO BE CREATED ( IT IS ALREADY THERE )
-      # IN CONTRACT TO SQLITE ( THAT CAN HAVE ITS DATABASE CREATED )
-      dbPreExists <- attr(connection, "dbPreExists") <- TRUE
-      # END ANDRE FIX
-      ## OLD BEGIN
-      ## dbPreExists <- attr(connection, "dbPreExists")
-      ## OLD END
-    }
-    engine <- getOption("gsubfn.engine")
-    if (is.null(engine) || is.na(engine) || engine == "") {
-      engine <- if (require("tcltk"))
-        "tcl"
-      else "R"
-    }
-    else if (engine == "tcl")
-      require("tcltk")
-    words. <- words <- if (engine == "tcl") {
-      strapplyc(x, "[[:alnum:]._]+")
-    }
-    else strapply(x, "[[:alnum:]._]+", engine = "R")
-    if (length(words) > 0)
-      words <- unique(unlist(words))
-    is.special <- sapply(mget(words, envir, "any", NA, inherits = TRUE),
-                         function(x) is.data.frame(x) + 2 * inherits(x, "file"))
-    dfnames <- words[is.special == 1]
-    for (i in seq_along(dfnames)) {
-      nam <- dfnames[i]
-      if (dbPreExists && !overwrite && dbExistsTable(connection,
-                                                     nam)) {
-        dfnames <- head(dfnames, i - 1)                       # ANDRE# SHOULD ALSO BE # DIFFERENT # ?
-        stop(paste("sqldf:", "table", nam, "already in",
-                   dbname, "\n"))
-      }
-      DF <- as.data.frame(get(nam, envir))
-      if (!is.null(to.db) && is.function(to.db))
-        DF <- to.db(DF)
-      nam2 <- backquote.maybe(nam)
-      if (verbose)
-        cat("sqldf: dbWriteTable(connection, '", nam2, "', ",
-            nam, ", row.names = ", row.names, ")\n", sep = "")
-      dbWriteTable(connection, nam2, DF, row.names = row.names)
-    }
-    fileobjs <- if (is.null(file.format)) {
-      character(0)
-    }
-    else {
-      eol <- if (.Platform$OS == "windows")
-        "\r\n"
-      else "\n"
-      words[is.special == 2]
-    }
-    for (i in seq_along(fileobjs)) {
-      fo <- fileobjs[i]
-      Filename <- summary(get(fo, envir))$description
-      if (dbPreExists && !overwrite && dbExistsTable(connection,
-                                                     Filename)) {
-        fileobjs <- head(fileobjs, i - 1)
-        stop(paste("sqldf:", "table", fo, "from file", Filename,
-                   "already in", dbname, "\n"))
-      }
-      args <- c(list(conn = connection, name = fo, value = Filename),
-                modifyList(list(eol = eol), file.format))
-      args <- modifyList(args, as.list(attr(get(fo, envir),
-                                            "file.format")))
-      filter <- args$filter
-      if (!is.null(filter)) {
-        args$filter <- NULL
-        Filename.tmp <- tempfile()
-        args$value <- Filename.tmp
-        filter.subs <- filter[-1]
-        if (length(filter.subs) > 0) {
-          filter.subs <- filter.subs[sapply(names(filter.subs),
-                                            nzchar)]
-        }
-        filter.nms <- names(filter.subs)
-        filter.tempfiles <- sapply(filter.nms, tempfile)
-        cmd <- filter[[1]]
-        for (nm in filter.nms) {
-          cat(filter.subs[[nm]], file = filter.tempfiles[[nm]])
-          cmd <- gsub(nm, filter.tempfiles[[nm]], cmd,
-                      fixed = TRUE)
-        }
-        cmd <- if (nchar(Filename) > 0)
-          sprintf("%s < \"%s\" > \"%s\"", cmd, Filename,
-                  Filename.tmp)
-        else sprintf("%s > \"%s\"", cmd, Filename.tmp)
-        if (.Platform$OS == "windows") {
-          cmd <- paste("cmd /c", cmd)
-          if (FALSE) {
-            key <- "SOFTWARE\\R-core"
-            show.error.messages <- getOption("show.error.message")
-            options(show.error.messages = FALSE)
-            reg <- try(readRegistry(key, maxdepth = 3)$Rtools$InstallPath)
-            reg <- NULL
-            options(show.error.messages = show.error.messages)
-            if (!is.null(reg) && !inherits(reg, "try-error")) {
-              Rtools.path <- file.path(reg, "bin", fsep = "\\")
-              path <- Sys.getenv("PATH")
-              on.exit(Sys.setenv(PATH = path), add = TRUE)
-              path.new <- paste(path, Rtools.path, sep = ";")
-              Sys.setenv(PATH = path.new)
-            }
-          }
-        }
-        if (verbose)
-          cat("sqldf: system(\"", cmd, "\")\n", sep = "")
-        system(cmd)
-        for (fn in filter.tempfiles) file.remove(fn)
-      }
-      if (verbose)
-        cat("sqldf: dbWriteTable(", toString(args), ")\n")
-      do.call("dbWriteTable", args)
-    }
-    if (drv == "sqlite" || drv == "mysql" || drv == "postgresql") {
-      for (xi in x) {
-        if (verbose) {
-          cat("sqldf: dbGetQuery(connection, '", xi, "')\n",
-              sep = "")
-        }
-        rs <- dbGetQuery(connection, xi)
-      }
-    }
-    else {
-      for (i in seq_along(x)) {
-        if (length(words.[[i]]) > 0) {
-          dbGetQueryWords <- c("select", "show", "call",
-                               "explain", "with")
-          if (tolower(words.[[i]][1]) %in% dbGetQueryWords ||
-              drv != "h2") {
-            if (verbose) {
-              cat("sqldf: dbGetQuery(connection, '", x[i],
-                  "')\n", sep = "")
-            }
-            rs <- dbGetQuery(connection, x[i])
-          }
-          else {
-            if (verbose) {
-              cat("sqldf: dbSendUpdate:", x[i], "\n")
-            }
-            rs <- get("dbSendUpdate")(connection, x[i])
-          }
-        }
-      }
-    }
-    if (is.null(to.df))
-      to.df <- "auto"
-    if (is.function(to.df))
-      return(to.df(rs))
-    if (identical(to.df, "raw"))
-      return(rs)
-    if (identical(to.df, "name__class"))
-      return(do.call("name__class", list(rs)))
-    if (!identical(to.df, "nofactor") && !identical(to.df, "auto")) {
-      return(do.call("colClass", list(rs, to.df)))
-    }
-    row_names_name <- grep("row[_.]names", names(rs), value = TRUE)
-    if (length(row_names_name) > 1)
-      warning(paste("ambiguity regarding row names:", row_names_name))
-    row_names_name <- row_names_name[1]
-    rs <- if (!is.na(row_names_name)) {
-      if (identical(row.names, FALSE)) {
-        rs[names(rs) != row_names_name]
-      }
-      else {
-        rn <- rs[[row_names_name]]
-        rs <- rs[names(rs) != row_names_name]
-        if (all(regexpr("^[[:digit:]]*$", rn) > 0))
-          rn <- as.integer(rn)
-        rownames(rs) <- rn
-        rs
-      }
-    }
-    else rs
-    tab <- do.call("rbind", lapply(dfnames, function(dfname) {
-      df <- get(dfname, envir)
-      nms <- names(df)
-      do.call("rbind", lapply(seq_along(df), function(j) {
-        column <- df[[j]]
-        cbind(dfname, nms[j], toString(class(column)), toString(levels(column)))
-      }))
-    }))
-    tabu <- unique(tab[, -1, drop = FALSE])
-    dup <- unname(tabu[duplicated(tabu[, 1]), 1])
-    auto <- function(i) {
-      cn <- colnames(rs)[[i]]
-      if (!cn %in% dup && (ix <- match(cn, tab[, 2], nomatch = 0)) >
-          0) {
-        df <- get(tab[ix, 1], envir)
-        if (inherits(df[[cn]], "ordered")) {
-          if (identical(to.df, "auto")) {
-            u <- unique(rs[[i]])
-            levs <- levels(df[[cn]])
-            if (all(u %in% levs))
-              return(factor(rs[[i]], levels = levels(df[[cn]]),
-                            ordered = TRUE))
-            else return(rs[[i]])
-          }
-          else return(rs[[i]])
-        }
-        else if (inherits(df[[cn]], "factor")) {
-          if (identical(to.df, "auto")) {
-            u <- unique(rs[[i]])
-            levs <- levels(df[[cn]])
-            if (all(u %in% levs))
-              return(factor(rs[[i]], levels = levels(df[[cn]])))
-            else return(rs[[i]])
-          }
-          else return(rs[[i]])
-        }
-        else if (inherits(df[[cn]], "POSIXct"))
-          return(as.POSIXct(rs[[i]]))
-        else if (inherits(df[[cn]], "times"))
-          return(as.times.character(rs[[i]]))
-        else {
-          asfn <- paste("as", class(df[[cn]]), sep = ".")
-          asfn <- match.fun(asfn)
-          return(asfn(rs[[i]]))
-        }
-      }
-      if (stringsAsFactors && is.character(rs[[i]]))
-        factor(rs[[i]])
-      else rs[[i]]
-    }
-    rs2 <- lapply(seq_along(rs), auto)
-    rs[] <- rs2
-    rs
-  }
 
 
 if(exists("copyDirectoryByPattern.default")) suppressWarnings(rm("copyDirectoryByPattern.default"))
@@ -695,6 +148,19 @@ insert_df <- function(df = NULL, val = NULL, nm = NULL, pos = 0 ) {
 # ANDRE
 
 
+is_connected_postgresql_con <- function() {  
+
+  tryCatch({  res <- postgresqlExecStatement(get("con", envir = .GlobalEnv), "select 1; ")
+                 postgresqlFetch(res)
+                 TRUE 
+            }
+            , error = function(e) { FALSE } )
+
+}
+# How to use dbGetQuery in tryCatch with PostgreSQL?
+# http://stackoverflow.com/questions/34332769/how-to-use-dbgetquery-in-trycatch-with-postgresql
+
+
 
 verify_connection <- function () {
   
@@ -732,12 +198,31 @@ verify_connection <- function () {
     # set work_mem to '2047MB';
     # set constraint_exclusion = on;
     # set max_parallel_workers_per_gather to 4;
+    
+    
+    # How to use dbGetQuery in tryCatch with PostgreSQL?
+    # http://stackoverflow.com/questions/34332769/how-to-use-dbgetquery-in-trycatch-with-postgresql
+    
     #
     require(PivotalR) #                                     # OSUser
     require(stringr)
-    if(!exists("cid", envir = .GlobalEnv)) {
+    if(!exists("cid", envir = .GlobalEnv) || 
+       !exists("con", envir = .GlobalEnv) || 
+       !is_connected_postgresql_con() 
+    ) {
       cid <<- db.connect(user = "postgres", dbname = "finance_econ", default.schemas = "fe_data_store,public")
-      con <<- PivotalR:::.localVars$db[[1]]$conn
+      # increments up by 1 every time
+      con <<- PivotalR:::.localVars$db[[length(PivotalR:::.localVars$db)]]$conn
+      
+      if(!is_connected_postgresql_con()){
+        stop("PostgreSQL database server is not responding.  Is it up/blocked?  Are the client login credentials valid?")
+      }
+      
+      # set search_path to fe_data_store,public;
+      # set time zone 'utc';
+      # set work_mem to '2047MB';
+      # set constraint_exclusion = on;
+      # set max_parallel_workers_per_gather to 4;
       
       db.q(str_c("set time zone 'utc';"), nrows =  -1, conn.id = cid)
       # windows LIMIT
@@ -1219,14 +704,15 @@ lcase_a_remove_useless_columns <- function(df) {
 get_db_data_types <- function(name = NULL) {
 
   require(stringr) #  0 = 1 normally returnes a zero column data.frame
-  rs <- dbSendQuery(con,str_c("select * from ",name," where 0 = 1;"))
+  rs   <- dbSendQuery(con,str_c("select * from ",name," where 0 = 1;"))
   info <- dbColumnInfo(rs)
   dbClearResult(rs)
   return(info)
 }
 
 
-
+## assumes(uses) that input value(data.frame) ALREADY has a column called dateindex
+##   (future) SHOULD BE VECTORIZED: INPUT MANY 'values's (data.frames)
 # NOTE: keys MUST be entered in lowercase
 upsert <-  function(value = NULL, keys = NULL) { # vector of primary key values
 
@@ -1237,15 +723,20 @@ upsert <-  function(value = NULL, keys = NULL) { # vector of primary key values
   require(stringr)
   require(R.rsp)
   
-  options() -> Ops
+  options() -> ops
+  options(max.print = 10000)
+  # RStudio: Options->Code->Dislplay: Console; Limit length of lines displayed in console to: 0
   options(warn=1)
+  
+  verify_connection()
   
   # cleanup and prepare
                 # note: if I send "dateindex", then all records are removed(rm_df_dups)
                 # LATER?, I may want to liberalzed this function "to 'all dups per group'"
-  { value } %>% rm_df_dups(., keys) %>% lcase_a_remove_useless_columns(.) %>% financize(.) -> value
+  # ALL 3 already DONE in the verify_ function
+  # { value } %>% rm_df_dups(., keys) %>% lcase_a_remove_useless_columns(.) %>% financize(.) -> value
   
-  # compare inbound
+  # compare inbound value dat.frame column names and column types
   with(value,{sapply(ls(sort=FALSE),function(x){class(get(x))})}) -> value_meta
   
   # to what is in the database
@@ -1253,16 +744,20 @@ upsert <-  function(value = NULL, keys = NULL) { # vector of primary key values
   col.types(ptr_si_finecon2) -> fc_meta
       names(ptr_si_finecon2) -> names(fc_meta) 
   
-  # to fc, add new columns ( of 'new columns' from 'value' that do not exist in 'fc' )
-  
   # names(with types) in value that are 'value only'(setdiff) that need to (soon) be new columns in 'fc'
   value_meta[names(value_meta) %in% setdiff(names(value_meta),names(fc_meta))] -> fc_new_columns
 
-  # change "numeric"(R) to "numeric(7,1)"(PostgreSQL)
+  # plan to change "numeric"(R) to "numeric(7,1)"(PostgreSQL)
+  #
+  # + other custom column types
+  # 
   "text"          -> fc_new_columns[fc_new_columns == "character"] 
   "numeric(7,1)"  -> fc_new_columns[fc_new_columns == "numeric"]  
   "smallint"      -> fc_new_columns[names(fc_new_columns) %in% c("drp_avail","adr")] 
    
+  # remove at the beginning
+  # debug at <text>#30: .base_paste0 <- base::paste0\n\n 
+  # stop the rstudio debugger OUTPUT from going inside the string
   clean_text <- function(x) { 
     require(stringi)
     require(stringr)
@@ -1271,14 +766,12 @@ upsert <-  function(value = NULL, keys = NULL) { # vector of primary key values
   }
   # writeLines(clean_text(my_string))
   
-  # actually add columns
+  # actually add NEW columns to si_finecon 
   # if any columns exist to add
   # EXPECTED 'IF-THEN' to be extended
   if(length(fc_new_columns) > 0L) {
   
-    # try: stop the rstudio debugger from going inside the string
-    # try( { try( { 
-    
+    # to fc, add new columns ( of 'new columns' from 'value' that do not exist in 'fc' )
     str_trim(str_c(rstring('
     alter table if exists si_finecon2
       <% for (i in seq_along(fc_new_columns)) { -%>
@@ -1290,17 +783,16 @@ upsert <-  function(value = NULL, keys = NULL) { # vector of primary key values
     ')))  %>% clean_text(.) -> add_columns_sql # 
               # remove at the beginning
               # debug at <text>#30: .base_paste0 <- base::paste0\n\n 
-    
-    # %>% str_replace(.,"^.*(\n\n)","") -> add_columns_sql
-    # }, silent = TRUE) }, silent = TRUE)
-    
+              # stop the rstudio debugger OUTPUT from going inside the string
+
     db.q(add_columns_sql, conn.id = cid)
     
   } else {
     warning("in call to function upsert, no new columns were found to add.  Is this correct?")
   }
   
-  # add a primary key column ( needed for PivotalR ) 
+  # add a 'dataindex + keys'primary key column to input 'value data.fram ( needed for PivotalR and OTHER things ) 
+  # currenly 'really' only tested used with/about company_id
   str_c(c("dateindex",keys), collapse = "_")  -> value_primary_key
   with( value, { eval(parse(text=eval(parse(text=('str_c(c("dateindex",keys), collapse = " %s+% \'_\' %s+% ")'))))) } ) -> value[,value_primary_key]
   DataCombine::MoveFront(value,value_primary_key) -> value
@@ -1316,6 +808,8 @@ upsert <-  function(value = NULL, keys = NULL) { # vector of primary key values
   as.db.data.frame(value, "upsert_temp", conn.id = cid, verbose = FALSE, key = value_primary_key) -> ptr_upsert_temp
   
   # db.q(str_c("create unique index upsert_temp_unqpkidx on upsert_temp(" %s+% value_primary_key %s+% ");"), conn.id = cid)
+
+  # garantee that upsert_Temp values are unique
   try( { db.q(str_c("alter table if exists upsert_temp add primary key(" %s+% value_primary_key %s+% ");"), conn.id = cid) }, silent = TRUE )
   # upsert_temp_<value_primary_key>_pkey ( singleton )
   
@@ -1323,6 +817,8 @@ upsert <-  function(value = NULL, keys = NULL) { # vector of primary key values
   # db.q(str_c("create unique index upsert_temp_unqidx on upsert_temp(" %s+%  "dateindex, " %s+% str_c(keys,collapse = ", ", sep = "") %s+% ");"), conn.id = cid)
   
   # try( { db.q(str_c("alter table if exists upsert_temp add unique(" %s+%  "dateindex, " %s+% str_c(keys,collapse = ", ", sep = "") %s+% ");"), conn.id = cid) }, silent = TRUE )
+
+  # garantee unqueness
   try( { db.q("create unique index if not exists upsert_temp_keyz_key on upsert_temp(dateindex, company_id);", conn.id = cid) }, silent = TRUE )
   # upsert_temp_keyz_key ( can be many )
   
@@ -1344,26 +840,26 @@ upsert <-  function(value = NULL, keys = NULL) { # vector of primary key values
   # upsert ( these columns have a different data type )
   # of upsert_temp these colums are what I want to change  dataypes to match what is in si_finecon2
 
-  # REQUIRED refresh?!
+  # REQUIRED refresh of meta?!
   # ovewrite
   db.data.frame("upsert_temp", conn.id = cid, verbose = FALSE) -> ptr_upsert_temp  # class (db.#)
   col.types(ptr_upsert_temp) -> upsert_meta
       names(ptr_upsert_temp) -> names(upsert_meta)
 
   # to what is in the database ( RE-calculate fc_meta: REDONE from above )
-  # REQUIRED refresh?!
+  # REQUIRED refresh of meta?!
   db.data.frame("si_finecon2", conn.id = cid, verbose = FALSE) -> ptr_si_finecon2  # class (db.#)
   col.types(ptr_si_finecon2) -> fc_meta
       names(ptr_si_finecon2) -> names(fc_meta) 
 
-  # prepare for together
+  # prepare for together by creating a common join column
   data.frame(upsert_meta, in_common_names  = names(upsert_meta), stringsAsFactors = FALSE) -> upsert_df 
   data.frame(fc_meta    , in_common_names  = names(fc_meta),     stringsAsFactors = FALSE) -> fc_df 
 
-  # together
+  # outer join together
   plyr::join(upsert_df, fc_df, by = c("in_common_names"), type = "full", match = "all" )-> upsert_fc_df
 
-  # query
+  # find column date types in table upsert_temp thet need to be changed
   { upsert_fc_df } %>% {
       # non-NA only concerted about matches(in common(f/full)) AND matches(datatypes) that are not equal
      .[(!is.na(.$upsert_meta)) & (.$upsert_meta !=.$fc_meta),,drop = FALSE] } %>% { 
@@ -1377,7 +873,7 @@ upsert <-  function(value = NULL, keys = NULL) { # vector of primary key values
   print(upsert_col_type_changes)
   
 
-  # actual change
+  # actual change column date types in table upsert_temp
   0 -> i
   str_trim(str_c(rstring('
   alter table if exists upsert_temp
@@ -1390,46 +886,87 @@ upsert <-  function(value = NULL, keys = NULL) { # vector of primary key values
   ')))  %>% clean_text(.) -> upsert_col_type_changes_sql #
 
   db.q(upsert_col_type_changes_sql, conn.id = cid)
+  # update meta
+  # overwrite
+  db.data.frame("upsert_temp", conn.id = cid, verbose = FALSE) -> ptr_upsert_temp  # class (db.#)
+  col.types(ptr_upsert_temp) -> upsert_meta
+      names(ptr_upsert_temp) -> names(upsert_meta)
   
-
   # part2
   # to fc, sql_update ON CONFLICT DO UPDATE ( given columns/info from value )  
   
-# LEFT_OFF
-  
-# 
-# -- detect if it has the column *dateindex_company_id_orig* ( si_ci )
-# insert into si_finecon2(dateindex_company_id_orig, dateindex_company_id, dateindex, company_id, company_id_orig, ticker, company) 
-#                  select dateindex_company_id_orig, dateindex_company_id, dateindex, company_id, company_id_orig, ticker, company
-#                    from upsert_temp 
-#                      on conflict (dateindex_company_id_orig) 
-#                        do update set (dateindex_company_id_orig, dateindex, company_id, company_id_orig, ticker, company) = (excluded.dateindex_company_id_orig, excluded.dateindex, excluded.company_id, excluded.company_id_orig, excluded.ticker, excluded.company);
-# 
-# -- detect if (upsert_temp)  does not have the column *dateindex_company_id_orig* ( use dateindex_company_id )
-# -- REPLACE: on conflict (dateindex_company_id_orig)  WITH on conflict (dateindex_company_id) 
+  # -- detect if it has the column *dateindex_company_id_orig* ( si_ci )
+  # insert into si_finecon2(dateindex_company_id_orig, dateindex_company_id, dateindex, company_id, company_id_orig, ticker, company) 
+  #                  select dateindex_company_id_orig, dateindex_company_id, dateindex, company_id, company_id_orig, ticker, company
+  #                    from upsert_temp 
+  #                      on conflict (dateindex_company_id_orig) 
+  #                        do update set (dateindex_company_id_orig, dateindex, company_id, company_id_orig, ticker, company) = (excluded.dateindex_company_id_orig, excluded.dateindex, excluded.company_id, excluded.company_id_orig, excluded.ticker, excluded.company);
+  # 
+  # -- detect if (upsert_temp)  does not have the column *dateindex_company_id_orig* ( use dateindex_company_id )
+  # -- REPLACE: on conflict (dateindex_company_id_orig)  WITH on conflict (dateindex_company_id)  
 
+  FALSE           -> valid_upsert_temp 
+  character()     -> conflict_column
+  # prepare to upsert
+  if("dateindex_company_id_orig" %in% names(upsert_meta)) {
   
+    # detect if si_finecon2.dateindex_company_id_orig exists, then this is th required MIN columns to be updated
+    if (!any( !c("dateindex_company_id_orig", "dateindex_company_id", "dateindex", 
+                           "company_id",      "company_id_orig", "ticker", "company") %in% names(upsert_meta) )) {
+      TRUE                        -> valid_upsert_temp
+      "dateindex_company_id_orig" -> conflict_column
+    } else {
+      stop("dateindex_company_id_orig exists BUT the mininum columns do not")
+    }
+  } else { # UNTESTED AREA should-ish WORK
+    # mininumum assumption for any upsert
+    if("dateindex_company_id" %in% names(upsert_meta)) { 
+      TRUE                        -> valid_upsert_temp
+      "dateindex_company_id" -> conflict_column
+    } else {
+      stop("dateindex_company_id_orig NOT exists AND dateindex_company_id_orig NOT exits")
+    }
+  }
   
+  if(valid_upsert_temp) {
+  
+    # actually perform the upsert
+    str_trim(str_c(rstring('<%= 
+    sprintf(
+    "insert into si_finecon2(" %s+% str_c(names(upsert_meta), collapse = ", ") %s+% ")" %s+% " \n" %s+% 
+    "  select " %s+% str_c(names(upsert_meta), collapse = ", ") %s+% " \n" %s+% 
+    "    from upsert_temp" %s+% " \n" %s+% 
+    "      on conflict (" %s+% conflict_column %s+% ")" %s+% " \n" %s+%
+    "        do update set (" %s+% str_c(names(upsert_meta), collapse = ", ") %s+% ") = (" %s+%  str_c("excluded.", names(upsert_meta), collapse = ", ") %s+% ");" 
+    )
+    %>')))  %>% clean_text(.) -> fc_col_val_changes_sql 
+    
+    print("UPSERT")
+    print(writeLines(fc_col_val_changes_sql))
+  
+    rs <- dbSendQuery(con, fc_col_val_changes_sql)
+    if(dbHasCompleted(rs)) { print(str_c("Rows Affected: ", dbGetRowsAffected(rs))) ; dbClearResult(rs) }
+    
+    # db.q(fc_col_val_changes_sql, conn.id = cid) 
+    
+  }
   
   drop_upsert_temp()
   
-
-  
-
-
-  
-
   options(ops)
   return(invisible(NULL))
    
 }
 
 
+
+## (future) BUSINESS LOGIC ERROR HERE: (RETURNS too_early(after first loop)) SHOULD INSTEAD 'ADD TO A 'LIST OF DATA.FRAMES'
+# 
 verify_company_basics <- function (dateindex = NULL) {
   
   # R version 3.3.2 (2016-10-31) # sessionInfo()
   
-  ops <- options()
+  ops <- options() 
   
   options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
   options(digits = 22) 
@@ -1481,9 +1018,12 @@ verify_company_basics <- function (dateindex = NULL) {
     for(dateindex_redux_i in dateindex_redux) { 
     
       # # save for later
-      # c("setup","si_ci","si_exchg","si_mgdsc",
+      # c("setup",                                           # DONE [X]
+      #   "si_ci",                                           # DONE [X]
+      #   "si_exchg","si_mgdsc",                             # DONE[X]
+      #   "si_psd"                       # mktcap(big index) 
       #   "si_bsq","si_isq","si_cfq",
-      #   "si_date","si_psd","si_psdc","si_psdd",
+      #   "si_date","si_psdc","si_psdd",
       #   "si_mlt","si_rat",
       #   "si_ee")
       
@@ -1636,7 +1176,7 @@ verify_company_basics <- function (dateindex = NULL) {
       
       rm("si_mgdsc")
       
-      return(si_all_df)
+      return(si_all_df) ## BUSINESS LOGIC ERROR HERE: (RETURNS too_early(after first loop)) SHOULD INSTEAD 'ADD TO A 'LIST OF DATA.FRAMES'
     } 
     
   }
@@ -1664,10 +1204,10 @@ verify_company_basics <- function (dateindex = NULL) {
 
 
 
-# (WORK IN PROGRESS)
-# WORK ON 'grabbing future' company_ids
-# --------------------------------------
 
+# 'grabbing future' company_id
+# (future) SHOULD BE VECTORIZED: should be INPUT MANY 'ref's AND then RETERN 'A 'LIST OF DATA.FRAMES'
+# 
 update_from_future_new_company_ids <- function(df = NULL, ref = NULL) {
   
   require(magrittr)
@@ -1712,9 +1252,10 @@ update_from_future_new_company_ids <- function(df = NULL, ref = NULL) {
   
   # the_past(whatever) 
   # past data looking forward to grab company_ids, tickers, and company s
-  # expect 2 SQL updates
+  # expect 2 SQL updates per loop iteration
   
   # will downsize into integers ( 3 months ahead is sufficient to find a lost link )
+  # 3 loop iterations
   for(month_i in zoo::as.Date(ref) %m+% months(1:3)) {
     
     lwd_of_month(month_i) -> lwd
@@ -1740,7 +1281,7 @@ update_from_future_new_company_ids <- function(df = NULL, ref = NULL) {
     db.q(str_c("create index if not exists src_company_idx on src(company)"), conn.id = cid)
     
     # not worth my time to write a trigger affecting dateindex_company_id
-    # UPDATE 1
+    # UPDATE 1 - grab future months where the ticker name is the same but the company_id is differrent
     db.q(str_c("
                update trg
                  set company_id =                     src.company_id,
@@ -1753,7 +1294,8 @@ update_from_future_new_company_ids <- function(df = NULL, ref = NULL) {
     ## MAY? WANT TO SHUT OFF DURING DEVELOPMENT ( THIS TAKES 5 SECONDS TO RUN)
     
     # not worth my time to write a trigger affecting dateindex_company_id
-    # UPDATE 2 ( UPDATE 1 IS REQUIRED )
+    # I DO NOT LIKE THIS ONE.  ... waiting for an error to occur
+    # UPDATE 2 ( UPDATE 1 IS REQUIRED ) - grab future months where the company nme is the same ( and elimintate duplicates )
     db.q(str_c("
               update trg
               set company_id          =                     src.company_id,
@@ -1792,12 +1334,271 @@ update_from_future_new_company_ids <- function(df = NULL, ref = NULL) {
 }
 
 
+
+
+# SEE BELOW (for how to use)
+verify_company_details <- function(dateindex = NULL,  table_f = NULL, cnames_e = NULL) {
+  
+  # R version 3.3.2 (2016-10-31) # sessionInfo()
+  
+  ops <- options() 
+  
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  verify_company_details_inner <- function (dateindex = NULL, table_f = NULL, cnames_e = NULL) {
+    
+    verify_si_finecon_exists()
+    
+    require(magrittr)
+    
+    require(stringi)
+    require(stringr)
+    
+    # uses # DataCombine::MoveFront
+    # uses plyr::join
+    
+    # uses last_day_of_month
+    # uses lwd_day_of_month
+    # uses insert_df
+    
+    # run once
+    getvar_all_load_days_lwd_var <- getvar_all_load_days_lwd()
+    
+    ## LEFT_OFF
+    bm <- 1
+    
+    # dateindex in arg not found on disk
+    if(!dateindex %in% getvar_all_load_days_lwd_var) { 
+      dateindex[!dateindex %in% getvar_all_load_days_lwd_var] -> dateindex_not_found_on_disk
+      stop("arg dateindex not found on disk" %s+% str_c(dateindex_not_found_on_disk, collapse = "") )
+    }
+    
+    ## SINGLE value NOW A REDUNDANT CHECK
+    ## getsetvar_aaii_sipro_dir()
+    ## if(!dateindex %in% getvar_all_load_days_lwd_var) stop("no arg dateindex was found on disk")
+    
+    ## SINGLE value NOW A REDUNDANT CHECK
+    # just the ones on found on disk    
+    ## spec date(not all dates) IN 'all disk possible aaii si_pro last weekday of the month'
+    # dateindex_redux <- dateindex[dateindex %in% getvar_all_load_days_lwd_var]
+    
+    
+    # dateindex_redux_i
+    # at least one
+
+    # # save for later
+    # c("setup",                                           # DONE [X]
+    #   "si_ci",                                           # DONE [X]
+    #   "si_exchg","si_mgdsc",                             # DONE[X]
+    #   "si_psd"                       # mktcap(big index) 
+    #   "si_bsq","si_isq","si_cfq",
+    #   "si_date","si_psdc","si_psdd",
+    #   "si_mlt","si_rat",
+    #   "si_ee")
+    
+    # si_tbl <- c("si_ci","si_exchg","si_mgdsc")
+    
+    table_f -> si_tbl_i 
+
+    ## always load
+    paste0(getsetvar_aaii_sipro_dir(),"/",dateindex,"/") -> part_path_file_name
+    si_si_tbl_df <- suppressWarnings(suppressMessages(foreign::read.dbf(file = paste0(part_path_file_name,si_tbl_i,".dbf"), as.is = TRUE)))
+    
+    # # all lower ( PostgreSQL friendly )
+    # colnames(si_si_tbl_df) <- tolower(colnames(si_si_tbl_df))
+    # 
+    # # remove useless columns
+    # # nothing starts with 'x'
+    # # x_nullflags, x., x, x.1, x.2 ...
+    # # 
+    # si_si_tbl_df[, !str_detect(colnames(si_si_tbl_df),"^x\\.?+")   & 
+    #                !str_detect(colnames(si_si_tbl_df),"^repno$")   & 
+    #                !str_detect(colnames(si_si_tbl_df),"^lastmod$") &
+    #                !str_detect(colnames(si_si_tbl_df),"^updated$")
+    # , drop = FALSE] -> si_si_tbl_df 
+    
+    lcase_a_remove_useless_columns(si_si_tbl_df) -> si_si_tbl_df
+    
+    # keep the ones that I have interest
+    si_si_tbl_df[,str_subset(colnames(si_si_tbl_df),str_c("^company_id$","|",cnames_e)),drop = FALSE] -> si_si_tbl_df
+    
+    # unique ids
+    
+    # if(si_tbl_i == "si_ci") {
+    # 
+    #   within( si_si_tbl_df, { assign("dateindexeom", rep(last_day_of_month(dateindex),NROW(si_si_tbl_df[,1])) )  } ) -> si_si_tbl_df
+    #   DataCombine::MoveFront(si_si_tbl_df,   "dateindexeom")    -> si_si_tbl_df
+    #   
+    #   within( si_si_tbl_df, { assign("dateindexlwd", rep(     lwd_of_month(dateindex),NROW(si_si_tbl_df[,1])) )  } ) -> si_si_tbl_df
+    #   DataCombine::MoveFront(si_si_tbl_df,   "dateindexlwd") -> si_si_tbl_df
+    #   
+    # }
+    
+    within( si_si_tbl_df, { assign("dateindex", rep(as.integer(dateindex),NROW(si_si_tbl_df[,1]))      )  } ) -> si_si_tbl_df
+    DataCombine::MoveFront(si_si_tbl_df,   "dateindex")                                  -> si_si_tbl_df
+    
+    within( si_si_tbl_df, { assign("rn_" %s+% si_tbl_i, seq_along(si_si_tbl_df[,1])) } ) -> si_si_tbl_df
+    DataCombine::MoveFront(si_si_tbl_df,   "rn_" %s+% si_tbl_i)                          -> si_si_tbl_df
+    
+    # save before updating with new(future) values
+    # EVERY TABLE WILL END UP NEEDING
+    # if(si_tbl_i == "si_ci") {
+      { si_si_tbl_df } %>%
+      insert_df(.,      .$company_id                 , "company_id_orig"          , match("company_id", colnames(.)) - 1 ) -> si_si_tbl_df
+      { si_si_tbl_df } %>%
+      insert_df(.,str_c(.$dateindex,'_',.$company_id), "dateindex_company_id_orig", match("company_id", colnames(.)) - 1 ) -> si_si_tbl_df
+    # }
+      
+    # remove duplicated company_id, ticker ( will NOT be loaded into the PostgreSQL database)
+    
+    # BEGIN
+    # LATER: SHOULD be able to REPLACE with rm_df_dups(si_si_tbl_df, c("company_id","ticker")) -> si_si_tbl_df
+    
+    # "si_exchg","si_mgdsc" will NOT HAVE
+    
+    # if(any(colnames(si_si_tbl_df) %in% "company_id")) {
+    #   si_si_tbl_df[
+    #     !with(si_si_tbl_df, { company_id == "" | is.na(company_id) | is.null(company_id) | stri_duplicated(company_id) | stri_duplicated(company_id, fromLast = TRUE) 
+    #   }),,drop = FALSE] -> si_si_tbl_df
+    # }
+    
+    if(any(colnames(si_si_tbl_df) %in% "company_id")) {
+      rm_df_dups(si_si_tbl_df,"company_id") -> si_si_tbl_df
+    }
+    
+    # # OTHER si_ci TABLES WILL NOT HAVE BUT OK TO LEAVE HERE
+    # # extra for si_ci
+    # if(any(colnames(si_si_tbl_df) %in% "ticker")) {
+    #   si_si_tbl_df[
+    #     !with(si_si_tbl_df, { ticker     == "" | is.na(ticker)     | is.null(ticker)     | stri_duplicated(ticker)     | stri_duplicated(ticker    , fromLast = TRUE) 
+    #     }),,drop = FALSE] -> si_si_tbl_df
+    # }
+      
+    # LATER: SHOULD be able to REPLACE with rm_df_dups(si_si_tbl_df, c("company_id","ticker")) -> si_si_tbl_df
+    # END
+    
+    # speed
+
+    ##  keys, DFIs, and more DFI keys: ... speed
+    # if(any(colnames(si_si_tbl_df) %in% "company_id")) optimize(si_si_tbl_df)               -> si_si_tbl_df
+    # if(any(colnames(si_si_tbl_df) %in% "exchg_code")) optimize(si_si_tbl_df, "exchg_code") -> si_si_tbl_df
+    # if(any(colnames(si_si_tbl_df) %in% "mg_code"))    optimize(si_si_tbl_df, "mg_code")    -> si_si_tbl_df
+      
+    # create a primary key and move it to the front
+    
+      # SHOULD *MAKE* THIS INTO A FUNCTION
+      # currenly ONLY for tables that have company_id ( and dateindex )
+
+    # generate column: dateindex_company_id on ...
+    if("company_id" %in% colnames(si_si_tbl_df)) {
+
+      "company_id" -> keys
+      str_c(c("dateindex",keys), collapse = "_") -> si_si_tbl_df_primary_key
+      with( si_si_tbl_df, { eval(parse(text=eval(parse(text=('str_c(c("dateindex",keys), collapse = " %s+% \'_\' %s+% ")'))))) } ) -> si_si_tbl_df[,si_si_tbl_df_primary_key]
+      DataCombine::MoveFront(si_si_tbl_df,si_si_tbl_df_primary_key) -> si_si_tbl_df
+
+    }
+    
+    # si_TBL VARIABLES
+    assign(si_tbl_i,si_si_tbl_df)
+    rm(si_si_tbl_df)
+    
+    # NOT APPLICABLE
+    # # join key of exchange
+    # si_exchg$exchg_code  -> si_exchg$exchange
+    
+    # NOT APPLICABLE
+    # # outer join
+    # plyr::join_all(list(si_ci,si_exchg), by = c("dateindex","exchange"), type = "full") -> si_all_df
+    
+    get(si_tbl_i) -> si_all_df
+    
+    # optimize(si_all_df) -> si_all_df
+    
+    # # NOT APPLICABLE
+    # rm(si_ci)
+    # rm(si_exchg)
+    
+    # # NOT APPLICABLE
+    # # join key of industry
+    # si_all_df$ind_3_dig -> si_all_df$industry_code
+    # si_mgdsc$mg_code  ->   si_mgdsc$industry_code
+    
+    # # NOT APPLICABLE
+    # # left join because mg_code has codes that are sectors and not industries ( creates orphans )
+    # # left join becuase orphan industries are meaningless
+    # plyr::join_all(list(si_all_df,si_mgdsc), by = c("dateindex","industry_code"), type = "left") -> si_all_df
+    # si_all_df$mg_desc -> si_all_df$industry_desc 
+    # within( si_all_df, { rm("mg_code","mg_desc") }) -> si_all_df
+    # si_all_df$rn_si_mgdsc -> si_all_df$rn_si_mgdsc_ind; within(si_all_df, { rm("rn_si_mgdsc") } ) -> si_all_df 
+    # within(  si_mgdsc , { rm("industry_code") }) -> si_mgdsc
+    # 
+    # # optimize(si_all_df) -> si_all_df
+    # 
+    # # join key of sector
+    # si_all_df$ind_2_dig            ->  si_all_df$sector_code
+    # str_sub(si_mgdsc$mg_code,1,2)  ->  si_mgdsc$sector_code
+    # 
+    # # get rid of duplicated sectors ( each industry has its sector rementioned )
+    # si_mgdsc -> si_mgdsc  
+    # # SPECIAL
+    # si_mgdsc$rn_si_mgdsc -> si_mgdsc$rn_si_mgdsc_sect
+    # si_mgdsc[with( si_mgdsc, { !stri_duplicated(sector_code) } ),,drop = FALSE] -> si_mgdsc
+    #   
+    # # optimize(si_mgdsc,c("mg_code")) -> si_mgdsc
+    # 
+    # # left join becuase orphan sectors are meaningless
+    # plyr::join_all(list(si_all_df,si_mgdsc), by = c("dateindex","sector_code"), type = "left")  -> si_all_df
+    # si_all_df$mg_desc -> si_all_df$sector_desc 
+    # within( si_all_df, { rm("mg_code","mg_desc") }) -> si_all_df
+    # # SPECIAL 
+    # within(si_all_df, { rm("rn_si_mgdsc") } ) -> si_all_df
+    # within(  si_mgdsc , { rm("sector_code") }) -> si_mgdsc
+    # 
+    
+    # KEEP
+    financize(si_all_df) -> si_all_df
+    
+    # NOT APPLICABLE
+    # # optimize(si_all_df) -> si_all_df
+    # 
+    # rm("si_mgdsc")   
+    
+    return(si_all_df) ## (no business error) ## BUSINESS LOGIC ERROR HERE: (RETURNS too_early(after first loop)) SHOULD INSTEAD 'ADD TO A 'LIST OF DATA.FRAMES'
+
+  }
+  ret <- verify_company_details_inner(dateindex = dateindex, table_f = table_f, cnames_e = cnames_e)
+                                      
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  return(ret)
+}
+
+# DECIDED that THESE functions will process ONLY one DATEINDEX at a time
+# 
+# verify_company_details(dateindex = c(15155),  table_f = "si_psd", cnames_e = "^mktcap$") -> si_all_g_df
+# ... update_from_future_new_company_ids(df = si_all_g_df, ref = 15155) -> si_all_g_df
+# ... upsert(si_all_g_df, keys = c("company_id")) 
+# 
+
+
+
 # rm(list=setdiff(ls(all.names=TRUE),c("si_all_g_df","con","cid")))
 # 
 # verify_company_basics(dateindex = c(15155)) -> si_all_g_df
 # 
-# update_from_future_new_company_ids(si_all_g_df,15155) -> si_all_g_df
-# 
+# update_from_future_new_company_ids(df = si_all_g_df, ref = 15155) -> si_all_g_df # always run after a verify(load)
+#                                                                                   
 #   PROPER WAY TO RUN ... BACKWARDS (THIS MONTH AND GO BACK THREE DAYS)
 #   SO INITIAL LOADING IS FROM *NOW* TO *EARLIEST*
 # 
@@ -1848,8 +1649,6 @@ finecon01 <- function () {
 #   (adr, exchange COLLATE pg_catalog."default", mktcap COLLATE pg_catalog."default", company_id_unq COLLATE pg_catalog."default", company COLLATE pg_catalog."default")
 #   WHERE adr = false AND exchange <> 'O'::text AND mktcap::numeric(15,2) >= 200.00 AND ((company !~~ '%iShares%'::text) AND (company !~~ '%Vanguard%'::text) AND (company !~~ 'SPDR'::text) AND (company !~~ '%PowerShares%'::text) AND (company !~~ '%Fund%'::text))  
 #   AND (company !~~ '%Holding%'::text) AND (mg_desc_ind !~~ '%Investment Service%'::text)
- 
-  
-
-
-  
+#
+#
+#                
