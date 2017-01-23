@@ -905,30 +905,39 @@ upsert <-  function(value = NULL, keys = NULL) { # vector of primary key values
   # -- detect if (upsert_temp)  does not have the column *dateindex_company_id_orig* ( use dateindex_company_id )
   # -- REPLACE: on conflict (dateindex_company_id_orig)  WITH on conflict (dateindex_company_id)  
 
-  FALSE           -> valid_upsert_temp 
+  logical()       -> upsert_temp_perform_nothing
+  logical()       -> upsert_temp_perform_upsert
   character()     -> conflict_column
   # prepare to upsert
-  if("dateindex_company_id_orig" %in% names(upsert_meta)) {
+  if( all(c("dateindex_company_id_orig","ticker") %in% names(upsert_meta)) ) {
   
     # detect if si_finecon2.dateindex_company_id_orig exists, then this is th required MIN columns to be updated
     if (!any( !c("dateindex_company_id_orig", "dateindex_company_id", "dateindex", 
                            "company_id",      "company_id_orig", "ticker", "company") %in% names(upsert_meta) )) {
-      TRUE                        -> valid_upsert_temp
+      FALSE           -> upsert_temp_perform_nothing
+      TRUE            -> upsert_temp_perform_upsert
       "dateindex_company_id_orig" -> conflict_column
     } else {
-      stop("dateindex_company_id_orig exists BUT the mininum columns do not")
+      TRUE           -> upsert_temp_perform_nothing
+      FALSE          -> upsert_temp_perform_upsert
+      stop("dateindex_company_id_orig and ticker exist BUT the mininum columns do not")
     }
   } else { # UNTESTED AREA should-ish WORK
-    # mininumum assumption for any upsert
-    if("dateindex_company_id" %in% names(upsert_meta)) { 
-      TRUE                        -> valid_upsert_temp
-      "dateindex_company_id" -> conflict_column
+    # mininumum assumption for any work
+    if("dateindex_company_id_orig" %in% names(upsert_meta)) { 
+      FALSE                           -> upsert_temp_perform_nothing
+      FALSE                           -> upsert_temp_perform_upsert # then do update-ish
+      "dateindex_company_id_orig"     -> conflict_column # STILL
     } else {
-      stop("dateindex_company_id_orig NOT exists AND dateindex_company_id_orig NOT exits")
+      TRUE            -> upsert_temp_perform_nothing
+      FALSE           -> upsert_temp_perform_upsert
+      stop("dateindex_company_id_orig NOT exist AND ticker NOT exist")
     }
   }
+  if(!length(upsert_temp_perform_nothing)) stop("upsert_temp_perform_nothing is not determined")
+  if(!length(upsert_temp_perform_upsert))  stop("upsert_temp_perform_upsert is not determined")
   
-  if(valid_upsert_temp) {
+  if(upsert_temp_perform_upsert) {
   
     # actually perform the upsert
     str_trim(str_c(rstring('<%= 
@@ -942,10 +951,39 @@ upsert <-  function(value = NULL, keys = NULL) { # vector of primary key values
     %>')))  %>% clean_text(.) -> fc_col_val_changes_sql 
     
     print("UPSERT")
+
+  }
+  
+  # then do update-ish STILL based on company_id_orig
+  # ( and do not UPDATE 
+  #   dateindex, company_id, dateindex_company_id, company_id_orig         # at least one column to try to update
+  if(!upsert_temp_perform_nothing && !upsert_temp_perform_upsert && length(!names(upsert_meta) %in% c("dateindex", "company_id", "dateindex_company_id", "company_id_orig", "dateindex_company_id_orig"))) {
+    
+    # actually perform the update 
+    str_trim(str_c(rstring('<%= 
+    sprintf(
+    "update si_finecon2 s " %s+% " set " %s+% 
+     str_c(sprintf("\n  %1$s = t.%1$s", names(upsert_meta)[!names(upsert_meta) %in% c("dateindex", "company_id", "dateindex_company_id", "company_id_orig", "dateindex_company_id_orig")] ), collapse = ", ") %s+% " \n" %s+%
+    "    from upsert_temp t " %s+% " \n" %s+%
+    "      where " %s+% "s." %s+% conflict_column %s+% " = " %s+% "t." %s+% conflict_column %s+% ";"
+    )
+    %>')))  %>% clean_text(.) -> fc_col_val_changes_sql
+
+    print("UPDATE")
+    
+  }
+  
+  if(!upsert_temp_perform_nothing) {
+    
     print(writeLines(fc_col_val_changes_sql))
   
     rs <- dbSendQuery(con, fc_col_val_changes_sql)
-    if(dbHasCompleted(rs)) { print(str_c("Rows Affected: ", dbGetRowsAffected(rs))) ; dbClearResult(rs) }
+    if(dbHasCompleted(rs)) { print(str_c("Rows Affected: ", dbGetRowsAffected(rs)))  }
+    
+    # for right now. I will just stop
+    if(dbGetRowsAffected(rs) == 0) { stop(str_c("Since Rows Affected: ", dbGetRowsAffected(rs)," so PERHAPS something is wrong!"))  }
+    
+    if(dbHasCompleted(rs)) dbClearResult(rs)
     
     # db.q(fc_col_val_changes_sql, conn.id = cid) 
     
@@ -1587,7 +1625,7 @@ verify_company_details <- function(dateindex = NULL,  table_f = NULL, cnames_e =
 # DECIDED that THESE functions will process ONLY one DATEINDEX at a time
 # 
 # verify_company_details(dateindex = c(15155),  table_f = "si_psd", cnames_e = "^mktcap$") -> si_all_g_df
-# ... update_from_future_new_company_ids(df = si_all_g_df, ref = 15155) -> si_all_g_df
+# ... X ( does not have a ticker ) update_from_future_new_company_ids(df = si_all_g_df, ref = 15155) -> si_all_g_df  ... x
 # ... upsert(si_all_g_df, keys = c("company_id")) 
 # 
 
@@ -1650,5 +1688,5 @@ finecon01 <- function () {
 #   WHERE adr = false AND exchange <> 'O'::text AND mktcap::numeric(15,2) >= 200.00 AND ((company !~~ '%iShares%'::text) AND (company !~~ '%Vanguard%'::text) AND (company !~~ 'SPDR'::text) AND (company !~~ '%PowerShares%'::text) AND (company !~~ '%Fund%'::text))  
 #   AND (company !~~ '%Holding%'::text) AND (mg_desc_ind !~~ '%Investment Service%'::text)
 #
-#
-#                
+#  
+#                    
