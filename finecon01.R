@@ -331,7 +331,7 @@ verify_si_finecon_exists <- function () {
     # si_finecon2_dateindex_company_id_key
     # can be many
     
-    # WILL JUST KEEP ADDING MORE
+    # (if unamed ndex?) ... WILL JUST KEEP ADDING MORE ... so I name it
     try( { db.q("create unique index if not exists si_finecon2_dateindex_company_id_key       on si_finecon2(dateindex, company_id);", conn.id = cid) }, silent = TRUE )
     # can be many
     try( { db.q("create unique index if not exists si_finecon2_dateindex_company_id_orig_key  on si_finecon2(dateindex, company_id_orig);", conn.id = cid) }, silent = TRUE )
@@ -534,7 +534,8 @@ financize <- function(df
                       , int_col_rexpr = "sic|employees|^perlen_q.*$"
                       , stringsAsFactors = FALSE       # untested # most likely upsiszed to a database to be an integer?
                       , char_col_rexpr = "^pertyp_q.*$"
-                      , num_col_rexpr = "price|mktcap|^.*_q.*$"
+                      # , num_col_rexpr = "price|mktcap|^.*_q.*$"
+                      , num_col_rexpr = "price|mktcap|^.*_q.*$|^prchg_\\d\\dw$"
                       , round_to_decimal_places = 1
                       , char_col_numeric_limit = 999999.9 # PostgreSQL # exact(actually an integer) # numeric(7,1) # SHOULD fit MOST aaii sipro data
 ) {
@@ -693,7 +694,8 @@ lcase_a_remove_useless_columns <- function(df) {
   df[, !str_detect(colnames(df),"^x\\.?+")   & 
                  !str_detect(colnames(df),"^repno$")   & 
                  !str_detect(colnames(df),"^lastmod$") &
-                 !str_detect(colnames(df),"^updated$")
+                 !str_detect(colnames(df),"^updated$") &
+                 !str_detect(colnames(df),"^business$|^analyst_fn$") # UNTESTED - si_ci binary garbage
   , drop = FALSE] -> df
   
   return(df)
@@ -709,6 +711,62 @@ get_db_data_types <- function(name = NULL) {
   dbClearResult(rs)
   return(info)
 }
+
+
+# # AFTER I GET 'mktcap' LOADED
+# jamesos [ ] newer one
+# -- drop index sipro_data_store.si_finecon_jamesos_partial_idx3;
+# CREATE INDEX si_finecon_jamesos_partial_idx3
+#   ON sipro_data_store.si_finecon
+#   USING btree
+#   (adr, exchange COLLATE pg_catalog."default", mktcap COLLATE pg_catalog."default", company_id_unq COLLATE pg_catalog."default", company COLLATE pg_catalog."default")
+#   WHERE adr = false AND exchange <> 'O'::text AND mktcap::numeric(15,2) >= 200.00 AND ((company !~~ '%iShares%'::text) AND (company !~~ '%Vanguard%'::text) AND (company !~~ 'SPDR'::text) AND (company !~~ '%PowerShares%'::text) AND (company !~~ '%Fund%'::text))  
+#   AND (company !~~ '%Holding%'::text) AND (mg_desc_ind !~~ '%Investment Service%'::text)
+#
+#  
+#  
+
+verify_finecon_jamesos_partial_idx <- function() {
+
+  require(RPostgreSQL)
+  require(PivotalR)
+  
+  # uses verify_connection, verify_si_finecon_exists
+  
+  verify_connection()
+  
+  # verify that si_finecon2 exists 
+  if(!dbExistsTable(con, "si_finecon2")) {
+    verify_si_finecon_exists()
+  }
+
+  # to what is in the database
+  db.data.frame("si_finecon2", conn.id = cid, verbose = FALSE) -> ptr_si_finecon2  # class (db.#)
+  col.types(ptr_si_finecon2) -> fc_meta # NOT USED
+      names(ptr_si_finecon2) -> names(fc_meta) 
+      
+  if(all(c("dateindex","adr","exchange","mktcap","industry_desc","company") %in% names(fc_meta))) {
+  
+    # create index if not exists
+    # NOTE: the ORIGINAL did NOT include 'dateindex' ( I am adding that here ... )
+    #  Note: BEST performance table is sorted by : sort by dateindex, company_id
+    # 
+    #
+
+    db.q("create index if not exists si_finecon2_finecon_jamesos_partial_idx on 
+                  si_finecon2(dateindex,adr,exchange,mktcap,industry_desc,company) where 
+                    adr = 0 and exchange != 'O' and mktcap > 200.0 
+                    and (company !~~ '%iShares%') and (company !~~ '%Vanguard%') and (company !~~ 'SPDR') 
+                    and (company !~~ '%PowerShares%') and (company !~~ '%Fund%') 
+                    and (company !~~ '%Holding%') and (industry_desc !~~ '%Investment Service%')
+              ;", conn.id = cid)
+
+  
+  }
+      
+   
+}
+# verify_finecon_jamesos_partial_idx() 
 
 
 ## assumes(uses) that input value(data.frame) ALREADY has a column called dateindex
@@ -728,7 +786,50 @@ upsert <-  function(value = NULL, keys = NULL) { # vector of primary key values
   # RStudio: Options->Code->Dislplay: Console; Limit length of lines displayed in console to: 0
   options(warn=1)
   
+  # loading forward ( and backward dates ) that 'do not use company_id'
+  if(is.null(keys)) character() -> keys
+  
   verify_connection()
+  
+  # verify that si_finecon2 exists  
+  # if(!db.q(str_c("select count(*) from information_schema.tables where table_name = 'si_finecon2';"), conn.id = cid)) {
+  if(!dbExistsTable(con, "si_finecon2")) {
+    verify_si_finecon_exists()
+  }
+
+  # SHOULD HAVE column dateindex, ELSE I can not (later in the function) join 
+  if(any(colnames(value) %in% "dateindex")) {
+
+    unique(value$dateindex) -> value_unq_index
+
+    # FAULTY LOGIC ( HAVE TO RETURN TO THIS 'TOPIC' )  
+    #    ** DO I NEED A 'SETDIFF INSTEAD?' **
+    # what 'value df dateindex' are already in the database
+    value_unq_index[
+      value_unq_index %in% as.vector(unlist(db.q(str_c("select distinct dateindex from si_finecon2;"), conn.id = cid)))
+                   ] ->  same_dateindex_found_in_db
+
+    # FAULTY LOGIC ( HAVE TO RETURN TO THIS 'TOPIC' ) 
+    # # the value dateindex was not found in the database
+    # if(length(same_dateindex_found_in_db) == 0) {
+    #     
+    #   # if the dateindex was not found in the database then run verify_company_basics(dateindex)
+    #   warning(str_c("no dateindex records of " %s+% ' ' %s+% str_c(value_unq_index, collapse = " ") %s+% ' ' %s+% " found in si_finecon, SO RUNNING verify_company_basics first ")) 
+    #   
+    #   for(dateindex_i in setdiff(value_unq_index, same_dateindex_found_in_db)){
+    #   
+    #     warning(str_c("Begin verify_company_basics/update_from_future_new_company_ids at ",dateindex_i))
+    #     verify_company_basics(dateindex_i) -> si_all_g_df
+    #     update_from_future_new_company_ids(df = si_all_g_df, ref = dateindex_i) -> si_all_g_df # always run
+    #     upsert(si_all_g_df, keys = c("company_id"))
+    #     warning(str_c("End verify_company_basics/update_from_future_new_company_ids at ",dateindex_i))
+    # 
+    #   
+    #   }
+    # 
+    # }
+    
+  }
   
   # cleanup and prepare
                 # note: if I send "dateindex", then all records are removed(rm_df_dups)
@@ -736,7 +837,7 @@ upsert <-  function(value = NULL, keys = NULL) { # vector of primary key values
   # ALL 3 already DONE in the verify_ function
   # { value } %>% rm_df_dups(., keys) %>% lcase_a_remove_useless_columns(.) %>% financize(.) -> value
   
-  # compare inbound value dat.frame column names and column types
+  # compare inbound value dat.frame column names and column types 
   with(value,{sapply(ls(sort=FALSE),function(x){class(get(x))})}) -> value_meta
   
   # to what is in the database
@@ -766,6 +867,8 @@ upsert <-  function(value = NULL, keys = NULL) { # vector of primary key values
   }
   # writeLines(clean_text(my_string))
   
+
+  
   # actually add NEW columns to si_finecon 
   # if any columns exist to add
   # EXPECTED 'IF-THEN' to be extended
@@ -787,8 +890,13 @@ upsert <-  function(value = NULL, keys = NULL) { # vector of primary key values
 
     db.q(add_columns_sql, conn.id = cid)
     
+    # to what is in the database
+    db.data.frame("si_finecon2", conn.id = cid, verbose = FALSE) -> ptr_si_finecon2  # class (db.#)
+    col.types(ptr_si_finecon2) -> fc_meta
+        names(ptr_si_finecon2) -> names(fc_meta) 
+    
   } else {
-    warning("in call to function upsert, no new columns were found to add.  Is this correct?")
+    warning("in call to function upsert, no new columns were found to be needed to be added to si_finecon2.  Is this correct?")
   }
   
   # add a 'dataindex + keys'primary key column to input 'value data.fram ( needed for PivotalR and OTHER things ) 
@@ -818,8 +926,8 @@ upsert <-  function(value = NULL, keys = NULL) { # vector of primary key values
   
   # try( { db.q(str_c("alter table if exists upsert_temp add unique(" %s+%  "dateindex, " %s+% str_c(keys,collapse = ", ", sep = "") %s+% ");"), conn.id = cid) }, silent = TRUE )
 
-  # garantee unqueness
-  try( { db.q("create unique index if not exists upsert_temp_keyz_key on upsert_temp(dateindex, company_id);", conn.id = cid) }, silent = TRUE )
+  # garantee unqueness 
+  try( { db.q(str_c("create unique index if not exists upsert_temp_keyz_key on upsert_temp(" %s+% str_c(c("dateindex",keys), collapse = ", ") %s+% ");"), conn.id = cid) }, silent = TRUE )
   # upsert_temp_keyz_key ( can be many )
   
   bm <- 1
@@ -872,26 +980,32 @@ upsert <-  function(value = NULL, keys = NULL) { # vector of primary key values
   print("upsert_temp from ... to column type changes")
   print(upsert_col_type_changes)
   
+  # actually update type in NEW columns to update_temp
+  if(length(upsert_col_type_changes) > 0L) {
 
-  # actual change column date types in table upsert_temp
-  0 -> i
-  str_trim(str_c(rstring('
-  alter table if exists upsert_temp
-    <% for (change_i in upsert_col_type_changes) { -%>
-        <% i + 1 -> i; sprintf("alter column %1$s set data type %2$s", 
-             change_i[2], change_i[3]) -> res
-        -%><%= str_c("    ",res) %><%=if(i  < length(upsert_col_type_changes)) ", \n" -%><%=if(i == length(upsert_col_type_changes)) "  \n" -%>
-    <% } %>
-  ;                     
-  ')))  %>% clean_text(.) -> upsert_col_type_changes_sql #
-
-  db.q(upsert_col_type_changes_sql, conn.id = cid)
-  # update meta
-  # overwrite
-  db.data.frame("upsert_temp", conn.id = cid, verbose = FALSE) -> ptr_upsert_temp  # class (db.#)
-  col.types(ptr_upsert_temp) -> upsert_meta
-      names(ptr_upsert_temp) -> names(upsert_meta)
+    # actual change column date types in table upsert_temp
+    0 -> i
+    str_trim(str_c(rstring('
+    alter table if exists upsert_temp
+      <% for (change_i in upsert_col_type_changes) { -%>
+          <% i + 1 -> i; sprintf("alter column %1$s set data type %2$s", 
+               change_i[2], change_i[3]) -> res
+          -%><%= str_c("    ",res) %><%=if(i  < length(upsert_col_type_changes)) ", \n" -%><%=if(i == length(upsert_col_type_changes)) "  \n" -%>
+      <% } %>
+    ;                     
+    ')))  %>% clean_text(.) -> upsert_col_type_changes_sql #
   
+    db.q(upsert_col_type_changes_sql, conn.id = cid)
+    # update meta
+    # overwrite
+    db.data.frame("upsert_temp", conn.id = cid, verbose = FALSE) -> ptr_upsert_temp  # class (db.#)
+    col.types(ptr_upsert_temp) -> upsert_meta
+        names(ptr_upsert_temp) -> names(upsert_meta)
+  
+  } else {
+    print("in call to function upsert, no update type were found to be needed to be done in update_temp.  Is this correct?")
+  }
+      
   # part2
   # to fc, sql_update ON CONFLICT DO UPDATE ( given columns/info from value )  
   
@@ -914,24 +1028,32 @@ upsert <-  function(value = NULL, keys = NULL) { # vector of primary key values
     # detect if si_finecon2.dateindex_company_id_orig exists, then this is th required MIN columns to be updated
     if (!any( !c("dateindex_company_id_orig", "dateindex_company_id", "dateindex", 
                            "company_id",      "company_id_orig", "ticker", "company") %in% names(upsert_meta) )) {
+      # si_ci GO EXACTLY HERE
       FALSE           -> upsert_temp_perform_nothing
       TRUE            -> upsert_temp_perform_upsert
       "dateindex_company_id_orig" -> conflict_column
     } else {
-      TRUE           -> upsert_temp_perform_nothing
+      TRUE           -> upsert_temp_perform_nothing # NOTHING IS HERE
       FALSE          -> upsert_temp_perform_upsert
       stop("dateindex_company_id_orig and ticker exist BUT the mininum columns do not")
     }
-  } else { # UNTESTED AREA should-ish WORK
-    # mininumum assumption for any work
+  } else { 
     if("dateindex_company_id_orig" %in% names(upsert_meta)) { 
+      # si_NON_ci GO EXACTLY HERE
       FALSE                           -> upsert_temp_perform_nothing
       FALSE                           -> upsert_temp_perform_upsert # then do update-ish
       "dateindex_company_id_orig"     -> conflict_column # STILL
     } else {
-      TRUE            -> upsert_temp_perform_nothing
-      FALSE           -> upsert_temp_perform_upsert
-      stop("dateindex_company_id_orig NOT exist AND ticker NOT exist")
+      if("dateindex" %in% names(upsert_meta)) {
+        # ** verify_return_dates(dateindex) go HERE ***
+        FALSE           -> upsert_temp_perform_nothing
+        FALSE           -> upsert_temp_perform_upsert # then do update-ish
+        "dateindex"     -> conflict_column 
+      } else {
+        TRUE            -> upsert_temp_perform_nothing
+        FALSE           -> upsert_temp_perform_upsert
+        stop(str_c("update_temp dateindex_company_id_orig NOT exist AND ticker NOT exist " %s+% " and primary key is only "  %s+% str_c(c("dateindex",keys), collapse = ", ")))
+      }
     }
   }
   if(!length(upsert_temp_perform_nothing)) stop("upsert_temp_perform_nothing is not determined")
@@ -954,10 +1076,13 @@ upsert <-  function(value = NULL, keys = NULL) { # vector of primary key values
 
   }
   
-  # then do update-ish STILL based on company_id_orig
+  
+  # %s+% if( conflict_column == "dateindex" ) { " and dateindex = " %s+% dateindex %s+%  ";" }  else { ""  %s+% ";" }
+  
+  # then do update-ish STILL based on company_id_orig  
   # ( and do not UPDATE 
-  #   dateindex, company_id, dateindex_company_id, company_id_orig         # at least one column to try to update
-  if(!upsert_temp_perform_nothing && !upsert_temp_perform_upsert && length(!names(upsert_meta) %in% c("dateindex", "company_id", "dateindex_company_id", "company_id_orig", "dateindex_company_id_orig"))) {
+  #   dateindex, company_id, dateindex_company_id, company_id_orig         # at least ONE COLUMN to try to update ( so the SQL DML UPDATE statement is valid ) # BELOW ARE 'non-updatable'
+  if(!upsert_temp_perform_nothing && !upsert_temp_perform_upsert && sum(!names(upsert_meta) %in% c("dateindex", "company_id", "dateindex_company_id", "company_id_orig", "dateindex_company_id_orig")) ) {
     
     # actually perform the update 
     str_trim(str_c(rstring('<%= 
@@ -965,7 +1090,7 @@ upsert <-  function(value = NULL, keys = NULL) { # vector of primary key values
     "update si_finecon2 s " %s+% " set " %s+% 
      str_c(sprintf("\n  %1$s = t.%1$s", names(upsert_meta)[!names(upsert_meta) %in% c("dateindex", "company_id", "dateindex_company_id", "company_id_orig", "dateindex_company_id_orig")] ), collapse = ", ") %s+% " \n" %s+%
     "    from upsert_temp t " %s+% " \n" %s+%
-    "      where " %s+% "s." %s+% conflict_column %s+% " = " %s+% "t." %s+% conflict_column %s+% ";"
+    "      where " %s+% "s." %s+% conflict_column %s+% " = " %s+% "t." %s+% conflict_column  %s+% ";" 
     )
     %>')))  %>% clean_text(.) -> fc_col_val_changes_sql
 
@@ -986,6 +1111,9 @@ upsert <-  function(value = NULL, keys = NULL) { # vector of primary key values
     if(dbHasCompleted(rs)) dbClearResult(rs)
     
     # db.q(fc_col_val_changes_sql, conn.id = cid) 
+    
+    # if I have the columns for this index, then create the index ( if it does not already exist )
+    verify_finecon_jamesos_partial_idx()
     
   }
   
@@ -1019,8 +1147,6 @@ verify_company_basics <- function (dateindex = NULL) {
   
   verify_company_basics_inner <- function (dateindex = NULL) {
     
-    verify_si_finecon_exists()
-    
     require(magrittr)
     
     require(stringi)
@@ -1032,6 +1158,14 @@ verify_company_basics <- function (dateindex = NULL) {
     # uses last_day_of_month
     # uses lwd_day_of_month
     # uses insert_df
+    
+    verify_si_finecon_exists()
+    
+    # verify that si_finecon2 exists 
+    # if(!db.q(str_c("select count(*) from information_schema.tables where table_name = 'si_finecon2';"), conn.id = cid)) {
+    if(!dbExistsTable(con, "si_finecon2")) {
+      verify_si_finecon_exists()
+    }
     
     # run once
     getvar_all_load_days_lwd_var <- getvar_all_load_days_lwd()
@@ -1045,7 +1179,7 @@ verify_company_basics <- function (dateindex = NULL) {
       warning("one/some arg dateindex not found on disk" %s+% str_c(dateindexes_not_found_on_disk, collapse = "") )
     }
     
-    # getsetvar_aaii_sipro_dir()
+    # getsetvar_aaii_sipro_dir() 
     if(!any(dateindex %in% getvar_all_load_days_lwd_var)) stop("no arg dateindex was found on disk")
     
     # just the ones on found on disk    
@@ -1622,6 +1756,289 @@ verify_company_details <- function(dateindex = NULL,  table_f = NULL, cnames_e =
   return(ret)
 }
 
+# alter table if exists si_finecon2 drop column if exists dateindexp38lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexp38eom;
+# alter table if exists si_finecon2 drop column if exists dateindexp37lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexp37eom;
+# alter table if exists si_finecon2 drop column if exists dateindexp36lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexp36eom;
+# alter table if exists si_finecon2 drop column if exists dateindexp35lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexp35eom;
+# alter table if exists si_finecon2 drop column if exists dateindexp34lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexp34eom;
+# alter table if exists si_finecon2 drop column if exists dateindexp33lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexp33eom;
+# alter table if exists si_finecon2 drop column if exists dateindexp32lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexp32eom;
+# alter table if exists si_finecon2 drop column if exists dateindexp31lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexp31eom;
+# alter table if exists si_finecon2 drop column if exists dateindexp30lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexp30eom;
+# alter table if exists si_finecon2 drop column if exists dateindexp29lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexp29eom;
+# alter table if exists si_finecon2 drop column if exists dateindexp28lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexp28eom;
+# alter table if exists si_finecon2 drop column if exists dateindexp27lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexp27eom;
+# alter table if exists si_finecon2 drop column if exists dateindexp26lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexp26eom;
+# alter table if exists si_finecon2 drop column if exists dateindexp25lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexp25eom;
+# alter table if exists si_finecon2 drop column if exists dateindexp24lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexp24eom;
+# alter table if exists si_finecon2 drop column if exists dateindexp23lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexp23eom;
+# alter table if exists si_finecon2 drop column if exists dateindexp22lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexp22eom;
+# alter table if exists si_finecon2 drop column if exists dateindexp21lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexp21eom;
+# alter table if exists si_finecon2 drop column if exists dateindexp20lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexp20eom;
+# alter table if exists si_finecon2 drop column if exists dateindexp19lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexp19eom;
+# alter table if exists si_finecon2 drop column if exists dateindexp18lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexp18eom;
+# alter table if exists si_finecon2 drop column if exists dateindexp17lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexp17eom;
+# alter table if exists si_finecon2 drop column if exists dateindexp16lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexp16eom;
+# alter table if exists si_finecon2 drop column if exists dateindexp15lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexp15eom;
+# alter table if exists si_finecon2 drop column if exists dateindexp14lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexp14eom;
+# alter table if exists si_finecon2 drop column if exists dateindexp13lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexp13eom;
+# alter table if exists si_finecon2 drop column if exists dateindexp12lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexp12eom;
+# alter table if exists si_finecon2 drop column if exists dateindexp11lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexp11eom;
+# alter table if exists si_finecon2 drop column if exists dateindexp10lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexp10eom;
+# alter table if exists si_finecon2 drop column if exists dateindexp09lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexp09eom;
+# alter table if exists si_finecon2 drop column if exists dateindexp08lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexp08eom;
+# alter table if exists si_finecon2 drop column if exists dateindexp07lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexp07eom;
+# alter table if exists si_finecon2 drop column if exists dateindexp06lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexp06eom;
+# alter table if exists si_finecon2 drop column if exists dateindexp05lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexp05eom;
+# alter table if exists si_finecon2 drop column if exists dateindexp04lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexp04eom;
+# alter table if exists si_finecon2 drop column if exists dateindexp03lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexp03eom;
+# alter table if exists si_finecon2 drop column if exists dateindexp02lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexp02eom;
+# alter table if exists si_finecon2 drop column if exists dateindexp01lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexp01eom;
+# alter table if exists si_finecon2 drop column if exists dateindexf01lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexf01eom;
+# alter table if exists si_finecon2 drop column if exists dateindexf02lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexf02eom;
+# alter table if exists si_finecon2 drop column if exists dateindexf03lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexf03eom;
+# alter table if exists si_finecon2 drop column if exists dateindexf04lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexf04eom;
+# alter table if exists si_finecon2 drop column if exists dateindexf05lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexf05eom;
+# alter table if exists si_finecon2 drop column if exists dateindexf06lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexf06eom;
+# alter table if exists si_finecon2 drop column if exists dateindexf07lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexf07eom;
+# alter table if exists si_finecon2 drop column if exists dateindexf08lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexf08eom;
+# alter table if exists si_finecon2 drop column if exists dateindexf09lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexf09eom;
+# alter table if exists si_finecon2 drop column if exists dateindexf10lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexf10eom;
+# alter table if exists si_finecon2 drop column if exists dateindexf11lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexf11eom;
+# alter table if exists si_finecon2 drop column if exists dateindexf12lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexf12eom;
+# alter table if exists si_finecon2 drop column if exists dateindexf13lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexf13eom;
+# alter table if exists si_finecon2 drop column if exists dateindexf14lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexf14eom;
+# alter table if exists si_finecon2 drop column if exists dateindexf15lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexf15eom;
+# alter table if exists si_finecon2 drop column if exists dateindexf16lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexf16eom;
+# alter table if exists si_finecon2 drop column if exists dateindexf17lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexf17eom;
+# alter table if exists si_finecon2 drop column if exists dateindexf18lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexf18eom;
+# alter table if exists si_finecon2 drop column if exists dateindexf19lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexf19eom;
+# alter table if exists si_finecon2 drop column if exists dateindexf20lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexf20eom;
+# alter table if exists si_finecon2 drop column if exists dateindexf21lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexf21eom;
+# alter table if exists si_finecon2 drop column if exists dateindexf22lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexf22eom;
+# alter table if exists si_finecon2 drop column if exists dateindexf23lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexf23eom;
+# alter table if exists si_finecon2 drop column if exists dateindexf24lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexf24eom;
+# alter table if exists si_finecon2 drop column if exists dateindexf25lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexf25eom;
+# alter table if exists si_finecon2 drop column if exists dateindexf26lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexf26eom;
+# alter table if exists si_finecon2 drop column if exists dateindexf27lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexf27eom;
+# alter table if exists si_finecon2 drop column if exists dateindexf28lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexf28eom;
+# alter table if exists si_finecon2 drop column if exists dateindexf29lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexf29eom;
+# alter table if exists si_finecon2 drop column if exists dateindexf30lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexf30eom;
+# alter table if exists si_finecon2 drop column if exists dateindexf31lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexf31eom;
+# alter table if exists si_finecon2 drop column if exists dateindexf32lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexf32eom;
+# alter table if exists si_finecon2 drop column if exists dateindexf33lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexf33eom;
+# alter table if exists si_finecon2 drop column if exists dateindexf34lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexf34eom;
+# alter table if exists si_finecon2 drop column if exists dateindexf35lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexf35eom;
+# alter table if exists si_finecon2 drop column if exists dateindexf36lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexf36eom;
+# alter table if exists si_finecon2 drop column if exists dateindexf37lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexf37eom;
+# alter table if exists si_finecon2 drop column if exists dateindexf38lwd;
+# alter table if exists si_finecon2 drop column if exists dateindexf38eom;
+
+
+
+verify_return_dates <- function(dateindex = NULL, months_limit = NULL) {
+  
+  # R version 3.3.2 (2016-10-31) # sessionInfo()
+  
+  ops <- options() 
+  
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  verify_return_dates_inner <- function (dateindex = NULL, months_limit = NULL) {
+    
+    verify_si_finecon_exists()
+    
+    require(magrittr)
+    require(stringi)
+    require(stringr)
+    require(lubridate)
+    # uses zoo::as.Date.integer, zoo::as.Date.yearmon, zoo::as.yearmon
+    # uses Hmisc::Hmisc::trunc.POSIXt
+    
+    if(is.null(months_limit)) stop("must supply a number of months: e.g. months_limit = 38")
+
+    # create the data.frame
+    
+    1:months_limit -> both_months_range 
+
+    both_months_range ->   future_months_range
+                    length(future_months_range) -> len_direction_months_range
+
+    c(rev(future_months_range),future_months_range) -> past_and_future_months_range
+      length(past_and_future_months_range)          -> len_past_and_future_months_range
+
+    rep(c('p','f'), each = len_past_and_future_months_range) %>%
+      # TWO_m per month
+      str_c(., rep(past_and_future_months_range, each= 2) %>% str_pad(.,2,'left','0') ) %>%
+        # suffix 'eom','lwd'
+        str_c( .,rep(c('lwd','eom'), times = len_past_and_future_months_range)) %>%
+          # prefix 'dateindex'
+          str_c('dateindex', .) -> column_names
+    
+    c("dateindex", "dateindexlwd", "dateindexeom", column_names) -> all_col_names 
+    
+    # eval(parse(text=str_c("data.frame(dateindex=integer(), dateindexlwd=integer(), dateindexeom=integer()," %s+% str_c(column_names,"=integer()",collapse = ", ") %s+% ")"))) -> si_all_df
+    
+    # fill the data.frame
+    
+    dateindex -> now_date
+    zoo::as.Date(now_date) -> now_date
+
+    # this month
+    now_date %m+% months(1) %>%
+      # 1st day of next month # last day of this month
+      Hmisc::trunc.POSIXt(., units='months') %m+% days(-1) %>% 
+        zoo::as.Date(.)  %>%
+          # add in lwd ( Sat or Sun falls back to Fri)
+          lapply(.,function(x) { (x - match(weekdays(x), c('Saturday','Sunday'), nomatch = 0)) %>% 
+                                  # lwd, eom
+                                  c(.,x)
+                               } ) %>% 
+            # flattened (Date class is stripped)
+            unlist(.) %>% zoo::as.Date(.) -> now_lwd_eom_dates
+
+    # past lwd eom dates
+
+    # previous Nth(months_limit) month back
+    now_date %m+% months(-months_limit) %>%
+      # 1st day of previous Nth month
+      Hmisc::trunc.POSIXt(., units='months')  %>%
+        # N(months_limit) or so months
+        seq(., by = 'month', length.out = months_limit) %m+% 
+          # last day of month
+          months(1) %m+% days(-1) %>% 
+            zoo::as.Date(.) %>% 
+              # add in lwd ( Sat or Sun falls back to Fri)
+              lapply(.,function(x) { (x - match(weekdays(x), c('Saturday','Sunday'), nomatch = 0)) %>% 
+                                     # lwd, eom
+                                     c(.,x)
+                                   } ) %>% 
+                # flattened (Date class is stripped)
+                unlist(.) %>% zoo::as.Date(.) -> past_lwd_eom_dates
+
+    # future lwd eom dates
+
+    # next month
+    now_date %m+% months(1) %>%
+      # 1st day of next month
+      Hmisc::trunc.POSIXt(., units='months') %>%
+        # N(months_limit) or so months
+        seq(., by = 'month', length.out = months_limit) %m+% 
+          # last day of month
+          months(1) %m+% days(-1) %>% 
+            zoo::as.Date(.) %>% 
+              # add in lwd ( Sat or Sun falls back to Fri)
+              lapply(.,function(x) { (x - match(weekdays(x), c('Saturday','Sunday'), nomatch = 0)) %>% 
+                                     # lwd, eom
+                                     c(.,x)
+                                   } ) %>% 
+                # flattened (Date class is stripped)
+                unlist(.) %>% zoo::as.Date(.) -> future_lwd_eom_dates
+
+
+    c(now_date,now_lwd_eom_dates,past_lwd_eom_dates,future_lwd_eom_dates) %>% as.integer(.) -> all_dates
+
+    # actual fill 
+    
+    eval(parse(text=str_c("data.frame(" %s+% str_c(all_col_names,"=",all_dates, "L" , collapse = ", ") %s+% ")"))) -> si_all_df
+    
+    return(si_all_df) 
+
+  }
+  ret <- verify_return_dates_inner(dateindex = dateindex, months_limit = months_limit)
+                                      
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  return(ret)
+}
+# verify_return_dates(15155, months_limit = 38)  -> si_all_g_df 
+# upsert(si_all_g_df, keys = NULL) # ONLY dateindex is the pk
+
+
 # DECIDED that THESE functions will process ONLY one DATEINDEX at a time
 # 
 # verify_company_details(dateindex = c(15155),  table_f = "si_psd", cnames_e = "^mktcap$") -> si_all_g_df
@@ -1629,24 +2046,43 @@ verify_company_details <- function(dateindex = NULL,  table_f = NULL, cnames_e =
 # ... upsert(si_all_g_df, keys = c("company_id")) 
 # 
 
-
-
 # rm(list=setdiff(ls(all.names=TRUE),c("si_all_g_df","con","cid")))
+# debugSource('W:/R-3.3._/finecon01.R')
 # 
 # verify_company_basics(dateindex = c(15155)) -> si_all_g_df
-# 
 # update_from_future_new_company_ids(df = si_all_g_df, ref = 15155) -> si_all_g_df # always run after a verify(load)
-#                                                                                   
 #   PROPER WAY TO RUN ... BACKWARDS (THIS MONTH AND GO BACK THREE DAYS)
 #   SO INITIAL LOADING IS FROM *NOW* TO *EARLIEST*
-# 
-#
-# A WORK IN PROGRESS
 # upsert(si_all_g_df, keys = c("company_id"))
-  # NEXT_TIME
-  #   CAROLINE_LIKE LOAD (update) si_finecon2 # START? si_isq
-
+# 
+# verify_company_details(dateindex = c(15155),  table_f = "si_psd", cnames_e = "^mktcap$") -> si_all_g_df
+# upsert(si_all_g_df, keys = c("company_id")) 
 #
+# verify_company_details(dateindex = c(15155),  table_f = "si_psd", cnames_e = "^prchg_\\d\\dw$") -> si_all_g_df
+# upsert(si_all_g_df, keys = c("company_id"))
+#
+# verify_return_dates(dateindex = c(15155), months_limit = 38)  -> si_all_g_df 
+# upsert(si_all_g_df, keys = NULL) # ONLY dateindex is the pk
+# etc
+# 
+## verify_company_details(dateindex = c(15155),  table_f = "si_isq", cnames_e = "^netinc_q.$") -> si_all_g_df
+## upsert(si_all_g_df, keys = c("company_id"))
+
+# prchg_ # > zoo::as.Date(15155) [1] "2011-06-30" > zoo::as.Date(15184) [1] "2011-07-29"
+
+# verify_company_basics(dateindex = c(15184)) -> si_all_g_df
+# update_from_future_new_company_ids(df = si_all_g_df, ref = 15184) -> si_all_g_df 
+# upsert(si_all_g_df, keys = c("company_id"))
+
+# verify_company_details(dateindex = c(15184),  table_f = "si_psd", cnames_e = "^mktcap$") -> si_all_g_df
+# upsert(si_all_g_df, keys = c("company_id")) 
+#
+# verify_company_details(dateindex = c(15184),  table_f = "si_psd", cnames_e = "^prchg_\\d\\dw$") -> si_all_g_df
+# upsert(si_all_g_df, keys = c("company_id"))
+
+# verify_return_dates(dateindex = c(15184), months_limit = 38)  -> si_all_g_df 
+# upsert(si_all_g_df, keys = NULL) # ONLY dateindex is the pk
+
 
 finecon01 <- function () {
   
@@ -1675,18 +2111,6 @@ finecon01 <- function () {
   Sys.setenv(TZ=oldtz)
   options(ops)
 }
-#     
-
-
-# # AFTER I GET 'mktcap' LOADED
-# jamesos [ ] newer one
-# -- drop index sipro_data_store.si_finecon_jamesos_partial_idx3;
-# CREATE INDEX si_finecon_jamesos_partial_idx3
-#   ON sipro_data_store.si_finecon
-#   USING btree
-#   (adr, exchange COLLATE pg_catalog."default", mktcap COLLATE pg_catalog."default", company_id_unq COLLATE pg_catalog."default", company COLLATE pg_catalog."default")
-#   WHERE adr = false AND exchange <> 'O'::text AND mktcap::numeric(15,2) >= 200.00 AND ((company !~~ '%iShares%'::text) AND (company !~~ '%Vanguard%'::text) AND (company !~~ 'SPDR'::text) AND (company !~~ '%PowerShares%'::text) AND (company !~~ '%Fund%'::text))  
-#   AND (company !~~ '%Holding%'::text) AND (mg_desc_ind !~~ '%Investment Service%'::text)
-#
-#  
-#                    
+#       
+#    
+#      
