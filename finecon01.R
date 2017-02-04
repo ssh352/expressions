@@ -537,7 +537,8 @@ financize <- function(df
                       # , num_col_rexpr = "price|mktcap|^.*_q.*$"
                       , num_col_rexpr = "price|mktcap|^.*_q.*$|^prchg_\\d\\dw$"
                       , round_to_decimal_places = 1
-                      , char_col_numeric_limit = 999999.9 # PostgreSQL # exact(actually an integer) # numeric(7,1) # SHOULD fit MOST aaii sipro data
+                                               # 8,2
+                      , char_col_numeric_limit = 999999.99 # PostgreSQL # exact(actually an integer) # numeric(8,2) # SHOULD fit MOST aaii sipro data
 ) {
   
   ops <- options()
@@ -848,16 +849,16 @@ upsert <-  function(value = NULL, keys = NULL) { # vector of primary key values
   # names(with types) in value that are 'value only'(setdiff) that need to (soon) be new columns in 'fc'
   value_meta[names(value_meta) %in% setdiff(names(value_meta),names(fc_meta))] -> fc_new_columns
 
-  # plan to change "numeric"(R) to "numeric(7,1)"(PostgreSQL)
+  # plan to change "numeric"(R) to "numeric(8,2)"(PostgreSQL)
   #
   # + other custom column types
   # 
   "text"          -> fc_new_columns[fc_new_columns == "character"] 
-  "numeric(7,1)"  -> fc_new_columns[fc_new_columns == "numeric"]  
+  "numeric(8,2)"  -> fc_new_columns[fc_new_columns == "numeric"]  
   "smallint"      -> fc_new_columns[names(fc_new_columns) %in% c("drp_avail","adr")] 
    
-  # remove at the beginning
-  # debug at <text>#30: .base_paste0 <- base::paste0\n\n 
+  # remove at the beginning 
+  # debug at <text>#30: .base_paste0 <- base::paste0\n\n  
   # stop the rstudio debugger OUTPUT from going inside the string
   clean_text <- function(x) { 
     require(stringi)
@@ -934,7 +935,7 @@ upsert <-  function(value = NULL, keys = NULL) { # vector of primary key values
   
   # par1
   # ? db.data.frame HELP ( indirect way of doing it)
-  # to 'value in the database' change 'double precision' to 'numeric(7,1)'  
+  # to 'value in the database' change 'double precision' to 'numeric(8,2)'  
   
   # eventually
   # col.types(ptr_upsert_temp) -> upsert_meta
@@ -2113,4 +2114,4 @@ finecon01 <- function () {
 }
 #       
 #    
-#      
+#        
