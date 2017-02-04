@@ -2066,8 +2066,11 @@ verify_return_dates <- function(dateindex = NULL, months_limit = NULL) {
 # upsert(si_all_g_df, keys = NULL) # ONLY dateindex is the pk
 # etc
 # 
-## verify_company_details(dateindex = c(15155),  table_f = "si_isq", cnames_e = "^netinc_q.$") -> si_all_g_df
-## upsert(si_all_g_df, keys = c("company_id"))
+# verify_company_details(dateindex = c(15155),  table_f = "si_isq", cnames_e = "^netinc_q.$") -> si_all_g_df
+# upsert(si_all_g_df, keys = c("company_id"))
+# 
+# verify_company_details(dateindex = c(15155),  table_f = "si_isq", cnames_e = "^dps_q.$") -> si_all_g_df
+# upsert(si_all_g_df, keys = c("company_id"))
 
 # prchg_ # > zoo::as.Date(15155) [1] "2011-06-30" > zoo::as.Date(15184) [1] "2011-07-29"
 
@@ -2083,6 +2086,9 @@ verify_return_dates <- function(dateindex = NULL, months_limit = NULL) {
 
 # verify_return_dates(dateindex = c(15184), months_limit = 38)  -> si_all_g_df 
 # upsert(si_all_g_df, keys = NULL) # ONLY dateindex is the pk
+# 
+# verify_company_details(dateindex = c(15184),  table_f = "si_isq", cnames_e = "^dps_q.$") -> si_all_g_df
+# upsert(si_all_g_df, keys = c("company_id")) 
 
 
 finecon01 <- function () {
@@ -2114,4 +2120,4 @@ finecon01 <- function () {
 }
 #       
 #    
-#        
+#          
