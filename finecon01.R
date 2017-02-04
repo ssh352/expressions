@@ -1401,106 +1401,118 @@ update_from_future_new_company_ids <- function(df = NULL, ref = NULL) {
   #  [6] "2013-08-30" "2013-09-30" "2013-10-31" "2013-11-29" "2013-12-31"
   # [11] "2014-01-31" "2014-02-28" "2014-03-31"
   
-  verify_connection()
+  # ONLY applicable to dates BEFORE this DATE
+  # then need to try to update the 'old company_ids' in the old system to the new company_ids in the 'new system'
+  if(ref < 15184 ) {
   
-
-  # just work with the core
-  # if("DFI" %in% class(df)) df <- df$x
-  
-                    # must be a data.frame ALONE
-                                                    # temporary table becaue I did not give a name
-  trg_db_temp    <- as.db.data.frame(as.data.frame(df), conn.id = cid, key = "company_id", verbose = FALSE)
-  trg_db_temp_nm <- trg_db_temp@.content # temporary table
-  db.q(str_c("drop table if exists trg"), conn.id = cid)
-  db.q(str_c("create table if not exists trg as select * from ", trg_db_temp_nm, collapse = ""), conn.id = cid)
-  db.q(str_c("drop index if exists trg_company_id_idx"), conn.id = cid)
-  db.q(str_c("create index if not exists trg_company_id_idx on trg(company_id)"), conn.id = cid)
-  db.q(str_c("drop index if exists trg_ticker_idx"), conn.id = cid)
-  db.q(str_c("create index if not exists trg_ticker_idx on trg(ticker)"), conn.id = cid)
-  db.q(str_c("drop index if exists trg_company_idx"), conn.id = cid)
-  db.q(str_c("create index if not exists trg_company_idx on trg(company)"), conn.id = cid)
-  
-  # str( db.q(str_c("select * from trg"), conn.id = cid) )
-  
-  
-  # the_past(whatever) 
-  # past data looking forward to grab company_ids, tickers, and company s
-  # expect 2 SQL updates per loop iteration
-  
-  # will downsize into integers ( 3 months ahead is sufficient to find a lost link )
-  # 3 loop iterations
-  for(month_i in zoo::as.Date(ref) %m+% months(1:3)) {
+    verify_connection()
     
-    lwd_of_month(month_i) -> lwd
+  
+    # just work with the core
+    # if("DFI" %in% class(df)) df <- df$x
     
-    print(str_c("Looking in direction at ... ", zoo::as.Date(lwd)," ",lwd," Maybe in "))
-    if(file.exists(str_c("W:/AAIISIProDBFs/",lwd))) { print(str_c("  Exists: ","W:/AAIISIProDBFs/",lwd)) }
+                      # must be a data.frame ALONE
+                                                      # temporary table becaue I did not give a name
+    trg_db_temp    <- as.db.data.frame(as.data.frame(df), conn.id = cid, key = "company_id", verbose = FALSE)
+    trg_db_temp_nm <- trg_db_temp@.content # temporary table
+    db.q(str_c("drop table if exists trg"), conn.id = cid)
+    db.q(str_c("create table if not exists trg as select * from ", trg_db_temp_nm, collapse = ""), conn.id = cid)
+    db.q(str_c("drop index if exists trg_company_id_idx"), conn.id = cid)
+    db.q(str_c("create index if not exists trg_company_id_idx on trg(company_id)"), conn.id = cid)
+    db.q(str_c("drop index if exists trg_ticker_idx"), conn.id = cid)
+    db.q(str_c("create index if not exists trg_ticker_idx on trg(ticker)"), conn.id = cid)
+    db.q(str_c("drop index if exists trg_company_idx"), conn.id = cid)
+    db.q(str_c("create index if not exists trg_company_idx on trg(company)"), conn.id = cid)
     
-    suppressWarnings(suppressMessages(foreign::read.dbf(file = str_c("W:/AAIISIProDBFs/",lwd,"/si_ci.dbf")
-                                                        , as.is = TRUE))) %>% lcase_a_remove_useless_columns(.) %>%
-      ## setNames(.,tolower(colnames(.))) %>%
-      rm_df_dups(.,c("company_id","ticker"))  -> trg_db
+    # str( db.q(str_c("select * from trg"), conn.id = cid) )
     
-                                             # no name ... becomes a temporary
-    src_db_temp    <- as.db.data.frame(trg_db, conn.id = cid, key = "company_id", verbose = FALSE)
-    src_db_temp_nm <- src_db_temp@.content # temporary table
+    
+    # the_past(whatever) 
+    # past data looking forward to grab company_ids, tickers, and company s
+    # expect 2 SQL updates per loop iteration
+    
+    # FIRST(+future+) date that HAS the NEW(earliest of latest) company_id system
+    for(month_i in 15184) {
+    
+    # will downsize into integers ( 1 months ahead is sufficient to find a lost link )
+    # ?? loop iterations ( CURRENLY JUST ONE iteration)
+    # for(month_i in zoo::as.Date(ref) %m+% months(1:1)) {
+      
+      lwd_of_month(month_i) -> lwd
+      
+      print(str_c("Looking in direction at ... ", zoo::as.Date(lwd)," ",lwd," Maybe in "))
+      if(file.exists(str_c("W:/AAIISIProDBFs/",lwd))) { print(str_c("  Exists: ","W:/AAIISIProDBFs/",lwd)) }
+      
+      suppressWarnings(suppressMessages(foreign::read.dbf(file = str_c("W:/AAIISIProDBFs/",lwd,"/si_ci.dbf")
+                                                          , as.is = TRUE))) %>% lcase_a_remove_useless_columns(.) %>%
+        ## setNames(.,tolower(colnames(.))) %>%
+        rm_df_dups(.,c("company_id","ticker"))  -> trg_db
+      
+                                               # no name ... becomes a temporary
+      src_db_temp    <- as.db.data.frame(trg_db, conn.id = cid, key = "company_id", verbose = FALSE)
+      src_db_temp_nm <- src_db_temp@.content # temporary table
+      db.q(str_c("drop table if exists src"), conn.id = cid)
+      db.q(str_c("create table if not exists src as select * from ", src_db_temp_nm, collapse = ""), conn.id = cid)
+      db.q(str_c("drop index if exists src_company_id_idx"), conn.id = cid)
+      db.q(str_c("create index if not exists src_company_id_idx on src(company_id)"), conn.id = cid)
+      db.q(str_c("drop index if exists src_ticker_idx"), conn.id = cid)
+      db.q(str_c("create index if not exists src_ticker_idx on src(ticker)"), conn.id = cid)
+      db.q(str_c("drop index if exists src_company_idx"), conn.id = cid)
+      db.q(str_c("create index if not exists src_company_idx on src(company)"), conn.id = cid)
+      
+      # not worth my time to write a trigger affecting dateindex_company_id
+      # UPDATE 1 - grab future months where the ticker name is the same but the company_id is differrent
+      db.q(str_c("
+                 update trg
+                   set company_id =                     src.company_id,
+             dateindex_company_id = dateindex || '_' || src.company_id  
+                 from src
+                   where trg.company_id != src.company_id and
+                         trg.ticker      = src.ticker
+      "), nrows =  -1, conn.id = cid)
+      
+      ## MAY? WANT TO SHUT OFF DURING DEVELOPMENT ( THIS TAKES 5 SECONDS TO RUN)
+      
+      # not worth my time to write a trigger affecting dateindex_company_id
+      # I DO NOT LIKE THIS ONE.  ... waiting for an error to occur
+      # UPDATE 2 ( UPDATE 1 IS REQUIRED ) - grab future months where the company nme is the same ( and elimintate duplicates )
+      
+      ## MAY BE 'BUGGY'??
+      # db.q(str_c("
+      #           update trg
+      #           set company_id          =                     src.company_id,
+      #     dateindex_company_id          = dateindex || '_' || src.company_id
+      #                   from src
+      #                 where trg.company_id != src.company_id and
+      #                       trg.ticker     != src.ticker and
+      #                       trg.company     = src.company  -- 117
+      #           and trg.company not in -- IN -> NOT_IN -> ELMINTATES DUPLICATED COMPANY NAMES
+      #           (select trg.company 
+      #           from trg
+      #           where trg.company
+      #           in ( 
+      #             select src.company
+      #                from trg, src
+      #                 where trg.company_id = src.company_id and
+      #                       trg.ticker     = src.ticker 
+      #             )
+      #           ) -- 99 rows ( 5 second update in PgAdminIII)
+      #            "), nrows =  -1, conn.id = cid)
+      ## END OF 'MAY BE BUGGY?'
+      
+      ci_tk <- db.q(str_c("select dateindex_company_id, company_id, ticker from trg"), nrows =  -1, conn.id = cid)
+      df[,"company_id"]           <- ci_tk[,"company_id"]
+      df[,"dateindex_company_id"] <- ci_tk[,"dateindex_company_id"]
+      
+      print(str_c("Done looking in direction at ... ", zoo::as.Date(lwd)," ",lwd," Maybe in "))
+    }
+    
+    db.q(str_c("drop table if exists trg"), conn.id = cid)
     db.q(str_c("drop table if exists src"), conn.id = cid)
-    db.q(str_c("create table if not exists src as select * from ", src_db_temp_nm, collapse = ""), conn.id = cid)
-    db.q(str_c("drop index if exists src_company_id_idx"), conn.id = cid)
-    db.q(str_c("create index if not exists src_company_id_idx on src(company_id)"), conn.id = cid)
-    db.q(str_c("drop index if exists src_ticker_idx"), conn.id = cid)
-    db.q(str_c("create index if not exists src_ticker_idx on src(ticker)"), conn.id = cid)
-    db.q(str_c("drop index if exists src_company_idx"), conn.id = cid)
-    db.q(str_c("create index if not exists src_company_idx on src(company)"), conn.id = cid)
     
-    # not worth my time to write a trigger affecting dateindex_company_id
-    # UPDATE 1 - grab future months where the ticker name is the same but the company_id is differrent
-    db.q(str_c("
-               update trg
-                 set company_id =                     src.company_id,
-           dateindex_company_id = dateindex || '_' || src.company_id  
-               from src
-                 where trg.company_id != src.company_id and
-                       trg.ticker      = src.ticker
-    "), nrows =  -1, conn.id = cid)
+    # optimize(df) -> df
     
-    ## MAY? WANT TO SHUT OFF DURING DEVELOPMENT ( THIS TAKES 5 SECONDS TO RUN)
-    
-    # not worth my time to write a trigger affecting dateindex_company_id
-    # I DO NOT LIKE THIS ONE.  ... waiting for an error to occur
-    # UPDATE 2 ( UPDATE 1 IS REQUIRED ) - grab future months where the company nme is the same ( and elimintate duplicates )
-    db.q(str_c("
-              update trg
-              set company_id          =                     src.company_id,
-        dateindex_company_id          = dateindex || '_' || src.company_id
-                      from src
-                    where trg.company_id != src.company_id and
-                          trg.ticker     != src.ticker and
-                          trg.company     = src.company  -- 117
-              and trg.company not in -- IN -> NOT_IN -> ELMINTATES DUPLICATED COMPANY NAMES
-              (select trg.company 
-              from trg
-              where trg.company
-              in ( 
-                select src.company
-                   from trg, src
-                    where trg.company_id = src.company_id and
-                          trg.ticker     = src.ticker 
-                )
-              ) -- 99 rows ( 5 second update in PgAdminIII)
-               "), nrows =  -1, conn.id = cid)
-    
-    ci_tk <- db.q(str_c("select dateindex_company_id, company_id, ticker from trg"), nrows =  -1, conn.id = cid)
-    df[,"company_id"]           <- ci_tk[,"company_id"]
-    df[,"dateindex_company_id"] <- ci_tk[,"dateindex_company_id"]
-    
-    print(str_c("Done looking in direction at ... ", zoo::as.Date(lwd)," ",lwd," Maybe in "))
   }
-  
-  db.q(str_c("drop table if exists trg"), conn.id = cid)
-  db.q(str_c("drop table if exists src"), conn.id = cid)
-  
-  # optimize(df) -> df
 
   return(df)
   
@@ -2072,7 +2084,9 @@ verify_return_dates <- function(dateindex = NULL, months_limit = NULL) {
 # verify_company_details(dateindex = c(15155),  table_f = "si_isq", cnames_e = "^dps_q.$") -> si_all_g_df
 # upsert(si_all_g_df, keys = c("company_id"))
 
-# prchg_ # > zoo::as.Date(15155) [1] "2011-06-30" > zoo::as.Date(15184) [1] "2011-07-29"
+###
+
+# prchg_ # > zoo::as.Date(15155) [1] "2011-06-30" > zoo::as.Date(15184) [1] "2011-07-29" > zoo::as.Date(15217) [1] "2011-08-31" > zoo::as.Date(15247) [1] "2011-09-30"
 
 # verify_company_basics(dateindex = c(15184)) -> si_all_g_df
 # update_from_future_new_company_ids(df = si_all_g_df, ref = 15184) -> si_all_g_df 
@@ -2088,8 +2102,54 @@ verify_return_dates <- function(dateindex = NULL, months_limit = NULL) {
 # upsert(si_all_g_df, keys = NULL) # ONLY dateindex is the pk
 # 
 # verify_company_details(dateindex = c(15184),  table_f = "si_isq", cnames_e = "^dps_q.$") -> si_all_g_df
+# upsert(si_all_g_df, keys = c("company_id"))  
+
+###
+
+# verify_company_basics(dateindex = c(15217)) -> si_all_g_df
+# update_from_future_new_company_ids(df = si_all_g_df, ref = 15217) -> si_all_g_df 
+# upsert(si_all_g_df, keys = c("company_id"))
+
+# verify_company_details(dateindex = c(15217),  table_f = "si_psd", cnames_e = "^price$|^mktcap$") -> si_all_g_df
+# upsert(si_all_g_df, keys = c("company_id")) 
+#
+# verify_company_details(dateindex = c(15217),  table_f = "si_psd", cnames_e = "^prchg_\\d\\dw$") -> si_all_g_df
+# upsert(si_all_g_df, keys = c("company_id"))
+
+# verify_return_dates(dateindex = c(15217), months_limit = 38)  -> si_all_g_df 
+# upsert(si_all_g_df, keys = NULL) # ONLY dateindex is the pk
+# 
+# verify_company_details(dateindex = c(15217),  table_f = "si_isq", cnames_e = "^dps_q.$") -> si_all_g_df
 # upsert(si_all_g_df, keys = c("company_id")) 
 
+###
+
+# verify_company_basics(dateindex = c(15247)) -> si_all_g_df
+# update_from_future_new_company_ids(df = si_all_g_df, ref = 15247) -> si_all_g_df 
+# upsert(si_all_g_df, keys = c("company_id")) # HERE #
+
+#   alter table fe_data_store.upsert_temp add primary key ("dateindex_company_id") 
+#   Show Traceback
+#
+#   Rerun with Debug
+#   Error in db.q("alter table ", table.str, " add primary key (\"", key,  : 
+#    RS-DBI driver: (could not Retrieve the result : ERROR:  could not create unique index "upsert_temp_pkey"
+#   DETAIL:  Key (dateindex_company_id)=(15247_0767N) is duplicated.
+#   ) 
+
+# NOT DONE YET
+
+# verify_company_details(dateindex = c(15247),  table_f = "si_psd", cnames_e = "^price$|^mktcap$") -> si_all_g_df
+# upsert(si_all_g_df, keys = c("company_id")) 
+#
+# verify_company_details(dateindex = c(15247),  table_f = "si_psd", cnames_e = "^prchg_\\d\\dw$") -> si_all_g_df
+# upsert(si_all_g_df, keys = c("company_id"))
+
+# verify_return_dates(dateindex = c(15247), months_limit = 38)  -> si_all_g_df 
+# upsert(si_all_g_df, keys = NULL) # ONLY dateindex is the pk
+# 
+# verify_company_details(dateindex = c(15247),  table_f = "si_isq", cnames_e = "^dps_q.$") -> si_all_g_df
+# upsert(si_all_g_df, keys = c("company_id")) 
 
 finecon01 <- function () {
   
@@ -2120,4 +2180,4 @@ finecon01 <- function () {
 }
 #       
 #    
-#          
+#           
