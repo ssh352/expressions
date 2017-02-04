@@ -2062,21 +2062,21 @@ verify_return_dates <- function(dateindex = NULL, months_limit = NULL) {
 # rm(list=setdiff(ls(all.names=TRUE),c("si_all_g_df","con","cid")))
 # debugSource('W:/R-3.3._/finecon01.R')
 # 
+
+# #
+# 
 # verify_company_basics(dateindex = c(15155)) -> si_all_g_df
 # update_from_future_new_company_ids(df = si_all_g_df, ref = 15155) -> si_all_g_df # always run after a verify(load)
-#   PROPER WAY TO RUN ... BACKWARDS (THIS MONTH AND GO BACK THREE DAYS)
-#   SO INITIAL LOADING IS FROM *NOW* TO *EARLIEST*
 # upsert(si_all_g_df, keys = c("company_id"))
 # 
 # verify_company_details(dateindex = c(15155),  table_f = "si_psd", cnames_e = "^price$|^mktcap$") -> si_all_g_df
 # upsert(si_all_g_df, keys = c("company_id")) 
-#
+# 
 # verify_company_details(dateindex = c(15155),  table_f = "si_psd", cnames_e = "^prchg_\\d\\dw$") -> si_all_g_df
 # upsert(si_all_g_df, keys = c("company_id"))
-#
+# 
 # verify_return_dates(dateindex = c(15155), months_limit = 38)  -> si_all_g_df 
 # upsert(si_all_g_df, keys = NULL) # ONLY dateindex is the pk
-# etc
 # 
 # verify_company_details(dateindex = c(15155),  table_f = "si_isq", cnames_e = "^netinc_q.$") -> si_all_g_df
 # upsert(si_all_g_df, keys = c("company_id"))
@@ -2084,72 +2084,60 @@ verify_return_dates <- function(dateindex = NULL, months_limit = NULL) {
 # verify_company_details(dateindex = c(15155),  table_f = "si_isq", cnames_e = "^dps_q.$") -> si_all_g_df
 # upsert(si_all_g_df, keys = c("company_id"))
 
-###
-
-# prchg_ # > zoo::as.Date(15155) [1] "2011-06-30" > zoo::as.Date(15184) [1] "2011-07-29" > zoo::as.Date(15217) [1] "2011-08-31" > zoo::as.Date(15247) [1] "2011-09-30"
+# # prchg_ # > zoo::as.Date(15155) [1] "2011-06-30" > zoo::as.Date(15184) [1] "2011-07-29" > zoo::as.Date(15217) [1] "2011-08-31" > zoo::as.Date(15247) [1] "2011-09-30"
 
 # verify_company_basics(dateindex = c(15184)) -> si_all_g_df
 # update_from_future_new_company_ids(df = si_all_g_df, ref = 15184) -> si_all_g_df 
 # upsert(si_all_g_df, keys = c("company_id"))
-
+# 
 # verify_company_details(dateindex = c(15184),  table_f = "si_psd", cnames_e = "^price$|^mktcap$") -> si_all_g_df
 # upsert(si_all_g_df, keys = c("company_id")) 
-#
+# 
 # verify_company_details(dateindex = c(15184),  table_f = "si_psd", cnames_e = "^prchg_\\d\\dw$") -> si_all_g_df
 # upsert(si_all_g_df, keys = c("company_id"))
-
+# 
 # verify_return_dates(dateindex = c(15184), months_limit = 38)  -> si_all_g_df 
 # upsert(si_all_g_df, keys = NULL) # ONLY dateindex is the pk
 # 
 # verify_company_details(dateindex = c(15184),  table_f = "si_isq", cnames_e = "^dps_q.$") -> si_all_g_df
 # upsert(si_all_g_df, keys = c("company_id"))  
 
-###
+# #
 
 # verify_company_basics(dateindex = c(15217)) -> si_all_g_df
 # update_from_future_new_company_ids(df = si_all_g_df, ref = 15217) -> si_all_g_df 
 # upsert(si_all_g_df, keys = c("company_id"))
-
+# 
 # verify_company_details(dateindex = c(15217),  table_f = "si_psd", cnames_e = "^price$|^mktcap$") -> si_all_g_df
 # upsert(si_all_g_df, keys = c("company_id")) 
-#
+# 
 # verify_company_details(dateindex = c(15217),  table_f = "si_psd", cnames_e = "^prchg_\\d\\dw$") -> si_all_g_df
 # upsert(si_all_g_df, keys = c("company_id"))
-
+# 
 # verify_return_dates(dateindex = c(15217), months_limit = 38)  -> si_all_g_df 
 # upsert(si_all_g_df, keys = NULL) # ONLY dateindex is the pk
 # 
 # verify_company_details(dateindex = c(15217),  table_f = "si_isq", cnames_e = "^dps_q.$") -> si_all_g_df
 # upsert(si_all_g_df, keys = c("company_id")) 
 
-###
+# #
 
 # verify_company_basics(dateindex = c(15247)) -> si_all_g_df
 # update_from_future_new_company_ids(df = si_all_g_df, ref = 15247) -> si_all_g_df 
 # upsert(si_all_g_df, keys = c("company_id")) # HERE #
-
-#   alter table fe_data_store.upsert_temp add primary key ("dateindex_company_id") 
-#   Show Traceback
-#
-#   Rerun with Debug
-#   Error in db.q("alter table ", table.str, " add primary key (\"", key,  : 
-#    RS-DBI driver: (could not Retrieve the result : ERROR:  could not create unique index "upsert_temp_pkey"
-#   DETAIL:  Key (dateindex_company_id)=(15247_0767N) is duplicated.
-#   ) 
-
-# NOT DONE YET
-
+# 
 # verify_company_details(dateindex = c(15247),  table_f = "si_psd", cnames_e = "^price$|^mktcap$") -> si_all_g_df
 # upsert(si_all_g_df, keys = c("company_id")) 
-#
+# 
 # verify_company_details(dateindex = c(15247),  table_f = "si_psd", cnames_e = "^prchg_\\d\\dw$") -> si_all_g_df
 # upsert(si_all_g_df, keys = c("company_id"))
-
-# verify_return_dates(dateindex = c(15247), months_limit = 38)  -> si_all_g_df 
+# 
+# verify_return_dates(dateindex = c(15247), months_limit = 38)  -> si_all_g_df
 # upsert(si_all_g_df, keys = NULL) # ONLY dateindex is the pk
 # 
 # verify_company_details(dateindex = c(15247),  table_f = "si_isq", cnames_e = "^dps_q.$") -> si_all_g_df
-# upsert(si_all_g_df, keys = c("company_id")) 
+# upsert(si_all_g_df, keys = c("company_id"))
+
 
 finecon01 <- function () {
   
