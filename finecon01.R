@@ -2056,7 +2056,7 @@ verify_return_dates <- function(dateindex = NULL, months_limit = NULL) {
 #   SO INITIAL LOADING IS FROM *NOW* TO *EARLIEST*
 # upsert(si_all_g_df, keys = c("company_id"))
 # 
-# verify_company_details(dateindex = c(15155),  table_f = "si_psd", cnames_e = "^mktcap$") -> si_all_g_df
+# verify_company_details(dateindex = c(15155),  table_f = "si_psd", cnames_e = "^price$|^mktcap$") -> si_all_g_df
 # upsert(si_all_g_df, keys = c("company_id")) 
 #
 # verify_company_details(dateindex = c(15155),  table_f = "si_psd", cnames_e = "^prchg_\\d\\dw$") -> si_all_g_df
@@ -2078,7 +2078,7 @@ verify_return_dates <- function(dateindex = NULL, months_limit = NULL) {
 # update_from_future_new_company_ids(df = si_all_g_df, ref = 15184) -> si_all_g_df 
 # upsert(si_all_g_df, keys = c("company_id"))
 
-# verify_company_details(dateindex = c(15184),  table_f = "si_psd", cnames_e = "^mktcap$") -> si_all_g_df
+# verify_company_details(dateindex = c(15184),  table_f = "si_psd", cnames_e = "^price$|^mktcap$") -> si_all_g_df
 # upsert(si_all_g_df, keys = c("company_id")) 
 #
 # verify_company_details(dateindex = c(15184),  table_f = "si_psd", cnames_e = "^prchg_\\d\\dw$") -> si_all_g_df
