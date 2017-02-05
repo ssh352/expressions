@@ -2138,6 +2138,53 @@ verify_return_dates <- function(dateindex = NULL, months_limit = NULL) {
 # verify_company_details(dateindex = c(15247),  table_f = "si_isq", cnames_e = "^dps_q.$") -> si_all_g_df
 # upsert(si_all_g_df, keys = c("company_id"))
 
+# select 
+#   nullif(fe.price,0)/(nullif(fe.prchg_13w,-100)/100 + 1)          pricebck_13w,
+#   fe.prchg_13w * 4                                                prchg_13w_ann,
+#                      coalesce(fe.dps_q1,0)/(nullif(fe.price,0)/(nullif(fe.prchg_13w,-100)/100 + 1)) * 4 pct_div_ret_ov_pr_q1_ann,
+#   fe.prchg_13w * 4 + coalesce(fe.dps_q1,0)/(nullif(fe.price,0)/(nullif(fe.prchg_13w,-100)/100 + 1)) * 4 pradchg_13w_ann,
+#   fe.price
+# from 
+#   si_finecon2 fe;
+
+# select fe.dateindex, fe.company_id, fe.dateindexf03lwd, fe_13w_o.dateindex dateindex_13w
+# from 
+#   si_finecon2 fe left join lateral ( 
+#       select fe_13w.dateindex, fe_13w.company_id from si_finecon2 fe_13w 
+#   ) fe_13w_o on fe.dateindexf03lwd  = fe_13w_o.dateindex and fe.company_id = fe_13w_o.company_id;
+
+
+
+# -- si_date.perend_q1-q8(integer) -- Date ( BUT I think I just need this? )
+# -- si_date.perlen_q1-q8(integer)
+# -- si_date.pertyp_q1-q8
+# 
+# -- LEFT_OFF
+# -- need 4(1/3*dps_q1),26(dps_q1+dps_q2),52(dps_q 1..4)
+# select 
+# fe.dateindex_company_id_orig,
+# -- fe.dateindex || '_' || fe.company_id dateindex_company_id,
+# -- fe.dateindex, fe.company_id, 
+# fe_13w_o.pricebck_13w,
+# fe_13w_o.prchg_13w_ann,
+# fe_13w_o.pct_div_ret_ov_pr_q1_ann,
+# fe_13w_o.pradchg_13w_ann,
+# fe_13w_o.price price_13w
+# -- fe.dateindexf03lwd, fe_13w_o.dateindex dateindex_13w
+# from 
+#   si_finecon2 fe left join lateral ( 
+#     select 
+#       fe_13w.dateindex, fe_13w.company_id,
+#         nullif(fe_13w.price,0)/(nullif(fe_13w.prchg_13w,-100)/100 + 1)      pricebck_13w,
+#         fe_13w.prchg_13w * 4                                                prchg_13w_ann,
+#                                coalesce(fe_13w.dps_q1,0)/(nullif(fe_13w.price,0)/(nullif(fe_13w.prchg_13w,-100)/100 + 1)) * 100 * 4 pct_div_ret_ov_pr_q1_ann,
+#         fe_13w.prchg_13w * 4 + coalesce(fe_13w.dps_q1,0)/(nullif(fe_13w.price,0)/(nullif(fe_13w.prchg_13w,-100)/100 + 1)) * 100 * 4 pradchg_13w_ann,
+#         fe_13w.price
+#       from 
+#           si_finecon2 fe_13w
+#   ) fe_13w_o on fe.dateindexf03lwd  = fe_13w_o.dateindex and fe.company_id = fe_13w_o.company_id;
+
+
 
 finecon01 <- function () {
   
@@ -2167,5 +2214,5 @@ finecon01 <- function () {
   options(ops)
 }
 #       
-#    
+#     
 #           
