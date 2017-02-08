@@ -2064,7 +2064,7 @@ verify_return_dates <- function(dateindex = NULL, months_limit = NULL) {
 # 
 
 # #
-# 
+
 # verify_company_basics(dateindex = c(15155)) -> si_all_g_df
 # update_from_future_new_company_ids(df = si_all_g_df, ref = 15155) -> si_all_g_df # always run after a verify(load)
 # upsert(si_all_g_df, keys = c("company_id"))
@@ -2087,6 +2087,9 @@ verify_return_dates <- function(dateindex = NULL, months_limit = NULL) {
 # verify_company_details(dateindex = c(15155),  table_f = "si_date", cnames_e = "^perend_q.$") -> si_all_g_df
 # upsert(si_all_g_df, keys = c("company_id"))
 # 
+# verify_company_details(dateindex = c(15155),  table_f = "si_isq", cnames_e = "^sales_q.$") -> si_all_g_df
+# upsert(si_all_g_df, keys = c("company_id"))
+#
 
 # # prchg_ # > zoo::as.Date(15155) [1] "2011-06-30" > zoo::as.Date(15184) [1] "2011-07-29" > zoo::as.Date(15217) [1] "2011-08-31" > zoo::as.Date(15247) [1] "2011-09-30"
 
@@ -2107,6 +2110,9 @@ verify_return_dates <- function(dateindex = NULL, months_limit = NULL) {
 # upsert(si_all_g_df, keys = c("company_id"))  
 #
 # verify_company_details(dateindex = c(15184),  table_f = "si_date", cnames_e = "^perend_q.$") -> si_all_g_df
+# upsert(si_all_g_df, keys = c("company_id"))
+# 
+# verify_company_details(dateindex = c(15184),  table_f = "si_isq", cnames_e = "^sales_q.$") -> si_all_g_df
 # upsert(si_all_g_df, keys = c("company_id"))
 # 
 
@@ -2131,6 +2137,9 @@ verify_return_dates <- function(dateindex = NULL, months_limit = NULL) {
 # verify_company_details(dateindex = c(15217),  table_f = "si_date", cnames_e = "^perend_q.$") -> si_all_g_df
 # upsert(si_all_g_df, keys = c("company_id"))
 # 
+# verify_company_details(dateindex = c(15217),  table_f = "si_isq", cnames_e = "^sales_q.$") -> si_all_g_df
+# upsert(si_all_g_df, keys = c("company_id"))
+# 
 
 # #
 
@@ -2152,6 +2161,10 @@ verify_return_dates <- function(dateindex = NULL, months_limit = NULL) {
 #
 # verify_company_details(dateindex = c(15247),  table_f = "si_date", cnames_e = "^perend_q.$") -> si_all_g_df
 # upsert(si_all_g_df, keys = c("company_id"))
+#
+# verify_company_details(dateindex = c(15247),  table_f = "si_isq", cnames_e = "^sales_q.$") -> si_all_g_df
+# upsert(si_all_g_df, keys = c("company_id"))
+#
 
 
 # select 
