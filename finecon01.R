@@ -2167,23 +2167,6 @@ verify_return_dates <- function(dateindex = NULL, months_limit = NULL) {
 #
 
 
-# select 
-#   nullif(fe.price,0)/(nullif(fe.prchg_13w,-100)/100 + 1)          pricebck_13w,
-#   fe.prchg_13w * 4                                                prchg_13w_ann,
-#                      coalesce(fe.dps_q1,0)/(nullif(fe.price,0)/(nullif(fe.prchg_13w,-100)/100 + 1)) * 4 pct_div_ret_ov_pr_q1_ann,
-#   fe.prchg_13w * 4 + coalesce(fe.dps_q1,0)/(nullif(fe.price,0)/(nullif(fe.prchg_13w,-100)/100 + 1)) * 4 pradchg_13w_ann,
-#   fe.price
-# from 
-#   si_finecon2 fe;
-
-# select fe.dateindex, fe.company_id, fe.dateindexf03lwd, fe_13w_o.dateindex dateindex_13w
-# from 
-#   si_finecon2 fe left join lateral ( 
-#       select fe_13w.dateindex, fe_13w.company_id from si_finecon2 fe_13w 
-#   ) fe_13w_o on fe.dateindexf03lwd  = fe_13w_o.dateindex and fe.company_id = fe_13w_o.company_id;
-
-
-
 # -- si_date.perend_q1-q8(integer) -- Date ( BUT I think I just need this? )
 # -- si_date.perlen_q1-q8(integer)
 # -- si_date.pertyp_q1-q8
@@ -2191,7 +2174,10 @@ verify_return_dates <- function(dateindex = NULL, months_limit = NULL) {
 
 # BEGIN (DONE)                                                    
 # select 
+# --
+# fe.dateindex,
 # fe.dateindex_company_id_orig,
+# fe.company_id,
 # --
 # fe_04w_o.pricebck_04w,
 # fe_04w_o.prchg_04w_ann,
