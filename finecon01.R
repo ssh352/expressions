@@ -113,7 +113,7 @@ getAAIISIProDate <- function(from = "C:/Program Files (x86)/Stock Investor/Profe
 # TRY running this EXACTLY - WORKS
 # copyAAIISIProDBFs(
 #     from = "C:/Program Files (x86)/Stock Investor/Professional"
-#   , to   = paste0("W:/AAIISIProDBFs/",getAAIISIProDate()) # 
+#   , to   = paste0("W:/AAIISIProDBFs","/",getAAIISIProDate())  
 # )
 
 
@@ -432,18 +432,54 @@ to.monthly.lwd <- function(x) {
 # as.integer(zoo::as.Date("2016-12-29"))
 # [1] 17164
 
+
+
+# lwd_of_month <- function(anyday = NULL) {  
+#   #
+#   # uses # to.monthly.lwd
+#   # uses package zoo
+#   #
+#   seq(from = as.integer(zoo::as.Date(zoo::as.yearmon(zoo::as.Date(anyday)), frac = 0)),
+#       to = as.integer(zoo::as.Date(zoo::as.yearmon(zoo::as.Date(anyday)), frac = 1)),
+#       by = 1) -> all_month_days
+#   as.integer(zoo::index(to.monthly.lwd(xts::xts(rep(NA_real_,length(all_month_days)),zoo::as.Date(all_month_days)))))
+# }
+# # lwd_of_month(17164)
+# # [1] 17165
+
+
+
+# vectorized
 lwd_of_month <- function(anyday = NULL) {  
   #
   # uses # to.monthly.lwd
   # uses package zoo
   #
-  seq(from = as.integer(zoo::as.Date(zoo::as.yearmon(zoo::as.Date(anyday)), frac = 0)),
-      to = as.integer(zoo::as.Date(zoo::as.yearmon(zoo::as.Date(anyday)), frac = 1)),
-      by = 1) -> all_month_days
-  as.integer(zoo::index(to.monthly.lwd(xts::xts(rep(NA_real_,length(all_month_days)),zoo::as.Date(all_month_days)))))
+  logical() -> result
+  for(anyday_i in anyday) {
+    seq(from = as.integer(zoo::as.Date(zoo::as.yearmon(zoo::as.Date(anyday_i)), frac = 0)),
+        to = as.integer(zoo::as.Date(zoo::as.yearmon(zoo::as.Date(anyday_i)), frac = 1)),
+        by = 1) -> all_month_days
+    as.integer(zoo::index(to.monthly.lwd(xts::xts(rep(NA_real_,length(all_month_days)),zoo::as.Date(all_month_days))))) -> result_i
+    c(result, result_i) -> result
+  }
+  return(result)
+    
 }
-# lwd_of_month(17164)
-# [1] 17165
+# lwd_of_month(c(17164, 17165, 17166))
+# [1] 17165 17165 17165
+
+
+
+is_lwd_of_month <- function(anyday = NULL) { 
+  # uses lwd_of_month
+  return(anyday == lwd_of_month(anyday)) 
+
+}
+# is_lwd_of_month(c(17164, 17165, 17166))
+# [1] FALSE  TRUE FALSE
+
+
 
 last_day_of_month <- function(anyday = NULL) {  
   # uses package zoo
@@ -2380,4 +2416,4 @@ finecon01 <- function () {
 }
 #        
 #          
-#                         
+#                          
