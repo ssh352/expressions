@@ -110,6 +110,13 @@ getAAIISIProDate <- function(from = "C:/Program Files (x86)/Stock Investor/Profe
 }
 
 
+# TRY running this EXACTLY - WORKS
+# copyAAIISIProDBFs(
+#     from = "C:/Program Files (x86)/Stock Investor/Professional"
+#   , to   = paste0("W:/AAIISIProDBFs/",getAAIISIProDate()) # 
+# )
+
+
 
 # insert at a postion a new column into a data.frame
 # --------------------------------------------------
@@ -2373,4 +2380,4 @@ finecon01 <- function () {
 }
 #        
 #          
-#                    
+#                         
