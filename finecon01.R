@@ -2247,6 +2247,9 @@ verify_week_often_week_returns <- function(dateindex = NULL) {
 # verify_week_often_week_returns(15155) -> si_all_g_df
 # upsert(si_all_g_df, keys = c("company_id"))
 # 
+# verify_company_details(dateindex = c(15155),  table_f = "si_psdc", cnames_e = "^price_m00[1-9]$|^price_m01[0-7]$") -> si_all_g_df
+# upsert(si_all_g_df, keys = c("company_id"))
+# 
 
 # # prchg_ # > zoo::as.Date(15155) [1] "2011-06-30" > zoo::as.Date(15184) [1] "2011-07-29" > zoo::as.Date(15217) [1] "2011-08-31" > zoo::as.Date(15247) [1] "2011-09-30"
 
@@ -2275,6 +2278,9 @@ verify_week_often_week_returns <- function(dateindex = NULL) {
 # verify_week_often_week_returns(15184) -> si_all_g_df
 # upsert(si_all_g_df, keys = c("company_id")) 
 # 
+# verify_company_details(dateindex = c(15184),  table_f = "si_psdc", cnames_e = "^price_m00[1-9]$|^price_m01[0-7]$") -> si_all_g_df
+# upsert(si_all_g_df, keys = c("company_id"))
+#
 
 # #
 
@@ -2301,6 +2307,9 @@ verify_week_often_week_returns <- function(dateindex = NULL) {
 # upsert(si_all_g_df, keys = c("company_id"))
 # 
 # verify_week_often_week_returns(15217) -> si_all_g_df
+# upsert(si_all_g_df, keys = c("company_id"))
+#
+# verify_company_details(dateindex = c(15217),  table_f = "si_psdc", cnames_e = "^price_m00[1-9]$|^price_m01[0-7]$") -> si_all_g_df
 # upsert(si_all_g_df, keys = c("company_id"))
 #
 
@@ -2331,6 +2340,9 @@ verify_week_often_week_returns <- function(dateindex = NULL) {
 # verify_week_often_week_returns(15247) -> si_all_g_df
 # upsert(si_all_g_df, keys = c("company_id"))
 # 
+# verify_company_details(dateindex = c(15247),  table_f = "si_psdc", cnames_e = "^price_m00[1-9]$|^price_m01[0-7]$") -> si_all_g_df
+# upsert(si_all_g_df, keys = c("company_id"))
+#
 
 finecon01 <- function () {
   
