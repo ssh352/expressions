@@ -2387,7 +2387,80 @@ verify_week_often_week_returns <- function(dateindex = NULL) {
 # upsert(si_all_g_df, keys = c("company_id"))
 #
 
-finecon01 <- function () {
+
+upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_only_back = NULL) {
+
+  ops <- options()
+  options(warn=1) # If 'warn' is one, warnings are printed as they occur. ( Because I can not print colors )
+  
+  as.integer(dir(from_dir))         ->     all_dbf_dirs
+  is_lwd_of_month(all_dbf_dirs)     -> lwd_all_dbf_dirs_tf 
+  all_dbf_dirs[lwd_all_dbf_dirs_tf] ->     lwd_dbf_dirs
+  
+  # latest to earliest 
+  # NOTE: any *new* month, I have to iterate back (months_only_back = 13) 13 months to calculate any *new* future returns
+  # 
+  # index of lwd months
+  seq_along(lwd_dbf_dirs) -> lwd_months_idx
+  if(is.null(months_only_back)) { 
+    # everything
+    sort(lwd_dbf_dirs, decreasing = TRUE)[lwd_months_idx]  -> lwd_dbf_dirs_ordered
+  } else {
+    # just the *new* month and the previous 12 months redone (months_only_back = 13)
+    sort(lwd_dbf_dirs, decreasing = TRUE)[head(lwd_months_idx,months_only_back)]  -> lwd_dbf_dirs_ordered
+  }
+  
+  for(dir_i in lwd_dbf_dirs_ordered) {
+    
+    warning(paste0("Beginning disk dbf dir: ",dir_i))
+    
+    verify_company_basics(dateindex = c(dir_i)) -> si_all_g_df
+    update_from_future_new_company_ids(df = si_all_g_df, ref = dir_i) -> si_all_g_df 
+    upsert(si_all_g_df, keys = c("company_id")) # HERE #
+    
+    verify_company_details(dateindex = c(dir_i),  table_f = "si_psd", cnames_e = "^price$|^mktcap$") -> si_all_g_df
+    upsert(si_all_g_df, keys = c("company_id")) 
+    
+    verify_company_details(dateindex = c(dir_i),  table_f = "si_psd", cnames_e = "^prchg_\\d\\dw$") -> si_all_g_df
+    upsert(si_all_g_df, keys = c("company_id"))
+    
+    verify_return_dates(dateindex = c(dir_i), months_limit = 38)  -> si_all_g_df
+    upsert(si_all_g_df, keys = NULL) # ONLY dateindex is the pk
+    
+    verify_company_details(dateindex = c(dir_i),  table_f = "si_isq", cnames_e = "^dps_q.$") -> si_all_g_df
+    upsert(si_all_g_df, keys = c("company_id"))
+    
+    verify_company_details(dateindex = c(dir_i),  table_f = "si_date", cnames_e = "^perend_q.$") -> si_all_g_df
+    upsert(si_all_g_df, keys = c("company_id"))
+    
+    verify_company_details(dateindex = c(dir_i),  table_f = "si_isq", cnames_e = "^sales_q.$") -> si_all_g_df
+    upsert(si_all_g_df, keys = c("company_id"))
+    
+    # requires 
+    #   dateindexf##lwd, price, prchg_##w, perend_q#, dps_q#
+    verify_week_often_week_returns(dir_i) -> si_all_g_df
+    upsert(si_all_g_df, keys = c("company_id"))
+    
+    verify_company_details(dateindex = c(dir_i),  table_f = "si_psdc", cnames_e = "^price_m00[1-9]$|^price_m01[0-7]$") -> si_all_g_df
+    upsert(si_all_g_df, keys = c("company_id"))
+    
+    warning(paste0("Ending disk dbf dir: ",dir_i))
+
+  }
+  
+  options(ops)
+  
+  return(invisible())
+  
+}
+
+# upload_lwd_sipro_dbfs_to_db()
+# upload_lwd_sipro_dbfs_to_db(months_only_back = 13)
+#
+
+
+
+finecon01 <- function() {
   
   # R version 3.3.2 (2016-10-31) # sessionInfo()
   
@@ -2416,4 +2489,4 @@ finecon01 <- function () {
 }
 #        
 #          
-#                          
+#                              
