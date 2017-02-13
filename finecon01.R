@@ -579,10 +579,10 @@ financize <- function(df
                       , char_col_rexpr = "^pertyp_q.*$"
                       # , num_col_rexpr = "price|mktcap|^.*_q.*$"
                       , num_col_rexpr = "price|mktcap|^.*_q.*$|^prchg_\\d\\dw$"
-                      , round_to_decimal_places = 1
+                      , round_to_decimal_places  = 2
                                                # 8,2
                       , char_col_numeric_limit = 999999.99 # PostgreSQL # exact(actually an integer) # numeric(8,2) # SHOULD fit MOST aaii sipro data
-) {
+) {                     # also applies to is.numeric general check
   
   ops <- options()
   options(warn=1)
@@ -625,7 +625,8 @@ financize <- function(df
               }
               if(str_detect(col__names[col__names_iter], char_col_rexpr)) return(as.character(x))
               #
-              # ONLY characters are REMAINING
+              # ONLY characters are REMAINING from SIPRO dbfS ( but not in DERIVED DATA, see BELOW )
+              # 
               if(str_detect(col__names[col__names_iter], num_col_rexpr)) {
                 out <- try( { as.numeric(x) }, silent = TRUE)
                 if ( !"try-error" %in% class(out))  { 
@@ -645,7 +646,41 @@ financize <- function(df
                 }
                 if(!is.null(char_col_numeric_limit)) {
                   over_the_limit_tf <- {char_col_numeric_limit < x}
-                  print(stringi::stri_c("  Note, these many NAs found in x: " %s+% sum(is.na(x)), ignore_null = TRUE))
+                  print(stringi::stri_c("  Note, these many NA_real_s found in x: " %s+% sum(is.na(x)), ignore_null = TRUE))
+                  if(any(over_the_limit_tf, na.rm = TRUE)) {                           #  NROW(x[!is.na(x)][x[!is.na(x)] > char_col_numeric_limit]) # SAME
+                    warning(stri_c("  Note, these many OVER THE LIMIT found in x: " %s+% sum(over_the_limit_tf, na.rm = TRUE), ignore_null = TRUE))
+                    print(stri_c("over_the_limit_tf <- x[" %s+% char_col_numeric_limit %s+% " < x] records found for column: " %s+% col__names[col__names_iter]))
+                    print(stri_c("Printing those " %s+% sum(over_the_limit_tf, na.rm = TRUE) %s+% " (column_ids)(if any) records Now."))
+                    if("company_id" %in% col__names) { print(cbind(df[,"company_id",drop = FALSE],x = x)[!is.na(x) &  { x > 999999.9 },,drop = FALSE])  }
+                    out <- try( { x[char_col_numeric_limit < x] <- NA_real_ ; x }, silent = TRUE)
+                    if ( !"try-error" %in% class(out)) { 
+                      print(stri_c("  SUCCESS for ... over_the_limit_tf <- x[char_col_numeric_limit < x] records found for column: " %s+% col__names[col__names_iter]))
+                      x <- out 
+                    } else { 
+                      warning(stri_c("Conversion ACTUALLY failed for ... x[char_col_numeric_limit < x] <- NA_real_ conversion failed for column: " %s+% col__names[col__names_iter])) 
+                      return(x)
+                    }
+                  }
+                }
+              }
+              # 
+              # BUT (anonymous) derived DATA ( e.g weekly returns )
+              # e.g. calculated weekly returns (and not sent to this function call's actual params regex names )
+              #   then the column values may be NUMERIC
+              # 
+              if(is.numeric(x)) {
+                if(!is.null(round_to_decimal_places)) {
+                  out <- try( { round(x, digits=round_to_decimal_places)  }, silent = TRUE)
+                  if ( !"try-error" %in% class(out)) { 
+                    x <- out 
+                  } else { 
+                    warning(stri_c("round(x, digits=round_to_decimal_places) conversion failed for column: " %s+% col__names[col__names_iter])) 
+                    return(x)
+                  }
+                }
+                if(!is.null(char_col_numeric_limit)) {
+                  over_the_limit_tf <- {char_col_numeric_limit < x}
+                  print(stringi::stri_c("  Note, these many NA_real_s found in x: " %s+% sum(is.na(x)), ignore_null = TRUE))
                   if(any(over_the_limit_tf, na.rm = TRUE)) {                           #  NROW(x[!is.na(x)][x[!is.na(x)] > char_col_numeric_limit]) # SAME
                     warning(stri_c("  Note, these many OVER THE LIMIT found in x: " %s+% sum(over_the_limit_tf, na.rm = TRUE), ignore_null = TRUE))
                     print(stri_c("over_the_limit_tf <- x[" %s+% char_col_numeric_limit %s+% " < x] records found for column: " %s+% col__names[col__names_iter]))
@@ -2237,6 +2272,9 @@ verify_week_often_week_returns <- function(dateindex = NULL) {
 
     db.q(add_columns_sql, nrows = -1, conn.id = cid) -> si_all_df
 
+    # KEEP
+    financize(si_all_df) -> si_all_df
+    
     return(si_all_df) 
 
   }
@@ -2387,15 +2425,20 @@ verify_week_often_week_returns <- function(dateindex = NULL) {
 # upsert(si_all_g_df, keys = c("company_id"))
 #
 
-
-upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_only_back = NULL) {
+                                                                                                # NO CHECK: I must verify
+                                                                                                # that (1) exists AND (2) lwd
+upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_only_back = NULL, exact_lwd_dbf_dirs = NULL) {
 
   ops <- options()
   options(warn=1) # If 'warn' is one, warnings are printed as they occur. ( Because I can not print colors )
   
-  as.integer(dir(from_dir))         ->     all_dbf_dirs
-  is_lwd_of_month(all_dbf_dirs)     -> lwd_all_dbf_dirs_tf 
-  all_dbf_dirs[lwd_all_dbf_dirs_tf] ->     lwd_dbf_dirs
+  if(is.null(exact_lwd_dbf_dirs)){
+    as.integer(dir(from_dir))         ->     all_dbf_dirs
+    is_lwd_of_month(all_dbf_dirs)     -> lwd_all_dbf_dirs_tf 
+    all_dbf_dirs[lwd_all_dbf_dirs_tf] ->     lwd_dbf_dirs
+  } else {
+                      exact_lwd_dbf_dirs -> lwd_dbf_dirs
+  }
   
   # latest to earliest 
   # NOTE: any *new* month, I have to iterate back (months_only_back = 13) 13 months to calculate any *new* future returns
@@ -2456,7 +2499,8 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
 
 # upload_lwd_sipro_dbfs_to_db()
 # upload_lwd_sipro_dbfs_to_db(months_only_back = 13)
-#
+# upload_lwd_sipro_dbfs_to_db(exact_lwd_dbf_dirs = 16678) 
+# 
 
 
 
@@ -2489,4 +2533,4 @@ finecon01 <- function() {
 }
 #        
 #          
-#                              
+#                                 
