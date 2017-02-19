@@ -1591,7 +1591,7 @@ update_from_future_new_company_ids <- function(df = NULL, ref = NULL) {
       
       # ORDER is NOT GARANTEED
       ci_tk <- db.q(str_c("select dateindex_company_id, dateindex_company_id_orig, company_id from trg"), nrows =  -1, conn.id = cid)
-      df <- plyr::join(ci_tk, df, by = "dateindex_company_id_orig" ,type = "inner")
+      df <- plyr::join(ci_tk, df[,!colnames(df) %in% c("dateindex_company_id","company_id"), drop = FALSE], by = "dateindex_company_id_orig" ,type = "inner")
       
       print(str_c("Done looking in direction at ... ", zoo::as.Date(lwd)," ",lwd," Maybe in "))
     }
@@ -2526,7 +2526,9 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
 # upload_lwd_sipro_dbfs_to_db()
 # upload_lwd_sipro_dbfs_to_db(months_only_back = 13)
 # upload_lwd_sipro_dbfs_to_db(exact_lwd_dbf_dirs = 16678) 
-# 
+
+# untried BUT truncate table is BETTER for company_id/ticker SYSTEM change PROBLEMS
+# upload_lwd_sipro_dbfs_to_db(exact_lwd_dbf_dirs = sort(all_load_days_lwd[all_load_days_lwd <= (15155 + 400)], decreasing = TRUE))
 
 
 
