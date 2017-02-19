@@ -1466,7 +1466,7 @@ update_from_future_new_company_ids <- function(df = NULL, ref = NULL) {
   require(stringr)
   require(PivotalR)
   
-  # uses zoo::as.Date, foreign::read.dbf
+  # uses zoo::as.Date, foreign::read.dbf, plyr::join
   # uses lwd_of_month, rm_df_dups
   
   # zoo::as.Date(ref) %m+% months(1:13) %>% lwd_of_month(x) %>% zoo::as.Date(.)
@@ -1540,14 +1540,25 @@ update_from_future_new_company_ids <- function(df = NULL, ref = NULL) {
       
       # not worth my time to write a trigger affecting dateindex_company_id
       # UPDATE 1 - grab future months where the ticker name is the same but the company_id is differrent
+      # db.q(str_c("
+      #            update trg
+      #              set company_id =                     src.company_id,
+      #        dateindex_company_id = dateindex || '_' || src.company_id  
+      #            from src
+      #              where trg.company_id != src.company_id and
+      #                    trg.ticker      = src.ticker
+      # "), nrows =  -1, conn.id = cid)
+      
       db.q(str_c("
                  update trg
                    set company_id =                     src.company_id,
              dateindex_company_id = dateindex || '_' || src.company_id  
                  from src
                    where trg.company_id != src.company_id and
-                         trg.ticker      = src.ticker
-      "), nrows =  -1, conn.id = cid)
+                         trg.ticker      = src.ticker and
+                         trg.street      = src.street
+      "), nrows =  -1, conn.id = cid)    # SRC.STREET # a little extra safety, hp & hpq
+      
       
       ## MAY? WANT TO SHUT OFF DURING DEVELOPMENT ( THIS TAKES 5 SECONDS TO RUN)
       
@@ -1578,9 +1589,9 @@ update_from_future_new_company_ids <- function(df = NULL, ref = NULL) {
       #            "), nrows =  -1, conn.id = cid)
       ## END OF 'MAY BE BUGGY?'
       
-      ci_tk <- db.q(str_c("select dateindex_company_id, company_id, ticker from trg"), nrows =  -1, conn.id = cid)
-      df[,"company_id"]           <- ci_tk[,"company_id"]
-      df[,"dateindex_company_id"] <- ci_tk[,"dateindex_company_id"]
+      # ORDER is NOT GARANTEED
+      ci_tk <- db.q(str_c("select dateindex_company_id, dateindex_company_id_orig, company_id from trg"), nrows =  -1, conn.id = cid)
+      df <- plyr::join(ci_tk, df, by = "dateindex_company_id_orig" ,type = "inner")
       
       print(str_c("Done looking in direction at ... ", zoo::as.Date(lwd)," ",lwd," Maybe in "))
     }
@@ -2325,6 +2336,9 @@ verify_week_often_week_returns <- function(dateindex = NULL) {
 # verify_company_details(dateindex = c(15155),  table_f = "si_isq", cnames_e = "^sales_q.$") -> si_all_g_df
 # upsert(si_all_g_df, keys = c("company_id"))
 #
+# verify_company_details(dateindex = c(15155),  table_f = "si_isq", cnames_e = "^netinc_q.$") -> si_all_g_df
+# upsert(si_all_g_df, keys = c("company_id"))
+#
 # verify_week_often_week_returns(15155) -> si_all_g_df
 # upsert(si_all_g_df, keys = c("company_id"))
 # 
@@ -2354,6 +2368,9 @@ verify_week_often_week_returns <- function(dateindex = NULL) {
 # upsert(si_all_g_df, keys = c("company_id"))
 # 
 # verify_company_details(dateindex = c(15184),  table_f = "si_isq", cnames_e = "^sales_q.$") -> si_all_g_df
+# upsert(si_all_g_df, keys = c("company_id"))
+# 
+# verify_company_details(dateindex = c(15184),  table_f = "si_isq", cnames_e = "^netinc_q.$") -> si_all_g_df
 # upsert(si_all_g_df, keys = c("company_id"))
 # 
 # verify_week_often_week_returns(15184) -> si_all_g_df
@@ -2387,6 +2404,9 @@ verify_week_often_week_returns <- function(dateindex = NULL) {
 # verify_company_details(dateindex = c(15217),  table_f = "si_isq", cnames_e = "^sales_q.$") -> si_all_g_df
 # upsert(si_all_g_df, keys = c("company_id"))
 # 
+# verify_company_details(dateindex = c(15217),  table_f = "si_isq", cnames_e = "^netinc_q.$") -> si_all_g_df
+# upsert(si_all_g_df, keys = c("company_id"))
+# 
 # verify_week_often_week_returns(15217) -> si_all_g_df
 # upsert(si_all_g_df, keys = c("company_id"))
 #
@@ -2416,6 +2436,9 @@ verify_week_often_week_returns <- function(dateindex = NULL) {
 # upsert(si_all_g_df, keys = c("company_id"))
 #
 # verify_company_details(dateindex = c(15247),  table_f = "si_isq", cnames_e = "^sales_q.$") -> si_all_g_df
+# upsert(si_all_g_df, keys = c("company_id"))
+# 
+# verify_company_details(dateindex = c(15247),  table_f = "si_isq", cnames_e = "^netinc_q.$") -> si_all_g_df
 # upsert(si_all_g_df, keys = c("company_id"))
 #
 # verify_week_often_week_returns(15247) -> si_all_g_df
@@ -2458,32 +2481,35 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
     warning(paste0("Beginning disk dbf dir: ",dir_i))
     
     verify_company_basics(dateindex = c(dir_i)) -> si_all_g_df
-    update_from_future_new_company_ids(df = si_all_g_df, ref = dir_i) -> si_all_g_df 
+    update_from_future_new_company_ids(df = si_all_g_df, ref = dir_i) -> si_all_g_df
     upsert(si_all_g_df, keys = c("company_id")) # HERE #
-    
+
     verify_company_details(dateindex = c(dir_i),  table_f = "si_psd", cnames_e = "^price$|^mktcap$") -> si_all_g_df
-    upsert(si_all_g_df, keys = c("company_id")) 
-    
+    upsert(si_all_g_df, keys = c("company_id"))
+
     verify_company_details(dateindex = c(dir_i),  table_f = "si_psd", cnames_e = "^prchg_\\d\\dw$") -> si_all_g_df
     upsert(si_all_g_df, keys = c("company_id"))
-    
+
     verify_return_dates(dateindex = c(dir_i), months_limit = 38)  -> si_all_g_df
     upsert(si_all_g_df, keys = NULL) # ONLY dateindex is the pk
-    
+
     verify_company_details(dateindex = c(dir_i),  table_f = "si_isq", cnames_e = "^dps_q.$") -> si_all_g_df
     upsert(si_all_g_df, keys = c("company_id"))
-    
+
     verify_company_details(dateindex = c(dir_i),  table_f = "si_date", cnames_e = "^perend_q.$") -> si_all_g_df
     upsert(si_all_g_df, keys = c("company_id"))
-    
+
     verify_company_details(dateindex = c(dir_i),  table_f = "si_isq", cnames_e = "^sales_q.$") -> si_all_g_df
     upsert(si_all_g_df, keys = c("company_id"))
     
-    # requires 
+    verify_company_details(dateindex = c(dir_i),  table_f = "si_isq", cnames_e = "^netinc_q.$") -> si_all_g_df
+    upsert(si_all_g_df, keys = c("company_id"))
+    
+    # requires
     #   dateindexf##lwd, price, prchg_##w, perend_q#, dps_q#
     verify_week_often_week_returns(dir_i) -> si_all_g_df
     upsert(si_all_g_df, keys = c("company_id"))
-    
+
     verify_company_details(dateindex = c(dir_i),  table_f = "si_psdc", cnames_e = "^price_m00[1-9]$|^price_m01[0-7]$") -> si_all_g_df
     upsert(si_all_g_df, keys = c("company_id"))
     
@@ -2533,4 +2559,4 @@ finecon01 <- function() {
 }
 #        
 #          
-#                                 
+#                                    
