@@ -2,6 +2,17 @@
 
 # finecon01.R   
 
+# QUANTILE FIX ( for pl/r)
+# 71906
+# committed as  71906  (plus an example)
+# Bug 16672 - quantile produces decreasing output
+# https://bugs.r-project.org/bugzilla3/show_bug.cgi?id=16672
+# https://bugs.r-project.org/bugzilla3/attachment.cgi?id=2045&action=diff
+# https://bugs.r-project.org/bugzilla3/attachment.cgi?id=2045&action=diff&collapsed=&headers=1&format=raw
+# FEB 20, 2017 R-DEV ( MEANT FOR R_NEXT 3.3.3 )
+# https://svn.r-project.org/R/trunk/src/library/stats/R/quantile.R
+# REPLACE
+# stats:::quantile.default
 
 
 if(exists("copyDirectoryByPattern.default")) suppressWarnings(rm("copyDirectoryByPattern.default"))
@@ -2616,10 +2627,82 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
 #   te.dateindex
 # ;
 # --WORKS
+# --TODO: [ ] ADD sp500_total_shares mktcap / price ( to demonstrate buyback in action )
+# --TODO: [ ] ADD mktvalue weight of those that have reported within the last month
+# --          [ ] ADD yoy(q1 v.s. q5) pctchg of those that have reported within the last month
+# --TODO: Ratio adjustment for those dateindex that do NOT have exactly 500 firms
+
+# --TODO: [ ] load GetSymbols into the database
+
 
 # IF I CARE TO expand ... EXCELLENT ARTICLE
 # Metrics Maven: Calculating a Moving Average in PostgreSQL
 # https://www.compose.com/articles/metrics-maven-calculating-a-moving-average-in-postgresql/
+
+
+# -- ORIGINAL HAD INSTEAD:  ( sales / shr_aq ) / price   MAY?_HAD_SLIGHTLY_BETTER_RETURNS
+# -- ORIGINAL ALSO HAD + : sharpe, sortino, sharp_short, sortino_true, sortino_short, sortino_true_short
+# -- ORIGINAL USED 85 SECONDS
+# -- 
+# select sqe.* from (
+#   select 
+#       coalesce(sq.dateindex::text,'ALL')                   dateindex  -- aesthetics
+#     , count(1)                                             all_ct
+#     , count(1)                   filter(where sq.total_sales_ov_total_mktcap is not null) total_sales_ov_total_mktcap_ct
+#     , coalesce(sq.total_sales_ov_total_mktcap::text,'ALL')     total_sales_ov_total_mktcap_rnk1000 -- aesthetics
+#     , count(sq.pradchg_52w_ann)  filter(where sq.total_sales_ov_total_mktcap is not null) pradchg_52w_ann_ct
+#     , avg(sq.pradchg_52w_ann)    filter(where sq.total_sales_ov_total_mktcap is not null) pradchg_52w_ann_avg
+#     , stddev_pop(sq.pradchg_52w_ann) filter(where sq.total_sales_ov_total_mktcap is not null) pradchg_52w_ann_sd
+#     , count(sq.pradchg_26w_ann)  filter(where sq.total_sales_ov_total_mktcap is not null) pradchg_26w_ann_ct
+#     , avg(sq.pradchg_26w_ann)    filter(where sq.total_sales_ov_total_mktcap is not null) pradchg_26w_ann_avg
+#     , stddev_pop(sq.pradchg_26w_ann) filter(where sq.total_sales_ov_total_mktcap is not null) pradchg_26w_ann_sd
+#     , count(sq.pradchg_13w_ann)  filter(where sq.total_sales_ov_total_mktcap is not null) pradchg_13w_ann_ct
+#     , avg(sq.pradchg_13w_ann)    filter(where sq.total_sales_ov_total_mktcap is not null) pradchg_13w_ann_avg
+#     , stddev_pop(sq.pradchg_13w_ann) filter(where sq.total_sales_ov_total_mktcap is not null) pradchg_13w_ann_sd
+#     , count(sq.pradchg_04w_ann)  filter(where sq.total_sales_ov_total_mktcap is not null) pradchg_04w_ann_ct
+#     , avg(sq.pradchg_04w_ann)    filter(where sq.total_sales_ov_total_mktcap is not null) pradchg_04w_ann_avg
+#     , stddev_pop(sq.pradchg_04w_ann) filter(where sq.total_sales_ov_total_mktcap is not null) pradchg_04w_ann_sd
+#   from ( 
+#     select sqi.* from (
+#       select 
+#           dateindex
+#         , to_timestamp(dateindex*3600*24)::date dateindex_dt
+#         , ticker 
+#         , company
+#         , mktcap
+#         , industry_desc
+#         , sector_desc
+#         , trunc(least(case when 
+#           (    coalesce(sales_q1,0)  
+#              + coalesce(sales_q2,0) 
+#           )  / 
+#                 nullif( mktcap,0)  
+#           is not null then
+#           percent_rank() over (partition by dateindex order by ( 
+#             ( 
+#                 coalesce(sales_q1,0)  
+#               + coalesce(sales_q2,0)    
+#             )  / 
+#                 nullif( mktcap,0)  
+#           ) desc nulls last )  
+#           else null end,0.99)::numeric * 1000,0)::int + 1 
+#           total_sales_ov_total_mktcap
+#         , pradchg_04w_ann
+#         , pradchg_13w_ann
+#         , pradchg_26w_ann
+#         , pradchg_52w_ann
+#       from si_finecon2_jos
+#     ) sqi
+#   ) sq group by cube(
+#         sq.dateindex
+#       , sq.total_sales_ov_total_mktcap
+#     )
+# ) sqe where sqe.dateindex = 'ALL' 
+#       and   sqe.total_sales_ov_total_mktcap_rnk1000 in ('1','2','3','4','5','6','7','8','9','10')
+# ;
+# WORKS
+# 
+# --TODO: [ ] ADD/TRY stability of the last 12 months of returns
 
 
 finecon01 <- function() {
@@ -2651,4 +2734,4 @@ finecon01 <- function() {
 }
 #        
 #          
-#                                         
+#                                              
