@@ -839,7 +839,16 @@ verify_finecon_jamesos_partial_idx <- function() {
                     and (company !~~ '%PowerShares%') and (company !~~ '%Fund%') 
                     and (company !~~ '%Holding%') and (industry_desc !~~ '%Investment Service%')
               ;", conn.id = cid)
-
+    
+    
+    # save space ( if nothing else )
+    db.q("create or replace view si_finecon2_jos as select * from  
+                  si_finecon2                                                      where 
+                    adr = 0 and exchange != 'O' and mktcap > 200.0 
+                    and (company !~~ '%iShares%') and (company !~~ '%Vanguard%') and (company !~~ 'SPDR') 
+                    and (company !~~ '%PowerShares%') and (company !~~ '%Fund%') 
+                    and (company !~~ '%Holding%') and (industry_desc !~~ '%Investment Service%')
+              ;", conn.id = cid)
   
   }
       
@@ -2532,6 +2541,87 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
 
 
 
+# -- find out whether the sp500 companies are actually 'doing better' xor 'inflating(bubbling)'
+# --
+# -- from NOW(17197) and then back one year ( and 3 months ): 16829 - 100
+# -- NOTE: (if I want to dig deeper: e.g. per month) per company: perend_q1
+# with
+# sp500_total_measures as
+# (
+#   with
+#   sp500_total_market as
+#   (
+#     -- sp500_total_market
+#     select dateindex, to_timestamp(dateindex*3600*24)::date dateindex_dt, sum(coalesce(mktcap,0)) sp500_total_market from 
+#     si_finecon2 where dateindex >= 16829 - 100 and company_id in ( select company_id from fe_data_store.si_finecon2 where sp = '500' and dateindex = 16829 )
+#     group by dateindex
+#   ),
+#   sp500_price_mktcap_wtd as (
+#     with
+#     sp500_total_market as
+#     (
+#       -- sp500_total_market
+#       select dateindex, to_timestamp(dateindex*3600*24)::date dateindex_dt, sum(coalesce(mktcap,0)) sp500_total_market from 
+#       si_finecon2 where dateindex >= 16829 - 100 and company_id in ( select company_id from fe_data_store.si_finecon2 where sp = '500' and dateindex = 16829 )
+#       group by dateindex
+#     ) 
+#     -- sp500_price_mktcap_wtd
+#     select fe.dateindex, to_timestamp(fe.dateindex*3600*24)::date dateindex_dt, sum(coalesce(fe.price,0) * coalesce(fe.mktcap,0) / tm.sp500_total_market) sp500_price_mktcap_wtd
+#     from 
+#       si_finecon2 fe, sp500_total_market tm 
+#     where 
+#       fe.dateindex >= 16829 - 100 and fe.company_id in ( select company_id from si_finecon2 where sp = '500' and dateindex = 16829 ) and 
+#       fe.dateindex = tm.dateindex group by fe.dateindex
+#   ),
+#   sp500_total_sales as
+#   (
+#     -- sp500_total_sales
+#     select dateindex, to_timestamp(dateindex*3600*24)::date dateindex_dt, sum(coalesce(sales_q1,0)) sp500_total_sales from 
+#     si_finecon2 where dateindex >= 16829 - 100 and company_id in ( select company_id from fe_data_store.si_finecon2 where sp = '500' and dateindex = 16829 )
+#     group by dateindex
+#   ),
+#   sp500_total_netinc as
+#   (
+#     -- sp500_total_netinc
+#     select dateindex, to_timestamp(dateindex*3600*24)::date dateindex_dt, sum(coalesce(netinc_q1,0)) sp500_total_netinc from 
+#     si_finecon2 where dateindex >= 16829 - 100 and company_id in ( select company_id from fe_data_store.si_finecon2 where sp = '500' and dateindex = 16829 )
+#     group by dateindex
+#   )
+#   select tm.dateindex, tm.dateindex_dt
+#     , sp500_price_mktcap_wtd
+#     , sp500_total_market / sp500_total_sales  sp500_market_ov_sales   -- down-trend is better ( if up-trending, then it is 'over-selling' )
+#     , sp500_total_market / sp500_total_netinc sp500_market_ov_netinc  -- down-trend is better ( if up-trending, then it is 'over-selling' )
+#     , sp500_total_sales  / sp500_total_netinc sp500_sales_ov_netinc   -- down-trend is better ( if up-trending, them company expenses are relatively increasing )
+#   from 
+#     sp500_total_market tm,
+#     sp500_price_mktcap_wtd wp,
+#     sp500_total_sales ts,
+#     sp500_total_netinc ni
+#   where tm.dateindex = wp.dateindex and wp.dateindex = ts.dateindex and ts.dateindex = ni.dateindex order by tm.dateindex
+# ) 
+# select te.dateindex, te.dateindex_dt
+#   ,      te.sp500_price_mktcap_wtd
+#   , (lag(te.sp500_price_mktcap_wtd,0) over te_di - lag(te.sp500_price_mktcap_wtd,1) over te_di) / lag(te.sp500_price_mktcap_wtd,1) over te_di * 100.00 sp500_price_mktcap_wtd_m00_m01_pctchg
+#   ,      te.sp500_market_ov_sales 
+#   , (lag(te.sp500_market_ov_sales,0)  over te_di - lag(te.sp500_market_ov_sales,1)  over te_di) / lag(te.sp500_market_ov_sales,1)  over te_di * 100.00 sp500_market_ov_sales_m00_m01_pctchg
+#   ,      te.sp500_market_ov_netinc 
+#   , (lag(te.sp500_market_ov_netinc,0) over te_di - lag(te.sp500_market_ov_netinc,1) over te_di) / lag(te.sp500_market_ov_netinc,1) over te_di * 100.00 sp500_market_ov_netinc_m00_m01_pctchg
+#   ,      te.sp500_sales_ov_netinc 
+#   , (lag(te.sp500_sales_ov_netinc,0)  over te_di - lag(te.sp500_sales_ov_netinc,1)  over te_di) / lag(te.sp500_sales_ov_netinc,1)  over te_di * 100.00 sp500_sales_ov_netinc_m00_m01_pctchg
+# from 
+#   sp500_total_measures te 
+# window 
+#   te_di as (order by te.dateindex) 
+# order by 
+#   te.dateindex
+# ;
+# --WORKS
+
+# IF I CARE TO expand ... EXCELLENT ARTICLE
+# Metrics Maven: Calculating a Moving Average in PostgreSQL
+# https://www.compose.com/articles/metrics-maven-calculating-a-moving-average-in-postgresql/
+
+
 finecon01 <- function() {
   
   # R version 3.3.2 (2016-10-31) # sessionInfo()
@@ -2561,4 +2651,4 @@ finecon01 <- function() {
 }
 #        
 #          
-#                                    
+#                                         
