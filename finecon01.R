@@ -2321,6 +2321,151 @@ verify_week_often_week_returns <- function(dateindex = NULL) {
 
 
 
+# requires (above)
+#    price_m001 through price_m017
+verify_month_often_month_past_returns <- function(dateindex = NULL, months_limit = NULL) {
+
+  # R version 3.3.2 (2016-10-31) # sessionInfo()
+  
+  ops <- options() 
+  
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  verify_month_often_month_past_returns_inner <- function (dateindex = NULL) {
+    
+    verify_connection()
+    if(!dbExistsTable(con, "si_finecon2")) {
+      verify_si_finecon_exists()
+    }
+
+    require(magrittr)
+
+    require(RPostgreSQL)
+    require(PivotalR)
+    
+    require(stringi)
+    require(stringr)
+    require(R.rsp)
+    
+    # uses clean_text
+    
+    # to what is in the database
+    db.data.frame("si_finecon2", conn.id = cid, verbose = FALSE) -> ptr_si_finecon2  # class (db.#)
+    col.types(ptr_si_finecon2) -> fc_meta
+    names(ptr_si_finecon2)     -> names(fc_meta)
+    
+    # requires 
+    #   dateindexf##lwd, price, prchg_##w, perend_q#, dps_q# 
+    # 
+    c("price_m001") -> sample_columns
+    
+    if(any(!sample_columns %in% names(fc_meta))) { 
+      warning("Minumum columns are missing.") 
+      warning("Sample Missing columns are the following:"  %s+% ' ' %s+% str_c(sample_columns[!sample_columns %in% names(fc_meta)], collapse = " "))
+      browser()
+    } 
+    
+    (months_limit-1) -> n 
+    
+    # NOT USING ( SHOULD HAVE USED instead )
+    # verify_company_details(dateindex = c(dir_i),  table_f = "si_psdc", cnames_e = "^price_m00[1-9]$|^price_m01[0-7]$")
+    
+    # # writeLines({
+    # str_trim(str_c(rstring('
+    # alter table if exists si_finecon2
+    #   <% for (i in 1:n) { -%>
+    #       <% sprintf("drop if exists m%1$s_m%2$s_prchg_ann", 
+    #            str_pad(i,3,"left","0"), str_pad((i+1),3,"left","0")) -> res
+    #       -%><%= str_c("    ",res) %><%=if(i  < n) ", \n" -%><%=if(i == n) "  \n" -%>
+    #   <% } %>
+    # ; 
+    # '))) %>% clean_text(.) -> remove_columns_sql
+    # # })
+    # # writeLines(remove_columns_sql)
+    # 
+    # db.q(remove_columns_sql, conn.id = cid)
+    
+    # # writeLines({
+    # str_trim(str_c(rstring('
+    # alter table if exists si_finecon2
+    #   <% for (i in 1:n) { -%>
+    #       <% sprintf("add if not exists m%1$s_m%2$s_prchg_ann numeric(8,2)", 
+    #            str_pad(i,3,"left","0"), str_pad((i+1),3,"left","0")) -> res
+    #       -%><%= str_c("    ",res) %><%=if(i  < n) ", \n" -%><%=if(i == n) "  \n" -%>
+    #   <% } %>
+    # ; 
+    # '))) %>% clean_text(.) -> add_columns_sql 
+    # # })
+    # # writeLines(add_columns_sql)
+    # 
+    # db.q(add_columns_sql, conn.id = cid)
+    
+    # # UNTRIED ( SELF-JOIN - MAY? WORK?) ( COULD BE SIMPLER: JUST *ONE* TABLE)
+    #
+    # # writeLines({
+    # str_trim(str_c(rstring('
+    # update si_finecon2 fc set
+    #   <% for (i in 1:n) { -%>
+    #       <% sprintf("m%1$s_m%2$s_prchg_ann = sq.m%1$s_m%2$s_prchg_ann", 
+    #            str_pad(i,3,"left","0"), str_pad((i+1),3,"left","0")) -> res
+    #       -%><%= str_c("    ",res) %><%=if(i  < n) ", \n" -%><%=if(i == n) "  \n" -%>
+    #   <% } %>
+    # from (
+    # select 
+    #   <% for (i in 1:n) { -%>
+    #       <% sprintf("(price_m%1$s - price_m%2$s) / nullif(abs(price_m%2$s),0) * 100 * 12 m%1$s_m%2$s_prchg_ann", 
+    #           str_pad(i,3,"left","0"), str_pad((i+1),3,"left","0")) -> res
+    #       -%><%= str_c("    ",res) %><%=if(i  < n) ", \n" -%><%=if(i == n) "  \n" -%>
+    #   <% } %>
+    #   from si_finecon2
+    # ) sq
+    # where fc.dateindex_company_id_orig = sq.dateindex_company_id_orig and fe.dateindex = ' %s+% dateindex %s+%  ';
+    # '))) %>% clean_text(.) -> update_columns_sql
+    # # })
+    # # writeLines(update_columns_sql)
+    # 
+    # db.q(update_columns_sql, conn.id = cid)) # nrows =  -1, 
+    
+    # writeLines({
+    str_trim(str_c(rstring('
+    select fe.dateindex, fe.dateindex_company_id_orig, fe.company_id,
+      <% for (i in 1:n) { -%>
+          <% sprintf("(price_m%1$s - price_m%2$s) / nullif(abs(price_m%2$s),0) * 100 * 12 m%1$s_m%2$s_prchg_ann", 
+              str_pad(i,3,"left","0"), str_pad((i+1),3,"left","0")) -> res
+          -%><%= str_c("    ",res) %><%=if(i  < n) ", \n" -%><%=if(i == n) "  \n" -%>
+      <% } %>
+      from si_finecon2 fe
+    where fe.dateindex = ' %s+% dateindex %s+%  ';
+    '))) %>% clean_text(.) -> add_columns_sql
+    # })
+    # writeLines(add_columns_sql)
+    
+    db.q(add_columns_sql, nrows = -1, conn.id = cid) -> si_all_df
+
+    # KEEP
+    financize(si_all_df) -> si_all_df
+    
+    return(si_all_df) 
+
+  }
+  ret <- verify_month_often_month_past_returns_inner(dateindex = dateindex)
+
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  return(ret)
+} 
+
+
+
 # DECIDED that THESE functions will process ONLY one DATEINDEX at a time
 # 
 # verify_company_details(dateindex = c(15155),  table_f = "si_psd", cnames_e = "^mktcap$") -> si_all_g_df
@@ -2536,6 +2681,11 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
     verify_company_details(dateindex = c(dir_i),  table_f = "si_psdc", cnames_e = "^price_m00[1-9]$|^price_m01[0-7]$") -> si_all_g_df
     upsert(si_all_g_df, keys = c("company_id"))
     
+    # requires (above)
+    #    price_m001 through price_m017
+    verify_month_often_month_past_returns(dir_i,  months_limit = 17) -> si_all_g_df
+    upsert(si_all_g_df, keys = c("company_id"))
+    
     warning(paste0("Ending disk dbf dir: ",dir_i))
 
   }
@@ -2737,4 +2887,4 @@ finecon01 <- function() {
 }
 #        
 #          
-#                                              
+#                                                 
