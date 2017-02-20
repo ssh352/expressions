@@ -868,6 +868,20 @@ verify_finecon_jamesos_partial_idx <- function() {
 # verify_finecon_jamesos_partial_idx() 
 
 
+
+# remove at the beginning 
+# debug at <text>#30: .base_paste0 <- base::paste0\n\n  
+# stop the rstudio debugger OUTPUT from going inside the string
+clean_text <- function(x) { 
+  require(stringi)
+  require(stringr)
+  stri_split_lines1(x) -> lines
+  str_c(lines[!str_detect(lines,"^debug at <text>")],collapse = "\n") 
+}
+# writeLines(clean_text(my_string))
+
+
+
 ## assumes(uses) that input value(data.frame) ALREADY has a column called dateindex
 ##   (future) SHOULD BE VECTORIZED: INPUT MANY 'values's (data.frames)
 # NOTE: keys MUST be entered in lowercase
@@ -879,6 +893,8 @@ upsert <-  function(value = NULL, keys = NULL) { # vector of primary key values
   require(stringi)
   require(stringr)
   require(R.rsp)
+  
+  # uses clean_text
   
   options() -> ops
   options(max.print = 10000)
@@ -955,19 +971,6 @@ upsert <-  function(value = NULL, keys = NULL) { # vector of primary key values
   "numeric(8,2)"  -> fc_new_columns[fc_new_columns == "numeric"]  
   "smallint"      -> fc_new_columns[names(fc_new_columns) %in% c("drp_avail","adr")] 
    
-  # remove at the beginning 
-  # debug at <text>#30: .base_paste0 <- base::paste0\n\n  
-  # stop the rstudio debugger OUTPUT from going inside the string
-  clean_text <- function(x) { 
-    require(stringi)
-    require(stringr)
-    stri_split_lines1(x) -> lines
-    str_c(lines[!str_detect(lines,"^debug at <text>")],collapse = "\n") 
-  }
-  # writeLines(clean_text(my_string))
-  
-
-  
   # actually add NEW columns to si_finecon 
   # if any columns exist to add
   # EXPECTED 'IF-THEN' to be extended
@@ -2612,13 +2615,13 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
 # ) 
 # select te.dateindex, te.dateindex_dt
 #   ,      te.sp500_price_mktcap_wtd
-#   , (lag(te.sp500_price_mktcap_wtd,0) over te_di - lag(te.sp500_price_mktcap_wtd,1) over te_di) / lag(te.sp500_price_mktcap_wtd,1) over te_di * 100.00 sp500_price_mktcap_wtd_m00_m01_pctchg
+#   , (lag(te.sp500_price_mktcap_wtd,0) over te_di - lag(te.sp500_price_mktcap_wtd,1) over te_di) / abs(lag(te.sp500_price_mktcap_wtd,1) over te_di) * 100.00 sp500_price_mktcap_wtd_m00_m01_pctchg
 #   ,      te.sp500_market_ov_sales 
-#   , (lag(te.sp500_market_ov_sales,0)  over te_di - lag(te.sp500_market_ov_sales,1)  over te_di) / lag(te.sp500_market_ov_sales,1)  over te_di * 100.00 sp500_market_ov_sales_m00_m01_pctchg
+#   , (lag(te.sp500_market_ov_sales,0)  over te_di - lag(te.sp500_market_ov_sales,1)  over te_di) / abs(lag(te.sp500_market_ov_sales,1)  over te_di) * 100.00 sp500_market_ov_sales_m00_m01_pctchg
 #   ,      te.sp500_market_ov_netinc 
-#   , (lag(te.sp500_market_ov_netinc,0) over te_di - lag(te.sp500_market_ov_netinc,1) over te_di) / lag(te.sp500_market_ov_netinc,1) over te_di * 100.00 sp500_market_ov_netinc_m00_m01_pctchg
+#   , (lag(te.sp500_market_ov_netinc,0) over te_di - lag(te.sp500_market_ov_netinc,1) over te_di) / abs(lag(te.sp500_market_ov_netinc,1) over te_di) * 100.00 sp500_market_ov_netinc_m00_m01_pctchg
 #   ,      te.sp500_sales_ov_netinc 
-#   , (lag(te.sp500_sales_ov_netinc,0)  over te_di - lag(te.sp500_sales_ov_netinc,1)  over te_di) / lag(te.sp500_sales_ov_netinc,1)  over te_di * 100.00 sp500_sales_ov_netinc_m00_m01_pctchg
+#   , (lag(te.sp500_sales_ov_netinc,0)  over te_di - lag(te.sp500_sales_ov_netinc,1)  over te_di) / abs(lag(te.sp500_sales_ov_netinc,1)  over te_di) * 100.00 sp500_sales_ov_netinc_m00_m01_pctchg
 # from 
 #   sp500_total_measures te 
 # window 
