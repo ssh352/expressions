@@ -1,5 +1,7 @@
 
 
+#LEFT_OFF see LEFT_OFF.txt unnest(array(...
+
 # finecon01.R   
 
 # QUANTILE FIX ( for pl/r)
@@ -2667,12 +2669,6 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
     verify_company_details(dateindex = c(dir_i),  table_f = "si_date", cnames_e = "^perend_q.$") -> si_all_g_df
     upsert(si_all_g_df, keys = c("company_id"))
 
-    verify_company_details(dateindex = c(dir_i),  table_f = "si_isq", cnames_e = "^sales_q.$") -> si_all_g_df
-    upsert(si_all_g_df, keys = c("company_id"))
-    
-    verify_company_details(dateindex = c(dir_i),  table_f = "si_isq", cnames_e = "^netinc_q.$") -> si_all_g_df
-    upsert(si_all_g_df, keys = c("company_id"))
-    
     # requires
     #   dateindexf##lwd, price, prchg_##w, perend_q#, dps_q#
     verify_week_often_week_returns(dir_i) -> si_all_g_df
@@ -2684,6 +2680,12 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
     # requires (above)
     #    price_m001 through price_m017
     verify_month_often_month_past_returns(dir_i,  months_limit = 17) -> si_all_g_df
+    upsert(si_all_g_df, keys = c("company_id"))
+    
+    verify_company_details(dateindex = c(dir_i),  table_f = "si_isq", cnames_e = "^sales_q.$") -> si_all_g_df
+    upsert(si_all_g_df, keys = c("company_id"))
+
+    verify_company_details(dateindex = c(dir_i),  table_f = "si_isq", cnames_e = "^netinc_q.$") -> si_all_g_df
     upsert(si_all_g_df, keys = c("company_id"))
     
     warning(paste0("Ending disk dbf dir: ",dir_i))
@@ -2887,4 +2889,4 @@ finecon01 <- function() {
 }
 #        
 #          
-#                                                 
+#                                                  
