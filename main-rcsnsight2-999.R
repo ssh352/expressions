@@ -347,11 +347,11 @@ getSymbols.multpl <- function(
   #   http://www.multpl.com/s-p-500-real-earnings-growth/table/by-quarter
   #   
   #   S&P 500 PE Ratio by Month ( MATH) ( SandP.500.PE.Ratio )
-  #   Price to earnings ratio, based on trailing twelve month âas reportedâ
+  #   Price to earnings ratio, based on trailing twelve month “as reported”
   #   http://www.multpl.com/table?f=m
   
   #   S&P 500 Book Value Per Share by Quarter ( "SandP.500.BV.Per.Share" )
-  #   S&P 500 book value per share â non-inflation adjusted current dollars. 
+  #   S&P 500 book value per share — non-inflation adjusted current dollars. 
   #   http://www.multpl.com/s-p-500-book-value/table/by-quarter
   
   # web site and owner
@@ -383,7 +383,7 @@ getSymbols.multpl <- function(
   
   require(XML)     # NEED readHTMLTable
   # Hadley Wickham # web scraping 
-  require(rvest)   # imports XML  masked from âpackage:XMLâ: xml
+  require(rvest)   # imports XML  masked from ‘package:XML’: xml
   # IF uncommented : require(XML), USE: XML::xml to access XML::xml
   require(xts)     # as.xts STUFF
   
@@ -605,11 +605,11 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     #  2. incomplete data exists of current month 
     # THEREFORE
     # this IS       the end of the PREVIOUS MONTH
-    # finDate.TestTrain.Global.Latest    <- "2016-10-31"  # 2014-12-31(perfect) 
+    # finDate.TestTrain.Global.Latest    <- "2017-03-31"  # 2014-12-31(perfect) 
                                                           # march 21, 2015 run: "2015-01-31": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
                                                           # march 21, 2015 run: "2015-02-28": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
                                                           # march 21, 2015 run: "2015-03-31": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
-    finDate.TestTrain.Global.Latest      <- "2016-10-31"  # april  6, 2015 run: "2015-03-31": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
+    finDate.TestTrain.Global.Latest      <- "2017-03-31"  # april  6, 2015 run: "2015-03-31": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
     
     # training and TRUE tests
     list(Test2001 = list(Train=list(initDate = initData.TestTrain.Global.Earliest,finDate ="1998-12-31"),
@@ -1614,7 +1614,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     # by Jill Mislinski
     # http://www.advisorperspectives.com/dshort/updates/ISM-Manufacturing
     # 
-    # "The June PMIï¿½ registered 53.2 percent, an increase of 1.9 percentage points 
+    # "The June PMI� registered 53.2 percent, an increase of 1.9 percentage points 
     # from the May reading of 51.3 percent.
     # 
     # Today the Institute for Supply Management published its 
@@ -1965,55 +1965,62 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     
     bookmark_here <- 1
     
-    # change rate seems to DIP right before a RECESSION
+    # [1] "A576RC1Q027SBEA pullAheadZOOData should be DELAYFIVE Actual: 24"
+    # SEEN APR 03 2017
+    # Compensation of employees: Wages and salaries (DISCONTINUED) (A576RC1Q027SBEA)
+    # Series was replaced with https://fred.stlouisfed.org/series/WASCUR
+    # Compensation of Employees: Wages and Salary Accruals (WASCUR) - Quarterly
+    # https://fred.stlouisfed.org/series/A576RC1Q027SBEA
     
-    #     Title:               Compensation of employees: Wages and salaries       
-    #     Series ID:           A576RC1Q027SBEA
-    #     Source:              US. Bureau of Economic Analysis
-    #     Release:             Gross Domestic Product
-    #     Seasonal Adjustment: Seasonally Adjusted Annual Rate
-    #     Frequency:           Quarterly
-    #     Units:               Billions of Dollars
-    #     Date Range:          1947-01-01 to 2014-07-01
-    #     Last Updated:        2014-11-25 8:34 AM CST
-    #     Notes:               BEA Account Code: A576RC1
+    #     # change rate seems to DIP right before a RECESSION
     #     
-    #     http://research.stlouisfed.org/fred2/data/A576RC1Q027SBEA.txt
-    
-    retrieveSymbolsQuantmodRdata(
-      finSymbol = "A576RC1Q027SBEA"
-      , finSymbolRemoteSource = "Quantmod_FRED"
-      , finSymbolAttributes = c("Close")
-      , initDate = "1950-03-01"
-      , subtractOffDaysSpec = -1
-      , interpolate = TRUE
-    ) -> A576RC1Q027SBEA.DELAYFIVE.ABS     # head "1947-01-01"
-                                           # Quarterly
-                                           # ( Last Updated: 2015-03-27 8:48 AM CDT - ??? date - typically 7 month late WITH 7 month old date in 3 month chunks )
-
-    # really meant for a monthly
-    as.integer(diff.mondate(c(
-      as.mondate(tail(index(A576RC1Q027SBEA.DELAYFIVE.ABS),1), displayFormat="%Y-%m-%d",timeunits="months"),
-      as.mondate(finDate.TestTrain.Global.Latest, displayFormat="%Y-%m-%d",timeunits="months")
-    ))) -> pullAheadZOODataMonthShiftAmount
-    
-    merge.xts(MaxAllTestTrainMonthEnds,A576RC1Q027SBEA.DELAYFIVE.ABS) -> A576RC1Q027SBEA.DELAYFIVE.ABS
-    A576RC1Q027SBEA.DELAYFIVE.ABS[MaxAllTestTrainMonthEndsRange] -> A576RC1Q027SBEA.DELAYFIVE.ABS
-    
-    assign("A576RC1Q027SBEA.DELAYFIVE.ABS", value=A576RC1Q027SBEA.DELAYFIVE.ABS, envir = .GlobalEnv)
-    
-    # if HAD BEEN a Daily
-    max(pullAheadZOODataMonthShiftAmount,0) -> pullAheadZOODataMonthShiftAmount
-    
-    pullAheadZOOData(A576RC1Q027SBEA.DELAYFIVE.ABS,pullAheadZOODataMonthShiftAmount) -> A576RC1Q027SBEA.DELAYFIVE.ABS.ADJUSTNOW
-    print(paste0("A576RC1Q027SBEA pullAheadZOOData should be DELAYFIVE"," Actual: ",pullAheadZOODataMonthShiftAmount))
-    
-    merge.xts(MaxAllTestTrainMonthEnds,A576RC1Q027SBEA.DELAYFIVE.ABS.ADJUSTNOW) -> A576RC1Q027SBEA.DELAYFIVE.ABS.ADJUSTNOW
-    A576RC1Q027SBEA.DELAYFIVE.ABS.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> A576RC1Q027SBEA.DELAYFIVE.ABS.ADJUSTNOW
-    
-    assign("A576RC1Q027SBEA.DELAYFIVE.ABS.ADJUSTNOW", value=A576RC1Q027SBEA.DELAYFIVE.ABS.ADJUSTNOW, envir = .GlobalEnv)
-    
-    "A576RC1Q027SBEA.DELAYFIVE.ABS.ADJUSTNOW" -> ALL.OBSERVEES["A576RC1Q027SBEA.DELAYFIVE.ABS.ADJUSTNOW"]
+    #     #     Title:               Compensation of employees: Wages and salaries       
+    #     #     Series ID:           A576RC1Q027SBEA
+    #     #     Source:              US. Bureau of Economic Analysis
+    #     #     Release:             Gross Domestic Product
+    #     #     Seasonal Adjustment: Seasonally Adjusted Annual Rate
+    #     #     Frequency:           Quarterly
+    #     #     Units:               Billions of Dollars
+    #     #     Date Range:          1947-01-01 to 2014-07-01
+    #     #     Last Updated:        2014-11-25 8:34 AM CST
+    #     #     Notes:               BEA Account Code: A576RC1
+    #     #     
+    #     #     http://research.stlouisfed.org/fred2/data/A576RC1Q027SBEA.txt
+    #     
+    #     retrieveSymbolsQuantmodRdata(
+    #       finSymbol = "A576RC1Q027SBEA"
+    #       , finSymbolRemoteSource = "Quantmod_FRED"
+    #       , finSymbolAttributes = c("Close")
+    #       , initDate = "1950-03-01"
+    #       , subtractOffDaysSpec = -1
+    #       , interpolate = TRUE
+    #     ) -> A576RC1Q027SBEA.DELAYFIVE.ABS     # head "1947-01-01"
+    #                                            # Quarterly
+    #                                            # ( Last Updated: 2015-03-27 8:48 AM CDT - ??? date - typically 7 month late WITH 7 month old date in 3 month chunks )
+    # 
+    #     # really meant for a monthly
+    #     as.integer(diff.mondate(c(
+    #       as.mondate(tail(index(A576RC1Q027SBEA.DELAYFIVE.ABS),1), displayFormat="%Y-%m-%d",timeunits="months"),
+    #       as.mondate(finDate.TestTrain.Global.Latest, displayFormat="%Y-%m-%d",timeunits="months")
+    #     ))) -> pullAheadZOODataMonthShiftAmount
+    #     
+    #     merge.xts(MaxAllTestTrainMonthEnds,A576RC1Q027SBEA.DELAYFIVE.ABS) -> A576RC1Q027SBEA.DELAYFIVE.ABS
+    #     A576RC1Q027SBEA.DELAYFIVE.ABS[MaxAllTestTrainMonthEndsRange] -> A576RC1Q027SBEA.DELAYFIVE.ABS
+    #     
+    #     assign("A576RC1Q027SBEA.DELAYFIVE.ABS", value=A576RC1Q027SBEA.DELAYFIVE.ABS, envir = .GlobalEnv)
+    #     
+    #     # if HAD BEEN a Daily
+    #     max(pullAheadZOODataMonthShiftAmount,0) -> pullAheadZOODataMonthShiftAmount
+    #     
+    #     pullAheadZOOData(A576RC1Q027SBEA.DELAYFIVE.ABS,pullAheadZOODataMonthShiftAmount) -> A576RC1Q027SBEA.DELAYFIVE.ABS.ADJUSTNOW
+    #     print(paste0("A576RC1Q027SBEA pullAheadZOOData should be DELAYFIVE"," Actual: ",pullAheadZOODataMonthShiftAmount))
+    #     
+    #     merge.xts(MaxAllTestTrainMonthEnds,A576RC1Q027SBEA.DELAYFIVE.ABS.ADJUSTNOW) -> A576RC1Q027SBEA.DELAYFIVE.ABS.ADJUSTNOW
+    #     A576RC1Q027SBEA.DELAYFIVE.ABS.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> A576RC1Q027SBEA.DELAYFIVE.ABS.ADJUSTNOW
+    #     
+    #     assign("A576RC1Q027SBEA.DELAYFIVE.ABS.ADJUSTNOW", value=A576RC1Q027SBEA.DELAYFIVE.ABS.ADJUSTNOW, envir = .GlobalEnv)
+    #     
+    #     "A576RC1Q027SBEA.DELAYFIVE.ABS.ADJUSTNOW" -> ALL.OBSERVEES["A576RC1Q027SBEA.DELAYFIVE.ABS.ADJUSTNOW"]
     
     # DIDIER SORNETE? ( VOLITILITY BEFORE THE EARTHQUAKE? )
     #
@@ -2031,6 +2038,71 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     # By Joshua Ulrich
     # http://www.r-bloggers.com/historical-future-volatility-correlation-stability/
     # http://blog.fosstrading.com/2010/04/historical-future-volatility.html?utm_source=feedburner&utm_medium=feed&utm_campaign=Feed%3A+FossTrading+%28FOSS+Trading%29
+    
+    
+    
+    # [1] "A576RC1Q027SBEA pullAheadZOOData should be DELAYFIVE Actual: 24"
+    # SEEN APR 03 2017
+    # Compensation of employees: Wages and salaries (DISCONTINUED) (A576RC1Q027SBEA)
+    # Series was replaced with https://fred.stlouisfed.org/series/WASCUR
+    # Compensation of Employees: Wages and Salary Accruals (WASCUR) - Quarterly
+    # https://fred.stlouisfed.org/series/A576RC1Q027SBEA
+    
+    # change rate seems to DIP right before a RECESSION
+    
+    #     Title:               Compensation of Employees: Wages and Salary Accruals
+    #     Series ID:           WASCUR
+    #     Source:              U.S. Bureau of Economic Analysis
+    #     Release:             Gross Domestic Product
+    #     Seasonal Adjustment: Seasonally Adjusted Annual Rate
+    #     Frequency:           Quarterly
+    #     Units:               Billions of Dollars
+    #     Date Range:          1947-01-01 to 2016-10-01
+    #     Last Updated:        2017-03-30 7:51 AM CDT
+    #     Notes:               BEA Account Code: A034RC1
+    #     
+    #     A Guide to the National Income and Product Accounts of the United
+    #     States (NIPA) - (http://www.bea.gov/national/pdf/nipaguid.pdf)
+    #     
+    #     http://research.stlouisfed.org/fred2/data/WASCUR.txt
+    
+    # NOTE: SEEMS like just the *NAME* changed
+    
+    retrieveSymbolsQuantmodRdata(
+      finSymbol = "WASCUR"
+      , finSymbolRemoteSource = "Quantmod_FRED"
+      , finSymbolAttributes = c("Close")
+      , initDate = "1950-03-01"
+      , subtractOffDaysSpec = -1
+      , interpolate = TRUE
+    ) -> WASCUR.DELAYFIVE.ABS     # head "1947-01-01"
+    # Quarterly
+    # ( Last Updated: 2015-03-27 8:48 AM CDT - ??? date - typically 7 month late WITH 7 month old date in 3 month chunks )
+    
+    # really meant for a monthly
+    as.integer(diff.mondate(c(
+      as.mondate(tail(index(WASCUR.DELAYFIVE.ABS),1), displayFormat="%Y-%m-%d",timeunits="months"),
+      as.mondate(finDate.TestTrain.Global.Latest, displayFormat="%Y-%m-%d",timeunits="months")
+    ))) -> pullAheadZOODataMonthShiftAmount
+    
+    merge.xts(MaxAllTestTrainMonthEnds,WASCUR.DELAYFIVE.ABS) -> WASCUR.DELAYFIVE.ABS
+    WASCUR.DELAYFIVE.ABS[MaxAllTestTrainMonthEndsRange] -> WASCUR.DELAYFIVE.ABS
+    
+    assign("WASCUR.DELAYFIVE.ABS", value=WASCUR.DELAYFIVE.ABS, envir = .GlobalEnv)
+    
+    # if HAD BEEN a Daily
+    max(pullAheadZOODataMonthShiftAmount,0) -> pullAheadZOODataMonthShiftAmount
+    
+    pullAheadZOOData(WASCUR.DELAYFIVE.ABS,pullAheadZOODataMonthShiftAmount) -> WASCUR.DELAYFIVE.ABS.ADJUSTNOW
+    print(paste0("WASCUR pullAheadZOOData should be DELAYFIVE"," Actual: ",pullAheadZOODataMonthShiftAmount))
+    
+    merge.xts(MaxAllTestTrainMonthEnds,WASCUR.DELAYFIVE.ABS.ADJUSTNOW) -> WASCUR.DELAYFIVE.ABS.ADJUSTNOW
+    WASCUR.DELAYFIVE.ABS.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> WASCUR.DELAYFIVE.ABS.ADJUSTNOW
+    
+    assign("WASCUR.DELAYFIVE.ABS.ADJUSTNOW", value=WASCUR.DELAYFIVE.ABS.ADJUSTNOW, envir = .GlobalEnv)
+    
+    "WASCUR.DELAYFIVE.ABS.ADJUSTNOW" -> ALL.OBSERVEES["WASCUR.DELAYFIVE.ABS.ADJUSTNOW"]    
+    
     
     bookmark_here <- 1
     
@@ -2741,7 +2813,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     #
     #  the number of iterations,T(n.trees)
     #  the depth of each tree,K(interaction.depth)
-    #  the shrinkage (or learning rate) parameter,Î»(shrinkage)
+    #  the shrinkage (or learning rate) parameter,λ(shrinkage)
     #  the subsampling rate,p(bag.fraction)
     #
     #  Generalized Boosted Models: A guide to the gbm package Greg Ridgeway August 3, 2007
