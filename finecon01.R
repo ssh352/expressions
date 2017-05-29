@@ -2706,6 +2706,58 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
 # upload_lwd_sipro_dbfs_to_db(exact_lwd_dbf_dirs = sort(all_load_days_lwd[all_load_days_lwd <= (15155 + 400)], decreasing = TRUE))
 
 
+
+#### BEGIN WORKFLOW ####
+
+# ANDRE NEW PLAN - INBOUND
+# ------------------------
+# Inbound Sales/Market,Net_Income/Market,Net_Income/Sales  by (since last time, since last year this time)
+# INBOUND DATA  
+#   missing data
+#     na.locf
+#     flag column of na.locf
+#     time in days since last measure ( higher values for na.locf ) ( see my Philadelpha/Cleveland ... "Forecasters" )
+# OTHER
+# Real_Sharp of monthly stock returns ('risk')
+# Gold & Silver sector returns ('fear')
+#   Real_Sharp of Gold & Silver sector returns('risk')
+# Competition('Return on bonds')
+#   Real_Sharp of Competition('risk')
+# Inflation ('free growth') [ over Competition('Return on bonds')]
+# Ratio of Stock_Risk/Bond_Risk
+# Ratio of Stock_Return/Bond_Return
+# PREDICT on ONE only ... loop predict(1); rbind(1) end loop
+# 
+# ANDRE NEW PLAN - PROCESSING and OUTBOUND
+# ----------------------------------------
+# DATA, DATA-CLEANING, PREDICTION
+# 
+# require(tidyquant); require(timekit); my Zachary Ma
+# require(wrapr)
+# require(Boruta)
+# require(UBL)
+# require(vtreat)
+# 
+# workflow
+# --------
+# 
+# add [my] transforms(<none>/ROLLING/SMA/PCTCHG/LAG[/CORRELATION]) &+ _WEIGHTED .. &+ _12_MO_SEASONAL-> 
+#   add mead-adj-factor-vars(e..g. codings) and/or trendish_time-vars ->
+#     MANUALLY: eliminate non-[near]future-able data) -> 
+#       vtreat(eliminate bad luck)
+#         Boruta (variable elimination: eliminate luck: permutes variable values to see if any effect)  
+#           SMOTE imbalanced -> balanced ( SMOTE for Regression library(UBL) See Torgo )
+#             vtreat(eliminate bad luck) -> CUSTOM resamples -> model [cross] validation -> find 'optimal parameters'
+#               COMBO
+#               model feature selection (PROB not USE: 'boost'(immune)/'random forest'(immune-never overfit?)
+#               observation/class weights (error rates) (model specific)
+#                 model prediction(newdata(recent))
+
+#### END WORKFLOW ####
+
+
+
+
 #### MONTHLY METHOD BEGINS ####
 
 # -------------------------------------------------------------------
