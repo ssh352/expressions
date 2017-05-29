@@ -2706,6 +2706,151 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
 # upload_lwd_sipro_dbfs_to_db(exact_lwd_dbf_dirs = sort(all_load_days_lwd[all_load_days_lwd <= (15155 + 400)], decreasing = TRUE))
 
 
+#### MONTHLY METHOD BEGINS ####
+
+# -------------------------------------------------------------------
+# ---- begin VERY EARLY MORNING MON APR 03 2017, SUN MAY 29 2017 ----
+# 
+# Andre_Mikulec@Hotmail.com
+# 
+# <short_usual>+<code>+<code>WITH RULES(JUST IN TOP OF FILE)
+#   Andre_R_AAII_SIPro_rcom_AppActivate_RDCOMClient_SIPro_40_Install.txt
+# 
+# C:\PG-9.6._
+# C:\PG-9.6._\PG-9.6._.bat
+# 
+# <windows - all programs>
+# P
+#  PgAdmin III 1.22
+#    PgAdmin III
+#     postgres_5432__finance_econ(localhost:5432) double_click
+#       finance_econ
+#         fe_data_store
+#           si_finecon2
+# 
+#     SQL Toolbar Icon
+#       File->Recent Files
+#           W:\R-Portable.3.2.2\App\R-Portable\bin\x64\RDebug\Home
+# scratch.txt
+# scratch_queries.txt
+# partitions.SCRATCH.sql
+# partitions.SCRATCH_finalizing.sql
+# TEMPORARY.sql
+# 
+#         execute paragraph
+#           set search_path to sipro_data_store,sipro_stage;
+#           set ...
+#           ...
+#       File->New Window ( repeat 4 more times)
+#      
+# # old Excel spreadsheet program (*.xls)
+# 
+# W:\R-Portable.3.2.2\App\R-Portable\bin\x64\
+# W:\R-Portable.3.2.2\App\R-Portable\bin\x64\START_R.bat
+# > shell("rstudio", wait = FALSE)                           # YELLOW 
+# W:\R-Portable.3.2.2\App\R-Portable\bin\x64\RDebug\Home (FILES in HERE)
+# RStudio
+# > debugSource(paste0(getwd(),'/data_loading_with_Excel_4.R'))
+# 
+# # new sipro data loader program into PostgreSQL
+# 
+# W:\R-3.3._
+# W:\R-3.3._\R-3.3._.bat
+# > shell("rstudio", wait = FALSE)                           # WHITE
+# W:\R-3.3._                                             (FILES in HERE) : finecon01.R  finecon01_more_SQL.sql
+# > debugSource('W:/R-3.3._/finecon01.R')
+# 
+# > getAAIISIProDate()
+# [1] "17225"
+# 
+# > zoo::as.Date(as.integer("17225")) # reads directly from # C:/Program Files (x86)/Stock Investor/Professional/Setup.dbf
+# [1] "2017-02-28"                                          # MUST BE THE 'last weekday of the lastmonth' (CAN! (and has_been! Christmas))
+# 
+# Fri Mar 31
+# stockinvestorinstall_20170331.exe
+# --6465
+# 
+# > getAAIISIProDate()
+# [1] "17256" - new
+# 
+# # will create the folder
+# copyAAIISIProDBFs(
+#     from = "C:/Program Files (x86)/Stock Investor/Professional"
+#   , to   = paste0("W:/AAIISIProDBFs/",getAAIISIProDate()) # 
+# )
+# 
+# # view last months data
+# set search_path to sipro_data_store,sipro_stage;
+# set ...
+# set ...
+# select max(dateindex) from fe_data_store.si_finecon2;
+# select count(*) from fe_data_store.si_finecon2 where dateindex = 17225;
+# select * from fe_data_store.si_finecon2 where dateindex = 17225;
+# 
+# W:\R-3.3._
+# W:\R-3.3._\R-3.3._.bat
+# > shell("rstudio", wait = FALSE)
+# RStudio
+# > debugSource('W:/R-3.3._/finecon01.R')
+# RAN MON MORN APR 03
+# > upload_lwd_sipro_dbfs_to_db(months_only_back = 13)
+#  ( can take a while: 30 minutes+ ??? )
+# DONE
+# 
+# # relook ( updated future date columns )
+# # view last months data
+# set search_path to sipro_data_store,sipro_stage;
+# set ...
+# set ...
+# 
+# -- begin drill 1
+# select max(dateindex) from fe_data_store.si_finecon2;
+# 
+# select count(*) from fe_data_store.si_finecon2 where dateindex = 17225;
+# select * from fe_data_store.si_finecon2 where dateindex = 17225;
+# look at 4 colulmns ( should be filled )
+# prchg_042_ann, pct_div_ret_ov_pr_04w_q1_ann,pradchg_04w_ann,price_04w
+# # new month-data
+# select max(dateindex) from fe_data_store.si_finecon2;
+# -- end drill 1
+# 
+# -- begin drill 2
+# select max(dateindex) from fe_data_store.si_finecon2;
+# -- 17284
+# 
+# select count(*) from fe_data_store.si_finecon2 where dateindex = 17284;
+# 
+#                                                                -- early OCT 2016 --
+# select distinct dateindex from fe_data_store.si_finecon2 where dateindex > 17074 and dateindexf01lwd is null;
+# --NO RECORDS RETURNED
+# 
+# select distinct dateindex from fe_data_store.si_finecon2;
+# --17284 -- latest loaded ( no future data exists )
+# 
+# -- THIS COULD TAKE much MEMORY
+# select * from fe_data_store.si_finecon2 where dateindex = 17284;
+# -- 11.8 query + 30 seconds load + 11.3 MB postgresql 
+# 
+# select * from fe_data_store.si_finecon2 where dateindex = 17256;
+# 
+# -- current(last) month: just  loaded ( no future data in the database)
+# select * from fe_data_store.si_finecon2 where dateindex = 17284;  -- e.g. pricebck_04w IS NULL
+# -- previous month ( EXACTLY ONE month of  future data in the database)
+# select * from fe_data_store.si_finecon2 where dateindex = 17256;  -- e.g. pricebck_04w IS FILLED
+# 
+# select * from fe_data_store.si_finecon2 where dateindex in (17256,17284) where ticker = 'AAPL';
+# -- end drill 2
+# 
+# C:\PG-9.6._>"C:\PG-9.6._\bin\pg_ctl" -D "C:\PG-9.6._\data" stop -m fast"
+#   any wierd AVG interference? ... then re-cycle PostgreSQL ... make sure
+# 
+# ---- end VERY EARLY MORNING MON APR 03 2017, SUN MAY 29 2017 ----
+# -------------------------------------------------------------
+
+#### MONTHLY METHOD ENDS ####
+
+
+
 #### QUERIES BEGIN ####
 
 # -- find out whether the sp500 companies are actually 'doing better' xor 'inflating(bubbling)'
