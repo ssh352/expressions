@@ -2895,16 +2895,14 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
 # --TODO: [ ] ADD/TRY stability of the last 12 months of returns
 
 
+
 # -- of ALL firms in HISTORY
 # -- UNFINISHED (main QUERY IS DONE) ( meant as to determine the MARGINAL returns of the firms that 
 # --  that ONLY have reported WITHIN the last month ( SO now_dateindex >= now_perend_q1 > now_dateindexp01lwd )
 # --
 # -- determine earlier(erlr): mktcap, price sales_q2, sales_q1, netinc_q1, netinc_q2, erlr_mktcap, erlr_price
 # -- print now(now) SAME AS ABOVE and now_perend_q2 and now_perend_q1, now_mktcap, now_price
-# 
-# -- ADD [ ] dateindex [ ] company_id
-# -- SO I CAN add 'new information'  into the postgresql database
-# 
+
 # set search_path to fe_data_store;
 # set time zone 'utc';
 # --set work_mem to  '1200MB';
@@ -2913,8 +2911,8 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
 # -- postgresql 9.6
 # set max_parallel_workers_per_gather to 4; -- not 'written in docs'
 # 
-# select sq.* 
-#   from ( select distinct dateindex from si_finecon2 ) curr -- Index Only Scan
+# select sq.*     -- Index Only Scan
+#   from ( select distinct dateindex from si_finecon2 ) curr  
 # join lateral  -- for each dateindex,  load in 'current record + previous record', process, then loop to the next dateindex
 # (
 #   with clump as ( 
@@ -2954,15 +2952,13 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
 #   , coalesce(now.netinc_q2,0)  now_netinc_q2
 #   , coalesce(now.netinc_q1,0)  now_netinc_q1
 #   from 
-#   clump now inner join clump erlr on now.dateindex = erlr.dateindexp01lwd and now.company_id = erlr.company_id
-# ) sq on (true)
+#   clump now inner join clump erlr on now.dateindexp01lwd  = erlr.dateindex and now.company_id = erlr.company_id
+# ) sq on (true) -- order by dateindex, now_company;
 # -- 177 seconds(cold run(first)) most often ( entire database 618,000 rows )
 # -- 
 # -- 60 seconds ( 13 seconds to query + 47 seconds on data load 
 
-
-
-#### QUERIES BEGIN ####
+#### QUERIES ENDED ####
 
 #        
 #          
