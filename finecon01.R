@@ -2706,11 +2706,33 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
 # upload_lwd_sipro_dbfs_to_db(exact_lwd_dbf_dirs = sort(all_load_days_lwd[all_load_days_lwd <= (15155 + 400)], decreasing = TRUE))
 
 
+#### QUERIES BEGIN ####
 
 # -- find out whether the sp500 companies are actually 'doing better' xor 'inflating(bubbling)'
 # --
 # -- from NOW(17197) and then back one year ( and 3 months ): 16829 - 100
+# 
+# set search_path to fe_data_store;
+# set time zone 'utc';
+# --set work_mem to '1200MB';
+#   set work_mem to '2047MB';
+# set constraint_exclusion = on;
+# -- postgresql 9.6
+# set max_parallel_workers_per_gather to 4; -- not 'written in docs'
+# 
 # -- NOTE: (if I want to dig deeper: e.g. per month) per company: perend_q1
+# 
+# -- dateindex 
+# -- dateindex_dt 
+# -- sp500_price_mktcap_wtd -- somwhere around 5000
+# -- sp500_price_mktcap_wtd_m00_m01_pctchg_ann 
+# -- sp500_market_ov_sales 
+# -- sp500_market_ov_sales_m00_m01_pctchg_ann 
+# -- sp500_market_ov_netinc 
+# -- sp500_market_ov_netinc_m00_m01_pctchg_ann 
+# -- sp500_sales_ov_netinc 
+# -- sp500_sales_ov_netinc_m00_m01_pctchg_ann
+# 
 # with
 # sp500_total_measures as
 # (
@@ -2767,13 +2789,13 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
 # ) 
 # select te.dateindex, te.dateindex_dt
 #   ,      te.sp500_price_mktcap_wtd
-#   , (lag(te.sp500_price_mktcap_wtd,0) over te_di - lag(te.sp500_price_mktcap_wtd,1) over te_di) / abs(lag(te.sp500_price_mktcap_wtd,1) over te_di) * 100.00 sp500_price_mktcap_wtd_m00_m01_pctchg
+#   , (lag(te.sp500_price_mktcap_wtd,0) over te_di - lag(te.sp500_price_mktcap_wtd,1) over te_di) / abs(lag(te.sp500_price_mktcap_wtd,1) over te_di) * 100.00 * 12 sp500_price_mktcap_wtd_m00_m01_pctchg_ann
 #   ,      te.sp500_market_ov_sales 
-#   , (lag(te.sp500_market_ov_sales,0)  over te_di - lag(te.sp500_market_ov_sales,1)  over te_di) / abs(lag(te.sp500_market_ov_sales,1)  over te_di) * 100.00 sp500_market_ov_sales_m00_m01_pctchg
+#   , (lag(te.sp500_market_ov_sales,0)  over te_di - lag(te.sp500_market_ov_sales,1)  over te_di) / abs(lag(te.sp500_market_ov_sales,1)  over te_di) * 100.00 * 12 sp500_market_ov_sales_m00_m01_pctchg_ann
 #   ,      te.sp500_market_ov_netinc 
-#   , (lag(te.sp500_market_ov_netinc,0) over te_di - lag(te.sp500_market_ov_netinc,1) over te_di) / abs(lag(te.sp500_market_ov_netinc,1) over te_di) * 100.00 sp500_market_ov_netinc_m00_m01_pctchg
+#   , (lag(te.sp500_market_ov_netinc,0) over te_di - lag(te.sp500_market_ov_netinc,1) over te_di) / abs(lag(te.sp500_market_ov_netinc,1) over te_di) * 100.00 * 12 sp500_market_ov_netinc_m00_m01_pctchg_ann
 #   ,      te.sp500_sales_ov_netinc 
-#   , (lag(te.sp500_sales_ov_netinc,0)  over te_di - lag(te.sp500_sales_ov_netinc,1)  over te_di) / abs(lag(te.sp500_sales_ov_netinc,1)  over te_di) * 100.00 sp500_sales_ov_netinc_m00_m01_pctchg
+#   , (lag(te.sp500_sales_ov_netinc,0)  over te_di - lag(te.sp500_sales_ov_netinc,1)  over te_di) / abs(lag(te.sp500_sales_ov_netinc,1)  over te_di) * 100.00 * 12 sp500_sales_ov_netinc_m00_m01_pctchg_ann
 # from 
 #   sp500_total_measures te 
 # window 
@@ -2786,8 +2808,8 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
 # --TODO: [ ] ADD mktvalue weight of those that have reported within the last month
 # --          [ ] ADD yoy(q1 v.s. q5) pctchg of those that have reported within the last month
 # --TODO: Ratio adjustment for those dateindex that do NOT have exactly 500 firms
-
 # --TODO: [ ] load GetSymbols into the database
+
 
 
 # IF I CARE TO expand ... EXCELLENT ARTICLE
@@ -2795,6 +2817,19 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
 # https://www.compose.com/articles/metrics-maven-calculating-a-moving-average-in-postgresql/
 
 
+
+# -- of ALL firms in HISTORY
+# -- the 52,26,13,4 week *returns* of *avg* and *sd*
+# --   for best sales/mktcap in ranks 1-10 of 1000 ranks
+# 
+# set search_path to fe_data_store;
+# set time zone 'utc';
+# --set work_mem to '1200MB';
+#   set work_mem to '2047MB';
+# set constraint_exclusion = on;
+# -- postgresql 9.6
+# set max_parallel_workers_per_gather to 4; -- not 'written in docs'
+# 
 # -- ORIGINAL HAD INSTEAD:  ( sales / shr_aq ) / price   MAY?_HAD_SLIGHTLY_BETTER_RETURNS
 # -- ORIGINAL ALSO HAD + : sharpe, sortino, sharp_short, sortino_true, sortino_short, sortino_true_short
 # -- ORIGINAL USED 85 SECONDS
@@ -2860,33 +2895,75 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
 # --TODO: [ ] ADD/TRY stability of the last 12 months of returns
 
 
-finecon01 <- function() {
-  
-  # R version 3.3.2 (2016-10-31) # sessionInfo()
-  
-  ops <- options()
-  
-  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
-  options(digits = 22) 
-  options(max.print=99999)
-  options(scipen=255) # Try these = width
-  
-  #correct for TZ 
-  oldtz <- Sys.getenv('TZ')
-  if(oldtz=='') {
-    Sys.setenv(TZ="UTC")
-  }
-  
-  finecon01_inner <- function () {
-    
-  # LATER GUTS
-    
-  }
-  finecon01_inner()
-  
-  Sys.setenv(TZ=oldtz)
-  options(ops)
-}
+# -- of ALL firms in HISTORY
+# -- UNFINISHED (main QUERY IS DONE) ( meant as to determine the MARGINAL returns of the firms that 
+# --  that ONLY have reported WITHIN the last month ( SO now_dateindex >= now_perend_q1 > now_dateindexp01lwd )
+# --
+# -- determine earlier(erlr): mktcap, price sales_q2, sales_q1, netinc_q1, netinc_q2, erlr_mktcap, erlr_price
+# -- print now(now) SAME AS ABOVE and now_perend_q2 and now_perend_q1, now_mktcap, now_price
+# 
+# -- ADD [ ] dateindex [ ] company_id
+# -- SO I CAN add 'new information'  into the postgresql database
+# 
+# set search_path to fe_data_store;
+# set time zone 'utc';
+# --set work_mem to  '1200MB';
+# set work_mem to '2047MB';
+# set constraint_exclusion = on;
+# -- postgresql 9.6
+# set max_parallel_workers_per_gather to 4; -- not 'written in docs'
+# 
+# select sq.* 
+#   from ( select distinct dateindex from si_finecon2 ) curr -- Index Only Scan
+# join lateral  -- for each dateindex,  load in 'current record + previous record', process, then loop to the next dateindex
+# (
+#   with clump as ( 
+#     -- pairs(sets) for performance reasons
+#     select * from si_finecon2 now where now.dateindex = curr.dateindex  -- even a WITH statement CAN reference the OUTSIDE of LATERAL
+#     union all
+#     select * from si_finecon2 now where now.dateindex = ( select distinct on (now.dateindexp01lwd) dateindexp01lwd from si_finecon2 now where now.dateindex = curr.dateindex ) 
+#   )
+#   select
+#     now.dateindex
+#   , now.dateindex now_dateindex
+#   , to_timestamp(now.dateindex*3600*24)::date now_dateindex_dt
+#   , now.company_id             company_id 
+#   , now.company_id             now_company_id 
+#   , now.ticker                 now_ticker
+#   , now.company                now_company
+#   , now.industry_desc          now_industry_desc
+#   , now.sector_desc            now_sector_desc
+#   , now.perend_q2 now_perend_q2
+#   , to_timestamp(now.perend_q2*3600*24)::date now_perend_q2_dt
+#   , now.perend_q1 now_perend_q
+#   , to_timestamp(now.perend_q1*3600*24)::date now_perend_q1_dt              -- data current(last known of) as of 
+#   , now.dateindexp01eom now_dateindexp01eom
+#   , to_timestamp(now.dateindexp01eom*3600*24)::date now_dateindexp01eom_dt  -- (later: find the gap of companies that have reported)
+#   , erlr.dateindexp01lwd erlr_dateindexp01lwd
+#   , to_timestamp(erlr.dateindexp01lwd*3600*24)::date erlr_dateindexp01lwd_dt
+#   , coalesce(erlr.mktcap,0)    erlr_mktcap
+#   , coalesce(now.mktcap,0)     now_mktcap
+#   , coalesce(erlr.price,0)     erlr_price
+#   , coalesce(now.price,0)      now_price
+#   , coalesce(erlr.sales_q2,0)  erlr_sales_q2
+#   , coalesce(erlr.sales_q1,0)  erlr_sales_q1
+#   , coalesce(erlr.netinc_q1,0) erlr_netinc_q1
+#   , coalesce(erlr.netinc_q2,0) erlr_netinc_q2
+#   , coalesce(now.sales_q2,0)   now_sales_q2
+#   , coalesce(now.sales_q1,0)   now_sales_q1
+#   , coalesce(now.netinc_q2,0)  now_netinc_q2
+#   , coalesce(now.netinc_q1,0)  now_netinc_q1
+#   from 
+#   clump now inner join clump erlr on now.dateindex = erlr.dateindexp01lwd and now.company_id = erlr.company_id
+# ) sq on (true)
+# -- 177 seconds(cold run(first)) most often ( entire database 618,000 rows )
+# -- 
+# -- 60 seconds ( 13 seconds to query + 47 seconds on data load 
+
+
+
+#### QUERIES BEGIN ####
+
 #        
 #          
 #                                                   
