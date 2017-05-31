@@ -2698,13 +2698,97 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
   
 }
 
-# upload_lwd_sipro_dbfs_to_db()
+# upload_lwd_sipro_dbfs_to_db() # HARD NOTE: THIS DOES EVERYTHING 7+ YEARS
 # upload_lwd_sipro_dbfs_to_db(months_only_back = 13)
 # upload_lwd_sipro_dbfs_to_db(exact_lwd_dbf_dirs = 16678) 
 
 # untried BUT truncate table is BETTER for company_id/ticker SYSTEM change PROBLEMS
 # upload_lwd_sipro_dbfs_to_db(exact_lwd_dbf_dirs = sort(all_load_days_lwd[all_load_days_lwd <= (15155 + 400)], decreasing = TRUE))
 
+
+
+# rm(list=setdiff(ls(all.names=TRUE),c("si_all_g_df","con","cid")))
+# debugSource('W:/R-3.4._/finecon01.R')
+
+
+
+# go out to th web, get the data, return the data into an xts object
+retrieve_us_bonds <- function(when = NULL){
+  
+  retrieve_us_bonds_inner <- function(when = NULL) {
+    
+    # uses XML tidyr zoo
+    
+    # EVERYTHING ( SINCE 1990 )
+    base_url        <- "http://data.treasury.gov/feed.svc/DailyTreasuryYieldCurveRateData"
+    url_when_filter <- "?$filter=year(NEW_DATE)%20eq%20"
+    run_url         <- base_url
+    
+    # when(character vectore of size 1): "all" xor "recent"(this year)(default),  xor "<specific year>"
+    when_processed <- FALSE
+    if((when_processed == FALSE) && (is.null(when) || (when == "recent"))) { 
+      run_url <- paste0(run_url,url_when_filter,format(Sys.Date(),"%Y")) 
+      when_processed <- TRUE
+    }
+    if((when_processed == FALSE) && (!is.null(when) && (when == "all"))) { 
+      run_url <- run_url 
+      when_processed <- TRUE
+    }
+    
+    if((when_processed == FALSE) && (!is.null(when) && (nchar(when) == 4))) { # e.g. specific  year "2010"
+      run_url <- paste0(run_url,url_when_filter,when)
+      when_processed <- TRUE
+    }
+    
+    # process: go get the data
+    treasury.xml <- XML::xmlParse(run_url)
+    
+    # function to process
+    xml.field <- function(name) {
+      XML::xpathSApply(XML::xmlRoot(treasury.xml), paste0('//ns:entry/ns:content//d:', name),
+                       function(x) {XML::xmlValue(x)},
+                       namespaces = c(ns = 'http://www.w3.org/2005/Atom',
+                                      d = 'http://schemas.microsoft.com/ado/2007/08/dataservices'))
+    }
+    
+    us_bonds <- data.frame(
+      us_bonds_1m = as.numeric(xml.field('BC_1MONTH')),
+      us_bonds_3m = as.numeric(xml.field('BC_3MONTH')),
+      us_bonds_6m = as.numeric(xml.field('BC_6MONTH')),
+      us_bonds_1y = as.numeric(xml.field('BC_1YEAR')),
+      us_bonds_3y = as.numeric(xml.field('BC_3YEAR')),
+      us_bonds_5y = as.numeric(xml.field('BC_5YEAR')),
+      us_bonds_7y = as.numeric(xml.field('BC_7YEAR')),
+      us_bonds_10y = as.numeric(xml.field('BC_10YEAR')),
+      us_bonds_20y = as.numeric(xml.field('BC_20YEAR')),
+      us_bonds_30y = as.numeric(xml.field('BC_30YEAR'))
+    )
+    
+    row.names(us_bonds) <- zoo::as.Date( strptime(xml.field('NEW_DATE'), format = '%Y-%m-%dT%H:%M:%S', tz = 'UTC') )
+    # non-Date index
+    us_bonds <- xts::as.xts(as.matrix(us_bonds)) # df SO NOT xts:::as.matrix.xts
+    
+    # index type will be 'Date'
+    us_bonds <- xts::xts(xts:::coredata.xts(us_bonds),zoo::as.Date( xts:::index.xts(us_bonds)))
+    
+    return(us_bonds)
+    
+  }
+  
+  return(retrieve_us_bonds_inner(when = when))
+  
+}
+
+# this year
+# us_bonds <- retrieve_us_bonds() 
+# us_bonds <- retrieve_us_bonds("2016") # so from a specific year e.g. 2016 ONLY
+# all since 1990
+# # us_bonds <- retrieve_us_bonds("all")
+
+
+
+
+# rm(list=setdiff(ls(all.names=TRUE),c("si_all_g_df","con","cid","us_bonds")))
 
 
 #### BEGIN WORKFLOW ####
