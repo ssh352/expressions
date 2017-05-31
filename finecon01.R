@@ -2717,7 +2717,7 @@ retrieve_us_bonds <- function(when = NULL){
   
   retrieve_us_bonds_inner <- function(when = NULL) {
     
-    # uses XML tidyr zoo
+    # uses XML zoo xts
     
     # EVERYTHING ( SINCE 1990 )
     base_url        <- "http://data.treasury.gov/feed.svc/DailyTreasuryYieldCurveRateData"
@@ -2778,7 +2778,6 @@ retrieve_us_bonds <- function(when = NULL){
   return(retrieve_us_bonds_inner(when = when))
   
 }
-
 # # this year
 # # us_bonds <- retrieve_us_bonds() 
 # # us_bonds <- retrieve_us_bonds("2016") # so from a specific year e.g. 2016 ONLY
@@ -2794,19 +2793,41 @@ retrieve_us_bonds <- function(when = NULL){
 #
 
 # add 'past change'(return-ish) data 04W, 13w, 26w, 52w in 'xts/quantmod style' (ignore weekend days)
-chg_XXw_ann <- function(xtsobj = NULL) {
+chgs_XXw_ann <- function(xtsobj = NULL) {
   
-  chg_XXw_ann_inner <- function(xtsobj = NULL) {
+  # uses xts
+  
+  # get the name e.g. "us_bonds"
+  xtsobj_name <- as.character(substitute(xtsobj))
+  
+  chgs_XXw_ann_inner <- function(xtsobj = NULL, xtsobj_name = NULL) {
     
-    # note XXW will have NAs becuase the previous time(XXw) data is not available ( so I want to load the previous year)
+
+    xtsobj_chg_04w_ann <- (xtsobj - xts::lag.xts(xtsobj, 1*22)) / abs( xts::lag.xts(xtsobj, 1*22)) * 100 * 12
+    colnames(xtsobj_chg_04w_ann) <- paste0(colnames(xtsobj_chg_04w_ann),"_chg_04w_ann")
+    #
+    xtsobj_chg_13w_ann <- (xtsobj - xts::lag.xts(xtsobj, 3*22)) / abs( xts::lag.xts(xtsobj, 3*22)) * 100 *  4
+    colnames(xtsobj_chg_13w_ann) <- paste0(colnames(xtsobj_chg_13w_ann),"_chg_13w_ann")
+    #
+    xtsobj_chg_26w_ann <- (xtsobj - xts::lag.xts(xtsobj, 6*22)) / abs( xts::lag.xts(xtsobj, 6*22)) * 100 *  2
+    colnames(xtsobj_chg_26w_ann) <- paste0(colnames(xtsobj_chg_26w_ann),"_chg_26w_ann")
+    #
+    xtsobj_chg_52w_ann <- (xtsobj - xts::lag.xts(xtsobj,12*22)) / abs( xts::lag.xts(xtsobj,12*22)) * 100 *  1
+    colnames(xtsobj_chg_52w_ann) <- paste0(colnames(xtsobj_chg_52w_ann),"_chg_52w_ann")
+    
+    xtsobj_chg <- xts::merge.xts(xtsobj,xtsobj_chg_04w_ann,xtsobj_chg_13w_ann,xtsobj_chg_26w_ann,xtsobj_chg_52w_ann)
+    return(xtsobj_chg)
     
   }
-  chg_XXw_ann_inner(xtsobj = xtsobj)
+  return(chgs_XXw_ann_inner(xtsobj = xtsobj, xtsobj_name = xtsobj_name))
   
-}
+}    
+# note XXW will have NAs becuase the previous time(XXw) data is not available ( so I want to load the previous year)
+# us_bonds_chgs <- chgs_XXw_ann(us_bonds)
+
+# rm(list=setdiff(ls(all.names=TRUE),c("si_all_g_df","con","cid","us_bonds","us_bonds_chgs")))
 
 
-# rm(list=setdiff(ls(all.names=TRUE),c("si_all_g_df","con","cid","us_bonds")))
 
 
 #### BEGIN WORKFLOW ####
