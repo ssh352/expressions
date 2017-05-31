@@ -2779,13 +2779,31 @@ retrieve_us_bonds <- function(when = NULL){
   
 }
 
-# this year
-# us_bonds <- retrieve_us_bonds() 
-# us_bonds <- retrieve_us_bonds("2016") # so from a specific year e.g. 2016 ONLY
-# all since 1990
+# # this year
+# # us_bonds <- retrieve_us_bonds() 
+# # us_bonds <- retrieve_us_bonds("2016") # so from a specific year e.g. 2016 ONLY
+# # all since 1990
 # # us_bonds <- retrieve_us_bonds("all")
+# #
+# # note XXW will have NAs becuase the previous time(XXw) data is not available 
+# #   ( so I want to load the previous year)
+# # typically ( often )
+#
+#             # now(this year up to today)                                # all of last year
+# us_bonds <- xts::rbind.xts(retrieve_us_bonds(format(Sys.Date(),"%Y")),  retrieve_us_bonds( as.character(as.integer(format(Sys.Date(),"%Y")) -1) ) )
+#
 
-
+# add 'past change'(return-ish) data 04W, 13w, 26w, 52w in 'xts/quantmod style' (ignore weekend days)
+chg_XXw_ann <- function(xtsobj = NULL) {
+  
+  chg_XXw_ann_inner <- function(xtsobj = NULL) {
+    
+    # note XXW will have NAs becuase the previous time(XXw) data is not available ( so I want to load the previous year)
+    
+  }
+  chg_XXw_ann_inner(xtsobj = xtsobj)
+  
+}
 
 
 # rm(list=setdiff(ls(all.names=TRUE),c("si_all_g_df","con","cid","us_bonds")))
