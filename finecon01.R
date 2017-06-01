@@ -2689,9 +2689,20 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
     upsert(si_all_g_df, keys = c("company_id"))
     
     warning(paste0("Ending disk dbf dir: ",dir_i))
-
+    
+    
   }
   
+  if(!is.null(months_only_back)) {
+    # NOTE:US BONDS SOME GAPS DO EXIST IN THE DATA ( TO DO [ ] DETECT NULL AND APPROXIMATION [ ]
+    load_us_bond_instruments(us_bonds_year_back = (months_only_back %/% 12 + 2) ) # MIMIMUM OF 2 YEARS OF DATA
+  }
+
+  if(is.null(months_only_back)) {
+    # NOTE: US BONDS SOME GAPS DO EXIST IN THE DATA ( TO DO [ ] DETECT NULL AND APPROXIMATION [ ]
+    load_us_bond_instruments() # ALL OF the data
+  }
+
   options(ops)
   
   return(invisible())
@@ -3007,21 +3018,21 @@ load_us_bond_instruments <- function(us_bonds_year_back = NULL) {
     if (is.null(us_bonds_year_back)) { 
       print(paste0("BEGIN RETRIEVING US BONDS OF ALL YEARS"))
       us_bonds <- retrieve_us_bonds("all") 
-      print(paste0("END RETRIEVING US BONDS OF ALL TWO YEARS"))
+      print(paste0("END RETRIEVING US BONDS OF ALL YEARS"))
     }
 
     # note XXW will have NAs becuase the previous time(XXw) data is not available 
     #    ( so I want to load the previous year)
     # typically ( often )
     #
-    if(us_bonds_year_back == 2) {
+    if(!is.null(us_bonds_year_back) && (us_bonds_year_back == 2)) {
       print(paste0("BEGIN RETRIEVING US BONDS OF LAST TWO YEARS"))
       #             # now(this year up to today)                                # all of last year
       us_bonds <- xts::rbind.xts(retrieve_us_bonds(format(Sys.Date(),"%Y")),  retrieve_us_bonds( as.character(as.integer(format(Sys.Date(),"%Y")) -1) ) )
       print(paste0("END RETRIEVING US BONDS OF LAST TWO YEARS"))
     }
     
-    if(us_bonds_year_back > 2) {
+    if(!is.null(us_bonds_year_back) && (us_bonds_year_back > 2)) {
       
       # > as.character(as.integer(format(Sys.Date(),"%Y")) -(0:(us_bonds_year_back -1)))
       # [1] "2017" "2016" "2015"
