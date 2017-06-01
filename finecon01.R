@@ -2883,7 +2883,7 @@ xtsobjs_2_db_ready_df <- function(xtsobj = NULL, split_search = NULL, split_repl
 
 
 
-# typically(in this case) I only care about measures the fall on the last weekday of the month
+# typically(in this case) I only care about measures that fall on the last weekday of the month
 # 
 # us_bonds      <- to.monthly.lwd(us_bonds)
 # us_bonds_chgs <- to.monthly.lwd(us_bonds_chgs) 
