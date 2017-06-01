@@ -2893,6 +2893,77 @@ xtsobjs_2_db_ready_df <- function(xtsobj = NULL, split_search = NULL, split_repl
 # us_bonds_chgs <- xtsobjs_2_db_ready_df(us_bonds_chgs, split_search = "_chg", split_replace = ".chg",  split_sep = "[.]") # XOR "\\."
 
 
+load_instruments <- function(dfobj = NULL) {
+  
+  load_instruments_inner <- function(dfobj =NULL) {
+    
+    require(stringi)
+    require(stringr)
+    require(PivotalR)
+    
+    # no numeric greater than 999999.99
+    for (colnames_i in colnames(dfobj)) {
+      col_vector_data <- unlist(as.vector(dfobj[,colnames_i]))
+      if(is.numeric(col_vector_data) && !is.integer(col_vector_data)) {
+        within( dfobj, { 
+          assign( colnames_i, 
+                  ifelse(get(colnames_i) > 999999.99,999999.99, get(colnames_i)) 
+          )      } 
+        ) -> dfobj
+      }
+    } 
+    
+    
+    verify_connection()
+    
+    db.q("drop table if exists upsert_temp", conn.id = cid)
+
+    dbWriteTable(con, "upsert_temp", value = dfobj, append = FALSE, row.names = FALSE)
+    
+    # garantee that upsert_Temp values are unique
+    db.q("create unique index if not exists upsert_temp_dateindex_instruments_key on upsert_temp(dateindex, instrument);", conn.id = cid)
+    
+    
+    db.q("
+         create table if not exists fe_data_store.instruments
+         (
+         dateindex integer,
+         dateindexlwd integer,
+         dateindexeom integer,
+         instrument text,
+         instrument_value numeric(8,2),
+         chg_04w_ann numeric(8,2),
+         chg_13w_ann numeric(8,2),
+         chg_26w_ann numeric(8,2),
+         chg_52w_ann numeric(8,2)
+         );
+         ", conn.id = cid)
+    
+    db.q("create unique index if not exists instruments_dateindex_instrument_key on instruments(dateindex, instrument);", conn.id = cid)
+    
+    db.q("insert into 
+             instruments(" %s+% str_c(colnames(dfobj), collapse = ", ")  %s+% ")
+               select    " %s+% str_c(colnames(dfobj), collapse = ", ")  %s+% " from upsert_temp
+         on conflict(dateindex, instrument)
+         do update set ( " %s+% str_c(colnames(dfobj), collapse = ", ")  %s+% " ) = 
+                       ( " %s+% str_c(str_c("excluded.",colnames(dfobj)), collapse = ", ") %s+% " );")
+    
+    db.q("drop table if exists upsert_temp", conn.id = cid)
+    
+    return(TRUE)
+    
+  }
+  return(load_instruments_inner(dfobj = dfobj))
+
+}
+
+# rm(list=setdiff(ls(all.names=TRUE),c("si_all_g_df","con","cid","us_bonds","us_bonds_orig","us_bonds_chgs","us_bonds_chgs_orig")))
+
+# load_instruments(us_bonds)
+# load_instruments(us_bonds_chgs)
+
+
+
 
 
 #### BEGIN WORKFLOW ####
@@ -2930,6 +3001,8 @@ xtsobjs_2_db_ready_df <- function(xtsobj = NULL, split_search = NULL, split_repl
 # --------
 # 
 # add [my] transforms(<none>/ROLLING/SMA/PCTCHG/LAG[/CORRELATION]) &+ _WEIGHTED .. &+ _12_MO_SEASONAL-> 
+#     time(in_days)_since_report_release_date
+#     time(in_days)_since_asof_data_date
 #   add mead-adj-factor-vars(e..g. codings) and/or trendish_time-vars ->
 #     MANUALLY: eliminate non-[near]future-able data) -> 
 #       vtreat(eliminate bad luck)
