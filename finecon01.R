@@ -2815,7 +2815,7 @@ chgs_XXw_ann <- function(xtsobj = NULL) {
     xtsobj_chg_52w_ann <- (xtsobj - xts::lag.xts(xtsobj,12*22)) / abs( xts::lag.xts(xtsobj,12*22)) * 100 *  1
     colnames(xtsobj_chg_52w_ann) <- paste0(colnames(xtsobj_chg_52w_ann),"_chg_52w_ann")
     
-    xtsobj_chg <- xts::merge.xts(xtsobj,xtsobj_chg_04w_ann,xtsobj_chg_13w_ann,xtsobj_chg_26w_ann,xtsobj_chg_52w_ann)
+    xtsobj_chg <- xts::merge.xts(xtsobj_chg_04w_ann,xtsobj_chg_13w_ann,xtsobj_chg_26w_ann,xtsobj_chg_52w_ann)
     return(xtsobj_chg)
     
   }
@@ -2826,6 +2826,71 @@ chgs_XXw_ann <- function(xtsobj = NULL) {
 # us_bonds_chgs <- chgs_XXw_ann(us_bonds)
 
 # rm(list=setdiff(ls(all.names=TRUE),c("si_all_g_df","con","cid","us_bonds","us_bonds_chgs")))
+
+# adds columns: "dateindex", "dateindexlwd", "dateindexeom"
+# from an xts, prepares a df (meant later to be uploaded)
+#
+# split_search/split_replace - to slight change the instrument name ( meant as a pre-reqisite to split_sep )
+# split_sep                  - split the instrument name into two pieces 
+# e.g. us_bonds_30y_chg_04w_ann -> us_bonds_30y.chg_04w_ann -> two columns: us_bonds_30y chg_04w_ann(then many columsn of slight diff titles)
+xtsobjs_2_db_ready_df <- function(xtsobj = NULL, split_search = NULL, split_replace = NULL, split_sep = NULL) {
+  
+  ops <- options()
+  options(warn = 1)
+  
+  # I can only look at yesterdays data tomorrow
+  # remove THAT(IF EXISTS) to.monthly 'FUTURE measure raised'
+  if(tail(xts:::index.xts(xtsobj),1) >= Sys.Date()) xtsobj <- xtsobj[-NROW(xtsobj),]
+
+  # uses tidyr stringr DataCombine to.monthly.lwd
+  
+  cdata <- xts:::coredata.xts(xtsobj)
+  
+  # common columns
+  cdata <- as.data.frame(cdata,stringsAsFactors = FALSE)
+  cdata[,c("dateindex")   ] <-        as.integer(xts:::index.xts(xtsobj)) 
+  cdata[,c("dateindexlwd")] <- as.integer(xts:::index.xts(to.monthly.lwd(xtsobj))) # not use the coredata(I do not need)
+  cdata[,c("dateindexeom")] <- last_day_of_month(xts:::index.xts(xtsobj)) 
+  
+  dfobj <- DataCombine::MoveFront(cdata, Var=c("dateindex","dateindexlwd","dateindexeom")); rm(cdata)
+  
+  # reshape
+  gathered <- tidyr::gather(dfobj, instrument, instrument_value, -dateindex, -dateindexlwd, -dateindexeom)
+  # need later to separate on the dot
+  if(!is.null(split_search)) gathered$instrument <- stringr::str_replace(gathered$instrument,split_search,split_replace)
+  # into columns called "instrument" and "change"  "change" column has MANY values "chg_XXw_ann"
+  if(!is.null(split_sep)) separated <- tidyr::separate(gathered, col = instrument, into = c("instrument", "instrument_measure"), sep = split_sep) # "[.]" XOR "\\."
+  # put "instrument_value" column MANY values "chg_XXw_ann" into EACHEs own column
+  if(exists("separated"))  result <- spreaded <- tidyr::spread(separated, instrument_measure, instrument_value)
+  if(!exists("separated")) result <- gathered
+  
+  options(ops)
+  
+  return(result)
+  
+}
+
+# # us_bonds
+# dateindex dateindexlwd dateindexeom   instrument instrument_value
+# 165     17165        17165        17166 us_bonds_30y             3.06
+# 166     17197        17197        17197 us_bonds_30y             3.05
+# ...
+# 
+# # us_bonds_chgs
+# dateindex dateindexlwd dateindexeom   instrument chg_04w_ann chg_13w_ann chg_26w_ann chg_52w_ann
+# 155     17284        17284        17286 us_bonds_30y   -12.04013   -18.06452    35.85657    15.62500
+# 156     17284        17284        17286  us_bonds_3m    30.76923   240.00000   270.58824   247.82609
+
+
+
+# typically(in this case) I only care about measures the fall on the last weekday of the month
+# 
+# us_bonds      <- to.monthly.lwd(us_bonds)
+# us_bonds_chgs <- to.monthly.lwd(us_bonds_chgs) 
+# add columns, format df
+# 
+# us_bonds      <- xtsobjs_2_db_ready_df(us_bonds)
+# us_bonds_chgs <- xtsobjs_2_db_ready_df(us_bonds_chgs, split_search = "_chg", split_replace = ".chg",  split_sep = "[.]") # XOR "\\."
 
 
 
