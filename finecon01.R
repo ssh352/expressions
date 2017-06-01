@@ -2893,13 +2893,15 @@ xtsobjs_2_db_ready_df <- function(xtsobj = NULL, split_search = NULL, split_repl
 # us_bonds_chgs <- xtsobjs_2_db_ready_df(us_bonds_chgs, split_search = "_chg", split_replace = ".chg",  split_sep = "[.]") # XOR "\\."
 
 
-load_instruments <- function(dfobj = NULL) {
+load_instruments <- function(dfobj = NULL, no_update_earliest_year = NULL) {
   
-  load_instruments_inner <- function(dfobj =NULL) {
+  load_instruments_inner <- function(dfobj =NULL, no_update_earliest_year = NULL) {
     
     require(stringi)
     require(stringr)
     require(PivotalR)
+    
+    if(is.null(no_update_earliest_year)) no_update_earliest_year <- FALSE
     
     # no numeric greater than 999999.99
     for (colnames_i in colnames(dfobj)) {
@@ -2941,9 +2943,22 @@ load_instruments <- function(dfobj = NULL) {
     
     db.q("create unique index if not exists instruments_dateindex_instrument_key on instruments(dateindex, instrument);", conn.id = cid)
     
+     # want to NOT UPDATE the earliest year of 2( or 3) ( will be incomplete becuase no earlier data to calculate the XXw performance )
+    earl_loaded_year <-  db.q("select min(date_part('year', to_timestamp(dateindex*3600*24)::date)) earl_loaded_year from upsert_temp;", nrows = "all", conn.id = cid)
+    earl_loaded_year <- as.character(earl_loaded_year)
+    
+    no_update_earliest_year_f <- function(no_update_earliest_year = NULL, earl_loaded_year = NULL) {
+      if(no_update_earliest_year == TRUE) { 
+        " where date_part('year', to_timestamp(dateindex*3600*24)::date) > " %s+% earl_loaded_year 
+      } else { 
+          "" 
+      }
+    }
+    
+    # NOTE: some NON-past DATASOURCE do NOT NEED their earlier data removed ( e.g. no-over-time-change-data )
     db.q("insert into 
              instruments(" %s+% str_c(colnames(dfobj), collapse = ", ")  %s+% ")
-               select    " %s+% str_c(colnames(dfobj), collapse = ", ")  %s+% " from upsert_temp
+               select    " %s+% str_c(colnames(dfobj), collapse = ", ")  %s+% " from upsert_temp " %s+% no_update_earliest_year_f(no_update_earliest_year, earl_loaded_year) %s+% "
          on conflict(dateindex, instrument)
          do update set ( " %s+% str_c(colnames(dfobj), collapse = ", ")  %s+% " ) = 
                        ( " %s+% str_c(str_c("excluded.",colnames(dfobj)), collapse = ", ") %s+% " );")
@@ -2953,15 +2968,15 @@ load_instruments <- function(dfobj = NULL) {
     return(TRUE)
     
   }
-  return(load_instruments_inner(dfobj = dfobj))
+  return(load_instruments_inner(dfobj = dfobj, no_update_earliest_year = no_update_earliest_year))
 
 }
 
 # rm(list=setdiff(ls(all.names=TRUE),c("si_all_g_df","con","cid","us_bonds","us_bonds_orig","us_bonds_chgs","us_bonds_chgs_orig")))
 
 # load_instruments(us_bonds)
-# load_instruments(us_bonds_chgs)
-
+# early year does not have past-change data so TOO MANY nulls/NAs
+# load_instruments(us_bonds_chgs, no_update_earliest_year = TRUE)
 
 
 
