@@ -2978,7 +2978,103 @@ load_instruments <- function(dfobj = NULL, no_update_earliest_year = NULL) {
 # early year does not have past-change data so TOO MANY nulls/NAs
 # load_instruments(us_bonds_chgs, no_update_earliest_year = TRUE)
 
+# IF us_bonds_year_back = NULL then load everything from the BEGINNING'
+# 1 - this year                   (  'no_update_earliest_year = TRUE' will load an extra year )
+# 2 - this year and previous year (  'no_update_earliest_year = TRUE' will YET load anOTHER extra year )
+# 3 ... etc ...
+#
+# called like
+# 
+# > # months_back %/% 12 + 2 # min always
+# > #          13 %/% 12 + 2
+# >            13 %/% 12 + 2
+# [1] 3
+# 
+load_us_bond_instruments <- function(us_bonds_year_back = NULL) {
+ 
+  load_us_bond_instruments_inner <- function(us_bonds_year_back = NULL) {
+ 
+    print("BEGIN LOADING US BONDS")
+    
+    
+    # this year ( NULL is THIS YEAR ONLY! DIFFERNT FROM OTHERS )
+    # us_bonds <- retrieve_us_bonds() 
+    
+    #
+    # # us_bonds <- retrieve_us_bonds("2016") # so from a specific year e.g. 2016 ONLY
+    
+    # all since 1990
+    if (is.null(us_bonds_year_back)) { 
+      print(paste0("BEGIN RETREIVING US BONDS OF ALL YEARS"))
+      us_bonds <- retrieve_us_bonds("all") 
+      print(paste0("END RETREIVING US BONDS OF ALL TWO YEARS"))
+    }
 
+    # note XXW will have NAs becuase the previous time(XXw) data is not available 
+    #    ( so I want to load the previous year)
+    # typically ( often )
+    #
+    if(us_bonds_year_back == 2) {
+      print(paste0("BEGIN RETREIVING US BONDS OF LAST TWO YEARS"))
+      #             # now(this year up to today)                                # all of last year
+      us_bonds <- xts::rbind.xts(retrieve_us_bonds(format(Sys.Date(),"%Y")),  retrieve_us_bonds( as.character(as.integer(format(Sys.Date(),"%Y")) -1) ) )
+      print(paste0("END RETREIVING US BONDS OF LAST TWO YEARS"))
+    }
+    
+    if(us_bonds_year_back > 2) {
+      
+      # > as.character(as.integer(format(Sys.Date(),"%Y")) -(0:(us_bonds_year_back -1)))
+      # [1] "2017" "2016" "2015"
+      us_bonds_year_back_range <- as.character(as.integer(format(Sys.Date(),"%Y")) -(0:(us_bonds_year_back -1)))
+      us_bonds_data_list <- list()
+
+      # Reduce
+      for(us_bonds_year_back_range_i in us_bonds_year_back_range) {
+        
+        print(paste0("BEGIN RETREIVING US BONDS YEAR:",us_bonds_year_back_range_i))
+        curr_item <- retrieve_us_bonds(us_bonds_year_back_range_i)
+        print(paste0("END RETREIVING US BONDS YEAR:",us_bonds_year_back_range_i))
+        Sys.sleep(3.0)
+        us_bonds_data_list <- append(us_bonds_data_list,list(curr_item)) # 3stra list prevents df from collapsing
+      }
+      us_bonds <- do.call(xts::rbind.xts,us_bonds_data_list)
+      
+    }
+     
+    
+    # note XXW will have NAs becuase the previous time(XXw) data is not available ( so I want to load the previous year)
+    print(paste0("BEGIN CALCULATING US BONDS CHANGE RATES"))
+    us_bonds_chgs <- chgs_XXw_ann(us_bonds)
+    print(paste0("END CALCULATING US BONDS CHANGE RATES"))
+    
+    
+    # typically(in this case) I only care about measures that fall on the last weekday of the month
+    # 
+    print(paste0("BEGIN US BONDS TO.MONTHLY"))
+    us_bonds      <- to.monthly.lwd(us_bonds)
+    us_bonds_chgs <- to.monthly.lwd(us_bonds_chgs) 
+    print(paste0("END US BONDS TO.MONTHLY"))
+    # add columns, format df
+    # 
+    print(paste0("BEGIN US BONDS XTS TO DF"))
+    us_bonds      <- xtsobjs_2_db_ready_df(us_bonds)
+    us_bonds_chgs <- xtsobjs_2_db_ready_df(us_bonds_chgs, split_search = "_chg", split_replace = ".chg",  split_sep = "[.]") # XOR "\\."
+    print(paste0("END US BONDS XTS TO DF"))
+    
+    print(paste0("BEGIN US BONDS LOAD INTO POSTGRESQL DATABASE"))
+    load_instruments(us_bonds)
+    # early year does not have past-change data so TOO MANY nulls/NAs
+    load_instruments(us_bonds_chgs, no_update_earliest_year = TRUE)
+    print(paste0("END US BONDS LOAD INTO POSTGRESQL DATABASE"))
+    
+    print("END LOADING US BONDS")
+   
+  }
+  return(load_us_bond_instruments_inner(us_bonds_year_back = us_bonds_year_back))
+  
+}
+# load_us_bond_instruments() # ALL OF the data
+# load_us_bond_instruments(us_bonds_year_back = 3)
 
 
 #### BEGIN WORKFLOW ####
