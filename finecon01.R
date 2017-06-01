@@ -3005,9 +3005,9 @@ load_us_bond_instruments <- function(us_bonds_year_back = NULL) {
     
     # all since 1990
     if (is.null(us_bonds_year_back)) { 
-      print(paste0("BEGIN RETREIVING US BONDS OF ALL YEARS"))
+      print(paste0("BEGIN RETRIEVING US BONDS OF ALL YEARS"))
       us_bonds <- retrieve_us_bonds("all") 
-      print(paste0("END RETREIVING US BONDS OF ALL TWO YEARS"))
+      print(paste0("END RETRIEVING US BONDS OF ALL TWO YEARS"))
     }
 
     # note XXW will have NAs becuase the previous time(XXw) data is not available 
@@ -3015,10 +3015,10 @@ load_us_bond_instruments <- function(us_bonds_year_back = NULL) {
     # typically ( often )
     #
     if(us_bonds_year_back == 2) {
-      print(paste0("BEGIN RETREIVING US BONDS OF LAST TWO YEARS"))
+      print(paste0("BEGIN RETRIEVING US BONDS OF LAST TWO YEARS"))
       #             # now(this year up to today)                                # all of last year
       us_bonds <- xts::rbind.xts(retrieve_us_bonds(format(Sys.Date(),"%Y")),  retrieve_us_bonds( as.character(as.integer(format(Sys.Date(),"%Y")) -1) ) )
-      print(paste0("END RETREIVING US BONDS OF LAST TWO YEARS"))
+      print(paste0("END RETRIEVING US BONDS OF LAST TWO YEARS"))
     }
     
     if(us_bonds_year_back > 2) {
@@ -3041,7 +3041,6 @@ load_us_bond_instruments <- function(us_bonds_year_back = NULL) {
       
     }
      
-    
     # note XXW will have NAs becuase the previous time(XXw) data is not available ( so I want to load the previous year)
     print(paste0("BEGIN CALCULATING US BONDS CHANGE RATES"))
     us_bonds_chgs <- chgs_XXw_ann(us_bonds)
@@ -3075,6 +3074,7 @@ load_us_bond_instruments <- function(us_bonds_year_back = NULL) {
 }
 # load_us_bond_instruments() # ALL OF the data
 # load_us_bond_instruments(us_bonds_year_back = 3)
+# months_back <- 13; load_us_bond_instruments(us_bonds_year_back = (months_back %/% 12 + 2) )
 
 
 #### BEGIN WORKFLOW ####
