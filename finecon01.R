@@ -3088,6 +3088,214 @@ load_us_bond_instruments <- function(us_bonds_year_back = NULL) {
 # months_back <- 13; load_us_bond_instruments(us_bonds_year_back = (months_back %/% 12 + 2) )
 
 
+# independent function currenly not used for anything
+# 
+# inbound tibble/data.frame/xts object
+# note: this tblobj is expected to be of class data.frame
+load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
+
+  # have to grab right away
+  tblobj_name <- tolower(as.character(substitute(tblobj)))
+  
+  load_obj_direct_inner <- function(tblobj =NULL, key_columns = NULL) {
+    
+    # uses package functions: DataCombine::MoveFront, xts::xtsible, xts:::index.xts
+    # uses user functions: verify_connection, lwd_of_month, last_day_of_month
+    
+    ops <- options()
+    options(warn = 1)
+    
+    require(stringi)
+    require(stringr)
+    require(PivotalR)
+    
+    # as.vector unlist data.frame drop = TRUE
+    avud <- function( tblobj, col_name) { 
+      as.vector(unlist(tblobj[, col_name, drop = TRUE]))  
+    }
+    
+    if(is.null(key_columns)) stop("paremeter key_columns must be provided")
+    
+    # make all column names lower case 
+    # replace does with underscore
+    colnames(tblobj) <- tolower(colnames(tblobj))
+    colnames(tblobj) <- stringr::str_replace(colnames(tblobj),"[.]","_")
+
+    # rip off tibble peculiarities ( [x,y,drop = FALSE] is ignored )
+    if("xts" %in% class(tblobj)) {
+      tblobj <- data.frame(dateindex = xts:::index.xts(tblobj),tblobj) # at this point dateindex will be Date xor POSIXct
+    } else {
+      tblobj <- as.data.frame(tblobj, stringsAsFactors = FALSE)
+    }
+    
+
+    
+    # tidyquant/timekit tibble may have a "date"(Date) column xor "index"("POSIXct" "POSIXt")
+    # move "date" column to the front 
+    if("date" %in% colnames(tblobj)) {
+      tblobj <- DataCombine::MoveFront(tblobj,"date")
+      # rename date to dateindex
+      names(tblobj)[1] <- "dateindex"
+    }
+    # move "index" column to the front 
+    if("index" %in% colnames(tblobj)) {
+      tblobj <- DataCombine::MoveFront(tblobj,"index")
+      # rename date to dateindex
+      names(tblobj)[1] <- "dateindex"
+    }
+    
+    verify_connection()
+    
+    db.q(str_c("create table if not exists ", tblobj_name,"(dateindex int4, dateindexlwd int4, dateindexeom int4);"), conn.id = cid)
+    
+    # most have ONE column to be eligible to be pointed_at ( REPORT THIS BUG )
+    tblobj_db_ptr <- db.data.frame(tblobj_name, cid)
+    
+    # cycle through the column names in tblobj_db
+    # if the column exists in tblobj_db_ptr and also exists in  tblobj 
+    # then convert the tblobj column datatype to be the same(or compatiable ) as the tblobj_db datatype
+    
+     for (col_index_i in seq_along(tblobj_db_ptr@.col.name)) {
+      if(colnames(tblobj)[col_index_i] %in% tblobj_db_ptr@.col.name) {
+        match_index <- match(colnames(tblobj)[col_index_i], tblobj_db_ptr@.col.name, nomatch = 0) # FALSE
+        column_not_addressed <- TRUE
+        if(match_index) {
+          # is.POSIXct # still will NOT keep POSIXct datatype on drop = TRUE .... becomes 'seconds' 
+          if(xts::xtsible(tblobj[,col_index_i]) && 
+          ("POSIXct" %in% class(tblobj[,col_index_i])) &&
+             (tblobj_db_ptr@.col.udt_name[match_index] == "int4") && column_not_addressed == TRUE) {
+             within(tblobj, { assign( colnames(tblobj)[col_index_i], as.integer(get(colnames(tblobj)[col_index_i])) / (3600*24) ) }) -> tblobj
+             column_not_addressed <- FALSE
+             warning(str_c("column ", colnames(tblobj)[col_index_i], " datatype converion attempt to match what is in ", tblobj_name, " in ", tblobj_db_ptr@.col.name[match_index], " type ", tblobj_db_ptr@.col.udt_name[match_index]))
+          } 
+          # is.Date # still will keep Date datatype on drop = TRUE
+          if(xts::xtsible(tblobj[,col_index_i]) && 
+          ("Date" %in% class(tblobj[,col_index_i])) &&
+             (tblobj_db_ptr@.col.udt_name[match_index] == "int4") && column_not_addressed == TRUE) {
+             within(tblobj, { assign( colnames(tblobj)[col_index_i], as.integer(get(colnames(tblobj)[col_index_i]))) }) -> tblobj
+             column_not_addressed <- FALSE
+             warning(str_c("column ", colnames(tblobj)[col_index_i], " datatype converion attempt to match what is in ", tblobj_name, " in ", tblobj_db_ptr@.col.name[match_index], " type ", tblobj_db_ptr@.col.udt_name[match_index]))
+          } 
+          if(is.factor(tblobj[,col_index_i]) && 
+          (tblobj_db_ptr@.col.udt_name[match_index] == "text") && column_not_addressed == TRUE) {
+             within(tblobj, { assign( colnames(tblobj)[col_index_i], as.character(get(colnames(tblobj)[col_index_i]))) }) -> tblobj
+             column_not_addressed <- FALSE
+             warning(str_c("column ", colnames(tblobj)[col_index_i], " datatype converion attempt to match what is in ", tblobj_name, " in ", tblobj_db_ptr@.col.name[match_index], " type ", tblobj_db_ptr@.col.udt_name[match_index]))
+          } 
+          if(!is.numeric(tblobj[,col_index_i]) && 
+             (tblobj_db_ptr@.col.udt_name[match_index] == "numeric") && column_not_addressed == TRUE) {
+             within(tblobj, { assign( colnames(tblobj)[col_index_i], as.numeric(get(colnames(tblobj)[col_index_i]))) }) -> tblobj
+             column_not_addressed <- FALSE
+             warning(str_c("column ", colnames(tblobj)[col_index_i], " datatype converion attempt to match what is in ", tblobj_name, " in ", tblobj_db_ptr@.col.name[match_index], " type ", tblobj_db_ptr@.col.udt_name[match_index]))
+          }
+          # note: POSIXct will(would have if where here) drop down to 'numeric'(!integer) 'days * seconds'
+          if(!is.integer(tblobj[,col_index_i]) && 
+             (tblobj_db_ptr@.col.udt_name[match_index] == "int4") && column_not_addressed == TRUE) {
+             within(tblobj, { assign( colnames(tblobj)[col_index_i], as.integer(get(colnames(tblobj)[col_index_i]))) }) -> tblobj
+             column_not_addressed <- FALSE
+             warning(str_c("column ", colnames(tblobj)[col_index_i], " datatype converion attempt to match what is in ", tblobj_name, " in ", tblobj_db_ptr@.col.name[match_index], " type ", tblobj_db_ptr@.col.udt_name[match_index]))
+          }
+          if(!is.character(tblobj[,col_index_i]) && 
+             (tblobj_db_ptr@.col.udt_name[match_index] == "text") && column_not_addressed == TRUE) {
+             within(tblobj, { assign( colnames(tblobj)[col_index_i], as.character(get(colnames(tblobj)[col_index_i]))) }) -> tblobj
+             column_not_addressed <- FALSE
+             warning(str_c("column ", colnames(tblobj)[col_index_i], " datatype converion attempt to match what is in ", tblobj_name, " in ", tblobj_db_ptr@.col.name[match_index], " type ", tblobj_db_ptr@.col.udt_name[match_index]))
+          } 
+        }
+      }
+    } 
+    # cycle through the column names in tblobj
+    # if the column does not exist in tblobj_db_ptr then add it to tblobj_db_ptr
+    for (col_index_i in seq_along(colnames(tblobj))) {
+      if(!colnames(tblobj)[col_index_i] %in% tblobj_db_ptr@.col.name) {
+        # special handling Date -> convert to integer
+        # convert Date column to integers
+        if( "Date" %in% class(avud(tblobj,colnames(tblobj)[col_index_i]))) {
+          tblobj[,colnames(tblobj)[col_index_i]] <- as.integer(avud(tblobj,colnames(tblobj)[col_index_i]))
+        }
+        # convert POSIXct column to integers
+        if( "POSIXct" %in% class(avud(tblobj,colnames(tblobj)[col_index_i]))) {
+          tblobj[,colnames(tblobj)[col_index_i]] <- as.integer(avud(tblobj,colnames(tblobj)[col_index_i])) / (3600*24)
+        }
+        datatype_db_col <- switch(class(avud(tblobj,colnames(tblobj)[col_index_i])), integer = "int4", numeric = "numeric(8,2)", character = "text")
+        db.q("alter table ", tblobj_name," add if not exists ", colnames(tblobj)[col_index_i]," ", datatype_db_col, ";", conn.id = cid)
+        
+      }
+    }
+    
+    if("dateindex" %in% colnames(tblobj)) {
+      # at this point dateindex is an integer
+      # assume if the column dateindex[lwd/oem] is not there in tblobj then a 'custom' fill is not exptected to be done
+      # so I can do an automatic fill
+      dateindex <- tblobj[,"dateindex",drop =TRUE]
+      if(!"dateindexlwd" %in% colnames(tblobj)) tblobj$dateindexlwd <-       lwd_of_month(tblobj$dateindex); 
+      if(!"dateindexeom" %in% colnames(tblobj)) tblobj$dateindexeom <-  last_day_of_month(tblobj$dateindex); 
+    }
+    
+    # re-order columns that I have
+    matched <- match(c("dateindex","dateindexlwd","dateindexeom"), colnames(tblobj))
+    matched <- matched[complete.cases(matched)]
+    tblobj <- DataCombine::MoveFront(tblobj,colnames(tblobj)[matched])
+    
+    # unconditionally put htere
+    # only case accidentally/purposelydropped on the target
+    db.q(str_c("alter table ", tblobj_name," add if not exists dateindexlwd int4;"), conn.id = cid)
+    db.q(str_c("alter table ", tblobj_name," add if not exists dateindexeom int4;"), conn.id = cid)
+    
+    # add an index to tblobj_db_ptr if it does not exist
+    db.q(str_c("create unique index if not exists ", tblobj_name, "_" , str_c(key_columns, collapse = "_"),"_key  on ", tblobj_name, "(",str_c(key_columns, collapse = ", "),");"), conn.id = cid)
+
+    # no numeric greater than 999999.99
+    for (colnames_i in colnames(tblobj)) {
+                        # avud: note: POSIXct will(would have if where here) drop down to 'numeric' 'days * seconds'
+      if(is.numeric(tblobj[,colnames_i]) && !is.integer(tblobj[,colnames_i])) {
+        within( tblobj, { 
+          assign( colnames_i, 
+                  ifelse(get(colnames_i) > 999999.99,999999.99, get(colnames_i)) 
+          )      } 
+        ) -> tblobj
+      }
+    } 
+    
+    # load tblobj into "upsert_temp"
+    db.q("drop table if exists upsert_temp", conn.id = cid)
+    # would have used as.db.data.frame but 'mult-column primary key is 'not allowed' ( I SHOULD REPORT THIS BUG )
+    dbWriteTable(con, "upsert_temp", value = tblobj, append = FALSE, row.names = FALSE)
+    
+    # load "upsert_temp" into tblobj_db_ptr ( upsize tblobj_db_ptr )
+    db.q("insert into " %s+%
+      tblobj_name %s+% "(" %s+% str_c(colnames(tblobj), collapse = ", ")  %s+% ") " %s+% "
+                 select  " %s+% str_c(colnames(tblobj), collapse = ", ")  %s+% " from upsert_temp "  %s+% "
+             on conflict(" %s+% str_c(key_columns, collapse = ", ")       %s+% ") "    %s+% "
+         do update set ( " %s+% str_c(colnames(tblobj), collapse = ", ")  %s+% " ) = " %s+% "
+                       ( " %s+% str_c(str_c("excluded.",colnames(tblobj)), collapse = ", ") %s+% " );")
+    
+    db.q("drop table if exists upsert_temp", conn.id = cid)
+    
+    options(ops)
+    return(TRUE)
+    
+  }
+  return(load_obj_direct_inner(tblobj = tblobj, key_columns = key_columns))
+  
+}
+# load_obj_direct(tblobj = tblobj, key_columns = key_columns)
+# 
+# data("sample_matrix", package = "xts") # NOTE
+# my_POSIXct_xts <- xts::as.xts(sample_matrix)
+# load_obj_direct(my_POSIXct_xts, key_columns = "dateindex")
+# my_tbl_df <- timekit::tk_tbl(my_POSIXct_xts)
+# load_obj_direct(my_tbl_df, key_columns = "dateindex")
+# my_tbl_df$Higher <- my_tbl_df$High + 100
+# load_obj_direct(my_tbl_df, key_columns = "dateindex")
+#
+# tbl_df’, ‘tbl’ and 'data.frame'
+# above: program changes columns "date" or "index" to "dateindex"
+# vix <- tidyquant::tq_get(c("VIX"), get  = "stock.prices", from = "2016-01-01", to  = "2017-01-01")[,c("date","close")]
+# colnames(vix)[2] <- "vix"
+# load_obj_direct(vix, key_columns = "date")
+
+
 #### BEGIN WORKFLOW ####
 
 # ANDRE NEW PLAN - INBOUND
