@@ -13,7 +13,71 @@
 #           scanForPackages = TRUE, checkpointLocation = "~/", verbose = TRUE,
 #           use.knitr = system.file(package = "knitr") != "") 
 
-
+# install.packages("quantmod")  
+# curl
+# quantmod
+# TTR # direct call
+# xts # direct call
+# zoo # direct call
+# 
+# install.packages("FinancialInstrument") # actually NEED
+# 
+# install.packages("gbm") # direct call ( through caret )
+# install.packages("mondate") # direct call
+# install.packages("Holidays") # actually NEED
+# install.packages("TimeWarp") # direct call
+# install.packages("XML") # direct call ???
+# install.packages("rvest") # direct call
+# 
+# stringi
+# Rcpp
+# BH
+# jsonlite
+# mime
+# openssl
+# R6
+# stringr
+# xml2
+# httr
+# selectr
+# magrittr
+# 
+# install.packages("functional") # Curry # direct call
+# 
+# install.packages("caret") # direct call
+# 
+# colorspace
+# minqa
+# nloptr
+# RcppEigen
+# RColorBrewer
+# dichromat
+# munsell
+# labeling
+# rlang
+# lme4
+# SparseM
+# MatrixModels
+# digest
+# gtable
+# scales
+# tibble
+# lazyeval
+# pbkrtest
+# quantreg
+# iterators
+# ggplot2
+# car
+# foreach
+# plyr
+# ModelMetrics
+# reshape2
+# 
+# install.packages("matrixStats")
+# 
+# install.packages("dplyr")
+# assertthat
+# DBI
 
 # ( NOTE: REORGANIZE THESE 'checkpoint' NOTES )
 
@@ -342,7 +406,7 @@ bookmark_here <- 1
 #                   , interpolate = TRUE 
 # ) -> x
 # > str(x)
-# An ‘xts’ object on 1871-01-31/2016-12-31 containing:
+# An 'xts' object on 1871-01-31/2016-12-31 containing:
 #   Data: num [1:1752, 1] 7.85 7.62 7.51 7.79 7.97 8.1 8.1 8.23 8.03 7.91 ...
 # - attr(*, "dimnames")=List of 2
 # ..$ : NULL
