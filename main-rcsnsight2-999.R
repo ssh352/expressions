@@ -1,5 +1,8 @@
 
-## search for "LEFT_OFF"
+# main-rcsnsight2-999.R
+
+# R version 3.4.0 (2017-04-21)
+# Platform: x86_64-w64-mingw32/x64 (64-bit)
 
 # I ACTUALLY *RAN THESE THREE LINES IN *R TERM*
 # install.packages("checkpoint") 
@@ -110,7 +113,7 @@ options(max.print=99999)
 options(scipen=255) # Try these = width 
 
 # setwd("N:\\MyVMWareSharedFolder\\rcsnsight1\\R") # TO BE CHANGED LATER 
-setwd("W:/New_Economics/rcsnsight1.320")
+### I AM ALREADY THERE ### setwd("W:/New_Economics/rcsnsight1.340")
 
 bookmark_here <- 1
 
@@ -324,224 +327,254 @@ retrieveSymbolsQuantmodRdata <- function(
 bookmark_here <- 1
 
 
-# TO BE 'EDITED,DEBUGGED and TESTED' in ( main_rcsnsight1_999_miniplay5  )
 
-getSymbols.multpl <- function(
-    symbolText
-  , finSymbolAttribute = "Close" # if only ONE column
-  , interpolate = FALSE
-) {
-  
-  # Main page
-  # http://www.multpl.com/sitemap
-  
-  # More pages
-  # http://www.multpl.com/sitemap/world-economic-stats
-  
-  #   (SEEMS RECESSION SENSITIVE)
-  
-  #   S&P 500 Earnings Per Share. ( "12.month.EPS" )
-  #   http://www.multpl.com/s-p-500-earnings/table?f=m
-  #   
-  #   S&P 500 Real Earnings Growth by Quarter ( "SandP.500.Real.Earnings.Growth.Pct" )
-  #   http://www.multpl.com/s-p-500-real-earnings-growth/table/by-quarter
-  #   
-  #   S&P 500 PE Ratio by Month ( MATH) ( SandP.500.PE.Ratio )
-  #   Price to earnings ratio, based on trailing twelve month âas reportedâ
-  #   http://www.multpl.com/table?f=m
-  
-  #   S&P 500 Book Value Per Share by Quarter ( "SandP.500.BV.Per.Share" )
-  #   S&P 500 book value per share â non-inflation adjusted current dollars. 
-  #   http://www.multpl.com/s-p-500-book-value/table/by-quarter
-  
-  # web site and owner
-  # multpl.com  JOSHSTAIGER@GMAIL.COM ( in California )
-  # https://www.easywhois.com/
-  
-  # After I signed up for email, the following was returned
-  # multpl.com
-  # 1130 Shoreline Dr
-  # San Mateo, California 94404
-  
-  if(is.null(symbolText)) stop("missing arg symbolText in function getSymbols.multp")
-  
-  # create, later will be 'tested for null'
-  NULL -> url
-  
-  # which web page data do I want?
-  if(symbolText == "SandP.500.12.month.EPS")              "http://www.multpl.com/s-p-500-earnings/table?f=m" -> url
-  
-  # Annual percentage change in 12 month
-  if(symbolText == "SandP.500.Real.Earnings.Growth.Pct")  "http://www.multpl.com/s-p-500-real-earnings-growth/table/by-quarter" -> url
-  if(symbolText == "SandP.500.PE.Ratio")                  "http://www.multpl.com/table?f=m" -> url
-  if(symbolText == "SandP.500.BV.Per.Share")              "http://www.multpl.com/s-p-500-book-value/table/by-quarter" -> url
-  # OTHERS ( in future follow ) ..
-  # if
-  # if
-  
-  if(is.null(url)) stop(paste0("symbolText: ", symbolText ," url not found by function getSymbols.multp"))
-  
-  require(XML)     # NEED readHTMLTable
-  # Hadley Wickham # web scraping 
-  require(rvest)   # imports XML  masked from âpackage:XMLâ: xml
-  # IF uncommented : require(XML), USE: XML::xml to access XML::xml
-  require(xts)     # as.xts STUFF
-  
-  require(TimeWarp) # create month-end calendar dates from the first through the last
-  
-  # NO KNOWN requirement ( but I do not want to be pest and be kicked OUT)
-  Sys.sleep(1.0)
-  html(url) -> found 
-  
-  # content="multpl" expected
-  if(!grepl("multpl",html_text(found))) stop(paste0("seems internal url not(no_longer) correct for ", symbolText," in function getSymbols.multpl"))
-  
-  # get that data
-  readHTMLTable(html_node(found,"#datatable")
-                , stringsAsFactors = FALSE
-  ) -> prexts 
-  
-  # NOTE: SOME other TABLES have
-  #   some other non-numeric characters "commas", "slashes" 
-  # TO DO: clean_out AS NEEDED
-  
-  # if a first cell of a non-Date column has the text '\n estimate(red)' remove this
-  for(cn in colnames(prexts)) { 
-    if(cn != "Date") 
-      if(grepl("estimate",prexts[1,cn])) { 
-        gsub("estimate","",prexts[1,cn]) -> prexts[1,cn]
-        gsub("\n"      ,"",prexts[1,cn]) -> prexts[1,cn]
-        gsub(" "       ,"",prexts[1,cn]) -> prexts[1,cn]
-      }
-  }
-  
-  # check if this is a "Percent table" if so create a suffix
-  for(cn in colnames(prexts)) { 
-    if(cn != "Date") 
-      if(any(grepl("%",prexts[,cn]))) { 
-        paste0( colnames(prexts)[colnames(prexts) %in% cn],".Pct") -> colnames(prexts)[colnames(prexts) %in% cn]
-      }
-  }
-  
-  # in the 'not the Date' columns, if a 'percent sign' exists remove it'
-  for(cn in colnames(prexts)) { 
-    if(cn != "Date") gsub("%","",prexts[,cn]) -> prexts[,cn] 
-  }
-  
-  # make columns other than 'Date' to be numeric
-  for(cn in colnames(prexts)) { if(cn != "Date") as.numeric(prexts[,cn]) -> prexts[,cn] }
-  
-  # convert 'Jan 31, 1872' to friendly general date format YYYY-MM-DD
-  as.character(strptime(prexts[,"Date"],format='%b %d, %Y')) -> prexts[,"Date"]
-  
-  # create 'data.frame to xts' expected row.names
-  prexts[,"Date"] -> row.names(prexts)
-  
-  # remove NOT useful Date column ( safer form )
-  prexts[,which(!(colnames(prexts) %in% "Date")), drop = FALSE] -> prexts
-  
-  # make R-like column names (somthing character to dots)
-  gsub(" ", "."  , colnames(prexts)) -> colnames(prexts)
-  gsub("&", "and", colnames(prexts)) -> colnames(prexts)
-  
-  # when only ONE column, add a named " finSymbolAttribute"
-  if(NCOL(prexts) == 1) {
-    paste0(colnames(prexts)[1],".",finSymbolAttribute) -> colnames(prexts)[1]
-  }
-  
-  # convert to xts # SEE ? as.xts.methods
-  as.xts(prexts, dateFormat="Date") -> nowxts
-  
-  # fill in missing values
-  if( interpolate == TRUE ) {
-    
-    # create month-end calendar dates from the first through the last
-    xts( ,order.by = as.Date(c(dateSeq(from = index(first(nowxts)), to = index(last(nowxts)) , by="months", k.by = 1 ) - 1,index(last(nowxts)))) ) -> monthsxts
-    
-    # make lots of NAs
-    merge.xts(monthsxts,nowxts, join="left")            -> nowxts
-    
-      # merge.xt will prefix column(s)? with an "X".  Remove this "X"
-      sub("^X","",colnames(nowxts)) -> colnames(nowxts)
-    
-    # interpolate(na.approx) to locf(na.locf)
-    na.locf(merge.xts(monthsxts,nowxts, join="left")) -> nowxts
-    
-      # merge.xt will prefix column(s)? with an "X".  Remove this "X"
-      sub("^X","",colnames(nowxts)) -> colnames(nowxts)
-    
-  }
-  
-  # TEMPORARILY hardcoded until I find a more elegant solution
-  # REALLY 'should' have BEEN put through the QUAUNTSTRAT to.monthly fixer method
-  if(symbolText == "SandP.500.PE.Ratio") {
-    
-    # these dates are the '1st of the month'
-    # these dates also include an extra 'last observation within-month partial estimate'
-    
-    # remove THAT 'last observation within-month partial estimate'
-    # but I REALLY should DETECT this
-    nowxts[1:(NROW(nowxts)-1)] -> nowxts
-    
-    # since at the '1st of the month' subtract off one day
-    dateWarp(date=index(nowxts),spec=-1,by="days") -> index(nowxts) 
-    
-    return(nowxts)
-  }
-  
-  return(nowxts)
-}
+# # OLD CODE AND NEW CODE ( BOTH SAME # SCRAPE ( HTML HAS CHANGED ) #
+# # THIS IS 'OBSOLETE' # I CAN GET THIS DIRECTLY FROM QUANDL(THE AUTHOR POSTS THERE)
+# #
+# # REMOVED: BECAUSE (NOT USED) # DOES NOT HELP MY 'PREDICTIONS': SUPER POOR INFLUENCE #
+# #
+# # rvest_0.2.0  # 'html' is deprecated. Use 'read_html' instead. # xml2_1.1.1 #  read_html
+# # XML_3.98-1.1 # readHTMLTable ...                              # rvest_0.3.2  # html_table
+# 
+# 
+# getSymbols.multpl("SandP.500.12.month.EPS"
+#                   , finSymbolAttribute = "Close" # finSymbolAttribute 
+#                   , interpolate = TRUE 
+# ) -> x
+# > str(x)
+# An ‘xts’ object on 1871-01-31/2016-12-31 containing:
+#   Data: num [1:1752, 1] 7.85 7.62 7.51 7.79 7.97 8.1 8.1 8.23 8.03 7.91 ...
+# - attr(*, "dimnames")=List of 2
+# ..$ : NULL
+# ..$ : chr "Value......................Value.Close"
+# Indexed by objects of class: [Date] TZ: UTC
+# xts Attributes:  
+#   NULL
 
+# # TO BE 'EDITED,DEBUGGED and TESTED' in ( main_rcsnsight1_999_miniplay5  )
 
-retrieveSymbolsmultplRdata <- function(
-    finSymbol
-  , finSymbolAttribute 
-) {
-  
-  if( file.exists(paste0(getwd(),"/",finSymbol,".",finSymbolAttribute,".Rdata"))){
-    load(file = paste0(getwd(),"/",finSymbol,".",finSymbolAttribute,".Rdata"), envir = environment())
-    return(get(paste0(finSymbol,".",finSymbolAttribute)))
-  } else {
-    
-    if ( finSymbol == "SP500.12M.EPS" ) {
-      getSymbols.multpl("SandP.500.12.month.EPS"
-                        , finSymbolAttribute = finSymbolAttribute 
-                        , interpolate = TRUE 
-      ) -> x
-    }
-    
-    if ( finSymbol == "SP500.REAL.EARN.GR.PCT" ) {
-      getSymbols.multpl("SandP.500.Real.Earnings.Growth.Pct"
-                        , finSymbolAttribute = finSymbolAttribute 
-                        , interpolate = TRUE 
-      ) -> x
-    }
-    
-    if ( finSymbol == "SP500.PE.RATIO" ) {
-      getSymbols.multpl("SandP.500.PE.Ratio"
-                        , finSymbolAttribute = finSymbolAttribute 
-                        , interpolate = FALSE 
-      ) -> x
-      
-    }
-      
-    if ( finSymbol == "SP500.BV.PER.SHARE" ) {
-      getSymbols.multpl("SandP.500.BV.Per.Share"
-                          , finSymbolAttribute = finSymbolAttribute 
-                          , interpolate = TRUE 
-      ) -> x
-    }
-
-    
-    symbol <- paste0(finSymbol,".",finSymbolAttribute)
-    
-    assign(symbol,x)
-    save(list = c(symbol),file = paste0(getwd(),"/",finSymbol,".",finSymbolAttribute,".Rdata"))
-    return(get(symbol))
-    
-  }
-  
-}
+# getSymbols.multpl <- function(
+#     symbolText
+#   , finSymbolAttribute = "Close" # if only ONE column
+#   , interpolate = FALSE
+# ) {
+#   
+#   # Main page
+#   # http://www.multpl.com/sitemap
+#   
+#   # More pages
+#   # http://www.multpl.com/sitemap/world-economic-stats
+#   
+#   #   (SEEMS RECESSION SENSITIVE)
+#   
+#   #   S&P 500 Earnings Per Share. ( "12.month.EPS" )
+#   #   http://www.multpl.com/s-p-500-earnings/table?f=m
+#   #   
+#   #   S&P 500 Real Earnings Growth by Quarter ( "SandP.500.Real.Earnings.Growth.Pct" )
+#   #   http://www.multpl.com/s-p-500-real-earnings-growth/table/by-quarter
+#   #   
+#   #   S&P 500 PE Ratio by Month ( MATH) ( SandP.500.PE.Ratio )
+#   #   Price to earnings ratio, based on trailing twelve month âas reportedâ
+#   #   http://www.multpl.com/table?f=m
+#   
+#   #   S&P 500 Book Value Per Share by Quarter ( "SandP.500.BV.Per.Share" )
+#   #   S&P 500 book value per share â non-inflation adjusted current dollars. 
+#   #   http://www.multpl.com/s-p-500-book-value/table/by-quarter
+#   
+#   # web site and owner
+#   # multpl.com  JOSHSTAIGER@GMAIL.COM ( in California )
+#   # https://www.easywhois.com/
+#   
+#   # After I signed up for email, the following was returned
+#   # multpl.com
+#   # 1130 Shoreline Dr
+#   # San Mateo, California 94404
+#   
+#   if(is.null(symbolText)) stop("missing arg symbolText in function getSymbols.multp")
+#   
+#   # create, later will be 'tested for null'
+#   NULL -> url
+#   
+#   # which web page data do I want?
+#   if(symbolText == "SandP.500.12.month.EPS")              "http://www.multpl.com/s-p-500-earnings/table?f=m" -> url
+#   
+#   # Annual percentage change in 12 month
+#   if(symbolText == "SandP.500.Real.Earnings.Growth.Pct")  "http://www.multpl.com/s-p-500-real-earnings-growth/table/by-quarter" -> url
+#   if(symbolText == "SandP.500.PE.Ratio")                  "http://www.multpl.com/table?f=m" -> url
+#   if(symbolText == "SandP.500.BV.Per.Share")              "http://www.multpl.com/s-p-500-book-value/table/by-quarter" -> url
+#   # OTHERS ( in future follow ) ..
+#   # if
+#   # if
+#   
+#   if(is.null(url)) stop(paste0("symbolText: ", symbolText ," url not found by function getSymbols.multp"))
+#   
+#   require(XML)     # NEED readHTMLTable
+#   # Hadley Wickham # web scraping 
+#   require(rvest)   # imports XML  masked from âpackage:XMLâ: xml
+#   # IF uncommented : require(XML), USE: XML::xml to access XML::xml
+#   require(xts)     # as.xts STUFF
+#   
+#   require(TimeWarp) # create month-end calendar dates from the first through the last
+#   
+#   # NO KNOWN requirement ( but I do not want to be pest and be kicked OUT)
+#   Sys.sleep(1.0)
+#   
+#   # # rvest_0.2.0  # 'html' is deprecated. Use 'read_html' instead. ... # xml2_1.1.1 #  read_html
+#   ## html(url) -> found 
+#   read_html(url) -> found
+#   
+#   # content="multpl" expected
+#   if(!grepl("multpl",html_text(found))) stop(paste0("seems internal url not(no_longer) correct for ", symbolText," in function getSymbols.multpl"))
+#   
+#   # get that data
+#   
+#   # # XML_3.98-1.1 # readHTMLTable ... #  rvest_0.3.2  # html_table
+#   ## readHTMLTable(html_node(found,"#datatable")
+#   ##               , stringsAsFactors = FALSE
+#   ## ) -> prexts 
+#   html_table(found)[[1]] -> prexts
+#   
+#   # NOTE: SOME other TABLES have
+#   #   some other non-numeric characters "commas", "slashes" 
+#   # TO DO: clean_out AS NEEDED
+#   
+#   # if a first cell of a non-Date column has the text '\n estimate(red)' remove this
+#   for(cn in colnames(prexts)) { 
+#     if(cn != "Date") 
+#       if(grepl("estimate",prexts[1,cn])) { 
+#         gsub("estimate","",prexts[1,cn]) -> prexts[1,cn]
+#         gsub("\n"      ,"",prexts[1,cn]) -> prexts[1,cn]
+#         gsub(" "       ,"",prexts[1,cn]) -> prexts[1,cn]
+#       }
+#   }
+#   
+#   # check if this is a "Percent table" if so create a suffix
+#   for(cn in colnames(prexts)) { 
+#     if(cn != "Date") 
+#       if(any(grepl("%",prexts[,cn]))) { 
+#         paste0( colnames(prexts)[colnames(prexts) %in% cn],".Pct") -> colnames(prexts)[colnames(prexts) %in% cn]
+#       }
+#   }
+#   
+#   # in the 'not the Date' columns, if a 'percent sign' exists remove it'
+#   for(cn in colnames(prexts)) { 
+#     if(cn != "Date") gsub("%","",prexts[,cn]) -> prexts[,cn] 
+#   }
+#   
+#   # make columns other than 'Date' to be numeric
+#   for(cn in colnames(prexts)) { if(cn != "Date") as.numeric(prexts[,cn]) -> prexts[,cn] }
+#   
+#   # convert 'Jan 31, 1872' to friendly general date format YYYY-MM-DD
+#   as.character(strptime(prexts[,"Date"],format='%b %d, %Y')) -> prexts[,"Date"]
+#   
+#   # create 'data.frame to xts' expected row.names
+#   prexts[,"Date"] -> row.names(prexts)
+#   
+#   # remove NOT useful Date column ( safer form )
+#   prexts[,which(!(colnames(prexts) %in% "Date")), drop = FALSE] -> prexts
+#   
+#   # make R-like column names (somthing character to dots)
+#   gsub(" ", "."  , colnames(prexts)) -> colnames(prexts)
+#   gsub("&", "and", colnames(prexts)) -> colnames(prexts)
+#   
+#   # when only ONE column, add a named " finSymbolAttribute"
+#   if(NCOL(prexts) == 1) {
+#     paste0(colnames(prexts)[1],".",finSymbolAttribute) -> colnames(prexts)[1]
+#   }
+#   
+#   # convert to xts # SEE ? as.xts.methods
+#   as.xts(prexts, dateFormat="Date") -> nowxts
+#   
+#   # fill in missing values
+#   if( interpolate == TRUE ) {
+#     
+#     # create month-end calendar dates from the first through the last
+#     xts( ,order.by = as.Date(c(dateSeq(from = index(first(nowxts)), to = index(last(nowxts)) , by="months", k.by = 1 ) - 1,index(last(nowxts)))) ) -> monthsxts
+#     
+#     # make lots of NAs
+#     merge.xts(monthsxts,nowxts, join="left")            -> nowxts
+#     
+#       # merge.xt will prefix column(s)? with an "X".  Remove this "X"
+#       sub("^X","",colnames(nowxts)) -> colnames(nowxts)
+#     
+#     # interpolate(na.approx) to locf(na.locf)
+#     na.locf(merge.xts(monthsxts,nowxts, join="left")) -> nowxts
+#     
+#       # merge.xt will prefix column(s)? with an "X".  Remove this "X"
+#       sub("^X","",colnames(nowxts)) -> colnames(nowxts)
+#     
+#   }
+#   
+#   # TEMPORARILY hardcoded until I find a more elegant solution
+#   # REALLY 'should' have BEEN put through the QUAUNTSTRAT to.monthly fixer method
+#   if(symbolText == "SandP.500.PE.Ratio") {
+#     
+#     # these dates are the '1st of the month'
+#     # these dates also include an extra 'last observation within-month partial estimate'
+#     
+#     # remove THAT 'last observation within-month partial estimate'
+#     # but I REALLY should DETECT this
+#     nowxts[1:(NROW(nowxts)-1)] -> nowxts
+#     
+#     # since at the '1st of the month' subtract off one day
+#     dateWarp(date=index(nowxts),spec=-1,by="days") -> index(nowxts) 
+#     
+#     return(nowxts)
+#   }
+#   
+#   return(nowxts)
+# }
+# 
+# 
+# retrieveSymbolsmultplRdata <- function(
+#     finSymbol
+#   , finSymbolAttribute 
+# ) {
+#   
+#   if( file.exists(paste0(getwd(),"/",finSymbol,".",finSymbolAttribute,".Rdata"))){
+#     load(file = paste0(getwd(),"/",finSymbol,".",finSymbolAttribute,".Rdata"), envir = environment())
+#     return(get(paste0(finSymbol,".",finSymbolAttribute)))
+#   } else {
+#     
+#     if ( finSymbol == "SP500.12M.EPS" ) {
+#       getSymbols.multpl("SandP.500.12.month.EPS"
+#                         , finSymbolAttribute = finSymbolAttribute 
+#                         , interpolate = TRUE 
+#       ) -> x
+#     }
+#     
+#     if ( finSymbol == "SP500.REAL.EARN.GR.PCT" ) {
+#       getSymbols.multpl("SandP.500.Real.Earnings.Growth.Pct"
+#                         , finSymbolAttribute = finSymbolAttribute 
+#                         , interpolate = TRUE 
+#       ) -> x
+#     }
+#     
+#     if ( finSymbol == "SP500.PE.RATIO" ) {
+#       getSymbols.multpl("SandP.500.PE.Ratio"
+#                         , finSymbolAttribute = finSymbolAttribute 
+#                         , interpolate = FALSE 
+#       ) -> x
+#       
+#     }
+#       
+#     if ( finSymbol == "SP500.BV.PER.SHARE" ) {
+#       getSymbols.multpl("SandP.500.BV.Per.Share"
+#                           , finSymbolAttribute = finSymbolAttribute 
+#                           , interpolate = TRUE 
+#       ) -> x
+#     }
+# 
+#     
+#     symbol <- paste0(finSymbol,".",finSymbolAttribute)
+#     
+#     assign(symbol,x)
+#     save(list = c(symbol),file = paste0(getwd(),"/",finSymbol,".",finSymbolAttribute,".Rdata"))
+#     return(get(symbol))
+#     
+#   }
+#   
+# }
 
 
 
@@ -553,7 +586,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     
     bookmarkhere <- 1
     
-    setwd("W:/New_Economics/rcsnsight1.320")
+    ### I AM ALREADY THERE ### setwd("W:/New_Economics/rcsnsight1.340")
     
     oldtz <- Sys.getenv('TZ')
     if(oldtz=='') {
@@ -2109,133 +2142,133 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     
     bookmark_here <- 1
     
-    retrieveSymbolsmultplRdata(         # "12.month.EPS.Close" ( web table header) 
-      finSymbol = "SP500.12M.EPS"
-      , finSymbolAttribute = "Close"
-    )  -> SP500.12M.EPS.DELAYTHREE.ABS  # head "Jan 31, 1871"
-                                        # Monthly
-                                        # ( Last Known Date: Dec 31, 2014 - ??? date - typically 4 month late WITH 4 month old date )
+    # retrieveSymbolsmultplRdata(         # "12.month.EPS.Close" ( web table header) 
+    #   finSymbol = "SP500.12M.EPS"
+    #   , finSymbolAttribute = "Close"
+    # )  -> SP500.12M.EPS.DELAYTHREE.ABS  # head "Jan 31, 1871"
+    #                                     # Monthly
+    #                                     # ( Last Known Date: Dec 31, 2014 - ??? date - typically 4 month late WITH 4 month old date )
     
-    # really meant for a monthly
-    as.integer(diff.mondate(c(
-      as.mondate(tail(index(SP500.12M.EPS.DELAYTHREE.ABS),1), displayFormat="%Y-%m-%d",timeunits="months"),
-      as.mondate(finDate.TestTrain.Global.Latest, displayFormat="%Y-%m-%d",timeunits="months")
-    ))) -> pullAheadZOODataMonthShiftAmount
-    
-    merge.xts(MaxAllTestTrainMonthEnds,SP500.12M.EPS.DELAYTHREE.ABS) -> SP500.12M.EPS.DELAYTHREE.ABS
-    SP500.12M.EPS.DELAYTHREE.ABS[MaxAllTestTrainMonthEndsRange] -> SP500.12M.EPS.DELAYTHREE.ABS
-    
-    assign("SP500.12M.EPS.DELAYTHREE.ABS", value=SP500.12M.EPS.DELAYTHREE.ABS, envir = .GlobalEnv)
-    
-    # if HAD BEEN a Daily
-    max(pullAheadZOODataMonthShiftAmount,0) -> pullAheadZOODataMonthShiftAmount
-    
-    pullAheadZOOData(SP500.12M.EPS.DELAYTHREE.ABS,pullAheadZOODataMonthShiftAmount) -> SP500.12M.EPS.DELAYTHREE.ABS.ADJUSTNOW
-    print(paste0("SP500.12M.EPS pullAheadZOOData should be DELAYTHREE"," Actual: ",pullAheadZOODataMonthShiftAmount))
-    
-    merge.xts(MaxAllTestTrainMonthEnds,SP500.12M.EPS.DELAYTHREE.ABS.ADJUSTNOW) -> SP500.12M.EPS.DELAYTHREE.ABS.ADJUSTNOW
-    SP500.12M.EPS.DELAYTHREE.ABS.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> SP500.12M.EPS.DELAYTHREE.ABS.ADJUSTNOW
-    
-    assign("SP500.12M.EPS.DELAYTHREE.ABS.ADJUSTNOW", value=SP500.12M.EPS.DELAYTHREE.ABS.ADJUSTNOW, envir = .GlobalEnv)
-    
-    "SP500.12M.EPS.DELAYTHREE.ABS.ADJUSTNOW" -> ALL.OBSERVEES["SP500.12M.EPS.DELAYTHREE.ABS.ADJUSTNOW"]
+    # # really meant for a monthly
+    # as.integer(diff.mondate(c(
+    #   as.mondate(tail(index(SP500.12M.EPS.DELAYTHREE.ABS),1), displayFormat="%Y-%m-%d",timeunits="months"),
+    #   as.mondate(finDate.TestTrain.Global.Latest, displayFormat="%Y-%m-%d",timeunits="months")
+    # ))) -> pullAheadZOODataMonthShiftAmount
+    # 
+    # merge.xts(MaxAllTestTrainMonthEnds,SP500.12M.EPS.DELAYTHREE.ABS) -> SP500.12M.EPS.DELAYTHREE.ABS
+    # SP500.12M.EPS.DELAYTHREE.ABS[MaxAllTestTrainMonthEndsRange] -> SP500.12M.EPS.DELAYTHREE.ABS
+    # 
+    # assign("SP500.12M.EPS.DELAYTHREE.ABS", value=SP500.12M.EPS.DELAYTHREE.ABS, envir = .GlobalEnv)
+    # 
+    # # if HAD BEEN a Daily
+    # max(pullAheadZOODataMonthShiftAmount,0) -> pullAheadZOODataMonthShiftAmount
+    # 
+    # pullAheadZOOData(SP500.12M.EPS.DELAYTHREE.ABS,pullAheadZOODataMonthShiftAmount) -> SP500.12M.EPS.DELAYTHREE.ABS.ADJUSTNOW
+    # print(paste0("SP500.12M.EPS pullAheadZOOData should be DELAYTHREE"," Actual: ",pullAheadZOODataMonthShiftAmount))
+    # 
+    # merge.xts(MaxAllTestTrainMonthEnds,SP500.12M.EPS.DELAYTHREE.ABS.ADJUSTNOW) -> SP500.12M.EPS.DELAYTHREE.ABS.ADJUSTNOW
+    # SP500.12M.EPS.DELAYTHREE.ABS.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> SP500.12M.EPS.DELAYTHREE.ABS.ADJUSTNOW
+    # 
+    # assign("SP500.12M.EPS.DELAYTHREE.ABS.ADJUSTNOW", value=SP500.12M.EPS.DELAYTHREE.ABS.ADJUSTNOW, envir = .GlobalEnv)
+    # 
+    # "SP500.12M.EPS.DELAYTHREE.ABS.ADJUSTNOW" -> ALL.OBSERVEES["SP500.12M.EPS.DELAYTHREE.ABS.ADJUSTNOW"]
     
     # TO DO ABOVE: FIX THAT COLNAME
     # ...........12.month.EPS...........Value..........Close
     
-    retrieveSymbolsmultplRdata(                      # "SandP.500.Real.Earnings.Growth.Pct.Close"
-      finSymbol = "SP500.REAL.EARN.GR.PCT"           # Annual percentage change in 12 month
-      , finSymbolAttribute = "Close"
-    )  -> SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO   # head "Dec 31, 1989"
-                                                          #  Quarterly
-                                                          # ( Last Known Date: Dec 31, 2014 - ??? date - typically 4 month late WITH 4 month old date )
+    # retrieveSymbolsmultplRdata(                      # "SandP.500.Real.Earnings.Growth.Pct.Close"
+    #   finSymbol = "SP500.REAL.EARN.GR.PCT"           # Annual percentage change in 12 month
+    #   , finSymbolAttribute = "Close"
+    # )  -> SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO   # head "Dec 31, 1989"
+    #                                                       #  Quarterly
+    #                                                       # ( Last Known Date: Dec 31, 2014 - ??? date - typically 4 month late WITH 4 month old date )
 
-    # really meant for a monthly
-    as.integer(diff.mondate(c(
-      as.mondate(tail(index(SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO),1), displayFormat="%Y-%m-%d",timeunits="months"),
-      as.mondate(finDate.TestTrain.Global.Latest, displayFormat="%Y-%m-%d",timeunits="months")
-    ))) -> pullAheadZOODataMonthShiftAmount
+    # # really meant for a monthly
+    # as.integer(diff.mondate(c(
+    #   as.mondate(tail(index(SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO),1), displayFormat="%Y-%m-%d",timeunits="months"),
+    #   as.mondate(finDate.TestTrain.Global.Latest, displayFormat="%Y-%m-%d",timeunits="months")
+    # ))) -> pullAheadZOODataMonthShiftAmount
+    # 
+    # merge.xts(MaxAllTestTrainMonthEnds,SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO) -> SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO
+    # SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO[MaxAllTestTrainMonthEndsRange] -> SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO
+    # 
+    # assign("SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO", value=SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO, envir = .GlobalEnv)
+    # 
+    # # if HAD BEEN a Daily
+    # max(pullAheadZOODataMonthShiftAmount,0) -> pullAheadZOODataMonthShiftAmount
+    # 
+    # pullAheadZOOData(SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO,pullAheadZOODataMonthShiftAmount) -> SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO.ADJUSTNOW
+    # print(paste0("SP500.REAL.EARN.GR pullAheadZOOData should be DELAYTHREE"," Actual: ",pullAheadZOODataMonthShiftAmount))
+    # 
+    # merge.xts(MaxAllTestTrainMonthEnds,SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO.ADJUSTNOW) -> SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO.ADJUSTNOW
+    # SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO.ADJUSTNOW
+    # 
+    # assign("SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO.ADJUSTNOW", value=SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO.ADJUSTNOW, envir = .GlobalEnv)
+    # 
+    # "SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO.ADJUSTNOW" -> ALL.OBSERVEES["SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO.ADJUSTNOW"]
     
-    merge.xts(MaxAllTestTrainMonthEnds,SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO) -> SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO
-    SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO[MaxAllTestTrainMonthEndsRange] -> SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO
+    # retrieveSymbolsmultplRdata(          # "SandP.500.PE.Ratio.Close" ( web table header) 
+    #     finSymbol = "SP500.PE.RATIO"
+    #   , finSymbolAttribute = "Close"
+    # )  -> SP500.PE.RATIO.DELAYONE.ABS    # head "Jan 1, 1871"
+    #                                      #  Monthly ( with in-month estimate )
+    #                                      # ( Last Known Date: Mar 1, 2015 - ??? date - typically 1 month late WITH 1 month old date )
     
-    assign("SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO", value=SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO, envir = .GlobalEnv)
+    # # really meant for a monthly
+    # as.integer(diff.mondate(c(
+    #   as.mondate(tail(index(SP500.PE.RATIO.DELAYONE.ABS),1), displayFormat="%Y-%m-%d",timeunits="months"),
+    #   as.mondate(finDate.TestTrain.Global.Latest, displayFormat="%Y-%m-%d",timeunits="months")
+    # ))) -> pullAheadZOODataMonthShiftAmount
+    # 
+    # merge.xts(MaxAllTestTrainMonthEnds,SP500.PE.RATIO.DELAYONE.ABS) -> SP500.PE.RATIO.DELAYONE.ABS
+    # SP500.PE.RATIO.DELAYONE.ABS[MaxAllTestTrainMonthEndsRange] -> SP500.PE.RATIO.DELAYONE.ABS
+    # 
+    # assign("SP500.PE.RATIO.DELAYONE.ABS", value=SP500.PE.RATIO.DELAYONE.ABS, envir = .GlobalEnv)
+    # 
+    # # if HAD BEEN a Daily
+    # max(pullAheadZOODataMonthShiftAmount,0) -> pullAheadZOODataMonthShiftAmount
+    # 
+    # pullAheadZOOData(SP500.PE.RATIO.DELAYONE.ABS,pullAheadZOODataMonthShiftAmount) -> SP500.PE.RATIO.DELAYONE.ABS.ADJUSTNOW
+    # print(paste0("SP500.PE.RATIO pullAheadZOOData should be DELAYONE"," Actual: ",pullAheadZOODataMonthShiftAmount))
+    # 
+    # merge.xts(MaxAllTestTrainMonthEnds,SP500.PE.RATIO.DELAYONE.ABS.ADJUSTNOW) -> SP500.PE.RATIO.DELAYONE.ABS.ADJUSTNOW
+    # SP500.PE.RATIO.DELAYONE.ABS.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> SP500.PE.RATIO.DELAYONE.ABS.ADJUSTNOW
+    # 
+    # assign("SP500.PE.RATIO.DELAYONE.ABS.ADJUSTNOW", value=SP500.PE.RATIO.DELAYONE.ABS.ADJUSTNOW, envir = .GlobalEnv)
+    # 
+    # "SP500.PE.RATIO.DELAYONE.ABS.ADJUSTNOW" -> ALL.OBSERVEES["SP500.PE.RATIO.DELAYONE.ABS.ADJUSTNOW"]
     
-    # if HAD BEEN a Daily
-    max(pullAheadZOODataMonthShiftAmount,0) -> pullAheadZOODataMonthShiftAmount
-    
-    pullAheadZOOData(SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO,pullAheadZOODataMonthShiftAmount) -> SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO.ADJUSTNOW
-    print(paste0("SP500.REAL.EARN.GR pullAheadZOOData should be DELAYTHREE"," Actual: ",pullAheadZOODataMonthShiftAmount))
-    
-    merge.xts(MaxAllTestTrainMonthEnds,SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO.ADJUSTNOW) -> SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO.ADJUSTNOW
-    SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO.ADJUSTNOW
-    
-    assign("SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO.ADJUSTNOW", value=SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO.ADJUSTNOW, envir = .GlobalEnv)
-    
-    "SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO.ADJUSTNOW" -> ALL.OBSERVEES["SP500.REAL.EARN.GR.DELAYTHREE.PCTCHG.OVER12MO.ADJUSTNOW"]
-    
-    retrieveSymbolsmultplRdata(          # "SandP.500.PE.Ratio.Close" ( web table header) 
-        finSymbol = "SP500.PE.RATIO"
-      , finSymbolAttribute = "Close"
-    )  -> SP500.PE.RATIO.DELAYONE.ABS    # head "Jan 1, 1871"
-                                         #  Monthly ( with in-month estimate )
-                                         # ( Last Known Date: Mar 1, 2015 - ??? date - typically 1 month late WITH 1 month old date )
-    
-    # really meant for a monthly
-    as.integer(diff.mondate(c(
-      as.mondate(tail(index(SP500.PE.RATIO.DELAYONE.ABS),1), displayFormat="%Y-%m-%d",timeunits="months"),
-      as.mondate(finDate.TestTrain.Global.Latest, displayFormat="%Y-%m-%d",timeunits="months")
-    ))) -> pullAheadZOODataMonthShiftAmount
-    
-    merge.xts(MaxAllTestTrainMonthEnds,SP500.PE.RATIO.DELAYONE.ABS) -> SP500.PE.RATIO.DELAYONE.ABS
-    SP500.PE.RATIO.DELAYONE.ABS[MaxAllTestTrainMonthEndsRange] -> SP500.PE.RATIO.DELAYONE.ABS
-    
-    assign("SP500.PE.RATIO.DELAYONE.ABS", value=SP500.PE.RATIO.DELAYONE.ABS, envir = .GlobalEnv)
-    
-    # if HAD BEEN a Daily
-    max(pullAheadZOODataMonthShiftAmount,0) -> pullAheadZOODataMonthShiftAmount
-    
-    pullAheadZOOData(SP500.PE.RATIO.DELAYONE.ABS,pullAheadZOODataMonthShiftAmount) -> SP500.PE.RATIO.DELAYONE.ABS.ADJUSTNOW
-    print(paste0("SP500.PE.RATIO pullAheadZOOData should be DELAYONE"," Actual: ",pullAheadZOODataMonthShiftAmount))
-    
-    merge.xts(MaxAllTestTrainMonthEnds,SP500.PE.RATIO.DELAYONE.ABS.ADJUSTNOW) -> SP500.PE.RATIO.DELAYONE.ABS.ADJUSTNOW
-    SP500.PE.RATIO.DELAYONE.ABS.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> SP500.PE.RATIO.DELAYONE.ABS.ADJUSTNOW
-    
-    assign("SP500.PE.RATIO.DELAYONE.ABS.ADJUSTNOW", value=SP500.PE.RATIO.DELAYONE.ABS.ADJUSTNOW, envir = .GlobalEnv)
-    
-    "SP500.PE.RATIO.DELAYONE.ABS.ADJUSTNOW" -> ALL.OBSERVEES["SP500.PE.RATIO.DELAYONE.ABS.ADJUSTNOW"]
-    
-    retrieveSymbolsmultplRdata(               # "SandP.500.Book.Value.Close"
-        finSymbol = "SP500.BV.PER.SHARE"
-      , finSymbolAttribute = "Close"
-    )  -> SP500.BV.PER.SHARE.DELAYTHREE.ABS   
-                                               # head "Dec 31, 1999"
-                                               #  Quarterly 
-                                               # ( Last Known Date:Sep 30, 2014 - ??? date - typically 6 month late WITH 6 month old date )
-    
-    # really meant for a monthly
-    as.integer(diff.mondate(c(
-      as.mondate(tail(index(SP500.BV.PER.SHARE.DELAYTHREE.ABS),1), displayFormat="%Y-%m-%d",timeunits="months"),
-      as.mondate(finDate.TestTrain.Global.Latest, displayFormat="%Y-%m-%d",timeunits="months")
-    ))) -> pullAheadZOODataMonthShiftAmount
-    
-    merge.xts(MaxAllTestTrainMonthEnds,SP500.BV.PER.SHARE.DELAYTHREE.ABS) -> SP500.BV.PER.SHARE.DELAYTHREE.ABS
-    SP500.BV.PER.SHARE.DELAYTHREE.ABS[MaxAllTestTrainMonthEndsRange] -> SP500.BV.PER.SHARE.DELAYTHREE.ABS
-    
-    assign("SP500.BV.PER.SHARE.DELAYTHREE.ABS", value=SP500.BV.PER.SHARE.DELAYTHREE.ABS, envir = .GlobalEnv)
-    
-    # if HAD BEEN a Daily
-    max(pullAheadZOODataMonthShiftAmount,0) -> pullAheadZOODataMonthShiftAmount
-    
-    pullAheadZOOData(SP500.BV.PER.SHARE.DELAYTHREE.ABS,pullAheadZOODataMonthShiftAmount) -> SP500.BV.PER.SHARE.DELAYTHREE.ABS.ADJUSTNOW
-    print(paste0("SP500.BV.PER.SHARE pullAheadZOOData should be DELAYTHREE"," Actual: ",pullAheadZOODataMonthShiftAmount))
-    
-    merge.xts(MaxAllTestTrainMonthEnds,SP500.BV.PER.SHARE.DELAYTHREE.ABS.ADJUSTNOW) -> SP500.BV.PER.SHARE.DELAYTHREE.ABS.ADJUSTNOW
-    SP500.BV.PER.SHARE.DELAYTHREE.ABS.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> SP500.BV.PER.SHARE.DELAYTHREE.ABS.ADJUSTNOW 
-    
-    assign("SP500.BV.PER.SHARE.DELAYTHREE.ABS.ADJUSTNOW", value=SP500.BV.PER.SHARE.DELAYTHREE.ABS.ADJUSTNOW, envir = .GlobalEnv)
-    
-    "SP500.BV.PER.SHARE.DELAYTHREE.ABS.ADJUSTNOW" -> ALL.OBSERVEES["SP500.BV.PER.SHARE.DELAYTHREE.ABS.ADJUSTNOW"]
+    # retrieveSymbolsmultplRdata(               # "SandP.500.Book.Value.Close"
+    #     finSymbol = "SP500.BV.PER.SHARE"
+    #   , finSymbolAttribute = "Close"
+    # )  -> SP500.BV.PER.SHARE.DELAYTHREE.ABS   
+    #                                            # head "Dec 31, 1999"
+    #                                            #  Quarterly 
+    #                                            # ( Last Known Date:Sep 30, 2014 - ??? date - typically 6 month late WITH 6 month old date )
+    # 
+    # # really meant for a monthly
+    # as.integer(diff.mondate(c(
+    #   as.mondate(tail(index(SP500.BV.PER.SHARE.DELAYTHREE.ABS),1), displayFormat="%Y-%m-%d",timeunits="months"),
+    #   as.mondate(finDate.TestTrain.Global.Latest, displayFormat="%Y-%m-%d",timeunits="months")
+    # ))) -> pullAheadZOODataMonthShiftAmount
+    # 
+    # merge.xts(MaxAllTestTrainMonthEnds,SP500.BV.PER.SHARE.DELAYTHREE.ABS) -> SP500.BV.PER.SHARE.DELAYTHREE.ABS
+    # SP500.BV.PER.SHARE.DELAYTHREE.ABS[MaxAllTestTrainMonthEndsRange] -> SP500.BV.PER.SHARE.DELAYTHREE.ABS
+    # 
+    # assign("SP500.BV.PER.SHARE.DELAYTHREE.ABS", value=SP500.BV.PER.SHARE.DELAYTHREE.ABS, envir = .GlobalEnv)
+    # 
+    # # if HAD BEEN a Daily
+    # max(pullAheadZOODataMonthShiftAmount,0) -> pullAheadZOODataMonthShiftAmount
+    # 
+    # pullAheadZOOData(SP500.BV.PER.SHARE.DELAYTHREE.ABS,pullAheadZOODataMonthShiftAmount) -> SP500.BV.PER.SHARE.DELAYTHREE.ABS.ADJUSTNOW
+    # print(paste0("SP500.BV.PER.SHARE pullAheadZOOData should be DELAYTHREE"," Actual: ",pullAheadZOODataMonthShiftAmount))
+    # 
+    # merge.xts(MaxAllTestTrainMonthEnds,SP500.BV.PER.SHARE.DELAYTHREE.ABS.ADJUSTNOW) -> SP500.BV.PER.SHARE.DELAYTHREE.ABS.ADJUSTNOW
+    # SP500.BV.PER.SHARE.DELAYTHREE.ABS.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> SP500.BV.PER.SHARE.DELAYTHREE.ABS.ADJUSTNOW 
+    # 
+    # assign("SP500.BV.PER.SHARE.DELAYTHREE.ABS.ADJUSTNOW", value=SP500.BV.PER.SHARE.DELAYTHREE.ABS.ADJUSTNOW, envir = .GlobalEnv)
+    # 
+    # "SP500.BV.PER.SHARE.DELAYTHREE.ABS.ADJUSTNOW" -> ALL.OBSERVEES["SP500.BV.PER.SHARE.DELAYTHREE.ABS.ADJUSTNOW"]
     
     bookmark_here <- 1 
     
@@ -2747,7 +2780,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
       , method = "gbm" 
       , verbose = FALSE # gbm TOO MUCH # default is TRUE? anyway?
       # , tuneGrid = expand.grid(interaction.depth = seq(1, 7, by = 2),n.trees = seq(500, 1000, by = 250),shrinkage = c(0.1)) 
-      , tuneGrid = expand.grid(interaction.depth = 7, n.trees = seq(10,500,1), shrinkage = c(0.01))
+      , tuneGrid = expand.grid(interaction.depth = 7, n.trees = seq(10,500,1), shrinkage = c(0.01), n.minobsinnode = 10)
     ) -> FitterTune
     
     # ntreesOPTIMAL <-  gbm.perf(FitterTune$finalModel, method="OOB", plot.it = FALSE)
@@ -2855,7 +2888,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
       , verbose = FALSE # gbm TOO MUCH # default is TRUE? anyway?
       # , preProcess = "ica"
       # , tuneGrid = expand.grid(interaction.depth = seq(1, 7, by = 2),n.trees = seq(500, 1000, by = 250),shrinkage = c(0.1)) 
-      , tuneGrid = expand.grid(interaction.depth = 7, n.trees = ntreesOPTIMAL$n.trees, shrinkage = c(0.01)) 
+      , tuneGrid = expand.grid(interaction.depth = 7, n.trees = ntreesOPTIMAL$n.trees, shrinkage = c(0.01), n.minobsinnode = 10) 
     ) -> FitterTune
 
     # DEBUG(BOTH STMTS)
@@ -2975,7 +3008,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     
     # 
     # MANAGE THE OLD
-    # In W:\New_Economics\rcsnsight1.320
+    # In W:\New_Economics\rcsnsight1.340
     # Create folder DataYYMMDD  *** where YYMMDD is the date on the .RData files ***
     #   Cut/Move all .Rdata files into DataYYMMDD
     # Copy     all .R     files into DataYYMMDD
@@ -2983,7 +3016,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     
     # 
     # DON'T FORGET THAT in R Studio
-    # setwd(""W:/New_Economics/rcsnsight1.320"") # getwd()
+    # setwd(""W:/New_Economics/rcsnsight1.340"") # getwd()
     # 
     # CHECK THAT THE LOADED .R FILE IN THE TAB (hover over) 
     # HAS THE SAME PATH AS THE 'setwd'
@@ -3017,7 +3050,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     # rm(list=ls(all.names=TRUE))
     # 
     # BEST HAVE THE 'ABSOLUTE PATH' 
-    # debugSource('W:/New_Economics/rcsnsight1.320/main-rcsnsight2-999.R')
+    # debugSource('W:/New_Economics/rcsnsight1.340/main-rcsnsight2-999.R')
     # 
     # PLACE DOWN BREAKPOINT AT "bookmark_here <- 1" ( ABOVE )
     # 
@@ -3196,7 +3229,8 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     the_end_debug_bookmark_here <- 1
     
     
-    setwd("W:/New_Economics/rcsnsight1.320") # TO BE CHANGED LATER
+    ### I AM ALREADY THERE ### setwd("W:/New_Economics/rcsnsight1.340") # TO BE CHANGED LATER
+    
     
     the_end_debug_bookmark_here <- 1
     
