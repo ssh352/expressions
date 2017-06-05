@@ -347,11 +347,11 @@ getSymbols.multpl <- function(
   #   http://www.multpl.com/s-p-500-real-earnings-growth/table/by-quarter
   #   
   #   S&P 500 PE Ratio by Month ( MATH) ( SandP.500.PE.Ratio )
-  #   Price to earnings ratio, based on trailing twelve month “as reported”
+  #   Price to earnings ratio, based on trailing twelve month âas reportedâ
   #   http://www.multpl.com/table?f=m
   
   #   S&P 500 Book Value Per Share by Quarter ( "SandP.500.BV.Per.Share" )
-  #   S&P 500 book value per share — non-inflation adjusted current dollars. 
+  #   S&P 500 book value per share â non-inflation adjusted current dollars. 
   #   http://www.multpl.com/s-p-500-book-value/table/by-quarter
   
   # web site and owner
@@ -383,7 +383,7 @@ getSymbols.multpl <- function(
   
   require(XML)     # NEED readHTMLTable
   # Hadley Wickham # web scraping 
-  require(rvest)   # imports XML  masked from ‘package:XML’: xml
+  require(rvest)   # imports XML  masked from âpackage:XMLâ: xml
   # IF uncommented : require(XML), USE: XML::xml to access XML::xml
   require(xts)     # as.xts STUFF
   
@@ -605,11 +605,11 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     #  2. incomplete data exists of current month 
     # THEREFORE
     # this IS       the end of the PREVIOUS MONTH
-    # finDate.TestTrain.Global.Latest    <- "2017-03-31"  # 2014-12-31(perfect) 
+    # finDate.TestTrain.Global.Latest    <- "2017-05-31"  # 2014-12-31(perfect) 
                                                           # march 21, 2015 run: "2015-01-31": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
                                                           # march 21, 2015 run: "2015-02-28": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
                                                           # march 21, 2015 run: "2015-03-31": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
-    finDate.TestTrain.Global.Latest      <- "2017-03-31"  # april  6, 2015 run: "2015-03-31": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
+    finDate.TestTrain.Global.Latest      <- "2017-05-31"  # april  6, 2015 run: "2015-03-31": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
     
     # training and TRUE tests
     list(Test2001 = list(Train=list(initDate = initData.TestTrain.Global.Earliest,finDate ="1998-12-31"),
@@ -668,43 +668,46 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     # ### CURRENTLY - NOT USED 'UMICH SENTIMENT SURVEY' ###
     #
     
-    # S&P500 from yahoo  
+    ## SUN JUN 04 2017 # old quantmod "# but yahoo URLS/method has changed (LATE MAY/JUN 2017 ) # no longer loading # ^GSPC
+    ## SUN JUN 04 2017 # INDEXES ^GSPC do not seem to work any more ( compLaints from Quantmod issues )
     
-    retrieveSymbolsQuantmodRdata(
-        finSymbol = "^GSPC"
-      , finSymbolAttributes = c("Close","Low")
-      , initDate = "1950-03-01"
-      , subtractOffDaysSpec = 0
-    ) -> GSPC.DELAYZERO.ABS     # head "1950-03-31"
-    
-    # really meant for a monthly
-    as.integer(diff.mondate(c(
-      as.mondate(tail(index(GSPC.DELAYZERO.ABS),1), displayFormat="%Y-%m-%d",timeunits="months"),
-      as.mondate(finDate.TestTrain.Global.Latest, displayFormat="%Y-%m-%d",timeunits="months")
-    ))) -> pullAheadZOODataMonthShiftAmount
-    
-    merge.xts(MaxAllTestTrainMonthEnds,GSPC.DELAYZERO.ABS) -> GSPC.DELAYZERO.ABS
-    GSPC.DELAYZERO.ABS[MaxAllTestTrainMonthEndsRange] -> GSPC.DELAYZERO.ABS
-    
-    assign("GSPC.DELAYZERO.ABS", value=GSPC.DELAYZERO.ABS, envir = .GlobalEnv) 
-    
-    # if HAD BEEN a Daily
-    max(pullAheadZOODataMonthShiftAmount,0) -> pullAheadZOODataMonthShiftAmount
-    
-    pullAheadZOOData(GSPC.DELAYZERO.ABS,pullAheadZOODataMonthShiftAmount) ->   GSPC.DELAYZERO.ABS.ADJUSTNOW
-    print(paste0("GSPC pullAheadZOOData should be DELAYZERO"," Actual: ",pullAheadZOODataMonthShiftAmount))
-    
-    merge.xts(MaxAllTestTrainMonthEnds,GSPC.DELAYZERO.ABS.ADJUSTNOW) -> GSPC.DELAYZERO.ABS.ADJUSTNOW
-    GSPC.DELAYZERO.ABS.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> GSPC.DELAYZERO.ABS.ADJUSTNOW
-    
-    # specifics 
-    Cl(GSPC.DELAYZERO.ABS.ADJUSTNOW) -> GSPC.DELAYZERO.ABS.ADJUSTNOW.CLOSE
-    Lo(GSPC.DELAYZERO.ABS.ADJUSTNOW) -> GSPC.DELAYZERO.ABS.ADJUSTNOW.LOW
-    assign("GSPC.DELAYZERO.ABS.ADJUSTNOW.CLOSE", value=GSPC.DELAYZERO.ABS.ADJUSTNOW.CLOSE, envir = .GlobalEnv)
-    assign("GSPC.DELAYZERO.ABS.ADJUSTNOW.LOW"  , value=GSPC.DELAYZERO.ABS.ADJUSTNOW.LOW  , envir = .GlobalEnv)
-    
-    "GSPC.DELAYZERO.ABS.ADJUSTNOW.CLOSE" -> ALL.OBSERVEES["GSPC.DELAYZERO.ABS.ADJUSTNOW.CLOSE"] 
-    "GSPC.DELAYZERO.ABS.ADJUSTNOW.LOW"   -> ALL.OBSERVEES["GSPC.DELAYZERO.ABS.ADJUSTNOW.LOW"] 
+    #     # S&P500 from yahoo  
+    #     
+    #     retrieveSymbolsQuantmodRdata(
+    #         finSymbol = "^GSPC"
+    #       , finSymbolAttributes = c("Close","Low")
+    #       , initDate = "1950-03-01"
+    #       , subtractOffDaysSpec = 0
+    #     ) -> GSPC.DELAYZERO.ABS     # head "1950-03-31"
+    #     
+    #     # really meant for a monthly
+    #     as.integer(diff.mondate(c(
+    #       as.mondate(tail(index(GSPC.DELAYZERO.ABS),1), displayFormat="%Y-%m-%d",timeunits="months"),
+    #       as.mondate(finDate.TestTrain.Global.Latest, displayFormat="%Y-%m-%d",timeunits="months")
+    #     ))) -> pullAheadZOODataMonthShiftAmount
+    #     
+    #     merge.xts(MaxAllTestTrainMonthEnds,GSPC.DELAYZERO.ABS) -> GSPC.DELAYZERO.ABS
+    #     GSPC.DELAYZERO.ABS[MaxAllTestTrainMonthEndsRange] -> GSPC.DELAYZERO.ABS
+    #     
+    #     assign("GSPC.DELAYZERO.ABS", value=GSPC.DELAYZERO.ABS, envir = .GlobalEnv) 
+    #     
+    #     # if HAD BEEN a Daily
+    #     max(pullAheadZOODataMonthShiftAmount,0) -> pullAheadZOODataMonthShiftAmount
+    #     
+    #     pullAheadZOOData(GSPC.DELAYZERO.ABS,pullAheadZOODataMonthShiftAmount) ->   GSPC.DELAYZERO.ABS.ADJUSTNOW
+    #     print(paste0("GSPC pullAheadZOOData should be DELAYZERO"," Actual: ",pullAheadZOODataMonthShiftAmount))
+    #     
+    #     merge.xts(MaxAllTestTrainMonthEnds,GSPC.DELAYZERO.ABS.ADJUSTNOW) -> GSPC.DELAYZERO.ABS.ADJUSTNOW
+    #     GSPC.DELAYZERO.ABS.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> GSPC.DELAYZERO.ABS.ADJUSTNOW
+    #     
+    #     # specifics 
+    #     Cl(GSPC.DELAYZERO.ABS.ADJUSTNOW) -> GSPC.DELAYZERO.ABS.ADJUSTNOW.CLOSE
+    #     Lo(GSPC.DELAYZERO.ABS.ADJUSTNOW) -> GSPC.DELAYZERO.ABS.ADJUSTNOW.LOW
+    #     assign("GSPC.DELAYZERO.ABS.ADJUSTNOW.CLOSE", value=GSPC.DELAYZERO.ABS.ADJUSTNOW.CLOSE, envir = .GlobalEnv)
+    #     assign("GSPC.DELAYZERO.ABS.ADJUSTNOW.LOW"  , value=GSPC.DELAYZERO.ABS.ADJUSTNOW.LOW  , envir = .GlobalEnv)
+    #     
+    #     "GSPC.DELAYZERO.ABS.ADJUSTNOW.CLOSE" -> ALL.OBSERVEES["GSPC.DELAYZERO.ABS.ADJUSTNOW.CLOSE"] 
+    #     "GSPC.DELAYZERO.ABS.ADJUSTNOW.LOW"   -> ALL.OBSERVEES["GSPC.DELAYZERO.ABS.ADJUSTNOW.LOW"] 
     
     bookmark_here <- 1
     
@@ -1614,7 +1617,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     # by Jill Mislinski
     # http://www.advisorperspectives.com/dshort/updates/ISM-Manufacturing
     # 
-    # "The June PMI� registered 53.2 percent, an increase of 1.9 percentage points 
+    # "The June PMIï¿½ registered 53.2 percent, an increase of 1.9 percentage points 
     # from the May reading of 51.3 percent.
     # 
     # Today the Institute for Supply Management published its 
@@ -2269,7 +2272,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     sink()
     
     # test
-    test1 <- NEXT.PCTDRAWDOWN.OVER.3MO(GSPC.DELAYZERO.ABS.ADJUSTNOW.CLOSE,GSPC.DELAYZERO.ABS.ADJUSTNOW.LOW)
+    # test1 <- NEXT.PCTDRAWDOWN.OVER.3MO(GSPC.DELAYZERO.ABS.ADJUSTNOW.CLOSE,GSPC.DELAYZERO.ABS.ADJUSTNOW.LOW)
     
     "NEXT.PCTDRAWDOWN.OVER.3MO" -> ALL.PREDICTEESFUNCTIONS[["NEXT.PCTDRAWDOWN.OVER.3MO"]]
     "NEXT.PCTDRAWDOWN.OVER.2MO" -> ALL.PREDICTEESFUNCTIONS[["NEXT.PCTDRAWDOWN.OVER.2MO"]]
@@ -2296,7 +2299,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     sink()
     
     # test  
-    test2 <- NEXT.PCTCHG.OVER.1MO(GSPC.DELAYZERO.ABS.ADJUSTNOW.CLOSE)
+    # test2 <- NEXT.PCTCHG.OVER.1MO(GSPC.DELAYZERO.ABS.ADJUSTNOW.CLOSE)
     
     "NEXT.PCTCHG.OVER.3MO" -> ALL.PREDICTEESFUNCTIONS[["NEXT.PCTCHG.OVER.3MO"]]
     "NEXT.PCTCHG.OVER.2MO" -> ALL.PREDICTEESFUNCTIONS[["NEXT.PCTCHG.OVER.2MO"]]
@@ -2371,7 +2374,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     sink()
     
     # test
-    test2b <- LAG.PCTCHG.OVER.1MO(GSPC.DELAYZERO.ABS.ADJUSTNOW.CLOSE)
+    # test2b <- LAG.PCTCHG.OVER.1MO(GSPC.DELAYZERO.ABS.ADJUSTNOW.CLOSE)
 
     "LAG.PCTCHG.OVER.1MO" -> ALL.OBSERVEESFUNCTIONS[["LAG.PCTCHG.OVER.1MO"]]
     "LAG.PCTCHG.OVER.2MO" -> ALL.OBSERVEESFUNCTIONS[["LAG.PCTCHG.OVER.2MO"]]
@@ -2450,7 +2453,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     sink()
     
     # test
-    test3 <- TTR.MATH.OVER.SMA.2MO(GSPC.DELAYZERO.ABS.ADJUSTNOW.CLOSE)
+    # test3 <- TTR.MATH.OVER.SMA.2MO(GSPC.DELAYZERO.ABS.ADJUSTNOW.CLOSE)
     
     "TTR.MATH.OVER.SMA.2MO" -> ALL.OBSERVEESFUNCTIONS[["TTR.MATH.OVER.SMA.2MO"]]
     "TTR.MATH.OVER.SMA.3MO" -> ALL.OBSERVEESFUNCTIONS[["TTR.MATH.OVER.SMA.3MO"]]
@@ -2483,7 +2486,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     sink()
     
     # test 
-    test4 <- COMPARE.ABOVE.PCT(TTR.MATH.OVER.SMA.2MO(GSPC.DELAYZERO.ABS.ADJUSTNOW.CLOSE),GSPC.DELAYZERO.ABS.ADJUSTNOW.CLOSE)
+    # test4 <- COMPARE.ABOVE.PCT(TTR.MATH.OVER.SMA.2MO(GSPC.DELAYZERO.ABS.ADJUSTNOW.CLOSE),GSPC.DELAYZERO.ABS.ADJUSTNOW.CLOSE)
     
     # see 'test' above NEEDS a CLEVER use
     "COMPARE.ABOVE.PCT" ->  ALL.OVER.OBSERVEESFUNCTIONS[["COMPARE.ABOVE.PCT"]]
@@ -2762,7 +2765,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     # gbm::summary(method=relative.influence) ?
     #   # > caret:::varImp.gbm
     #   # function (object, numTrees = NULL, ...)
-    varImpFound <- varImp(FitterTune,numTrees = 500) # numTrees number must equal a number found in train(n.trees)
+    varImpFound <- varImp(FitterTune,numTrees = ntreesOPTIMAL$n.trees) # numTrees number must equal a number found in train(n.trees)
     
     # small data.frame of variable importance
     model.data.CURR.OBSERVEES.IMPORTANCES <- dplyr::filter(dplyr::arrange( cbind(row.names(varImpFound$importance),varImpFound$importance), desc(Overall)), Overall >= 10.0)
@@ -2813,7 +2816,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     #
     #  the number of iterations,T(n.trees)
     #  the depth of each tree,K(interaction.depth)
-    #  the shrinkage (or learning rate) parameter,λ(shrinkage)
+    #  the shrinkage (or learning rate) parameter,Î»(shrinkage)
     #  the subsampling rate,p(bag.fraction)
     #
     #  Generalized Boosted Models: A guide to the gbm package Greg Ridgeway August 3, 2007
