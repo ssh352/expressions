@@ -272,6 +272,144 @@ calculate <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o_
 # TMinfutTOPRED
 
 
+
+delay_since_last_obs.default <- function(x) {
+
+  # uses treamMetabolism::contiguous.zoo, rowr::rowApply
+
+  StreamMetabolism__noncontiguous.zoo <- function(x)   {
+      z.rle <- rle(is.na(rowSums(coredata(x))))  # CAN BE EXTENDED HERE
+      ends <- cumsum(z.rle$lengths)
+      starts <- ends - z.rle$lengths + 1
+      indexes <- with(z.rle, data.frame(starts, ends, lengths,
+          values))
+      indexes.sort <- indexes[order(-indexes$lengths), ]
+      indexes.sort[indexes.sort$values, ]
+  }
+
+  vec <- x   #  vec <- c(101,NA,NA,NA,102,NA,NA)
+  new_vec <- rep(0,length(vec)) # output of all values found ( optimistic ): zeros : no delays found of elements found
+  
+  # 100% opposite of the below ( delays found )
+
+  snc <- StreamMetabolism__noncontiguous.zoo(data.frame(vec))
+  if(NROW(snc)>0) {
+    rowr::rowApply(snc, fun = function(x) { 
+      with( x, { new_vec[starts:ends] <- seq(1,lengths,1)
+                 assign("new_vec", new_vec , envir= parent.frame(8))  
+               } ) -> discard ; NULL
+    }) -> discard
+  }
+  
+  # # 100% opposite of the above ( no  delays found ): REDUNDANT: I CAN REMOVE THIS CODE
+  # 
+  # sc <- StreamMetabolism::contiguous.zoo(data.frame(vec))
+  # 
+  # if(NROW(snc)>0) {
+  #   rowr::rowApply(sc, fun = function(x) { 
+  #     with( x, { new_vec[starts:ends] <- rep(0,lengths)
+  #                assign("new_vec", new_vec , envir= parent.frame(8))  
+  #              } ) -> discard ; NULL
+  #   }) -> discard
+  # }
+   
+  return(new_vec)
+ 
+}
+ 
+# delay_since_last_obs.default(c(101,NA,NA,NA,102,NA,NA))
+# [1] 0 1 2 3 0 1 2
+
+
+
+# note: index(first/last(x, '1 day')) expected to return ONE single element
+# note: consider using period.apply( to reduce a a 'set of first/last '1 day' to ret ONE single element 
+
+collofdays2daily.xts <- function(x) {
+
+  require(xts)
+
+  # dispatch on xts:::merge.xts, seq.Date, xts:::index.xts, xts:::first/last.xts
+  x_days <- xts(,seq(index(first(x, '1 day')),index(last(x, '1 day')), by = 1))
+  
+  # dispach on xts:::merge.xts
+  ret <- merge(x,x_days)
+  return(ret)
+  
+}
+# x <- xts(c(11,13,15),zoo::as.Date(c(1,3,5))) 
+# xc <- collofdays2daily.xts(x)
+# xc
+#              x
+# 1970-01-02 11
+# 1970-01-03 NA
+# 1970-01-04 13
+# 1970-01-05 NA
+# 1970-01-06 15
+
+
+
+delay_since_last_obs.xts <-function(x) { 
+
+  # ONLY works on a single column xts
+
+  # uses   delay_since_last_obs.default
+  
+  x_core  <- as.vector(coredata(x))
+  x_index <- index(x)
+  
+  x_core_new <- delay_since_last_obs.default(x_core)
+  
+  return(xts(x_core_new,x_index))
+
+} 
+
+# ADD A a revord fo each day is this what I want?
+delay_since_last_day.xts <-function(x) { 
+
+  # ONLY works on a single column xts
+
+  # uses   delay_since_last_obs.default
+  # uses xts:::merge.xts
+  
+  # more dates - create temporary rows
+  x_nonsparse <- collofdays2daily.xts(x)
+  
+  # find delays(0 - no delay over NA, 1 - one delay 'at' NA)
+  x_nonsparse_delays <- delay_since_last_obs.xts(x_nonsparse)
+  
+  return(x_nonsparse_delays)
+
+} 
+
+# # testing 
+# library(quantmod); 
+
+
+# getSymbols("GDP", src = "FRED")
+
+# WEEKENDS WILL SHOW DELAYS 
+# WILL INCREASE the number of days
+# head(calculate(GDP, fnct = "delay_since_last_day.xts", alt_name = "DELAY"),6) 
+
+# > head(calculate(GDP, fnct = "delay_since_last_day.xts", alt_name = "DELAY"),10) 
+#            GDP.DELAY
+# 1947-01-01         0
+# 1947-01-02         1
+# 1947-01-03         2
+# 1947-01-04         3
+# 1947-01-05         4
+# 1947-01-06         5
+# 1947-01-07         6
+# 1947-01-08         7
+# 1947-01-09         8
+# 1947-01-10         9
+
+# LEFT_oFF 
+# BACKWARD ADJUST FRED EOM REPORT DAYS IF LASTS ON THE FIRST/2ND/3RD/4TH/ PULLthe data back tot the FIRST
+
+
+
 # TO DO
 # Reproducible Finance with R: Sector Correlations - Jonathan Regenstein
 # merged_xts$rolling_cor <- rollapply
