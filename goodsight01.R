@@ -275,7 +275,8 @@ calculate <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o_
 
 delay_since_last_obs.default <- function(x) {
 
-  # uses treamMetabolism::contiguous.zoo, rowr::rowApply
+  # help from  StreamMetabolism::contiguous.zoo
+  # uses       rowr::rowApply
 
   StreamMetabolism__noncontiguous.zoo <- function(x)   {
       z.rle <- rle(is.na(rowSums(coredata(x))))  # CAN BE EXTENDED HERE
@@ -404,6 +405,43 @@ delay_since_last_day.xts <-function(x) {
 # 1947-01-08         7
 # 1947-01-09         8
 # 1947-01-10         9
+
+
+
+# is the xts observation na? 1 - true  2 - false(regular observation)
+is.xts.na <- function(x) {
+
+   # uses ojUtils::ifelseC
+
+   # expecting a 'single' column xts
+
+   x_vector     <- as.vector(coredata(x))
+   x_vector_len <- length(x_vector)
+
+   coredata_new <- ojUtils::ifelseC(is.na(x_vector), rep(1,x_vector_len), rep(2,x_vector_len))
+   coredata(x)  <- coredata_new
+
+   return(x)
+
+} 
+# xts(c(11,NA,NA,14,NA),zoo::as.Date(1:5))
+#            [,1]
+# 1970-01-02   11
+# 1970-01-03   NA
+# 1970-01-04   NA
+# 1970-01-05   14
+# 1970-01-06   NA
+# 
+# is.xts.na(xts(c(11,NA,NA,14,NA),zoo::as.Date(1:5)))
+#            [,1]
+# 1970-01-02    2
+# 1970-01-03    1
+# 1970-01-04    1
+# 1970-01-05    2
+# 1970-01-06    1
+
+# meant later to be flagged "_factor" then future as.factor
+
 
 # LEFT_oFF 
 # BACKWARD ADJUST FRED EOM REPORT DAYS IF LASTS ON THE FIRST/2ND/3RD/4TH/ PULLthe data back tot the FIRST
