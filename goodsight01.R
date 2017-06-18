@@ -70,7 +70,7 @@ na.locfl <- function(x, n = NULL) {
 
 
 
-
+# SHOULD 'RENAME TO 'Uses'
 check_uses_packages_available <- function(programmed_in_R_version, explicit_package_function_calls, matched_call = NULL) {
 
   running_in_R_version <- paste(R.Version()$major,R.Version()$minor, sep = ".")
@@ -441,6 +441,95 @@ is.xts.na <- function(x) {
 # 1970-01-06    1
 
 # meant later to be flagged "_factor" then future as.factor
+
+
+
+# typical entry rm_what = c("Saturday", "Sunday", "BIZHOLIDAYS" )
+rm.days.xts <- function(x, rm_what = NULL) {
+
+  # JUN 2017
+  # .indexwday
+  # http://joshuaulrich.github.io/xts/xts_faq.html
+
+  # uses stringr::stringr::str_detect, RQuantLib::isBusinessDay
+  require(xts)
+
+  if( !is.null(rm_what)     && 
+     ( length(rm_what) > 0) && 
+      any(stringr::str_detect(rm_what,"Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday|HOLIDAYS$"))
+    ) { 
+
+    # 0 - Sunday ... 6 - Saturday  
+    
+    # Browse[2]> .indexwday(xts(,zoo::as.Date("2017-06-18"))) # Sunday
+    # [1] 0
+    # 
+    # > weekdays(index(xts(,zoo::as.Date("2017-06-18")))) # format(zoo::as.Date("2017-06-18"), "%A")
+    # [1] "Sunday"
+
+    weekdays_index <- c(Sunday = 0,  Monday = 1, Tuesday = 2, Wednesday = 3, Thursday = 4, Friday = 5, Saturday = 6)
+
+    rm_what_holidays_not <-  rm_what[!stringr::str_detect(rm_what,"HOLIDAYS$")]
+    if(length(rm_what_holidays_not)) {
+    
+      rm_what_weekdays_index   <-  weekdays_index[match(rm_what_holidays_not, names(weekdays_index))]
+      if(length(rm_what_weekdays_index)) {
+      
+        keep_what_weekdays_index <- weekdays_index[-match(names(rm_what_weekdays_index), names(weekdays_index))]
+        x <- x[.indexwday(x) %in% keep_what_weekdays_index]
+      
+      }
+    
+    }
+      
+    rm_what_holidays <-  rm_what[stringr::str_detect(rm_what,"BIZHOLIDAYS$")]
+    if(length(rm_what_holidays)) {
+    
+      if(length(match("BIZHOLIDAYS",rm_what_holidays))) {
+      
+        x <- x[!RQuantLib::isHoliday("UnitedStates/NYSE", index(x))]
+      
+      }
+    }
+  }
+  return(x)
+}
+# rm.days.xts(xts(0:89,zoo::as.Date("2017-01-01") + 0:89), rm_what = c("Saturday", "Sunday", "BIZHOLIDAYS"))
+
+# weekends removed
+# BIZHOLIDAYS removed 2017-01-02   2017-01-16   2017-02-20
+
+# Browse[2]> data.frame( index(x), !RQuantLib::isHoliday("UnitedStates/NYSE", index(x)) )
+#      index.x. X.RQuantLib..isHoliday..UnitedStates.NYSE...index.x..
+# 1  2017-01-02                                                 FALSE
+# 2  2017-01-03                                                  TRUE
+# 3  2017-01-04                                                  TRUE
+# 4  2017-01-05                                                  TRUE
+# 5  2017-01-06                                                  TRUE
+# 6  2017-01-09                                                  TRUE
+# 7  2017-01-10                                                  TRUE
+# 8  2017-01-11                                                  TRUE
+# 9  2017-01-12                                                  TRUE
+# 10 2017-01-13                                                  TRUE
+# 11 2017-01-16                                                 FALSE
+# 12 2017-01-17                                                  TRUE
+# # ... etc ...
+
+# LEFT_OFF
+# NEED addition
+# need na.locfL, non_bizdays = c("remove","NA")
+
+# xts
+# > .indexwday(xts(c(11,NA,NA,14,NA),zoo::as.Date(1:5))) # as.POSIXlt(.POSIXct(.index(x)))$wday
+# [1] 5 6 0 1 2
+
+# .Call("RQuantLib_isBusinessDay"
+# > isBusinessDay("UnitedStates/NYSE",           index(xts(c(11,NA,NA,14,NA),zoo::as.Date(1:5))))  ## stocks
+# [1]  TRUE FALSE FALSE  TRUE  TRUE
+
+# *major* ( could have 'too much information' )
+# NEED  ... IS.YEAR.NOWORBEFORE.1950 .... present_year # bond switchover year
+
 
 
 # LEFT_oFF 
