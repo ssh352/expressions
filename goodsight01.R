@@ -7,6 +7,20 @@
 # last observation carried forard limited
 na.locfl <- function(x, n = NULL) {
 
+  ops <- options()
+  
+  options(warn = 1)
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
   # uses zoo:::rollapply.zoo, DescTools::DoCall
 
   INPUT <- x
@@ -41,6 +55,9 @@ na.locfl <- function(x, n = NULL) {
   
   if(class(RES)[1] != "zoo") DescTools::DoCall(paste0("as.",cINPUT),list(RES)) -> RES
 
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
   return(RES)
   
   # ORIG FROM
@@ -98,9 +115,28 @@ check_uses_packages_available <- function(programmed_in_R_version, explicit_pack
 # pecent change from the past through NOW 
 # ( if to_future == TRUE, then from NOW to the FUTURE )
 PCTCHG <- function(x, whiches, to_future = NULL) { 
+  
+  ops <- options()
+  
+  options(warn = 1)
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
   lag_direction <- 1 # normal backwards
   if(to_future == TRUE) lag_direction <- -1
-  ( x - xts::lag.xts(x, whiches * lag_direction) )/ abs(x) * 100 * lag_direction
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  return(( x - xts::lag.xts(x, whiches * lag_direction) )/ abs(x) * 100 * lag_direction)
 } 
 
 
@@ -110,26 +146,26 @@ calculate <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o_
   
   matched_call <- capture.output(str(match.call()))
   
+  ops <- options()
+  
+  options(warn = 1)
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
   calculate_inner <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o_args = NULL, prefix = NULL) {
     # uses zoo::is.zoo, zoo::as.zoo, zoo::na.locf, DescTools::DoCall, 
     # xts:::na.locf.xts(dispatch), xts:::merge.xts(dispatch), plyr::join_all,  DataCombine::VarDrop, stringr::str_replace_all
     # xts::is.xts, xts::as.xts, rlist::list.flatten(X?X),  rlist::list.ungroup, stringr::str_replace_all, plyr::mutate
   
     check_uses_packages_available("3.4.0",c("zoo","xts","rlist","stringr","DescTools","plyr","DataCombine"), matched_call)
-    
-    ops <- options()
-    
-    options(warn = 1)
-    options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
-    options(digits = 22) 
-    options(max.print=99999)
-    options(scipen=255) # Try these = width
-    
-    #correct for TZ 
-    oldtz <- Sys.getenv('TZ')
-    if(oldtz=='') {
-      Sys.setenv(TZ="UTC")
-    }
     
     if(is.null(     x))  stop("run-time user must provide input data")
     if(is.null(   fnct)) stop("run-time user must provide a function 'fnct'")
@@ -214,10 +250,12 @@ calculate <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o_
       RETs <- RETs[!"index" %in% columns(RETs),,drop = FALSE] 
     } 
     
-    options(ops)
-    
     return(RETs)
   }
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
   return(calculate_inner(x = x, fnct =  fnct, whiches = whiches, alt_name = alt_name, o_args = o_args, prefix = prefix))
 
 }
@@ -275,6 +313,20 @@ calculate <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o_
 
 delay_since_last_obs.default <- function(x) {
 
+  ops <- options()
+  
+  options(warn = 1)
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
   # help from  StreamMetabolism::contiguous.zoo
   # uses       rowr::rowApply
 
@@ -314,6 +366,9 @@ delay_since_last_obs.default <- function(x) {
   #   }) -> discard
   # }
    
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
   return(new_vec)
  
 }
@@ -327,6 +382,20 @@ delay_since_last_obs.default <- function(x) {
 # note: consider using period.apply( to reduce a a 'set of first/last '1 day' to ret ONE single element 
 
 collofdays2daily.xts <- function(x) {
+  
+  ops <- options()
+  
+  options(warn = 1)
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
 
   require(xts)
 
@@ -335,6 +404,10 @@ collofdays2daily.xts <- function(x) {
   
   # dispach on xts:::merge.xts
   ret <- merge(x,x_days)
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
   return(ret)
   
 }
@@ -352,6 +425,20 @@ collofdays2daily.xts <- function(x) {
 
 delay_since_last_obs.xts <-function(x) { 
 
+  ops <- options()
+  
+  options(warn = 1)
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
   # ONLY works on a single column xts
 
   # uses   delay_since_last_obs.default
@@ -361,6 +448,9 @@ delay_since_last_obs.xts <-function(x) {
   
   x_core_new <- delay_since_last_obs.default(x_core)
   
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
   return(xts(x_core_new,x_index))
 
 } 
@@ -368,6 +458,20 @@ delay_since_last_obs.xts <-function(x) {
 # ADD A a revord fo each day is this what I want?
 delay_since_last_day.xts <-function(x) { 
 
+  ops <- options()
+  
+  options(warn = 1)
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+}
+  
   # ONLY works on a single column xts
 
   # uses   delay_since_last_obs.default
@@ -379,13 +483,15 @@ delay_since_last_day.xts <-function(x) {
   # find delays(0 - no delay over NA, 1 - one delay 'at' NA)
   x_nonsparse_delays <- delay_since_last_obs.xts(x_nonsparse)
   
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
   return(x_nonsparse_delays)
 
 } 
 
 # # testing 
 # library(quantmod); 
-
 
 # getSymbols("GDP", src = "FRED")
 
@@ -406,22 +512,48 @@ delay_since_last_day.xts <-function(x) {
 # 1947-01-09         8
 # 1947-01-10         9
 
+# What are the ways of treatng missing values in XGboost? #21
+#  Internally, XGBoost will automatically learn what is the best direction to go when a value is missing. 
+#  For continuous features, a missing(default) direction is learnt for missing value data to go into, so when the data of the speficific value is missing, then it goes to the default direction
+#  3.4 Sparsity-aware Split Finding
+#  https://arxiv.org/pdf/1603.02754.pdf
+#  10 JUN 2016
+#  XGBoost: A Scalable Tree Boosting System
+#  29 APR 2016
+# https://github.com/dmlc/xgboost/issues/21
 
 
-# is the xts observation na? 1 - true  2 - false(regular observation)
+  # is the xts observation na? 1 - true  2 - false(regular observation)
 is.xts.na <- function(x) {
+  
+  ops <- options()
+  
+  options(warn = 1)
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  # uses ojUtils::ifelseC
 
-   # uses ojUtils::ifelseC
+  # expecting a 'single' column xts
 
-   # expecting a 'single' column xts
+  x_vector     <- as.vector(coredata(x))
+  x_vector_len <- length(x_vector)
 
-   x_vector     <- as.vector(coredata(x))
-   x_vector_len <- length(x_vector)
+  coredata_new <- ojUtils::ifelseC(is.na(x_vector), rep(1,x_vector_len), rep(2,x_vector_len))
+  coredata(x)  <- coredata_new
 
-   coredata_new <- ojUtils::ifelseC(is.na(x_vector), rep(1,x_vector_len), rep(2,x_vector_len))
-   coredata(x)  <- coredata_new
-
-   return(x)
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+   
+  return(x)
 
 } 
 # xts(c(11,NA,NA,14,NA),zoo::as.Date(1:5))
@@ -447,6 +579,20 @@ is.xts.na <- function(x) {
 # typical entry rm_what = c("Saturday", "Sunday", "BIZHOLIDAYS" )
 rm.days.xts <- function(x, rm_what = NULL) {
 
+  ops <- options()
+  
+  options(warn = 1)
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
   # JUN 2017
   # .indexwday
   # http://joshuaulrich.github.io/xts/xts_faq.html
@@ -487,11 +633,33 @@ rm.days.xts <- function(x, rm_what = NULL) {
     
       if(length(match("BIZHOLIDAYS",rm_what_holidays))) {
       
-        x <- x[!RQuantLib::isHoliday("UnitedStates/NYSE", index(x))]
+        # "UnitedStates/GovernmentBond"
+        # 2007 Federal Holidays
+        # Monday, January 1   New Year’s Day
+        # Monday, January 15  Birthday of Martin Luther King, Jr.
+        # https://archive.opm.gov/Operating_Status_Schedules/fedhol/2007.asp
+        
+        # "UnitedStates/NYSE"
+        # NYSE Holidays from 2000-2010
+        # 01 Jan 2007 Monday  New Years Day
+        # 02 Jan 2007 Tuesday Day Of Mourning - Gerald Ford ( SUPRISING )
+        # 15 Jan 2007 Monday  Martin Luther King Day
+        # http://nyseholidays.blogspot.com/2012/11/nyse-holidays-from-2000-2010.html
+
+        # NYSE Holidays: Market Closings for 2017 – Stock Market Holidays Schedule
+        # Thursday, February 23, 2017
+        # https://mrtopstep.com/nyse-holidays-market-closings-2017-stock-market-holidays-schedule/
+        
+        # NOTE does INCLUDE WEEKENDS
+        x <- x[!RQuantLib::isHoliday("UnitedStates/NYSE", zoo::as.Date(index(x)))] # CHANGED index(x) TO zoo::as.Date(index(x)) # UNTESTED but POSIX__ NOT WORK
       
       }
     }
   }
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
   return(x)
 }
 # rm.days.xts(xts(0:89,zoo::as.Date("2017-01-01") + 0:89), rm_what = c("Saturday", "Sunday", "BIZHOLIDAYS"))
@@ -515,27 +683,260 @@ rm.days.xts <- function(x, rm_what = NULL) {
 # 12 2017-01-17                                                  TRUE
 # # ... etc ...
 
-# LEFT_OFF
-# NEED addition
-# need na.locfL, non_bizdays = c("remove","NA")
 
-# xts
-# > .indexwday(xts(c(11,NA,NA,14,NA),zoo::as.Date(1:5))) # as.POSIXlt(.POSIXct(.index(x)))$wday
-# [1] 5 6 0 1 2
+# xts object: x, 
+# d numeric vector of past days: -1 yesterday, c(-1,-2) yesterday AND the 'day before yesterday' etc ( both must be true )
+all.nearby.FRED.holidays <- function(x = NULL, d = NULL) {
 
-# .Call("RQuantLib_isBusinessDay"
-# > isBusinessDay("UnitedStates/NYSE",           index(xts(c(11,NA,NA,14,NA),zoo::as.Date(1:5))))  ## stocks
-# [1]  TRUE FALSE FALSE  TRUE  TRUE
+  ops <- options()
+  
+  options(warn = 1)
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  # "UnitedStates/GovernmentBond"
+  # 2007 Federal Holidays
+  # Monday, January 1   New Year’s Day
+  # Monday, January 15  Birthday of Martin Luther King, Jr.
+  # https://archive.opm.gov/Operating_Status_Schedules/fedhol/2007.asp
+  
+  # uses  RQuantLib::isHoliday, rlist::list.zip
+  require(xts)
+  
+  FUN  <- function(x,d) { index(x) %m+% days(c(d)) }
+  PARALLEL_LISTS <- Vectorize(FUN, vectorize.args = "d", SIMPLIFY = FALSE)(x, d)
+  TOGETHER_LISTS <- do.call(rlist::list.zip, PARALLEL_LISTS)
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  return(sapply(TOGETHER_LISTS, function(x) { 
+    xx <- x
+    all(sapply(xx, function(xx) { 
+      RQuantLib::isHoliday("UnitedStates/GovernmentBond",zoo::as.Date(xx)) 
+    })) 
+  }))
+}
+# library(xts)
+# data("sample_matrix")
+# sample_xts <- as.xts(sample_matrix)
+#
+# ojUtils::ifelseC( all.nearby.FRED.holidays(sample_xts,c(-1,-2)) , rep(TRUE,length(index(sample_xts))), rep(FALSE,length(index(sample_xts))))
+# WORKS
+# [169] FALSE FALSE FALSE  TRUE FALSE FALSE FALSE FALSE FALSE FALSE  TRUE FALSE
 
-# *major* ( could have 'too much information' )
+
+
+# meant REALY only for St.Louis FRED
+# adjust dates that start on the 1st( sometimes 4th, 3rd, or 2nd) to be the 31st
+# be aware of landings on weekend and long holiday weekends and after a Tuesday or Thursday holiday
+
+
+
+# xts go get a new index
+# x - xts needs a new index
+# x_index_new - numerical values of the index 
+#               - either in the coredata of a single column xts object ( the 'index' is ignored ( not used ) )
+#               - xor as a vector of numberic values ( UNTESTED )
+reindex.xts <- function(x, x_index_new) {
+
+  ops <- options()
+  
+  options(warn = 1)
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+}
+  
+  # But proper way to do would have been
+  # convert xts to zoo and set the index values directy
+  # and/with/or 'probably' convert time units to seconds ( because days are not-seconds )
+
+  # Setting an xts Index ( DID NOT WORK FOR ME )
+  # time(XX) <- 
+  # 2010
+  # https://stackoverflow.com/questions/4435011/setting-an-xts-index
+
+  # replace index/time of a zoo object
+  # index(x) <- ...
+  # ? zoo::index
+
+  # TRICK - can not do a timediff  - so instead do ... subtract off the constant number of days ( since 1970 )
+  # TRICK - can not manipulate the index values - so use the rownames of a matrix to manipulate the index )
+
+  # get numeric values
+  if(is.xts(x_index_new)) { avc_xx <- as.vector(coredata(x_index_new)) } else { avc_xx <- x_index_new }
+
+  # uses lubridate::days, lubridate
+  require(lubridate)
+  require(xts)
+
+  x_indexClass  <- indexClass(x)
+  x_indexFormat <- indexFormat(x) # NULL? if default
+  x_indexTZ     <- indexTZ(x)
+
+  for(index_i in seq_along(index(x))) {
+  
+    # near-zero out days ( NOTE: 'can not' use time differencing )
+    index(x)[index_i] <- index(x)[index_i] - days(index(x))@day[index_i]
+    
+    # add back the adjusted days
+    index(x)[index_i] <- index(x)[index_i] + avc_xx[index_i]
+    
+  }
+
+  # fix the order ( if neceessary )
+  x_m <- as.matrix(x)
+  x_m <- x_m[order(rownames(x_m)),,drop = FALSE]
+
+  # re-class
+  x <- as.xts(x_m, dateFormat = x_indexClass, .RECLASS = TRUE) # remember how to go back (.RECLASS) # not necessary
+
+  # anything that I would have missed
+  indexClass(x)  <- x_indexClass
+  indexFormat(x) <- x_indexFormat # NULL? if default
+  indexTZ(x)     <- x_indexTZ
+
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  return(x)
+
+}
+
+# # getSymbols("GDP", src = "FRED") # ABOVE
+# # head(GDP)
+#              GDP
+# 1947-01-01 243.1
+# 1947-04-01 246.3
+# 1947-07-01 250.1
+# 1947-10-01 260.3
+# 1948-01-01 266.2
+# 1948-04-01 272.9
+# 
+# reindex.xts(head(GDP), 0:5)
+#              GDP
+# 1970-01-01 243.1
+# 1970-01-02 246.3
+# 1970-01-03 250.1
+# 1970-01-04 260.3
+# 1970-01-05 266.2
+# 1970-01-06 272.9
+
+
+
+# expect ONLY one observation per day
+# slow 170 observations per second
+pushback.FRED.1st.days.xts <- function(x) {
+
+  ops <- options()
+  
+  options(warn = 1)
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  # uses xts::apply.daily xts::index
+  # uses all.nearby.FRED.holidays  reindex.xts
+  
+  require(xts)
+
+  # if the 4th is Today and the last 3 days were holidays then shift the index 4 # then done  
+  apply.daily(x, function(xx) { 
+    # only one daily observation in this case so '&&' is O.K.
+    if(index(xx) == 4 && all.nearby.FRED.holidays(xx, c(-1,-2,-3))) {
+      index(xx) %m+% days(-4)
+    } else {
+      index(xx)
+    }
+  }) -> x_4th
+  x <- reindex.xts(x, x_4th)
+
+  # if the 3rd is Today and the last 2 days were holidays then shift the index 3 # then done  
+  apply.daily(x, function(xx) { 
+    # only one daily observation in this case so '&&' is O.K.
+    if(index(xx) == 3 && all.nearby.FRED.holidays(xx, c(-1,-2))) {
+      index(xx) %m+% days(-3)
+    } else {
+      index(xx)
+    }
+  }) -> x_3rd
+  x <- reindex.xts(x, x_3rd)
+
+  # Tuesday and Thursday(Thanksgiving) holidays
+  # if the 2nd is Today and the last 1 day was a holiday then shift the index 2 # then done  
+  apply.daily(x, function(xx) { 
+    # only one daily observation in this case so '&&' is O.K.
+    if(index(xx) == 2 && all.nearby.FRED.holidays(xx, c(-1))) {
+      index(xx) %m+% days(-2)
+    } else {
+      index(xx)
+    }
+  }) -> x_2nd
+  x <- reindex.xts(x, x_2nd)
+
+  # if the 1st is Today then shift the index 1  # then done
+  apply.daily(x, function(xx) { 
+    # only one daily observation in this case so '&&' is O.K.
+    if(day(index(xx)) ==  1) {
+      index(xx) %m+% days(-1)
+    } else {
+      index(xx)
+    }
+  }) -> x_1st
+  x <- reindex.xts(x, x_1st)
+
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  return(x)
+
+}
+
+# # getSymbols("GDP", src = "FRED") # ABOVE
+# # head(GDP)
+#              GDP
+# 1947-01-01 243.1
+# 1947-04-01 246.3
+# 1947-07-01 250.1
+# 1947-10-01 260.3
+# 1948-01-01 266.2
+# 1948-04-01 272.9
+# 
+# # head(pushback.FRED.1st.days.xts(GDP))
+# 
+#              GDP
+# 1946-12-31 243.1
+# 1947-03-31 246.3
+# 1947-06-30 250.1
+# 1947-09-30 260.3
+# 1947-12-31 266.2
+# 1948-03-31 272.9
+
+
+
 # NEED  ... IS.YEAR.NOWORBEFORE.1950 .... present_year # bond switchover year
-
-
-
-# LEFT_oFF 
-# BACKWARD ADJUST FRED EOM REPORT DAYS IF LASTS ON THE FIRST/2ND/3RD/4TH/ PULLthe data back tot the FIRST
-
-
 
 # TO DO
 # Reproducible Finance with R: Sector Correlations - Jonathan Regenstein
