@@ -540,6 +540,7 @@ is.xts.na <- function(x) {
     Sys.setenv(TZ="UTC")
   }
   
+  require(xts)
   # uses ojUtils::ifelseC
 
   # expecting a 'single' column xts
@@ -774,6 +775,11 @@ reindex.xts <- function(x, x_index_new) {
   # replace index/time of a zoo object
   # index(x) <- ...
   # ? zoo::index
+  
+  # OTHER info
+  #  xts:::align.time.xts (not really useful)
+  # ? `.index` ( of xts, barely(some) usefullness )
+  # ? indexTZ  ( of xts, barely(some) usefullness )
 
   # TRICK - can not do a timediff  - so instead do ... subtract off the constant number of days ( since 1970 )
   # TRICK - can not manipulate the index values - so use the rownames of a matrix to manipulate the index )
@@ -934,9 +940,79 @@ pushback.FRED.1st.days.xts <- function(x) {
 # 1947-12-31 266.2
 # 1948-03-31 272.9
 
+# NEED 
+#   [x] 'year less than or equal to' ylthoeto2017
+ # NEED  ... IS.YEAR.NOWORBEFORE.1950 .... present_year # bond switchover year
+  # [ [ ] consider  'time signature'-ish functions ]
+#   [ ] buyback yield to be in the database
+#   [ ] generator wrapper over 'left join lateral'-'within'
 
 
-# NEED  ... IS.YEAR.NOWORBEFORE.1950 .... present_year # bond switchover year
+
+# meant to pass just the index
+year.less.then.or.equal <- function(x, n = NULL ) {
+
+  ops <- options()
+  
+  options(warn = 1)
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  require(xts)
+  # uses lubridate::year
+  # uses ojUtils::ifelseC
+
+  # only the index is important
+  
+  x_index_len <- length(index(x))
+
+  coredata_new <- ojUtils::ifelseC(lubridate::year(index(x)) <= n, rep(1,x_index_len), rep(2,x_index_len))
+  
+  # coredata(x)  <- coredata_new
+  # safer methoda if no corredata is passed
+  x <- xts(coredata_new, index(x))
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+   
+  return(x)
+
+}
+
+# seq ... as long as the characters order correctly ... should work
+# 
+# uses xts, xts::index, lubridate::year
+#
+# EXPECT only to DO at the VERY end ( or after GARANTEE that new more NEW rows WILL be added )
+#
+# ONLY the index is important: so ONLY passing NO coredate:  xts(,index(IBM)
+#
+# head(calculate(xts(,index(IBM)), fnct = "year.less.then.or.equal", whiches =  seq(year(min(index(IBM))),year(max(index(IBM))),by = 1), alt_name = "y_lth_or_eq_to_fact"),1)
+# tail(calculate(xts(,index(IBM)), fnct = "year.less.then.or.equal", whiches =  seq(year(min(index(IBM))),year(max(index(IBM))),by = 1), alt_name = "y_lth_or_eq_to_fact"),1)
+# 
+
+# > head(calculate(xts(,index(IBM)), fnct = "year.less.then.or.equal", whiches =  seq(year(min(index(IBM))),year(max(index(IBM))),by = 1), alt_name = "y_lth_or_eq_to_fact"),1)
+#            .y_lth_or_eq_to_fact.2007 .y_lth_or_eq_to_fact.2008 .y_lth_or_eq_to_fact.2009 .y_lth_or_eq_to_fact.2010 .y_lth_or_eq_to_fact.2011 .y_lth_or_eq_to_fact.2012
+# 2007-01-03                         1                         1                         1                         1                         1                         1
+#            .y_lth_or_eq_to_fact.2013 .y_lth_or_eq_to_fact.2014 .y_lth_or_eq_to_fact.2015 .y_lth_or_eq_to_fact.2016 .y_lth_or_eq_to_fact.2017
+# 2007-01-03                         1                         1                         1                         1                         1
+# > tail(calculate(xts(,index(IBM)), fnct = "year.less.then.or.equal", whiches =  seq(year(min(index(IBM))),year(max(index(IBM))),by = 1), alt_name = "y_lth_or_eq_to_fact"),1)
+#            .y_lth_or_eq_to_fact.2007 .y_lth_or_eq_to_fact.2008 .y_lth_or_eq_to_fact.2009 .y_lth_or_eq_to_fact.2010 .y_lth_or_eq_to_fact.2011 .y_lth_or_eq_to_fact.2012
+# 2017-06-16                         2                         2                         2                         2                         2                         2
+#            .y_lth_or_eq_to_fact.2013 .y_lth_or_eq_to_fact.2014 .y_lth_or_eq_to_fact.2015 .y_lth_or_eq_to_fact.2016 .y_lth_or_eq_to_fact.2017
+# 2017-06-16                         2                         2                         2                         2                         1
+#
+
+
+
 
 # TO DO
 # Reproducible Finance with R: Sector Correlations - Jonathan Regenstein
