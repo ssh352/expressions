@@ -3159,11 +3159,16 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
     }
     
     if(is.null(key_columns)) stop("paremeter key_columns must be provided")
+    key_columns <- tolower(key_columns)
+    key_columns <- stringr::str_replace_all(key_columns,"[.]","_")
+    key_columns <- stringr::str_replace_all(key_columns,  " ","_")
     
     # make all column names lower case 
     # replace does with underscore
     colnames(tblobj) <- tolower(colnames(tblobj))
-    colnames(tblobj) <- stringr::str_replace(colnames(tblobj),"[.]","_")
+    colnames(tblobj) <- stringr::str_replace_all(colnames(tblobj),"[.]","_")
+    colnames(tblobj) <- stringr::str_replace_all(colnames(tblobj),  " ","_")
+    
 
     # rip off tibble peculiarities ( [x,y,drop = FALSE] is ignored )
     if("xts" %in% class(tblobj)) {
