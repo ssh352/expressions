@@ -871,6 +871,50 @@ verify_finecon_jamesos_partial_idx <- function() {
 
 
 
+verify_finecon_sp_500_partial_idx <- function() {
+
+  require(RPostgreSQL)
+  require(PivotalR)
+  
+  # uses verify_connection, verify_si_finecon_exists
+  
+  verify_connection()
+  
+  # verify that si_finecon2 exists 
+  if(!dbExistsTable(con, "si_finecon2")) {
+    verify_si_finecon_exists()
+  }
+
+  # to what is in the database
+  db.data.frame("si_finecon2", conn.id = cid, verbose = FALSE) -> ptr_si_finecon2  # class (db.#)
+  col.types(ptr_si_finecon2) -> fc_meta # NOT USED
+      names(ptr_si_finecon2) -> names(fc_meta) 
+      
+  if(all(c("dateindex","sp") %in% names(fc_meta))) {
+  
+    # create index if not exists
+    # NOTE: the ORIGINAL did NOT include 'dateindex' ( I am adding that here ... )
+    #  Note: BEST performance table is sorted by : sort by dateindex, company_id
+    # 
+    #
+
+    db.q("create index if not exists si_finecon2_finecon_sp_500_partial_idx on 
+                  si_finecon2(dateindex,sp) where sp = '500'
+              ;", conn.id = cid)
+    
+    
+    # save space ( if nothing else )
+    db.q("create or replace view si_finecon2_sp_500 as select * from  
+                  si_finecon2 where sp = '500'
+              ;", conn.id = cid)
+  
+  }
+      
+}
+# verify_finecon_sp_500_partial_idx() 
+
+
+
 # remove at the beginning 
 # debug at <text>#30: .base_paste0 <- base::paste0\n\n  
 # stop the rstudio debugger OUTPUT from going inside the string
@@ -1218,7 +1262,7 @@ upsert <-  function(value = NULL, keys = NULL) { # vector of primary key values
     
     # if I have the columns for this index, then create the index ( if it does not already exist )
     verify_finecon_jamesos_partial_idx()
-    
+    verify_finecon_sp_500_partial_idx()
   }
   
   drop_upsert_temp()
@@ -3295,6 +3339,8 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
 # colnames(vix)[2] <- "vix"
 # load_obj_direct(vix, key_columns = "date")
 
+# debugSource('W:/R-3.4._/finecon01.R')
+# rm(list=setdiff(ls(all.names=TRUE),c("si_all_g_df","con","cid","us_bonds","us_bonds_orig","us_bonds_chgs","us_bonds_chgs_orig","my_POSIXct_xts","my_tbl_df","vix")))
 
 #### BEGIN WORKFLOW ####
 
@@ -3397,11 +3443,11 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
 # 
 # # new sipro data loader program into PostgreSQL
 # 
-# W:\R-3.3._
-# W:\R-3.3._\R-3.3._.bat
+# W:\R-3.4._
+# W:\R-3.4._\R-3.4._.bat
 # > shell("rstudio", wait = FALSE)                           # WHITE
-# W:\R-3.3._                                             (FILES in HERE) : finecon01.R  finecon01_more_SQL.sql
-# > debugSource('W:/R-3.3._/finecon01.R')
+# W:\R-3.4._                                             (FILES in HERE) : finecon01.R  finecon01_more_SQL.sql
+# > debugSource('W:/R-3.4._/finecon01.R')
 # 
 # > getAAIISIProDate()
 # [1] "17225"
@@ -3416,7 +3462,7 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
 # > getAAIISIProDate()
 # [1] "17256" - new
 # 
-# # will create the folder
+# # will create the folder  ##### ( DO NOT FORGET TO DO ) #####
 # copyAAIISIProDBFs(
 #     from = "C:/Program Files (x86)/Stock Investor/Professional"
 #   , to   = paste0("W:/AAIISIProDBFs/",getAAIISIProDate()) # 
@@ -3451,10 +3497,14 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
 # 
 # select count(*) from fe_data_store.si_finecon2 where dateindex = 17225;
 # select * from fe_data_store.si_finecon2 where dateindex = 17225;
+# look at column prchg_04w_ann
+# # select * from fe_data_store.si_finecon2 where dateindex = ____;
+#
 # look at 4 colulmns ( should be filled )
 # prchg_042_ann, pct_div_ret_ov_pr_04w_q1_ann,pradchg_04w_ann,price_04w
 # # new month-data
 # select max(dateindex) from fe_data_store.si_finecon2;
+
 # -- end drill 1
 # 
 # -- begin drill 2
@@ -3481,7 +3531,12 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
 # -- previous month ( EXACTLY ONE month of  future data in the database)
 # select * from fe_data_store.si_finecon2 where dateindex = 17256;  -- e.g. pricebck_04w IS FILLED
 # 
+# look at column prchg_04w_ann ( of previsous month now should be filled )
 # select * from fe_data_store.si_finecon2 where dateindex in (17256,17284) where ticker = 'AAPL';
+
+# since I now have bonds ( make sure they are loaded )
+# select * from fe_data_store.instruments where dateindex >= ( select ( max(dateindex) - 366) from fe_data_store.instruments );
+
 # -- end drill 2
 # 
 # C:\PG-9.6._>"C:\PG-9.6._\bin\pg_ctl" -D "C:\PG-9.6._\data" stop -m fast"
