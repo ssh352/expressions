@@ -1318,7 +1318,6 @@ verify_company_basics <- function (dateindex = NULL) {
     # run once
     getvar_all_load_days_lwd_var <- getvar_all_load_days_lwd()
     
-    ## LEFT_OFF
     bm <- 1
     
     # some dateindexs in arg not found on disk
@@ -1716,7 +1715,6 @@ verify_company_details <- function(dateindex = NULL,  table_f = NULL, cnames_e =
     # run once
     getvar_all_load_days_lwd_var <- getvar_all_load_days_lwd()
     
-    ## LEFT_OFF
     bm <- 1
     
     # dateindex in arg not found on disk
@@ -3132,6 +3130,20 @@ load_us_bond_instruments <- function(us_bonds_year_back = NULL) {
 # months_back <- 13; load_us_bond_instruments(us_bonds_year_back = (months_back %/% 12 + 2) )
 
 
+numb.digits.left.of.decimal <- function(x) {
+
+  res <- floor( log10( abs(x) ) ) + 1
+  res <- as.integer(ifelse(res > 0, res, 0 ))
+  
+  return(res)
+  
+}
+
+# numb.digits.left.of.decimal(c(9999.00,0.0000,-9999.00))
+# [1] 4 0 4
+
+
+
 # independent function currenly not used for anything
 # 
 # inbound tibble/data.frame/xts object
@@ -3144,7 +3156,7 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
   load_obj_direct_inner <- function(tblobj =NULL, key_columns = NULL) {
     
     # uses package functions: DataCombine::MoveFront, xts::xtsible, xts:::index.xts
-    # uses user functions: verify_connection, lwd_of_month, last_day_of_month
+    # uses user functions: verify_connection, lwd_of_month, last_day_of_month, numb.digits.left.of.decimal
     
     ops <- options()
     options(warn = 1)
@@ -3298,11 +3310,32 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
     for (colnames_i in colnames(tblobj)) {
                         # avud: note: POSIXct will(would have if where here) drop down to 'numeric' 'days * seconds'
       if(is.numeric(tblobj[,colnames_i]) && !is.integer(tblobj[,colnames_i])) {
-        within( tblobj, { 
-          assign( colnames_i, 
-                  ifelse(get(colnames_i) > 999999.99,999999.99, get(colnames_i)) 
-          )      } 
-        ) -> tblobj
+        
+        # 'volume of s&p 500' NOT FIT problem
+        
+        ## originally make inbound data smaller to fit the db datatype
+        # within( tblobj, { 
+        #   assign( colnames_i, 
+        #           ifelse(get(colnames_i) > 999999.99,999999.99, get(colnames_i)) 
+        #   )      } 
+        # ) -> tblobj
+        
+        ## now (if need be) make db datatype fit inbound data
+        
+        schema_current <- db.q(str_c("select current_schema();"), conn.id = cid)[1,1,drop = TRUE]
+        precision_numeric <- db.q(str_c("select numeric_precision from information_schema.columns where table_schema = '", schema_current, "' and table_name = '", tblobj_name, "' and column_name = '", colnames_i, "';"), conn.id = cid)[1,1,drop = TRUE]
+        db_numeric_column_i_storage_limit <- as.numeric(paste0(paste0(rep("9", precision_numeric), collapse = ""),".99"))
+        
+        max_tblobj_colnames_i <- max(tblobj[,colnames_i])
+        # >= because R may be inprecise
+        if(max_tblobj_colnames_i >= db_numeric_column_i_storage_limit) {
+        
+          # get numer of 9s to the left of the decimal
+          new_numeric <- numb.digits.left.of.decimal(max_tblobj_colnames_i)
+          db.q(str_c("alter table ", tblobj_name," alter column ", colnames_i, " type numeric(", new_numeric + 2, ", 2);"), conn.id = cid)
+          
+        }
+        
       }
     } 
     
@@ -3433,19 +3466,32 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
 
 
 # LEFT_OFF
-# FIX: load_obj_direct ... FIX: other places
+# ... caret ... xgboost or random_forest  GSPC momentum vs itself ( NICE OUTPUT it THEN WORK BACKWARDS )
 # 
-# make gspc volume fit, make large numerics fit
-# How do I determine the number of digits of an integer in C?
-# max(column)
-# > floor (log10 (abs (-9999.00))) + 1  # IF 5% OF MY DATA IS WITHIN 1 DIGIT THEN 'GREATER WIDTH' OTHERWISE WINDSORIZE
-# [1] 4
-# https://stackoverflow.com/questions/1068849/how-do-i-determine-the-number-of-digits-of-an-integer-in-c
+# --TODO: [ ] ADD sp500_total_shares mktcap / price ( to demonstrate buyback in action )
+# --TODO: [ ] ADD mktvalue weight of those that have reported within the last month
+# --          [ ] ADD yoy(q1 v.s. q5) pctchg of those that have reported last and 'not reported in the previous month'
+# --TODO: Ratio adjustment for those dateindex that do NOT have exactly 500 firms
+# --TODO: [x] load GetSymbols into the database  # make gspc volume fit, make large numerics fit
+#              FIX: load_obj_direct ... FIX: other places
+#         [x] How do I determine the number of digits of an integer in C?
+
 # 
 # with-'left join lateral' query gnerator
 #
 # data.cube
 # multitable
+
+# ANDRE measureS ( WHERE make SENSE )
+# RECIPRICOL_PCTCHG  4% -> 5%   4/100 -> 5/100 = 1/100
+# and
+# ABS_PCTCHG
+#
+# ANDRE: True_Stortino  ( see R function parameter )
+# ... of ... OTHER markets(that crash) before MAIN us MARKET ( ANDRE: earthquake )
+# 
+# ANDRE
+# what makes $1 stock companies RISE ( like FORD did? )
 
 
 # ANDRE NEW PLAN - INBOUND
@@ -3456,6 +3502,7 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
 # derived data rations:  price, net_income, sales
 # perhaps MORE from ( through Quandl? ): http://www.multpl.com/
 # Inbound Sales/Market,Net_Income/Market,Net_Income/Sales  by (since last time, since last year this time)
+# BUYBACK_YIELD: maybe the ONLY reason that a STOCK price goes up
 # INBOUND DATA  
 #   missing data
 #     na.locf
@@ -3756,11 +3803,7 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
 #   te.dateindex
 # ;
 # --WORKS
-# --TODO: [ ] ADD sp500_total_shares mktcap / price ( to demonstrate buyback in action )
-# --TODO: [ ] ADD mktvalue weight of those that have reported within the last month
-# --          [ ] ADD yoy(q1 v.s. q5) pctchg of those that have reported within the last month
-# --TODO: Ratio adjustment for those dateindex that do NOT have exactly 500 firms
-# --TODO: [ ] load GetSymbols into the database
+
 
 
 
@@ -3915,3 +3958,10 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
 #        
 #          
 #                                                   
+
+# LATELY
+# 
+# quantmod::getSymbols("^GSPC", from = "1940-01-01")
+# rm(list=setdiff(ls(all.names=TRUE),c("si_all_g_df","con","cid","GSPC"))); debugSource('W:/R-3.4._/finecon01.R'); debugSource('W:/R-3.4._/goodsight01.R')
+
+
