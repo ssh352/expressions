@@ -3347,10 +3347,114 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
 # debugSource('W:/R-3.4._/finecon01.R')
 # rm(list=setdiff(ls(all.names=TRUE),c("si_all_g_df","con","cid","us_bonds","us_bonds_orig","us_bonds_chgs","us_bonds_chgs_orig","my_POSIXct_xts","my_tbl_df","vix")))
 
+# quantmod::getSymbols("GSPC") # XOR? # quantmod::getSymbols("^GSPC") # quantmod::getSymbols("^GSPC", from = "1940-01-01") #  "1950-01-03"+...
+
+     # As of quantmod 0.4-9, 'getSymbols.yahoo' has been patched to work
+     # with changes to Yahoo Finance, which also included the following
+     # changes to the raw data:
+     # 
+     #    • The adjusted close column appears to no longer include
+     #      dividend adjustments
+     # 
+     #    • The close column appears to be adjusted for splits twice
+     # 
+     #    • The open, high, and low columns are adjusted for splits, and
+     # 
+     #    • The raw data may contain missing values.
+
+# getSymbols.yahoo
+
+# load_obj_direct(GSPC, key_columns = "dateindex")
+# 
+# quantmod::getSymbols("^GSPC", from = "1950-01-01") # 67 years '262 days/year ~ 17000 rows of data': # first time ... 5 ... 10 seconds 
+# [1] "GSPC"
+
+# ROUGH WAY to look for missing values ( from = "1940-01-01" #  "1950-01-03"+... ) 
+# split.xts
+# > sapply( split(GSPC, f = "years"), NROW )
+#  [1] 249 249 250 251 252 252 251 252 252 253 252 250 252 251 253 252 252 251 226
+# [20] 250 254 253 251 252 253 253 253 252 252 253 253 253 253 253 253 252 253 253
+# [39] 253 252 253 253 254 253 252 252 254 253 252 252 252 248 252 252 252 252 251
+# [58] 251 253 252 252 252 250 252 252 252 252 131
+
+# head(GSPC)
+#            GSPC.Open GSPC.High GSPC.Low GSPC.Close GSPC.Volume GSPC.Adjusted
+# 1950-01-03     16.66     16.66    16.66      16.66     1260000         16.66
+# 1950-01-04     16.85     16.85    16.85      16.85     1890000         16.85
+# 1950-01-05     16.93     16.93    16.93      16.93     2550000         16.93
+# 1950-01-06     16.98     16.98    16.98      16.98     2010000         16.98
+# 1950-01-09     17.09     17.09    17.08      17.08     3850000         17.08
+# 1950-01-10     17.03     17.03    17.03      17.03     2160000         17.03
+# 
+# verify_connection()
+# load_obj_direct(GSPC, key_columns = "dateindex")
+# 
+# finance_econ=# select * from gspc order by dateindex limit  6;
+#  dateindex | dateindexlwd | dateindexeom | gspc_open | gspc_high | gspc_low | gspc_close | gspc_volume | gspc_adjusted
+# -----------+--------------+--------------+-----------+-----------+----------+------------+-------------+---------------
+#      -7303 |        -7275 |        -7275 |     16.66 |     16.66 |    16.66 |      16.66 |   999999.99 |         16.66
+#      -7302 |        -7275 |        -7275 |     16.85 |     16.85 |    16.85 |      16.85 |   999999.99 |         16.85
+#      -7301 |        -7275 |        -7275 |     16.93 |     16.93 |    16.93 |      16.93 |   999999.99 |         16.93
+#      -7300 |        -7275 |        -7275 |     16.98 |     16.98 |    16.98 |      16.98 |   999999.99 |         16.98
+#      -7297 |        -7275 |        -7275 |     17.09 |     17.09 |    17.08 |      17.08 |   999999.99 |         17.08
+#      -7296 |        -7275 |        -7275 |     17.03 |     17.03 |    17.03 |      17.03 |   999999.99 |         17.03
+# (6 rows)
+# 
+# finance_econ=# delete from gspc where dateindex in (-7303,-7202,-7301,-7300);
+# DELETE 3
+# 
+# finance_econ=# select * from gspc order by dateindex limit  6;
+#  dateindex | dateindexlwd | dateindexeom | gspc_open | gspc_high | gspc_low | gspc_close | gspc_volume | gspc_adjusted
+# -----------+--------------+--------------+-----------+-----------+----------+------------+-------------+---------------
+#      -7297 |        -7275 |        -7275 |     17.09 |     17.09 |    17.08 |      17.08 |   999999.99 |         17.08
+#      -7296 |        -7275 |        -7275 |     17.03 |     17.03 |    17.03 |      17.03 |   999999.99 |         17.03
+#      -7295 |        -7275 |        -7275 |     17.09 |     17.09 |    17.09 |      17.09 |   999999.99 |         17.09
+#      -7294 |        -7275 |        -7275 |     16.76 |     16.76 |    16.76 |      16.76 |   999999.99 |         16.76
+#      -7293 |        -7275 |        -7275 |     16.67 |     16.67 |    16.67 |      16.67 |   999999.99 |         16.67
+#      -7290 |        -7275 |        -7275 |     16.65 |     16.72 |    16.65 |      16.72 |   999999.99 |         16.72
+# (6 rows)
+# 
+# quantmod::getSymbols("^GSPC", from = "1950-01-01", to = "1950-02-01")
+# load_obj_direct(GSPC, key_columns = "dateindex")
+# 
+# finance_econ=# select * from gspc order by dateindex limit  6;
+#  dateindex | dateindexlwd | dateindexeom | gspc_open | gspc_high | gspc_low | gspc_close | gspc_volume | gspc_adjusted
+# -----------+--------------+--------------+-----------+-----------+----------+------------+-------------+---------------
+#      -7303 |        -7275 |        -7275 |     16.66 |     16.66 |    16.66 |      16.66 |   999999.99 |         16.66
+#      -7302 |        -7275 |        -7275 |     16.85 |     16.85 |    16.85 |      16.85 |   999999.99 |         16.85
+#      -7301 |        -7275 |        -7275 |     16.93 |     16.93 |    16.93 |      16.93 |   999999.99 |         16.93
+#      -7300 |        -7275 |        -7275 |     16.98 |     16.98 |    16.98 |      16.98 |   999999.99 |         16.98
+#      -7297 |        -7275 |        -7275 |     17.09 |     17.09 |    17.08 |      17.08 |   999999.99 |         17.08
+#      -7296 |        -7275 |        -7275 |     17.03 |     17.03 |    17.03 |      17.03 |   999999.99 |         17.03
+# (6 rows)
+
+
 #### BEGIN WORKFLOW ####
+
+
+# LEFT_OFF
+# FIX: load_obj_direct ... FIX: other places
+# 
+# make gspc volume fit, make large numerics fit
+# How do I determine the number of digits of an integer in C?
+# max(column)
+# > floor (log10 (abs (-9999.00))) + 1  # IF 5% OF MY DATA IS WITHIN 1 DIGIT THEN 'GREATER WIDTH' OTHERWISE WINDSORIZE
+# [1] 4
+# https://stackoverflow.com/questions/1068849/how-do-i-determine-the-number-of-digits-of-an-integer-in-c
+# 
+# with-'left join lateral' query gnerator
+#
+# data.cube
+# multitable
+
 
 # ANDRE NEW PLAN - INBOUND
 # ------------------------
+# NEW data
+# % increase in 40 year olds in the population
+# aaii buyback yield
+# derived data rations:  price, net_income, sales
+# perhaps MORE from ( through Quandl? ): http://www.multpl.com/
 # Inbound Sales/Market,Net_Income/Market,Net_Income/Sales  by (since last time, since last year this time)
 # INBOUND DATA  
 #   missing data
@@ -3358,11 +3462,11 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
 #     flag column of na.locf
 #     time in days since last measure ( higher values for na.locf ) ( see my Philadelpha/Cleveland ... "Forecasters" )
 # OTHER
-# Real_Sharp of monthly stock returns ('risk')
+# Real_Sortino of monthly stock returns ('risk')
 # Gold & Silver sector returns ('fear')
-#   Real_Sharp of Gold & Silver sector returns('risk')
+#   Real_Sortino of Gold & Silver sector returns('risk')
 # Competition('Return on bonds')
-#   Real_Sharp of Competition('risk')
+#   Real_Sorino of Competition('risk')
 # Inflation ('free growth') [ over Competition('Return on bonds')]
 # Ratio of Stock_Risk/Bond_Risk
 # Ratio of Stock_Return/Bond_Return
@@ -3381,7 +3485,7 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
 # workflow
 # --------
 # 
-# add [my] transforms(<none>/ROLLING/SMA/PCTCHG/LAG[/CORRELATION]) &+ _WEIGHTED .. &+ _12_MO_SEASONAL-> 
+# add [my] transforms(<none>/ROLLING/SMA/PCTCHG/LAG[/CORRELATION]/QUANTILE(FINDINTERRVAL) &+ _WEIGHTED .. &+ _12_MO_SEASONAL-> 
 #     time(in_days)_since_report_release_date
 #     time(in_days)_since_asof_data_date
 #   add mead-adj-factor-vars(e..g. codings) and/or trendish_time-vars ->
