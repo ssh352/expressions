@@ -2708,9 +2708,13 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
     verify_company_details(dateindex = c(dir_i),  table_f = "si_isq", cnames_e = "^dps_q.$") -> si_all_g_df
     upsert(si_all_g_df, keys = c("company_id"))
 
-    verify_company_details(dateindex = c(dir_i),  table_f = "si_date", cnames_e = "^perend_q.$") -> si_all_g_df
+    verify_company_details(dateindex = c(dir_i),  table_f = "si_date", cnames_e = "^perend_q.$|^perlen_q.$|^pertyp_q.$") -> si_all_g_df
     upsert(si_all_g_df, keys = c("company_id"))
 
+    # MAY? have not been reliable?
+    verify_company_details(dateindex = c(dir_i),  table_f = "si_ee"  , cnames_e = "^date_eq0$") -> si_all_g_df
+    upsert(si_all_g_df, keys = c("company_id"))
+    
     # requires
     #   dateindexf##lwd, price, prchg_##w, perend_q#, dps_q#
     verify_week_often_week_returns(dir_i) -> si_all_g_df
