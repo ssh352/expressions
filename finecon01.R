@@ -587,7 +587,7 @@ optimize <- function(tb = NULL, colz = c("dateindex","company_id")) {
 #     3. x[char_col_numeric_limit < x] <- NA_real_ 
 
 financize <- function(df
-                      , int_col_rexpr = "sic|employees|^perlen_q.*$"
+                      , int_col_rexpr = "sic|employees|^perlen_q.*$|date_eq0"
                       , stringsAsFactors = FALSE       # untested # most likely upsiszed to a database to be an integer?
                       , char_col_rexpr = "^pertyp_q.*$"
                       # , num_col_rexpr = "price|mktcap|^.*_q.*$"
@@ -3465,7 +3465,15 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
 #### BEGIN WORKFLOW ####
 
 
+
+#
+# OTHER THAN GSPC ( AND i NEED YEAR MEASURE )
+# https://en.wikipedia.org/wiki/Thrift_Savings_Plan
+#  https://en.wikipedia.org/wiki/Bloomberg_Barclays_US_Aggregate_Bond_Index
+#      iShares Core US Aggregate Bond Index (AGG) Vanguard Total Bond Market Index Fund (VBMFX), Fidelity U.S. Bond Index Fund (FBIDX)
+#
 # LEFT_OFF
+# 
 # ... caret ... xgboost or random_forest  GSPC momentum vs itself ( NICE OUTPUT it THEN WORK BACKWARDS )
 # 
 # --TODO: [ ] ADD sp500_total_shares mktcap / price ( to demonstrate buyback in action )
@@ -3478,9 +3486,35 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
 
 # 
 # with-'left join lateral' query gnerator
+
+# PROBABLY WOULD WANT
+#  Dates and Periods
+#    Data Table Name: PERLEN_Q1, Data Table Name:                     [ ]
+#    pertyp_q1, q2, q3, q4, q5, q6, q7, q8 Q2, Q3, Q4, Q5, Q6, Q7, Q8 [ ]
+     
+
+# Earnings and Estimates
+#   Date--Latest Quarterly EPS
+#     Data Category: Dates and Periods
+#     Data Table Name: DATE_EQ0  ( SO LOAD THIS ) [ ]
+#     Field Type: Date (MM/DD/YYYY)
+#       The ending date of the last completed fiscal quarter.
+# Dates and Periods
+
+# ALREADY HAVE AND 'HAVE HAD'
+# fe_data_store.si_finecon2 ADD COLUMN perend_q1 integer;
+#
+# Dates and Periods
+#  Ending date Q1, Q2, Q3, Q4, Q5, Q6, Q7, Q8
+#    Data Category: Dates and Periods
+#    Data Table Name: PEREND_Q1, Q2, Q3, Q4, Q5, Q6, Q7, Q8
+#    Field Type: Date (YY/MM)
+#    The last day for each of the last eight fiscal quarters.
+
 #
 # data.cube
 # multitable
+# Charles Driver transforms
 
 # ANDRE measureS ( WHERE make SENSE )
 # RECIPRICOL_PCTCHG  4% -> 5%   4/100 -> 5/100 = 1/100
@@ -3492,6 +3526,14 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
 # 
 # ANDRE
 # what makes $1 stock companies RISE ( like FORD did? )
+
+# [ ]
+# change 'company_id_orig' -> 'company_id' ADJUST
+#  FROM 'whatever now' TO 'at least 2 of 3' to make update
+#    2of3SAME(company, ticker, street)  -> company_id ADJUST 
+
+
+
 
 
 # ANDRE NEW PLAN - INBOUND
