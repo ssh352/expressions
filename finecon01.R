@@ -2702,7 +2702,7 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
     update_from_future_new_company_ids(df = si_all_g_df, ref = dir_i) -> si_all_g_df
     upsert(si_all_g_df, keys = c("company_id")) # HERE #
 
-    verify_company_details(dateindex = c(dir_i),  table_f = "si_psd", cnames_e = "^price$|^mktcap$") -> si_all_g_df
+    verify_company_details(dateindex = c(dir_i),  table_f = "si_psd", cnames_e = "^price$|^mktcap$|^split_fact$|^split_date$") -> si_all_g_df
     upsert(si_all_g_df, keys = c("company_id"))
 
     verify_company_details(dateindex = c(dir_i),  table_f = "si_psd", cnames_e = "^prchg_\\d\\dw$") -> si_all_g_df
@@ -2719,6 +2719,9 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
 
     # MAY? have not been reliable?
     verify_company_details(dateindex = c(dir_i),  table_f = "si_ee"  , cnames_e = "^date_eq0$") -> si_all_g_df
+    upsert(si_all_g_df, keys = c("company_id"))
+    
+    verify_company_details(dateindex = c(dir_i),  table_f = "si_mlt", cnames_e = "^bby_1t$") -> si_all_g_df
     upsert(si_all_g_df, keys = c("company_id"))
     
     # requires
@@ -4015,6 +4018,6 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
 # LATELY
 # 
 # quantmod::getSymbols("^GSPC", from = "1940-01-01")
-# rm(list=setdiff(ls(all.names=TRUE),c("si_all_g_df","con","cid","GSPC"))); debugSource('W:/R-3.4._/finecon01.R'); debugSource('W:/R-3.4._/goodsight01.R')
+# rm(list=setdiff(ls(all.names=TRUE),c("con","cid","GSPC"))); debugSource('W:/R-3.4._/finecon01.R'); debugSource('W:/R-3.4._/goodsight01.R');verify_connection()
 
 
