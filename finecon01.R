@@ -586,12 +586,15 @@ optimize <- function(tb = NULL, colz = c("dateindex","company_id")) {
 #     2. round(x, digits=round_to_decimal_places)
 #     3. x[char_col_numeric_limit < x] <- NA_real_ 
 
-financize <- function(df
-                      , int_col_rexpr = "sic|employees|^perlen_q.*$|date_eq0"
+                      # datish: xts::is.timeBased is converted to integer ( so fractional parts are lost )
+                      # everything else must be EXPLICITY filtered here ( else it falls out to become(stay?)'text' )
+                      #
+financize <- function(df                                                      # FIX? FOR SOME REASON  ???
+                      , int_col_rexpr = "sic|employees|^perlen_q.*$" # MANUAL ( date_eq0 DID NOT MATCH )
                       , stringsAsFactors = FALSE       # untested # most likely upsiszed to a database to be an integer?
                       , char_col_rexpr = "^pertyp_q.*$"
                       # , num_col_rexpr = "price|mktcap|^.*_q.*$"
-                      , num_col_rexpr = "price|mktcap|^.*_q.*$|^prchg_\\d\\dw$"
+                      , num_col_rexpr = "price|mktcap|^.*_q.*$|^prchg_\\d\\dw$|split_fact|bby_1t"
                       , round_to_decimal_places  = 2
                                                # 8,2
                       , char_col_numeric_limit = 999999.99 # PostgreSQL # exact(actually an integer) # numeric(8,2) # SHOULD fit MOST aaii sipro data
@@ -622,7 +625,10 @@ financize <- function(df
             function(x) { 
               print(str_c("Begin: ",col__names[col__names_iter], collapse = " "))
               col__names_iter <<- col__names_iter + 1
-              if(xts::xtsible(x)) { # detects Date 
+              
+              # ? xts::is.timeBased Current time-based objects supported are 'Date', 'POSIXct', 'chron', 'yearmon', 'yearqtr', and 'timeDate'.
+              # if(xts::xts::xtsible(x)) { # OLD xts - do no use - new xts does not allow non-valid values in the index 
+              if(xts::is.timeBased(x)) { # detects Date 
                 return(as.integer(x)) # convert Dates to integer
               }
               if(is.integer(x)) {
@@ -3493,8 +3499,8 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
 
 # PROBABLY WOULD WANT
 #  Dates and Periods
-#    Data Table Name: PERLEN_Q1, Data Table Name:                     [ ]
-#    pertyp_q1, q2, q3, q4, q5, q6, q7, q8 Q2, Q3, Q4, Q5, Q6, Q7, Q8 [ ]
+#    Data Table Name: PERLEN_Q1, Data Table Name:                     [X]
+#    pertyp_q1, q2, q3, q4, q5, q6, q7, q8 Q2, Q3, Q4, Q5, Q6, Q7, Q8 [X]
      
 
 # Earnings and Estimates
@@ -3545,10 +3551,11 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
 # NEW data
 # % increase in 40 year olds in the population
 # aaii buyback yield
+# BUYBACK_YIELD: maybe the ONLY reason that a STOCK price goes up [X] loaded
 # derived data rations:  price, net_income, sales
 # perhaps MORE from ( through Quandl? ): http://www.multpl.com/
 # Inbound Sales/Market,Net_Income/Market,Net_Income/Sales  by (since last time, since last year this time)
-# BUYBACK_YIELD: maybe the ONLY reason that a STOCK price goes up
+
 # INBOUND DATA  
 #   missing data
 #     na.locf
