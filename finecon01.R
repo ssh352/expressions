@@ -3509,7 +3509,7 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
 # Earnings and Estimates
 #   Date--Latest Quarterly EPS
 #     Data Category: Dates and Periods
-#     Data Table Name: DATE_EQ0  ( SO LOAD THIS ) [ ]
+#     Data Table Name: DATE_EQ0  ( SO LOAD THIS ) [X]
 #     Field Type: Date (MM/DD/YYYY)
 #       The ending date of the last completed fiscal quarter.
 # Dates and Periods
@@ -3523,6 +3523,58 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
 #    Data Table Name: PEREND_Q1, Q2, Q3, Q4, Q5, Q6, Q7, Q8
 #    Field Type: Date (YY/MM)
 #    The last day for each of the last eight fiscal quarters.
+
+
+
+# # LEFT_OFF
+# 
+# # -- Index Scan using si_finecon2_dateindex_company_id_key
+# # -- 6608 rows
+# # -- 0.7 seconds
+# # 
+# # requires sales_q1, netinc_q1, mktcap, price, date_eq0, perend_q1, pertyp_q1, perlen_q1
+# # 
+# wayback_machine_last_month_sales_netinc <- function(x) {
+# 
+#   verify_connection() # require(PivotalR)
+# 
+#   x <- as.integer(x)
+# 
+#   dbGetQuery(conn, paste0("
+# 
+#     select
+#       now.dateindex
+#     , now.company_id
+#     , p01lwd.dateindex     p01lwd_dateindex
+#     , p01lwd.company_id    p01lwd_company_id
+#     , p01lwd.sales_q1      p01lwd_sales_q1
+#     , p01lwd.netinc_q1     p01lwd_netinc_q1
+#     , p01lwd.mktcap        p01lwd_mktcap
+#     , p01lwd.price         p01lwd_price
+#     , p01lwd.date_eq0      p01lwd_date_eq0
+#     , p01lwd.perend_q1     p01lwd_perend_q1
+#     , p01lwd.pertyp_q1     p01lwd_pertyp_q1
+#     , p01lwd.perlen_q1     p01lwd_perlen_q1
+#       from
+#         ( select * from si_finecon2 now  where now.dateindex = ",x," ) now 
+#           left outer join si_finecon2 p01lwd on now.dateindexp01lwd  = p01lwd.dateindex and 
+#                                                 now.company_id       = p01lwd.company_id 
+#   ")) -> res
+#   return(res)
+#   
+#   # note: ADD more LEFT OUTER JOINS to include MORE months 
+#   # ( BUT!! better OFF loading them SEPARATELY in ANOTHER function & call )
+#  
+# }
+# 
+# # USAGE
+# # 
+# # -- Index Scan using si_finecon2_dateindex_company_id_key
+# # -- 6608 rows
+# # -- 0.7 seconds
+# # wayback_machine_last_month_sales_netinc(dir_i) -> si_all_g_df
+# # upsert(si_all_g_df, keys = c("company_id"))
+
 
 #
 # data.cube
@@ -4008,6 +4060,8 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
 # -- 177 seconds(cold run(first)) most often ( entire database 618,000 rows )
 # -- 
 # -- 60 seconds ( 13 seconds to query + 47 seconds on data load 
+# -- LATELY - TYPICALLY 2 TO 5 MINUTES
+
 
 #### QUERIES ENDED ####
 
