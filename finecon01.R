@@ -238,12 +238,28 @@ verify_connection <- function () {
         stop("PostgreSQL database server is not responding.  Is it up/blocked?  Are the client login credentials valid?")
       }
       
+      # EXPERIMENT
+      # ( memory for ) disk caching
+      # set effective_cache_size to '14GB';
+      #
       # set search_path to fe_data_store,public;
       # set time zone 'utc';
       # set work_mem to '2047MB';
       # set constraint_exclusion = on;
       # set max_parallel_workers_per_gather to 4;
       
+      # EXPERIMENT
+      # MEMORY caching data
+      # requires PostgreSQL restart
+      # ONLY in postgresql.conf
+      # postgres=# show shared_buffers;
+      #  shared_buffers
+      # ----------------
+      #  8GB
+      
+      # EXPERIMENT
+      db.q(str_c("set effective_cache_size to '14GB';"), nrows =  -1, conn.id = cid)
+      # 
       db.q(str_c("set time zone 'utc';"), nrows =  -1, conn.id = cid)
       # windows LIMIT
       db.q(str_c("set work_mem to '2047MB';"), nrows =  -1, conn.id = cid)
@@ -2694,6 +2710,9 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
     sort(lwd_dbf_dirs, decreasing = TRUE)[head(lwd_months_idx,months_only_back)]  -> lwd_dbf_dirs_ordered
   }
   
+  # load_us_bond_instruments
+  for_bonds_is_null_months_only_back_check_NOT_done <- TRUE
+  
   for(dir_i in lwd_dbf_dirs_ordered) {
     
     warning(paste0("Beginning disk dbf dir: ",dir_i))
@@ -2745,15 +2764,18 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
     
     warning(paste0("Ending disk dbf dir: ",dir_i))
     
-    
   }
   
-  if(!is.null(months_only_back)) {
+  # WARNING: NOT 'dir_i TIME by database BASED' ( SHOULD REWRITE? IF POSSIBLE? )
+  # NOTE: IF missed *MANY* months in LOADING cheaper to REBUILD the entire DATABASE
+  if(for_bonds_is_null_months_only_back_check_NOT_done  && !is.null(months_only_back)) {
+    for_bonds_is_null_months_only_back_check_NOT_done <- FALSE
     # NOTE:US BONDS SOME GAPS DO EXIST IN THE DATA ( TO DO [ ] DETECT NULL AND APPROXIMATION [ ]
     load_us_bond_instruments(us_bonds_year_back = (months_only_back %/% 12 + 2) ) # MIMIMUM OF 2 YEARS OF DATA
   }
 
-  if(is.null(months_only_back)) {
+  if(for_bonds_is_null_months_only_back_check_not_done  && is.null(months_only_back)) {
+    for_bonds_is_null_months_only_back_check_NOT_done <- FALSE
     # NOTE: US BONDS SOME GAPS DO EXIST IN THE DATA ( TO DO [ ] DETECT NULL AND APPROXIMATION [ ]
     load_us_bond_instruments() # ALL OF the data
   }
@@ -3607,10 +3629,11 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
 # % increase in 40 year olds in the population
 # aaii buyback yield
 # BUYBACK_YIELD: maybe the ONLY reason that a STOCK price goes up [X] loaded
-# derived data rations:  price, net_income, sales
-# perhaps MORE from ( through Quandl? ): http://www.multpl.com/
 # Inbound Sales/Market,Net_Income/Market,Net_Income/Sales  by (since last time, since last year this time)
-
+# derived data rations:  price, net_income, sales - IN PROGRESS [ ]
+# perhaps MORE from ( through Quandl? ): http://www.multpl.com/
+# MY FIX and/or DATA from
+#   qmao::.getEconomicCalendarBriefing ( my fix of ) # and/or/xor # library(censusapi
 # INBOUND DATA  
 #   missing data
 #     na.locf
@@ -3626,6 +3649,8 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
 # Ratio of Stock_Risk/Bond_Risk
 # Ratio of Stock_Return/Bond_Return
 # PREDICT on ONE only ... loop predict(1); rbind(1) end loop
+# MY FIX and/or DATA from
+# qmao::.getEconomicCalendarBriefing ( my fix of ) # and/or/xor # library(censusapi
 # 
 # ANDRE NEW PLAN - PROCESSING and OUTBOUND
 # ----------------------------------------
