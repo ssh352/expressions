@@ -606,11 +606,11 @@ optimize <- function(tb = NULL, colz = c("dateindex","company_id")) {
                       # everything else must be EXPLICITY filtered here ( else it falls out to become(stay?)'text' )
                       #
 financize <- function(df                                                      # FIX? FOR SOME REASON  ???
-                      , int_col_rexpr = "sic|employees|^perlen_q.*$" # MANUAL ( date_eq0 DID NOT MATCH )
+                      , int_col_rexpr = "sic|employees|^perlen_q.*$|stmtid" # MANUAL ( date_eq0 DID NOT MATCH )
                       , stringsAsFactors = FALSE       # untested # most likely upsiszed to a database to be an integer?
                       , char_col_rexpr = "^pertyp_q.*$"
                       # , num_col_rexpr = "price|mktcap|^.*_q.*$"
-                      , num_col_rexpr = "price|mktcap|^.*_q.*$|^prchg_\\d\\dw$|split_fact|bby_1t"
+                      , num_col_rexpr = "price|mktcap|^.*_q.*$|^prchg_\\d\\dw$|split_fact|bby_1t|stmtstat"
                       , round_to_decimal_places  = 2
                                                # 8,2
                       , char_col_numeric_limit = 999999.99 # PostgreSQL # exact(actually an integer) # numeric(8,2) # SHOULD fit MOST aaii sipro data
