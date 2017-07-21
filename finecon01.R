@@ -975,7 +975,7 @@ upsert <-  function(value = NULL, keys = NULL) { # vector of primary key values
   verify_connection()
   
   # verify that si_finecon2 exists  
-  # if(!db.q(str_c("select count(*) from information_schema.tables where table_name = 'si_finecon2';"), conn.id = cid)) {
+  # if(!db.q(str_c("select count(*) from information_schema.tables where table_name = 'si_finecon2';"), nrows = -1, conn.id = cid)) {
   if(!dbExistsTable(con, "si_finecon2")) {
     verify_si_finecon_exists()
   }
@@ -989,7 +989,7 @@ upsert <-  function(value = NULL, keys = NULL) { # vector of primary key values
     #    ** DO I NEED A 'SETDIFF INSTEAD?' **
     # what 'value df dateindex' are already in the database
     value_unq_index[
-      value_unq_index %in% as.vector(unlist(db.q(str_c("select distinct dateindex from si_finecon2;"), conn.id = cid)))
+      value_unq_index %in% as.vector(unlist(db.q(str_c("select distinct dateindex from si_finecon2;"), nrows = -1, conn.id = cid)))
                    ] ->  same_dateindex_found_in_db
 
     # FAULTY LOGIC ( HAVE TO RETURN TO THIS 'TOPIC' ) 
@@ -1036,7 +1036,31 @@ upsert <-  function(value = NULL, keys = NULL) { # vector of primary key values
   # + other custom column types
   # 
   "text"          -> fc_new_columns[fc_new_columns == "character"] 
-  "numeric(8,2)"  -> fc_new_columns[fc_new_columns == "numeric"]  
+  #
+  ## "numeric(8,2)"  -> fc_new_columns[fc_new_columns == "numeric"]  ###
+  # new columns to be put in fc
+  # for numeric greater than 999999.99 make them bigger
+  for (colnames_i in names(fc_new_columns)[fc_new_columns == "numeric"]) {
+  
+    db_numeric_column_i_storage_limit <- as.numeric("999999.99")
+    
+    max_value_colnames_i <- max(value[[colnames_i]], na.rm = TRUE)
+    min_value_colnames_i <- min(value[[colnames_i]], na.rm = TRUE)
+    
+    # >= because R may be inprecise
+    if((max_value_colnames_i >= db_numeric_column_i_storage_limit) || ( -1 * db_numeric_column_i_storage_limit >= min_value_colnames_i)) {
+    
+      # get numer of 9s to the left of the decimal
+      new_numeric <- numb.digits.left.of.decimal(max(max_value_colnames_i, abs(min_value_colnames_i)))
+      str_c("numeric(", new_numeric + 2, ", 2)") -> fc_new_columns[names(fc_new_columns ) == colnames_i]
+      
+    } else {
+    
+            "numeric(8,2)"                       -> fc_new_columns[names(fc_new_columns ) == colnames_i]
+    }
+      
+  } 
+  #
   "smallint"      -> fc_new_columns[names(fc_new_columns) %in% c("drp_avail","adr")] 
    
   # actually add NEW columns to si_finecon 
@@ -1068,6 +1092,38 @@ upsert <-  function(value = NULL, keys = NULL) { # vector of primary key values
   } else {
     warning("in call to function upsert, no new columns were found to be needed to be added to si_finecon2.  Is this correct?")
   }
+  
+  # current columns ( or columns added or not added by ""if(length(fc_new_columns) > 0L)"" ) to be updated
+  value_meta[names(value_meta)  %in% names(fc_meta)] -> fc_tobeupdated_columns
+  
+  # current columns in fc
+  # no numeric greater than 999999.99
+  for (colnames_i in names(fc_tobeupdated_columns)[fc_tobeupdated_columns == "numeric"]) {
+  
+    schema_current <- db.q(str_c("select current_schema();"), nrows = -1, conn.id = cid)[1,1,drop = TRUE]
+    precision_numeric <- db.q(str_c("select numeric_precision from information_schema.columns where table_schema = '", schema_current, "' and table_name = '", "si_finecon2", "' and column_name = '", colnames_i, "';"), nrows = -1, conn.id = cid)[1,1,drop = TRUE]
+    db_numeric_column_i_storage_limit <- as.numeric(paste0(paste0(rep("9", precision_numeric), collapse = ""),".99"))
+    
+    max_value_colnames_i <- max(value[[colnames_i]], na.rm = TRUE)
+    min_value_colnames_i <- min(value[[colnames_i]], na.rm = TRUE)
+    # >= because R may be inprecise
+    if((max_value_colnames_i >= db_numeric_column_i_storage_limit) || ( -1 * db_numeric_column_i_storage_limit >= min_value_colnames_i)) {
+    
+      # get numer of 9s to the left of the decimal
+      new_numeric <- numb.digits.left.of.decimal(max(max_value_colnames_i, abs(min_value_colnames_i)))
+      db.q(str_c("alter table ", "si_finecon2", " alter column ", colnames_i, " type numeric(", new_numeric + 2, ", 2);"), conn.id = cid)
+      
+    }
+     
+  } 
+  # to what is in the database ( just in case I did something above )
+  db.data.frame("si_finecon2", conn.id = cid, verbose = FALSE) -> ptr_si_finecon2  # class (db.#)
+  col.types(ptr_si_finecon2) -> fc_meta
+  names(ptr_si_finecon2) -> names(fc_meta) 
+
+  
+
+  # PREPARE FOR UPSERTS/UPDATES #
   
   # add a 'dataindex + keys'primary key column to input 'value data.fram ( needed for PivotalR and OTHER things ) 
   # currenly 'really' only tested used with/about company_id
@@ -1214,16 +1270,23 @@ upsert <-  function(value = NULL, keys = NULL) { # vector of primary key values
       FALSE                           -> upsert_temp_perform_upsert # then do update-ish
       "dateindex_company_id_orig"     -> conflict_column # STILL
     } else {
-      if("dateindex" %in% names(upsert_meta)) {
-        # ** verify_return_dates(dateindex) go HERE ***
-        FALSE           -> upsert_temp_perform_nothing
-        FALSE           -> upsert_temp_perform_upsert # then do update-ish
-        "dateindex"     -> conflict_column 
-      } else {
-        TRUE            -> upsert_temp_perform_nothing
-        FALSE           -> upsert_temp_perform_upsert
-        stop(str_c("update_temp dateindex_company_id_orig NOT exist AND ticker NOT exist " %s+% " and primary key is only "  %s+% str_c(c("dateindex",keys), collapse = ", ")))
-      }
+      if("dateindex_company_id" %in% names(upsert_meta)) { # 
+        # load_inbnd_stmtstats EXACTLY HERE
+        FALSE                      -> upsert_temp_perform_nothing
+        FALSE                      -> upsert_temp_perform_upsert # then do update-ish
+        "dateindex_company_id"     -> conflict_column 
+      } 
+      if("dateindex" %in% names(upsert_meta)) { # 
+        # verify_return_dates(dateindex) EXACTLY HERE 
+        FALSE                      -> upsert_temp_perform_nothing
+        FALSE                      -> upsert_temp_perform_upsert # then do update-ish
+        "dateindex"                -> conflict_column 
+      } 
+      # else
+      TRUE            -> upsert_temp_perform_nothing
+      FALSE           -> upsert_temp_perform_upsert
+      stop(str_c("update_temp dateindex_company_id_orig NOT exist AND ticker NOT exist " %s+% " and primary key is only "  %s+% str_c(c("dateindex",keys), collapse = ", ")))
+      
     }
   }
   if(!length(upsert_temp_perform_nothing)) stop("upsert_temp_perform_nothing is not determined")
@@ -1332,7 +1395,7 @@ verify_company_basics <- function (dateindex = NULL) {
     verify_si_finecon_exists()
     
     # verify that si_finecon2 exists 
-    # if(!db.q(str_c("select count(*) from information_schema.tables where table_name = 'si_finecon2';"), conn.id = cid)) {
+    # if(!db.q(str_c("select count(*) from information_schema.tables where table_name = 'si_finecon2';"), nrows = -1, conn.id = cid)) {
     if(!dbExistsTable(con, "si_finecon2")) {
       verify_si_finecon_exists()
     }
@@ -1592,7 +1655,7 @@ update_from_future_new_company_ids <- function(df = NULL, ref = NULL) {
     db.q(str_c("drop index if exists trg_company_idx"), conn.id = cid)
     db.q(str_c("create index if not exists trg_company_idx on trg(company)"), conn.id = cid)
     
-    # str( db.q(str_c("select * from trg"), conn.id = cid) )
+    # str( db.q(str_c("select * from trg"), nrows = -1, conn.id = cid) )
     
     
     # the_past(whatever) 
@@ -2532,6 +2595,138 @@ verify_month_often_month_past_returns <- function(dateindex = NULL, months_limit
 
 
 
+load_inbnd_stmtstats <- function (dateindex = NULL, support_dateindex_collection = NULL,  char_col_numeric_limit = NULL) {
+  
+  # R version 3.4.1 (2017-06-30) # sessionInfo()
+  
+  require(RPostgreSQL)
+  require(PivotalR)
+  require(stringi)
+  require(stringr)
+  
+  ops <- options() 
+  
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  options(warn = 1)
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  load_inbnd_stmtstats_inner <- function (dateindex = NULL, support_dateindex_collection = NULL,  char_col_numeric_limit = NULL) {
+    
+    # Then do everything
+    if(!is.null(dateindex)) {  
+      display_where_condition <- str_c(" = ", dateindex)
+      support_where_condition <- str_c(" in (", str_c(support_dateindex_collection, collapse = ", "), ")") 
+    } else { 
+      display_where_condition <- " > -99999 " 
+      support_where_condition <- " > -99999 "
+      
+    }
+    
+    
+    verify_connection()
+    
+    warning(paste0("Beginning load_inbnd_stmtstats query SQL of dateindex: ", dateindex))
+    
+    str_c("
+      select * 
+      from ( -- sq4
+        select 
+            sq3.dateindex
+          , sq3.company_id  
+          , sq3.now_inbnd_stmtid_dateindex
+          , sq3.now_inbnd_stmtstat_netinc_q1_o_mktcap
+          , sq3.now_inbnd_stmtstat_sales_q1_o_mktcap
+          , sq3.now_inbnd_stmtstat_netinc_q1_o_sales_q1
+          -- , sq3.now_inbnd_stmtid_dateindex_partition -- sql debugging utility
+          , first_value(sq3.now_inbnd_stmtid_dateindex)              over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindex_partition order by sq3.dateindex) last_inbnd_stmtid_dateindex
+          , first_value(sq3.now_inbnd_stmtstat_netinc_q1_o_mktcap)   over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindex_partition order by sq3.dateindex) last_inbnd_stmtstat_netinc_q1_o_mktcap
+          , first_value(sq3.now_inbnd_stmtstat_sales_q1_o_mktcap)    over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindex_partition order by sq3.dateindex) last_inbnd_stmtstat_sales_q1_o_mktcap
+          , first_value(sq3.now_inbnd_stmtstat_netinc_q1_o_sales_q1) over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindex_partition order by sq3.dateindex) last_inbnd_stmtstat_netinc_q1_o_sales_q1
+        from ( -- sq3
+          select 
+              sq2.dateindex
+            , sq2.company_id  
+            , sq2.now_inbnd_stmtid_dateindex
+            , sq2.now_inbnd_stmtstat_netinc_q1_o_mktcap
+            , sq2.now_inbnd_stmtstat_sales_q1_o_mktcap
+            , sq2.now_inbnd_stmtstat_netinc_q1_o_sales_q1
+            , sum(case when sq2.now_inbnd_stmtid_dateindex is null then 0 else 1 end) over (partition by sq2.company_id order by sq2.dateindex) as now_inbnd_stmtid_dateindex_partition
+          from ( -- sq2
+            select 
+                sq1.dateindex
+              , sq1.company_id
+              , case when sq1.now_eff_date_eq0 != sq1.p01lwd_eff_date_eq0 then sq1.now_dateindex            else null end now_inbnd_stmtid_dateindex 
+              , case when sq1.now_eff_date_eq0 != sq1.p01lwd_eff_date_eq0 then sq1.now_netinc_q1_o_mktcap   else null end now_inbnd_stmtstat_netinc_q1_o_mktcap  
+              , case when sq1.now_eff_date_eq0 != sq1.p01lwd_eff_date_eq0 then sq1.now_sales_q1_o_mktcap    else null end now_inbnd_stmtstat_sales_q1_o_mktcap  
+              , case when sq1.now_eff_date_eq0 != sq1.p01lwd_eff_date_eq0 then sq1.now_netinc_q1_o_sales_q1 else null end now_inbnd_stmtstat_netinc_q1_o_sales_q1  
+            from ( -- sq1
+              select
+                  now.dateindex
+                , now.company_id
+                , now.dateindex           now_dateindex
+              --   , now.company_id       now_company_id
+              --   , now.sales_q1         now_sales_q1
+              --   , now.netinc_q1        now_netinc_q1  -- per 3 months -- netinc/mktcap is '1% per quarter' -- UNITS of 100,000 ( one hundred thousand  )  -- typically  $1000/100_thousoand (per quarter)
+                , now.netinc_q1 / nullif(now.mktcap,0)   * case when now.pertyp_q1 = 'W' then 7 * now.perlen_q1 else (365 / 12) * now.perlen_q1 end / (365 / 4) * 100000 now_netinc_q1_o_mktcap    -- I care about the current mktcap ( investor return per dollar )
+                , now.sales_q1  / nullif(now.mktcap,0)   * case when now.pertyp_q1 = 'W' then 7 * now.perlen_q1 else (365 / 12) * now.perlen_q1 end / (365 / 4) * 100000 now_sales_q1_o_mktcap     -- I care about the current mktcap ( customer satisfaction )
+                , now.netinc_q1 / nullif(now.sales_q1,0) * case when now.pertyp_q1 = 'W' then 7 * now.perlen_q1 else (365 / 12) * now.perlen_q1 end / (365 / 4) * 100000 now_netinc_q1_o_sales_q1  -- I care about the current        ( company (internal) efficiency )
+              --  , now.date_eq0         now_date_eq0
+              --  , now.perend_q1        now_perend_q1
+                , case when   now.date_eq0             >   now.perend_q1         then now.date_eq0 -- greater than and neither is null
+                       when   now.date_eq0 is not null and now.perend_q1 is null then now.date_eq0
+                       else                                now.perend_q1                           -- ... otherwise everything is null so just null
+                    end now_eff_date_eq0
+              --   , now.pertyp_q1        now_pertyp_q1
+              --   , now.perlen_q1        now_perlen_q1
+              --   , p01lwd.dateindex     p01lwd_dateindex
+              --   , p01lwd.company_id    p01lwd_company_id
+              --   , p01lwd.sales_q1      p01lwd_sales_q1
+              --   , p01lwd.netinc_q1     p01lwd_netinc_q1
+              --   , p01lwd.mktcap        p01lwd_mktcap
+              --   , p01lwd.price         p01lwd_price
+              --   , p01lwd.netinc_q1/nullif(p01lwd.mktcap,0) p01lwd_netinc_q1_o_mktcap  
+              --   , p01lwd.date_eq0      p01lwd_date_eq0
+              --   , p01lwd.perend_q1     p01lwd_perend_q1
+                , case when   p01lwd.date_eq0             >   p01lwd.perend_q1         then p01lwd.date_eq0 -- greater than and neither is null
+                       when   p01lwd.date_eq0 is not null and p01lwd.perend_q1 is null then p01lwd.date_eq0
+                       else                                   p01lwd.perend_q1                              -- ... otherwise everything is null so just null
+                    end p01lwd_eff_date_eq0
+              --   , p01lwd.pertyp_q1     p01lwd_pertyp_q1
+              --   , p01lwd.perlen_q1     p01lwd_perlen_q1
+                from
+                  ( select * from si_finecon2 now  where now.dateindex ", support_where_condition, ") now left outer join si_finecon2 p01lwd on now.dateindexp01lwd  = p01lwd.dateindex and now.company_id = p01lwd.company_id 
+            ) sq1                              -- where now.ticker in ('AAPL','MSFT') -- VERY easy to test
+          ) sq2                                -- where now.dateindex in (16982, 17011, 17044, 17074, 17105, 17135, 17165, 17197, 17225, 17256, 17284, 17317, 17347) -- first ONE minute AFTER 13 seconds WITH SORT
+        ) sq3
+        order by 2,1
+      ) sq4 where sq4.dateindex ", display_where_condition, "
+    ") -> add_columns_sql
+    
+    db.q(add_columns_sql, nrows = "all", conn.id = cid) -> si_all_df
+    
+    warning(paste0("Ending load_inbnd_stmtstats query SQL of dateindex: ", dateindex))
+    
+    financize(si_all_df,  char_col_numeric_limit = char_col_numeric_limit) -> si_all_df
+    return(si_all_df) 
+    
+  }
+  ret <- load_inbnd_stmtstats_inner(dateindex = dateindex, support_dateindex_collection = support_dateindex_collection,  char_col_numeric_limit = char_col_numeric_limit)
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  return(ret)
+}
+
+
+
 # DECIDED that THESE functions will process ONLY one DATEINDEX at a time
 # 
 # verify_company_details(dateindex = c(15155),  table_f = "si_psd", cnames_e = "^mktcap$") -> si_all_g_df
@@ -2713,6 +2908,9 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
   # load_us_bond_instruments
   for_bonds_is_null_months_only_back_check_NOT_done <- TRUE
   
+  # load_inbnd_stmtstats
+  for_inbnd_stmtstats_is_null_months_only_back_check_NOT_done <- TRUE
+  
   for(dir_i in lwd_dbf_dirs_ordered) {
     
     warning(paste0("Beginning disk dbf dir: ",dir_i))
@@ -2766,15 +2964,38 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
     
   }
   
+  # requires mktcap, netinc_q1, sales_q1, perend_q1, date_eq0
+  # 
+  if(for_inbnd_stmtstats_is_null_months_only_back_check_NOT_done && !is.null(months_only_back)) {
+    for_inbnd_stmtstats_is_null_months_only_back_check_NOT_done <- FALSE
+    # 
+    # only ever load ONE month THE MOST recent MONTH 
+    # ( 13 seconds/month: return; current + 10 support data  ) 
+    # (2.7 seconds/month; return; current _throw out support data_), 
+    # (7:40 minutes/all; return; current +  80 support months )
+    # 
+    # support_dateindex_collection is the 
+    # minimum of 11 months: current + ( 6 month Quarter period reporter with 4 month Q-10 report filing delay ) 
+    #                           # current or earlier                               # current or up to 10 earlier
+    load_inbnd_stmtstats(dir_i, lwd_dbf_dirs_ordered[dir_i>= lwd_dbf_dirs_ordered][seq_len(min(sum(dir_i >= lwd_dbf_dirs_ordered),11))], char_col_numeric_limit = Inf) -> si_all_g_df
+    upsert(si_all_g_df, keys = c("company_id"))
+  }
+  
+  if(for_inbnd_stmtstats_is_null_months_only_back_check_NOT_done && is.null(months_only_back)) {
+    for_inbnd_stmtstats_is_null_months_only_back_check_NOT_done <- FALSE
+    load_inbnd_stmtstats( char_col_numeric_limit = Inf) -> si_all_g_df # ALL OF the data ( 81 months = 7 minutes and 40 seconds ( SQL alone )
+    upsert(si_all_g_df, keys = c("company_id"))
+  }
+  
   # WARNING: NOT 'dir_i TIME by database BASED' ( SHOULD REWRITE? IF POSSIBLE? )
   # NOTE: IF missed *MANY* months in LOADING cheaper to REBUILD the entire DATABASE
-  if(for_bonds_is_null_months_only_back_check_NOT_done  && !is.null(months_only_back)) {
+  if(for_bonds_is_null_months_only_back_check_NOT_done && !is.null(months_only_back)) {
     for_bonds_is_null_months_only_back_check_NOT_done <- FALSE
     # NOTE:US BONDS SOME GAPS DO EXIST IN THE DATA ( TO DO [ ] DETECT NULL AND APPROXIMATION [ ]
     load_us_bond_instruments(us_bonds_year_back = (months_only_back %/% 12 + 2) ) # MIMIMUM OF 2 YEARS OF DATA
   }
 
-  if(for_bonds_is_null_months_only_back_check_not_done  && is.null(months_only_back)) {
+  if(for_bonds_is_null_months_only_back_check_not_done && is.null(months_only_back)) {
     for_bonds_is_null_months_only_back_check_NOT_done <- FALSE
     # NOTE: US BONDS SOME GAPS DO EXIST IN THE DATA ( TO DO [ ] DETECT NULL AND APPROXIMATION [ ]
     load_us_bond_instruments() # ALL OF the data
@@ -3032,7 +3253,7 @@ load_instruments <- function(dfobj = NULL, no_update_earliest_year = NULL) {
     db.q("create unique index if not exists instruments_dateindex_instrument_key on instruments(dateindex, instrument);", conn.id = cid)
     
      # want to NOT UPDATE the earliest year of 2( or 3) ( will be incomplete becuase no earlier data to calculate the XXw performance )
-    earl_loaded_year <-  db.q("select min(date_part('year', to_timestamp(dateindex*3600*24)::date)) earl_loaded_year from upsert_temp;", nrows = "all", conn.id = cid)
+    earl_loaded_year <-  db.q("select min(date_part('year', to_timestamp(dateindex*3600*24)::date)) earl_loaded_year from upsert_temp;", nrows = -1, conn.id = cid)
     earl_loaded_year <- as.character(earl_loaded_year)
     
     no_update_earliest_year_f <- function(no_update_earliest_year = NULL, earl_loaded_year = NULL) {
@@ -3357,16 +3578,17 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
         
         ## now (if need be) make db datatype fit inbound data
         
-        schema_current <- db.q(str_c("select current_schema();"), conn.id = cid)[1,1,drop = TRUE]
-        precision_numeric <- db.q(str_c("select numeric_precision from information_schema.columns where table_schema = '", schema_current, "' and table_name = '", tblobj_name, "' and column_name = '", colnames_i, "';"), conn.id = cid)[1,1,drop = TRUE]
+        schema_current <- db.q(str_c("select current_schema();"), nrows = -1, conn.id = cid)[1,1,drop = TRUE]
+        precision_numeric <- db.q(str_c("select numeric_precision from information_schema.columns where table_schema = '", schema_current, "' and table_name = '", tblobj_name, "' and column_name = '", colnames_i, "';"), nrows = -1, conn.id = cid)[1,1,drop = TRUE]
         db_numeric_column_i_storage_limit <- as.numeric(paste0(paste0(rep("9", precision_numeric), collapse = ""),".99"))
         
         max_tblobj_colnames_i <- max(tblobj[,colnames_i])
+        min_tblobj_colnames_i <- max(tblobj[,colnames_i])
         # >= because R may be inprecise
-        if(max_tblobj_colnames_i >= db_numeric_column_i_storage_limit) {
+        if((max_tblobj_colnames_i >= db_numeric_column_i_storage_limit) || ( -1 * db_numeric_column_i_storage_limit  >= min_tblobj_colnames_i)) {
         
           # get numer of 9s to the left of the decimal
-          new_numeric <- numb.digits.left.of.decimal(max_tblobj_colnames_i)
+          new_numeric <- numb.digits.left.of.decimal(max(max_tblobj_colnames_i, abs(min_tblobj_colnames_i)))
           db.q(str_c("alter table ", tblobj_name," alter column ", colnames_i, " type numeric(", new_numeric + 2, ", 2);"), conn.id = cid)
           
         }
