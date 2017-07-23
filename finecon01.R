@@ -238,9 +238,7 @@ verify_connection <- function () {
         stop("PostgreSQL database server is not responding.  Is it up/blocked?  Are the client login credentials valid?")
       }
       
-      # EXPERIMENT
-      # ( memory for ) disk caching
-      # set effective_cache_size to '14GB';
+
       #
       # set search_path to fe_data_store,public;
       # set time zone 'utc';
@@ -258,6 +256,13 @@ verify_connection <- function () {
       #  8GB
       
       # EXPERIMENT
+      # The setting can be changed within individual sessions, but only before the first use of temporary tables within the session; 
+      # subsequent attempts to change the value will have no effect on that session.
+      # ANY number I want ( no error )
+      # EXPERIMENT 'sorting and temp tables
+      db.q(str_c("set temp_buffers to '14GB';"), nrows =  -1, conn.id = cid)
+      
+      # EXPERIMENT ( memory for disk caching )
       db.q(str_c("set effective_cache_size to '14GB';"), nrows =  -1, conn.id = cid)
       # 
       db.q(str_c("set time zone 'utc';"), nrows =  -1, conn.id = cid)
