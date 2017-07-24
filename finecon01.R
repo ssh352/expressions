@@ -1253,51 +1253,158 @@ upsert <-  function(value = NULL, keys = NULL) { # vector of primary key values
   logical()       -> upsert_temp_perform_nothing
   logical()       -> upsert_temp_perform_upsert
   character()     -> conflict_column
+  
   # prepare to upsert
-  if( all(c("dateindex_company_id_orig","ticker") %in% names(upsert_meta)) ) {
   
-    # detect if si_finecon2.dateindex_company_id_orig exists, then this is th required MIN columns to be updated 
-    if (!any( !c("dateindex_company_id_orig", "dateindex_company_id", "dateindex", 
-                           "company_id",      "company_id_orig", "ticker", "company") %in% names(upsert_meta) )) {
-      # si_ci GO EXACTLY HERE
-      FALSE           -> upsert_temp_perform_nothing
-      TRUE            -> upsert_temp_perform_upsert
-      "dateindex_company_id_orig" -> conflict_column
-    } else {
-      TRUE           -> upsert_temp_perform_nothing # NOTHING IS HERE
-      FALSE          -> upsert_temp_perform_upsert
-      stop("dateindex_company_id_orig and ticker exist BUT the mininum columns do not")
-    }
-  } else { 
-    if("dateindex_company_id_orig" %in% names(upsert_meta)) { 
-      # si_NON_ci GO EXACTLY HERE
-      FALSE                           -> upsert_temp_perform_nothing
-      FALSE                           -> upsert_temp_perform_upsert # then do update-ish
-      "dateindex_company_id_orig"     -> conflict_column # STILL
-    } else {
-      if("dateindex_company_id" %in% names(upsert_meta)) { # 
-        # load_inbnd_stmtstats EXACTLY HERE
-        FALSE                      -> upsert_temp_perform_nothing
-        FALSE                      -> upsert_temp_perform_upsert # then do update-ish
-        "dateindex_company_id"     -> conflict_column 
-      } 
-      if("dateindex" %in% names(upsert_meta)) { # 
-        # verify_return_dates(dateindex) EXACTLY HERE 
-        FALSE                      -> upsert_temp_perform_nothing
-        FALSE                      -> upsert_temp_perform_upsert # then do update-ish
-        "dateindex"                -> conflict_column 
-      } 
-      # else
-      TRUE            -> upsert_temp_perform_nothing
-      FALSE           -> upsert_temp_perform_upsert
-      stop(str_c("update_temp dateindex_company_id_orig NOT exist AND ticker NOT exist " %s+% " and primary key is only "  %s+% str_c(c("dateindex",keys), collapse = ", ")))
-      
-    }
+  # if( all(c("dateindex_company_id_orig","ticker") %in% names(upsert_meta)) ) {
+  # 
+  #   # detect if si_finecon2.dateindex_company_id_orig exists, then this is th required MIN columns to be updated 
+  #   if (!any( !c("dateindex_company_id_orig", "dateindex_company_id", "dateindex", 
+  #                          "company_id",      "company_id_orig", "ticker", "company") %in% names(upsert_meta) )) {
+  #     # si_ci GO EXACTLY HERE
+  #     FALSE           -> upsert_temp_perform_nothing
+  #     TRUE            -> upsert_temp_perform_upsert
+  #     "dateindex_company_id_orig" -> conflict_column
+  #   } else {
+  #     TRUE           -> upsert_temp_perform_nothing # NOTHING IS HERE
+  #     FALSE          -> upsert_temp_perform_upsert
+  #     stop("dateindex_company_id_orig and ticker exist BUT the mininum columns do not")
+  #   }
+  # } else { 
+  #   if("dateindex_company_id_orig" %in% names(upsert_meta)) { 
+  #     # si_NON_ci GO EXACTLY HERE
+  #     FALSE                           -> upsert_temp_perform_nothing
+  #     FALSE                           -> upsert_temp_perform_upsert # then do update-ish
+  #     "dateindex_company_id_orig"     -> conflict_column # STILL
+  #   } else {
+  #     if("dateindex_company_id" %in% names(upsert_meta)) { # 
+  #       # load_inbnd_stmtstats EXACTLY HERE
+  #       FALSE                      -> upsert_temp_perform_nothing
+  #       FALSE                      -> upsert_temp_perform_upsert # then do update-ish
+  #       "dateindex_company_id"     -> conflict_column 
+  #     } 
+  #     if("dateindex" %in% names(upsert_meta)) { # 
+  #       # verify_return_dates(dateindex) EXACTLY HERE 
+  #       FALSE                      -> upsert_temp_perform_nothing
+  #       FALSE                      -> upsert_temp_perform_upsert # then do update-ish
+  #       "dateindex"                -> conflict_column 
+  #     } 
+  #     # else
+  #     TRUE            -> upsert_temp_perform_nothing
+  #     FALSE           -> upsert_temp_perform_upsert
+  #     stop(str_c("update_temp dateindex_company_id_orig NOT exist AND ticker NOT exist " %s+% " and primary key is only "  %s+% str_c(c("dateindex",keys), collapse = ", ")))
+  #     
+  #   }
+  # }
+  
+
+  ### strait QUERY of the disk ### ( ci, mgdsc, exchg )
+  ## verify_company_basics ## ( NOT directly tried to UPDATED/UPSERT into the database )
+  #
+  #  dateindex_company_id_orig # dateindex  # ticker  # street
+  #                            # company_id # company
+  # company_id_orig            
+  # NOT PASSED TO UPSERT 
+  # data passed IN from verify_company_basics          NOT PASSED OUT
+  # IF "if(ref < 15184 )" THEN update (set company_id, dateindex_company_id) using (company_id, ticker , street)
+  # OTHERWISE .. make NO CHANGE in data values
+  # INHERITS from ABOVE  
+  #
+  ## update_from_future_new_company_ids ##
+  #
+  # dateindex_company_id_orig # dateindex  # ticker  # street
+  #                           # company_id # company
+  # company_id_orig   
+  # PASSED TO UPSERT
+  
+  
+  ### strait QUERY of the disk ### (non ci)
+  ## verify_company_details ##
+  # 
+  # dateindex_company_id_orig # dateindex 
+  # dateindex_company_id      # company_id
+  # company_id_orig
+  # PASSED TO UPSERT (non ci)
+  
+  
+  ### no QUERY of anything ... strait math generation ###
+  ## verify_return_dates ##
+  #
+  #                          # dateindex
+  # 
+  # PASSED TO UPSERT (generated dates only)
+  
+  
+  ### strait QUERY of the database ###
+  ## verify_week_often_week_returns ##      # ( REPLACE dateindex_company_id_orig by dateindex_company_id ) TO_DO [X]
+  # dateindex_company_id      # dateindex 
+  #                           # company_id
+  # PASSED TO UPSERT
+  
+  
+  ### strait QUERY of the database ###
+  ## verify_month_often_month_past_returns ##
+  # dateindex_company_id      # dateindex   # ( REPLACE dateindex_company_id_orig by dateindex_company_id ) TO_DO [X]
+  #                           # company_id
+  # PASSED TO UPSERT
+  
+  
+  ### strait QUERY of the database ###
+  ## load_inbnd_stmtstats ##
+  #  dateindex_company_id*   # dateindex #  ( ADD dateindex_company_id ) TO_DO [x]
+  #                          # company_id
+  # PASSED TO UPSERT
+  
+  
+  # **** IMPORTANT ( what UPDATE/UPSERT and what CONFLICT column is CHOSEN base on "what" column(z) are sent ) ****
+  # **** heirarchy: "ticker", "dateindex_company_id_orig", "dateindex_company_id", "dateindex" ****
+  
+  Chosen_UpsertUpdate_Path_Done <- FALSE
+  
+  # ci, msdsc, exchg ( verify_company_basics -> update_from_future_new_company_ids )
+  if(("ticker" %in% names(upsert_meta)) && 
+     (Chosen_UpsertUpdate_Path_Done == FALSE)) {
+    FALSE                       -> upsert_temp_perform_nothing
+    TRUE                        -> upsert_temp_perform_upsert
+    "dateindex_company_id_orig" -> conflict_column
+    Chosen_UpsertUpdate_Path_Done <- TRUE
   }
-  if(!length(upsert_temp_perform_nothing)) stop("upsert_temp_perform_nothing is not determined")
-  if(!length(upsert_temp_perform_upsert))  stop("upsert_temp_perform_upsert is not determined")
   
-  if(upsert_temp_perform_upsert) {
+  # non_ci ( verify_company_details )
+  if(("dateindex_company_id_orig" %in% names(upsert_meta)) && 
+     (Chosen_UpsertUpdate_Path_Done == FALSE)) {
+    FALSE                           -> upsert_temp_perform_nothing
+    FALSE                           -> upsert_temp_perform_upsert 
+    "dateindex_company_id_orig"     -> conflict_column
+    Chosen_UpsertUpdate_Path_Done <- TRUE
+  }
+  
+  # db_query_only ( verify_week_often_week_returns, verify_month_often_month_past_returns, load_inbnd_stmtstats )
+  if(( "dateindex_company_id"      %in% names(upsert_meta)) && 
+     (!"dateindex_company_id_orig" %in% names(upsert_meta)) &&
+     (Chosen_UpsertUpdate_Path_Done == FALSE)) {
+    FALSE                      -> upsert_temp_perform_nothing
+    FALSE                      -> upsert_temp_perform_upsert 
+    "dateindex_company_id"     -> conflict_column 
+    Chosen_UpsertUpdate_Path_Done <- TRUE
+  }
+  
+  # math_only ( verify_return_dates )
+  if(( "dateindex"                 %in% names(upsert_meta)) && 
+     (!"company_id"                %in% names(upsert_meta)) &&
+     (!"dateindex_company_id     " %in% names(upsert_meta)) &&
+     (Chosen_UpsertUpdate_Path_Done == FALSE)) {
+    FALSE                      -> upsert_temp_perform_nothing
+    FALSE                      -> upsert_temp_perform_upsert 
+    "dateindex"                -> conflict_column 
+    Chosen_UpsertUpdate_Path_Done <- TRUE
+  }
+  
+  if(!Chosen_UpsertUpdate_Path_Done)       stop("Chosen_UpsertUpdate_Path_Done has not been completed.")
+  if(!length(upsert_temp_perform_nothing)) stop("upsert_temp_perform_nothing is not determined") # LATER REMOVE
+  if(!length(upsert_temp_perform_upsert))  stop("upsert_temp_perform_upsert is not determined")  # LATER REMOVE
+  
+  if(!upsert_temp_perform_nothing && upsert_temp_perform_upsert) {
   
     # actually perform the upsert
     str_trim(str_c(rstring('<%= 
@@ -1317,11 +1424,13 @@ upsert <-  function(value = NULL, keys = NULL) { # vector of primary key values
   
   # %s+% if( conflict_column == "dateindex" ) { " and dateindex = " %s+% dateindex %s+%  ";" }  else { ""  %s+% ";" }
   
-  # then do update-ish STILL based on company_id_orig  
-  # ( and do not UPDATE 
-  #   dateindex, company_id, dateindex_company_id, company_id_orig         # at least ONE COLUMN to try to update ( so the SQL DML UPDATE statement is valid ) # BELOW ARE 'non-updatable'
-  if(!upsert_temp_perform_nothing && !upsert_temp_perform_upsert && sum(!names(upsert_meta) %in% c("dateindex", "company_id", "dateindex_company_id", "company_id_orig", "dateindex_company_id_orig")) ) {
+  ### then do update-ish STILL based on company_id_orig  
+  ### ( and do not UPDATE 
+  ###   dateindex, company_id, dateindex_company_id, company_id_orig         # at least ONE COLUMN to try to update ( so the SQL DML UPDATE statement is valid ) # BELOW ARE 'non-updatable'
+  ##if(!upsert_temp_perform_nothing && !upsert_temp_perform_upsert && sum(!names(upsert_meta) %in% c("dateindex", "company_id", "dateindex_company_id", "company_id_orig", "dateindex_company_id_orig")) ) {
     
+  if(!upsert_temp_perform_nothing && !upsert_temp_perform_upsert) {
+  
     # actually perform the update 
     str_trim(str_c(rstring('<%= 
     sprintf(
@@ -2939,25 +3048,12 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
   # load_us_bond_instruments
   for_bonds_is_null_months_only_back_check_NOT_done <- TRUE
   
-  # load_inbnd_stmtstats
-  for_inbnd_stmtstats_is_null_months_only_back_check_NOT_done <- TRUE
+  ## # load_inbnd_stmtstats
+  ## # for_inbnd_stmtstats_is_null_months_only_back_check_NOT_done <- TRUE
   
   for(dir_i in lwd_dbf_dirs_ordered) {
     
     warning(paste0("Beginning disk dbf dir: ",dir_i))
-    
-    # eventually within upload_lwd_sipro_dbfs_to_db
-    
-    # debug(load_inbnd_stmtstats)
-    # required sales_q1, netinc_q1, mktcap, price
-    load_inbnd_stmtstats(
-        dateindex = 17347 # e.g. last loaded pay period
-      , support_dateindex_collection = c(17347, 17317, 17284, 17256, 17225, 17197, 17165, 17135, 17105, 17074, 17044, 17011, 16982)
-      , char_col_numeric_limit = 999999.99    # for right NOW pure AAII data ( unratio-ed )
-    )  -> si_all_g_df
-    
-    # str(si_all_g_df)
-    upsert(si_all_g_df, keys = c("company_id"))
     
     
     verify_company_basics(dateindex = c(dir_i)) -> si_all_g_df
@@ -3005,33 +3101,49 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
     verify_company_details(dateindex = c(dir_i),  table_f = "si_isq", cnames_e = "^netinc_q.$") -> si_all_g_df
     upsert(si_all_g_df, keys = c("company_id"))
     
+    # # debug(load_inbnd_stmtstats)
+    # # required date_eq0, perend_q1, perlen_q1, pertyp_q1, dateindex_company_id, dateindex, dateindexp01lwd, company_id, sales_q1, netinc_q1, mktcap, price
+    # load_inbnd_stmtstats(
+    #     dateindex = 17347 # e.g. last loaded pay period
+    #   , support_dateindex_collection = c(17347, 17317, 17284, 17256, 17225, 17197, 17165, 17135, 17105, 17074, 17044, 17011, 16982)
+    #   , char_col_numeric_limit = 999999.99    # for right NOW pure AAII data ( unratio-ed )
+    # )  -> si_all_g_df
+    # 
+    # # str(si_all_g_df)
+    # upsert(si_all_g_df, keys = c("company_id"))
+    # 
+    # if(for_inbnd_stmtstats_is_null_months_only_back_check_NOT_done && !is.null(months_only_back)) {
+    #   for_inbnd_stmtstats_is_null_months_only_back_check_NOT_done <- FALSE
+    #   # 
+    #   # only ever load ONE month THE MOST recent MONTH 
+    #   # ( 13 seconds/month: return; current + 10 support data  ) 
+    #   # (2.7 seconds/month; return; current _throw out support data_), 
+    #   # (7:40 minutes/all; return; current +  80 support months )
+    #   # 
+    #   # support_dateindex_collection is the 
+    #   # minimum of 11 months: current + ( 6 month Quarter period reporter with 4 month Q-10 report filing delay ) 
+    #   #                           # current or earlier                               # current or up to 10 earlier
+    #   load_inbnd_stmtstats(dir_i, lwd_dbf_dirs_ordered[dir_i>= lwd_dbf_dirs_ordered][seq_len(min(sum(dir_i >= lwd_dbf_dirs_ordered),11))], char_col_numeric_limit = 99999999999999.99) -> si_all_g_df
+    #   upsert(si_all_g_df, keys = c("company_id"))
+    # }
+    # 
+    # if(for_inbnd_stmtstats_is_null_months_only_back_check_NOT_done && is.null(months_only_back)) {
+    #   for_inbnd_stmtstats_is_null_months_only_back_check_NOT_done <- FALSE
+    #   # x WRONG X # load_inbnd_stmtstats( char_col_numeric_limit = 99999999999999.99) -> si_all_g_df # ALL OF the data ( 81 months = 7 minutes and 40 seconds ( SQL alone ) # x WRONG X 
+    #   upsert(si_all_g_df, keys = c("company_id"))
+    # }
+
+    # support_dateindex_collection is the 
+    # minimum of 11 months: current + ( 6 month Quarter period reporter with 4 month Q-10 report filing delay ) 
+    #                           # current or earlier                               # current or up to 10 earlier
+    load_inbnd_stmtstats(dir_i, lwd_dbf_dirs_ordered[dir_i>= lwd_dbf_dirs_ordered][seq_len(min(sum(dir_i >= lwd_dbf_dirs_ordered),11))], char_col_numeric_limit = 99999999999999.99) -> si_all_g_df
+    upsert(si_all_g_df, keys = c("company_id"))
+    
     warning(paste0("Ending disk dbf dir: ",dir_i))
     
   }
   
-  # requires mktcap, netinc_q1, sales_q1, perend_q1, date_eq0
-  # 
-  if(for_inbnd_stmtstats_is_null_months_only_back_check_NOT_done && !is.null(months_only_back)) {
-    for_inbnd_stmtstats_is_null_months_only_back_check_NOT_done <- FALSE
-    # 
-    # only ever load ONE month THE MOST recent MONTH 
-    # ( 13 seconds/month: return; current + 10 support data  ) 
-    # (2.7 seconds/month; return; current _throw out support data_), 
-    # (7:40 minutes/all; return; current +  80 support months )
-    # 
-    # support_dateindex_collection is the 
-    # minimum of 11 months: current + ( 6 month Quarter period reporter with 4 month Q-10 report filing delay ) 
-    #                           # current or earlier                               # current or up to 10 earlier
-    load_inbnd_stmtstats(dir_i, lwd_dbf_dirs_ordered[dir_i>= lwd_dbf_dirs_ordered][seq_len(min(sum(dir_i >= lwd_dbf_dirs_ordered),11))], char_col_numeric_limit = Inf) -> si_all_g_df
-    upsert(si_all_g_df, keys = c("company_id"))
-  }
-  
-  if(for_inbnd_stmtstats_is_null_months_only_back_check_NOT_done && is.null(months_only_back)) {
-    for_inbnd_stmtstats_is_null_months_only_back_check_NOT_done <- FALSE
-    load_inbnd_stmtstats( char_col_numeric_limit = Inf) -> si_all_g_df # ALL OF the data ( 81 months = 7 minutes and 40 seconds ( SQL alone )
-    upsert(si_all_g_df, keys = c("company_id"))
-  }
-  
+
   # WARNING: NOT 'dir_i TIME by database BASED' ( SHOULD REWRITE? IF POSSIBLE? )
   # NOTE: IF missed *MANY* months in LOADING cheaper to REBUILD the entire DATABASE
   if(for_bonds_is_null_months_only_back_check_NOT_done && !is.null(months_only_back)) {
