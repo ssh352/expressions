@@ -2356,7 +2356,7 @@ verify_week_often_week_returns <- function(dateindex = NULL) {
     select 
     --
     fe.dateindex,
-    fe.dateindex_company_id_orig,
+    fe.dateindex_company_id,
     fe.company_id,
     --
     fe_04w_o.pricebck_04w,
@@ -2571,7 +2571,7 @@ verify_month_often_month_past_returns <- function(dateindex = NULL, months_limit
     
     # writeLines({
     str_trim(str_c(rstring('
-    select fe.dateindex, fe.dateindex_company_id_orig, fe.company_id,
+    select fe.dateindex, fe.dateindex_company_id, fe.company_id,
       <% for (i in 1:n) { -%>
           <% sprintf("(price_m%1$s - price_m%2$s) / nullif(abs(price_m%2$s),0) * 100 * 12 m%1$s_m%2$s_prchg_ann", 
               str_pad(i,3,"left","0"), str_pad((i+1),3,"left","0")) -> res
