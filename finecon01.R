@@ -1256,7 +1256,7 @@ upsert <-  function(value = NULL, keys = NULL) { # vector of primary key values
   # prepare to upsert
   if( all(c("dateindex_company_id_orig","ticker") %in% names(upsert_meta)) ) {
   
-    # detect if si_finecon2.dateindex_company_id_orig exists, then this is th required MIN columns to be updated
+    # detect if si_finecon2.dateindex_company_id_orig exists, then this is th required MIN columns to be updated 
     if (!any( !c("dateindex_company_id_orig", "dateindex_company_id", "dateindex", 
                            "company_id",      "company_id_orig", "ticker", "company") %in% names(upsert_meta) )) {
       # si_ci GO EXACTLY HERE
@@ -2635,84 +2635,110 @@ load_inbnd_stmtstats <- function (dateindex = NULL, support_dateindex_collection
       
     }
     
-    
     verify_connection()
     
     warning(paste0("Beginning load_inbnd_stmtstats query SQL of dateindex: ", dateindex))
     
+    ## ratios not usefull 'right now' because of explosion
+    ## interesting compare (current) mktcap vs last_inbnd_stmtstat_mktcap
     str_c("
-      select * 
-      from ( -- sq4
-        select 
-            sq3.dateindex
-          , sq3.company_id  
-          , sq3.now_inbnd_stmtid_dateindex
-          , sq3.now_inbnd_stmtstat_netinc_q1_o_mktcap
-          , sq3.now_inbnd_stmtstat_sales_q1_o_mktcap
-          , sq3.now_inbnd_stmtstat_netinc_q1_o_sales_q1
-          -- , sq3.now_inbnd_stmtid_dateindex_partition -- sql debugging utility
-          , first_value(sq3.now_inbnd_stmtid_dateindex)              over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindex_partition order by sq3.dateindex) last_inbnd_stmtid_dateindex
-          , first_value(sq3.now_inbnd_stmtstat_netinc_q1_o_mktcap)   over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindex_partition order by sq3.dateindex) last_inbnd_stmtstat_netinc_q1_o_mktcap
-          , first_value(sq3.now_inbnd_stmtstat_sales_q1_o_mktcap)    over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindex_partition order by sq3.dateindex) last_inbnd_stmtstat_sales_q1_o_mktcap
-          , first_value(sq3.now_inbnd_stmtstat_netinc_q1_o_sales_q1) over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindex_partition order by sq3.dateindex) last_inbnd_stmtstat_netinc_q1_o_sales_q1
-        from ( -- sq3
-          select 
-              sq2.dateindex
-            , sq2.company_id  
-            , sq2.now_inbnd_stmtid_dateindex
-            , sq2.now_inbnd_stmtstat_netinc_q1_o_mktcap
-            , sq2.now_inbnd_stmtstat_sales_q1_o_mktcap
-            , sq2.now_inbnd_stmtstat_netinc_q1_o_sales_q1
-            , sum(case when sq2.now_inbnd_stmtid_dateindex is null then 0 else 1 end) over (partition by sq2.company_id order by sq2.dateindex) as now_inbnd_stmtid_dateindex_partition
-          from ( -- sq2
+          select sq4.* 
+          from ( -- sq4
             select 
-                sq1.dateindex
-              , sq1.company_id
-              , case when sq1.now_eff_date_eq0 != sq1.p01lwd_eff_date_eq0 then sq1.now_dateindex            else null end now_inbnd_stmtid_dateindex 
-              , case when sq1.now_eff_date_eq0 != sq1.p01lwd_eff_date_eq0 then sq1.now_netinc_q1_o_mktcap   else null end now_inbnd_stmtstat_netinc_q1_o_mktcap  
-              , case when sq1.now_eff_date_eq0 != sq1.p01lwd_eff_date_eq0 then sq1.now_sales_q1_o_mktcap    else null end now_inbnd_stmtstat_sales_q1_o_mktcap  
-              , case when sq1.now_eff_date_eq0 != sq1.p01lwd_eff_date_eq0 then sq1.now_netinc_q1_o_sales_q1 else null end now_inbnd_stmtstat_netinc_q1_o_sales_q1  
-            from ( -- sq1
+              sq3.dateindex_company_id
+            , sq3.dateindex
+            , sq3.company_id  
+            , sq3.now_inbnd_stmtid_dateindex
+            , sq3.now_inbnd_stmtstat_sales_q1
+            , sq3.now_inbnd_stmtstat_netinc_q1
+            , sq3.now_inbnd_stmtstat_mktcap
+            , sq3.now_inbnd_stmtstat_price
+            --, sq3.now_inbnd_stmtstat_netinc_q1_o_mktcap
+            --, sq3.now_inbnd_stmtstat_sales_q1_o_mktcap
+            --, sq3.now_inbnd_stmtstat_netinc_q1_o_sales_q1
+            ---- , sq3.now_inbnd_stmtid_dateindex_partition -- sql debugging utility
+            , first_value(sq3.now_inbnd_stmtid_dateindex)              over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindex_partition order by sq3.dateindex) last_inbnd_stmtid_dateindex
+            , first_value(sq3.now_inbnd_stmtstat_sales_q1)    over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindex_partition order by sq3.dateindex) last_inbnd_stmtstat_sales_q1
+            , first_value(sq3.now_inbnd_stmtstat_netinc_q1)   over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindex_partition order by sq3.dateindex) last_inbnd_stmtstat_netinc_q1
+            , first_value(sq3.now_inbnd_stmtstat_mktcap)      over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindex_partition order by sq3.dateindex) last_inbnd_stmtstat_mktcap
+            , first_value(sq3.now_inbnd_stmtstat_mktcap)      over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindex_partition order by sq3.dateindex) last_inbnd_stmtstat_price
+            --, first_value(sq3.now_inbnd_stmtstat_netinc_q1_o_mktcap)   over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindex_partition order by sq3.dateindex) last_inbnd_stmtstat_netinc_q1_o_mktcap
+            --, first_value(sq3.now_inbnd_stmtstat_sales_q1_o_mktcap)    over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindex_partition order by sq3.dateindex) last_inbnd_stmtstat_sales_q1_o_mktcap
+            --, first_value(sq3.now_inbnd_stmtstat_netinc_q1_o_sales_q1) over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindex_partition order by sq3.dateindex) last_inbnd_stmtstat_netinc_q1_o_sales_q1
+          from ( -- sq3
+            select 
+                sq2.dateindex_company_id
+              , sq2.dateindex
+              , sq2.company_id  
+              , sq2.now_inbnd_stmtid_dateindex
+              , sq2.now_inbnd_stmtstat_sales_q1
+              , sq2.now_inbnd_stmtstat_netinc_q1
+              , sq2.now_inbnd_stmtstat_mktcap
+              , sq2.now_inbnd_stmtstat_price
+           -- , sq2.now_inbnd_stmtstat_netinc_q1_o_mktcap
+           -- , sq2.now_inbnd_stmtstat_sales_q1_o_mktcap
+           -- , sq2.now_inbnd_stmtstat_netinc_q1_o_sales_q1
+              , sum(case when sq2.now_inbnd_stmtid_dateindex is null then 0 else 1 end) over (partition by sq2.company_id order by sq2.dateindex) as now_inbnd_stmtid_dateindex_partition
+            from ( -- sq2
               select
-                  now.dateindex
-                , now.company_id
-                , now.dateindex           now_dateindex
-              --   , now.company_id       now_company_id
-              --   , now.sales_q1         now_sales_q1
-              --   , now.netinc_q1        now_netinc_q1  -- per 3 months -- netinc/mktcap is '1% per quarter' -- UNITS of 100,000 ( one hundred thousand  )  -- typically  $1000/100_thousoand (per quarter)
-                , now.netinc_q1 / nullif(now.mktcap,0)   * case when now.pertyp_q1 = 'W' then 7 * now.perlen_q1 else (365 / 12) * now.perlen_q1 end / (365 / 4) * 100000 now_netinc_q1_o_mktcap    -- I care about the current mktcap ( investor return per dollar )
-                , now.sales_q1  / nullif(now.mktcap,0)   * case when now.pertyp_q1 = 'W' then 7 * now.perlen_q1 else (365 / 12) * now.perlen_q1 end / (365 / 4) * 100000 now_sales_q1_o_mktcap     -- I care about the current mktcap ( customer satisfaction )
-                , now.netinc_q1 / nullif(now.sales_q1,0) * case when now.pertyp_q1 = 'W' then 7 * now.perlen_q1 else (365 / 12) * now.perlen_q1 end / (365 / 4) * 100000 now_netinc_q1_o_sales_q1  -- I care about the current        ( company (internal) efficiency )
-              --  , now.date_eq0         now_date_eq0
-              --  , now.perend_q1        now_perend_q1
-                , case when   now.date_eq0             >   now.perend_q1         then now.date_eq0 -- greater than and neither is null
-                       when   now.date_eq0 is not null and now.perend_q1 is null then now.date_eq0
-                       else                                now.perend_q1                           -- ... otherwise everything is null so just null
-                    end now_eff_date_eq0
-              --   , now.pertyp_q1        now_pertyp_q1
-              --   , now.perlen_q1        now_perlen_q1
-              --   , p01lwd.dateindex     p01lwd_dateindex
-              --   , p01lwd.company_id    p01lwd_company_id
-              --   , p01lwd.sales_q1      p01lwd_sales_q1
-              --   , p01lwd.netinc_q1     p01lwd_netinc_q1
-              --   , p01lwd.mktcap        p01lwd_mktcap
-              --   , p01lwd.price         p01lwd_price
-              --   , p01lwd.netinc_q1/nullif(p01lwd.mktcap,0) p01lwd_netinc_q1_o_mktcap  
-              --   , p01lwd.date_eq0      p01lwd_date_eq0
-              --   , p01lwd.perend_q1     p01lwd_perend_q1
-                , case when   p01lwd.date_eq0             >   p01lwd.perend_q1         then p01lwd.date_eq0 -- greater than and neither is null
-                       when   p01lwd.date_eq0 is not null and p01lwd.perend_q1 is null then p01lwd.date_eq0
-                       else                                   p01lwd.perend_q1                              -- ... otherwise everything is null so just null
-                    end p01lwd_eff_date_eq0
-              --   , p01lwd.pertyp_q1     p01lwd_pertyp_q1
-              --   , p01lwd.perlen_q1     p01lwd_perlen_q1
-                from
-                  ( select * from si_finecon2 now  where now.dateindex ", support_where_condition, ") now left outer join si_finecon2 p01lwd on now.dateindexp01lwd  = p01lwd.dateindex and now.company_id = p01lwd.company_id 
-            ) sq1                              -- where now.ticker in ('AAPL','MSFT') -- VERY easy to test
-          ) sq2                                -- where now.dateindex in (16982, 17011, 17044, 17074, 17105, 17135, 17165, 17197, 17225, 17256, 17284, 17317, 17347) -- first ONE minute AFTER 13 seconds WITH SORT
-        ) sq3
-        order by 2,1
-      ) sq4 where sq4.dateindex ", display_where_condition, "
+                  sq1.dateindex_company_id
+                , sq1.dateindex
+                , sq1.company_id
+                , case when sq1.now_eff_date_eq0 != sq1.p01lwd_eff_date_eq0 then sq1.now_dateindex            else null end now_inbnd_stmtid_dateindex 
+                , case when sq1.now_eff_date_eq0 != sq1.p01lwd_eff_date_eq0 then sq1.now_sales_q1             else null end now_inbnd_stmtstat_sales_q1
+                , case when sq1.now_eff_date_eq0 != sq1.p01lwd_eff_date_eq0 then sq1.now_netinc_q1            else null end now_inbnd_stmtstat_netinc_q1
+                , case when sq1.now_eff_date_eq0 != sq1.p01lwd_eff_date_eq0 then sq1.now_mktcap               else null end now_inbnd_stmtstat_mktcap 
+                , case when sq1.now_eff_date_eq0 != sq1.p01lwd_eff_date_eq0 then sq1.now_price                else null end now_inbnd_stmtstat_price 
+            --  , case when sq1.now_eff_date_eq0 != sq1.p01lwd_eff_date_eq0 then sq1.now_netinc_q1_o_mktcap   else null end now_inbnd_stmtstat_netinc_q1_o_mktcap  
+            --  , case when sq1.now_eff_date_eq0 != sq1.p01lwd_eff_date_eq0 then sq1.now_sales_q1_o_mktcap    else null end now_inbnd_stmtstat_sales_q1_o_mktcap  
+            --  , case when sq1.now_eff_date_eq0 != sq1.p01lwd_eff_date_eq0 then sq1.now_netinc_q1_o_sales_q1 else null end now_inbnd_stmtstat_netinc_q1_o_sales_q1  
+              from ( -- sq1
+                select
+                    now.dateindex_company_id
+          	, now.dateindex
+          	, now.company_id
+          	, now.dateindex        now_dateindex
+                  , now.company_id       now_company_id
+                  , now.sales_q1         now_sales_q1
+                  , now.netinc_q1        now_netinc_q1  
+                  , now.mktcap           now_mktcap     
+                  , now.price            now_price
+                  , case when now.pertyp_q1 = 'W' then 7 * now.perlen_q1 else (365 / 12) * now.perlen_q1 end now_perlen_days_q1
+                                                            -- per 3 months -- netinc/mktcap is '1% per quarter' -- UNITS of 100,000 ( one hundred thousand  )  -- typically  $1000/100_thousoand (per quarter)
+              --  , now.netinc_q1 / nullif(now.mktcap,0)   * case when now.pertyp_q1 = 'W' then 7 * now.perlen_q1 else (365 / 12) * now.perlen_q1 end / (365 / 4) * 100000 now_netinc_q1_o_mktcap    -- I care about the current mktcap ( investor return per dollar )
+              --  , now.sales_q1  / nullif(now.mktcap,0)   * case when now.pertyp_q1 = 'W' then 7 * now.perlen_q1 else (365 / 12) * now.perlen_q1 end / (365 / 4) * 100000 now_sales_q1_o_mktcap     -- I care about the current mktcap ( customer satisfaction )
+              --  , now.netinc_q1 / nullif(now.sales_q1,0) * case when now.pertyp_q1 = 'W' then 7 * now.perlen_q1 else (365 / 12) * now.perlen_q1 end / (365 / 4) * 100000 now_netinc_q1_o_sales_q1  -- I care about the current        ( company (internal) efficiency )
+                --  , now.date_eq0         now_date_eq0
+                --  , now.perend_q1        now_perend_q1
+          	, case when   now.date_eq0             >   now.perend_q1         then now.date_eq0 -- greater than and neither is null
+          	       when   now.date_eq0 is not null and now.perend_q1 is null then now.date_eq0
+          	       else                                now.perend_q1                           -- ... otherwise everything is null so just null
+          	    end now_eff_date_eq0
+                --   , now.pertyp_q1        now_pertyp_q1
+                --   , now.perlen_q1        now_perlen_q1
+                --   , p01lwd.dateindex     p01lwd_dateindex
+                --   , p01lwd.company_id    p01lwd_company_id
+                --   , p01lwd.sales_q1      p01lwd_sales_q1
+                --   , p01lwd.netinc_q1     p01lwd_netinc_q1
+                --   , p01lwd.mktcap        p01lwd_mktcap
+                --   , p01lwd.price         p01lwd_price
+                --   , p01lwd.netinc_q1/nullif(p01lwd.mktcap,0) p01lwd_netinc_q1_o_mktcap  
+                --   , p01lwd.date_eq0      p01lwd_date_eq0
+                --   , p01lwd.perend_q1     p01lwd_perend_q1
+          	, case when   p01lwd.date_eq0             >   p01lwd.perend_q1         then p01lwd.date_eq0 -- greater than and neither is null
+          	       when   p01lwd.date_eq0 is not null and p01lwd.perend_q1 is null then p01lwd.date_eq0
+                         else                                   p01lwd.perend_q1                              -- ... otherwise everything is null so just null
+          	    end p01lwd_eff_date_eq0
+                --   , p01lwd.pertyp_q1     p01lwd_pertyp_q1
+                --   , p01lwd.perlen_q1     p01lwd_perlen_q1
+                	from
+                    ( select   date_eq0, perend_q1, perlen_q1, pertyp_q1, dateindex_company_id, dateindex, dateindexp01lwd, company_id, sales_q1, netinc_q1, mktcap, price
+                               from si_finecon2 now  where now.dateindex ", support_where_condition, ") now left outer join si_finecon2 p01lwd on now.dateindexp01lwd  = p01lwd.dateindex and now.company_id = p01lwd.company_id 
+              ) sq1                               -- where now.ticker in ('AAPL','MSFT') -- VERY easy to test
+            ) sq2                                 -- where now.dateindex in (17347, 17317, 17284, 17256, 17225, 17197, 17165, 17135, 17105, 17074, 17044, 17011, 16982) -- first ONE minute AFTER 13 seconds WITH SORT
+          ) sq3
+          order by 2,1
+        ) sq4 where sq4.dateindex ", display_where_condition, "
     ") -> add_columns_sql
     
     db.q(add_columns_sql, nrows = "all", conn.id = cid) -> si_all_df
@@ -2919,6 +2945,20 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
   for(dir_i in lwd_dbf_dirs_ordered) {
     
     warning(paste0("Beginning disk dbf dir: ",dir_i))
+    
+    # eventually within upload_lwd_sipro_dbfs_to_db
+    
+    # debug(load_inbnd_stmtstats)
+    # required sales_q1, netinc_q1, mktcap, price
+    load_inbnd_stmtstats(
+        dateindex = 17347 # e.g. last loaded pay period
+      , support_dateindex_collection = c(17347, 17317, 17284, 17256, 17225, 17197, 17165, 17135, 17105, 17074, 17044, 17011, 16982)
+      , char_col_numeric_limit = 999999.99    # for right NOW pure AAII data ( unratio-ed )
+    )  -> si_all_g_df
+    
+    # str(si_all_g_df)
+    upsert(si_all_g_df, keys = c("company_id"))
+    
     
     verify_company_basics(dateindex = c(dir_i)) -> si_all_g_df
     update_from_future_new_company_ids(df = si_all_g_df, ref = dir_i) -> si_all_g_df
