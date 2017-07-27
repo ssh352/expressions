@@ -2770,7 +2770,7 @@ load_inbnd_stmtstats <- function (dateindex = NULL, support_dateindex_collection
             , first_value(sq3.now_inbnd_stmtstat_sales_q1)    over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindex_partition order by sq3.dateindex) last_inbnd_stmtstat_sales_q1
             , first_value(sq3.now_inbnd_stmtstat_netinc_q1)   over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindex_partition order by sq3.dateindex) last_inbnd_stmtstat_netinc_q1
             , first_value(sq3.now_inbnd_stmtstat_mktcap)      over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindex_partition order by sq3.dateindex) last_inbnd_stmtstat_mktcap
-            , first_value(sq3.now_inbnd_stmtstat_mktcap)      over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindex_partition order by sq3.dateindex) last_inbnd_stmtstat_price
+            , first_value(sq3.now_inbnd_stmtstat_price)      over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindex_partition order by sq3.dateindex) last_inbnd_stmtstat_price
             --, first_value(sq3.now_inbnd_stmtstat_netinc_q1_o_mktcap)   over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindex_partition order by sq3.dateindex) last_inbnd_stmtstat_netinc_q1_o_mktcap
             --, first_value(sq3.now_inbnd_stmtstat_sales_q1_o_mktcap)    over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindex_partition order by sq3.dateindex) last_inbnd_stmtstat_sales_q1_o_mktcap
             --, first_value(sq3.now_inbnd_stmtstat_netinc_q1_o_sales_q1) over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindex_partition order by sq3.dateindex) last_inbnd_stmtstat_netinc_q1_o_sales_q1
