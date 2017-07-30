@@ -3277,16 +3277,16 @@ chgs_XXw_ann <- function(xtsobj = NULL) {
     
 
     xtsobj_chg_04w_ann <- (xtsobj - xts::lag.xts(xtsobj, 1*22)) / abs( xts::lag.xts(xtsobj, 1*22)) * 100 * 12
-    colnames(xtsobj_chg_04w_ann) <- paste0(colnames(xtsobj_chg_04w_ann),"_chg_04w_ann")
+    colnames(xtsobj_chg_04w_ann) <- paste0(colnames(xtsobj_chg_04w_ann),"_prchg_04w_ann")
     #
     xtsobj_chg_13w_ann <- (xtsobj - xts::lag.xts(xtsobj, 3*22)) / abs( xts::lag.xts(xtsobj, 3*22)) * 100 *  4
-    colnames(xtsobj_chg_13w_ann) <- paste0(colnames(xtsobj_chg_13w_ann),"_chg_13w_ann")
+    colnames(xtsobj_chg_13w_ann) <- paste0(colnames(xtsobj_chg_13w_ann),"_prchg_13w_ann")
     #
     xtsobj_chg_26w_ann <- (xtsobj - xts::lag.xts(xtsobj, 6*22)) / abs( xts::lag.xts(xtsobj, 6*22)) * 100 *  2
-    colnames(xtsobj_chg_26w_ann) <- paste0(colnames(xtsobj_chg_26w_ann),"_chg_26w_ann")
+    colnames(xtsobj_chg_26w_ann) <- paste0(colnames(xtsobj_chg_26w_ann),"_prchg_26w_ann")
     #
     xtsobj_chg_52w_ann <- (xtsobj - xts::lag.xts(xtsobj,12*22)) / abs( xts::lag.xts(xtsobj,12*22)) * 100 *  1
-    colnames(xtsobj_chg_52w_ann) <- paste0(colnames(xtsobj_chg_52w_ann),"_chg_52w_ann")
+    colnames(xtsobj_chg_52w_ann) <- paste0(colnames(xtsobj_chg_52w_ann),"_prchg_52w_ann")
     
     xtsobj_chg <- xts::merge.xts(xtsobj_chg_04w_ann,xtsobj_chg_13w_ann,xtsobj_chg_26w_ann,xtsobj_chg_52w_ann)
     return(xtsobj_chg)
@@ -3407,10 +3407,10 @@ load_instruments <- function(dfobj = NULL, no_update_earliest_year = NULL) {
          dateindexeom integer,
          instrument text,
          instrument_value numeric(8,2),
-         chg_04w_ann numeric(8,2),
-         chg_13w_ann numeric(8,2),
-         chg_26w_ann numeric(8,2),
-         chg_52w_ann numeric(8,2)
+         prchg_04w_ann numeric(8,2),
+         prchg_13w_ann numeric(8,2),
+         prchg_26w_ann numeric(8,2),
+         prchg_52w_ann numeric(8,2)
          );
          ", conn.id = cid)
     
@@ -3530,7 +3530,7 @@ load_us_bond_instruments <- function(us_bonds_year_back = NULL) {
     # 
     print(paste0("BEGIN US BONDS XTS TO DF"))
     us_bonds      <- xtsobjs_2_db_ready_df(us_bonds)
-    us_bonds_chgs <- xtsobjs_2_db_ready_df(us_bonds_chgs, split_search = "_chg", split_replace = ".chg",  split_sep = "[.]") # XOR "\\."
+    us_bonds_chgs <- xtsobjs_2_db_ready_df(us_bonds_chgs, split_search = "_prchg", split_replace = ".prchg",  split_sep = "[.]") # XOR "\\."
     print(paste0("END US BONDS XTS TO DF"))
     
     print(paste0("BEGIN US BONDS LOAD INTO POSTGRESQL DATABASE"))
