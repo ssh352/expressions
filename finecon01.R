@@ -3889,8 +3889,8 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
 # LEFT_OFF
 
 # ZERO
-# [ ] RE-ORGANIZE some R CODE in TEMPORARY.sql
-# [ ] save on GITHUB
+# [x] RE-ORGANIZE some R CODE in TEMPORARY.sql
+# [x] save on GITHUB
 # 
 # BEFORE_FIRST (SOMEWHERE)
 # [ ]RENAME SOME COLUMNS to CLEAR they ARE FUTURE ( SEE SECOND )
