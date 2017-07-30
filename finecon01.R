@@ -2864,7 +2864,13 @@ load_inbnd_stmtstats <- function (dateindex = NULL, support_dateindex_collection
   options(ops)
   return(ret)
 }
-
+# # debug(load_inbnd_stmtstats)
+# # required date_eq0, perend_q1, perlen_q1, pertyp_q1, dateindex_company_id, dateindex, dateindexp01lwd, company_id, sales_q1, netinc_q1, mktcap, price
+# load_inbnd_stmtstats(
+#     dateindex = 17347 # e.g. last loaded pay period
+#   , support_dateindex_collection = c(17347, 17317, 17284, 17256, 17225, 17197, 17165, 17135, 17105, 17074, 17044, 17011, 16982)
+#   , char_col_numeric_limit = 999999.99    # for right NOW pure AAII data ( unratio-ed )
+# )  -> si_all_g_df
 
 
 # DECIDED that THESE functions will process ONLY one DATEINDEX at a time
@@ -3879,15 +3885,48 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
 #### BEGIN WORKFLOW ####
 
 
+# LEFT_OFF
 
-#
+# ZERO
+# [ ] RE-ORGANIZE some R CODE in TEMPORARY.sql
+# [ ] save on GITHUB
+# 
+# BEFORE_FIRST (SOMEWHERE)
+# [ ]RENAME SOME COLUMNS to CLEAR they ARE FUTURE ( SEE SECOND )
+# -- TO DO [ ] ( RENAME PRICE FUTURE CALCULATION SOMETHING BETTER _ann ALONE DOES NOT WORK )
+
+# FIRST
+# [ ] agrep ( join old companies with name change )
+# Approximate String Matching (Fuzzy Matching)
+# https://www.rdocumentation.org/packages/base/versions/3.4.1/topics/agrep
+# 
+# SECOND
+# [ ] HINT - DO NOT BOTHER TO UPDATE A ROW THE SECOND TIME
+# SO ADD COLUMNS and USE IN detect QUERIES
+#        chg_xxw_annz_uptodate
+# nowlast_inbnd_stmtz_uptodate
+# 
+# THIRD (WEAK - FEWER 'BIG' QUERIES)
+# [ ] ALTERNATE - 'everything at ONE time' update method
+# (may be good when the same page keeps getting rewritten 
+# and/or lots of page contention and MUCH writing, so there exists MUCH waiting for disk
+
+# SOON
+## --       [ ] 3 SQL now UPDATE company_idS to NEW company_ids use fuzzy matching in pl/r: ( SEE above: fuzzy matching by Levenshtein )
+## --       [ ] <UPSERT> to INSERT/UPDATE ( in prep for partitions ) - CONVERT FROM INSERT(CONFLICT - TO INSERT(NOT EXSITS...UPDATE(EXISTS
+
+## SOON
+## --       [ ] convert pg_temp TO NONDEBUG mot to TEMP TABLE: TEMPORARY/table_index ( for non-debug ) runs ( HALF the DISK IO )
+## --         [ ] if exists TRUNCATE TABLE 
+
+
+
+# [ ] 
 # OTHER THAN GSPC ( AND i NEED YEAR MEASURE )
 # https://en.wikipedia.org/wiki/Thrift_Savings_Plan
 #  https://en.wikipedia.org/wiki/Bloomberg_Barclays_US_Aggregate_Bond_Index
 #      iShares Core US Aggregate Bond Index (AGG) Vanguard Total Bond Market Index Fund (VBMFX), Fidelity U.S. Bond Index Fund (FBIDX)
 #
-# LEFT_OFF
-# 
 # ... caret ... xgboost or random_forest  GSPC momentum vs itself ( NICE OUTPUT it THEN WORK BACKWARDS )
 # 
 # --TODO: [ ] ADD sp500_total_shares mktcap / price ( to demonstrate buyback in action )
