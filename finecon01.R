@@ -871,24 +871,29 @@ verify_finecon_jamesos_partial_idx <- function() {
     #  Note: BEST performance table is sorted by : sort by dateindex, company_id
     # 
     #
+    
+    db.q("create index if not exists si_finecon2_finecon_jamesos_partial_idx on
+                  si_finecon2(dateindex,adr,exchange,mktcap,industry_desc,company) where
+                    adr = 0 and exchange != 'O' and mktcap > 200.0
+                    and (company !~~ '%iShares%') and (company !~~ '%Vanguard%') and (company !~~ 'SPDR')
+                    and (company !~~ '%PowerShares%') and (company !~~ '%Fund%')
+                    and (company !~~ '%Holding%') and (industry_desc !~~ '%Investment Service%')
+              ;", conn.id = cid)
 
-    db.q("create index if not exists si_finecon2_finecon_jamesos_partial_idx on 
-                  si_finecon2(dateindex,adr,exchange,mktcap,industry_desc,company) where 
-                    adr = 0 and exchange != 'O' and mktcap > 200.0 
-                    and (company !~~ '%iShares%') and (company !~~ '%Vanguard%') and (company !~~ 'SPDR') 
-                    and (company !~~ '%PowerShares%') and (company !~~ '%Fund%') 
-                    and (company !~~ '%Holding%') and (industry_desc !~~ '%Investment Service%')
-              ;", conn.id = cid)
-    
-    
-    # save space ( if nothing else )
-    db.q("create or replace view si_finecon2_jos as select * from  
-                  si_finecon2                                                      where 
-                    adr = 0 and exchange != 'O' and mktcap > 200.0 
-                    and (company !~~ '%iShares%') and (company !~~ '%Vanguard%') and (company !~~ 'SPDR') 
-                    and (company !~~ '%PowerShares%') and (company !~~ '%Fund%') 
-                    and (company !~~ '%Holding%') and (industry_desc !~~ '%Investment Service%')
-              ;", conn.id = cid)
+    # SAVE FOR LATER
+    # 
+    # VIEWS WORK DIFFERNETLY THAT IN 'Oracle' or "Microsoft SQL Server"
+    # ERROR:  cannot change name of view column "prchg_04w_ann" to "prchg_f04w_ann"
+    # 
+    # 
+    # # save space ( if nothing else )
+    # db.q("create or replace view si_finecon2_jos as select * from  
+    #               si_finecon2                                                      where 
+    #                 adr = 0 and exchange != 'O' and mktcap > 200.0 
+    #                 and (company !~~ '%iShares%') and (company !~~ '%Vanguard%') and (company !~~ 'SPDR') 
+    #                 and (company !~~ '%PowerShares%') and (company !~~ '%Fund%') 
+    #                 and (company !~~ '%Holding%') and (industry_desc !~~ '%Investment Service%')
+    #           ;", conn.id = cid)
   
   }
       
@@ -929,11 +934,11 @@ verify_finecon_sp_500_partial_idx <- function() {
                   si_finecon2(dateindex,sp) where sp = '500'
               ;", conn.id = cid)
     
-    
-    # save space ( if nothing else )
-    db.q("create or replace view si_finecon2_sp_500 as select * from  
-                  si_finecon2 where sp = '500'
-              ;", conn.id = cid)
+    ## SAVE FOR LATER
+    # # save space ( if nothing else )
+    # db.q("create or replace view si_finecon2_sp_500 as select * from  
+    #               si_finecon2 where sp = '500'
+    #           ;", conn.id = cid)
   
   }
       
@@ -1708,9 +1713,7 @@ verify_company_basics <- function (dateindex = NULL) {
 # verify_company_basics(dateindex = NULL)
 # verify_company_basics(dateindex = c(15764)) -> si_all_g_df
 
-# LEFT_OFF 
-#   financize-like TRIM data.types ( and load into the database)
-#   ( Caroline-like & SQL: load into the database)
+
 # 
 # look forward to NEXT month and get any NEW COMPANY_IDS by TICKER then company_id by STREET
 # 
@@ -2469,38 +2472,38 @@ verify_week_often_week_returns <- function(dateindex = NULL) {
     fe.company_id,
     --
     fe_04w_o.pricebck_04w,
-    fe_04w_o.prchg_04w_ann,
-    fe_04w_o.pct_div_ret_ov_pr_04w_q1_ann,
-    fe_04w_o.pradchg_04w_ann,
-    fe_04w_o.price_04w,
+    fe_04w_o.prchg_f04w_ann,
+    fe_04w_o.pct_f_div_ret_ov_pr_04w_q1_ann,
+    fe_04w_o.pradchg_f04w_ann,
+    fe_04w_o.price_f04w,
     --
     fe_13w_o.pricebck_13w,
-    fe_13w_o.prchg_13w_ann,
-    fe_13w_o.pct_div_ret_ov_pr_13w_q1_ann,
-    fe_13w_o.pradchg_13w_ann,
-    fe_13w_o.price_13w,
+    fe_13w_o.prchg_f13w_ann,
+    fe_13w_o.pct_f_div_ret_ov_pr_13w_q1_ann,
+    fe_13w_o.pradchg_f13w_ann,
+    fe_13w_o.price_f13w,
     --
     fe_26w_o.pricebck_26w,
-    fe_26w_o.prchg_26w_ann,
-    fe_26w_o.pct_div_ret_ov_pr_26w_q12_ann,
-    fe_26w_o.pradchg_26w_ann,
-    fe_26w_o.price_26w,
+    fe_26w_o.prchg_f26w_ann,
+    fe_26w_o.pct_f_div_ret_ov_pr_26w_q12_ann,
+    fe_26w_o.pradchg_f26w_ann,
+    fe_26w_o.price_f26w,
     --
     fe_52w_o.pricebck_52w,
-    fe_52w_o.prchg_52w_ann,
-    fe_52w_o.pct_div_ret_ov_pr_52w_q1234_ann,
-    fe_52w_o.pradchg_52w_ann,
-    fe_52w_o.price_52w
+    fe_52w_o.prchg_f52w_ann,
+    fe_52w_o.pct_f_div_ret_ov_pr_52w_q1234_ann,
+    fe_52w_o.pradchg_f52w_ann,
+    fe_52w_o.price_f52w
     from 
       si_finecon2 fe 
     left join lateral ( 
         select 
           fe_04w.dateindex, fe_04w.company_id,
             nullif(fe_04w.price,0)/(nullif(fe_04w.prchg_04w,-100)/100 + 1)  pricebck_04w,
-            fe_04w.prchg_04w * 12                                           prchg_04w_ann,
-                                    30.5 / ( fe_04w.perend_q1 - fe_04w.perend_q2 ) * ( coalesce(fe_04w.dps_q1,0)    )/(nullif(fe_04w.price,0)/(nullif(fe_04w.prchg_04w,-100)/100 + 1)) * 100 * 12 pct_div_ret_ov_pr_04w_q1_ann,
-            fe_04w.prchg_04w * 12 + 30.5 / ( fe_04w.perend_q1 - fe_04w.perend_q2 ) * ( coalesce(fe_04w.dps_q1,0)    )/(nullif(fe_04w.price,0)/(nullif(fe_04w.prchg_04w,-100)/100 + 1)) * 100 * 12 pradchg_04w_ann,
-            fe_04w.price price_04w
+            fe_04w.prchg_04w * 12                                           prchg_f04w_ann,
+                                    30.5 / ( fe_04w.perend_q1 - fe_04w.perend_q2 ) * ( coalesce(fe_04w.dps_q1,0)    )/(nullif(fe_04w.price,0)/(nullif(fe_04w.prchg_04w,-100)/100 + 1)) * 100 * 12 pct_f_div_ret_ov_pr_04w_q1_ann,
+            fe_04w.prchg_04w * 12 + 30.5 / ( fe_04w.perend_q1 - fe_04w.perend_q2 ) * ( coalesce(fe_04w.dps_q1,0)    )/(nullif(fe_04w.price,0)/(nullif(fe_04w.prchg_04w,-100)/100 + 1)) * 100 * 12 pradchg_f04w_ann,
+            fe_04w.price price_f04w
           from 
               si_finecon2 fe_04w
     ) fe_04w_o on fe.dateindexf01lwd  = fe_04w_o.dateindex and fe.company_id = fe_04w_o.company_id                              
@@ -2508,10 +2511,10 @@ verify_week_often_week_returns <- function(dateindex = NULL) {
         select 
           fe_13w.dateindex, fe_13w.company_id,
             nullif(fe_13w.price,0)/(nullif(fe_13w.prchg_13w,-100)/100 + 1)  pricebck_13w,
-            fe_13w.prchg_13w * 4                                            prchg_13w_ann,
-                                    91.0 / ( fe_13w.perend_q1 - fe_13w.perend_q2 ) * ( coalesce(fe_13w.dps_q1,0)    )/(nullif(fe_13w.price,0)/(nullif(fe_13w.prchg_13w,-100)/100 + 1)) * 100 *  4 pct_div_ret_ov_pr_13w_q1_ann,
-            fe_13w.prchg_13w * 4 +  91.0 / ( fe_13w.perend_q1 - fe_13w.perend_q2 ) * ( coalesce(fe_13w.dps_q1,0)    )/(nullif(fe_13w.price,0)/(nullif(fe_13w.prchg_13w,-100)/100 + 1)) * 100 *  4 pradchg_13w_ann,
-            fe_13w.price price_13w
+            fe_13w.prchg_13w * 4                                            prchg_f13w_ann,
+                                    91.0 / ( fe_13w.perend_q1 - fe_13w.perend_q2 ) * ( coalesce(fe_13w.dps_q1,0)    )/(nullif(fe_13w.price,0)/(nullif(fe_13w.prchg_13w,-100)/100 + 1)) * 100 *  4 pct_f_div_ret_ov_pr_13w_q1_ann,
+            fe_13w.prchg_13w * 4 +  91.0 / ( fe_13w.perend_q1 - fe_13w.perend_q2 ) * ( coalesce(fe_13w.dps_q1,0)    )/(nullif(fe_13w.price,0)/(nullif(fe_13w.prchg_13w,-100)/100 + 1)) * 100 *  4 pradchg_f13w_ann,
+            fe_13w.price price_f13w
           from 
               si_finecon2 fe_13w
     ) fe_13w_o on fe.dateindexf03lwd  = fe_13w_o.dateindex and fe.company_id = fe_13w_o.company_id 
@@ -2519,12 +2522,12 @@ verify_week_often_week_returns <- function(dateindex = NULL) {
         select 
           fe_26w.dateindex, fe_26w.company_id,
             nullif(fe_26w.price,0)/(nullif(fe_26w.prchg_26w,-100)/100 + 1)  pricebck_26w,
-            fe_26w.prchg_26w * 2                                            prchg_26w_ann,
+            fe_26w.prchg_26w * 2                                            prchg_f26w_ann,
                                     182.0 / ( fe_26w.perend_q1 - fe_26w.perend_q3 ) * ( coalesce(fe_26w.dps_q1,0) + 
-                                                                                        coalesce(fe_26w.dps_q2,0)    )/(nullif(fe_26w.price,0)/(nullif(fe_26w.prchg_26w,-100)/100 + 1)) * 100 *  2 pct_div_ret_ov_pr_26w_q12_ann,
+                                                                                        coalesce(fe_26w.dps_q2,0)    )/(nullif(fe_26w.price,0)/(nullif(fe_26w.prchg_26w,-100)/100 + 1)) * 100 *  2 pct_f_div_ret_ov_pr_26w_q12_ann,
             fe_26w.prchg_26w * 2 +  182.0 / ( fe_26w.perend_q1 - fe_26w.perend_q3 ) * ( coalesce(fe_26w.dps_q1,0) + 
-                                                                                        coalesce(fe_26w.dps_q2,0)    )/(nullif(fe_26w.price,0)/(nullif(fe_26w.prchg_26w,-100)/100 + 1)) * 100 *  2 pradchg_26w_ann,
-            fe_26w.price price_26w
+                                                                                        coalesce(fe_26w.dps_q2,0)    )/(nullif(fe_26w.price,0)/(nullif(fe_26w.prchg_26w,-100)/100 + 1)) * 100 *  2 pradchg_f26w_ann,
+            fe_26w.price price_f26w
           from 
               si_finecon2 fe_26w
     ) fe_26w_o on fe.dateindexf06lwd  = fe_26w_o.dateindex and fe.company_id = fe_26w_o.company_id 
@@ -2532,16 +2535,16 @@ verify_week_often_week_returns <- function(dateindex = NULL) {
         select 
           fe_52w.dateindex, fe_52w.company_id,
             nullif(fe_52w.price,0)/(nullif(fe_52w.prchg_52w,-100)/100 + 1)  pricebck_52w,
-            fe_52w.prchg_52w * 1                                            prchg_52w_ann,
+            fe_52w.prchg_52w * 1                                            prchg_f52w_ann,
                                     365.0 / ( fe_52w.perend_q1 - fe_52w.perend_q5 ) * ( coalesce(fe_52w.dps_q1,0) + 
                                                                                         coalesce(fe_52w.dps_q2,0) + 
                                                                                         coalesce(fe_52w.dps_q3,0) + 
-                                                                                        coalesce(fe_52w.dps_q4,0)    )/(nullif(fe_52w.price,0)/(nullif(fe_52w.prchg_52w,-100)/100 + 1)) * 100 *  1 pct_div_ret_ov_pr_52w_q1234_ann,
+                                                                                        coalesce(fe_52w.dps_q4,0)    )/(nullif(fe_52w.price,0)/(nullif(fe_52w.prchg_52w,-100)/100 + 1)) * 100 *  1 pct_f_div_ret_ov_pr_52w_q1234_ann,
             fe_52w.prchg_52w * 1 +  365.0 / ( fe_52w.perend_q1 - fe_52w.perend_q5 ) * ( coalesce(fe_52w.dps_q1,0) + 
                                                                                         coalesce(fe_52w.dps_q2,0) + 
                                                                                         coalesce(fe_52w.dps_q3,0) + 
-                                                                                        coalesce(fe_52w.dps_q4,0)    )/(nullif(fe_52w.price,0)/(nullif(fe_52w.prchg_52w,-100)/100 + 1)) * 100 *  1 pradchg_52w_ann,
-            fe_52w.price price_52w
+                                                                                        coalesce(fe_52w.dps_q4,0)    )/(nullif(fe_52w.price,0)/(nullif(fe_52w.prchg_52w,-100)/100 + 1)) * 100 *  1 pradchg_f52w_ann,
+            fe_52w.price price_f52w
           from 
               si_finecon2 fe_52w
     ) fe_52w_o on fe.dateindexf12lwd  = fe_52w_o.dateindex and fe.company_id = fe_52w_o.company_id 
@@ -3893,21 +3896,22 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
 # [x] save on GITHUB
 # 
 # BEFORE_FIRST (SOMEWHERE)
-# [ ]RENAME SOME COLUMNS to CLEAR they ARE FUTURE ( SEE SECOND )
-# -- TO DO [ ] ( RENAME PRICE FUTURE CALCULATION SOMETHING BETTER _ann ALONE DOES NOT WORK )
+# [X]RENAME SOME COLUMNS to CLEAR they ARE FUTURE ( SEE SECOND )
+# [x] BONDS
+# -- TO DO [X] ( RENAME PRICE FUTURE CALCULATION SOMETHING BETTER _ann ALONE DOES NOT WORK )
 
 # FIRST
 # [ ] agrep ( join old companies with name change )
 # Approximate String Matching (Fuzzy Matching)
 # https://www.rdocumentation.org/packages/base/versions/3.4.1/topics/agrep
 # 
-# SECOND
+# SECOND ( SOME FUTURE TIME )
 # [ ] HINT - DO NOT BOTHER TO UPDATE A ROW THE SECOND TIME
 # SO ADD COLUMNS and USE IN detect QUERIES
 #        chg_xxw_annz_uptodate
 # nowlast_inbnd_stmtz_uptodate
 # 
-# THIRD (WEAK - FEWER 'BIG' QUERIES)
+# THIRD (WEAK - FEWER 'BIG' QUERIES) ( SOME FUTURE TIME )
 # [ ] ALTERNATE - 'everything at ONE time' update method
 # (may be good when the same page keeps getting rewritten 
 # and/or lots of page contention and MUCH writing, so there exists MUCH waiting for disk
@@ -3916,7 +3920,7 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
 ## --       [ ] 3 SQL now UPDATE company_idS to NEW company_ids use fuzzy matching in pl/r: ( SEE above: fuzzy matching by Levenshtein )
 ## --       [ ] <UPSERT> to INSERT/UPDATE ( in prep for partitions ) - CONVERT FROM INSERT(CONFLICT - TO INSERT(NOT EXSITS...UPDATE(EXISTS
 
-## SOON
+## SOON     ( SOME FUTURE TIME (BUT SIMPLE)
 ## --       [ ] convert pg_temp TO NONDEBUG mot to TEMP TABLE: TEMPORARY/table_index ( for non-debug ) runs ( HALF the DISK IO )
 ## --         [ ] if exists TRUNCATE TABLE 
 
