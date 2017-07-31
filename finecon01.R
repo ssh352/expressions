@@ -1819,15 +1819,129 @@ update_from_future_new_company_ids <- function(df = NULL, ref = NULL) {
       #                    trg.ticker      = src.ticker
       # "), nrows =  -1, conn.id = cid)
       
-      db.q(str_c("
+      # db.q(str_c("
+      #            update trg
+      #              set company_id =                     src.company_id,
+      #        dateindex_company_id = dateindex || '_' || src.company_id  
+      #            from src
+      #              where trg.company_id != src.company_id and
+      #                    trg.ticker      = src.ticker and
+      #                    trg.street      = src.street
+      # "), nrows =  -1, conn.id = cid)    # SRC.STREET # a little extra safety, hp & hpq
+      
+      ## BEGIN BIG SET OF THREE ( NO FUZZY ) ##
+      
+      # db.q(str_c("
+      #            update trg
+      #              set company_id =                     src.company_id,
+      #        dateindex_company_id = dateindex || '_' || src.company_id  
+      #            from src
+      #              where src.company_id != trg.company_id and
+      #                    src.ticker      = trg.ticker and
+      #                    src.street      = trg.street
+      # "), nrows =  -1, conn.id = cid)    # SRC.STREET # a little extra safety, hp & hpq
+      # 
+      # db.q(str_c("
+      #            update trg
+      #              set company_id =                     src.company_id,
+      #        dateindex_company_id = dateindex || '_' || src.company_id  
+      #            from src
+      #              where src.company_id != trg.company_id and
+      #                    src.ticker      = trg.ticker and
+      #                    src.company     = trg.company
+      # "), nrows =  -1, conn.id = cid)    
+      # 
+      # db.q(str_c("
+      #            update trg
+      #              set company_id =                     src.company_id,
+      #        dateindex_company_id = dateindex || '_' || src.company_id  
+      #            from src
+      #              where src.company_id != trg.company_id and
+      #                    src.street      = trg.street and
+      #                    src.company     = trg.company
+      # "), nrows =  -1, conn.id = cid)   
+      
+      ## END BIG SET OF FUNCTIONS ( NO FUZZY ) ##
+      
+      ## BEGIN BIG SET OF THREE   ( YES FUZZY ) ##
+      
+     db.q(str_c("
+        create or replace function sif_agrep(pattern text, x text)
+        returns boolean as $$
+          if(is.null(pattern) || is.na(pattern) || !length(pattern)  ) return(F)
+          if(is.null(x)       || is.na(x)       || !length(x)        ) return(F)
+          ret <- tryCatch({ agrepl(pattern = pattern, x = x, ignore.case = TRUE) }, error = function(e) { print(e); print(pattern); print(x); stop() })
+          return(ret)
+        $$ language plr;
+      "), nrows =  -1, conn.id = cid) 
+      
+     str_c("
                  update trg
                    set company_id =                     src.company_id,
              dateindex_company_id = dateindex || '_' || src.company_id  
                  from src
-                   where trg.company_id != src.company_id and
-                         trg.ticker      = src.ticker and
-                         trg.street      = src.street
-      "), nrows =  -1, conn.id = cid)    # SRC.STREET # a little extra safety, hp & hpq
+                   where src.company_id != trg.company_id and
+                         src.ticker      = trg.ticker and
+                         sif_agrep(src.street, trg.street) 
+      ") -> changes_sql
+      writeLines(changes_sql)
+      rs <- dbSendQuery(con, changes_sql)
+      if(dbHasCompleted(rs)) { print(str_c("Rows Affected: ", dbGetRowsAffected(rs)))  }
+      if(dbHasCompleted(rs)) dbClearResult(rs)
+
+      str_c("
+                 update trg
+                   set company_id =                     src.company_id,
+             dateindex_company_id = dateindex || '_' || src.company_id  
+                 from src
+                   where src.company_id != trg.company_id and
+                         src.ticker      = trg.ticker and
+                         sif_agrep(src.company, trg.company)
+      ") -> changes_sql
+      writeLines(changes_sql)
+      rs <- dbSendQuery(con, changes_sql)
+      if(dbHasCompleted(rs)) { print(str_c("Rows Affected: ", dbGetRowsAffected(rs)))  }
+      if(dbHasCompleted(rs)) dbClearResult(rs)
+      
+      # -- skyskrapers
+      # -- "45 Fremont Street"
+      # select street 
+      # from si_finecon2
+      # where dateindex = 14911
+      # group by street
+      # having count(*) > 1
+      # order by 1
+      # -- 179
+      # 
+      # -- "iShares Dow Jones US Consumer"  ( OLD DATA: 30 character chop-off name problem )
+      # -- "iShares Dow Jones US Financial" ( NOTE: EARLY DATA COMPANY_ID and TICKER dups ARE removed MAYBE also COMPANY exactly SHOULD be REMOVED
+      # select company 
+      # from si_finecon2
+      # where dateindex = 14911
+      # group by company
+      # having count(*) > 1
+      # order by 1
+      
+      # NOT BOLD ENOUGH TO TRY THIS
+      
+      # str_c("
+      #            update trg
+      #              set company_id =                     src.company_id,
+      #        dateindex_company_id = dateindex || '_' || src.company_id  
+      #            from src
+      #              where src.company_id != trg.company_id and
+      #                    sif_agrep(src.street, trg.street)   and
+      #                    sif_agrep(src.company, trg.company) and 
+      #                    src.street not in ( select street from src group by street having count(*) > 1 ) and
+      #                    trg.street not in ( select street from trg group by street having count(*) > 1 ) and
+      #                    src.company not in ( select company from src group by company having count(*) > 1 ) and
+      #                    trg.company not in ( select company from trg group by company having count(*) > 1 ) 
+      # ")  -> changes_sql
+      # writeLines(changes_sql)
+      # rs <- dbSendQuery(con, changes_sql)
+      # if(dbHasCompleted(rs)) { print(str_c("Rows Affected: ", dbGetRowsAffected(rs)))  }
+      # if(dbHasCompleted(rs)) dbClearResult(rs)
+      ## END BIG SET OF FUNCTIONS ( YES FUZZY ) ##
       
       
       ## MAY? WANT TO SHUT OFF DURING DEVELOPMENT ( THIS TAKES 5 SECONDS TO RUN)
@@ -3795,7 +3909,7 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
 # my_tbl_df$Higher <- my_tbl_df$High + 100
 # load_obj_direct(my_tbl_df, key_columns = "dateindex")
 #
-# tbl_df’, ‘tbl’ and 'data.frame'
+# tbl_df', 'tbl' and 'data.frame'
 # above: program changes columns "date" or "index" to "dateindex"
 # vix <- tidyquant::tq_get(c("VIX"), get  = "stock.prices", from = "2016-01-01", to  = "2017-01-01")[,c("date","close")]
 # colnames(vix)[2] <- "vix"
@@ -3810,14 +3924,14 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
      # with changes to Yahoo Finance, which also included the following
      # changes to the raw data:
      # 
-     #    • The adjusted close column appears to no longer include
+     #    . The adjusted close column appears to no longer include
      #      dividend adjustments
      # 
-     #    • The close column appears to be adjusted for splits twice
+     #    . The close column appears to be adjusted for splits twice
      # 
-     #    • The open, high, and low columns are adjusted for splits, and
+     #    . The open, high, and low columns are adjusted for splits, and
      # 
-     #    • The raw data may contain missing values.
+     #    . The raw data may contain missing values.
 
 # getSymbols.yahoo
 
