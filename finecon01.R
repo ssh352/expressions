@@ -1819,6 +1819,9 @@ update_from_future_new_company_ids <- function(df = NULL, ref = NULL) {
       #                    trg.ticker      = src.ticker
       # "), nrows =  -1, conn.id = cid)
       
+      ##########################################################################
+      ## BEGIN (ORIGINAL) LONG (DEVELOPMENT) TIME RUNING TRG/SRC UPDATED QUERY #
+      
       # db.q(str_c("
       #            update trg
       #              set company_id =                     src.company_id,
@@ -1828,6 +1831,9 @@ update_from_future_new_company_ids <- function(df = NULL, ref = NULL) {
       #                    trg.ticker      = src.ticker and
       #                    trg.street      = src.street
       # "), nrows =  -1, conn.id = cid)    # SRC.STREET # a little extra safety, hp & hpq
+      
+      ## END ( ORIGINAL ) LONG (DEVELOPMENT) TIME RUNNING TRG/SRC UPDATED QUERY #
+      ###########################################################################
       
       ## BEGIN BIG SET OF THREE ( NO FUZZY ) ##
       
@@ -3909,7 +3915,7 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
 # my_tbl_df$Higher <- my_tbl_df$High + 100
 # load_obj_direct(my_tbl_df, key_columns = "dateindex")
 #
-# tbl_df', 'tbl' and 'data.frame'
+# tbl_df’, ‘tbl’ and 'data.frame'
 # above: program changes columns "date" or "index" to "dateindex"
 # vix <- tidyquant::tq_get(c("VIX"), get  = "stock.prices", from = "2016-01-01", to  = "2017-01-01")[,c("date","close")]
 # colnames(vix)[2] <- "vix"
@@ -3924,14 +3930,14 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
      # with changes to Yahoo Finance, which also included the following
      # changes to the raw data:
      # 
-     #    . The adjusted close column appears to no longer include
+     #    • The adjusted close column appears to no longer include
      #      dividend adjustments
      # 
-     #    . The close column appears to be adjusted for splits twice
+     #    • The close column appears to be adjusted for splits twice
      # 
-     #    . The open, high, and low columns are adjusted for splits, and
+     #    • The open, high, and low columns are adjusted for splits, and
      # 
-     #    . The raw data may contain missing values.
+     #    • The raw data may contain missing values.
 
 # getSymbols.yahoo
 
