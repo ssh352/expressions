@@ -3295,7 +3295,7 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
     load_us_bond_instruments(us_bonds_year_back = (months_only_back %/% 12 + 2) ) # MIMIMUM OF 2 YEARS OF DATA
   }
 
-  if(for_bonds_is_null_months_only_back_check_not_done && is.null(months_only_back)) {
+  if(for_bonds_is_null_months_only_back_check_NOT_done && is.null(months_only_back)) {
     for_bonds_is_null_months_only_back_check_NOT_done <- FALSE
     # NOTE: US BONDS SOME GAPS DO EXIST IN THE DATA ( TO DO [ ] DETECT NULL AND APPROXIMATION [ ]
     load_us_bond_instruments() # ALL OF the data
