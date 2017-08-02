@@ -3236,7 +3236,6 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
     upsert(si_all_g_df, keys = c("company_id"))
     
     # # debug(load_inbnd_stmtstats)
-    # # required date_eq0, perend_q1, perlen_q1, pertyp_q1, dateindex_company_id, dateindex, dateindexp01lwd, company_id, sales_q1, netinc_q1, mktcap, price
     # load_inbnd_stmtstats(
     #     dateindex = 17347 # e.g. last loaded pay period
     #   , support_dateindex_collection = c(17347, 17317, 17284, 17256, 17225, 17197, 17165, 17135, 17105, 17074, 17044, 17011, 16982)
@@ -3267,6 +3266,16 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
     #   upsert(si_all_g_df, keys = c("company_id"))
     # }
 
+    # col required
+    # # not used anymore: perlen_q1, pertyp_q1
+    # # required date_eq0, perend_q1, perend_q1, dateindex_company_id, dateindex, dateindexp01lwd, company_id, sales_q1, netinc_q1, mktcap, price
+    # 
+    
+    # if( is.null(months_only_back) )  # reloadS           the entire history ( 1 HOUR )
+    # 
+    #                                  # typically 13
+    # if( is.null(months_only_back) )  # reloadS subset of the entire history ( 1 HOUR )
+    
     # support_dateindex_collection is the 
     # minimum of 11 months: current + ( 6 month Quarter period reporter with 4 month Q-10 report filing delay ) 
     #                           # current or earlier                               # current or up to 10 earlier
@@ -3919,7 +3928,7 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
 # my_tbl_df$Higher <- my_tbl_df$High + 100
 # load_obj_direct(my_tbl_df, key_columns = "dateindex")
 #
-# tbl_df', 'tbl' and 'data.frame'
+# tbl_df’, ‘tbl’ and 'data.frame'
 # above: program changes columns "date" or "index" to "dateindex"
 # vix <- tidyquant::tq_get(c("VIX"), get  = "stock.prices", from = "2016-01-01", to  = "2017-01-01")[,c("date","close")]
 # colnames(vix)[2] <- "vix"
@@ -3934,14 +3943,14 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
      # with changes to Yahoo Finance, which also included the following
      # changes to the raw data:
      # 
-     #    . The adjusted close column appears to no longer include
+     #    • The adjusted close column appears to no longer include
      #      dividend adjustments
      # 
-     #    . The close column appears to be adjusted for splits twice
+     #    • The close column appears to be adjusted for splits twice
      # 
-     #    . The open, high, and low columns are adjusted for splits, and
+     #    • The open, high, and low columns are adjusted for splits, and
      # 
-     #    . The raw data may contain missing values.
+     #    • The raw data may contain missing values.
 
 # getSymbols.yahoo
 
@@ -4285,7 +4294,7 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
 # W:\R-3.4._                                             (FILES in HERE) : finecon01.R  finecon01_more_SQL.sql
 # > debugSource('W:/R-3.4._/finecon01.R')
 # 
-# > getAAIISIProDate()
+# > getAAIISIProDate() # Reads: C:/Program Files (x86)/Stock Investor/Professional
 # [1] "17225"
 # 
 # > zoo::as.Date(as.integer("17225")) # reads directly from # C:/Program Files (x86)/Stock Investor/Professional/Setup.dbf
@@ -4295,14 +4304,17 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
 # stockinvestorinstall_20170331.exe
 # --6465
 # 
-# > getAAIISIProDate()
+# > getAAIISIProDate() # Reads: C:/Program Files (x86)/Stock Investor/Professional
 # [1] "17256" - new
 # 
 # # will create the folder  ##### ( DO NOT FORGET TO DO ) #####
 # copyAAIISIProDBFs(
 #     from = "C:/Program Files (x86)/Stock Investor/Professional"
-#   , to   = paste0("W:/AAIISIProDBFs/",getAAIISIProDate()) # 
+#   , to   = paste0("W:/AAIISIProDBFs/",getAAIISIProDate()) # # Reads: C:/Program Files (x86)/Stock Investor/Professional
 # )
+# 
+# the MOST important
+# upload_lwd_sipro_dbfs_to_db(months_only_back = 13)
 # 
 # # view last months data
 # set search_path to sipro_data_store,sipro_stage;
