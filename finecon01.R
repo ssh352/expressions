@@ -260,13 +260,17 @@ verify_connection <- function () {
       # subsequent attempts to change the value will have no effect on that session.
       # ANY number I want ( no error )
       # EXPERIMENT 'sorting and temp tables
-      db.q(str_c("set temp_buffers to '14GB';"), nrows =  -1, conn.id = cid)
+      # db.q(str_c("set temp_buffers to '14GB';"), nrows =  -1, conn.id = cid)
       
-      # EXPERIMENT ( memory for disk caching )
-      db.q(str_c("set effective_cache_size to '14GB';"), nrows =  -1, conn.id = cid)
+      # ANONYOMOUST ( 2017 / WINDOW 10 ) HAS 16GB of RAM
+      
+      # EXPERIMENT ( memory for disk caching ) -- 2048(GUESSING) + 4096(shared buffers)
+      db.q(str_c("set effective_cache_size to '6144MB';"), nrows =  -1, conn.id = cid) # disk cache by the: os +'shared_buffers'
       # 
       db.q(str_c("set time zone 'utc';"), nrows =  -1, conn.id = cid)
-      # windows LIMIT
+      # windows LIMIT 2047
+      # A good rule of thumb is to keep: work_mem*max_connections*2 < 1/4 of memory
+      # NOTE: WATCH OUT FOR 'R language: parallel'each process GETS 'work_mem' limit
       db.q(str_c("set work_mem to '2047MB';"), nrows =  -1, conn.id = cid)
       db.q(str_c("set constraint_exclusion = on;"), nrows =  -1, conn.id = cid)
       # postgresql 9.6
@@ -3915,7 +3919,7 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
 # my_tbl_df$Higher <- my_tbl_df$High + 100
 # load_obj_direct(my_tbl_df, key_columns = "dateindex")
 #
-# tbl_df’, ‘tbl’ and 'data.frame'
+# tbl_df', 'tbl' and 'data.frame'
 # above: program changes columns "date" or "index" to "dateindex"
 # vix <- tidyquant::tq_get(c("VIX"), get  = "stock.prices", from = "2016-01-01", to  = "2017-01-01")[,c("date","close")]
 # colnames(vix)[2] <- "vix"
@@ -3930,14 +3934,14 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
      # with changes to Yahoo Finance, which also included the following
      # changes to the raw data:
      # 
-     #    • The adjusted close column appears to no longer include
+     #    . The adjusted close column appears to no longer include
      #      dividend adjustments
      # 
-     #    • The close column appears to be adjusted for splits twice
+     #    . The close column appears to be adjusted for splits twice
      # 
-     #    • The open, high, and low columns are adjusted for splits, and
+     #    . The open, high, and low columns are adjusted for splits, and
      # 
-     #    • The raw data may contain missing values.
+     #    . The raw data may contain missing values.
 
 # getSymbols.yahoo
 
@@ -4041,9 +4045,9 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
 ## --       [ ] <UPSERT> to INSERT/UPDATE ( in prep for partitions ) - CONVERT FROM INSERT(CONFLICT - TO INSERT(NOT EXSITS...UPDATE(EXISTS
 
 ## SOON     ( SOME FUTURE TIME (BUT SIMPLE)
-## --       [ ] convert pg_temp TO NONDEBUG mot to TEMP TABLE: TEMPORARY/table_index ( for non-debug ) runs ( HALF the DISK IO )
+## --       [ ] PERFORMANCE: convert pg_temp TO NONDEBUG mot to TEMP TABLE: TEMPORARY/table_index ( for non-debug ) runs ( HALF the DISK IO )
 ## --         [ ] if exists TRUNCATE TABLE 
-
+## --         [ ] PERFORMANCE trg/src and/or ALSO 'query the PostgreSQL database' to NOT select already 'currented' records
 
 
 # [ ] 
