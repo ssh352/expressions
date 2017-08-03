@@ -2889,6 +2889,7 @@ load_inbnd_stmtstats <- function (dateindex = NULL, support_dateindex_collection
             , sq3.now_inbnd_stmtstat_netinc_q1
             , sq3.now_inbnd_stmtstat_mktcap
             , sq3.now_inbnd_stmtstat_price
+            -- SMALL RATIO EXPLOSIONS MAKE THESE USELESS
             --, sq3.now_inbnd_stmtstat_netinc_q1_o_mktcap
             --, sq3.now_inbnd_stmtstat_sales_q1_o_mktcap
             --, sq3.now_inbnd_stmtstat_netinc_q1_o_sales_q1
@@ -2901,6 +2902,7 @@ load_inbnd_stmtstats <- function (dateindex = NULL, support_dateindex_collection
             --, first_value(sq3.now_inbnd_stmtstat_netinc_q1_o_mktcap)   over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindex_partition order by sq3.dateindex) last_inbnd_stmtstat_netinc_q1_o_mktcap
             --, first_value(sq3.now_inbnd_stmtstat_sales_q1_o_mktcap)    over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindex_partition order by sq3.dateindex) last_inbnd_stmtstat_sales_q1_o_mktcap
             --, first_value(sq3.now_inbnd_stmtstat_netinc_q1_o_sales_q1) over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindex_partition order by sq3.dateindex) last_inbnd_stmtstat_netinc_q1_o_sales_q1
+              , sq3.pct_freeprice_ret_01m_ann
           from ( -- sq3
             select 
                 sq2.dateindex_company_id
@@ -2915,6 +2917,7 @@ load_inbnd_stmtstats <- function (dateindex = NULL, support_dateindex_collection
            -- , sq2.now_inbnd_stmtstat_sales_q1_o_mktcap
            -- , sq2.now_inbnd_stmtstat_netinc_q1_o_sales_q1
               , sum(case when sq2.now_inbnd_stmtid_dateindex is null then 0 else 1 end) over (partition by sq2.company_id order by sq2.dateindex) as now_inbnd_stmtid_dateindex_partition
+              , sq2.pct_freeprice_ret_01m_ann
             from ( -- sq2
               select
                   sq1.dateindex_company_id
@@ -2927,7 +2930,8 @@ load_inbnd_stmtstats <- function (dateindex = NULL, support_dateindex_collection
                 , case when sq1.now_eff_date_eq0 != sq1.p01lwd_eff_date_eq0 then sq1.now_price                else null end now_inbnd_stmtstat_price 
             --  , case when sq1.now_eff_date_eq0 != sq1.p01lwd_eff_date_eq0 then sq1.now_netinc_q1_o_mktcap   else null end now_inbnd_stmtstat_netinc_q1_o_mktcap  
             --  , case when sq1.now_eff_date_eq0 != sq1.p01lwd_eff_date_eq0 then sq1.now_sales_q1_o_mktcap    else null end now_inbnd_stmtstat_sales_q1_o_mktcap  
-            --  , case when sq1.now_eff_date_eq0 != sq1.p01lwd_eff_date_eq0 then sq1.now_netinc_q1_o_sales_q1 else null end now_inbnd_stmtstat_netinc_q1_o_sales_q1  
+            --  , case when sq1.now_eff_date_eq0 != sq1.p01lwd_eff_date_eq0 then sq1.now_netinc_q1_o_sales_q1 else null end now_inbnd_stmtstat_netinc_q1_o_sales_q1 
+                , sq1.pct_freeprice_ret_01m_ann
               from ( -- sq1
                 select
                     now.dateindex_company_id
@@ -2968,8 +2972,11 @@ load_inbnd_stmtstats <- function (dateindex = NULL, support_dateindex_collection
           	    end p01lwd_eff_date_eq0
                 --   , p01lwd.pertyp_q1     p01lwd_pertyp_q1
                 --   , p01lwd.perlen_q1     p01lwd_perlen_q1
-                	from
-                    ( select   date_eq0, perend_q1, perlen_q1, pertyp_q1, dateindex_company_id, dateindex, dateindexp01lwd, company_id, sales_q1, netinc_q1, mktcap, price
+            , case when not ( now.split_date > now.dateindexp01lwd )
+                   then  ( lag((now.mktcap/nullif(now.price,0))) over (partition by now.company_id order by now.dateindex) - (now.mktcap/nullif(now.price,0)) ) /  nullif((now.mktcap/nullif(now.price,0)),0)
+                   else 0.0 end * 100.0 * 12  pct_freeprice_ret_01m_ann  -- a PAST return  
+                	 from
+                    ( select   date_eq0, perend_q1, perlen_q1, pertyp_q1, dateindex_company_id, dateindex, dateindexp01lwd, company_id, sales_q1, netinc_q1, mktcap, price, split_date
                                from si_finecon2 now  where now.dateindex ", support_where_condition, ") now left outer join si_finecon2 p01lwd on now.dateindexp01lwd  = p01lwd.dateindex and now.company_id = p01lwd.company_id 
               ) sq1                               -- where now.ticker in ('AAPL','MSFT') -- VERY easy to test
             ) sq2                                 -- where now.dateindex in (17347, 17317, 17284, 17256, 17225, 17197, 17165, 17135, 17105, 17074, 17044, 17011, 16982) -- first ONE minute AFTER 13 seconds WITH SORT
@@ -4164,17 +4171,17 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
 # and
 # ABS_PCTCHG
 #
-# ANDRE: True_Stortino  ( see R function parameter )
+# ANDRE: True_Stortino  ( see R function parameter ) # ALso see 
 # ... of ... OTHER markets(that crash) before MAIN us MARKET ( ANDRE: earthquake )
 # 
 # ANDRE
 # what makes $1 stock companies RISE ( like FORD did? )
 
-# [ ]
+# [x]
 # change 'company_id_orig' -> 'company_id' ADJUST
 #  FROM 'whatever now' TO 'at least 2 of 3' to make update
 #    2of3SAME(company, ticker, street)  -> company_id ADJUST 
-
+# [ ] run on earlier data ( NOT YET )
 
 
 
