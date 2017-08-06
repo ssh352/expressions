@@ -4161,21 +4161,75 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
 # # upsert(si_all_g_df, keys = c("company_id"))
 
 
-#
-# data.cube
-# multitable
+# dplyr cubes
+# data.cube ( Jan Gorecki )
+# dwtools   ( Jan Gorecki )
+# multitable ( Steve Walker )
 # Charles Driver transforms
+
+
+# ANDRE NEW PLAN - INBOUND
+# ------------------------
+
+ 
+# MAKE sure the db_temp HAS and INDEX ?
+# [warning SURVIAL bias IN DATA missing future should have been -100 coalese(x,-100.00) elseif(is.na(x), -100.00)
+#   STILL put in the COMPLETION of the MODEL data
+# 
+# [ ] redo SIMPLIFY the data imput 
+# ( PivotalR )
+# .db.writeTable.rpostgresql
+# add.row.names
+# is.temp
+#   .db.buildTableDefinition
+#     field.types
+# ( RPostgreSQL )
+# PostgreSQLSupport.R                                                                             -- LITERAL ENTRY
+# postgresqlWriteTable <- function(con, name, value, field.types, row.names = TRUE,   -- field.types: 'numeric(9,2)' I query the df, I query db: max(max(db.col),max(df.col))
+#                                  overwrite = FALSE, append = FALSE, ..., allow.keywords = FALSE) {
+# COPY
+# # PostgreSQLSupport.R     
+# # THIS is what I NEED to APPEND
+# # 
+# # append records to table ( NOTE: no option to create a temp table )
+# # overwrite = FALSE
+# # append    = TRUE
+# # 
+# # COPY
+# # 
+#
+# consider
+# caroline::dbWriteTable2 ( considert: makes the source df have the same col structure the target db then COPY )
+# 
+# ( pg )
+# pgWriteTable 
+#   dbWriteTable(NEW) row.names, append, match.cols(NEW)
+# [ ] redo SIMPLIFY the upsert
+# (  pg )
+# pgSendUpsert  ON CONFLICT
+#   pgUpsertTable
+#   pgWriteTable
+# ( rpostgis ) 
+# pgInsert ON CONFLICT
+# ( my own : Prepare FOR postgresql 10 PARTITION BY )
+# WITH UPDATE RETURNING * SQL INSERT NOT RETURNING
+# xor
+# BEGIN UPDATE EXISTS INSERT NOT EXISTS END
+# ( statar )
+# join ( if (update) : option update ONLY is.na VALUES - could be EXTENDED - ) ( MAYBE handle a DATABASE object? )
+# THEN
+#   plyr::join_all ( COOL )
 
 # ANDRE measureS ( WHERE make SENSE )
 # RECIPRICOL_PCTCHG  4% -> 5%   4/100 -> 5/100 = 1/100
 # and
 # ABS_PCTCHG
 #
-# ANDRE: True_Stortino  ( see R function parameter ) # ALso see 
-# ... of ... OTHER markets(that crash) before MAIN us MARKET ( ANDRE: earthquake )
+# ANDRE: True_Stortino  (tsortino SEE PostgreSQL notes) ( see R function parameter ) # ALso see 
+# ... of ... OTHER markets(that crash) before MAIN us MARKET ( ANDRE: earthquake ) ( SEE BELOW ON INTERNATIONAL BONDS )
 # 
 # ANDRE
-# what makes $1 stock companies RISE ( like FORD did? )
+# what makes $1 stock companies RISE ( like FORD did? ) dollar companies ...
 
 # [x]
 # change 'company_id_orig' -> 'company_id' ADJUST
@@ -4183,43 +4237,74 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
 #    2of3SAME(company, ticker, street)  -> company_id ADJUST 
 # [ ] run on earlier data ( NOT YET )
 
-
-
-
-# ANDRE NEW PLAN - INBOUND
-# ------------------------
+# 1ST SW
+# performance - HIGH (*) 
+#  tbl_temp: CREATE TEMPORARY table tbl_tmp (prevent 'disk backup') on crash -re-use con create tbl_temp_real as select * from tbl_temp
+#  (framework) series: 
+#       mm_prchg_ann  
+#       prchg_f  
+#       inbnd_stmtstat
+#     series_inbnd_stmtstat_last_update_dt (HEAVY PERFORMANCE) 
+#     series_inbnd_stmtstat_good_update(filled) - queries selection on this to NOT try to update
+# trg and src ALSO select upon database ( LIMIT the worthless re-updates AND disk-io )
+# 2ND HW
+# peformance - RAM disk - put 'set tablespace..' in session
+# 3RD perf - databaser pg 10 PARITIONS
+#   change UPDATE DO CONFLICT -> WITH X UPDATE RETURNS * SQL INSERT NOT *
+#                             -> BEGIN TRANS; UPDATE EXISTS, INSERT NOT EXIST, END TRANS
+#  AND/OR buy 'other' SSD disk (PUTTEMP/tablepaces there? )
+#   create tempoary table 
+# SEE ANY 'to do' notes in TEMPORARY.sql
+# [ ] FIX everywhere object to/from xts conversons
+# [ ] verify OUTPUT renaming on ALL functions
+# [x] (2 places) fix inbound fo a numeric() is check for mAX(value) then target destination table column is INCREASED to fit that data
+# NOTE: 200x COST: fundamental mistake ( queries (and the main index) SHOULD have been 
+#   based on dateindexeom ( an not on dateindex SO  CAN JOIN with other e.g. BONDS ) .... NO! O.K. like it is
+# [ ] change dateindex -> dateindex_dt adr_bl ( to show that the stored TYPE is not the actual type in MEAINING
 # NEW data
-# % increase in 40 year olds in the population
+# % increase in 40 year olds in the population ( SEE my NEW datailed DATA on this )
 # aaii buyback yield
-# BUYBACK_YIELD: maybe the ONLY reason that a STOCK price goes up [X] loaded
-# Inbound Sales/Market,Net_Income/Market,Net_Income/Sales  by (since last time, since last year this time)
-# derived data rations:  price, net_income, sales - IN PROGRESS [ ]
+#   BUYBACK_YIELD: maybe the ONLY reason that a STOCK price goes up [X] loaded
+# [x] Inbound Sales/Market,Net_Income/Market,Net_Income/Sales 
+#   [ ] by (since last time, since last year this time ) ... can/will be done using xts
+# [x] derived data rations:  price, net_income, sales -  [x]
 # perhaps MORE from ( through Quandl? ): http://www.multpl.com/
-# MY FIX and/or DATA from
+# MY FIX and/or *new* DATA from
 #   qmao::.getEconomicCalendarBriefing ( my fix of ) # and/or/xor # library(censusapi
 # INBOUND DATA  
 #   missing data
-#     na.locf
-#     flag column of na.locf
-#     time in days since last measure ( higher values for na.locf ) ( see my Philadelpha/Cleveland ... "Forecasters" )
+#   [TO REVIEW CODE]  na.locf
+#   [TO REVIEW CODE] flag column of na.locf
+#   [TO REVIEW CODE] time in days since last measure ( higher values for na.locf ) ( see my Philadelpha/Cleveland ... "Forecasters" )
 # OTHER
 # Real_Sortino of monthly stock returns ('risk')
 # Gold & Silver sector returns ('fear')
 #   Real_Sortino of Gold & Silver sector returns('risk')
-# Competition('Return on bonds')
+#    NEG inverse SORTINO - from ANYWHERE WHERE APPROPRIATE
+# Large ticket sales
+#   Housing Indusry
+#   Automobile Indusry
+# OTHER countries returns ON foreign bonds ( historical data ) - SEE my economic indicator NOTES
+# other countries tsortino ON foreign bonds                    - see
+#   rate of returns
+#   tsortion
+# REAL COMPETITON ('Return(per dollar) on bonds')
 #   Real_Sorino of Competition('risk')
+# Price/Volumn Momentum
+# Price/Volume 'PCTCGH' m01b22d m01bw04 ( month 01 by 22 days (yahoo-ish stuff), month 01 by w04 ( aaii-ish stuff ) 
+#  OVER and/or above/below/neg_tsortino AS APROPRIATE
 # Inflation ('free growth') [ over Competition('Return on bonds')]
 # Ratio of Stock_Risk/Bond_Risk
 # Ratio of Stock_Return/Bond_Return
-# PREDICT on ONE only ... loop predict(1); rbind(1) end loop
-# MY FIX and/or DATA from
-# qmao::.getEconomicCalendarBriefing ( my fix of ) # and/or/xor # library(censusapi
+# Prevent output preduction 'program made'SMOOTHING
+#   PREDICT on ONE only ONE item loop predict(1); rbind(1) end loop
+
 # 
 # ANDRE NEW PLAN - PROCESSING and OUTBOUND
 # ----------------------------------------
 # DATA, DATA-CLEANING, PREDICTION
 # 
-# require(tidyquant); require(timekit); my Zachary Ma
+# require(tidyquant); require(timekit/timekt); my Zachary Ma
 # require(wrapr)
 # require(Boruta)
 # require(UBL)
