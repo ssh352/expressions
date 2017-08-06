@@ -1,9 +1,15 @@
 
 
-set search_path to sipro_data_store,sipro_stage;
+-- TEMPORARY.sql
+
+-- EXPERIMENT
+set effective_cache_size to '6144MB';  -- os + 'shared_buffers'
+
+set search_path to fe_data_store;
+-- et search_path to sipro_data_store,sipro_stage;
 set time zone 'utc';
 --set work_mem to  '1200MB';
-   set work_mem to '2047MB';
+set work_mem to '2047MB';
 set constraint_exclusion = on;
 -- postgresql 9.6
 set max_parallel_workers_per_gather to 4; -- not 'written in docs'
@@ -4138,105 +4144,7 @@ set max_parallel_workers_per_gather to 4; -- not 'written in docs'
 ---------------
 
 
-[ ] pl/r TRY THIS
-fuzzy matching by Levenshtein
-------------------------------
 
-agrepl(pattern = , x = , max.distance = 0.1, ignore.case = TRUE, fixed = FALSE) # .Internal(agrepl(pattern
-
-'1 Infinite Loop'
-'1 Infinite Loop 1 Infinite Loop'
-'ONE INFINITE LOOP'
-
-# Apple address looks thorugout the years ( human entry & errors )
-
--- 15184 -- AAII - update_from_future_new_company_ids
-agrepl(pattern = '1 Infinite Loop', x = '1 Infinite Loop 1 Infinite Loop', max.distance = 0.1, ignore.case = TRUE, fixed = FALSE)
-[1] TRUE
-
-agrepl(pattern = '1 Infinite Loop', x = 'ONE INFINITE LOOP', max.distance = 0.1, ignore.case = TRUE, fixed = FALSE)
-[1] TRUE
-
-> agrepl(pattern = '1 Infinite Loop', x = 'ONE', max.distance = 0.1, ignore.case = TRUE, fixed = FALSE)
-[1] FALSE
-> agrepl(pattern = '1 Infinite Loop', x = 'INFINITE', max.distance = 0.1, ignore.case = TRUE, fixed = FALSE)
-[1] FALSE
-> agrepl(pattern = '1 Infinite Loop', x = 'LOOP', max.distance = 0.1, ignore.case = TRUE, fixed = FALSE)
-[1] FALSE
-
-Andre Experience
-
-
-
-Where is a temporary table created?
------------------------------------
-
-Temporary tables get put into a schema called
-
-   "pg_temp_NNN", 
-
-where "NNN" indicates which server backend you're connected to. 
-This is implicitly added to your search path in the session that creates them.
-
-Note that you can't access one connection's temp tables via another connection
-
-pg_my_temp_schema()	oid	OID of session's temporary schema, or 0 if none
-WRONG: 'if none, then no records returned'
-
-postgres=# SELECT  pg_my_temp_schema();
- pg_my_temp_schema
--------------------
-                 0
-(1 row)
-
-# upone first TEMPORARY object creation, the 'temp schema' will be created.
-# ALSO, the 'new temp schema' will STAY after all temp objects are destroyed
-
-create temporary table xxx(); # ACCESS by xxx # drop by xxx  ( NOT pg_temp_2.xxx : will not work )
-
-CREATE TABLE
-SELECT  pg_my_temp_schema();
- pg_my_temp_schema
--------------------
-            199757
-(1 row)
-
-alter table xxx add xx int;
-
-truncate table xxx; -- PostgreSQL 9.6 ( no 'if exists' in language syntax )
-TRUNCATE TABLE
-
-select nspname from pg_namespace where oid = pg_my_temp_schema();
-
-  nspname
------------
- pg_temp_2
-(1 row)
-
-# ZERO in ARTICLE
-# NOTE: pg_stat_activity NO LONGER HAS procpid COLUMN and HAS radically changed
-# SO STICK WITH THE STANDARD: information_schema
-
-# list all your temporary tables ( and columns ):
-
-postgres=# select pg_backend_pid();
- pg_backend_pid
-----------------
-          54120
-(1 row)
-
-select table_catalog, table_schema, table_name, column_name, ordinal_position, data_type
-  from information_schema.columns where table_schema = 'pg_temp_2';
-
-
- table_catalog | table_schema | table_name | column_name | ordinal_position | data_type
----------------+--------------+------------+-------------+------------------+-----------
- postgres      | pg_temp_2    | xxx        | xx          |                1 | integer
-(1 row)
-
-Where is temporary table created?
-2010
-https://stackoverflow.com/questions/3037160/where-is-temporary-table-created
 
 
 
@@ -4382,11 +4290,11 @@ group by dateindex, sector_desc
 order by dateindex, sector_desc;
 -- good
 
---       ABOVE
+--       ABOVE ( LATER )
 --       [ ] ( FIGURE OUT HOW TO ACCUMULATE: prchg_free_01m ( like netinc ) # WINDOWS FUNCTION LIKE?
 
 --       ABOVE
---       [ ] replace    case when pertyp_q1 = 'W' then 7.0 * perlen_q1  BY  perlen_q1 - perlen_q2
+--       [x] replace    case when pertyp_q1 = 'W' then 7.0 * perlen_q1  BY  perlen_q1 - perlen_q2
 -- 90 day rate adjuster
 -- * case when now.pertyp_q1 = 'W' then 7.0 * now.perlen_q1 else (365.0 / 12) * now.perlen_q1 end / (365.0 / 4)
 -- could have (still) used perend_q2 ... perend_q1 - perendq2 = NUMBER of days
@@ -4468,6 +4376,7 @@ set max_parallel_workers_per_gather to 4; -- not 'written in docs'
                   , now.mktcap           now_mktcap     
                   , now.price            now_price
                   , case when now.pertyp_q1 = 'W' then 7 * now.perlen_q1 else (365 / 12) * now.perlen_q1 end now_perlen_days_q1
+              --  , case when perend_q1 - perend_q2 > 0 then perend_q1 - perend_q2 else (365 / 12)       end now_perlen_days_q1
                                                             -- per 3 months -- netinc/mktcap is '1% per quarter' -- UNITS of 100,000 ( one hundred thousand  )  -- typically  $1000/100_thousoand (per quarter)
               --  , now.netinc_q1 / nullif(now.mktcap,0)   * case when now.pertyp_q1 = 'W' then 7 * now.perlen_q1 else (365 / 12) * now.perlen_q1 end / (365 / 4) * 100000 now_netinc_q1_o_mktcap    -- I care about the current mktcap ( investor return per dollar )
               --  , now.sales_q1  / nullif(now.mktcap,0)   * case when now.pertyp_q1 = 'W' then 7 * now.perlen_q1 else (365 / 12) * now.perlen_q1 end / (365 / 4) * 100000 now_sales_q1_o_mktcap     -- I care about the current mktcap ( customer satisfaction )
@@ -4505,4 +4414,619 @@ set max_parallel_workers_per_gather to 4; -- not 'written in docs'
         ) sq4 where sq4.dateindex  = 17347
 
 
+select src.street src_street, trg.street trg_street
+from src, trg 
+where
+src.company_id != trg.company_id and
+src.ticker      = trg.ticker  and sif_agrep(src.street, trg.street) = 't' limit 100
 
+
+
+
+dbGetQuery(con,'
+create or replace function sif_agrep(pattern text, x text)
+returns boolean as $$
+  ret <- agrepl(pattern = pattern, x = x, ignore.case = TRUE, fixed = FALSE) 
+  return(ret)
+$$ language plr;
+;')
+
+tryCatch({  }, error = function(e) { print(e); print(pattern); print(x); stop() })
+
+
+dbGetQuery(con,'
+create or replace function sif_agrep(pattern text, x text)
+returns boolean as $$
+  ret <- tryCatch({ agrepl(pattern = pattern, x = x, ignore.case = TRUE, fixed = FALSE) }, error = function(e) { print(e); print(pattern); print(x); stop() })
+  return(ret)
+$$ language plr;
+;')
+
+
+Error in agrepl(pattern = pattern, x = x, ignore.case = TRUE, fixed = FALSE) :
+  invalid 'pattern' argument
+<simpleError in agrepl(pattern = pattern, x = x, ignore.case = TRUE, fixed = FALSE): invalid 'pattern' argument>
+NULL
+[1] "45 Fremont Street"
+Error in value[[3L]](cond) :
+
+
+select src.company, src.street src_street, trg.street trg_street, trg.company
+from src, trg 
+where
+src.company_id != trg.company_id and
+src.ticker      = trg.ticker and trg.street = '45 Fremont Street' order by 1
+
+
+
+--------------
+
+-- EXPERIMENT
+set effective_cache_size to '6144MB';  -- os + 'shared_buffers'
+
+set search_path to fe_data_store;
+set time zone 'utc';
+--set work_mem to  '1200MB';
+set work_mem to '2047MB';
+set constraint_exclusion = on;
+-- postgresql 9.6
+set max_parallel_workers_per_gather to 4; -- not 'written in docs'
+
+---------------
+
+
+
+-- LEFT_OFF -put on the outside avg
+
+select
+    dateindex 
+  , sector_desc
+  , count(now_inbnd_stmtid_dateindex) count_now_inbnd_stmtstat_dateindex                                             -- weighted cnt by stmtid reported this month
+  , sum(now_inbnd_stmtstat_mktcap)   sum_now_inbnd_stmtstat_mktcap                                                   
+  , sum(now_inbnd_stmtstat_mktcap) / sum(last_inbnd_stmtstat_mktcap)  * 100 pct_sum_now_o_last_inbnd_stmtstat_mktcap -- weighted pct by mktcap reported this month
+  , sum(now_inbnd_stmtstat_netinc_q1 * case when pertyp_q1 = 'W' then 7.0 * perlen_q1 else (365.0 / 12) * perlen_q1 end / (365.0 / 4)) / 
+      sum(case when now_inbnd_stmtstat_mktcap is null then 0.0 else mktcap end) * 100 pct_sum_now_inbnd_stmtstat_netinc_q1_o_sum_mktcap -- now netinc_q1 over (if now) current mktcap ( investor return per dollar )
+  , sum(now_inbnd_stmtstat_sales_q1  * case when pertyp_q1 = 'W' then 7.0 * perlen_q1 else (365.0 / 12) * perlen_q1 end / (365.0 / 4)) / 
+      sum(case when now_inbnd_stmtstat_mktcap is null then 0.0 else mktcap end) * 100 pct_sum_now_inbnd_stmtstat_sales_q1_o_sum_mktcap  -- now sales_q1  over (if now) current mktcap ( customer satisfaction )
+  , sum(now_inbnd_stmtstat_netinc_q1 * case when pertyp_q1 = 'W' then 7.0 * perlen_q1 else (365.0 / 12) * perlen_q1 end / (365.0 / 4)) /
+    sum(now_inbnd_stmtstat_sales_q1  * case when pertyp_q1 = 'W' then 7.0 * perlen_q1 else (365.0 / 12) * perlen_q1 end / (365.0 / 4)) * 100 pct_sum_now_inbnd_stmtstat_netinc_q1_o_sum_sales_q1  -- now netinc_q1 over now sales_q1 ( company (internal) efficiency ) 
+  from fe_data_store.si_finecon2 
+    where sp in (  '500'
+                 , '400','600'
+                ) 
+                and 
+          dateindex in (17347, 17317, 17284, 17256) and
+          sector_desc = 'Energy'
+group by dateindex, sector_desc
+order by dateindex, sector_desc;
+-- good
+
+--       ABOVE ( LATER )
+--       [ ] ( FIGURE OUT HOW TO ACCUMULATE: prchg_free_01m ( like netinc ) # WINDOWS FUNCTION LIKE?
+
+--       ABOVE
+--       [x] replace    case when pertyp_q1 = 'W' then 7.0 * perlen_q1  BY  perlen_q1 - perlen_q2
+-- 90 day rate adjuster
+-- * case when now.pertyp_q1 = 'W' then 7.0 * now.perlen_q1 else (365.0 / 12) * now.perlen_q1 end / (365.0 / 4)
+-- could have (still) used perend_q2 ... perend_q1 - perendq2 = NUMBER of days
+
+
+
+
+select dateindex, company_id, ticker
+ , mktcap/nullif(price,0) shares
+ , case when (split_date < last_inbnd_stmtid_dateindex) and ( dateindex != last_inbnd_stmtid_dateindex )
+      then (( (last_inbnd_stmtstat_mktcap/nullif(last_inbnd_stmtstat_price,0)) /(mktcap/nullif(price,0)) - 1 ) * ( 365.0 / (dateindex - last_inbnd_stmtid_dateindex)  )) + 1
+      else 1 end  * 100.0  pct_free_price_current_cummul_from_last_bb
+from fe_data_store.si_finecon2 
+where ticker in ('AAPL')
+order by company_id, dateindex;
+
+
+
+-- bb? -- from last buy back
+
+-- COPY FROM ABOVE
+
+select dateindex, company_id
+  , ticker, company, street
+  , sp
+  , sector_desc
+  , industry_code
+  , industry_desc
+  , dateindex
+  , last_inbnd_stmtid_dateindex
+  , now_inbnd_stmtid_dateindex
+  , price
+  , last_inbnd_stmtstat_price 
+  , mktcap
+  , split_date
+  , dateindexp01lwd
+  , split_fact
+  -- trying
+  , case when split_date > dateindexp01lwd then 1 else 0 end split_within_01m_from_01m  -- would need the month back history of splits ( ... geometric multiplication )
+  , lag(split_date) over (partition by company_id order by dateindex ) lag_split_date_01m
+
+  , last_inbnd_stmtstat_mktcap
+  , last_inbnd_stmtstat_price
+  , case when split_date < last_inbnd_stmtid_dateindex then 1 else 1 end  * 100.0  pct_free_price_current_from_last_bb
+  -- POTENTIAL BUT I HAVE TO RELOAD -- LEFT_OFF : TEST AFTER re_load
+  , mktcap
+  , price
+  , last_inbnd_stmtstat_mktcap
+  , last_inbnd_stmtstat_price
+  , mktcap / nullif(price,0) shares  -- inteesting one
+  , last_inbnd_stmtstat_mktcap/nullif(last_inbnd_stmtstat_price,0) last_inbnd_stmtstat_shares
+  -- * ( 365.0 / (dateindex - last_inbnd_stmtid_dateindex)  )
+  , case when (split_date < last_inbnd_stmtid_dateindex) and ( dateindex != last_inbnd_stmtid_dateindex )
+      then (( (last_inbnd_stmtstat_mktcap/nullif(last_inbnd_stmtstat_price,0)) /(mktcap/nullif(price,0)) - 1 ) * ( 365.0 / (dateindex - last_inbnd_stmtid_dateindex)  )) + 1
+      else 1 end  * 100.0  pct_free_price_current_cummul_from_last_bb  -- WORK-ISH - some sort of RISK FREE RATE benefit of HOLDING stock
+                                                                       -- HARD to FIGURE out A useful FORM ( BUT REALLY need MO 2 MO - not cummulative )
+  , mktcap/nullif(price,0) shares                                                                     
+  ,   lag(mktcap/nullif(price,0)) over (partition by company_id order by dateindex) shares_m01                                                         
+  ,   lag((mktcap/nullif(price,0))) over (partition by company_id order by dateindex) / (mktcap/nullif(price,0))  rat_free_prc_01m                                                     
+  , now_inbnd_stmtid_dateindex                                         
+  , now_inbnd_stmtstat_sales_q1
+  , now_inbnd_stmtstat_netinc_q1
+  , now_inbnd_stmtstat_mktcap
+  , now_inbnd_stmtstat_price
+  from fe_data_store.si_finecon2 
+    where 
+          -- sp in ('500','400','600') and 
+          -- dateindex in (17347, 17317, 17284, 17256) 
+          ticker = 'AAPL' -- company_id = '05680'
+          -- ticker in ('AAPL','MSFT')
+  order by company_id, dateindex;
+
+-- good
+
+-- ALREADY IN THE DATABASE
+
+  bby_1t numeric(8,2),
+  now_inbnd_stmtid_dateindex integer,
+  now_inbnd_stmtstat_sales_q1 numeric(8,2),
+  now_inbnd_stmtstat_netinc_q1 numeric(8,2),
+  now_inbnd_stmtstat_mktcap numeric(8,2),
+  now_inbnd_stmtstat_price numeric(8,2),
+  last_inbnd_stmtid_dateindex integer,
+  last_inbnd_stmtstat_sales_q1 numeric(8,2),
+  last_inbnd_stmtstat_netinc_q1 numeric(8,2),
+  last_inbnd_stmtstat_mktcap numeric(8,2),
+  last_inbnd_stmtstat_price numeric(8,2),
+
+
+
+
+
+-- bb? -- from last buy back
+
+-- COPY FROM ABOVE
+
+select dateindex, company_id, lag(price) over (partition by company_id order by dateindex) / lag(mktcap) over (partition by company_id order by dateindex)
+                , lag((price/mktcap)) over (partition by company_id order by dateindex)
+  from fe_data_store.si_finecon2 
+    where 
+          -- sp in ('500','400','600') and 
+          -- dateindex in (17347, 17317, 17284, 17256) 
+          ticker = 'AAPL' -- company_id = '05680'
+          -- ticker in ('AAPL','MSFT')
+  order by company_id, dateindex;
+
+
+select dateindex, company_id
+  , ticker, company, street
+  , sp
+  , sector_desc
+  , industry_code
+  , industry_desc
+  , dateindex
+  , last_inbnd_stmtid_dateindex
+  , now_inbnd_stmtid_dateindex
+  , price
+  , last_inbnd_stmtstat_price 
+  , mktcap
+  , split_date
+  , dateindexp01lwd
+  , split_fact
+  -- trying
+  , case when split_date > dateindexp01lwd then 1 else 0 end split_within_01m_from_01m  -- would need the month back history of splits ( ... geometric multiplication )
+  , lag(split_date) over (partition by company_id order by dateindex ) lag_split_date_01m
+
+  , last_inbnd_stmtstat_mktcap
+  , last_inbnd_stmtstat_price
+  , case when split_date < last_inbnd_stmtid_dateindex then 1 else 1 end  * 100.0  pct_free_price_current_from_last_bb
+  -- POTENTIAL BUT I HAVE TO RELOAD -- LEFT_OFF : TEST AFTER re_load
+  , mktcap
+  , price
+  , last_inbnd_stmtstat_mktcap
+  , last_inbnd_stmtstat_price
+  , mktcap / nullif(price,0) shares  -- inteesting one
+  , last_inbnd_stmtstat_mktcap/nullif(last_inbnd_stmtstat_price,0) last_inbnd_stmtstat_shares
+  -- * ( 365.0 / (dateindex - last_inbnd_stmtid_dateindex)  )
+  , case when (split_date < last_inbnd_stmtid_dateindex) then 1 else 0 end split_lt_last_inbnd_stmtid_dateindex
+  -- NOT RIGHT
+  -- , case when dateindex != last_inbnd_stmtid_dateindex   then 1 else 0 end di_neq_last_inbnd_stmtid_dateindex
+  -- NOT RIGHT
+  --, case when (split_date < last_inbnd_stmtid_dateindex) and ( dateindex != last_inbnd_stmtid_dateindex ) then 1 else 0 end free_rate_elegible
+  -- NOT RIGHT
+--   , case when (split_date < last_inbnd_stmtid_dateindex) and ( dateindex != last_inbnd_stmtid_dateindex )
+--       then (( (last_inbnd_stmtstat_mktcap/nullif(last_inbnd_stmtstat_price,0)) /(mktcap/nullif(price,0)) - 1 ) * ( 365.0 / (dateindex - last_inbnd_stmtid_dateindex)  )) + 1
+--       else 1 end  * 100.0  pctchg_f_free_price_current_cummul_from_last_bb  -- WORK-ISH - some sort of RISK FREE RATE benefit of HOLDING stock
+                                                                            -- HARD to FIGURE out A useful FORM ( BUT REALLY need MO 2 MO - not cummulative )
+  -- NO ( DO NOT NEED TO MIX balance sheets and 'free money from stock buy backs )
+--   , case when (split_date < last_inbnd_stmtid_dateindex) and ( split_date > dateindexp01lwd )
+--       then (( (last_inbnd_stmtstat_mktcap/nullif(last_inbnd_stmtstat_price,0)) /(mktcap/nullif(price,0)) - 1 ) * ( 365.0 / (dateindex - last_inbnd_stmtid_dateindex)  )) + 1
+--       else 1 end  * 100.0  pctchg_f_free_price_current_cummul_from_last_bb  
+
+    , dateindex
+    , now_inbnd_stmtid_dateindex
+    , last_inbnd_stmtid_dateindex
+    , dateindex - last_inbnd_stmtid_dateindex id_less_lis_di
+--   -- NO BECAUSE:  dateindex = now_inbnd_stmtid_dateindex = last_inbnd_stmtid_dateindex
+--     , case when not (split_date > dateindexp01lwd)
+--         then (( (last_inbnd_stmtstat_mktcap/nullif(last_inbnd_stmtstat_price,0)) /(mktcap/nullif(price,0)) - 1 ) * ( 365.0 / (dateindex - last_inbnd_stmtid_dateindex)  )) + 1
+--         else 1 end  * 100.0  pctchg_f_free_price_current_cummul_from_last_bb  
+
+
+
+--   -- FIX LATER ( CORRECT % PART )
+--   , (case when (split_date < last_inbnd_stmtid_dateindex) and ( dateindex != last_inbnd_stmtid_dateindex )
+--       then (( (last_inbnd_stmtstat_mktcap/nullif(last_inbnd_stmtstat_price,0)) /(mktcap/nullif(price,0)) - 1 ) * ( 365.0 / (dateindex - last_inbnd_stmtid_dateindex)  )) + 1
+--       else 1 end  * 100.0 - 100 ) * 12  pctchg_f_free_price_current_cummul_from_last_bb_ann  -- WORK-ISH - some sort of RISK FREE RATE benefit of HOLDING stock
+                                                                                             -- HARD to FIGURE out A useful FORM ( BUT REALLY need MO 2 MO - not cummulative )
+  , mktcap/nullif(price,0) shares                                                                     
+  ,   lag(mktcap/nullif(price,0)) over (partition by company_id order by dateindex) shares_m01                                                         
+  ,   lag((mktcap/nullif(price,0))) over (partition by company_id order by dateindex) / (mktcap/nullif(price,0))  rat_free_prc_01m                                                     
+  , now_inbnd_stmtid_dateindex                                         
+  , now_inbnd_stmtstat_sales_q1
+  , now_inbnd_stmtstat_netinc_q1
+  , now_inbnd_stmtstat_mktcap
+  , now_inbnd_stmtstat_price
+  from fe_data_store.si_finecon2 
+    where 
+          -- sp in ('500','400','600') and 
+          -- dateindex in (17347, 17317, 17284, 17256) 
+          ticker = 'AAPL' -- company_id = '05680'
+          -- ticker in ('AAPL','MSFT')
+  order by company_id, dateindex;
+
+
+-- WORKS ( KEEP ) -- BUT I DO NOT 
+select dateindex, company_id, ticker, split_fact, dateindex, split_date, dateindexp01lwd
+     , mktcap/nullif(price,0) shares
+     , lag((mktcap/nullif(price,0))) over (partition by company_id order by dateindex) lag_01m
+     , case when not ( split_date > dateindexp01lwd )
+         then  (  lag((mktcap/nullif(price,0))) over (partition by company_id order by dateindex) - (mktcap/nullif(price,0)) )  / (mktcap/nullif(price,0))
+         else 0.0 end * 100.0 * 12  pctchg_freeprice_01m_ann 
+  from fe_data_store.si_finecon2 
+    where 
+          -- sp in ('500','400','600') and 
+          -- dateindex in (17347, 17317, 17284, 17256) 
+          ticker in ('MSFT','AAPL') -- company_id = '05680'
+          -- ticker in ('AAPL','MSFT')
+  order by company_id, dateindex;
+
+     , case when not ( split_date > dateindexp01lwd )
+         then  ( lag((mktcap/nullif(price,0))) over (partition by company_id order by dateindex) - (mktcap/nullif(price,0)) ) / (mktcap/nullif(price,0))
+         else 0.0 end * 100.0 * 12  pctchg_f_freeprice_01m_ann 
+
+
+            , case when not ( split_date > dateindexp01lwd )
+                then  ( lag((mktcap/nullif(price,0))) over (partition by company_id order by dateindex) - (mktcap/nullif(price,0)) ) / (mktcap/nullif(price,0))
+                else 0.0 end * 100.0 * 12  pctchg_f_freeprice_01m_ann 
+
+
+
+          select sq4.* 
+          from ( -- sq4
+            select 
+              sq3.dateindex_company_id
+            , sq3.dateindex
+            , sq3.company_id  
+            , sq3.now_inbnd_stmtid_dateindex
+            , sq3.now_inbnd_stmtstat_sales_q1
+            , sq3.now_inbnd_stmtstat_netinc_q1
+            , sq3.now_inbnd_stmtstat_mktcap
+            , sq3.now_inbnd_stmtstat_price
+            -- SMALL RATIO EXPLOSIONS MAKE THESE USELESS
+            --, sq3.now_inbnd_stmtstat_netinc_q1_o_mktcap
+            --, sq3.now_inbnd_stmtstat_sales_q1_o_mktcap
+            --, sq3.now_inbnd_stmtstat_netinc_q1_o_sales_q1
+            ---- , sq3.now_inbnd_stmtid_dateindex_partition -- sql debugging utility
+            , first_value(sq3.now_inbnd_stmtid_dateindex)              over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindex_partition order by sq3.dateindex) last_inbnd_stmtid_dateindex
+            , first_value(sq3.now_inbnd_stmtstat_sales_q1)    over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindex_partition order by sq3.dateindex) last_inbnd_stmtstat_sales_q1
+            , first_value(sq3.now_inbnd_stmtstat_netinc_q1)   over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindex_partition order by sq3.dateindex) last_inbnd_stmtstat_netinc_q1
+            , first_value(sq3.now_inbnd_stmtstat_mktcap)      over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindex_partition order by sq3.dateindex) last_inbnd_stmtstat_mktcap
+            , first_value(sq3.now_inbnd_stmtstat_price)      over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindex_partition order by sq3.dateindex) last_inbnd_stmtstat_price
+            --, first_value(sq3.now_inbnd_stmtstat_netinc_q1_o_mktcap)   over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindex_partition order by sq3.dateindex) last_inbnd_stmtstat_netinc_q1_o_mktcap
+            --, first_value(sq3.now_inbnd_stmtstat_sales_q1_o_mktcap)    over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindex_partition order by sq3.dateindex) last_inbnd_stmtstat_sales_q1_o_mktcap
+            --, first_value(sq3.now_inbnd_stmtstat_netinc_q1_o_sales_q1) over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindex_partition order by sq3.dateindex) last_inbnd_stmtstat_netinc_q1_o_sales_q1
+            , sq3.pct_freeprice_ret_01m_ann
+          from ( -- sq3
+            select 
+                sq2.dateindex_company_id
+              , sq2.dateindex
+              , sq2.company_id  
+              , sq2.now_inbnd_stmtid_dateindex
+              , sq2.now_inbnd_stmtstat_sales_q1
+              , sq2.now_inbnd_stmtstat_netinc_q1
+              , sq2.now_inbnd_stmtstat_mktcap
+              , sq2.now_inbnd_stmtstat_price
+           -- , sq2.now_inbnd_stmtstat_netinc_q1_o_mktcap
+           -- , sq2.now_inbnd_stmtstat_sales_q1_o_mktcap
+           -- , sq2.now_inbnd_stmtstat_netinc_q1_o_sales_q1
+              , sum(case when sq2.now_inbnd_stmtid_dateindex is null then 0 else 1 end) over (partition by sq2.company_id order by sq2.dateindex) as now_inbnd_stmtid_dateindex_partition
+              , sq2.pct_freeprice_ret_01m_ann
+            from ( -- sq2
+              select
+                  sq1.dateindex_company_id
+                , sq1.dateindex
+                , sq1.company_id
+                , case when sq1.now_eff_date_eq0 != sq1.p01lwd_eff_date_eq0 then sq1.now_dateindex            else null end now_inbnd_stmtid_dateindex 
+                , case when sq1.now_eff_date_eq0 != sq1.p01lwd_eff_date_eq0 then sq1.now_sales_q1             else null end now_inbnd_stmtstat_sales_q1
+                , case when sq1.now_eff_date_eq0 != sq1.p01lwd_eff_date_eq0 then sq1.now_netinc_q1            else null end now_inbnd_stmtstat_netinc_q1
+                , case when sq1.now_eff_date_eq0 != sq1.p01lwd_eff_date_eq0 then sq1.now_mktcap               else null end now_inbnd_stmtstat_mktcap 
+                , case when sq1.now_eff_date_eq0 != sq1.p01lwd_eff_date_eq0 then sq1.now_price                else null end now_inbnd_stmtstat_price 
+            --  , case when sq1.now_eff_date_eq0 != sq1.p01lwd_eff_date_eq0 then sq1.now_netinc_q1_o_mktcap   else null end now_inbnd_stmtstat_netinc_q1_o_mktcap  
+            --  , case when sq1.now_eff_date_eq0 != sq1.p01lwd_eff_date_eq0 then sq1.now_sales_q1_o_mktcap    else null end now_inbnd_stmtstat_sales_q1_o_mktcap  
+            --  , case when sq1.now_eff_date_eq0 != sq1.p01lwd_eff_date_eq0 then sq1.now_netinc_q1_o_sales_q1 else null end now_inbnd_stmtstat_netinc_q1_o_sales_q1  
+                , sq1.pct_freeprice_ret_01m_ann
+              from ( -- sq1
+                select
+                    now.dateindex_company_id
+          	, now.dateindex
+          	, now.company_id
+          	, now.dateindex        now_dateindex
+                  , now.company_id       now_company_id
+                  , now.sales_q1         now_sales_q1
+                  , now.netinc_q1        now_netinc_q1  
+                  , now.mktcap           now_mktcap     
+                  , now.price            now_price
+                  , case when now.pertyp_q1 = 'W' then 7 * now.perlen_q1 else (365 / 12) * now.perlen_q1 end now_perlen_days_q1
+              --  , case when perend_q1 - perend_q2 > 0 then perend_q1 - perend_q2 else (365 / 12)       end now_perlen_days_q1
+                                                            -- per 3 months -- netinc/mktcap is '1% per quarter' -- UNITS of 100,000 ( one hundred thousand  )  -- typically  $1000/100_thousoand (per quarter)
+              --  , now.netinc_q1 / nullif(now.mktcap,0)   * case when now.pertyp_q1 = 'W' then 7 * now.perlen_q1 else (365 / 12) * now.perlen_q1 end / (365 / 4) * 100000 now_netinc_q1_o_mktcap    -- I care about the current mktcap ( investor return per dollar )
+              --  , now.sales_q1  / nullif(now.mktcap,0)   * case when now.pertyp_q1 = 'W' then 7 * now.perlen_q1 else (365 / 12) * now.perlen_q1 end / (365 / 4) * 100000 now_sales_q1_o_mktcap     -- I care about the current mktcap ( customer satisfaction )
+              --  , now.netinc_q1 / nullif(now.sales_q1,0) * case when now.pertyp_q1 = 'W' then 7 * now.perlen_q1 else (365 / 12) * now.perlen_q1 end / (365 / 4) * 100000 now_netinc_q1_o_sales_q1  -- I care about the current        ( company (internal) efficiency )
+                --  , now.date_eq0         now_date_eq0
+                --  , now.perend_q1        now_perend_q1
+          	, case when   now.date_eq0             >   now.perend_q1         then now.date_eq0 -- greater than and neither is null
+          	       when   now.date_eq0 is not null and now.perend_q1 is null then now.date_eq0
+          	       else                                now.perend_q1                           -- ... otherwise everything is null so just null
+          	    end now_eff_date_eq0
+                --   , now.pertyp_q1        now_pertyp_q1
+                --   , now.perlen_q1        now_perlen_q1
+                --   , p01lwd.dateindex     p01lwd_dateindex
+                --   , p01lwd.company_id    p01lwd_company_id
+                --   , p01lwd.sales_q1      p01lwd_sales_q1
+                --   , p01lwd.netinc_q1     p01lwd_netinc_q1
+                --   , p01lwd.mktcap        p01lwd_mktcap
+                --   , p01lwd.price         p01lwd_price
+                --   , p01lwd.netinc_q1/nullif(p01lwd.mktcap,0) p01lwd_netinc_q1_o_mktcap  
+                --   , p01lwd.date_eq0      p01lwd_date_eq0
+                --   , p01lwd.perend_q1     p01lwd_perend_q1
+          	, case when   p01lwd.date_eq0             >   p01lwd.perend_q1         then p01lwd.date_eq0 -- greater than and neither is null
+          	       when   p01lwd.date_eq0 is not null and p01lwd.perend_q1 is null then p01lwd.date_eq0
+                         else                                   p01lwd.perend_q1                              -- ... otherwise everything is null so just null
+          	    end p01lwd_eff_date_eq0
+                --   , p01lwd.pertyp_q1     p01lwd_pertyp_q1
+                --   , p01lwd.perlen_q1     p01lwd_perlen_q1
+            , case when not ( now.split_date > now.dateindexp01lwd )
+                  then  ( lag((now.mktcap/nullif(now.price,0))) over (partition by now.company_id order by now.dateindex) - (now.mktcap/nullif(now.price,0)) ) / (now.mktcap/nullif(now.price,0)) --HERE(NEW)
+                  else 0.0 end * 100.0 * 12  pct_freeprice_ret_01m_ann  -- a PAST return                                                                                                          --HERE(NEW)
+                	from
+                    ( select   date_eq0, perend_q1, perlen_q1, pertyp_q1, dateindex_company_id, dateindex, dateindexp01lwd, company_id, sales_q1, netinc_q1, mktcap, price, split_date  -- HERE(END)
+                               from si_finecon2 now  where now.ticker in ('AAPL') ) now left outer join si_finecon2 p01lwd on now.dateindexp01lwd  = p01lwd.dateindex and now.company_id = p01lwd.company_id 
+              ) sq1                               -- where now.ticker in ('AAPL','MSFT') -- VERY easy to test
+            ) sq2                                 -- where now.dateindex in (17347, 17317, 17284, 17256, 17225, 17197, 17165, 17135, 17105, 17074, 17044, 17011, 16982) -- first ONE minute AFTER 13 seconds WITH SORT
+          ) sq3
+          order by 2,1
+        ) sq4 -- where sq4.dateindex ", display_where_condition, "
+
+
+
+            select * from (
+              select
+              case when not ( now.split_date > now.dateindexp01lwd )
+                   then  ( lag((now.mktcap/nullif(now.price,0))) over (partition by now.company_id order by now.dateindex) - (now.mktcap/nullif(now.price,0)) ) / (now.mktcap/nullif(now.price,0)) 
+                   else 0.0 end * 100.0 * 12  pct_freeprice_ret_01m_ann  -- a PAST return  
+                	 from
+                    ( select   date_eq0, perend_q1, perlen_q1, pertyp_q1, dateindex_company_id, dateindex, dateindexp01lwd, company_id, sales_q1, netinc_q1, mktcap, price, split_date
+                               from si_finecon2 now  where now.dateindex  in (17378, 17347)) now left outer join si_finecon2 p01lwd on now.dateindexp01lwd  = p01lwd.dateindex and now.company_id = p01lwd.company_id 
+              ) sq1
+
+            select * from (
+              select
+                now.mktcap
+              , now.price
+              , (now.mktcap/nullif(now.price,0)) mkt_o_price
+              , lag((now.mktcap/nullif(now.price,0))) over (partition by now.company_id order by now.dateindex) old_mkt_o_price
+              , ( lag((now.mktcap/nullif(now.price,0))) over (partition by now.company_id order by now.dateindex) - (now.mktcap/nullif(now.price,0)) ) mkt_o_price_less_old_mkt_o_price
+              , ( lag((now.mktcap/nullif(now.price,0))) over (partition by now.company_id order by now.dateindex) - (now.mktcap/nullif(now.price,0)) ) / nullif((now.mktcap/nullif(now.price,0)),0) mkt_o_price_less_old_mkt_o_price_div_mkt_o_price
+                	 from
+                    ( select   date_eq0, perend_q1, perlen_q1, pertyp_q1, dateindex_company_id, dateindex, dateindexp01lwd, company_id, sales_q1, netinc_q1, mktcap, price, split_date
+                               from si_finecon2 now  where now.dateindex  in (17378, 17347)) now left outer join si_finecon2 p01lwd on now.dateindexp01lwd  = p01lwd.dateindex and now.company_id = p01lwd.company_id 
+                               where   (now.mktcap/nullif(now.price,0))  is null
+              ) sq1
+
+
+select mktcap/nullif(price,0) now
+     , lag((mktcap/nullif(price,0))) over (partition by company_id order by dateindex) lag_01m
+     , case when not ( split_date > dateindexp01lwd )
+         then  ( lag((mktcap/nullif(price,0))) over (partition by company_id order by dateindex) - (mktcap/nullif(price,0)) ) / nullif((mktcap/nullif(price,0)),0)
+         else 0.0 end * 100.0 * 12 pctchg_f_free_price_within_dateindex_from_01m_ann  
+  from fe_data_store.si_finecon2 
+    where 
+          -- sp in ('500','400','600') and 
+          -- dateindex in (17347, 17317, 17284, 17256) 
+          ticker = 'AAPL' -- company_id = '05680'
+          -- ticker in ('AAPL','MSFT')
+  order by company_id, dateindex;
+
+
+update fe_data_store.
+set 
+
+
+select dateindex
+     , company_id
+     , case when not ( split_date > dateindexp01lwd )
+         then  ( lag((mktcap/nullif(price,0))) over (partition by company_id order by dateindex) - (mktcap/nullif(price,0)) ) / nullif((mktcap/nullif(price,0)),0)
+         else 0.0 end * 100.0 * 12 pctchg_f_free_price_within_dateindex_from_01m_ann  
+  from fe_data_store.si_finecon2 
+    where 
+          -- sp in ('500','400','600') and 
+          -- dateindex in (17347, 17317, 17284, 17256) 
+          ticker = 'AAPL' -- company_id = '05680'
+          -- ticker in ('AAPL','MSFT')
+  order by company_id, dateindex;
+  
+
+update fe_data_store.si_finecon2 fe
+  set pct_freeprice_ret_01m_ann =
+  case when not ( split_date > dateindexp01lwd )
+         then  ( lag((mktcap/nullif(price,0))) over (partition by company_id order by dateindex) - (mktcap/nullif(price,0)) ) / nullif((mktcap/nullif(price,0)),0)
+         else 0.0 end * 100.0 * 12 pctchg_f_free_price_within_dateindex_from_01m_ann  
+  from fe_data_store.si_finecon2 
+    where  ticker = 'AAPL' -- company_id = '05680'
+
+select 
+  now.dateindex
+, now.company_id
+, now.pct_freeprice_ret_01m_ann pct_freeprice_ret_01m_ann_old
+, case when not ( now.split_date > now.dateindexp01lwd )
+       then  ( lag((now.mktcap/nullif(now.price,0))) over (partition by now.company_id order by now.dateindex) - (now.mktcap/nullif(now.price,0)) ) /  nullif((now.mktcap/nullif(now.price,0)),0)
+       else 0.0 end * 100.0 * 12  pct_freeprice_ret_01m_ann  -- a PAST return
+from  fe_data_store.si_finecon2 now where ticker = 'AAPL';
+
+
+select 
+  fe2.dateindex
+, fe2.company_id
+, fe2.pct_freeprice_ret_01m_ann pct_freeprice_ret_01m_ann_old
+, case when not ( fe2.split_date > fe2.dateindexp01lwd )
+       then  ( lag((fe2.mktcap/nullif(fe2.price,0))) over (partition by fe2.company_id order by fe2.dateindex) - (fe2.mktcap/nullif(fe2.price,0)) ) /  nullif((fe2.mktcap/nullif(fe2.price,0)),0)
+       else 0.0 end * 100.0 * 12  pct_freeprice_ret_01m_ann  -- a PAST return
+from  fe_data_store.si_finecon2 fe2 where fe2.ticker = 'AAPL';
+
+
+update fe_data_store.si_finecon2 fe
+set pct_freeprice_ret_01m_ann  =
+case when not ( fe2.split_date > fe2.dateindexp01lwd )
+       then  ( lag((fe2.mktcap/nullif(fe2.price,0))) over (partition by fe2.company_id order by fe2.dateindex) - (fe2.mktcap/nullif(fe2.price,0)) ) /  nullif((fe2.mktcap/nullif(fe2.price,0)),0)
+       else 0.0 end * 100.0 * 12    
+from  fe_data_store.si_finecon2 fe2 where 
+      fe2.dateindex  = fe.dateindex and
+      fe2.company_id = fe.company_id
+  and fe2.ticker = 'AAPL';
+  
+-- ERROR: window functions are not allowed in UPDATE
+
+select * from (
+  select 
+    fe2.dateindex
+  , fe2.company_id
+  , fe2.ticker
+  , case when not ( fe2.split_date > fe2.dateindexp01lwd )
+         then  ( lag((fe2.mktcap/nullif(fe2.price,0))) over (partition by fe2.company_id order by fe2.dateindex) - (fe2.mktcap/nullif(fe2.price,0)) ) /  nullif((fe2.mktcap/nullif(fe2.price,0)),0)
+         else 0.0 end * 100.0 * 12  pct_freeprice_ret_01m_ann  -- a PAST return
+  from  fe_data_store.si_finecon2 fe2 -- where fe2.ticker = 'AAPL'
+) f2;
+
+
+update fe_data_store.si_finecon2 fe
+set pct_freeprice_ret_01m_ann  = fe3.pct_freeprice_ret_01m_ann
+from (
+  select 
+    fe2.dateindex
+  , fe2.company_id
+  , fe2.ticker
+  , case when not ( fe2.split_date > fe2.dateindexp01lwd )
+         then  ( lag((fe2.mktcap/nullif(fe2.price,0))) over (partition by fe2.company_id order by fe2.dateindex) - (fe2.mktcap/nullif(fe2.price,0)) ) /  nullif((fe2.mktcap/nullif(fe2.price,0)),0)
+         else 0.0 end * 100.0 * 12  pct_freeprice_ret_01m_ann  -- a PAST return
+  from  fe_data_store.si_finecon2 fe2 
+) fe3 where 
+      fe3.dateindex  = fe.dateindex and
+      fe3.company_id = fe.company_id
+  and fe3.ticker = 'AAPL';
+
+
+select * from (
+  select 
+    fe2.dateindex
+  , fe2.company_id
+  , fe2.ticker
+  , pct_freeprice_ret_01m_ann
+  , case when not ( fe2.split_date > fe2.dateindexp01lwd )
+         then  ( lag((fe2.mktcap/nullif(fe2.price,0))) over (partition by fe2.company_id order by fe2.dateindex) - (fe2.mktcap/nullif(fe2.price,0)) ) /  nullif((fe2.mktcap/nullif(fe2.price,0)),0)
+         else 0.0 end * 100.0 * 12  pct_freeprice_ret_01m_ann_query  -- a PAST return
+  from  fe_data_store.si_finecon2 fe2 where fe2.ticker = 'AAPL'
+) f2;
+--GOOD
+
+-- ALL
+update fe_data_store.si_finecon2 fe
+set pct_freeprice_ret_01m_ann  = fe3.pct_freeprice_ret_01m_ann
+from (
+  select 
+    fe2.dateindex
+  , fe2.company_id
+  , fe2.ticker
+  , case when not ( fe2.split_date > fe2.dateindexp01lwd )
+         then  ( lag((fe2.mktcap/nullif(fe2.price,0))) over (partition by fe2.company_id order by fe2.dateindex) - (fe2.mktcap/nullif(fe2.price,0)) ) /  nullif((fe2.mktcap/nullif(fe2.price,0)),0)
+         else 0.0 end * 100.0 * 12  pct_freeprice_ret_01m_ann  -- a PAST return
+  from  fe_data_store.si_finecon2 fe2 
+) fe3 where 
+      fe3.dateindex  = fe.dateindex and
+      fe3.company_id = fe.company_id
+  -- and fe3.ticker = 'AAPL';
+
+ERROR:  numeric field overflow
+DETAIL:  A field with precision 9, scale 2 must round to an absolute value less than 10^7.
+********** Error **********
+ERROR: numeric field overflow
+SQL state: 22003
+Detail: A field with precision 9, scale 2 must round to an absolute value less than 10^7.
+
+
+
+select * from (
+  select max(
+  case when not ( fe2.split_date > fe2.dateindexp01lwd )
+         then  ( lag((fe2.mktcap/nullif(fe2.price,0))) over (partition by fe2.company_id order by fe2.dateindex) - (fe2.mktcap/nullif(fe2.price,0)) ) /  nullif((fe2.mktcap/nullif(fe2.price,0)),0)
+         else 0.0 end * 100.0 * 12  
+  ) pct_freeprice_ret_01m_ann_query_max  
+  from  fe_data_store.si_finecon2 fe2 
+) f2;
+-- ERROR: aggregate function calls cannot contain window function calls
+
+select max(fe3.pct_freeprice_ret_01m_ann_query) from (
+  select
+  case when not ( fe2.split_date > fe2.dateindexp01lwd )
+         then  ( lag((fe2.mktcap/nullif(fe2.price,0))) over (partition by fe2.company_id order by fe2.dateindex) - (fe2.mktcap/nullif(fe2.price,0)) ) /  nullif((fe2.mktcap/nullif(fe2.price,0)),0)
+         else 0.0 end * 100.0 * 12  
+  pct_freeprice_ret_01m_ann_query 
+  from  fe_data_store.si_finecon2 fe2 
+) fe3;
+--23380467.692307692307390060000
+--10,2
+
+
+-- ALL
+update fe_data_store.si_finecon2 fe
+set pct_freeprice_ret_01m_ann  = fe3.pct_freeprice_ret_01m_ann
+from (
+  select 
+    fe2.dateindex
+  , fe2.company_id
+  , fe2.ticker
+  , case when not ( fe2.split_date > fe2.dateindexp01lwd )
+         then  ( lag((fe2.mktcap/nullif(fe2.price,0))) over (partition by fe2.company_id order by fe2.dateindex) - (fe2.mktcap/nullif(fe2.price,0)) ) /  nullif((fe2.mktcap/nullif(fe2.price,0)),0)
+         else 0.0 end * 100.0 * 12  pct_freeprice_ret_01m_ann  -- a PAST return
+  from  fe_data_store.si_finecon2 fe2 
+) fe3 where 
+      fe3.dateindex  = fe.dateindex and
+      fe3.company_id = fe.company_id
+  -- and fe3.ticker = 'AAPL';
+-- 4 MINUTES FLAT
+-- DONE
