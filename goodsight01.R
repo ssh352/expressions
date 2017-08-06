@@ -810,6 +810,7 @@ reindex.xts <- function(x, x_index_new) {
   x_m <- x_m[order(rownames(x_m)),,drop = FALSE]
 
   # re-class
+  # dispatch as.xts.matrix
   x <- as.xts(x_m, dateFormat = x_indexClass, .RECLASS = TRUE) # remember how to go back (.RECLASS) # not necessary
 
   # anything that I would have missed
@@ -940,12 +941,6 @@ pushback.FRED.1st.days.xts <- function(x) {
 # 1947-12-31 266.2
 # 1948-03-31 272.9
 
-# NEED 
-#   [x] 'year less than or equal to' ylthoeto2017
- # NEED  ... IS.YEAR.NOWORBEFORE.1950 .... present_year # bond switchover year
-  # [ [ ] consider  'time signature'-ish functions ]
-#   [ ] buyback yield to be in the database
-#   [ ] generator wrapper over 'left join lateral'-'within'
 
 
 
@@ -1012,6 +1007,12 @@ year.less.then.or.equal <- function(x, n = NULL ) {
 #
 
 
+# NEED 
+#   [x] 'year less than or equal to' ylthoeto2017
+ # NEED  ... IS.YEAR.NOWORBEFORE.1950 .... present_year # bond switchover year
+  # [ [ ] consider  'time signature'-ish functions ]
+#   [ ] buyback yield to be in the database
+#   [ ] generator wrapper over 'left join lateral'-'within'
 
 
 # TO DO
