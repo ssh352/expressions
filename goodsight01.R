@@ -412,6 +412,12 @@ collofdays2daily.xts <- function(x) {
   
 }
 # x <- xts(c(11,13,15),zoo::as.Date(c(1,3,5))) 
+# > x <- xts(c(11,13,15),zoo::as.Date(c(1,3,5)))
+# > x
+#            [,1]
+# 1970-01-02   11
+# 1970-01-04   13
+# 1970-01-06   15
 # xc <- collofdays2daily.xts(x)
 # xc
 #              x
@@ -811,7 +817,7 @@ reindex.xts <- function(x, x_index_new) {
 
   # re-class
   # dispatch as.xts.matrix
-  x <- as.xts(x_m, dateFormat = x_indexClass, .RECLASS = TRUE) # remember how to go back (.RECLASS) # not necessary
+  x <- as.xts(x_m, dateFormat = x_indexClass) # , .RECLASS = TRUE # WRONG # remember how to go back (.RECLASS) # not necessary
 
   # anything that I would have missed
   indexClass(x)  <- x_indexClass
