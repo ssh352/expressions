@@ -670,6 +670,12 @@ rm.days.xts <- function(x, rm_what = NULL) {
   return(x)
 }
 # rm.days.xts(xts(0:89,zoo::as.Date("2017-01-01") + 0:89), rm_what = c("Saturday", "Sunday", "BIZHOLIDAYS"))
+#            [,1]
+# 2017-01-03    2
+# 2017-01-04    3
+# 2017-01-05    4
+# 2017-01-06    5
+# 2017-01-09    8
 
 # weekends removed
 # BIZHOLIDAYS removed 2017-01-02   2017-01-16   2017-02-20
@@ -715,9 +721,11 @@ all.nearby.FRED.holidays <- function(x = NULL, d = NULL) {
   # Monday, January 15  Birthday of Martin Luther King, Jr.
   # https://archive.opm.gov/Operating_Status_Schedules/fedhol/2007.asp
   
-  # uses  RQuantLib::isHoliday, rlist::list.zip
+  # uses  RQuantLib::isHoliday, rlist::list.zip, lubridate::`%m+%`
   require(xts)
+  require(lubridate)
   
+  # for ONE single day returns multiple days
   FUN  <- function(x,d) { index(x) %m+% days(c(d)) }
   PARALLEL_LISTS <- Vectorize(FUN, vectorize.args = "d", SIMPLIFY = FALSE)(x, d)
   TOGETHER_LISTS <- do.call(rlist::list.zip, PARALLEL_LISTS)
@@ -725,12 +733,16 @@ all.nearby.FRED.holidays <- function(x = NULL, d = NULL) {
   Sys.setenv(TZ=oldtz)
   options(ops)
   
-  return(sapply(TOGETHER_LISTS, function(x) { 
+  # if BOTH of those 'multiple days' is a "UnitedStates/GovernmentBond" then return TRUE
+  sapply(TOGETHER_LISTS, function(x) { 
     xx <- x
     all(sapply(xx, function(xx) { 
       RQuantLib::isHoliday("UnitedStates/GovernmentBond",zoo::as.Date(xx)) 
     })) 
-  }))
+  }) -> ret
+  
+  return(ret)
+  
 }
 # library(xts)
 # data("sample_matrix")
@@ -747,89 +759,138 @@ all.nearby.FRED.holidays <- function(x = NULL, d = NULL) {
 # be aware of landings on weekend and long holiday weekends and after a Tuesday or Thursday holiday
 
 
+# #
+# # given an xts object: x
+# # assign to 'x' a new index x_index_new
+# #  if index_new is 'not an xts' assume a vector and take those values
+# #  if index_new is '    an xts' take the new index values: as.vector(coredata(x
+# # 
+# # xts go get a new index
+# # x - xts needs a new index
+# # x_index_new - numerical values of the index 
+# #               - either in the coredata of a single column xts object ( the 'index' is ignored ( not used ) )
+# #               - xor as a vector of numberic values ( UNTESTED )
+# reindex.xts <- function(x, x_index_new) {
+# 
+#   ops <- options()
+#   
+#   options(warn = 1)
+#   options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+#   options(digits = 22) 
+#   options(max.print=99999)
+#   options(scipen=255) # Try these = width
+#   
+#   #correct for TZ 
+#   oldtz <- Sys.getenv('TZ')
+#   if(oldtz=='') {
+#     Sys.setenv(TZ="UTC")
+#   }
+#   
+#   # But proper way to do would have been
+#   # convert xts to zoo and set the index values directy
+#   # and/with/or 'probably' convert time units to seconds ( because days are not-seconds )
+# 
+#   # Setting an xts Index ( DID NOT WORK FOR ME )
+#   # time(XX) <- 
+#   # 2010
+#   # https://stackoverflow.com/questions/4435011/setting-an-xts-index
+# 
+#   # replace index/time of a zoo object
+#   # index(x) <- ...
+#   # ? zoo::index
+#   
+#   # OTHER info
+#   #  xts:::align.time.xts (not really useful)
+#   # ? `.index` ( of xts, barely(some) usefullness )
+#   # ? indexTZ  ( of xts, barely(some) usefullness )
+# 
+#   # TRICK - can not do a timediff  - so instead do ... subtract off the constant number of days ( since 1970 )
+#   # TRICK - can not manipulate the index values - so use the rownames of a matrix to manipulate the index )
+# 
+#   # get numeric values    # as.POSIXct.numeric
+#   if(is.xts(x_index_new)) { avc_xx <- as.numeric(as.POSIXct(as.vector(unlist(coredata(x_index_new))), origin = "1970-01-01")) } else { avc_xx <- as.numeric(as.POSIXct(x_index_new, origin = "1970-01-01")) }
+# 
+#   # uses lubridate::days, lubridate
+#   require(lubridate)
+#   require(xts)
+# 
+#   x_tclass      <- tclass(x)
+#   x_tzone       <- tzone(x)
+#   
+#   x_indexClass  <- indexClass(x)
+#   x_indexFormat <- indexFormat(x) # NULL? if default
+#   x_indexTZ     <- indexTZ(x)
+# 
+#   # index_all <- index(x)
+#   # for(index_i in seq_along(index_all)) {
+#   for(index_i in seq_along(index(x))) {
+#   
+#     # near-zero out days ( NOTE: 'can not' use time differencing )
+#     # # numeric
+#     .index(x)[index_i] <- index(x)[index_i] - days(index(x))@day[index_i]
+#     #   Error in `index<-.xts`(`*tmp*`, value = c(0, -8311, -8220, -8128, -8036,  : 
+#     #   new index needs to be sorted
+#     # index_all[index_i] <- index_all[index_i] - days(index(x))@day[index_i]
+#     
+#     # add back the adjusted days
+#     # # numeric
+#     .index(x)[index_i] <- index(x)[index_i] + avc_xx[index_i]
+#     # index_all[index_i] <- index_all[index_i]  + avc_xx[index_i]
+#     
+#   }
+#   
+#   # fix the order ( if neceessary )
+#   x_m <- as.matrix(x)
+#   # rownames(x_m) <- index_all
+#   
+#   x_m <- x_m[order(rownames(x_m)),,drop = FALSE]
+# 
+#   # re-class
+#   # dispatch as.xts.matrix
+#   # x <- as.xts(x_m, dateFormat = x_indexClass) # , .RECLASS = TRUE # WRONG # remember how to go back (.RECLASS) # not necessary
+#   x <- as.xts(x_m, dateFormat = x_tclass)
+#   tzone(x) <- x_tzone
+#   
+#   # anything that I would have missed
+#   # indexClass(x)  <- x_indexClass
+#   # indexFormat(x) <- x_indexFormat # NULL? if default
+#   # indexTZ(x)     <- x_indexTZ
+# 
+#   Sys.setenv(TZ=oldtz)
+#   options(ops)
+#   
+#   return(x)
+# 
+# }
 
-# xts go get a new index
-# x - xts needs a new index
-# x_index_new - numerical values of the index 
-#               - either in the coredata of a single column xts object ( the 'index' is ignored ( not used ) )
-#               - xor as a vector of numberic values ( UNTESTED )
-reindex.xts <- function(x, x_index_new) {
+# x          - xts object
+# x_index_new - anyting one dimensional
+#  with a length/NROW(x_index_new) == NROW(x) == length(index(x))
+reindex.xts <- function(x,  x_index_new ) {
 
-  ops <- options()
-  
-  options(warn = 1)
-  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
-  options(digits = 22) 
-  options(max.print=99999)
-  options(scipen=255) # Try these = width
-  
+  require(xts)
+
   #correct for TZ 
   oldtz <- Sys.getenv('TZ')
   if(oldtz=='') {
     Sys.setenv(TZ="UTC")
-}
-  
-  # But proper way to do would have been
-  # convert xts to zoo and set the index values directy
-  # and/with/or 'probably' convert time units to seconds ( because days are not-seconds )
-
-  # Setting an xts Index ( DID NOT WORK FOR ME )
-  # time(XX) <- 
-  # 2010
-  # https://stackoverflow.com/questions/4435011/setting-an-xts-index
-
-  # replace index/time of a zoo object
-  # index(x) <- ...
-  # ? zoo::index
-  
-  # OTHER info
-  #  xts:::align.time.xts (not really useful)
-  # ? `.index` ( of xts, barely(some) usefullness )
-  # ? indexTZ  ( of xts, barely(some) usefullness )
-
-  # TRICK - can not do a timediff  - so instead do ... subtract off the constant number of days ( since 1970 )
-  # TRICK - can not manipulate the index values - so use the rownames of a matrix to manipulate the index )
-
-  # get numeric values
-  if(is.xts(x_index_new)) { avc_xx <- as.vector(coredata(x_index_new)) } else { avc_xx <- x_index_new }
-
-  # uses lubridate::days, lubridate
-  require(lubridate)
-  require(xts)
-
-  x_indexClass  <- indexClass(x)
-  x_indexFormat <- indexFormat(x) # NULL? if default
-  x_indexTZ     <- indexTZ(x)
-
-  for(index_i in seq_along(index(x))) {
-  
-    # near-zero out days ( NOTE: 'can not' use time differencing )
-    index(x)[index_i] <- index(x)[index_i] - days(index(x))@day[index_i]
-    
-    # add back the adjusted days
-    index(x)[index_i] <- index(x)[index_i] + avc_xx[index_i]
-    
   }
 
-  # fix the order ( if neceessary )
-  x_m <- as.matrix(x)
-  x_m <- x_m[order(rownames(x_m)),,drop = FALSE]
-
-  # re-class
-  # dispatch as.xts.matrix
-  x <- as.xts(x_m, dateFormat = x_indexClass) # , .RECLASS = TRUE # WRONG # remember how to go back (.RECLASS) # not necessary
-
-  # anything that I would have missed
-  indexClass(x)  <- x_indexClass
-  indexFormat(x) <- x_indexFormat # NULL? if default
-  indexTZ(x)     <- x_indexTZ
-
+  x_tclass <- tclass(x)
+  x_tzone  <- tzone(x)
+  # INTERNAL STORAGE IS ALWAYS POSIXCT
+  # as.vector(unlist: anything one dimensional # HACK: x_tclass == "Date": SEE index:::index.xts
+  # .index(x) # DESTROYS entire attr(x,"index")
+  .index(x) <- as.vector(unlist(x_index_new)) * if( x_tclass == "Date") { 3600 * 24 } else { 1 }
+  x <- x[order(index(x)),]
+  tclass(x) <- x_tclass
+  tzone(x)  <- x_tzone
+  
   Sys.setenv(TZ=oldtz)
-  options(ops)
   
   return(x)
-
 }
+
 
 # # getSymbols("GDP", src = "FRED") # ABOVE
 # # head(GDP)
@@ -843,7 +904,7 @@ reindex.xts <- function(x, x_index_new) {
 # 
 # reindex.xts(head(GDP), 0:5)
 #              GDP
-# 1970-01-01 243.1
+# 1970-01-01 243.1 # new index starting with the 'birth' of UNIX 0 ... 5
 # 1970-01-02 246.3
 # 1970-01-03 250.1
 # 1970-01-04 260.3
@@ -852,8 +913,23 @@ reindex.xts <- function(x, x_index_new) {
 
 
 
+# Multiple DATES/day is not allowed
+# > as.xts(0:1,zoo::as.Date(0:0))
+# Error in xts(x, order.by = order.by, frequency = frequency, .CLASS = "integer",  :
+#  NROW(x) must match length(order.by)
+# 
+# [ ] FIX: DETECT OR 'BRUTE FORCE' run to.daily(ANY)
+# Mutiple POSIXct
+# two dates in ONE day: 
+# will be aligned to the _end_ of each period by default ( NOT last observation )
+# (except to.montly, to.quarterly: aligned to beginning)
+# > to.daily(xts(0:1,as.POSIXct(0:1, origin="1970-01-01", tz="UTC")) , OHLC = F)
+#            [,1]
+# 1970-01-01    1
+# 
 # expect ONLY one observation per day
 # slow 170 observations per second
+# 
 pushback.FRED.1st.days.xts <- function(x) {
 
   ops <- options()
@@ -874,11 +950,12 @@ pushback.FRED.1st.days.xts <- function(x) {
   # uses all.nearby.FRED.holidays  reindex.xts
   
   require(xts)
+  require(lubridate)
 
   # if the 4th is Today and the last 3 days were holidays then shift the index 4 # then done  
   apply.daily(x, function(xx) { 
     # only one daily observation in this case so '&&' is O.K.
-    if(index(xx) == 4 && all.nearby.FRED.holidays(xx, c(-1,-2,-3))) {
+    if(day(index(xx)) == 4 && all.nearby.FRED.holidays(xx, c(-1,-2,-3))) {
       index(xx) %m+% days(-4)
     } else {
       index(xx)
@@ -889,7 +966,7 @@ pushback.FRED.1st.days.xts <- function(x) {
   # if the 3rd is Today and the last 2 days were holidays then shift the index 3 # then done  
   apply.daily(x, function(xx) { 
     # only one daily observation in this case so '&&' is O.K.
-    if(index(xx) == 3 && all.nearby.FRED.holidays(xx, c(-1,-2))) {
+    if(day(index(xx)) == 3 && all.nearby.FRED.holidays(xx, c(-1,-2))) {
       index(xx) %m+% days(-3)
     } else {
       index(xx)
@@ -901,7 +978,7 @@ pushback.FRED.1st.days.xts <- function(x) {
   # if the 2nd is Today and the last 1 day was a holiday then shift the index 2 # then done  
   apply.daily(x, function(xx) { 
     # only one daily observation in this case so '&&' is O.K.
-    if(index(xx) == 2 && all.nearby.FRED.holidays(xx, c(-1))) {
+    if(day(index(xx)) == 2 && all.nearby.FRED.holidays(xx, c(-1))) {
       index(xx) %m+% days(-2)
     } else {
       index(xx)
