@@ -247,7 +247,7 @@ PCTCHG.xts <- function(x, whiches, to_future = NULL) {
 # 2007-01-05   NA
 
 
-
+## [ ] SKIPPED FOR NOW # WILL COME BACK LATER ##
 # o_args is av named vector of arguments ( but user should really should use a Curry )
 # IF o_args IS OF A MIXED DATA.TAPE us a list INSTEAD ( of a vector ) =list(indexAt= 'lastof', OHLC = FALSE)
 calculate <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o_args = NULL, prefix = NULL) {
@@ -408,6 +408,82 @@ calculate <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o_
 # head(calculate(IBM,  fnct = "to.monthly", o_args = list(indexAt= 'lastof', OHLC = FALSE)),6)
 
 
+ 
+collofdays2daily.xts <- function(x) {
+  
+  ops <- options()
+  
+  options(warn = 1)
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+
+  require(xts) # # Attaching package: ‘zoo’
+  # IF NOT Error in try.xts(element1) : could not find function "try.xts"
+  
+  x_orig <- x
+  c_orig <- class(x)[1] # original class
+  
+  ## VERY BASIC attemped CLASS conversion ##
+  x_try.xts_success <- FALSE
+  x_try.xts <- try(xts::try.xts(x_orig), silent = T)
+  #
+  x         <- if(any("try-error" %in% class(x_try.xts))) { stop("collofdays2daily.xts could not make an xts") } else { x_try.xts_success <- TRUE; x_try.xts }
+  # EXPECTED TO CHANGE THE NUMBER OF ROWS  SO CAN NOT DO 'reclass'
+  
+  # note: index(first/last(x, '1 day')) expected to return ONE single element
+  # reduce a a 'set of first/last '1 day' to ret ONE single element 
+  # also will covert a non-Date index to a Date index
+  x <- xts::to.daily(x, OHLC = F)
+  
+  # dispatch on xts:::merge.xts, seq.Date, xts:::index.xts, xts:::first/last.xts
+  x_days <- xts(,seq(index(first(x, '1 day')),index(last(x, '1 day')), by = 1))
+  
+  # dispach on xts:::merge.xts
+  ret <- merge(x,x_days)
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  return(ret)
+  
+}
+# x <- xts(c(11,13,15),zoo::as.Date(c(1,3,5))) 
+# x
+#            [,1]
+# 1970-01-02   11
+# 1970-01-04   13
+# 1970-01-06   15
+# xc <- collofdays2daily.xts(x)
+# xc
+#              x
+# 1970-01-02 11
+# 1970-01-03 NA
+# 1970-01-04 13
+# 1970-01-05 NA
+# 1970-01-06 15
+
+# # as.POSIXct(c(1,10000,200000,400000), origin = "1970-01-01")
+# # [1] "1970-01-01 00:00:01 UTC" "1970-01-01 02:46:40 UTC" "1970-01-03 07:33:20 UTC" "1970-01-05 15:06:40 UTC"
+# xp <- xts(11:14, as.POSIXct(c(1,10000,200000,400000), origin = "1970-01-01"))
+# xpc <- collofdays2daily.xts(xp)
+# xpc
+#             x
+# 1970-01-01 12
+# 1970-01-02 NA
+# 1970-01-03 13
+# 1970-01-04 NA
+# 1970-01-05 14
+
+
+
 # # time since 'end of data'
 # TMsinceEOD
 # 
@@ -417,6 +493,7 @@ calculate <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o_
 # # irregular: time(in future) window(horizon) to prediction
 # TMinfutTOPRED
 
+delay_since_last_obs <- function(x) UseMethod("delay_since_last_obs")
 
 
 delay_since_last_obs.default <- function(x) {
@@ -485,55 +562,6 @@ delay_since_last_obs.default <- function(x) {
 # [1] 0 1 2 3 0 1 2
 
 
-
-# note: index(first/last(x, '1 day')) expected to return ONE single element
-# note: consider using period.apply( to reduce a a 'set of first/last '1 day' to ret ONE single element 
-
-collofdays2daily.xts <- function(x) {
-  
-  ops <- options()
-  
-  options(warn = 1)
-  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
-  options(digits = 22) 
-  options(max.print=99999)
-  options(scipen=255) # Try these = width
-  
-  #correct for TZ 
-  oldtz <- Sys.getenv('TZ')
-  if(oldtz=='') {
-    Sys.setenv(TZ="UTC")
-  }
-
-  require(xts)
-
-  # dispatch on xts:::merge.xts, seq.Date, xts:::index.xts, xts:::first/last.xts
-  x_days <- xts(,seq(index(first(x, '1 day')),index(last(x, '1 day')), by = 1))
-  
-  # dispach on xts:::merge.xts
-  ret <- merge(x,x_days)
-  
-  Sys.setenv(TZ=oldtz)
-  options(ops)
-  
-  return(ret)
-  
-}
-# x <- xts(c(11,13,15),zoo::as.Date(c(1,3,5))) 
-# > x <- xts(c(11,13,15),zoo::as.Date(c(1,3,5)))
-# > x
-#            [,1]
-# 1970-01-02   11
-# 1970-01-04   13
-# 1970-01-06   15
-# xc <- collofdays2daily.xts(x)
-# xc
-#              x
-# 1970-01-02 11
-# 1970-01-03 NA
-# 1970-01-04 13
-# 1970-01-05 NA
-# 1970-01-06 15
 
 
 
