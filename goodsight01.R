@@ -2,8 +2,6 @@
 
 # goodsight01.R
 
-
-
 # last observation carried forard limited
 na.locfl <- function(x, n = NULL) {
 
@@ -21,10 +19,16 @@ na.locfl <- function(x, n = NULL) {
     Sys.setenv(TZ="UTC")
   }
   
+  require(xts) # Attaching package: ‘zoo’
+  # IF NOT Error in try.xts(element1) : could not find function "try.xts"
   # uses zoo:::rollapply.zoo, DescTools::DoCall
 
-  INPUT <- x
-  cINPUT <-  class(INPUT)[1]
+  x_orig <- x
+  c_orig <- class(x)[1] # original class
+  
+  x_try.xts_success <- FALSE
+  x_try.xts <- try(  xts::try.xts(x_orig) , silent = T)
+  x         <- if(any("try-error" %in% class(x_try.xts))) { x_orig } else { x_try.xts_success <- TRUE; x_try.xts }
 
   # na.locf from the 'company information' last quarterly report
   # but only carry forward a max of '2 periods'(THAT). XOR '4 periods'
@@ -35,7 +39,7 @@ na.locfl <- function(x, n = NULL) {
   #   so using zoo:::rollapply.zoo
       
   # I WANT to USE the ZOO method ( no dispatch )
-  zoo:::rollapply.zoo(as.zoo(INPUT), width = list(seq(-1*n, 0)),  FUN = function(x) {
+  zoo:::rollapply.zoo(zoo::as.zoo(x), width = list(seq(-1*n, 0)),  FUN = function(xx) {
     
       # if the 'element of interest'(last) is 'NA'
       # and in the width range, there exists at least one other element that  is 'not NA'
@@ -44,29 +48,40 @@ na.locfl <- function(x, n = NULL) {
       # othewise ( the entire range stays all 'NA's )
       #   return just the element of interest ( will be 'NA' )   
       
-      if( is.na(x[NROW(x)]) && (max(as.integer(!is.na(x))) > 0) ) { 
-        na.locf(x) -> y
+      if( is.na(xx[NROW(xx)]) && (max(as.integer(!is.na(xx))) > 0) ) { 
+        zoo::na.locf(xx) -> y
         return(y[NROW(y)]) 
       } else {
-        return(x[NROW(x)])
+        return(xx[NROW(xx)])
       }
     } , partial = 1 # min window size for partial computations 
-  )  -> RES
+  )  -> x_result
   
-  if(class(RES)[1] != "zoo") DescTools::DoCall(paste0("as.",cINPUT),list(RES)) -> RES
+if(x_try.xts_success) { 
+  xts::reclass(x_result, x_orig) 
+} else {
+  if(exists(paste0("as.", c_orig))) {
+    DescTools::DoCall(paste0("as.", c_orig), list(x_result)) 
+  } else {
+    x_result
+  }
+} -> x_result
 
   Sys.setenv(TZ=oldtz)
   options(ops)
   
-  return(RES)
+  return(x_result)
   
   # ORIG FROM
   # https://github.com/AndreMikulec/expressions/blob/8a910454ea590a30878e97b18d5e9dbe45a9d4fb/main-foresight3-999.R#L2287
 
 }
 
+# # na.locfl( c(101,NA,NA,NA,102,NA,NA), n = 2)
+# [1] 101 101 101  NA 102 102 102
+
 # # input
-# # xts(c(101,NA,NA,NA,102,NA,NA),zoo::as.Date(seq(10, 10*7, length.out = 7)))
+# # xts::xts(c(101,NA,NA,NA,102,NA,NA),zoo::as.Date(seq(10, 10*7, length.out = 7)))
 #            [,1]
 # 1970-01-11  101
 # 1970-01-21   NA
@@ -75,7 +90,8 @@ na.locfl <- function(x, n = NULL) {
 # 1970-02-20  102
 # 1970-03-02   NA
 # 1970-03-12   NA
-# # na.locfl( xts(c(101,NA,NA,NA,102,NA,NA),zoo::as.Date(seq(10, 10*7, length.out = 7))), 2 )
+
+# # na.locfl( xts::xts(c(101,NA,NA,NA,102,NA,NA),zoo::as.Date(seq(10, 10*7, length.out = 7))), 2 )
 #            [,1]
 # 1970-01-11  101
 # 1970-01-21  101
