@@ -28,8 +28,23 @@ na.locfl <- function(x, n = NULL) {
   
   x_try.xts_success <- FALSE
   x_try.xts <- try(  xts::try.xts(x_orig) , silent = T)
-  x         <- if(any("try-error" %in% class(x_try.xts))) { x_orig } else { x_try.xts_success <- TRUE; x_try.xts }
+  # x         <- if(any("try-error" %in% class(x_try.xts))) { x_orig } else { x_try.xts_success <- TRUE; x_try.xts }
 
+  x_try_zoo_success <- FALSE
+  if(any("try-error" %in% class(x_try.xts))) { 
+    x_try_zoo <- try(zoo::as.zoo(x), silent = T)
+    if(any("try-error" %in% class(x_try_zoo))) {
+      # x_orig # ASSUMING I CAN *STILL* DO SOMETHING WITH THIS
+      stop("na.locfl: can not make a zoo object")
+    } else {
+      x_try_zoo_success <- TRUE
+      x_try_zoo
+    }
+  } else { 
+    x_try.xts_success <- TRUE
+    x_try.xts 
+  } -> x
+  
   # na.locf from the 'company information' last quarterly report
   # but only carry forward a max of '2 periods'(THAT). XOR '4 periods'
   # After THAT. NAs follow 
@@ -57,15 +72,23 @@ na.locfl <- function(x, n = NULL) {
     } , partial = 1 # min window size for partial computations 
   )  -> x_result
   
-if(x_try.xts_success) { 
-  xts::reclass(x_result, x_orig) 
-} else {
-  if(exists(paste0("as.", c_orig))) {
-    DescTools::DoCall(paste0("as.", c_orig), list(x_result)) 
+  if(x_try.xts_success) { 
+    xts::reclass(x_result, x_orig) 
   } else {
-    x_result
-  }
-} -> x_result
+    if(exists(paste0("as.", c_orig))) {
+      DescTools::DoCall(paste0("as.", c_orig), list(x_result)) 
+    } else {
+      x_result
+    }
+  } -> x_result
+  
+  if(!x_try.xts_success && x_try_zoo_success) {
+    if(exists(paste0("as.", c_orig))) {
+      DescTools::DoCall(paste0("as.", c_orig), list(x_result)) 
+    } else {
+      x_result # THE BEST THAT I CAN DO
+    }
+  } -> x_result
 
   Sys.setenv(TZ=oldtz)
   options(ops)
