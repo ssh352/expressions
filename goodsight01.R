@@ -153,7 +153,7 @@ check_uses_packages_available <- function(programmed_in_R_version, explicit_pack
 
 # pecent change from the past through NOW 
 # ( if to_future == TRUE, then from NOW to the FUTURE )
-PCTCHG <- function(x, whiches, to_future = NULL) { 
+PCTCHG.xts <- function(x, whiches, to_future = NULL) { 
   
   ops <- options()
   
@@ -169,14 +169,83 @@ PCTCHG <- function(x, whiches, to_future = NULL) {
     Sys.setenv(TZ="UTC")
   }
   
-  lag_direction <- 1 # normal backwards
+  require(xts) # # Attaching package: ‘zoo’
+  # IF NOT Error in try.xts(element1) : could not find function "try.xts"
+  
+  ## VERY BASIC attemped CLASS conversion ##
+  x_orig <- x
+  c_orig <- class(x)[1] # original class
+  
+  x_try.xts_success <- FALSE
+  x_try.xts <- try(xts::try.xts(x_orig), silent = T)
+  x         <- if(any("try-error" %in% class(x_try.xts))) { stop("PCTCHG.xts: can not make an xts object") } else { x_try.xts_success <- TRUE; x_try.xts }
+
+   # normal backwards
+  if(is.null(to_future) || to_future == FALSE) { to_future = FALSE;   lag_direction <- 1 }
+
   if(to_future == TRUE) lag_direction <- -1
+  
+  # xts::lag.xts rules
+  if( whiches <= NROW(x) ) {
+    # from past
+    if(!to_future) x_result <- ( x - xts::lag.xts(x, whiches * lag_direction) )/ abs(xts::lag.xts(x, whiches * lag_direction)) * 100 * lag_direction
+    # to future
+    if( to_future) x_result <- ( xts::lag.xts(x, whiches * lag_direction) - x )/ abs(                                       x) * 100 * lag_direction
+  } else {
+    x[,] <- NA_real_
+    x_result <- x
+  }
+
+  # would/should always be/been true else I may/have/never ever made it his far
+  if(x_try.xts_success) { 
+    xts::reclass(x_result, x_orig) 
+  } 
   
   Sys.setenv(TZ=oldtz)
   options(ops)
   
-  return(( x - xts::lag.xts(x, whiches * lag_direction) )/ abs(x) * 100 * lag_direction)
+  return(x_result)
 } 
+
+# > library(xts)
+# > data(sample_matrix)
+# > sample_xts <- as.xts(sample_matrix)
+# > head(sample_xts[,"Open"],4) # x
+#                          Open
+# 2007-01-02 50.039781911546299
+# 2007-01-03 50.230496197795397
+# 2007-01-04 50.420955209067003
+# 2007-01-05 50.373468054328498
+# >
+# > PCTCHG.xts(head(sample_xts[,"Open"],4), whiches = 1,                 )
+#                             Open
+# 2007-01-02                    NA
+# 2007-01-03  0.381125334611203126 # res
+# 2007-01-04  0.379170077320410137
+# 2007-01-05 -0.094181386571521211
+# >
+# > ( 50.230496197795397 - 50.039781911546299 ) / abs(50.039781911546299) * 100
+# [1] 0.38112533461120313
+# >
+# > PCTCHG.xts(head(sample_xts[,"Open"],4), whiches = 1, to_future = TRUE )
+#                             Open
+# 2007-01-02 -0.381125334611203126
+# 2007-01-03 -0.379170077320410137 # res
+# 2007-01-04  0.094181386571521211
+# 2007-01-05                    NA
+# >
+# > ( 50.420955209067003 -50.230496197795397) / abs( 50.230496197795397 ) * 100
+# [1] 0.37917007732041014
+# 
+# # NOT(whiches <= NROW(x))
+# > PCTCHG.xts(head(sample_xts[,"Open"],4), whiches = 5, to_future = TRUE )
+# >
+#            Open
+# 2007-01-02   NA
+# 2007-01-03   NA
+# 2007-01-04   NA
+# 2007-01-05   NA
+
 
 
 # o_args is av named vector of arguments ( but user should really should use a Curry )
