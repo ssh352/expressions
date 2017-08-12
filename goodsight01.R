@@ -199,7 +199,7 @@ PCTCHG.xts <- function(x, whiches, to_future = NULL) {
   # would/should always be/been true else I may/have/never ever made it his far
   if(x_try.xts_success) { 
     xts::reclass(x_result, x_orig) 
-  } 
+  } -> x_result
   
   Sys.setenv(TZ=oldtz)
   options(ops)
@@ -582,22 +582,74 @@ delay_since_last_obs.xts <-function(x) {
   }
   
   # ONLY works on a single column xts
-
   # uses   delay_since_last_obs.default
   
+  require(xts) # # Attaching package: ‘zoo’
+  # IF NOT Error in try.xts(element1) : could not find function "try.xts"
+  
+  x_orig <- x
+  c_orig <- class(x)[1] # original class
+  
+  ## VERY BASIC attemped CLASS conversion ##
+  x_try.xts_success <- FALSE
+  x_try.xts <- try(xts::try.xts(x_orig), silent = T)
+  #
+  x         <- if(any("try-error" %in% class(x_try.xts))) { stop("delay_since_last_obs.xts could not make an xts") } else { x_try.xts_success <- TRUE; x_try.xts }
+
   x_core  <- as.vector(coredata(x))
   x_index <- index(x)
   
   x_core_new <- delay_since_last_obs.default(x_core)
   
+  x_result <- xts(x_core_new,x_index)
+  
+  # Should have always made it here
+  if(x_try.xts_success) { 
+    xts::reclass(x_result, x_orig) 
+  } -> x_result
+  
   Sys.setenv(TZ=oldtz)
   options(ops)
   
-  return(xts(x_core_new,x_index))
+  return(x_result)
 
 } 
 
-# ADD A a revord fo each day is this what I want?
+# # payload NA-gaps matter ( NOT index time gaps ) 
+# xts::xts(c(101,NA,NA,NA,102,NA,NA),zoo::as.Date(seq(10,70,10)))
+#            [,1]
+# 1970-01-11  101
+# 1970-01-21   NA
+# 1970-01-31   NA
+# 1970-02-10   NA
+# 1970-02-20  102
+# 1970-03-02   NA
+# 1970-03-12   NA
+# 
+# delay_since_last_obs.xts(xts::xts(c(101,NA,NA,NA,102,NA,NA),zoo::as.Date(seq(10,70,10))))
+#            [,1]
+# 1970-01-11    0
+# 1970-01-21    1
+# 1970-01-31    2
+# 1970-02-10    3
+# 1970-02-20    0
+# 1970-03-02    1
+# 1970-03-12    2
+# 
+# # S3 dispatch TEST
+# delay_since_last_obs(xts::xts(c(101,NA,NA,NA,102,NA,NA),zoo::as.Date(seq(10,70,10))))
+#            [,1]
+# 1970-01-11    0
+# 1970-01-21    1
+# 1970-01-31    2
+# 1970-02-10    3
+# 1970-02-20    0
+# 1970-03-02    1
+# 1970-03-12    2
+
+
+
+# ADD A a record for each day is this what I want?
 delay_since_last_day.xts <-function(x) { 
 
   ops <- options()
@@ -612,8 +664,20 @@ delay_since_last_day.xts <-function(x) {
   oldtz <- Sys.getenv('TZ')
   if(oldtz=='') {
     Sys.setenv(TZ="UTC")
-}
+  }
   
+  require(xts) # # Attaching package: ‘zoo’
+  # IF NOT Error in try.xts(element1) : could not find function "try.xts"
+  
+  x_orig <- x
+  c_orig <- class(x)[1] # original class
+  
+  ## VERY BASIC attemped CLASS conversion ##
+  x_try.xts_success <- FALSE
+  x_try.xts <- try(xts::try.xts(x_orig), silent = T)
+  #
+  x         <- if(any("try-error" %in% class(x_try.xts))) { stop("delay_since_last_obs.xts could not make an xts") } else { x_try.xts_success <- TRUE; x_try.xts }
+
   # ONLY works on a single column xts
 
   # uses   delay_since_last_obs.default
@@ -625,10 +689,17 @@ delay_since_last_day.xts <-function(x) {
   # find delays(0 - no delay over NA, 1 - one delay 'at' NA)
   x_nonsparse_delays <- delay_since_last_obs.xts(x_nonsparse)
   
+  x_result <- x_nonsparse_delays
+  
+  # Should have always made it here
+  if(x_try.xts_success) { 
+    xts::reclass(x_result, x_orig) 
+  } -> x_result
+  
   Sys.setenv(TZ=oldtz)
   options(ops)
   
-  return(x_nonsparse_delays)
+  return(x_result)
 
 } 
 
