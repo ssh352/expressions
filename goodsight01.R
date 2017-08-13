@@ -28,10 +28,10 @@ na.locfl <- function(x, n = NULL) {
   
   x_try.xts_success <- FALSE
   x_try.xts <- try(  xts::try.xts(x_orig) , silent = T)
-  # x         <- if(any("try-error" %in% class(x_try.xts))) { x_orig } else { x_try.xts_success <- TRUE; x_try.xts }
+  # x         <- if(any(class(x_try.xts) %in% "try-error")) { x_orig } else { x_try.xts_success <- TRUE; x_try.xts }
 
   x_try_zoo_success <- FALSE
-  if(any("try-error" %in% class(x_try.xts))) { 
+  if(any(class(x_try.xts) %in% "try-error")) { 
     x_try_zoo <- try(zoo::as.zoo(x), silent = T)
     if(any("try-error" %in% class(x_try_zoo))) {
       # x_orig # ASSUMING I CAN *STILL* DO SOMETHING WITH THIS
@@ -178,7 +178,7 @@ PCTCHG.xts <- function(x, whiches, to_future = NULL) {
   
   x_try.xts_success <- FALSE
   x_try.xts <- try(xts::try.xts(x_orig), silent = T)
-  x         <- if(any("try-error" %in% class(x_try.xts))) { stop("PCTCHG.xts: can not make an xts object") } else { x_try.xts_success <- TRUE; x_try.xts }
+  x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("PCTCHG.xts: can not make an xts object") } else { x_try.xts_success <- TRUE; x_try.xts }
 
    # normal backwards
   if(is.null(to_future) || to_future == FALSE) { to_future = FALSE;   lag_direction <- 1 }
@@ -468,7 +468,7 @@ collofdays2daily.xts <- function(x) {
   x_try.xts_success <- FALSE
   x_try.xts <- try(xts::try.xts(x_orig), silent = T)
   #
-  x         <- if(any("try-error" %in% class(x_try.xts))) { stop("collofdays2daily.xts could not make an xts") } else { x_try.xts_success <- TRUE; x_try.xts }
+  x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("collofdays2daily.xts could not make an xts") } else { x_try.xts_success <- TRUE; x_try.xts }
   # EXPECTED TO CHANGE THE NUMBER OF ROWS  SO CAN NOT DO 'reclass'
   
   # note: index(first/last(x, '1 day')) expected to return ONE single element
@@ -636,7 +636,7 @@ delay_since_last_obs.xts <-function(x) {
   x_try.xts_success <- FALSE
   x_try.xts <- try(xts::try.xts(x_orig), silent = T)
   #
-  x         <- if(any("try-error" %in% class(x_try.xts))) { stop("delay_since_last_obs.xts could not make an xts") } else { x_try.xts_success <- TRUE; x_try.xts }
+  x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("delay_since_last_obs.xts could not make an xts") } else { x_try.xts_success <- TRUE; x_try.xts }
 
   x_core  <- as.vector(coredata(x))
   x_index <- index(x)
@@ -718,7 +718,7 @@ delay_since_last_day.xts <-function(x) {
   x_try.xts_success <- FALSE
   x_try.xts <- try(xts::try.xts(x_orig), silent = T)
   #
-  x         <- if(any("try-error" %in% class(x_try.xts))) { stop("delay_since_last_day.xts could not make an xts") } else { x_try.xts_success <- TRUE; x_try.xts }
+  x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("delay_since_last_day.xts could not make an xts") } else { x_try.xts_success <- TRUE; x_try.xts }
 
   # ONLY works on a single column xts
 
@@ -840,8 +840,7 @@ is.na.xts <- function(x) {
   x_try.xts_success <- FALSE
   x_try.xts <- try(xts::try.xts(x_orig), silent = T)
   #
-  x         <- if(any("try-error" %in% class(x_try.xts))) { stop("delay_since_last_obs.xts could not make an xts") } else { x_try.xts_success <- TRUE; x_try.xts }
-
+  x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("is.na.xts could not make an xts") } else { x_try.xts_success <- TRUE; x_try.xts }
 
   # expecting a 'single' column xts
 
@@ -905,8 +904,21 @@ rm.days.xts <- function(x, rm_what = NULL) {
   # http://joshuaulrich.github.io/xts/xts_faq.html
 
   # uses stringr::stringr::str_detect, RQuantLib::isBusinessDay
-  require(xts)
 
+  require(xts) # # Attaching package: ‘zoo’
+  # IF NOT Error in try.xts(element1) : could not find function "try.xts"
+  
+  x_orig <- x
+  c_orig <- class(x)[1] # original class
+  
+  ## VERY BASIC attemped CLASS conversion ##
+  x_try.xts_success <- FALSE
+  x_try.xts <- try(xts::try.xts(x_orig), silent = T)
+  #
+  x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("rm.days.xts could not make an xts") } else { x_try.xts_success <- TRUE; x_try.xts }
+
+
+  
   if( !is.null(rm_what)     && 
      ( length(rm_what) > 0) && 
       any(stringr::str_detect(rm_what,"Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday|HOLIDAYS$"))
@@ -964,10 +976,18 @@ rm.days.xts <- function(x, rm_what = NULL) {
     }
   }
   
+  
+  x <- x_result
+
+  # Should have always made it here
+  if(x_try.xts_success) { 
+    xts::reclass(x_result, x_orig) 
+  } -> x_result
+  
   Sys.setenv(TZ=oldtz)
   options(ops)
   
-  return(x)
+  return(x_result)
 }
 # rm.days.xts(xts(0:89,zoo::as.Date("2017-01-01") + 0:89), rm_what = c("Saturday", "Sunday", "BIZHOLIDAYS"))
 #            [,1]
