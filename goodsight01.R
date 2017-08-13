@@ -1076,7 +1076,7 @@ all.nearby.FRED.holidays.xts <- function(x = NULL, d = NULL) {
   x_try.xts_success <- FALSE
   x_try.xts <- try(xts::try.xts(x_orig), silent = T)
   #
-  x         <- if(any("try-error" %in% class(x_try.xts))) { stop("delay_since_last_obs.xts could not make an xts") } else { x_try.xts_success <- TRUE; x_try.xts }
+  x         <- if(any("try-error" %in% class(x_try.xts))) { stop("all.nearby.FRED.holidays.xts could not make an xts") } else { x_try.xts_success <- TRUE; x_try.xts }
 
   require(lubridate)
   
@@ -1185,7 +1185,7 @@ reindex.xts <- function(x,  x_index_new ) {
   x_try.xts_success <- FALSE
   x_try.xts <- try(xts::try.xts(x_orig), silent = T)
   #
-  x         <- if(any("try-error" %in% class(x_try.xts))) { stop("delay_since_last_obs.xts could not make an xts") } else { x_try.xts_success <- TRUE; x_try.xts }
+  x         <- if(any("try-error" %in% class(x_try.xts))) { stop("reindex.xts could not make an xts") } else { x_try.xts_success <- TRUE; x_try.xts }
 
   x_tclass <- tclass(x)
   x_tzone  <- tzone(x)
