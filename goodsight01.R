@@ -33,7 +33,7 @@ na.locfl <- function(x, n = NULL) {
   x_try_zoo_success <- FALSE
   if(any(class(x_try.xts) %in% "try-error")) { 
     x_try_zoo <- try(zoo::as.zoo(x), silent = T)
-    if(any("try-error" %in% class(x_try_zoo))) {
+    if(any(class(x_try_zoo) %in% "try-error"  )) {
       # x_orig # ASSUMING I CAN *STILL* DO SOMETHING WITH THIS
       stop("na.locfl: can not make a zoo object")
     } else {
@@ -903,7 +903,7 @@ rm.days.xts <- function(x, rm_what = NULL) {
   # .indexwday
   # http://joshuaulrich.github.io/xts/xts_faq.html
 
-  # uses stringr::stringr::str_detect, RQuantLib::isBusinessDay
+  # uses stringr::stringr::str_detect, RQuantLib::isHoliday
 
   require(xts) # # Attaching package: ‘zoo’
   # IF NOT Error in try.xts(element1) : could not find function "try.xts"
@@ -1076,7 +1076,7 @@ all.nearby.FRED.holidays.xts <- function(x = NULL, d = NULL) {
   x_try.xts_success <- FALSE
   x_try.xts <- try(xts::try.xts(x_orig), silent = T)
   #
-  x         <- if(any("try-error" %in% class(x_try.xts))) { stop("all.nearby.FRED.holidays.xts could not make an xts") } else { x_try.xts_success <- TRUE; x_try.xts }
+  x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("all.nearby.FRED.holidays.xts could not make an xts") } else { x_try.xts_success <- TRUE; x_try.xts }
 
   require(lubridate)
   
@@ -1185,7 +1185,7 @@ reindex.xts <- function(x,  x_index_new ) {
   x_try.xts_success <- FALSE
   x_try.xts <- try(xts::try.xts(x_orig), silent = T)
   #
-  x         <- if(any("try-error" %in% class(x_try.xts))) { stop("reindex.xts could not make an xts") } else { x_try.xts_success <- TRUE; x_try.xts }
+  x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("reindex.xts could not make an xts") } else { x_try.xts_success <- TRUE; x_try.xts }
 
   x_tclass <- tclass(x)
   x_tzone  <- tzone(x)
@@ -1231,27 +1231,11 @@ reindex.xts <- function(x,  x_index_new ) {
 
 
 
-
 # meant REALY only for St.Louis FRED
 # adjust dates that start on the 1st( sometimes 4th, 3rd, or 2nd) to be the 31st
 # be aware of landings on weekend and long holiday weekends and after a Tuesday or Thursday holiday
 
-# Multiple DATES/day is not allowed
-# > as.xts(0:1,zoo::as.Date(0:0))
-# Error in xts(x, order.by = order.by, frequency = frequency, .CLASS = "integer",  :
-#  NROW(x) must match length(order.by)
-# 
-# [ ] FIX: DETECT OR 'BRUTE FORCE' run to.daily(ANY)
-# Mutiple POSIXct
-# two dates in ONE day: 
-# will be aligned to the _end_ of each period by default ( NOT last observation )
-# (except to.montly, to.quarterly: aligned to beginning)
-# > to.daily(xts(0:1,as.POSIXct(0:1, origin="1970-01-01", tz="UTC")) , OHLC = F)
-#            [,1]
-# 1970-01-01    1
-# 
-# expect ONLY one observation per day
-# slow 170 observations per second
+# slow: 170 observations per second
 # 
 pushback.FRED.1st.days.xts <- function(x) {
 
@@ -1271,7 +1255,7 @@ pushback.FRED.1st.days.xts <- function(x) {
   
   # uses lubridate::`%m+%`
   # uses xts::apply.daily xts::index
-  # uses all.nearby.FRED.holidays  reindex.xts
+  # uses all.nearby.FRED.holidays.xts  reindex.xts
 
   `%M+%` <- lubridate::`%m+%`
   
@@ -1285,12 +1269,18 @@ pushback.FRED.1st.days.xts <- function(x) {
   x_try.xts_success <- FALSE
   x_try.xts <- try(xts::try.xts(x_orig), silent = T)
   #
-  x         <- if(any("try-error" %in% class(x_try.xts))) { stop("pushback.FRED.1st.days.xts could not make an xts") } else { x_try.xts_success <- TRUE; x_try.xts }
+  x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("pushback.FRED.1st.days.xts could not make an xts") } else { x_try.xts_success <- TRUE; x_try.xts }
 
+  # If Mutiple POSIXct per day then I just need ONE of them 
+  x_s        <- xts::split.xts( x, f = "days" )
+  x_s_l_last <- lapply( x_s , function(x) { xts::last(x) } ) # xts::last remaining of all the elements
+  # unsplit
+  x <- do.call(xts::rbind.xts, x_s_l_last )
+  
   # if the 4th is Today and the last 3 days were holidays then shift the index 4 # then done  
   apply.daily(x, function(xx) { 
     # only one daily observation in this case so '&&' is O.K.
-    if(day(index(xx)) == 4 && all.nearby.FRED.holidays(xx, c(-1,-2,-3))) {
+    if(day(index(xx)) == 4 && all.nearby.FRED.holidays.xts(xx, c(-1,-2,-3))) {
       index(xx) %M+% days(-4)
     } else {
       index(xx)
@@ -1301,7 +1291,7 @@ pushback.FRED.1st.days.xts <- function(x) {
   # if the 3rd is Today and the last 2 days were holidays then shift the index 3 # then done  
   apply.daily(x, function(xx) { 
     # only one daily observation in this case so '&&' is O.K.
-    if(day(index(xx)) == 3 && all.nearby.FRED.holidays(xx, c(-1,-2))) {
+    if(day(index(xx)) == 3 && all.nearby.FRED.holidays.xts(xx, c(-1,-2))) {
       index(xx) %M+% days(-3)
     } else {
       index(xx)
@@ -1313,7 +1303,7 @@ pushback.FRED.1st.days.xts <- function(x) {
   # if the 2nd is Today and the last 1 day was a holiday then shift the index 2 # then done  
   apply.daily(x, function(xx) { 
     # only one daily observation in this case so '&&' is O.K.
-    if(day(index(xx)) == 2 && all.nearby.FRED.holidays(xx, c(-1))) {
+    if(day(index(xx)) == 2 && all.nearby.FRED.holidays.xts(xx, c(-1))) {
       index(xx) %M+% days(-2)
     } else {
       index(xx)
@@ -1366,10 +1356,8 @@ pushback.FRED.1st.days.xts <- function(x) {
 # 1948-03-31 272.9
 
 
-
-
 # meant to pass just the index
-year.less.then.or.equal <- function(x, n = NULL ) {
+year.less.then.or.equal.xts <- function(x, n = NULL ) {
 
   ops <- options()
   
@@ -1384,10 +1372,12 @@ year.less.then.or.equal <- function(x, n = NULL ) {
   if(oldtz=='') {
     Sys.setenv(TZ="UTC")
   }
-  
-  require(xts)
-  # uses lubridate::year
+
+    # uses lubridate::year
   # uses ojUtils::ifelseC
+
+  require(xts)
+
 
   # only the index is important
   
@@ -1405,6 +1395,22 @@ year.less.then.or.equal <- function(x, n = NULL ) {
   return(x)
 
 }
+
+# >  year.less.then.or.equal.xts(head(GDP,12), 1948 )
+#            [,1]
+# 1947-01-01    1
+# 1947-04-01    1
+# 1947-07-01    1
+# 1947-10-01    1
+# 1948-01-01    1
+# 1948-04-01    1
+# 1948-07-01    1
+# 1948-10-01    1
+# 1949-01-01    2
+# 1949-04-01    2
+# 1949-07-01    2
+# 1949-10-01    2
+
 
 # seq ... as long as the characters order correctly ... should work
 # 
