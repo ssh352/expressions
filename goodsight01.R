@@ -1034,10 +1034,15 @@ rm.days.xts <- function(x, rm_what = NULL) {
 # 12 2017-01-17                                                  TRUE
 # # ... etc ...
 
-
+# utility function ( input to OTHERS )
+# 
 # xts object: x, 
 # d numeric vector of past days: -1 yesterday, c(-1,-2) yesterday AND the 'day before yesterday' etc ( both must be true )
-all.nearby.FRED.holidays <- function(x = NULL, d = NULL) {
+# 
+# e.g. if TRUE and d = c(-1,-2), then 
+#      BOTH yesterday and the 'day before yesterday' NON-working days of the U.S. Federal Government.
+#
+all.nearby.FRED.holidays.xts <- function(x = NULL, d = NULL) {
 
   ops <- options()
   
@@ -1060,7 +1065,19 @@ all.nearby.FRED.holidays <- function(x = NULL, d = NULL) {
   # https://archive.opm.gov/Operating_Status_Schedules/fedhol/2007.asp
   
   # uses  RQuantLib::isHoliday, rlist::list.zip, lubridate::`%m+%`
-  require(xts)
+
+  require(xts) # # Attaching package: ‘zoo’
+  # IF NOT Error in try.xts(element1) : could not find function "try.xts"
+  
+  x_orig <- x
+  c_orig <- class(x)[1] # original class
+  
+  ## VERY BASIC attemped CLASS conversion ##
+  x_try.xts_success <- FALSE
+  x_try.xts <- try(xts::try.xts(x_orig), silent = T)
+  #
+  x         <- if(any("try-error" %in% class(x_try.xts))) { stop("delay_since_last_obs.xts could not make an xts") } else { x_try.xts_success <- TRUE; x_try.xts }
+
   require(lubridate)
   
   # for ONE single day returns multiple days
@@ -1077,18 +1094,67 @@ all.nearby.FRED.holidays <- function(x = NULL, d = NULL) {
     all(sapply(xx, function(xx) { 
       RQuantLib::isHoliday("UnitedStates/GovernmentBond",zoo::as.Date(xx)) 
     })) 
-  }) -> ret
+  }) -> x_result
   
-  return(ret)
+  # Should have always made it here
+  if(x_try.xts_success) { 
+    xts::reclass(x_result, x_orig) 
+  } -> x_result
+  
+  return(x_result)
   
 }
 # library(xts)
 # data("sample_matrix")
 # sample_xts <- as.xts(sample_matrix)
 #
-# ojUtils::ifelseC( all.nearby.FRED.holidays(sample_xts,c(-1,-2)) , rep(TRUE,length(index(sample_xts))), rep(FALSE,length(index(sample_xts))))
+# ojUtils::ifelseC(all.nearby.FRED.holidays.xts (sample_xts,c(-1,-2)) , rep(TRUE,length(index(sample_xts))), rep(FALSE,length(index(sample_xts))))
 # WORKS
 # [169] FALSE FALSE FALSE  TRUE FALSE FALSE FALSE FALSE FALSE FALSE  TRUE FALSE
+
+# 2017
+
+# xe <- xts(1:31,zoo::as.Date("2017-01-01") + 0:30)
+
+# xe
+#            [,1]
+# 2017-01-01    1
+# 2017-01-02    2
+# 2017-01-03    3
+# 2017-01-04    4
+# 2017-01-05    5
+# 2017-01-06    6
+# 2017-01-07    7
+# 2017-01-08    8
+# 2017-01-09    9
+# 2017-01-10   10
+# 2017-01-11   11
+# 2017-01-12   12
+# 2017-01-13   13
+# 2017-01-14   14
+# 2017-01-15   15
+# 2017-01-16   16
+# 2017-01-17   17
+# 2017-01-18   18
+# 2017-01-19   19
+# 2017-01-20   20
+# 2017-01-21   21
+# 2017-01-22   22
+# 2017-01-23   23
+# 2017-01-24   24
+# 2017-01-25   25
+# 2017-01-26   26
+# 2017-01-27   27
+# 2017-01-28   28
+# 2017-01-29   29
+# 2017-01-30   30
+# 2017-01-31   31
+
+# > ojUtils::ifelseC(all.nearby.FRED.holidays.xts(xe,c(-1,-2)), rep(TRUE,length(index(xe))), rep(FALSE,length(index(xe))))
+# [1] FALSE  TRUE  TRUE FALSE FALSE FALSE FALSE FALSE  TRUE FALSE FALSE FALSE FALSE FALSE FALSE  TRUE  TRUE FALSE FALSE FALSE FALSE
+#[22] FALSE  TRUE FALSE FALSE FALSE FALSE FALSE FALSE  TRUE FALSE
+
+
 
 
 
@@ -1201,6 +1267,9 @@ all.nearby.FRED.holidays <- function(x = NULL, d = NULL) {
 # 
 # }
 
+
+# SWAP OUT an XTS object index WITH my OWN custom INDEX
+# 
 # x          - xts object
 # x_index_new - anyting one dimensional
 #  with a length/NROW(x_index_new) == NROW(x) == length(index(x))
@@ -1222,7 +1291,7 @@ reindex.xts <- function(x,  x_index_new ) {
   .index(x) <- as.vector(unlist(x_index_new)) * if( x_tclass == "Date") { 3600 * 24 } else { 1 }
   x <- x[order(index(x)),]
   tclass(x) <- x_tclass
-  tzone(x)  <- x_tzone
+  tzone(x)  <- x_tzone # get for free( redundant ) == "UTC" if x_tclass == "Date"
   
   Sys.setenv(TZ=oldtz)
   
