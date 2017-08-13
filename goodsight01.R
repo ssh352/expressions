@@ -408,7 +408,40 @@ calculate <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o_
 # head(calculate(IBM,  fnct = "to.monthly", o_args = list(indexAt= 'lastof', OHLC = FALSE)),6)
 
 
- 
+# # testing 
+# library(quantmod); 
+
+# getSymbols("GDP", src = "FRED")
+
+# WEEKENDS WILL SHOW DELAYS 
+# WILL INCREASE the number of days
+# head(calculate(GDP, fnct = "delay_since_last_day.xts", alt_name = "DELAY"),6) 
+
+# > head(calculate(GDP, fnct = "delay_since_last_day.xts", alt_name = "DELAY"),10) 
+#            GDP.DELAY
+# 1947-01-01         0
+# 1947-01-02         1
+# 1947-01-03         2
+# 1947-01-04         3
+# 1947-01-05         4
+# 1947-01-06         5
+# 1947-01-07         6
+# 1947-01-08         7
+# 1947-01-09         8
+# 1947-01-10         9
+
+# What are the ways of treatng missing values in XGboost? #21
+#  Internally, XGBoost will automatically learn what is the best direction to go when a value is missing. 
+#  For continuous features, a missing(default) direction is learnt for missing value data to go into, so when the data of the speficific value is missing, then it goes to the default direction
+#  3.4 Sparsity-aware Split Finding
+#  https://arxiv.org/pdf/1603.02754.pdf
+#  10 JUN 2016
+#  XGBoost: A Scalable Tree Boosting System
+#  29 APR 2016
+# https://github.com/dmlc/xgboost/issues/21
+
+
+
 collofdays2daily.xts <- function(x) {
   
   ops <- options()
@@ -441,13 +474,22 @@ collofdays2daily.xts <- function(x) {
   # note: index(first/last(x, '1 day')) expected to return ONE single element
   # reduce a a 'set of first/last '1 day' to ret ONE single element 
   # also will covert a non-Date index to a Date index
-  x <- xts::to.daily(x, OHLC = F)
+  # 
+  #  zoo::as.Date garantees that a non-Date will become a Date
+  # saved NOW because FUTURE xts::to.daily WILL trim off dates
+  earliest_idx_x <- zoo::as.Date(zoo:::head.zoo(index(x),1))
+  latest_idx_x   <- zoo::as.Date(zoo:::tail.zoo(index(x),1))
+  
+  # trims off dates THAT have a PAYLOAD of NA
+  # Warning in to.period(x, "days", name = name, ...) :
+  # missing values removed from data
+  x <- suppressWarnings(xts::to.daily(x, OHLC = F))
   
   # dispatch on xts:::merge.xts, seq.Date, xts:::index.xts, xts:::first/last.xts
-  x_days <- xts(,seq(index(first(x, '1 day')),index(last(x, '1 day')), by = 1))
+  x_days <- xts(,seq(earliest_idx_x, latest_idx_x, by = 1))
   
   # dispach on xts:::merge.xts
-  ret <- merge(x,x_days)
+  ret <- merge(x_days, x)
   
   Sys.setenv(TZ=oldtz)
   options(ops)
@@ -676,7 +718,7 @@ delay_since_last_day.xts <-function(x) {
   x_try.xts_success <- FALSE
   x_try.xts <- try(xts::try.xts(x_orig), silent = T)
   #
-  x         <- if(any("try-error" %in% class(x_try.xts))) { stop("delay_since_last_obs.xts could not make an xts") } else { x_try.xts_success <- TRUE; x_try.xts }
+  x         <- if(any("try-error" %in% class(x_try.xts))) { stop("delay_since_last_day.xts could not make an xts") } else { x_try.xts_success <- TRUE; x_try.xts }
 
   # ONLY works on a single column xts
 
@@ -703,37 +745,70 @@ delay_since_last_day.xts <-function(x) {
 
 } 
 
-# # testing 
-# library(quantmod); 
+# > delay_since_last_day.xts(xts::xts(c(101,NA,NA,NA,102,NA,NA),zoo::as.Date(seq(10,70,10))))
+#            [,1]
+# 1970-01-11    0
+# 1970-01-12    1
+# 1970-01-13    2
+# 1970-01-14    3
+# 1970-01-15    4
+# 1970-01-16    5
+# 1970-01-17    6
+# 1970-01-18    7
+# 1970-01-19    8
+# 1970-01-20    9
+# 1970-01-21   10
+# 1970-01-22   11
+# 1970-01-23   12
+# 1970-01-24   13
+# 1970-01-25   14
+# 1970-01-26   15
+# 1970-01-27   16
+# 1970-01-28   17
+# 1970-01-29   18
+# 1970-01-30   19
+# 1970-01-31   20
+# 1970-02-01   21
+# 1970-02-02   22
+# 1970-02-03   23
+# 1970-02-04   24
+# 1970-02-05   25
+# 1970-02-06   26
+# 1970-02-07   27
+# 1970-02-08   28
+# 1970-02-09   29
+# 1970-02-10   30
+# 1970-02-11   31
+# 1970-02-12   32
+# 1970-02-13   33
+# 1970-02-14   34
+# 1970-02-15   35
+# 1970-02-16   36
+# 1970-02-17   37
+# 1970-02-18   38
+# 1970-02-19   39
+# 1970-02-20    0
+# 1970-02-21    1
+# 1970-02-22    2
+# 1970-02-23    3
+# 1970-02-24    4
+# 1970-02-25    5
+# 1970-02-26    6
+# 1970-02-27    7
+# 1970-02-28    8
+# 1970-03-01    9
+# 1970-03-02   10
+# 1970-03-03   11
+# 1970-03-04   12
+# 1970-03-05   13
+# 1970-03-06   14
+# 1970-03-07   15
+# 1970-03-08   16
+# 1970-03-09   17
+# 1970-03-10   18
+# 1970-03-11   19
+# 1970-03-12   20
 
-# getSymbols("GDP", src = "FRED")
-
-# WEEKENDS WILL SHOW DELAYS 
-# WILL INCREASE the number of days
-# head(calculate(GDP, fnct = "delay_since_last_day.xts", alt_name = "DELAY"),6) 
-
-# > head(calculate(GDP, fnct = "delay_since_last_day.xts", alt_name = "DELAY"),10) 
-#            GDP.DELAY
-# 1947-01-01         0
-# 1947-01-02         1
-# 1947-01-03         2
-# 1947-01-04         3
-# 1947-01-05         4
-# 1947-01-06         5
-# 1947-01-07         6
-# 1947-01-08         7
-# 1947-01-09         8
-# 1947-01-10         9
-
-# What are the ways of treatng missing values in XGboost? #21
-#  Internally, XGBoost will automatically learn what is the best direction to go when a value is missing. 
-#  For continuous features, a missing(default) direction is learnt for missing value data to go into, so when the data of the speficific value is missing, then it goes to the default direction
-#  3.4 Sparsity-aware Split Finding
-#  https://arxiv.org/pdf/1603.02754.pdf
-#  10 JUN 2016
-#  XGBoost: A Scalable Tree Boosting System
-#  29 APR 2016
-# https://github.com/dmlc/xgboost/issues/21
 
 
   # is the xts observation na? 1 - true  2 - false(regular observation)
