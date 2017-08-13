@@ -1357,6 +1357,7 @@ pushback.FRED.1st.days.xts <- function(x) {
 
 
 # meant to pass just the index
+# 1 - yes # 2 - new
 year.less.then.or.equal.xts <- function(x, n = NULL ) {
 
   ops <- options()
@@ -1376,8 +1377,17 @@ year.less.then.or.equal.xts <- function(x, n = NULL ) {
     # uses lubridate::year
   # uses ojUtils::ifelseC
 
-  require(xts)
-
+  require(xts) # # Attaching package: ‘zoo’
+  # IF NOT Error in try.xts(element1) : could not find function "try.xts"
+  
+  x_orig <- x
+  c_orig <- class(x)[1] # original class
+  
+  ## VERY BASIC attemped CLASS conversion ##
+  x_try.xts_success <- FALSE
+  x_try.xts <- try(xts::try.xts(x_orig), silent = T)
+  #
+  x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("delay_since_last_obs.xts could not make an xts") } else { x_try.xts_success <- TRUE; x_try.xts }
 
   # only the index is important
   
@@ -1388,11 +1398,17 @@ year.less.then.or.equal.xts <- function(x, n = NULL ) {
   # coredata(x)  <- coredata_new
   # safer methoda if no corredata is passed
   x <- xts(coredata_new, index(x))
+  x_result <- x
+  
+  # Should have always made it here
+  if(x_try.xts_success) { 
+    xts::reclass(x_result, x_orig) 
+  } -> x_result
   
   Sys.setenv(TZ=oldtz)
   options(ops)
    
-  return(x)
+  return(x_result)
 
 }
 
