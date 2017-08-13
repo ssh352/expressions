@@ -812,7 +812,7 @@ delay_since_last_day.xts <-function(x) {
 
 
   # is the xts observation na? 1 - true  2 - false(regular observation)
-is.xts.na <- function(x) {
+is.na.xts <- function(x) {
   
   ops <- options()
   
@@ -828,8 +828,20 @@ is.xts.na <- function(x) {
     Sys.setenv(TZ="UTC")
   }
   
-  require(xts)
   # uses ojUtils::ifelseC
+  
+  require(xts) # # Attaching package: ‘zoo’
+  # IF NOT Error in try.xts(element1) : could not find function "try.xts"
+  
+  x_orig <- x
+  c_orig <- class(x)[1] # original class
+  
+  ## VERY BASIC attemped CLASS conversion ##
+  x_try.xts_success <- FALSE
+  x_try.xts <- try(xts::try.xts(x_orig), silent = T)
+  #
+  x         <- if(any("try-error" %in% class(x_try.xts))) { stop("delay_since_last_obs.xts could not make an xts") } else { x_try.xts_success <- TRUE; x_try.xts }
+
 
   # expecting a 'single' column xts
 
@@ -838,11 +850,17 @@ is.xts.na <- function(x) {
 
   coredata_new <- ojUtils::ifelseC(is.na(x_vector), rep(1,x_vector_len), rep(2,x_vector_len))
   coredata(x)  <- coredata_new
+  x_result     <- x
 
+  # Should have always made it here
+  if(x_try.xts_success) { 
+    xts::reclass(x_result, x_orig) 
+  } -> x_result
+  
   Sys.setenv(TZ=oldtz)
   options(ops)
    
-  return(x)
+  return(x_result)
 
 } 
 # xts(c(11,NA,NA,14,NA),zoo::as.Date(1:5))
@@ -853,7 +871,7 @@ is.xts.na <- function(x) {
 # 1970-01-05   14
 # 1970-01-06   NA
 # 
-# is.xts.na(xts(c(11,NA,NA,14,NA),zoo::as.Date(1:5)))
+# is.na.xts(xts(c(11,NA,NA,14,NA),zoo::as.Date(1:5)))
 #            [,1]
 # 1970-01-02    2
 # 1970-01-03    1
