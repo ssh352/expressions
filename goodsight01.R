@@ -1069,6 +1069,8 @@ all.nearby.FRED.holidays.xts <- function(x = NULL, d = NULL) {
   require(xts) # # Attaching package: ‘zoo’
   # IF NOT Error in try.xts(element1) : could not find function "try.xts"
   
+  `%M+%` <- lubridate::`%m+%`
+  
   x_orig <- x
   c_orig <- class(x)[1] # original class
   
@@ -1078,10 +1080,8 @@ all.nearby.FRED.holidays.xts <- function(x = NULL, d = NULL) {
   #
   x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("all.nearby.FRED.holidays.xts could not make an xts") } else { x_try.xts_success <- TRUE; x_try.xts }
 
-  require(lubridate)
-  
   # for ONE single day returns multiple days
-  FUN  <- function(x,d) { index(x) %m+% days(c(d)) }
+  FUN  <- function(x,d) { index(x) %M+% days(c(d)) }
   PARALLEL_LISTS <- Vectorize(FUN, vectorize.args = "d", SIMPLIFY = FALSE)(x, d)
   TOGETHER_LISTS <- do.call(rlist::list.zip, PARALLEL_LISTS)
   
@@ -1426,6 +1426,10 @@ year.less.then.or.equal.xts <- function(x, n = NULL ) {
 # 1949-04-01    2
 # 1949-07-01    2
 # 1949-10-01    2
+
+
+
+
 
 
 # seq ... as long as the characters order correctly ... should work
