@@ -617,9 +617,10 @@ delay_since_last_day.xts <-function(x) {
 # 1970-03-12   20
 
 
-
+# renamed is.na.xt -> is.nasig.xts 
+# to PREVENT ACCIDENTAL REPLACE dispatch the REAL is.na.xts
   # is the xts observation na? 1 - true  2 - false(regular observation)
-is.na.xts <- function(x) {
+is.na_fctr.xts <- function(x) {
   
   ops <- options()
   
@@ -677,7 +678,7 @@ is.na.xts <- function(x) {
 # 1970-01-05   14
 # 1970-01-06   NA
 # 
-# is.na.xts(xts(c(11,NA,NA,14,NA),zoo::as.Date(1:5)))
+# is.na_fctr.xts(xts(c(11,NA,NA,14,NA),zoo::as.Date(1:5)))
 #            [,1]
 # 1970-01-02    2
 # 1970-01-03    1
@@ -685,7 +686,7 @@ is.na.xts <- function(x) {
 # 1970-01-05    2
 # 1970-01-06    1
 
-# meant later to be flagged "_factor" then future as.factor
+
 
 
 
@@ -1242,6 +1243,19 @@ year.less.then.or.equal.xts <- function(x, n = NULL ) {
 # IF o_args IS OF A MIXED DATA.TAPE us a list INSTEAD ( of a vector ) =list(indexAt= 'lastof', OHLC = FALSE)
 calculate <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o_args = NULL, prefix = NULL) {
   
+  # BASED ON 
+  #   Found by RSEEK
+  #   Time series cross-validation 5
+  #   January 24, 2013
+  #   By Zachary Mayer ( OTHERS BY THIS AUTHOR: http://www.r-bloggers.com/author/zachary-mayer/ )
+  #   Zachary Deane-Mayer  
+  #   ( CARET GUY: AND: Author of library(caretEnsemble)
+  #     http://www.r-bloggers.com/time-series-cross-validation-5/
+  #       http://moderntoolmaking.blogspot.com/2013/01/time-series-cross-validation-5.html?utm_source=feedburner&utm_medium=feed&utm_campaign=Feed%3A+ModernToolMaking+%28Modern+Tool+Making%29
+  #     GIST OF THIS ON GITHUB
+  #     https://gist.github.com/zachmayer/4630129#file-1-load-data-r
+  #     ALSO THE AUTHOR OF (cv.ts)(github)
+  
   matched_call <- capture.output(str(match.call()))
   
   ops <- options()
@@ -1264,6 +1278,9 @@ calculate <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o_
     # xts::is.xts, xts::as.xts, rlist::list.flatten(X?X),  rlist::list.ungroup, stringr::str_replace_all, plyr::mutate
   
     check_uses_packages_available("3.4.0",c("zoo","xts","rlist","stringr","DescTools","plyr","DataCombine"), matched_call)
+    
+    require(xts) # # Attaching package: ‘zoo’
+    # IF NOT Error in try.xts(element1) : could not find function "try.xts"
     
     if(is.null(     x))  stop("run-time user must provide input data")
     if(is.null(   fnct)) stop("run-time user must provide a function 'fnct'")
@@ -1367,6 +1384,7 @@ calculate <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o_
 # head(calculate(IBM, fnct = "TTR::SMA", whiches = 2:3, prefix = FALSE),2) # default
 # head(calculate(IBM, fnct = "TTR::SMA", whiches = 2:3, prefix = TRUE ),2) 
 # 
+#
 # # if xts # should dispatch on xts:::na.locf.xts
 # head(calculate(IBM, fnct = "na.locf"),2)
 #
@@ -1385,10 +1403,10 @@ calculate <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o_
 # 
 # PCTCHG(lag.xts)
 # 
-# head(calculate(IBM, fnct = "PCTCHG", whiches = 1),6)
+# head(calculate(IBM, fnct = "PCTCHG.xts", whiches = 1),6)
 #
-# head(calculate(IBM, fnct = "PCTCHG", whiches = 1:2, alt_name = "pastPCTCHG", o_args = c(to_future = FALSE)),6)
-# tail(calculate(IBM, fnct = "PCTCHG", whiches = 1:2, alt_name = "futPCTCHG", o_args = c(to_future = TRUE)),6)
+# head(calculate(IBM, fnct = "PCTCHG.xts", whiches = 1:2, alt_name = "pastPCTCHG", o_args = c(to_future = FALSE)),6)
+# tail(calculate(IBM, fnct = "PCTCHG.xts", whiches = 1:2, alt_name = "futPCTCHG" , o_args = c(to_future = TRUE )),6)
 #
 # # xts::merge.xts # dispach
 # head(merge(IBM, calculate(IBM, fnct = "TTR::SMA", whiches = 2:3)))
@@ -1405,9 +1423,7 @@ calculate <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o_
 
 # WEEKENDS WILL SHOW DELAYS 
 # WILL INCREASE the number of days
-# head(calculate(GDP, fnct = "delay_since_last_day.xts", alt_name = "DELAY"),6) 
-
-# > head(calculate(GDP, fnct = "delay_since_last_day.xts", alt_name = "DELAY"),10) 
+# head(calculate(GDP, fnct = "delay_since_last_day.xts", alt_name = "DELAY"),10) 
 #            GDP.DELAY
 # 1947-01-01         0
 # 1947-01-02         1
@@ -1420,15 +1436,7 @@ calculate <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o_
 # 1947-01-09         8
 # 1947-01-10         9
 
-# What are the ways of treatng missing values in XGboost? #21
-#  Internally, XGBoost will automatically learn what is the best direction to go when a value is missing. 
-#  For continuous features, a missing(default) direction is learnt for missing value data to go into, so when the data of the speficific value is missing, then it goes to the default direction
-#  3.4 Sparsity-aware Split Finding
-#  https://arxiv.org/pdf/1603.02754.pdf
-#  10 JUN 2016
-#  XGBoost: A Scalable Tree Boosting System
-#  29 APR 2016
-# https://github.com/dmlc/xgboost/issues/21
+
 
 
 
@@ -1440,29 +1448,8 @@ calculate <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o_
 #
 # ONLY the index is important: so ONLY passing NO coredate:  xts(,index(IBM)
 #
-# head(calculate(xts(,index(IBM)), fnct = "year.less.then.or.equal", whiches =  seq(year(min(index(IBM))),year(max(index(IBM))),by = 1), alt_name = "y_lth_or_eq_to_fact"),1)
-# tail(calculate(xts(,index(IBM)), fnct = "year.less.then.or.equal", whiches =  seq(year(min(index(IBM))),year(max(index(IBM))),by = 1), alt_name = "y_lth_or_eq_to_fact"),1)
-# 
-
-# > head(calculate(xts(,index(IBM)), fnct = "year.less.then.or.equal", whiches =  seq(year(min(index(IBM))),year(max(index(IBM))),by = 1), alt_name = "y_lth_or_eq_to_fact"),1)
-#            .y_lth_or_eq_to_fact.2007 .y_lth_or_eq_to_fact.2008 .y_lth_or_eq_to_fact.2009 .y_lth_or_eq_to_fact.2010 .y_lth_or_eq_to_fact.2011 .y_lth_or_eq_to_fact.2012
-# 2007-01-03                         1                         1                         1                         1                         1                         1
-#            .y_lth_or_eq_to_fact.2013 .y_lth_or_eq_to_fact.2014 .y_lth_or_eq_to_fact.2015 .y_lth_or_eq_to_fact.2016 .y_lth_or_eq_to_fact.2017
-# 2007-01-03                         1                         1                         1                         1                         1
-# > tail(calculate(xts(,index(IBM)), fnct = "year.less.then.or.equal", whiches =  seq(year(min(index(IBM))),year(max(index(IBM))),by = 1), alt_name = "y_lth_or_eq_to_fact"),1)
-#            .y_lth_or_eq_to_fact.2007 .y_lth_or_eq_to_fact.2008 .y_lth_or_eq_to_fact.2009 .y_lth_or_eq_to_fact.2010 .y_lth_or_eq_to_fact.2011 .y_lth_or_eq_to_fact.2012
-# 2017-06-16                         2                         2                         2                         2                         2                         2
-#            .y_lth_or_eq_to_fact.2013 .y_lth_or_eq_to_fact.2014 .y_lth_or_eq_to_fact.2015 .y_lth_or_eq_to_fact.2016 .y_lth_or_eq_to_fact.2017
-# 2017-06-16                         2                         2                         2                         2                         1
-#
-
-
-# NEED 
-#   [x] 'year less than or equal to' ylthoeto2017
- # NEED  ... IS.YEAR.NOWORBEFORE.1950 .... present_year # bond switchover year
-  # [ [ ] consider  'time signature'-ish functions ]
-#   [ ] buyback yield to be in the database
-#   [ ] generator wrapper over 'left join lateral'-'within'
+# head(calculate(xts(,index(IBM)), fnct = "year.less.then.or.equal.xts", whiches =  seq(lubridate::year(min(index(IBM))), lubridate::year(max(index(IBM))),by = 1), alt_name = "y_lth_or_eq_to_fact"),1)
+# tail(calculate(xts(,index(IBM)), fnct = "year.less.then.or.equal.xts", whiches =  seq(lubridate::year(min(index(IBM))), lubridate::year(max(index(IBM))),by = 1), alt_name = "y_lth_or_eq_to_fact"),1)
 
 
 # TO DO
@@ -1473,19 +1460,16 @@ calculate <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o_
 # findInterval
 # datavis::weighted.quantile
 
-## BASED ON 
-  #   Found by RSEEK
-  #   Time series cross-validation 5
-  #   January 24, 2013
-  #   By Zachary Mayer ( OTHERS BY THIS AUTHOR: http://www.r-bloggers.com/author/zachary-mayer/ )
-  #   Zachary Deane-Mayer  
-  #   ( CARET GUY: AND: Author of library(caretEnsemble)
-  #     http://www.r-bloggers.com/time-series-cross-validation-5/
-  #       http://moderntoolmaking.blogspot.com/2013/01/time-series-cross-validation-5.html?utm_source=feedburner&utm_medium=feed&utm_campaign=Feed%3A+ModernToolMaking+%28Modern+Tool+Making%29
-  #     GIST OF THIS ON GITHUB
-  #     https://gist.github.com/zachmayer/4630129#file-1-load-data-r
-  #     ALSO THE AUTHOR OF (cv.ts)(github)
 
+#  What are the ways of treatng missing values in XGboost? #21
+#  Internally, XGBoost will automatically learn what is the best direction to go when a value is missing. 
+#  For continuous features, a missing(default) direction is learnt for missing value data to go into, so when the data of the speficific value is missing, then it goes to the default direction
+#  3.4 Sparsity-aware Split Finding
+#  https://arxiv.org/pdf/1603.02754.pdf
+#  10 JUN 2016
+#  XGBoost: A Scalable Tree Boosting System
+#  29 APR 2016
+# https://github.com/dmlc/xgboost/issues/21
 
 # debugSource('W:/R-3.4._/goodsight01.R')
 # rm(list=setdiff(ls(all.names=TRUE),c()))
