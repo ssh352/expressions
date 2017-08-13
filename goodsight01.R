@@ -917,8 +917,6 @@ rm.days.xts <- function(x, rm_what = NULL) {
   #
   x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("rm.days.xts could not make an xts") } else { x_try.xts_success <- TRUE; x_try.xts }
 
-
-  
   if( !is.null(rm_what)     && 
      ( length(rm_what) > 0) && 
       any(stringr::str_detect(rm_what,"Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday|HOLIDAYS$"))
@@ -976,8 +974,7 @@ rm.days.xts <- function(x, rm_what = NULL) {
     }
   }
   
-  
-  x <- x_result
+  x_result <- x
 
   # Should have always made it here
   if(x_try.xts_success) { 
@@ -989,13 +986,34 @@ rm.days.xts <- function(x, rm_what = NULL) {
   
   return(x_result)
 }
-# rm.days.xts(xts(0:89,zoo::as.Date("2017-01-01") + 0:89), rm_what = c("Saturday", "Sunday", "BIZHOLIDAYS"))
+# weekends removed
+# 
+# RQuantLib::isHoliday("UnitedStates/NYSE" considers 'weekends' to be holidays
+  # Holiday 2nd removed
+  # Holiday 16th removed
+
+# > rm.days.xts(xts(1:31,zoo::as.Date("2017-01-01") + 0:30), rm_what = c("Saturday", "Sunday", "BIZHOLIDAYS"))
 #            [,1]
-# 2017-01-03    2
-# 2017-01-04    3
-# 2017-01-05    4
-# 2017-01-06    5
-# 2017-01-09    8
+# 2017-01-03    3
+# 2017-01-04    4
+# 2017-01-05    5
+# 2017-01-06    6
+# 2017-01-09    9
+# 2017-01-10   10
+# 2017-01-11   11
+# 2017-01-12   12
+# 2017-01-13   13
+# 2017-01-17   17
+# 2017-01-18   18
+# 2017-01-19   19
+# 2017-01-20   20
+# 2017-01-23   23
+# 2017-01-24   24
+# 2017-01-25   25
+# 2017-01-26   26
+# 2017-01-27   27
+# 2017-01-30   30
+# 2017-01-31   31
 
 # weekends removed
 # BIZHOLIDAYS removed 2017-01-02   2017-01-16   2017-02-20
