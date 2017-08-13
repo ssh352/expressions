@@ -1323,6 +1323,8 @@ calculate <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o_
           paste(names(out), stringr::str_replace_all(fnct,"[.]|::","_")               , sep='.') -> names(out)
         }   
       } 
+      # edge case: a column name is null: possible! allowed!: typical case send: xts(, index(<something>))
+      stringr::str_replace_all(names(out),"^[.]","") -> names(out)
       
       return(out)
     })
