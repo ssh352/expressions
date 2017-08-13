@@ -1269,17 +1269,29 @@ pushback.FRED.1st.days.xts <- function(x) {
     Sys.setenv(TZ="UTC")
   }
   
+  # uses lubridate::`%m+%`
   # uses xts::apply.daily xts::index
   # uses all.nearby.FRED.holidays  reindex.xts
+
+  `%M+%` <- lubridate::`%m+%`
   
-  require(xts)
-  require(lubridate)
+  require(xts) # # Attaching package: ‘zoo’
+  # IF NOT Error in try.xts(element1) : could not find function "try.xts"
+  
+  x_orig <- x
+  c_orig <- class(x)[1] # original class
+  
+  ## VERY BASIC attemped CLASS conversion ##
+  x_try.xts_success <- FALSE
+  x_try.xts <- try(xts::try.xts(x_orig), silent = T)
+  #
+  x         <- if(any("try-error" %in% class(x_try.xts))) { stop("pushback.FRED.1st.days.xts could not make an xts") } else { x_try.xts_success <- TRUE; x_try.xts }
 
   # if the 4th is Today and the last 3 days were holidays then shift the index 4 # then done  
   apply.daily(x, function(xx) { 
     # only one daily observation in this case so '&&' is O.K.
     if(day(index(xx)) == 4 && all.nearby.FRED.holidays(xx, c(-1,-2,-3))) {
-      index(xx) %m+% days(-4)
+      index(xx) %M+% days(-4)
     } else {
       index(xx)
     }
@@ -1290,7 +1302,7 @@ pushback.FRED.1st.days.xts <- function(x) {
   apply.daily(x, function(xx) { 
     # only one daily observation in this case so '&&' is O.K.
     if(day(index(xx)) == 3 && all.nearby.FRED.holidays(xx, c(-1,-2))) {
-      index(xx) %m+% days(-3)
+      index(xx) %M+% days(-3)
     } else {
       index(xx)
     }
@@ -1302,7 +1314,7 @@ pushback.FRED.1st.days.xts <- function(x) {
   apply.daily(x, function(xx) { 
     # only one daily observation in this case so '&&' is O.K.
     if(day(index(xx)) == 2 && all.nearby.FRED.holidays(xx, c(-1))) {
-      index(xx) %m+% days(-2)
+      index(xx) %M+% days(-2)
     } else {
       index(xx)
     }
@@ -1313,17 +1325,23 @@ pushback.FRED.1st.days.xts <- function(x) {
   apply.daily(x, function(xx) { 
     # only one daily observation in this case so '&&' is O.K.
     if(day(index(xx)) ==  1) {
-      index(xx) %m+% days(-1)
+      index(xx) %M+% days(-1)
     } else {
       index(xx)
     }
   }) -> x_1st
   x <- reindex.xts(x, x_1st)
+  x_result <- x
 
+  # Should have always made it here
+  if(x_try.xts_success) { 
+    xts::reclass(x_result, x_orig) 
+  } -> x_result
+  
   Sys.setenv(TZ=oldtz)
   options(ops)
   
-  return(x)
+  return(x_result)
 
 }
 
