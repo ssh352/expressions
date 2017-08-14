@@ -3,6 +3,13 @@
 # goodsight01.R
 
 # last observation carried forard limited
+
+#' Title
+#'
+#' @return
+#' @export
+#'
+#' @examples
 na.locfl <- function(x, n = NULL) {
 
   ops <- options()
@@ -127,6 +134,12 @@ na.locfl <- function(x, n = NULL) {
 
 
 # SHOULD 'RENAME TO 'Uses'
+#' Title
+#'
+#' @return
+#' @export
+#'
+#' @examples
 check_uses_packages_available <- function(programmed_in_R_version, explicit_package_function_calls, matched_call = NULL) {
 
   running_in_R_version <- paste(R.Version()$major,R.Version()$minor, sep = ".")
@@ -153,6 +166,12 @@ check_uses_packages_available <- function(programmed_in_R_version, explicit_pack
 
 # pecent change from the past through NOW 
 # ( if to_future == TRUE, then from NOW to the FUTURE )
+#' Title
+#'
+#' @return
+#' @export
+#'
+#' @examples
 PCTCHG.xts <- function(x, whiches, to_future = NULL) { 
   
   ops <- options()
@@ -248,7 +267,12 @@ PCTCHG.xts <- function(x, whiches, to_future = NULL) {
 
 
 
-
+#' Title
+#'
+#' @return
+#' @export
+#'
+#' @examples
 collofdays2daily.xts <- function(x) {
   
   ops <- options()
@@ -341,7 +365,12 @@ collofdays2daily.xts <- function(x) {
 # 
 # # irregular: time(in future) window(horizon) to prediction
 # TMinfutTOPRED
-
+#' Title
+#'
+#' @return
+#' @export
+#'
+#' @examples
 delay_since_last_obs <- function(x) UseMethod("delay_since_last_obs")
 
 
@@ -413,7 +442,12 @@ delay_since_last_obs.default <- function(x) {
 
 
 
-
+#' Title
+#'
+#' @return
+#' @export
+#'
+#' @examples
 delay_since_last_obs.xts <-function(x) { 
 
   ops <- options()
@@ -499,6 +533,12 @@ delay_since_last_obs.xts <-function(x) {
 
 
 # ADD A a record for each day is this what I want?
+#' Title
+#'
+#' @return
+#' @export
+#'
+#' @examples
 delay_since_last_day.xts <-function(x) { 
 
   ops <- options()
@@ -620,6 +660,12 @@ delay_since_last_day.xts <-function(x) {
 # renamed is.na.xt -> is.nasig.xts 
 # to PREVENT ACCIDENTAL REPLACE dispatch the REAL is.na.xts
   # is the xts observation na? 1 - true  2 - false(regular observation)
+#' Title
+#'
+#' @return
+#' @export
+#'
+#' @examples
 is.na_fctr.xts <- function(x) {
   
   ops <- options()
@@ -688,9 +734,13 @@ is.na_fctr.xts <- function(x) {
 
 
 
-
-
 # typical entry rm_what = c("Saturday", "Sunday", "BIZHOLIDAYS" )
+#' Title
+#'
+#' @return
+#' @export
+#'
+#' @examples
 rm.days.xts <- function(x, rm_what = NULL) {
 
   ops <- options()
@@ -850,6 +900,13 @@ rm.days.xts <- function(x, rm_what = NULL) {
 # e.g. if TRUE and d = c(-1,-2), then 
 #      BOTH yesterday and the 'day before yesterday' NON-working days of the U.S. Federal Government.
 #
+
+#' Title
+#'
+#' @return
+#' @export
+#'
+#' @examples
 all.nearby.FRED.holidays.xts <- function(x = NULL, d = NULL) {
 
   ops <- options()
@@ -973,6 +1030,12 @@ all.nearby.FRED.holidays.xts <- function(x = NULL, d = NULL) {
 #   xts object
 # x_index_new
 #  anyting one dimensional with a length/NROW(x_index_new) == NROW(x) == length(index(x))
+#' Title
+#'
+#' @return
+#' @export
+#'
+#' @examples
 reindex.xts <- function(x,  x_index_new ) {
 
   require(xts)
@@ -1045,6 +1108,13 @@ reindex.xts <- function(x,  x_index_new ) {
 
 # slow: 170 observations per second
 # 
+
+#' Title
+#'
+#' @return
+#' @export
+#'
+#' @examples
 pushback.FRED.1st.days.xts <- function(x) {
 
   ops <- options()
@@ -1166,6 +1236,13 @@ pushback.FRED.1st.days.xts <- function(x) {
 
 # meant to pass just the index
 # 1 - yes # 2 - new
+
+#' Title
+#'
+#' @return
+#' @export
+#'
+#' @examples
 year.less.then.or.equal.xts <- function(x, n = NULL ) {
 
   ops <- options()
@@ -1241,7 +1318,14 @@ year.less.then.or.equal.xts <- function(x, n = NULL ) {
 ## [ ] SKIPPED FOR NOW # WILL COME BACK LATER ##
 # o_args is av named vector of arguments ( but user should really should use a Curry )
 # IF o_args IS OF A MIXED DATA.TAPE us a list INSTEAD ( of a vector ) =list(indexAt= 'lastof', OHLC = FALSE)
-calculate <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o_args = NULL, prefix = NULL) {
+
+#' Title
+#'
+#' @return
+#' @export
+#'
+#' @examples
+expand.xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o_args = NULL, prefix = NULL) {
   
   # BASED ON 
   #   Found by RSEEK
@@ -1272,7 +1356,7 @@ calculate <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o_
     Sys.setenv(TZ="UTC")
   }
   
-  calculate_inner <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o_args = NULL, prefix = NULL) {
+  expand.xts_inner <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o_args = NULL, prefix = NULL) {
     # uses zoo::is.zoo, zoo::as.zoo, zoo::na.locf, DescTools::DoCall, 
     # xts:::na.locf.xts(dispatch), xts:::merge.xts(dispatch), plyr::join_all,  DataCombine::VarDrop, stringr::str_replace_all
     # xts::is.xts, xts::as.xts, rlist::list.flatten(X?X),  rlist::list.ungroup, stringr::str_replace_all, plyr::mutate
@@ -1373,7 +1457,7 @@ calculate <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o_
   Sys.setenv(TZ=oldtz)
   options(ops)
   
-  return(calculate_inner(x = x, fnct =  fnct, whiches = whiches, alt_name = alt_name, o_args = o_args, prefix = prefix))
+  return(expand.xts_inner(x = x, fnct =  fnct, whiches = whiches, alt_name = alt_name, o_args = o_args, prefix = prefix))
 
 }
   
@@ -1382,40 +1466,40 @@ calculate <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o_
 # 
 # SMA
 #
-# head(calculate(IBM, fnct = "TTR::SMA", whiches = 2:3                ),2) # default
-# head(calculate(IBM, fnct = "TTR::SMA", whiches = 2:3, prefix = FALSE),2) # default
-# head(calculate(IBM, fnct = "TTR::SMA", whiches = 2:3, prefix = TRUE ),2) 
+# head(expand.xts(IBM, fnct = "TTR::SMA", whiches = 2:3                ),2) # default
+# head(expand.xts(IBM, fnct = "TTR::SMA", whiches = 2:3, prefix = FALSE),2) # default
+# head(expand.xts(IBM, fnct = "TTR::SMA", whiches = 2:3, prefix = TRUE ),2) 
 # 
 #
 # # if xts # should dispatch on xts:::na.locf.xts
-# head(calculate(IBM, fnct = "na.locf"),2)
+# head(expand.xts(IBM, fnct = "na.locf"),2)
 #
 # na.locf
 # 
 # IBM2 <- IBM
 # IBM2[2:3,1] <- NA_real_
 # head(IBM2)
-# head(calculate(IBM2, fnct = "na.locf"),6)
+# head(expand.xts(IBM2, fnct = "na.locf"),6)
 # 
-# head(calculate(IBM,  fnct = "na.locf", alt_name = "NALOCF"),2)
+# head(expand.xts(IBM,  fnct = "na.locf", alt_name = "NALOCF"),2)
 #
 # lag.xts
 #
-# head(merge(IBM, calculate(IBM, fnct = "lag.xts", whiches = 1:2)))
+# head(merge(IBM, expand.xts(IBM, fnct = "lag.xts", whiches = 1:2)))
 # 
 # PCTCHG(lag.xts)
 # 
-# head(calculate(IBM, fnct = "PCTCHG.xts", whiches = 1),6)
+# head(expand.xts(IBM, fnct = "PCTCHG.xts", whiches = 1),6)
 #
-# head(calculate(IBM, fnct = "PCTCHG.xts", whiches = 1:2, alt_name = "pastPCTCHG", o_args = c(to_future = FALSE)),6)
-# tail(calculate(IBM, fnct = "PCTCHG.xts", whiches = 1:2, alt_name = "futPCTCHG" , o_args = c(to_future = TRUE )),6)
+# head(expand.xts(IBM, fnct = "PCTCHG.xts", whiches = 1:2, alt_name = "pastPCTCHG", o_args = c(to_future = FALSE)),6)
+# tail(expand.xts(IBM, fnct = "PCTCHG.xts", whiches = 1:2, alt_name = "futPCTCHG" , o_args = c(to_future = TRUE )),6)
 #
 # # xts::merge.xts # dispach
-# head(merge(IBM, calculate(IBM, fnct = "TTR::SMA", whiches = 2:3)))
+# head(merge(IBM, expand.xts(IBM, fnct = "TTR::SMA", whiches = 2:3)))
 # 
 
 # REDUCED index size 
-# head(calculate(IBM,  fnct = "to.monthly", o_args = list(indexAt= 'lastof', OHLC = FALSE)),6)
+# head(expand.xts(IBM,  fnct = "to.monthly", o_args = list(indexAt= 'lastof', OHLC = FALSE)),6)
 
 
 # # testing 
@@ -1425,7 +1509,7 @@ calculate <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o_
 
 # WEEKENDS WILL SHOW DELAYS 
 # WILL INCREASE the number of days
-# head(calculate(GDP, fnct = "delay_since_last_day.xts", alt_name = "DELAY"),10) 
+# head(expand.xts(GDP, fnct = "delay_since_last_day.xts", alt_name = "DELAY"),10) 
 #            GDP.DELAY
 # 1947-01-01         0
 # 1947-01-02         1
@@ -1450,8 +1534,8 @@ calculate <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o_
 #
 # ONLY the index is important: so ONLY passing NO coredate:  xts(,index(IBM)
 #
-# head(calculate(xts(,index(IBM)), fnct = "year.less.then.or.equal.xts", whiches =  seq(lubridate::year(min(index(IBM))), lubridate::year(max(index(IBM))),by = 1), alt_name = "y_lth_or_eq_to_fact"),1)
-# tail(calculate(xts(,index(IBM)), fnct = "year.less.then.or.equal.xts", whiches =  seq(lubridate::year(min(index(IBM))), lubridate::year(max(index(IBM))),by = 1), alt_name = "y_lth_or_eq_to_fact"),1)
+# head(expand.xts(xts(,index(IBM)), fnct = "year.less.then.or.equal.xts", whiches =  seq(lubridate::year(min(index(IBM))), lubridate::year(max(index(IBM))),by = 1), alt_name = "y_lth_or_eq_to_fact"),1)
+# tail(expand.xts(xts(,index(IBM)), fnct = "year.less.then.or.equal.xts", whiches =  seq(lubridate::year(min(index(IBM))), lubridate::year(max(index(IBM))),by = 1), alt_name = "y_lth_or_eq_to_fact"),1)
 
 
 # TO DO
