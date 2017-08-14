@@ -1450,11 +1450,23 @@ expand.xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o
     
     }
       
+    require(xts) # # Attaching package: ‘zoo’
+    # IF NOT Error in try.xts(element1) : could not find function "try.xts"
+    
+    x_orig <- x
+    c_orig <- class(x)[1] # original class
+    
+    ## VERY BASIC attemped CLASS conversion ##
+    x_try.xts_success <- FALSE
+    x_try.xts <- try(xts::try.xts(x_orig), silent = T)
+    #
+    x         <- if(any("try-error" %in% class(x_try.xts))) { x_orig } else { x_try.xts_success <- TRUE; x_try.xts }
+    
     
     x -> INPUT  
   
-    clINPUT <-  class(INPUT)[1] # typically "xts" "zoo"
-    rINPUT <-  if(xts::is.xts(INPUT) || zoo::is.zoo(INPUT)) { index(INPUT) }  else { rownames(INPUT) }
+    # clINPUT <-  class(INPUT)[1] # typically "xts" "zoo"
+    # rINPUT <-  if(xts::is.xts(INPUT) || zoo::is.zoo(INPUT)) { index(INPUT) }  else { rownames(INPUT) }
     RETs <- lapply(whiches, function(x) {
       lapply( INPUT, function(x,whiches) { 
         # as.data.frame(  eval(parse(text = fnct))(x, whiches), stringsAsFactors = FALSE) -> z
@@ -1513,19 +1525,35 @@ expand.xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o
     
     })
     
-    if(any(clINPUT %in% c("xts","zoo"))) { 
-      # assign("RETs",eval(parse(text=paste0(clINPUT[1],"::","as.",clINPUT[1],"(RETs,rINPUT)")))) # xts/zoo get an extra index
-      # xts:::merge.xts(dispatch)
-      RETs <- DescTools::DoCall("merge", RETsUGtDT )
-    } else { 
-      # assign("RETs",eval(parse(text=paste0(                "as.",clINPUT[1],"(RETs)"))))
-      # rownames(RETs) <- rINPUT
-      RETs <- plyr::join_all(RETsUGtDT, by = "index", type = "full")
-      row.names(RETs) <- RETs$index
-      RETs <- RETs[!"index" %in% columns(RETs),,drop = FALSE] 
-    } 
+    # xts:::merge.xts(dispatch)
+    RETs <- DescTools::DoCall("merge", RETsUGtDT )
     
-    return(RETs)
+    # if(any(clINPUT %in% c("xts","zoo"))) { 
+    #   # assign("RETs",eval(parse(text=paste0(clINPUT[1],"::","as.",clINPUT[1],"(RETs,rINPUT)")))) # xts/zoo get an extra index
+    #   # xts:::merge.xts(dispatch)
+    #   RETs <- DescTools::DoCall("merge", RETsUGtDT )
+    # } else { 
+    #   # assign("RETs",eval(parse(text=paste0(                "as.",clINPUT[1],"(RETs)"))))
+    #   # rownames(RETs) <- rINPUT
+    #   RETs <- plyr::join_all(RETsUGtDT, by = "index", type = "full")
+    #   row.names(RETs) <- RETs$index
+    #   RETs <- RETs[!"index" %in% columns(RETs),,drop = FALSE] 
+    # } 
+    
+    # return(RETs)
+    
+    x_result <- RETs
+    
+    # Should have always made it here
+    if(x_try.xts_success) { 
+      xts::reclass(x_result, x_orig) 
+    } -> x_result
+    
+    Sys.setenv(TZ=oldtz)
+    options(ops)
+     
+    return(x_result)
+    
   }
   
   Sys.setenv(TZ=oldtz)
