@@ -1340,6 +1340,28 @@ expand.xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o
   #     https://gist.github.com/zachmayer/4630129#file-1-load-data-r
   #     ALSO THE AUTHOR OF (cv.ts)(github)
   
+  # not used
+  fnct_text_items <- as.character(substitute(fnct))
+  
+  # used
+  fnct_text       <- as.character(deparse(substitute(fnct)))
+  
+  # fnct_text <- as.character(substitute(fnct))
+  # 
+  # if((length(fnct_text) == 3) && eval(parse(text=deparse(fnct_text[1]))) %in% c("::",":::")) {
+  #   fnct_text <- paste0( eval(parse(text=deparse(fnct_text[2]))), eval(parse(text=deparse(fnct_text[1]))), eval(parse(text=deparse(fnct_text[3]))), collapse = "")
+  # }
+  # 
+  # # not encountered case
+  # if((length(fnct_text) == 2) && eval(parse(text=deparse(fnct_text[1]))) %in% c("::",":::")) {
+  #   fnct_text <- paste0( eval(parse(text=deparse(fnct_text[2]))),                                          eval(parse(text=deparse(fnct_text[3]))), collapse = "")
+  # }
+  # 
+  # # not encountered case
+  # if((length(fnct_text)  > 0)                                                              ) {
+  #   fnct_text <- paste0(sapply(fnct_text, function(xx) { eval(parse(text=deparse(xx))) }), collapse = "")
+  # }
+  
   matched_call <- capture.output(str(match.call()))
   
   ops <- options()
@@ -1359,9 +1381,9 @@ expand.xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o
   expand.xts_inner <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o_args = NULL, prefix = NULL) {
     # uses zoo::is.zoo, zoo::as.zoo, zoo::na.locf, DescTools::DoCall, 
     # xts:::na.locf.xts(dispatch), xts:::merge.xts(dispatch), plyr::join_all,  DataCombine::VarDrop, stringr::str_replace_all
-    # xts::is.xts, xts::as.xts, rlist::list.flatten(X?X),  rlist::list.ungroup, stringr::str_replace_all, plyr::mutate
+    # xts::is.xts, xts::as.xts, rlist::list.flatten(X?X),  rlist::list.ungroup, stringr::str_replace_all, plyr::mutate, stringr::str_detect
   
-    check_uses_packages_available("3.4.0",c("zoo","xts","rlist","stringr","DescTools","plyr","DataCombine"), matched_call)
+    check_uses_packages_available("3.4.1",c("zoo","xts","rlist","stringr","DescTools","plyr","DataCombine"), matched_call)
     
     require(xts) # # Attaching package: ‘zoo’
     # IF NOT Error in try.xts(element1) : could not find function "try.xts"
@@ -1377,6 +1399,58 @@ expand.xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o
     have_alt_name <- FALSE
     if(!is.null(alt_name)) have_alt_name <- TRUE # patch # but REALLY the user should use a Curry
   
+    fnct_pass_type_determined <- FALSE
+    
+  
+    isFunctionSyntax <- function(x) { 
+       stringr::str_detect(x,"^[a-zA-Z][a-zA-Z0-9]*(::|:::)[a-zA-Z]([a-zA-Z0-9])*$") || stringr::str_detect(x,"^[a-zA-Z][a-zA-Z0-9]*$")
+    }
+    
+    # pass by   function_name
+    # pass by   function(x,n){  }
+    if(is.function(fnct) && !fnct_pass_type_determined) { 
+      
+
+      # because :: and ::: themselves are functions that return function content 
+      # exists("NS::FUNCT", mode = "function")
+      # then return FALSE
+      
+      # pass by   function(x,n){  }
+      if(!isFunctionSyntax(str_c(fnct_text, collapse = "")) && !fnct_pass_type_determined) { 
+        fnct_pass_type_determined <- TRUE
+        assign("anon", fnct )
+        fnct <- "anon"
+      }
+      
+      # pass by   function_name   namespace::function_name
+      # NOTE: fnct_text SHOULD HAVE already been collapsed
+      if( isFunctionSyntax(str_c(fnct_text, collapse = "")) && !fnct_pass_type_determined) { 
+        fnct_pass_type_determined <- TRUE
+        assign(fnct_text, fnct )
+        fnct <- fnct_text
+      }
+      
+    }
+    
+    if(!is.function(fnct) && !fnct_pass_type_determined) {
+
+      # pass by   "function_name"
+      if(is.character(fnct) && is.function(eval(parse(text=fnct))) &&  isFunctionSyntax(fnct) && !fnct_pass_type_determined) {
+        fnct_pass_type_determined <- TRUE
+        # default
+        # fnct = "function_name"
+      }
+      
+      # pass by   "function(x,n){  }"
+      if(is.character(fnct) && is.function(eval(parse(text=fnct))) && !isFunctionSyntax(fnct) && !fnct_pass_type_determined) {
+        fnct_pass_type_determined <- TRUE
+        assign("anon", eval(parse(text=fnct)))
+        fnct <- "anon"
+      }
+    
+    }
+      
+    
     x -> INPUT  
   
     clINPUT <-  class(INPUT)[1] # typically "xts" "zoo"
@@ -1467,6 +1541,17 @@ expand.xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o
 # SMA
 #
 # head(expand.xts(IBM, fnct = "TTR::SMA", whiches = 2:3                ),2) # default
+
+# # expected pass method
+# head(expand.xts(IBM, fnct =                "TTR::SMA"       , whiches = 2:3                ),2) # default
+# #
+# head(expand.xts(IBM, fnct =                 TTR::SMA        , whiches = 2:3                ),2) # default
+# #
+# head(expand.xts(IBM, fnct = "function(x,n){ TTR::SMA(x,n) }", whiches = 2:3                ),2) # default
+# #
+# head(expand.xts(IBM, fnct =  function(x,n){ TTR::SMA(x,n) } , whiches = 2:3                ),2) # default
+
+
 # head(expand.xts(IBM, fnct = "TTR::SMA", whiches = 2:3, prefix = FALSE),2) # default
 # head(expand.xts(IBM, fnct = "TTR::SMA", whiches = 2:3, prefix = TRUE ),2) 
 # 
@@ -1528,10 +1613,6 @@ expand.xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o
 
 # seq ... as long as the characters order correctly ... should work
 # 
-# uses xts, xts::index, lubridate::year
-#
-# EXPECT only to DO at the VERY end ( or after GARANTEE that new more NEW rows WILL be added )
-#
 # ONLY the index is important: so ONLY passing NO coredate:  xts(,index(IBM)
 #
 # head(expand.xts(xts(,index(IBM)), fnct = "year.less.then.or.equal.xts", whiches =  seq(lubridate::year(min(index(IBM))), lubridate::year(max(index(IBM))),by = 1), alt_name = "y_lth_or_eq_to_fact"),1)
