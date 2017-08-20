@@ -3008,6 +3008,147 @@ load_inbnd_stmtstats <- function (dateindex = NULL, support_dateindex_collection
 # )  -> si_all_g_df
 
 
+
+create_inbnd_stmtstats_aggregates_db <- function(exact_lwd_dbf_dirs = NULL) {
+
+  # R version 3.4.1 (2017-06-30) # sessionInfo()
+  
+  require(RPostgreSQL)
+  require(PivotalR)
+  require(stringi)
+  require(stringr)
+  
+  ops <- options() 
+  
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  options(warn = 1)
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+
+  verify_connection()
+  
+  db.q("
+    CREATE TABLE if not exists fe_data_store.inbnd_stmtstats_aggregates
+    (
+      dateindex integer,
+      dateindexeom double precision,
+      dateindex_fct text,
+      is_sp_fct text,
+      is_sp500_fct text,
+      sector_desc_fct text,
+      is_materials_fct text,
+      industry_desc_fct text,
+      is_gld_fct text,
+      approx_price_o_mktcap_x100 numeric,
+      count_now_inbnd_stmtstat_dateindex numeric,
+      pct_sum_now_o_last_inbnd_stmtstat_mktcap numeric,
+      rat_now_netinc_q1_o_mktcap_x_100 numeric,
+      rat_now_sales_q1_o_mktcap_x_100 numeric,
+      rat_now_netinc_q1_o_sales_x_100 numeric,
+      unweighted_pct_freeprice_ret_01m_ann numeric,
+      sum_mktcap numeric
+    );
+  ", conn.id = cid)
+  
+  as.integer(dir(getsetvar_aaii_sipro_dir())) -> all_load_days
+  
+  if( is.null(exact_lwd_dbf_dirs))                                dateindexes <- max(all_load_days) 
+  if(!is.null(exact_lwd_dbf_dirs) && exact_lwd_dbf_dirs == 'all') dateindexes <-     all_load_days
+  if(!is.null(exact_lwd_dbf_dirs) && exact_lwd_dbf_dirs != 'all') dateindexes <-     exact_lwd_dbf_dirs
+  
+  for(dateindex in dateindexes) {
+  
+    warning(paste0("Beginning inbnd_stmtstats_aggregates query SQL of dateindex: ", dateindex))
+    
+    db.q(str_c("delete from fe_data_store.inbnd_stmtstats_aggregates where dateindex = ", dateindex,";"), conn.id = cid)
+    
+    db.q(str_c("insert into fe_data_store.inbnd_stmtstats_aggregates ", "
+      select 
+          case when sq2.dateindex_fct not in ('empty','all') then                                                                  sq2.dateindex_fct::int                                                                                      else null end dateindex
+        , case when sq2.dateindex_fct not in ('empty','all') then (extract( 'epoch' from ( select date_trunc('month', to_timestamp(sq2.dateindex_fct::int * 3600 *24 )::date) +  interval '1 month' - interval '1 day' )) / ( 3600* 24 ))::int else null end dateindexeom
+        , sq2.dateindex_fct
+        , sq2.is_sp_fct
+        , sq2.is_sp500_fct
+        , sq2.sector_desc_fct
+        , sq2.is_materials_fct
+        , sq2.industry_desc_fct
+        , sq2.is_gld_fct
+        , sq2.approx_price_o_mktcap_x100
+        , sq2.count_now_inbnd_stmtstat_dateindex
+        , sq2.pct_sum_now_o_last_inbnd_stmtstat_mktcap
+        , sq2.rat_now_netinc_q1_o_mktcap_x_100
+        , sq2.rat_now_sales_q1_o_mktcap_x_100
+        , sq2.rat_now_netinc_q1_o_sales_x_100
+        , sq2.unweighted_pct_freeprice_ret_01m_ann
+        , sq2.sum_mktcap
+      from ( -- sq2
+        select 
+            coalesce(sq1.dateindex_fct,        'all') dateindex_fct
+          , coalesce(sq1.is_sp_fct,            'all') is_sp_fct
+          , coalesce(sq1.is_sp500_fct,         'all') is_sp500_fct
+          , coalesce(sq1.sector_desc_fct,      'all') sector_desc_fct
+          , coalesce(sq1.is_materials_fct,     'all') is_materials_fct
+          , coalesce(sq1.industry_desc_fct,    'all') industry_desc_fct
+          , coalesce(sq1.is_gld_fct,           'all') is_gld_fct
+          , sum(sq1.price)                        / nullif(sum(sq1.mktcap), 0)                    * 100.00 approx_price_o_mktcap_x100  -- also EXTERIOR DATA: e.g. just the  S&P value would have been just fine
+          , count(sq1.now_inbnd_stmtid_dateindex)::numeric   count_now_inbnd_stmtstat_dateindex                                                         -- cnt           reported this month
+          , sum(sq1.now_inbnd_stmtstat_mktcap)    /   nullif(sum(sq1.last_inbnd_stmtstat_mktcap), 0)  * 100.00 pct_sum_now_o_last_inbnd_stmtstat_mktcap -- pct by mktcap reported this month
+          , sum(sq1.now_inbnd_stmtstat_netinc_q1) /   nullif(sum(sq1.now_inbnd_stmtstat_mktcap), 0)   * 100.00 rat_now_netinc_q1_o_mktcap_x_100
+          , sum(sq1.now_inbnd_stmtstat_sales_q1)  /   nullif(sum(sq1.now_inbnd_stmtstat_mktcap), 0)   * 100.00  rat_now_sales_q1_o_mktcap_x_100
+          , sum(sq1.now_inbnd_stmtstat_netinc_q1) /   nullif(sum(sq1.now_inbnd_stmtstat_sales_q1), 0) * 100.00 rat_now_netinc_q1_o_sales_x_100
+          , avg(sq1.pct_freeprice_ret_01m_ann)                                                                 unweighted_pct_freeprice_ret_01m_ann
+          , sum(sq1.mktcap)                                                                                    sum_mktcap
+        from ( -- sq1
+          select
+              coalesce(dateindex::text, 'empty')  dateindex_fct
+            , case when sp in ('500', '400','600') then 'sp'    else 'notsp'    end is_sp_fct
+            , case when sp   = '500'               then 'sp500' else 'notsp500' end is_sp500_fct
+            , coalesce(sector_desc,   'empty')      sector_desc_fct
+            , case when sector_desc   = 'Basic Materials'               then 'isbasicmat' else 'notisbasicmat' end is_materials_fct
+            , coalesce(industry_desc, 'empty')      industry_desc_fct
+            , case when industry_desc   = 'Gold & Silver'               then 'isgld'      else 'notgld'        end is_gld_fct
+            , mktcap
+            , case when price < 0.10 or price > 1000.00 then null else price end price
+            , now_inbnd_stmtid_dateindex
+            , last_inbnd_stmtid_dateindex
+            , now_inbnd_stmtstat_mktcap
+            , last_inbnd_stmtstat_mktcap
+            , now_inbnd_stmtstat_netinc_q1
+            , last_inbnd_stmtstat_netinc_q1
+            , now_inbnd_stmtstat_sales_q1
+            , last_inbnd_stmtstat_sales_q1
+            , case when pct_freeprice_ret_01m_ann > 100.00 or pct_freeprice_ret_01m_ann < -100.00 then null else pct_freeprice_ret_01m_ann end pct_freeprice_ret_01m_ann
+          from fe_data_store.si_finecon2 where adr = 0 AND exchange <> 'O'::text  AND company !~~ '%iShares%'::text AND company !~~ '%Vanguard%'::text AND company !~~ 'SPDR'::text AND company !~~ '%PowerShares%'::text AND company !~~ '%Fund%'::text AND company !~~ '%Holding%'::text AND industry_desc !~~ '%Investment Service%'::text
+          -- AND mktcap > 200.0
+          -- and dateindex in (17347, 17317) 
+          and dateindex = ", dateindex, "  -- EVERYTHING HERE 2.7 SECONDS
+          ) sq1
+        group by cube(dateindex_fct, is_sp_fct, is_sp500_fct, sector_desc_fct, is_materials_fct, industry_desc_fct, is_gld_fct)
+      ) sq2 where sq2.dateindex_fct not in ('empty','all')  -- (NO COST DIFFERENCE): SPEED INCREASE by LESS DATA MANIP/RETURNED
+      order by dateindex_fct, is_sp_fct , is_sp500_fct, sector_desc_fct, is_materials_fct, industry_desc_fct, is_gld_fct;
+    "), conn.id = cid) -> add_data_sql
+    
+    warning(paste0("Ending    inbnd_stmtstats_aggregates query SQL of dateindex: ", dateindex))
+    
+  }
+    
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  return(TRUE)
+  
+ }
+# create_inbnd_stmtstats_aggregates_db(exact_lwd_dbf_dirs = c(17347, 17317))
+
+
+
+
 # DECIDED that THESE functions will process ONLY one DATEINDEX at a time
 # 
 # verify_company_details(dateindex = c(15155),  table_f = "si_psd", cnames_e = "^mktcap$") -> si_all_g_df
@@ -3935,7 +4076,7 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
 # my_tbl_df$Higher <- my_tbl_df$High + 100
 # load_obj_direct(my_tbl_df, key_columns = "dateindex")
 #
-# tbl_df’, ‘tbl’ and 'data.frame'
+# tbl_df', 'tbl' and 'data.frame'
 # above: program changes columns "date" or "index" to "dateindex"
 # vix <- tidyquant::tq_get(c("VIX"), get  = "stock.prices", from = "2016-01-01", to  = "2017-01-01")[,c("date","close")]
 # colnames(vix)[2] <- "vix"
@@ -3950,14 +4091,14 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
      # with changes to Yahoo Finance, which also included the following
      # changes to the raw data:
      # 
-     #    • The adjusted close column appears to no longer include
+     #    . The adjusted close column appears to no longer include
      #      dividend adjustments
      # 
-     #    • The close column appears to be adjusted for splits twice
+     #    . The close column appears to be adjusted for splits twice
      # 
-     #    • The open, high, and low columns are adjusted for splits, and
+     #    . The open, high, and low columns are adjusted for splits, and
      # 
-     #    • The raw data may contain missing values.
+     #    . The raw data may contain missing values.
 
 # getSymbols.yahoo
 
@@ -4279,6 +4420,7 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
 # OTHER
 # Real_Sortino of monthly stock returns ('risk')
 # Gold & Silver sector returns ('fear')
+# financial stress index and components data provided by the Federal Reserve Bank of Cleveland ('risk/fear') SEE MY OTHER NOTES
 #   Real_Sortino of Gold & Silver sector returns('risk')
 #    NEG inverse SORTINO - from ANYWHERE WHERE APPROPRIATE
 # Large ticket sales
