@@ -3071,8 +3071,8 @@ create_inbnd_stmtstats_aggregates_db <- function(exact_lwd_dbf_dirs = NULL) {
     
     db.q(str_c("insert into fe_data_store.inbnd_stmtstats_aggregates ", "
       select 
-          case when sq2.dateindex_fct not in ('empty','all') then                                                                  sq2.dateindex_fct::int                                                                                      else null end dateindex
-        , case when sq2.dateindex_fct not in ('empty','all') then (extract( 'epoch' from ( select date_trunc('month', to_timestamp(sq2.dateindex_fct::int * 3600 *24 )::date) +  interval '1 month' - interval '1 day' )) / ( 3600* 24 ))::int else null end dateindexeom
+          case when sq2.dateindex_fct not in ('emptydateindex','alldateindex') then                                                                  sq2.dateindex_fct::int                                                                                      else null end dateindex
+        , case when sq2.dateindex_fct not in ('emptydateindex','alldateindex') then (extract( 'epoch' from ( select date_trunc('month', to_timestamp(sq2.dateindex_fct::int * 3600 *24 )::date) +  interval '1 month' - interval '1 day' )) / ( 3600* 24 ))::int else null end dateindexeom
         , sq2.dateindex_fct
         , sq2.is_sp_fct
         , sq2.is_sp500_fct
@@ -3090,13 +3090,13 @@ create_inbnd_stmtstats_aggregates_db <- function(exact_lwd_dbf_dirs = NULL) {
         , sq2.sum_mktcap
       from ( -- sq2
         select 
-            coalesce(sq1.dateindex_fct,        'all') dateindex_fct
-          , coalesce(sq1.is_sp_fct,            'all') is_sp_fct
-          , coalesce(sq1.is_sp500_fct,         'all') is_sp500_fct
-          , coalesce(sq1.sector_desc_fct,      'all') sector_desc_fct
-          , coalesce(sq1.is_materials_fct,     'all') is_materials_fct
-          , coalesce(sq1.industry_desc_fct,    'all') industry_desc_fct
-          , coalesce(sq1.is_gld_fct,           'all') is_gld_fct
+            coalesce(sq1.dateindex_fct,        'alldateindex') dateindex_fct
+          , coalesce(sq1.is_sp_fct,            'allsp') is_sp_fct
+          , coalesce(sq1.is_sp500_fct,         'allsp500') is_sp500_fct
+          , coalesce(sq1.sector_desc_fct,      'allsector_desc') sector_desc_fct
+          , coalesce(sq1.is_materials_fct,     'allmaterials') is_materials_fct
+          , coalesce(sq1.industry_desc_fct,    'allindustry') industry_desc_fct
+          , coalesce(sq1.is_gld_fct,           'allgld') is_gld_fct
           , sum(sq1.price)                        / nullif(sum(sq1.mktcap), 0)                    * 100.00 approx_price_o_mktcap_x100  -- also EXTERIOR DATA: e.g. just the  S&P value would have been just fine
           , count(sq1.now_inbnd_stmtid_dateindex)::numeric   count_now_inbnd_stmtstat_dateindex                                                         -- cnt           reported this month
           , sum(sq1.now_inbnd_stmtstat_mktcap)    /   nullif(sum(sq1.last_inbnd_stmtstat_mktcap), 0)  * 100.00 pct_sum_now_o_last_inbnd_stmtstat_mktcap -- pct by mktcap reported this month
@@ -3107,13 +3107,13 @@ create_inbnd_stmtstats_aggregates_db <- function(exact_lwd_dbf_dirs = NULL) {
           , sum(sq1.mktcap)                                                                                    sum_mktcap
         from ( -- sq1
           select
-              coalesce(dateindex::text, 'empty')  dateindex_fct
-            , case when sp in ('500', '400','600') then 'sp'    else 'notsp'    end is_sp_fct
-            , case when sp   = '500'               then 'sp500' else 'notsp500' end is_sp500_fct
-            , coalesce(sector_desc,   'empty')      sector_desc_fct
+              coalesce(dateindex::text, 'emptydateindex')  dateindex_fct
+            , case when sp in ('500', '400','600') then 'issp'    else 'notissp'    end is_sp_fct
+            , case when sp   = '500'               then 'issp500' else 'notissp500' end is_sp500_fct
+            , coalesce(sector_desc,   'emptysector')     sector_desc_fct
             , case when sector_desc   = 'Basic Materials'               then 'isbasicmat' else 'notisbasicmat' end is_materials_fct
-            , coalesce(industry_desc, 'empty')      industry_desc_fct
-            , case when industry_desc   = 'Gold & Silver'               then 'isgld'      else 'notgld'        end is_gld_fct
+            , coalesce(industry_desc, 'emptyindustry')      industry_desc_fct
+            , case when industry_desc   = 'Gold & Silver'               then 'isgld'      else 'notisgld'     end is_gld_fct
             , mktcap
             , case when price < 0.10 or price > 1000.00 then null else price end price
             , now_inbnd_stmtid_dateindex
