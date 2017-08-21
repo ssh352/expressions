@@ -3131,7 +3131,7 @@ create_inbnd_stmtstats_aggregates_db <- function(exact_lwd_dbf_dirs = NULL) {
           and dateindex = ", dateindex, "  -- EVERYTHING HERE 2.7 SECONDS
           ) sq1
         group by cube(dateindex_fct, is_sp_fct, is_sp500_fct, sector_desc_fct, is_materials_fct, industry_desc_fct, is_gld_fct)
-      ) sq2 where sq2.dateindex_fct not in ('empty','all')  -- (NO COST DIFFERENCE): SPEED INCREASE by LESS DATA MANIP/RETURNED
+      ) sq2 where sq2.dateindex_fct not in ('emptydateindex','alldateindex')  -- (NO COST DIFFERENCE): SPEED INCREASE by LESS DATA MANIP/RETURNED
       order by dateindex_fct, is_sp_fct , is_sp500_fct, sector_desc_fct, is_materials_fct, industry_desc_fct, is_gld_fct;
     "), conn.id = cid) -> add_data_sql
     
