@@ -3148,6 +3148,293 @@ create_inbnd_stmtstats_aggregates_db <- function(exact_lwd_dbf_dirs = NULL) {
 
 
 
+            
+liquifyDF <- function(x, const_cols_regexpr = "^id", fctr_cols_rexpr = "_fct$") {
+
+  require(magrittr)
+  require(dplyr)
+  require(tidyr)
+  require(tidyselect)
+  require(seplyr)
+  require(R.utils)
+  require(stringr)
+  require(wrapr)
+  
+  if(NROW(x) == 0) { warning("liquifyDF found zero rows"); return(x) }
+  
+  # typically "id" columns
+  const_cols <- vars_select(names(x), matches(const_cols_regexpr))
+  lside_row_1      <- select_se(x, const_cols)[1,, drop = FALSE]
+  not_l_side <-  deselect(x, const_cols)
+  
+                     # garantee no 'id' columns ( and the [rest of] factors )
+  FCT_COLS_VECTOR <- setdiff(vars_select(names(x), matches(fctr_cols_rexpr)), const_cols)
+  FCT_COLS_NAME   <- str_c(FCT_COLS_VECTOR, collapse = "__")
+  FCT_COLS_SEP    <- str_c(FCT_COLS_VECTOR, collapse = ", ")
+  
+  UNITE <- function(x) { 
+    let(list(FCT_COLS_NAME = FCT_COLS_NAME, FCT_COLS_SEP = FCT_COLS_SEP), 
+        unite(x, FCT_COLS_NAME, FCT_COLS_SEP, sep = "__")
+      , subsMethod = "stringsubs", strict = FALSE) 
+    }
+  
+  # make ONE column to represent all factors
+  not_l_side %>% UNITE %>% 
+    # change row.names to FCT_COLS_NAME, drop column 1
+    `row.names<-`({browser();.}[[1]]) %>% select(-1) %>% 
+      # to one dimension : one BIG wide ROW
+      as.matrix %>% wrap(sep = "____") -> not_l_side
+  
+  cbind(lside_row_1,as.data.frame(t(not_l_side))) -> res
+  
+  return(res)
+}
+
+# liquifyDF(GT, const_cols_regexpr = "^dateindex.*", fctr_cols_rexpr = ".*_fct$")
+
+
+liquifyDF <- function(x, const_cols_regexpr = "^id", fctr_cols_rexpr = "_fct$") {
+
+  # R version 3.4.1 (2017-06-30)
+  # LATE AUG 2017
+
+  require(magrittr) # `%>%`
+  # dplyr       select
+  # tidyr       unite
+  # tidyselect  vars_select matches
+  # seplyr      select_se   deselect
+  # R.utils     wrap
+  # stringr     str_c
+  # wrapr       let
+  
+  # NOT WORK
+  # magrittr::`%>%` -> `%M%`
+  
+  if(NROW(x) == 0) { warning("liquifyDF found zero rows"); return(x) }
+  
+  # typically "id" columns
+  const_cols <- tidyselect::vars_select(names(x), tidyselect::matches(const_cols_regexpr))
+  lside_row_1      <- seplyr::select_se(x, const_cols)[1,, drop = FALSE]
+  not_l_side <-  seplyr::deselect(x, const_cols)
+  
+                     # garantee no 'id' columns ( and the [rest of] factors )
+  FCT_COLS_VECTOR <- setdiff(tidyselect::vars_select(names(x), tidyselect::matches(fctr_cols_rexpr)), const_cols)
+  FCT_COLS_NAME   <- stringr::str_c(FCT_COLS_VECTOR, collapse = "__")
+  FCT_COLS_SEP    <- stringr::str_c(FCT_COLS_VECTOR, collapse = ", ")
+  
+  UNITE <- function(x) { 
+    wrapr::let(list(FCT_COLS_NAME = FCT_COLS_NAME, FCT_COLS_SEP = FCT_COLS_SEP), 
+        tidyr::unite(x, FCT_COLS_NAME, FCT_COLS_SEP, sep = "__")
+      , subsMethod = "stringsubs", strict = FALSE) 
+    }
+  
+  # make ONE column to represent all factors
+  not_l_side %>% UNITE %>% 
+    # change row.names to FCT_COLS_NAME, drop column 1
+    `row.names<-`(.[[1]]) %>% dplyr::select(-1) %>% 
+      # to one dimension : one BIG wide ROW
+      as.matrix %>% R.utils::wrap(sep = "____") -> not_l_side
+  
+  cbind(lside_row_1,as.data.frame(t(not_l_side))) -> res
+  
+  return(res)
+}
+
+# A SIMPLE TEST
+
+# data.frame(
+    # id = c(1, 1, 1, 1),
+    # id_fct = c("1", "1", "1", "1"),
+  # col1_fct = c('A1', 'A1', 'A2', 'A2'),
+  # col2_fct = c('B1', 'B2', 'B1', 'B2'),
+  # aggr1 = c(8, 16, 32, 64),
+  # aggr2 = c(10008, 10016, 10032, 10064)
+# , stringsAsFactors = FALSE
+# )  -> DFS
+
+# > DFS
+  # id id_fct col1_fct col2_fct aggr1 aggr2
+# 1  1      1       A1       B1     8 10008
+# 2  1      1       A1       B2    16 10016
+# 3  1      1       A2       B1    32 10032
+# 4  1      1       A2       B2    64 10064
+
+# liquifyDF(DFS)
+
+# > liquifyDF(DFS)
+  # id id_fct A1__B1____aggr1 A1__B2____aggr1 A2__B1____aggr1 A2__B2____aggr1
+# 1  1      1               8              16              32              64
+  # A1__B1____aggr2 A1__B2____aggr2 A2__B1____aggr2 A2__B2____aggr2
+# 1           10008           10016           10032           10064
+
+# liquifyDF(GT, const_cols_regexpr = "^dateindex.*", fctr_cols_rexpr = ".*_fct$")
+# > str(GT)
+# 'data.frame':   8 obs. of  13 variables:
+ # $ dateindex                               : int  17347 17347 17347 17347 17347 17347 17347 17347
+ # $ dateindexeom                            : int  17347 17347 17347 17347 17347 17347 17347 17347
+ # $ dateindex_fct                           : chr  "17347" "17347" "17347" "17347" ...
+ # $ is_sp_fct                               : chr  "allsp" "allsp" "allsp" "issp" ...
+ # $ is_sp500_fct                            : chr  "allsp500" "issp500" "notissp500" "allsp500" ...
+ # $ approx_price_o_mktcap_x100              : num  0.518 0.214 1.414 0.381 0.214 ...
+ # $ count_now_inbnd_stmtstat_dateindex      : num  254 28 226 89 28 61 165 165
+ # $ pct_sum_now_o_last_inbnd_stmtstat_mktcap: num  5.16 5.29 4.75 5.3 5.29 ...
+ # $ rat_now_netinc_q1_o_mktcap_x_100        : num  0.961 1.305 -0.191 1.184 1.305 ...
+ # $ rat_now_sales_q1_o_mktcap_x_100         : num  18.2 15 28.7 17.3 15 ...
+ # $ rat_now_netinc_q1_o_sales_x_100         : num  5.287 8.68 -0.665 6.849 8.68 ...
+ # $ unweighted_pct_freeprice_ret_01m_ann    : num  0.593 1.911 0.417 1.104 1.911 ...
+ # $ sum_mktcap                              : num  28113704 20998101 7115603 23323812 209
+#
+
+# COPY FROM TEMPORARY
+            
+# dbGetQuery(con, "
+
+      # select 
+          # case when sq2.dateindex_fct not in ('emptydateindex','alldateindex') then                                                                  sq2.dateindex_fct::int                                                                                      else null end dateindex
+        # , case when sq2.dateindex_fct not in ('emptydateindex','alldateindex') then (extract( 'epoch' from ( select date_trunc('month', to_timestamp(sq2.dateindex_fct::int * 3600 *24 )::date) +  interval '1 month' - interval '1 day' )) / ( 3600* 24 ))::int else null end dateindexeom
+        # , sq2.dateindex_fct
+        # , sq2.is_sp_fct
+        # , sq2.is_sp500_fct
+        # , sq2.approx_price_o_mktcap_x100
+        # , sq2.count_now_inbnd_stmtstat_dateindex
+        # , sq2.pct_sum_now_o_last_inbnd_stmtstat_mktcap
+        # , sq2.rat_now_netinc_q1_o_mktcap_x_100
+        # , sq2.rat_now_sales_q1_o_mktcap_x_100
+        # , sq2.rat_now_netinc_q1_o_sales_x_100
+        # , sq2.unweighted_pct_freeprice_ret_01m_ann
+        # , sq2.sum_mktcap
+      # from ( -- sq2
+        # select 
+            # coalesce(sq1.dateindex_fct,        'alldateindex') dateindex_fct
+          # , coalesce(sq1.is_sp_fct,            'allsp') is_sp_fct
+          # , coalesce(sq1.is_sp500_fct,         'allsp500') is_sp500_fct
+          # , sum(sq1.price)                        / nullif(sum(sq1.mktcap), 0)                    * 100.00 approx_price_o_mktcap_x100  -- also EXTERIOR DATA: e.g. just the  S&P value would have been just fine
+          # , count(sq1.now_inbnd_stmtid_dateindex)::numeric   count_now_inbnd_stmtstat_dateindex                                                         -- cnt           reported this month
+          # , sum(sq1.now_inbnd_stmtstat_mktcap)    /   nullif(sum(sq1.last_inbnd_stmtstat_mktcap), 0)  * 100.00 pct_sum_now_o_last_inbnd_stmtstat_mktcap -- pct by mktcap reported this month
+          # , sum(sq1.now_inbnd_stmtstat_netinc_q1) /   nullif(sum(sq1.now_inbnd_stmtstat_mktcap), 0)   * 100.00 rat_now_netinc_q1_o_mktcap_x_100
+          # , sum(sq1.now_inbnd_stmtstat_sales_q1)  /   nullif(sum(sq1.now_inbnd_stmtstat_mktcap), 0)   * 100.00  rat_now_sales_q1_o_mktcap_x_100
+          # , sum(sq1.now_inbnd_stmtstat_netinc_q1) /   nullif(sum(sq1.now_inbnd_stmtstat_sales_q1), 0) * 100.00 rat_now_netinc_q1_o_sales_x_100
+          # , avg(sq1.pct_freeprice_ret_01m_ann)                                                                 unweighted_pct_freeprice_ret_01m_ann
+          # , sum(sq1.mktcap)                                                                                    sum_mktcap
+        # from ( -- sq1
+          # select
+              # coalesce(dateindex::text, 'emptydateindex')  dateindex_fct
+            # , case when sp in ('500', '400','600') then 'issp'    else 'notissp'    end is_sp_fct
+            # , case when sp   = '500'               then 'issp500' else 'notissp500' end is_sp500_fct
+            # , mktcap
+            # , case when price < 0.10 or price > 1000.00 then null else price end price
+            # , now_inbnd_stmtid_dateindex
+            # , last_inbnd_stmtid_dateindex
+            # , now_inbnd_stmtstat_mktcap
+            # , last_inbnd_stmtstat_mktcap
+            # , now_inbnd_stmtstat_netinc_q1
+            # , last_inbnd_stmtstat_netinc_q1
+            # , now_inbnd_stmtstat_sales_q1
+            # , last_inbnd_stmtstat_sales_q1
+            # , case when pct_freeprice_ret_01m_ann > 100.00 or pct_freeprice_ret_01m_ann < -100.00 then null else pct_freeprice_ret_01m_ann end pct_freeprice_ret_01m_ann
+          # from fe_data_store.si_finecon2 where adr = 0 AND exchange <> 'O'::text  AND company !~~ '%iShares%'::text AND company !~~ '%Vanguard%'::text AND company !~~ 'SPDR'::text AND company !~~ '%PowerShares%'::text AND company !~~ '%Fund%'::text AND company !~~ '%Holding%'::text AND industry_desc !~~ '%Investment Service%'::text
+          # -- AND mktcap > 200.0
+          # -- and dateindex in (17347, 17317) 
+          # and dateindex = 17347  -- EVERYTHING HERE 2.7 SECONDS
+          # ) sq1
+        # group by cube(dateindex_fct, is_sp_fct, is_sp500_fct)
+      # ) sq2 where sq2.dateindex_fct not in ('emptydateindex','alldateindex')  -- (NO COST DIFFERENCE): SPEED INCREASE by LESS DATA MANIP/RETURNED
+      # order by dateindex_fct, is_sp_fct , is_sp500_fct
+
+# ") -> GT
+
+ # dateindex | dateindexeom | dateindex_fct | is_sp_fct | is_sp500_fct | approx_price_o_mktcap_x100 | count_now_inbnd_stmtstat_dateindex | pct_sum_now_o_last_inbnd_stmtstat_mktcap | rat_now_netinc_q1_o_mktcap_x_100 | rat_now_sales_q1_o_mktcap_x_100 | rat_now_netinc_q1_o_sales_x_100 | unweighted_pct_freeprice_ret_01m_ann | sum_mktcap
+# -----------+--------------+---------------+-----------+--------------+----------------------------+------------------------------------+------------------------------------------+----------------------------------+---------------------------------+---------------------------------+--------------------------------------+-------------
+     # 17347 |        17347 | 17347         | allsp     | allsp500     |   0.5175184990386289970000 |                                254 |                 5.1559631335096084330000 |         0.9613114328189371820000 |       18.1823833047186013600000 |        5.2870485497325448940000 |               0.59277805611222444890 | 28113704.20
+     # 17347 |        17347 | 17347         | allsp     | issp500      |   0.2136159816202809800000 |                                 28 |                 5.2907328952632605760000 |         1.3054309464344947210000 |       15.0395397952483461170000 |        8.6799926341292565890000 |                   1.9113617021276596 | 20998101.20
+     # 17347 |        17347 | 17347         | allsp     | notissp500   |   1.4143329806342484260000 |                                226 |                 4.7508099140242344410000 |        -0.1907730216161953450000 |       28.7043705990169856470000 |       -0.6646131499665371080000 |               0.41681714934696195344 |  7115603.00
+     # 17347 |        17347 | 17347         | issp      | allsp500     |   0.3813841044745876780000 |                                 89 |                 5.3032500109766440120000 |         1.1842060443399664620000 |       17.2896553871473166920000 |        6.8492171638092604970000 |                   1.1041786743515850 | 23323811.60
+     # 17347 |        17347 | 17347         | issp      | issp500      |   0.2136159816202809800000 |                                 28 |                 5.2907328952632605760000 |         1.3054309464344947210000 |       15.0395397952483461170000 |        8.6799926341292565890000 |                   1.9113617021276596 | 20998101.20
+     # 17347 |        17347 | 17347         | issp      | notissp500   |   1.8961092490277379330000 |                                 61 |                 5.4163613371108738430000 |         0.1141614525746643060000 |       37.1512842963692024520000 |        0.3072880379153441880000 |               0.69091503267973856209 |  2325710.40
+     # 17347 |        17347 | 17347         | notissp   | allsp500     |   1.1804087214815630730000 |                                165 |                 4.4190135357192741760000 |        -0.3771013331081302070000 |       23.5429365869327187760000 |       -1.6017599661608768310000 |               0.32018817204301075269 |  4789892.60
+     # 17347 |        17347 | 17347         | notissp   | notissp500   |   1.1804087214815630730000 |                                165 |                 4.4190135357192741760000 |        -0.3771013331081302070000 |       23.5429365869327187760000 |       -1.6017599661608768310000 |               0.32018817204301075269 |  4789892.60
+# (8 rows)
+# -- SELECT is__ THEN all* ACRODSS THE REST OF THE FACTORS
+
+# # GT 
+
+# str(  liquifyDF(GT, const_cols_regexpr = "^dateindex.*", fctr_cols_rexpr = ".*_fct$") )
+
+# 'data.frame':   1 obs. of  67 variables:
+ # $ dateindex                                                      : int 17347
+ # $ dateindexeom                                                   : int 17347
+ # $ dateindex_fct                                                  : chr "17347"
+ # $ allsp__allsp500____approx_price_o_mktcap_x100                  : num 0.518
+ # $ allsp__issp500____approx_price_o_mktcap_x100                   : num 0.214
+ # $ allsp__notissp500____approx_price_o_mktcap_x100                : num 1.41
+ # $ issp__allsp500____approx_price_o_mktcap_x100                   : num 0.381
+ # $ issp__issp500____approx_price_o_mktcap_x100                    : num 0.214
+ # $ issp__notissp500____approx_price_o_mktcap_x100                 : num 1.9
+ # $ notissp__allsp500____approx_price_o_mktcap_x100                : num 1.18
+ # $ notissp__notissp500____approx_price_o_mktcap_x100              : num 1.18
+ # $ allsp__allsp500____count_now_inbnd_stmtstat_dateindex          : num 254
+ # $ allsp__issp500____count_now_inbnd_stmtstat_dateindex           : num 28
+ # $ allsp__notissp500____count_now_inbnd_stmtstat_dateindex        : num 226
+ # $ issp__allsp500____count_now_inbnd_stmtstat_dateindex           : num 89
+ # $ issp__issp500____count_now_inbnd_stmtstat_dateindex            : num 28
+ # $ issp__notissp500____count_now_inbnd_stmtstat_dateindex         : num 61
+ # $ notissp__allsp500____count_now_inbnd_stmtstat_dateindex        : num 165
+ # $ notissp__notissp500____count_now_inbnd_stmtstat_dateindex      : num 165
+ # $ allsp__allsp500____pct_sum_now_o_last_inbnd_stmtstat_mktcap    : num 5.16
+ # $ allsp__issp500____pct_sum_now_o_last_inbnd_stmtstat_mktcap     : num 5.29
+ # $ allsp__notissp500____pct_sum_now_o_last_inbnd_stmtstat_mktcap  : num 4.75
+ # $ issp__allsp500____pct_sum_now_o_last_inbnd_stmtstat_mktcap     : num 5.3
+ # $ issp__issp500____pct_sum_now_o_last_inbnd_stmtstat_mktcap      : num 5.29
+ # $ issp__notissp500____pct_sum_now_o_last_inbnd_stmtstat_mktcap   : num 5.42
+ # $ notissp__allsp500____pct_sum_now_o_last_inbnd_stmtstat_mktcap  : num 4.42
+ # $ notissp__notissp500____pct_sum_now_o_last_inbnd_stmtstat_mktcap: num 4.42
+ # $ allsp__allsp500____rat_now_netinc_q1_o_mktcap_x_100            : num 0.961
+ # $ allsp__issp500____rat_now_netinc_q1_o_mktcap_x_100             : num 1.31
+ # $ allsp__notissp500____rat_now_netinc_q1_o_mktcap_x_100          : num -0.191
+ # $ issp__allsp500____rat_now_netinc_q1_o_mktcap_x_100             : num 1.18
+ # $ issp__issp500____rat_now_netinc_q1_o_mktcap_x_100              : num 1.31
+ # $ issp__notissp500____rat_now_netinc_q1_o_mktcap_x_100           : num 0.114
+ # $ notissp__allsp500____rat_now_netinc_q1_o_mktcap_x_100          : num -0.377
+ # $ notissp__notissp500____rat_now_netinc_q1_o_mktcap_x_100        : num -0.377
+ # $ allsp__allsp500____rat_now_sales_q1_o_mktcap_x_100             : num 18.2
+ # $ allsp__issp500____rat_now_sales_q1_o_mktcap_x_100              : num 15
+ # $ allsp__notissp500____rat_now_sales_q1_o_mktcap_x_100           : num 28.7
+ # $ issp__allsp500____rat_now_sales_q1_o_mktcap_x_100              : num 17.3
+ # $ issp__issp500____rat_now_sales_q1_o_mktcap_x_100               : num 15
+ # $ issp__notissp500____rat_now_sales_q1_o_mktcap_x_100            : num 37.2
+ # $ notissp__allsp500____rat_now_sales_q1_o_mktcap_x_100           : num 23.5
+ # $ notissp__notissp500____rat_now_sales_q1_o_mktcap_x_100         : num 23.5
+ # $ allsp__allsp500____rat_now_netinc_q1_o_sales_x_100             : num 5.29
+ # $ allsp__issp500____rat_now_netinc_q1_o_sales_x_100              : num 8.68
+ # $ allsp__notissp500____rat_now_netinc_q1_o_sales_x_100           : num -0.665
+ # $ issp__allsp500____rat_now_netinc_q1_o_sales_x_100              : num 6.85
+ # $ issp__issp500____rat_now_netinc_q1_o_sales_x_100               : num 8.68
+ # $ issp__notissp500____rat_now_netinc_q1_o_sales_x_100            : num 0.307
+ # $ notissp__allsp500____rat_now_netinc_q1_o_sales_x_100           : num -1.6
+ # $ notissp__notissp500____rat_now_netinc_q1_o_sales_x_100         : num -1.6
+ # $ allsp__allsp500____unweighted_pct_freeprice_ret_01m_ann        : num 0.593
+ # $ allsp__issp500____unweighted_pct_freeprice_ret_01m_ann         : num 1.91
+ # $ allsp__notissp500____unweighted_pct_freeprice_ret_01m_ann      : num 0.417
+ # $ issp__allsp500____unweighted_pct_freeprice_ret_01m_ann         : num 1.1
+ # $ issp__issp500____unweighted_pct_freeprice_ret_01m_ann          : num 1.91
+ # $ issp__notissp500____unweighted_pct_freeprice_ret_01m_ann       : num 0.691
+ # $ notissp__allsp500____unweighted_pct_freeprice_ret_01m_ann      : num 0.32
+ # $ notissp__notissp500____unweighted_pct_freeprice_ret_01m_ann    : num 0.32
+ # $ allsp__allsp500____sum_mktcap                                  : num 28113704
+ # $ allsp__issp500____sum_mktcap                                   : num 20998101
+ # $ allsp__notissp500____sum_mktcap                                : num 7115603
+ # $ issp__allsp500____sum_mktcap                                   : num 23323812
+ # $ issp__issp500____sum_mktcap                                    : num 20998101
+ # $ issp__notissp500____sum_mktcap                                 : num 2325710
+ # $ notissp__allsp500____sum_mktcap                                : num 4789893
+ # $ notissp__notissp500____sum_mktcap                              : num 4789893
+
+# LEFT_OFF
+# NEXT, NEED PARAMETERS TO THE 'create' SQL FUNCTION TO GENERATE LESS COMPLEX FACTOR COMBINATIONS
+# inbound statement loader ?? # does it NEED original* 
+# DOES IT NEED TO overwrite as NEW CURRENT data COMES in?
+# NEXTER need UPSERT generator
+
 
 # DECIDED that THESE functions will process ONLY one DATEINDEX at a time
 # 
