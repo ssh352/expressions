@@ -3146,49 +3146,47 @@ create_inbnd_stmtstats_aggregates_db <- function(exact_lwd_dbf_dirs = NULL) {
  }
 # create_inbnd_stmtstats_aggregates_db(exact_lwd_dbf_dirs = c(17347, 17317))
 
-
-
             
-liquifyDF <- function(x, const_cols_regexpr = "^id", fctr_cols_rexpr = "_fct$") {
-
-  require(magrittr)
-  require(dplyr)
-  require(tidyr)
-  require(tidyselect)
-  require(seplyr)
-  require(R.utils)
-  require(stringr)
-  require(wrapr)
-  
-  if(NROW(x) == 0) { warning("liquifyDF found zero rows"); return(x) }
-  
-  # typically "id" columns
-  const_cols <- vars_select(names(x), matches(const_cols_regexpr))
-  lside_row_1      <- select_se(x, const_cols)[1,, drop = FALSE]
-  not_l_side <-  deselect(x, const_cols)
-  
-                     # garantee no 'id' columns ( and the [rest of] factors )
-  FCT_COLS_VECTOR <- setdiff(vars_select(names(x), matches(fctr_cols_rexpr)), const_cols)
-  FCT_COLS_NAME   <- str_c(FCT_COLS_VECTOR, collapse = "__")
-  FCT_COLS_SEP    <- str_c(FCT_COLS_VECTOR, collapse = ", ")
-  
-  UNITE <- function(x) { 
-    let(list(FCT_COLS_NAME = FCT_COLS_NAME, FCT_COLS_SEP = FCT_COLS_SEP), 
-        unite(x, FCT_COLS_NAME, FCT_COLS_SEP, sep = "__")
-      , subsMethod = "stringsubs", strict = FALSE) 
-    }
-  
-  # make ONE column to represent all factors
-  not_l_side %>% UNITE %>% 
-    # change row.names to FCT_COLS_NAME, drop column 1
-    `row.names<-`({browser();.}[[1]]) %>% select(-1) %>% 
-      # to one dimension : one BIG wide ROW
-      as.matrix %>% wrap(sep = "____") -> not_l_side
-  
-  cbind(lside_row_1,as.data.frame(t(not_l_side))) -> res
-  
-  return(res)
-}
+# liquifyDF <- function(x, const_cols_regexpr = "^id", fctr_cols_rexpr = "_fct$") {
+# 
+#   require(magrittr)
+#   require(dplyr)
+#   require(tidyr)
+#   require(tidyselect)
+#   require(seplyr)
+#   require(R.utils)
+#   require(stringr)
+#   require(wrapr)
+#   
+#   if(NROW(x) == 0) { warning("liquifyDF found zero rows"); return(x) }
+#   
+#   # typically "id" columns
+#   const_cols <- vars_select(names(x), matches(const_cols_regexpr))
+#   lside_row_1      <- select_se(x, const_cols)[1,, drop = FALSE]
+#   not_l_side <-  deselect(x, const_cols)
+#   
+#                      # garantee no 'id' columns ( and the [rest of] factors )
+#   FCT_COLS_VECTOR <- setdiff(vars_select(names(x), matches(fctr_cols_rexpr)), const_cols)
+#   FCT_COLS_NAME   <- str_c(FCT_COLS_VECTOR, collapse = "__")
+#   FCT_COLS_SEP    <- str_c(FCT_COLS_VECTOR, collapse = ", ")
+#   
+#   UNITE <- function(x) { 
+#     let(list(FCT_COLS_NAME = FCT_COLS_NAME, FCT_COLS_SEP = FCT_COLS_SEP), 
+#         unite(x, FCT_COLS_NAME, FCT_COLS_SEP, sep = "__")
+#       , subsMethod = "stringsubs", strict = FALSE) 
+#     }
+#   
+#   # make ONE column to represent all factors
+#   not_l_side %>% UNITE %>% 
+#     # change row.names to FCT_COLS_NAME, drop column 1
+#     `row.names<-`({browser();.}[[1]]) %>% select(-1) %>% 
+#       # to one dimension : one BIG wide ROW
+#       as.matrix %>% wrap(sep = "____") -> not_l_side
+#   
+#   cbind(lside_row_1,as.data.frame(t(not_l_side))) -> res
+#   
+#   return(res)
+# }
 
 # liquifyDF(GT, const_cols_regexpr = "^dateindex.*", fctr_cols_rexpr = ".*_fct$")
 
@@ -3434,6 +3432,130 @@ liquifyDF <- function(x, const_cols_regexpr = "^id", fctr_cols_rexpr = "_fct$") 
 # inbound statement loader ?? # does it NEED original* 
 # DOES IT NEED TO overwrite as NEW CURRENT data COMES in?
 # NEXTER need UPSERT generator
+
+
+# con RPostgreSQLConnection
+# schema_name PostgreSQL collection name
+# table_name  PostgreSQL schema spreadsheet
+# column_name PostgreSQL table field [OPTIONAL] ... otherwise will show all spreadsheet fields
+# is_temporary_table     TRUE/FALSE - is or is not or not a temporary table
+#
+# if a temporary table, just provide the table_name ( PostgreSQL will find the schema_name )
+# 
+pgListTableColumns2 <- function(con, schema_name = NULL, table_name = NULL, column_name = NULL, is_temporary_table = FALSE) {
+
+  # stringr str_c
+  # RPostgreSQLConnection dbGetQuery
+
+  # information_schema.columns
+  #
+  # Select datatype of the field in postgres
+  # https://stackoverflow.com/questions/2146705/select-datatype-of-the-field-in-postgres
+  #
+  # query to identify all data types used in postgresql database tables
+  # https://dba.stackexchange.com/questions/29901/query-to-identify-all-data-types-used-in-postgresql-database-tables?rq=1
+
+  # pg_attribute
+  # 
+  # Query to return output column names and data types of a query, table or view
+  # https://dba.stackexchange.com/questions/75015/query-to-return-output-column-names-and-data-types-of-a-query-table-or-view
+  #
+  # How do I list all columns for a specified table
+  # https://dba.stackexchange.com/questions/22362/how-do-i-list-all-columns-for-a-specified-table?noredirect=1&lq=1
+
+  # many pg_* join
+  # Query the schema details of a table in PostgreSQL?
+  # https://stackoverflow.com/questions/4336259/query-the-schema-details-of-a-table-in-postgresql
+
+  # pg_attribute
+  # https://www.postgresql.org/docs/9.6/static/catalog-pg-attribute.html
+  # pg_class
+  # https://www.postgresql.org/docs/9.6/static/catalog-pg-class.html
+  # pg_namespace
+  # https://www.postgresql.org/docs/9.6/static/catalog-pg-namespace.html
+
+  # Also note that the cast to regclass resolves the table name somewhat 
+  # intelligently according to the current search_path. ( SO I AM EXPLICIT )
+  # It also raises an exception if the name is not valid. Details:
+
+  # Re: How to get schema name in which TEMPORARY table is created?
+  # https://www.postgresql.org/message-id/201103081518.34461.jens.wilke%40affinitas.de
+  
+  # I simply joined by schema_name, table_name, column_name, and ordinal_position
+
+  if(is_temporary_table) {
+  
+    as.vector(unlist(
+      dbGetQuery(con, stringr::str_c(
+        "  select n.nspname 
+            from pg_class c join pg_namespace n on n.oid=c.relnamespace 
+          where c.relname ='", table_name, "' and n.nspname like 'pg_temp%';
+        ")
+      ))) -> schema_name
+  
+    if(is.null(schema_name))  stop("pgListTableColumns2 can not find TEMPORARY table_name (w/wo the column_name)") 
+        
+  }
+  
+  if(is.null(schema_name) || is.null(table_name)) { 
+    stop("pgListTableColumns2 needs a schema_name and a table_name w/wo a column_name") 
+  }
+
+  if(is.null(column_name)) {
+    column_name_search_clause <- "" 
+  } else {
+    column_name_search_clause <- stringr::str_c("and    pg_catalog.pg_attribute.attname = '", column_name, "'")
+  } 
+
+  dbGetQuery(con, stringr::str_c("
+    select 
+        information_schema.columns.udt_catalog
+      , information_schema.columns.udt_schema
+      , information_schema.columns.table_schema
+      , information_schema.columns.table_name
+      , information_schema.columns.column_name
+      , information_schema.columns.ordinal_position
+      , information_schema.columns.udt_name
+      , information_schema.columns.data_type
+      , information_schema.columns.character_maximum_length
+      , information_schema.columns.numeric_precision
+      , information_schema.columns.numeric_scale
+      , information_schema.columns.datetime_precision
+      , format_type(pg_catalog.pg_attribute.atttypid, pg_catalog.pg_attribute.atttypmod) as format_type_type
+      , (case 
+          when information_schema.columns.domain_name is not null then information_schema.columns.domain_name
+          when information_schema.columns.data_type='character varying' then 'varchar('||information_schema.columns.character_maximum_length||')'
+          when information_schema.columns.data_type='numeric' then 'numeric('||information_schema.columns.numeric_precision||','||information_schema.columns.numeric_scale||')'
+        else 
+          information_schema.columns.data_type
+        end)::text as info_schema_type
+      , information_schema.columns.is_nullable
+      , information_schema.columns.column_default
+      , information_schema.columns.is_identity
+    from information_schema.columns, pg_catalog.pg_attribute, pg_catalog.pg_class, pg_catalog.pg_namespace
+    where information_schema.columns.table_schema = '", schema_name, "' and information_schema.columns.table_name = '", table_name,"'
+    and    pg_catalog.pg_attribute.attrelid = pg_catalog.pg_class.oid and pg_catalog.pg_class.relnamespace = pg_catalog.pg_namespace.oid
+    and    pg_catalog.pg_attribute.attrelid = ('", schema_name,"' || '.' || '", table_name,"')::regclass
+    ",  column_name_search_clause, "
+    and    pg_catalog.pg_attribute.attnum > 0
+    and    not pg_catalog.pg_attribute.attisdropped
+    and    information_schema.columns.table_schema     = pg_catalog.pg_namespace.nspname and 
+           information_schema.columns.table_name       = pg_catalog.pg_attribute.attrelid::regclass::text and
+           information_schema.columns.column_name      = pg_catalog.pg_attribute.attname and
+           information_schema.columns.ordinal_position = pg_catalog.pg_attribute.attnum
+    order  by pg_catalog.pg_attribute.attnum;
+  "))
+
+}
+
+# conp <- dbConnect(dbDriver("PostgreSQL"), dbname = "finance_econ",user = "postgres", password = "postgres")
+# pgListTableColumns2(conp, schema_name = 'public', table_name = 'mtcars', column_name = 'mpg')
+# pgListTableColumns2(conp, schema_name = 'public', table_name = 'mtcars'                     )
+# dbGetQuery(conp, "create temporary table temp_xxx(xx int);")
+# pgListTableColumns2(conp,                         table_name = 'temp_xxx'                   , is_temporary_table = TRUE)
+# dbGetQuery(conp, "drop table temp_xxx;")
+# dbDisconnect(conp)
+
 
 
 # DECIDED that THESE functions will process ONLY one DATEINDEX at a time
