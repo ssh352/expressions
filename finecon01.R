@@ -3474,6 +3474,8 @@ pgListTableColumns2 <- function(con, schema_name = NULL, table_name = NULL, colu
   # pg_namespace
   # https://www.postgresql.org/docs/9.6/static/catalog-pg-namespace.html
 
+  # [ ]COULD? IMPROVE THIS TO RETURN A 'ZERO RECORD RESULT SET'
+  #   [ ] ALSO, SAME WITH TEMP
   # Also note that the cast to regclass resolves the table name somewhat 
   # intelligently according to the current search_path. ( SO I AM EXPLICIT )
   # It also raises an exception if the name is not valid. Details:
