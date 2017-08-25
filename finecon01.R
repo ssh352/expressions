@@ -3202,7 +3202,7 @@ liquifyDF <- function(x, const_cols_regexpr = "^id", fctr_cols_rexpr = "_fct$") 
   # tidyselect  vars_select matches
   # seplyr      select_se   deselect
   # R.utils     wrap
-  # stringr     str_c
+  # stringr     str_c str_replace
   # wrapr       let
   
   # NOT WORK
@@ -3234,6 +3234,9 @@ liquifyDF <- function(x, const_cols_regexpr = "^id", fctr_cols_rexpr = "_fct$") 
       as.matrix %>% R.utils::wrap(sep = "____") -> not_l_side
   
   cbind(lside_row_1,as.data.frame(t(not_l_side))) -> res
+  
+  colnames(res) <- tolower(colnames(res))
+  colnames(res) <- stringr::str_replace_all(colnames(res),"[ ]","_")
   
   return(res)
 }
@@ -3427,11 +3430,58 @@ liquifyDF <- function(x, const_cols_regexpr = "^id", fctr_cols_rexpr = "_fct$") 
  # $ notissp__allsp500____sum_mktcap                                : num 4789893
  # $ notissp__notissp500____sum_mktcap                              : num 4789893
 
-# LEFT_OFF
+# LEFT_OFF [ ]
 # NEXT, NEED PARAMETERS TO THE 'create' SQL FUNCTION TO GENERATE LESS COMPLEX FACTOR COMBINATIONS
 # inbound statement loader ?? # does it NEED original* 
 # DOES IT NEED TO overwrite as NEW CURRENT data COMES in?
 # NEXTER need UPSERT generator
+# LEFT_OFF [ ]
+# NEED A PERMANET PER COMPANY BALANCE OF MKTCAP PER 'WHAT ITEMS'? 
+#  DECIDE WHAT IEMS PER SP/SP500/SECTOR(BASIC MATERIALS,ENERYGY)/INDUSTRY(GOLD & SILVER)
+
+# 
+# LOOP(in R) or LATERAL(in SQL) over all dateindexes
+# ----------------------------------------------------
+# 
+# dbGetQuery(con,"
+# select
+#     dateindex 
+#   , dateindexeom
+#   , dateindexeom::text dateindexeom_fct
+#   , 'sector_desc'::text collection_name_fct
+#   , sector_desc sector_desc_fct
+#   , sum(now_inbnd_stmtstat_netinc_q1) sum_now_inbnd_stmtstat_netinc_q1 
+#   , sum(now_inbnd_stmtstat_mktcap)    sum_now_inbnd_stmtstat_mktcap
+# from si_finecon2 where sector_desc in ('Energy','Basic Materials') and dateindexeom = 17378
+# group by dateindex, dateindexeom, sector_desc
+# order by dateindex, dateindexeom, sector_desc
+# ;") -> SFS
+# 
+# > SFS
+#   dateindex dateindexeom dateindexeom_fct collection_name_fct sector_desc_fct
+# 1     17378        17378            17378         sector_desc Basic Materials
+# 2     17378        17378            17378         sector_desc          Energy
+#   sum_now_inbnd_stmtstat_netinc_q1 sum_now_inbnd_stmtstat_mktcap
+# 1                          17503.1                       1002512
+# 2                          12384.8                       1720491
+# 
+# > liquifyDF(SFS,"dateindex.*")
+#   dateindex dateindexeom dateindexeom_fct
+# 1     17378        17378            17378
+#   sector_desc__basic_materials____sum_now_inbnd_stmtstat_netinc_q1
+# 1                                                          17503.1
+#   sector_desc__energy____sum_now_inbnd_stmtstat_netinc_q1
+# 1                                                 12384.8
+#   sector_desc__basic_materials____sum_now_inbnd_stmtstat_mktcap
+# 1                                                       1002512
+#   sector_desc__energy____sum_now_inbnd_stmtstat_mktcap
+# 1                                              1720491
+
+
+
+
+
+
 
 
 # con RPostgreSQLConnection
