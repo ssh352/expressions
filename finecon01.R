@@ -3535,17 +3535,24 @@ pgListTableColumns2 <- function(con, schema_name = NULL, table_name = NULL, colu
   
   # I simply joined by schema_name, table_name, column_name, and ordinal_position
 
+  # uses
+  # RPostgreSQL dbGetQuery dbSendQuery dbColumnInfo dbClearResult
+  # plyr        join
+  
   if(is_temporary_table) {
   
     as.vector(unlist(
-      dbGetQuery(con, stringr::str_c(
+      RPostgreSQL::dbGetQuery(con, stringr::str_c(
         "  select n.nspname 
             from pg_class c join pg_namespace n on n.oid=c.relnamespace 
           where c.relname ='", table_name, "' and n.nspname like 'pg_temp%';
         ")
       ))) -> schema_name
   
-    if(is.null(schema_name))  stop("pgListTableColumns2 can not find TEMPORARY table_name (w/wo the column_name)") 
+    if(is.null(schema_name)) { 
+      warning(stringr::str_c("pgListTableColumns2 can not find TEMPORARY table_name ", table_name, " (w/wo the column_name)"))
+      return(data.frame()) 
+    }
         
   }
   
@@ -3559,7 +3566,31 @@ pgListTableColumns2 <- function(con, schema_name = NULL, table_name = NULL, colu
     column_name_search_clause <- stringr::str_c("and    pg_catalog.pg_attribute.attname = '", column_name, "'")
   } 
 
-  dbGetQuery(con, stringr::str_c("
+  # I do not want an ERROR to stop the program
+  #
+  # table check if exists
+  schema_and_table_exist <- (function() {tryCatch({NROW(suppressMessages(suppressWarnings(RPostgreSQL::dbGetQuery(con, stringr::str_c("select ('", schema_name, "' || '.' || '", table_name, "' )::regclass;"))))) }, error = function(e) { TRUE })})()
+  if(schema_and_table_exist) { # both exist with each other
+    # column check if exists
+    if(!is.null(column_name)){ # a column sent in by the caller
+      column_exists <- RPostgreSQL::dbGetQuery(con, stringr::str_c("select count(1) from information_schema.columns where table_schema = '", schema_name, "' and table_name = '", table_name, "' and column_name = '",column_name,"';"))[1,1]
+      if(column_exists) {
+        pg_catalog.pg_attribute.attrelid_phrase <- stringr::str_c("pg_catalog.pg_attribute.attrelid = ('", schema_name,"' || '.' || '", table_name,"')::regclass")
+      } else {
+        # pg_catalog.pg_attribute.attrelid_phrase <- "'f'"
+        warning(stringr::str_c("In table ", table_name," column ", column_name," is not found."))
+        return(data.frame())
+      }
+    } else { # no column sent in by the caller
+      pg_catalog.pg_attribute.attrelid_phrase <- stringr::str_c("pg_catalog.pg_attribute.attrelid = ('", schema_name,"' || '.' || '", table_name,"')::regclass")
+    }
+  } else { # both 'table_and_schema' do not exist and/or each/any does not exist with each other
+    # pg_catalog.pg_attribute.attrelid_phrase <- "'f'"
+    warning(stringr::str_c("schema ", schema_name," and/or/xor table ", table_name," is not found [together]"))
+    return(data.frame())
+  }
+  
+  RPostgreSQL::dbGetQuery(con, stringr::str_c("
     select 
         information_schema.columns.udt_catalog
       , information_schema.columns.udt_schema
@@ -3587,7 +3618,7 @@ pgListTableColumns2 <- function(con, schema_name = NULL, table_name = NULL, colu
     from information_schema.columns, pg_catalog.pg_attribute, pg_catalog.pg_class, pg_catalog.pg_namespace
     where information_schema.columns.table_schema = '", schema_name, "' and information_schema.columns.table_name = '", table_name,"'
     and    pg_catalog.pg_attribute.attrelid = pg_catalog.pg_class.oid and pg_catalog.pg_class.relnamespace = pg_catalog.pg_namespace.oid
-    and    pg_catalog.pg_attribute.attrelid = ('", schema_name,"' || '.' || '", table_name,"')::regclass
+    and    ", pg_catalog.pg_attribute.attrelid_phrase, "
     ",  column_name_search_clause, "
     and    pg_catalog.pg_attribute.attnum > 0
     and    not pg_catalog.pg_attribute.attisdropped
@@ -3596,16 +3627,60 @@ pgListTableColumns2 <- function(con, schema_name = NULL, table_name = NULL, colu
            information_schema.columns.column_name      = pg_catalog.pg_attribute.attname and
            information_schema.columns.ordinal_position = pg_catalog.pg_attribute.attnum
     order  by pg_catalog.pg_attribute.attnum;
-  "))
+  ")) -> result
+  
+  # of no rows then NOTHING
+  final_result <- data.frame()
+  
+  # if regClass table and 'column exists'
+  if(NROW(result)) {
+    if(is.null(column_name)){
+      rec <- RPostgreSQL::dbSendQuery(con, stringr::str_c("select    *                                      from ", dbQuoteIdentifier(con, schema_name), ".", dbQuoteIdentifier(con, table_name), ";"))
+    } else {
+      rec <- RPostgreSQL::dbSendQuery(con, stringr::str_c("select ", dbQuoteIdentifier(con, column_name), " from ", dbQuoteIdentifier(con, schema_name), ".", dbQuoteIdentifier(con, table_name), ";"))
+    }
+    # dispatch on RPostgreSQL
+    db.col.info <- RPostgreSQL::dbColumnInfo(rec)
+    RPostgreSQL::dbClearResult(rec)
+    db.col.info_result <- cbind(data.frame(table_schema=schema_name, table_name=table_name, ordinal_position=seq_along(row.names(db.col.info))),db.col.info)
+    
+    # column renaming
+    colnames(db.col.info_result)[colnames(db.col.info_result) == "name"] <- "column_name"
+    non_id_cols <- grep("^table_schema$|^table_name$|^column_name$|^ordinal_position$", colnames(db.col.info_result), invert = TRUE)
+    colnames(db.col.info_result)[non_id_cols] <- paste0("db_col_info_", colnames( db.col.info_result))[non_id_cols]
+    
+    # with above, merge() does not keep the order
+    final_result <- plyr::join(result, db.col.info_result, by = c("table_schema", "table_name", "column_name", "ordinal_position"))
+    
+  } 
+  
+  return(final_result)
 
 }
 
 # conp <- dbConnect(dbDriver("PostgreSQL"), dbname = "finance_econ",user = "postgres", password = "postgres")
+# dbWriteTable(conp, mtcars, "mtcars")
 # pgListTableColumns2(conp, schema_name = 'public', table_name = 'mtcars', column_name = 'mpg')
 # pgListTableColumns2(conp, schema_name = 'public', table_name = 'mtcars'                     )
+  # expect printed 'error'
+  #   pgListTableColumns2(conp, schema_name = 'public', table_name = 'mtcarsXX'                     )
+  #   pgListTableColumns2(conp, schema_name = 'publicXX', table_name = 'mtcars'                     )
+  # data frame with 0 columns and 0 rows
 # dbGetQuery(conp, "create temporary table temp_xxx(xx int);")
 # pgListTableColumns2(conp,                         table_name = 'temp_xxx'                   , is_temporary_table = TRUE)
+  # expect printed error
+  #   pgListTableColumns2(conp,                         table_name = 'temp_xxxXXX'                   , is_temporary_table = TRUE)
+  # data frame with 0 columns and 0 rows
 # dbGetQuery(conp, "drop table temp_xxx;")
+# Quote Check
+# dbWriteTable(conp, "iris", iris)
+# pgListTableColumns2(conp, schema_name = 'public', table_name = 'iris'                              )
+# pgListTableColumns2(conp, schema_name = 'public', table_name = 'iris', column_name = 'Petal.Length')
+# 
+## PostgreSQL specific: do not have Upper/mixed table names ( ::regclass does NOT support: drops table_name to lower case )
+## pgListTableColumns2(conp, schema_name = 'public', table_name = 'Iris'                              )
+## select ('public' || '.' || 'Iris' )::regclass;
+## "public.iris"
 # dbDisconnect(conp)
 
 
