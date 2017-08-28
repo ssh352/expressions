@@ -415,6 +415,45 @@ verify_si_finecon_exists <- function () {
 # verify_si_finecon_exists()
 
 
+
+# uses verify_connection
+verify_si_finecon_aggregates_exists <- function () {
+  
+  # R version 3.4.1 (2017-06-30) # sessionInfo()
+  
+  ops <- options()
+  
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  verify_si_finecon_aggregates_exists_inner <- function () {
+    
+
+    verify_connection()
+    db.q("create table if not exists si_finecon2_aggregates();", conn.id = cid)
+    db.q("alter  table               si_finecon2_aggregates add if not exists dateindex    int;", conn.id = cid)
+
+    # (if unnamed index?) ... WILL JUST KEEP ADDING MORE ... so I name it
+    try( { db.q("create unique index if not exists si_finecon2_aggregates_dateindex_key on si_finecon2_aggregates(dateindex);", conn.id = cid) }, silent = TRUE )
+ 
+  }
+  verify_si_finecon_aggregates_exists_inner()
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+}
+# verify_si_finecon_aggregates_exists_exists()
+
+
+
 getsetvar_aaii_sipro_dir <- function (new_dir = NULL) {
   
   # R version 3.3.2 (2016-10-31) # sessionInfo()
@@ -1479,6 +1518,536 @@ upsert <-  function(value = NULL, keys = NULL) { # vector of primary key values
   return(invisible(NULL))
    
 }
+
+
+
+
+## assumes(uses) that input value(data.frame) ALREADY has a column called dateindex
+##   (future) SHOULD BE VECTORIZED: INPUT MANY 'values's (data.frames)
+# NOTE: keys MUST be entered in lowercase
+upsert2 <-  function(value = NULL, keys = NULL, target_table_name = "si_finecon2", upsert_temp_perform_upsert_force = FALSE) { # vector of primary key values
+
+  require(magrittr)
+  require(RPostgreSQL)
+  require(PivotalR)
+  require(stringi)
+  require(stringr)
+  require(R.rsp)
+  
+  # uses clean_text
+  
+  options() -> ops
+  options(max.print = 10000)
+  # RStudio: Options->Code->Dislplay: Console; Limit length of lines displayed in console to: 0
+  options(warn=1)
+  
+  # loading forward ( and backward dates ) that 'do not use company_id'
+  if(is.null(keys)) character() -> keys
+  
+  verify_connection()
+  
+  # SHOULD BE PUT 'outside' OF THE FUNCTION
+  # verify that target_table_name exists  
+  # if(!db.q(str_c("select count(*) from information_schema.tables where table_name = '", target_table_name, "';"), nrows = -1, conn.id = cid)) {
+  if(!dbExistsTable(con, target_table_name)) {
+    if(target_table_name == "si_finecon2") {
+      verify_si_finecon_exists()
+    }
+    if(target_table_name == "si_finecon2_aggregates") {
+      verify_si_finecon_aggregates_exists()
+    }
+  }
+
+  # SHOULD HAVE column dateindex, ELSE I can not (later in the function) join 
+  if(any(colnames(value) %in% "dateindex")) {
+
+    unique(value$dateindex) -> value_unq_index
+
+    # FAULTY LOGIC ( HAVE TO RETURN TO THIS 'TOPIC' )  
+    #    ** DO I NEED A 'SETDIFF INSTEAD?' **
+    # what 'value df dateindex' are already in the database
+    value_unq_index[
+      value_unq_index %in% as.vector(unlist(db.q(str_c("select distinct dateindex from ", dbQuoteIdentifier(con, target_table_name), ";"), nrows = -1, conn.id = cid)))
+                   ] ->  same_dateindex_found_in_db
+
+    # FAULTY LOGIC ( HAVE TO RETURN TO THIS 'TOPIC' ) 
+    # # the value dateindex was not found in the database
+    # if(length(same_dateindex_found_in_db) == 0) {
+    #     
+    #   # if the dateindex was not found in the database then run verify_company_basics(dateindex)
+    #   warning(str_c("no dateindex records of " %s+% ' ' %s+% str_c(value_unq_index, collapse = " ") %s+% ' ' %s+% " found in si_finecon, SO RUNNING verify_company_basics first ")) 
+    #   
+    #   for(dateindex_i in setdiff(value_unq_index, same_dateindex_found_in_db)){
+    #   
+    #     warning(str_c("Begin verify_company_basics/update_from_future_new_company_ids at ",dateindex_i))
+    #     verify_company_basics(dateindex_i) -> si_all_g_df
+    #     update_from_future_new_company_ids(df = si_all_g_df, ref = dateindex_i) -> si_all_g_df # always run
+    #     upsert(si_all_g_df, keys = c("company_id"))
+    #     warning(str_c("End verify_company_basics/update_from_future_new_company_ids at ",dateindex_i))
+    # 
+    #   
+    #   }
+    # 
+    # }
+    
+  }
+  
+  # cleanup and prepare
+                # note: if I send "dateindex", then all records are removed(rm_df_dups)
+                # LATER?, I may want to liberalzed this function "to 'all dups per group'"
+  # ALL 3 already DONE in the verify_ function
+  # { value } %>% rm_df_dups(., keys) %>% lcase_a_remove_useless_columns(.) %>% financize(.) -> value
+  
+  # compare inbound value dat.frame column names and column types 
+  with(value,{sapply(ls(sort=FALSE),function(x){class(get(x))})}) -> value_meta
+  
+  # to what is in the database
+  db.data.frame(target_table_name, conn.id = cid, verbose = FALSE) -> ptr_target_table_name  # class (db.#)
+  col.types(ptr_target_table_name) -> fc_meta
+      names(ptr_target_table_name) -> names(fc_meta) 
+  
+  # names(with types) in value that are 'value only'(setdiff) that need to (soon) be new columns in 'fc'
+  value_meta[names(value_meta) %in% setdiff(names(value_meta),names(fc_meta))] -> fc_new_columns
+
+  # plan to change "numeric"(R) to "numeric(8,2)"(PostgreSQL)
+  #
+  # + other custom column types
+  # 
+  "text"          -> fc_new_columns[fc_new_columns == "character"] 
+  #
+  ## "numeric(8,2)"  -> fc_new_columns[fc_new_columns == "numeric"]  ###
+  # new columns to be put in fc
+  # for numeric greater than 999999.99 make them bigger
+  for (colnames_i in names(fc_new_columns)[fc_new_columns == "numeric"]) {
+  
+    db_numeric_column_i_storage_limit <- as.numeric("999999.99")
+    
+    max_value_colnames_i <- max(value[[colnames_i]], na.rm = TRUE)
+    min_value_colnames_i <- min(value[[colnames_i]], na.rm = TRUE)
+    
+    # >= because R may be inprecise
+    if((max_value_colnames_i >= db_numeric_column_i_storage_limit) || ( -1 * db_numeric_column_i_storage_limit >= min_value_colnames_i)) {
+    
+      # get numer of 9s to the left of the decimal
+      new_numeric <- numb.digits.left.of.decimal(max(max_value_colnames_i, abs(min_value_colnames_i)))
+      str_c("numeric(", new_numeric + 2, ", 2)") -> fc_new_columns[names(fc_new_columns ) == colnames_i]
+      
+    } else {
+    
+            "numeric(8,2)"                       -> fc_new_columns[names(fc_new_columns ) == colnames_i]
+    }
+      
+  } 
+  #
+  "smallint"      -> fc_new_columns[names(fc_new_columns) %in% c("drp_avail","adr")] 
+   
+  # actually add NEW columns to si_finecon 
+  # if any columns exist to add
+  # EXPECTED 'IF-THEN' to be extended
+  if(length(fc_new_columns) > 0L) {
+  
+    # to fc, add new columns ( of 'new columns' from 'value' that do not exist in 'fc' ) ### LEFT_OFF
+    str_trim(str_c(rstring(str_c('
+    alter table if exists ', dbQuoteIdentifier(con, target_table_name), '
+      <% for (i in seq_along(fc_new_columns)) { -%>
+          <% sprintf("add %1$s %2$s", 
+               names(fc_new_columns)[i], fc_new_columns[i]) -> res
+          -%><%= str_c("    ",res) %><%=if(i  < length(fc_new_columns)) ", \n" -%><%=if(i == length(fc_new_columns)) "  \n" -%>
+      <% } %>
+    ;                     
+    '))))  %>% clean_text(.) -> add_columns_sql # 
+              # remove at the beginning
+              # debug at <text>#30: .base_paste0 <- base::paste0\n\n 
+              # stop the rstudio debugger OUTPUT from going inside the string
+
+    db.q(add_columns_sql, conn.id = cid)
+    
+    # to what is in the database
+    db.data.frame(target_table_name, conn.id = cid, verbose = FALSE) -> ptr_target_table_name  # class (db.#)
+    col.types(ptr_target_table_name) -> fc_meta
+        names(ptr_target_table_name) -> names(fc_meta) 
+    
+  } else {
+    warning(str_c("in call to function upsert, no new columns were found to be needed to be added to ", target_table_name, ".  Is this correct?"))
+  }
+  
+  # current columns ( or columns added or not added by ""if(length(fc_new_columns) > 0L)"" ) to be updated
+  value_meta[names(value_meta)  %in% names(fc_meta)] -> fc_tobeupdated_columns
+  
+  # current columns in fc
+  # no numeric greater than 999999.99
+  for (colnames_i in names(fc_tobeupdated_columns)[fc_tobeupdated_columns == "numeric"]) {
+  
+    schema_current <- db.q(str_c("select current_schema();"), nrows = -1, conn.id = cid)[1,1,drop = TRUE]
+    precision_numeric <- db.q(str_c("select numeric_precision from information_schema.columns where table_schema = '", schema_current, "' and table_name = '", target_table_name, "' and column_name = '", colnames_i, "';"), nrows = -1, conn.id = cid)[1,1,drop = TRUE]
+    db_numeric_column_i_storage_limit <- as.numeric(paste0(paste0(rep("9", precision_numeric), collapse = ""),".99"))
+    
+    max_value_colnames_i <- max(value[[colnames_i]], na.rm = TRUE)
+    min_value_colnames_i <- min(value[[colnames_i]], na.rm = TRUE)
+    # >= because R may be inprecise
+    if((max_value_colnames_i >= db_numeric_column_i_storage_limit) || ( -1 * db_numeric_column_i_storage_limit >= min_value_colnames_i)) {
+    
+      # get numer of 9s to the left of the decimal
+      new_numeric <- numb.digits.left.of.decimal(max(max_value_colnames_i, abs(min_value_colnames_i)))
+      db.q(str_c("alter table ", dbQuoteIdentifier(con, target_table_name), " alter column ", colnames_i, " type numeric(", new_numeric + 2, ", 2);"), conn.id = cid)
+      
+    }
+     
+  } 
+  # to what is in the database ( just in case I did something above )
+  db.data.frame(target_table_name, conn.id = cid, verbose = FALSE) -> ptr_target_table_name  # class (db.#)
+  col.types(ptr_target_table_name) -> fc_meta
+  names(ptr_target_table_name) -> names(fc_meta) 
+
+  
+
+  # PREPARE FOR UPSERTS/UPDATES #
+  
+  # add a 'dataindex + keys'primary key column to input 'value data.fram ( needed for PivotalR and OTHER things ) 
+  # currenly 'really' only tested used with/about company_id
+  str_c(c("dateindex",keys), collapse = "_")  -> value_primary_key
+  with( value, { eval(parse(text=eval(parse(text=('str_c(c("dateindex",keys), collapse = " %s+% \'_\' %s+% ")'))))) } ) -> value[,value_primary_key]
+  DataCombine::MoveFront(value,value_primary_key) -> value
+  
+  # upload 'value' into the database 
+  
+  # eventually
+  {function() { db.q("drop table if exists upsert_temp", conn.id = cid) }} -> drop_upsert_temp
+  #
+  drop_upsert_temp()
+  # # upsert into the database
+  # SEEMS must CREATE A pk THIS WAY
+  as.db.data.frame(value, "upsert_temp", conn.id = cid, verbose = FALSE, key = value_primary_key) -> ptr_upsert_temp
+  
+  # db.q(str_c("create unique index upsert_temp_unqpkidx on upsert_temp(" %s+% value_primary_key %s+% ");"), conn.id = cid)
+
+  # garantee that upsert_Temp values are unique
+  try( { db.q(str_c("alter table if exists upsert_temp add primary key(" %s+% value_primary_key %s+% ");"), conn.id = cid) }, silent = TRUE )
+  # upsert_temp_<value_primary_key>_pkey ( singleton )
+  
+  # db.q(str_c("alter table upsert_temp add constraint upsert_temp_unqkey unique(" %s+%  "dateindex, " %s+% str_c(keys,collapse = ", ", sep = "") %s+% ");"), conn.id = cid)
+  # db.q(str_c("create unique index upsert_temp_unqidx on upsert_temp(" %s+%  "dateindex, " %s+% str_c(keys,collapse = ", ", sep = "") %s+% ");"), conn.id = cid)
+  
+  # try( { db.q(str_c("alter table if exists upsert_temp add unique(" %s+%  "dateindex, " %s+% str_c(keys,collapse = ", ", sep = "") %s+% ");"), conn.id = cid) }, silent = TRUE )
+
+  # garantee unqueness 
+  try( { db.q(str_c("create unique index if not exists upsert_temp_keyz_key on upsert_temp(" %s+% str_c(c("dateindex",keys), collapse = ", ") %s+% ");"), conn.id = cid) }, silent = TRUE )
+  # upsert_temp_keyz_key ( can be many )
+  
+  bm <- 1
+  
+  # par1
+  # ? db.data.frame HELP ( indirect way of doing it)
+  # to 'value in the database' change 'double precision' to 'numeric(8,2)'  
+  
+  # eventually
+  # col.types(ptr_upsert_temp) -> upsert_meta
+  #     names(ptr_upsert_temp) -> names(upsert_meta)
+  
+  # IF I NEED TO ( change ) a data.type here
+  # make another table
+  # as.list(col.types(ptr_upsert_temp)) -> LL; names(ptr_upsert_temp) -> names(LL); LL
+  # as.db.data.frame(ptr_upsert_temp[,], table.name ="upsert_temp_greater", field.types = LL) -> ptr_upsert_temp_gr
+  
+  # upsert ( these columns have a different data type )
+  # of upsert_temp these colums are what I want to change  dataypes to match what is in si_finecon2
+
+  # REQUIRED refresh of meta?!
+  # ovewrite
+  db.data.frame("upsert_temp", conn.id = cid, verbose = FALSE) -> ptr_upsert_temp  # class (db.#)
+  col.types(ptr_upsert_temp) -> upsert_meta
+      names(ptr_upsert_temp) -> names(upsert_meta)
+
+  # to what is in the database ( RE-calculate fc_meta: REDONE from above )
+  # REQUIRED refresh of meta?!
+  db.data.frame(target_table_name, conn.id = cid, verbose = FALSE) -> ptr_target_table_name  # class (db.#)
+  col.types(ptr_target_table_name) -> fc_meta
+      names(ptr_target_table_name) -> names(fc_meta) 
+
+  # prepare for together by creating a common join column
+  data.frame(upsert_meta, in_common_names  = names(upsert_meta), stringsAsFactors = FALSE) -> upsert_df 
+  data.frame(fc_meta    , in_common_names  = names(fc_meta),     stringsAsFactors = FALSE) -> fc_df 
+
+  # outer join together
+  plyr::join(upsert_df, fc_df, by = c("in_common_names"), type = "full", match = "all" )-> upsert_fc_df
+
+  # find column date types in table upsert_temp thet need to be changed
+  { upsert_fc_df } %>% {
+      # non-NA only concerted about matches(in common(f/full)) AND matches(datatypes) that are not equal
+     .[(!is.na(.$upsert_meta)) & (.$upsert_meta !=.$fc_meta),,drop = FALSE] } %>% { 
+       # convert to an iteratable list
+       # as.list( data.frame(t(.), stringsAsFactors = FALSE) ) 
+       { split(as.data.frame(., stringsAsFactors = F)[,, drop = F], seq_along(as.data.frame(., stringsAsFactors = F)[,1, drop = T])) }
+        } -> upsert_col_type_changes
+             #from #in_common #to
+
+  print("upsert_temp from ... to column type changes")
+  print(upsert_col_type_changes)
+  
+  # actually update type in NEW columns to update_temp
+  if(length(upsert_col_type_changes) > 0L) {
+
+    # actual change column date types in table upsert_temp
+    0 -> i
+    str_trim(str_c(rstring('
+    alter table if exists upsert_temp
+      <% for (change_i in upsert_col_type_changes) { -%>
+          <% i + 1 -> i; sprintf("alter column %1$s set data type %2$s", 
+               change_i[2], change_i[3]) -> res
+          -%><%= str_c("    ",res) %><%=if(i  < length(upsert_col_type_changes)) ", \n" -%><%=if(i == length(upsert_col_type_changes)) "  \n" -%>
+      <% } %>
+    ;                     
+    ')))  %>% clean_text(.) -> upsert_col_type_changes_sql #
+  
+    db.q(upsert_col_type_changes_sql, conn.id = cid)
+    # update meta
+    # overwrite
+    db.data.frame("upsert_temp", conn.id = cid, verbose = FALSE) -> ptr_upsert_temp  # class (db.#)
+    col.types(ptr_upsert_temp) -> upsert_meta
+        names(ptr_upsert_temp) -> names(upsert_meta)
+  
+  } else {
+    print("in call to function upsert, no update type were found to be needed to be done in update_temp.  Is this correct?")
+  }
+      
+  # part2
+  # to fc, sql_update ON CONFLICT DO UPDATE ( given columns/info from value )  
+  
+  # -- detect if it has the column *dateindex_company_id_orig* ( si_ci )
+  # insert into si_finecon2(dateindex_company_id_orig, dateindex_company_id, dateindex, company_id, company_id_orig, ticker, company) 
+  #                  select dateindex_company_id_orig, dateindex_company_id, dateindex, company_id, company_id_orig, ticker, company
+  #                    from upsert_temp 
+  #                      on conflict (dateindex_company_id_orig) 
+  #                        do update set (dateindex_company_id_orig, dateindex, company_id, company_id_orig, ticker, company) = (excluded.dateindex_company_id_orig, excluded.dateindex, excluded.company_id, excluded.company_id_orig, excluded.ticker, excluded.company);
+  # 
+  # -- detect if (upsert_temp)  does not have the column *dateindex_company_id_orig* ( use dateindex_company_id )
+  # -- REPLACE: on conflict (dateindex_company_id_orig)  WITH on conflict (dateindex_company_id)  
+
+  logical()       -> upsert_temp_perform_nothing
+  logical()       -> upsert_temp_perform_upsert
+  character()     -> conflict_column
+  
+  # prepare to upsert
+  
+  # if( all(c("dateindex_company_id_orig","ticker") %in% names(upsert_meta)) ) {
+  # 
+  #   # detect if si_finecon2.dateindex_company_id_orig exists, then this is th required MIN columns to be updated 
+  #   if (!any( !c("dateindex_company_id_orig", "dateindex_company_id", "dateindex", 
+  #                          "company_id",      "company_id_orig", "ticker", "company") %in% names(upsert_meta) )) {
+  #     # si_ci GO EXACTLY HERE
+  #     FALSE           -> upsert_temp_perform_nothing
+  #     TRUE            -> upsert_temp_perform_upsert
+  #     "dateindex_company_id_orig" -> conflict_column
+  #   } else {
+  #     TRUE           -> upsert_temp_perform_nothing # NOTHING IS HERE
+  #     FALSE          -> upsert_temp_perform_upsert
+  #     stop("dateindex_company_id_orig and ticker exist BUT the mininum columns do not")
+  #   }
+  # } else { 
+  #   if("dateindex_company_id_orig" %in% names(upsert_meta)) { 
+  #     # si_NON_ci GO EXACTLY HERE
+  #     FALSE                           -> upsert_temp_perform_nothing
+  #     FALSE                           -> upsert_temp_perform_upsert # then do update-ish
+  #     "dateindex_company_id_orig"     -> conflict_column # STILL
+  #   } else {
+  #     if("dateindex_company_id" %in% names(upsert_meta)) { # 
+  #       # load_inbnd_stmtstats EXACTLY HERE
+  #       FALSE                      -> upsert_temp_perform_nothing
+  #       FALSE                      -> upsert_temp_perform_upsert # then do update-ish
+  #       "dateindex_company_id"     -> conflict_column 
+  #     } 
+  #     if("dateindex" %in% names(upsert_meta)) { # 
+  #       # verify_return_dates(dateindex) EXACTLY HERE 
+  #       FALSE                      -> upsert_temp_perform_nothing
+  #       FALSE                      -> upsert_temp_perform_upsert # then do update-ish
+  #       "dateindex"                -> conflict_column 
+  #     } 
+  #     # else
+  #     TRUE            -> upsert_temp_perform_nothing
+  #     FALSE           -> upsert_temp_perform_upsert
+  #     stop(str_c("update_temp dateindex_company_id_orig NOT exist AND ticker NOT exist " %s+% " and primary key is only "  %s+% str_c(c("dateindex",keys), collapse = ", ")))
+  #     
+  #   }
+  # }
+  
+
+  ### strait QUERY of the disk ### ( ci, mgdsc, exchg )
+  ## verify_company_basics ## ( NOT directly tried to UPDATED/UPSERT into the database )
+  #
+  #  dateindex_company_id_orig # dateindex  # ticker  # street
+  #                            # company_id # company
+  # company_id_orig            
+  # NOT PASSED TO UPSERT 
+  # data passed IN from verify_company_basics          NOT PASSED OUT
+  # IF "if(ref < 15184 )" THEN update (set company_id, dateindex_company_id) using (company_id, ticker , street)
+  # OTHERWISE .. make NO CHANGE in data values
+  # INHERITS from ABOVE  
+  #
+  ## update_from_future_new_company_ids ##
+  #
+  # dateindex_company_id_orig # dateindex  # ticker  # street
+  #                           # company_id # company
+  # company_id_orig   
+  # PASSED TO UPSERT
+  
+  
+  ### strait QUERY of the disk ### (non ci)
+  ## verify_company_details ##
+  # 
+  # dateindex_company_id_orig # dateindex 
+  # dateindex_company_id      # company_id
+  # company_id_orig
+  # PASSED TO UPSERT (non ci)
+  
+  
+  ### no QUERY of anything ... strait math generation ###
+  ## verify_return_dates ##
+  #
+  #                          # dateindex
+  # 
+  # PASSED TO UPSERT (generated dates only)
+  
+  
+  ### strait QUERY of the database ###
+  ## verify_week_often_week_returns ##      # ( REPLACE dateindex_company_id_orig by dateindex_company_id ) TO_DO [X]
+  # dateindex_company_id      # dateindex 
+  #                           # company_id
+  # PASSED TO UPSERT
+  
+  
+  ### strait QUERY of the database ###
+  ## verify_month_often_month_past_returns ##
+  # dateindex_company_id      # dateindex   # ( REPLACE dateindex_company_id_orig by dateindex_company_id ) TO_DO [X]
+  #                           # company_id
+  # PASSED TO UPSERT
+  
+  
+  ### strait QUERY of the database ###
+  ## load_inbnd_stmtstats ##
+  #  dateindex_company_id*   # dateindex #  ( ADD dateindex_company_id ) TO_DO [x]
+  #                          # company_id
+  # PASSED TO UPSERT
+  
+  
+  # **** IMPORTANT ( what UPDATE/UPSERT and what CONFLICT column is CHOSEN base on "what" column(z) are sent ) ****
+  # **** heirarchy: "ticker", "dateindex_company_id_orig", "dateindex_company_id", "dateindex" ****
+  
+  Chosen_UpsertUpdate_Path_Done <- FALSE
+  
+  # ci, msdsc, exchg ( verify_company_basics -> update_from_future_new_company_ids )
+  if(("ticker" %in% names(upsert_meta)) && 
+     (Chosen_UpsertUpdate_Path_Done == FALSE)) {
+    FALSE                       -> upsert_temp_perform_nothing
+    TRUE                        -> upsert_temp_perform_upsert
+    "dateindex_company_id_orig" -> conflict_column
+    Chosen_UpsertUpdate_Path_Done <- TRUE
+  }
+  
+  # non_ci ( verify_company_details )
+  if(("dateindex_company_id_orig" %in% names(upsert_meta)) && 
+     (Chosen_UpsertUpdate_Path_Done == FALSE)) {
+    FALSE                           -> upsert_temp_perform_nothing
+    FALSE                           -> upsert_temp_perform_upsert 
+    "dateindex_company_id_orig"     -> conflict_column
+    Chosen_UpsertUpdate_Path_Done <- TRUE
+  }
+  
+  # db_query_only ( verify_week_often_week_returns, verify_month_often_month_past_returns, load_inbnd_stmtstats )
+  if(( "dateindex_company_id"      %in% names(upsert_meta)) && 
+     (!"dateindex_company_id_orig" %in% names(upsert_meta)) &&
+     (Chosen_UpsertUpdate_Path_Done == FALSE)) {
+    FALSE                      -> upsert_temp_perform_nothing
+    FALSE                      -> upsert_temp_perform_upsert 
+    "dateindex_company_id"     -> conflict_column 
+    Chosen_UpsertUpdate_Path_Done <- TRUE
+  }
+  
+  # math_only ( verify_return_dates )
+  if(( "dateindex"                 %in% names(upsert_meta)) && 
+     (!"company_id"                %in% names(upsert_meta)) &&
+     (!"dateindex_company_id     " %in% names(upsert_meta)) &&
+     (Chosen_UpsertUpdate_Path_Done == FALSE)) {
+    FALSE                      -> upsert_temp_perform_nothing
+    FALSE                      -> upsert_temp_perform_upsert 
+    "dateindex"                -> conflict_column 
+    Chosen_UpsertUpdate_Path_Done <- TRUE
+  }
+  
+  if(!Chosen_UpsertUpdate_Path_Done)       stop("Chosen_UpsertUpdate_Path_Done has not been completed.")
+  if(!length(upsert_temp_perform_nothing)) stop("upsert_temp_perform_nothing is not determined") # LATER REMOVE
+  if(!length(upsert_temp_perform_upsert))  stop("upsert_temp_perform_upsert is not determined")  # LATER REMOVE
+  
+  if((!upsert_temp_perform_nothing && upsert_temp_perform_upsert) || upsert_temp_perform_upsert_force) {
+  
+    # actually perform the upsert
+    str_trim(str_c(rstring(str_c('<%= 
+    sprintf(
+    "insert into \\"', target_table_name, '\\"(" %s+% str_c(names(upsert_meta), collapse = ", ") %s+% ")" %s+% " \n" %s+% 
+    "  select " %s+% str_c(names(upsert_meta), collapse = ", ") %s+% " \n" %s+% 
+    "    from upsert_temp" %s+% " \n" %s+% 
+    "      on conflict (" %s+% conflict_column %s+% ")" %s+% " \n" %s+%
+    "        do update set (" %s+% str_c(names(upsert_meta), collapse = ", ") %s+% ") = (" %s+%  str_c("excluded.", names(upsert_meta), collapse = ", ") %s+% ");" 
+    )
+    %>'))))  %>% clean_text(.) -> fc_col_val_changes_sql 
+    
+    print("UPSERT")
+
+  }
+  
+  
+  # %s+% if( conflict_column == "dateindex" ) { " and dateindex = " %s+% dateindex %s+%  ";" }  else { ""  %s+% ";" }
+  
+  ### then do update-ish STILL based on company_id_orig  
+  ### ( and do not UPDATE 
+  ###   dateindex, company_id, dateindex_company_id, company_id_orig         # at least ONE COLUMN to try to update ( so the SQL DML UPDATE statement is valid ) # BELOW ARE 'non-updatable'
+  ##if(!upsert_temp_perform_nothing && !upsert_temp_perform_upsert && sum(!names(upsert_meta) %in% c("dateindex", "company_id", "dateindex_company_id", "company_id_orig", "dateindex_company_id_orig")) ) {
+    
+  if(!upsert_temp_perform_nothing && !upsert_temp_perform_upsert && !upsert_temp_perform_upsert_force) {
+  
+    # actually perform the update 
+    str_trim(str_c(rstring(str_c('<%= 
+    sprintf(
+    "update \\"', target_table_name, '\\" s " %s+% " set " %s+% 
+     str_c(sprintf("\n  %1$s = t.%1$s", names(upsert_meta)[!names(upsert_meta) %in% c("dateindex", "company_id", "dateindex_company_id", "company_id_orig", "dateindex_company_id_orig")] ), collapse = ", ") %s+% " \n" %s+%
+    "    from upsert_temp t " %s+% " \n" %s+%
+    "      where " %s+% "s." %s+% conflict_column %s+% " = " %s+% "t." %s+% conflict_column  %s+% ";" 
+    )
+    %>'))))  %>% clean_text(.)
+
+    print("UPDATE")
+    
+  }
+  
+  if(!upsert_temp_perform_nothing) {
+    
+    print(writeLines(fc_col_val_changes_sql))
+  
+    rs <- dbSendQuery(con, fc_col_val_changes_sql)
+    if(dbHasCompleted(rs)) { print(str_c("Rows Affected: ", dbGetRowsAffected(rs)))  }
+    
+    # for right now. I will just stop
+    if(dbGetRowsAffected(rs) == 0) { stop(str_c("Since Rows Affected: ", dbGetRowsAffected(rs)," so PERHAPS something is wrong!"))  }
+    
+    if(dbHasCompleted(rs)) dbClearResult(rs)
+    
+    # db.q(fc_col_val_changes_sql, conn.id = cid) 
+    
+    # SHOULD BE PUT 'outside' OF THE FUNCTION
+    if(target_table_name == "si_finecon2") {
+      # if I have the columns for this index, then create the index ( if it does not already exist )
+      verify_finecon_jamesos_partial_idx()
+      verify_finecon_sp_500_partial_idx()
+    }
+  }
+  
+  drop_upsert_temp()
+  
+  options(ops)
+  return(invisible(NULL))
+   
+}
+# upsert2(value = SFS, target_table_name = "si_finecon2_aggregates", upsert_temp_perform_upsert_force = TRUE)
+
 
 
 
@@ -3446,6 +4015,7 @@ liquifyDF <- function(x, const_cols_regexpr = "^id", fctr_cols_rexpr = "_fct$") 
 # dbGetQuery(con,"
 # select
 #     dateindex 
+#   , dateindexlwd
 #   , dateindexeom
 #   , dateindexeom::text dateindexeom_fct
 #   , 'sector_desc'::text collection_name_fct
@@ -3453,34 +4023,25 @@ liquifyDF <- function(x, const_cols_regexpr = "^id", fctr_cols_rexpr = "_fct$") 
 #   , sum(now_inbnd_stmtstat_netinc_q1) sum_now_inbnd_stmtstat_netinc_q1 
 #   , sum(now_inbnd_stmtstat_mktcap)    sum_now_inbnd_stmtstat_mktcap
 # from si_finecon2 where sector_desc in ('Energy','Basic Materials') and dateindexeom = 17378
-# group by dateindex, dateindexeom, sector_desc
-# order by dateindex, dateindexeom, sector_desc
+# group by dateindex, dateindexlwd, dateindexeom, sector_desc
+# order by dateindex, dateindexlwd, dateindexeom, sector_desc
 # ;") -> SFS
 # 
 # > SFS
-#   dateindex dateindexeom dateindexeom_fct collection_name_fct sector_desc_fct
-# 1     17378        17378            17378         sector_desc Basic Materials
-# 2     17378        17378            17378         sector_desc          Energy
-#   sum_now_inbnd_stmtstat_netinc_q1 sum_now_inbnd_stmtstat_mktcap
-# 1                          17503.1                       1002512
-# 2                          12384.8                       1720491
+
+#   dateindex dateindexlwd dateindexeom dateindexeom_fct collection_name_fct sector_desc_fct sum_now_inbnd_stmtstat_netinc_q1 sum_now_inbnd_stmtstat_mktcap
+# 1     17378        17378        17378            17378         sector_desc Basic Materials                          17503.1                       1002512
+# 2     17378        17378        17378            17378         sector_desc          Energy                          12384.8                       1720491
+
 # 
-# > liquifyDF(SFS,"dateindex.*")
-#   dateindex dateindexeom dateindexeom_fct
-# 1     17378        17378            17378
-#   sector_desc__basic_materials____sum_now_inbnd_stmtstat_netinc_q1
-# 1                                                          17503.1
-#   sector_desc__energy____sum_now_inbnd_stmtstat_netinc_q1
-# 1                                                 12384.8
-#   sector_desc__basic_materials____sum_now_inbnd_stmtstat_mktcap
-# 1                                                       1002512
+# > liquifyDF(SFS,"dateindex.*") -> SFS
+
+#   dateindex dateindexlwd dateindexeom dateindexeom_fct sector_desc__basic_materials____sum_now_inbnd_stmtstat_netinc_q1
+# 1     17378        17378        17378            17378                                                          17503.1
+#   sector_desc__energy____sum_now_inbnd_stmtstat_netinc_q1 sector_desc__basic_materials____sum_now_inbnd_stmtstat_mktcap
+# 1                                                 12384.8                                                       1002512
 #   sector_desc__energy____sum_now_inbnd_stmtstat_mktcap
 # 1                                              1720491
-
-
-
-
-
 
 
 
