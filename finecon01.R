@@ -1197,7 +1197,7 @@ upsert <-  function(value = NULL, keys = NULL) { # vector of primary key values
   warning("END - drop table if exists upsert_temp")
   # # upsert into the database
   # SEEMS must CREATE A pk THIS WAY
-  as.db.data.frame(value, "upsert_temp", conn.id = cid, verbose = FALSE, key = value_primary_key) -> ptr_upsert_temp
+  as.db.data.frame(value, "upsert_temp", is.temp = if(!is.null(getOption("upsert_temp_is_temporary"))) { TRUE } else { FALSE }, conn.id = cid, verbose = FALSE, key = value_primary_key) -> ptr_upsert_temp
   
   # db.q(str_c("create unique index upsert_temp_unqpkidx on upsert_temp(" %s+% value_primary_key %s+% ");"), conn.id = cid)
 
@@ -1227,7 +1227,7 @@ upsert <-  function(value = NULL, keys = NULL) { # vector of primary key values
   # IF I NEED TO ( change ) a data.type here
   # make another table
   # as.list(col.types(ptr_upsert_temp)) -> LL; names(ptr_upsert_temp) -> names(LL); LL
-  # as.db.data.frame(ptr_upsert_temp[,], table.name ="upsert_temp_greater", field.types = LL) -> ptr_upsert_temp_gr
+  # as.db.data.frame(ptr_upsert_temp[,], table.name ="upsert_temp_greater", is.temp = if(!is.null(getOption("upsert_temp_is_temporary"))) { TRUE } else { FALSE }, field.types = LL) -> ptr_upsert_temp_gr
   
   # upsert ( these columns have a different data type )
   # of upsert_temp these colums are what I want to change  dataypes to match what is in si_finecon2
@@ -1726,7 +1726,7 @@ upsert2 <-  function(value = NULL, keys = NULL, target_table_name = "si_finecon2
   drop_upsert_temp()
   # # upsert into the database
   # SEEMS must CREATE A pk THIS WAY
-  as.db.data.frame(value, "upsert_temp", conn.id = cid, verbose = FALSE, key = value_primary_key) -> ptr_upsert_temp
+  as.db.data.frame(value, "upsert_temp", is.temp = if(!is.null(getOption("upsert_temp_is_temporary"))) { TRUE } else { FALSE }, conn.id = cid, verbose = FALSE, key = value_primary_key) -> ptr_upsert_temp
   
   # db.q(str_c("create unique index upsert_temp_unqpkidx on upsert_temp(" %s+% value_primary_key %s+% ");"), conn.id = cid)
 
@@ -1756,7 +1756,7 @@ upsert2 <-  function(value = NULL, keys = NULL, target_table_name = "si_finecon2
   # IF I NEED TO ( change ) a data.type here
   # make another table
   # as.list(col.types(ptr_upsert_temp)) -> LL; names(ptr_upsert_temp) -> names(LL); LL
-  # as.db.data.frame(ptr_upsert_temp[,], table.name ="upsert_temp_greater", field.types = LL) -> ptr_upsert_temp_gr
+  # as.db.data.frame(ptr_upsert_temp[,], table.name ="upsert_temp_greater", is.temp = if(!is.null(getOption("upsert_temp_is_temporary"))) { TRUE } else { FALSE }, field.types = LL) -> ptr_upsert_temp_gr
   
   # upsert ( these columns have a different data type )
   # of upsert_temp these colums are what I want to change  dataypes to match what is in si_finecon2
@@ -4887,7 +4887,7 @@ load_instruments <- function(dfobj = NULL, no_update_earliest_year = NULL) {
     try( { db.q("truncate table upsert_temp;", conn.id = cid) }, silent = TRUE )
     drop_upsert_temp()
 
-    dbWriteTable(con, "upsert_temp", value = dfobj, append = FALSE, row.names = FALSE)
+    dbWriteTable(con, "upsert_temp", temporary = if(!is.null(getOption("upsert_temp_is_temporary"))) { TRUE } else { FALSE }, value = dfobj, append = FALSE, row.names = FALSE)
     
     # garantee that upsert_Temp values are unique
     db.q("create unique index if not exists upsert_temp_dateindex_instruments_key on upsert_temp(dateindex, instrument);", conn.id = cid)
@@ -5271,7 +5271,7 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
     drop_upsert_temp()
     
     # would have used as.db.data.frame but 'mult-column primary key is 'not allowed' ( I SHOULD REPORT THIS BUG )
-    dbWriteTable(con, "upsert_temp", value = tblobj, append = FALSE, row.names = FALSE)
+    dbWriteTable(con, "upsert_temp", temporary = if(!is.null(getOption("upsert_temp_is_temporary"))) { TRUE } else { FALSE }, value = tblobj, append = FALSE, row.names = FALSE)
     
     # load "upsert_temp" into tblobj_db_ptr ( upsize tblobj_db_ptr )
     db.q("insert into " %s+%
@@ -6121,6 +6121,6 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
 # LATELY
 # 
 # quantmod::getSymbols("^GSPC", from = "1940-01-01")
-# rm(list=setdiff(ls(all.names=TRUE),c("con","cid","GSPC"))); debugSource('W:/R-3.4._/finecon01.R'); debugSource('W:/R-3.4._/goodsight01.R');verify_connection()
+# rm(list=setdiff(ls(all.names=TRUE),c("con","cid","GSPC"))); debugSource('W:/R-3.4._/finecon01.R'); debugSource('W:/R-3.4._/goodsight01.R');verify_connection();options(upsert_temp_is_temporary=Inf)
 
 
