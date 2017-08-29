@@ -1187,9 +1187,14 @@ upsert <-  function(value = NULL, keys = NULL) { # vector of primary key values
   # upload 'value' into the database 
   
   # eventually
+  # CAN GET HUNG UP HERE!!
+  warning("Begin - drop table if exists upsert_temp")
   {function() { db.q("drop table if exists upsert_temp", conn.id = cid) }} -> drop_upsert_temp
-  #
+  # TRY LESSEN THE CONGESTION 
+  try( { db.q("delete from upsert_temp;", conn.id = cid) }, silent = TRUE )
+  try( { db.q("truncate table upsert_temp;", conn.id = cid) }, silent = TRUE )
   drop_upsert_temp()
+  warning("END - drop table if exists upsert_temp")
   # # upsert into the database
   # SEEMS must CREATE A pk THIS WAY
   as.db.data.frame(value, "upsert_temp", conn.id = cid, verbose = FALSE, key = value_primary_key) -> ptr_upsert_temp
@@ -1712,8 +1717,12 @@ upsert2 <-  function(value = NULL, keys = NULL, target_table_name = "si_finecon2
   # upload 'value' into the database 
   
   # eventually
+  # CAN GET HUNG UP HERE!!
+  warning("Begin - drop table if exists upsert_temp")
   {function() { db.q("drop table if exists upsert_temp", conn.id = cid) }} -> drop_upsert_temp
-  #
+  # TRY LESSEN THE CONGESTION 
+  try( { db.q("delete from upsert_temp;", conn.id = cid) }, silent = TRUE )
+  try( { db.q("truncate table upsert_temp;", conn.id = cid) }, silent = TRUE )
   drop_upsert_temp()
   # # upsert into the database
   # SEEMS must CREATE A pk THIS WAY
@@ -4869,7 +4878,14 @@ load_instruments <- function(dfobj = NULL, no_update_earliest_year = NULL) {
     
     verify_connection()
     
-    db.q("drop table if exists upsert_temp", conn.id = cid)
+    # eventually
+    # CAN GET HUNG UP HERE!!
+    warning("Begin - drop table if exists upsert_temp")
+    {function() { db.q("drop table if exists upsert_temp", conn.id = cid) }} -> drop_upsert_temp
+    # TRY LESSEN THE CONGESTION 
+    try( { db.q("delete from upsert_temp;", conn.id = cid) }, silent = TRUE )
+    try( { db.q("truncate table upsert_temp;", conn.id = cid) }, silent = TRUE )
+    drop_upsert_temp()
 
     dbWriteTable(con, "upsert_temp", value = dfobj, append = FALSE, row.names = FALSE)
     
@@ -4914,7 +4930,14 @@ load_instruments <- function(dfobj = NULL, no_update_earliest_year = NULL) {
          do update set ( " %s+% str_c(colnames(dfobj), collapse = ", ")  %s+% " ) = 
                        ( " %s+% str_c(str_c("excluded.",colnames(dfobj)), collapse = ", ") %s+% " );")
     
-    db.q("drop table if exists upsert_temp", conn.id = cid)
+    # eventually
+    # CAN GET HUNG UP HERE!!
+    warning("Begin - drop table if exists upsert_temp")
+    {function() { db.q("drop table if exists upsert_temp", conn.id = cid) }} -> drop_upsert_temp
+    # TRY LESSEN THE CONGESTION 
+    try( { db.q("delete from upsert_temp;", conn.id = cid) }, silent = TRUE )
+    try( { db.q("truncate table upsert_temp;", conn.id = cid) }, silent = TRUE )
+    drop_upsert_temp()
     
     return(TRUE)
     
@@ -5238,8 +5261,15 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
       }
     } 
     
-    # load tblobj into "upsert_temp"
-    db.q("drop table if exists upsert_temp", conn.id = cid)
+    # eventually
+    # CAN GET HUNG UP HERE!!
+    warning("Begin - drop table if exists upsert_temp")
+    {function() { db.q("drop table if exists upsert_temp", conn.id = cid) }} -> drop_upsert_temp
+    # TRY LESSEN THE CONGESTION 
+    try( { db.q("delete from upsert_temp;", conn.id = cid) }, silent = TRUE )
+    try( { db.q("truncate table upsert_temp;", conn.id = cid) }, silent = TRUE )
+    drop_upsert_temp()
+    
     # would have used as.db.data.frame but 'mult-column primary key is 'not allowed' ( I SHOULD REPORT THIS BUG )
     dbWriteTable(con, "upsert_temp", value = tblobj, append = FALSE, row.names = FALSE)
     
@@ -5251,7 +5281,14 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
          do update set ( " %s+% str_c(colnames(tblobj), collapse = ", ")  %s+% " ) = " %s+% "
                        ( " %s+% str_c(str_c("excluded.",colnames(tblobj)), collapse = ", ") %s+% " );")
     
-    db.q("drop table if exists upsert_temp", conn.id = cid)
+    # eventually
+    # CAN GET HUNG UP HERE!!
+    warning("Begin - drop table if exists upsert_temp")
+    {function() { db.q("drop table if exists upsert_temp", conn.id = cid) }} -> drop_upsert_temp
+    # TRY LESSEN THE CONGESTION 
+    try( { db.q("delete from upsert_temp;", conn.id = cid) }, silent = TRUE )
+    try( { db.q("truncate table upsert_temp;", conn.id = cid) }, silent = TRUE )
+    drop_upsert_temp()
     
     options(ops)
     return(TRUE)
