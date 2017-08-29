@@ -1155,7 +1155,7 @@ upsert <-  function(value = NULL, keys = NULL) { # vector of primary key values
   
     schema_current <- db.q(str_c("select current_schema();"), nrows = -1, conn.id = cid)[1,1,drop = TRUE]
     precision_numeric <- db.q(str_c("select numeric_precision from information_schema.columns where table_schema = '", schema_current, "' and table_name = '", "si_finecon2", "' and column_name = '", colnames_i, "';"), nrows = -1, conn.id = cid)[1,1,drop = TRUE]
-    db_numeric_column_i_storage_limit <- as.numeric(paste0(paste0(rep("9", precision_numeric), collapse = ""),".99"))
+    db_numeric_column_i_storage_limit <- as.numeric(paste0(paste0(rep("9", precision_numeric - 2), collapse = ""),".99"))
     
     max_value_colnames_i <- max(value[[colnames_i]], na.rm = TRUE)
     min_value_colnames_i <- min(value[[colnames_i]], na.rm = TRUE)
@@ -1680,7 +1680,7 @@ upsert2 <-  function(value = NULL, keys = NULL, target_table_name = "si_finecon2
   
     schema_current <- db.q(str_c("select current_schema();"), nrows = -1, conn.id = cid)[1,1,drop = TRUE]
     precision_numeric <- db.q(str_c("select numeric_precision from information_schema.columns where table_schema = '", schema_current, "' and table_name = '", target_table_name, "' and column_name = '", colnames_i, "';"), nrows = -1, conn.id = cid)[1,1,drop = TRUE]
-    db_numeric_column_i_storage_limit <- as.numeric(paste0(paste0(rep("9", precision_numeric), collapse = ""),".99"))
+    db_numeric_column_i_storage_limit <- as.numeric(paste0(paste0(rep("9", precision_numeric - 2), collapse = ""),".99"))
     
     max_value_colnames_i <- max(value[[colnames_i]], na.rm = TRUE)
     min_value_colnames_i <- min(value[[colnames_i]], na.rm = TRUE)
@@ -3577,6 +3577,99 @@ load_inbnd_stmtstats <- function (dateindex = NULL, support_dateindex_collection
 # )  -> si_all_g_df
 
 
+# uses now_inbnd_stmtstat last_inbnd_stmtstat
+# since MANY SQLs upsertS are done inside
+load_division_aggregated_now_last_mktcap_per_company_id <- function(dateindex = NULL) {
+
+  ops <- options() 
+  options(warn = 1)
+  
+  require(PivotalR)
+  # R.rsp rstring
+
+  DATEINDEX         <- dateindex
+
+  DIVISION          <- c("sector_desc", "industry_desc")
+  
+  SP_OPS_WHAT       <- c("('500')","('500','400','600')")
+  SP_OPS_WHAT_SHORT <- c("sp500"  ,"sp"                 )
+
+  combo_grid   <- expand.grid(DIVISION=DIVISION, SP_OPS_WHAT=SP_OPS_WHAT)
+  combo_grid_f <- seq_along(row.names(combo_grid))
+
+  verify_connection()
+    
+
+  for(combo_i in split(combo_grid, combo_grid_f)) {
+
+
+    SP_OPS_WHAT_SHORT_I <- SP_OPS_WHAT_SHORT[match(combo_i[["SP_OPS_WHAT"]],SP_OPS_WHAT)]
+    
+    warning(paste0("Beginning load_division_aggregated_now_last_mktcap_per_company_id query SQL of dateindex: ", dateindex, " and ", paste0(as.matrix(combo_i), collapse = " ")))
+    
+    local({R.rsp::rstring("
+      select 
+          sr.company_id
+        , sq1.*                     
+      from si_finecon2 sr inner join
+      ( -- sq1
+        select 
+            dateindex 
+          , <%=DIVISION_I%>  
+          , count(1)                         count_<%=SP_OPS_WHAT_SHORT_I%>_<%=DIVISION_I%>
+          , sum(now_inbnd_stmtstat_mktcap)     sum_<%=SP_OPS_WHAT_SHORT_I%>_<%=DIVISION_I%>_now_inbnd_stmtstat_mktcap
+          , sum(last_inbnd_stmtstat_mktcap)    sum_<%=SP_OPS_WHAT_SHORT_I%>_<%=DIVISION_I%>_last_now_inbnd_stmtstat_mktcap
+          , sum(mktcap)                        sum_<%=SP_OPS_WHAT_SHORT_I%>_<%=DIVISION_I%>_mktcap
+        from si_finecon2 where dateindex = <%=DATEINDEX%> and sp in <%=SP_OPS_WHAT_I%>
+        group by dateindex, <%=DIVISION_I%>) sq1
+      on sr.dateindex = sq1.dateindex and 
+         sr.sp in <%=SP_OPS_WHAT_I%> and
+         sr.<%=DIVISION_I%> = sq1.<%=DIVISION_I%> and
+         sr.adr = 0 AND sr.exchange <> 'O'::text  AND sr.company !~~ '%iShares%'::text AND sr.company !~~ '%Vanguard%'::text AND sr.company !~~ 'SPDR'::text AND sr.company !~~ '%PowerShares%'::text AND sr.company !~~ '%Fund%'::text AND sr.company !~~ '%Holding%'::text AND sr.industry_desc !~~ '%Investment Service%'::text and
+         sr.dateindex = <%=DATEINDEX%>
+      ")}, envir = list2env(list(DIVISION_I = combo_i[["DIVISION"]], SP_OPS_WHAT_I = combo_i[["SP_OPS_WHAT"]]
+                             , SP_OPS_WHAT_SHORT_I=SP_OPS_WHAT_SHORT_I
+                             , DATEINDEX=DATEINDEX))
+    ) -> add_columns_sql
+    
+    db.q(add_columns_sql, nrows = "all", conn.id = cid) -> si_all_df
+    
+    financize(si_all_df, char_col_numeric_limit = 99999999999999.99) -> si_all_df
+    upsert(si_all_df, keys = c("company_id"))
+  
+    warning(paste0("Ending load_division_aggregated_now_last_mktcap_per_company_id query SQL of dateindex: ", dateindex, " and ", paste0(as.matrix(combo_i), collapse = " ")))
+
+  }
+  
+
+  options(ops)
+  
+  return(TRUE)
+  
+}
+# call 
+# uses now_inbnd_stmtstat last_inbnd_stmtstat
+# since MANY SQLs upsertS are done inside
+# load_division_aggregated_now_last_mktcap_per_company_id(dateindex = 17347)
+# 
+# from_dir = "W:/AAIISIProDBFs"
+# as.integer(dir(from_dir))         ->     all_dbf_dirs
+# is_lwd_of_month(all_dbf_dirs)     -> lwd_all_dbf_dirs_tf
+# all_dbf_dirs[lwd_all_dbf_dirs_tf] ->     lwd_dbf_dirs
+# seq_along(lwd_dbf_dirs) -> lwd_months_idx
+# sort(lwd_dbf_dirs, decreasing = TRUE)[lwd_months_idx]  -> wd_dbf_dirs_ordered
+# print(wd_dbf_dirs_ordered)
+# [1] 17378 17347 17317 17284
+# 
+# mass updates
+# sapply(wd_dbf_dirs_ordered, load_division_aggregated_now_last_mktcap_per_company_id)
+# 
+# CAN BE (per recent month)
+# uses now_inbnd_stmtstat last_inbnd_stmtstat
+# since MANY SQLs upsertS are done inside
+# load_division_aggregated_now_last_mktcap_per_company_id(dateindex = dir_i)
+
+
 
 create_inbnd_stmtstats_aggregates_db <- function(exact_lwd_dbf_dirs = NULL) {
 
@@ -4527,6 +4620,10 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
     load_inbnd_stmtstats(dir_i, lwd_dbf_dirs_ordered[dir_i>= lwd_dbf_dirs_ordered][seq_len(min(sum(dir_i >= lwd_dbf_dirs_ordered),11))], char_col_numeric_limit = 99999999999999.99) -> si_all_g_df
     upsert(si_all_g_df, keys = c("company_id"))
     
+    # uses now_inbnd_stmtstat last_inbnd_stmtstat
+    # since MANY SQLs upsertS are done inside
+    load_division_aggregated_now_last_mktcap_per_company_id(dateindex = dir_i)
+    
     warning(paste0("Ending disk dbf dir: ",dir_i))
     
   }
@@ -5125,7 +5222,7 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
         
         schema_current <- db.q(str_c("select current_schema();"), nrows = -1, conn.id = cid)[1,1,drop = TRUE]
         precision_numeric <- db.q(str_c("select numeric_precision from information_schema.columns where table_schema = '", schema_current, "' and table_name = '", tblobj_name, "' and column_name = '", colnames_i, "';"), nrows = -1, conn.id = cid)[1,1,drop = TRUE]
-        db_numeric_column_i_storage_limit <- as.numeric(paste0(paste0(rep("9", precision_numeric), collapse = ""),".99"))
+        db_numeric_column_i_storage_limit <- as.numeric(paste0(paste0(rep("9", precision_numeric - 2), collapse = ""),".99"))
         
         max_tblobj_colnames_i <- max(tblobj[,colnames_i])
         min_tblobj_colnames_i <- max(tblobj[,colnames_i])
