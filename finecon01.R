@@ -4101,13 +4101,12 @@ liquifyDF <- function(x, const_cols_regexpr = "^id", fctr_cols_rexpr = "_fct$") 
  # $ notissp__allsp500____sum_mktcap                                : num 4789893
  # $ notissp__notissp500____sum_mktcap                              : num 4789893
 
-# LEFT_OFF [ ]
-# NEXT, NEED PARAMETERS TO THE 'create' SQL FUNCTION TO GENERATE LESS COMPLEX FACTOR COMBINATIONS
-# inbound statement loader ?? # does it NEED original* 
+# LEFT_OFF 
+# [x] NEXT, NEED PARAMETERS TO THE 'create' SQL FUNCTION TO GENERATE LESS COMPLEX FACTOR COMBINATIONS
+# [ ] inbound statement loader ?? # does it NEED original* 
 # DOES IT NEED TO overwrite as NEW CURRENT data COMES in?
 # NEXTER need UPSERT generator
-# LEFT_OFF [ ]
-# NEED A PERMANET PER COMPANY BALANCE OF MKTCAP PER 'WHAT ITEMS'? 
+# [x] NEED A PERMANET PER COMPANY BALANCE OF MKTCAP PER 'WHAT ITEMS'? 
 #  DECIDE WHAT IEMS PER SP/SP500/SECTOR(BASIC MATERIALS,ENERYGY)/INDUSTRY(GOLD & SILVER)
 
 # 
@@ -4145,6 +4144,7 @@ liquifyDF <- function(x, const_cols_regexpr = "^id", fctr_cols_rexpr = "_fct$") 
 #   sector_desc__energy____sum_now_inbnd_stmtstat_mktcap
 # 1                                              1720491
 
+# OTHER sensitive INDUSTRY  "Household Furniture Manufacturing"
 
 
 # con RPostgreSQLConnection
@@ -4630,14 +4630,15 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
     upsert(si_all_g_df, keys = c("company_id"))
     
     # uses now_inbnd_stmtstat last_inbnd_stmtstat
-    # since MANY SQLs upsertS are done inside
+    # since MANY SQLs upsertS are done inside                                      # if NOT an UPDATE on COMPANY_ID then I CAN go on the OUTSIDE
+    # load_division_aggregated_now_last_mktcap_per_company_id(dateindex = dir_i) # # head(lwd_dbf_dirs_ordered,1) ( BUT WILL NOT do this now )
     load_division_aggregated_now_last_mktcap_per_company_id(dateindex = dir_i)
-    
-    warning(paste0("Ending disk dbf dir: ",dir_i))
     
   }
   
 
+  
+  
   # WARNING: NOT 'dir_i TIME by database BASED' ( SHOULD REWRITE? IF POSSIBLE? )
   # NOTE: IF missed *MANY* months in LOADING cheaper to REBUILD the entire DATABASE
   if(for_bonds_is_null_months_only_back_check_NOT_done && !is.null(months_only_back)) {
@@ -5777,6 +5778,10 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
 #     from = "C:/Program Files (x86)/Stock Investor/Professional"
 #   , to   = paste0("W:/AAIISIProDBFs/",getAAIISIProDate()) # # Reads: C:/Program Files (x86)/Stock Investor/Professional
 # )
+# 
+# 
+# SET upsert_temp TO make a temporary table
+# rm(list=setdiff(ls(all.names=TRUE),c("con","cid"))); debugSource('W:/R-3.4._/finecon01.R'); debugSource('W:/R-3.4._/goodsight01.R');verify_connection();options(upsert_temp_is_temporary=Inf)
 # 
 # the MOST important
 # upload_lwd_sipro_dbfs_to_db(months_only_back = 13)
