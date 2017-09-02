@@ -3877,7 +3877,7 @@ liquifyDF <- function(x, const_cols_regexpr = "^id", fctr_cols_rexpr = "_fct$") 
   # wrapr       let
   
   # NOT WORK
-  # magrittr::`%>%` -> `%M%`
+  # magrittr::`%>%` -> `%M%` # NOTE: DOES WORK; magrittr::`%>%` -> `%>%`
   
   if(NROW(x) == 0) { warning("liquifyDF found zero rows"); return(x) }
   
@@ -5414,7 +5414,7 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
 # -- TO DO [X] ( RENAME PRICE FUTURE CALCULATION SOMETHING BETTER _ann ALONE DOES NOT WORK )
 
 # FIRST
-# [ ] agrep ( join old companies with name change )
+# [code implemented plr extension to call R/NO_FIRST_MASS_RUN_YET] agrep ( join old companies with name change )
 # Approximate String Matching (Fuzzy Matching)
 # https://www.rdocumentation.org/packages/base/versions/3.4.1/topics/agrep
 # 
@@ -5442,16 +5442,18 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
 # [ ] 
 # OTHER THAN GSPC ( AND i NEED YEAR MEASURE )
 # https://en.wikipedia.org/wiki/Thrift_Savings_Plan
-#  https://en.wikipedia.org/wiki/Bloomberg_Barclays_US_Aggregate_Bond_Index
+#  https://en.wikipedia.org/wiki/Bloomberg_Barclays_US_Aggregate_Bond_Index AGG
 #      iShares Core US Aggregate Bond Index (AGG) Vanguard Total Bond Market Index Fund (VBMFX), Fidelity U.S. Bond Index Fund (FBIDX)
 #
 # ... caret ... xgboost or random_forest  GSPC momentum vs itself ( NICE OUTPUT it THEN WORK BACKWARDS )
 # 
-# --TODO: [ ] ADD sp500_total_shares mktcap / price ( to demonstrate buyback in action )
-# --TODO: [ ] ADD mktvalue weight of those that have reported within the last month
+# --TODO: [META/DATA THERE BUT NO SQL RAN YET] ADD sp500_total_shares mktcap / price ( to demonstrate buyback in action )
+# --TODO: [META/DATA THERE BUT NO SQL RAN YET] ADD mktvalue weight of those that have reported within the last month
 # --          [ ] ADD yoy(q1 v.s. q5) pctchg of those that have reported last and 'not reported in the previous month'
 # --TODO: Ratio adjustment for those dateindex that do NOT have exactly 500 firms
-# --TODO: [x] load GetSymbols into the database  # make gspc volume fit, make large numerics fit
+#         NOTE: generally needed ONLY in ABSOLUTE measures: RELATIVE measures netinc/mktcap NOT NEEDED
+# --TODO: [DONE - AUTOMATIC NUMERIC(x,2) ALTER column width expander] 
+#           load GetSymbols into the database  # make gspc volume fit, make large numerics fit
 #              FIX: load_obj_direct ... FIX: other places
 #         [x] How do I determine the number of digits of an integer in C?
 
@@ -5611,7 +5613,7 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
 # [ ] run on earlier data ( NOT YET )
 
 # 1ST SW
-# performance - HIGH (*) 
+# performance - HIGH (*) [DONE - options( ...  CREATE TEMPORARY TEABLE ...)
 #  tbl_temp: CREATE TEMPORARY table tbl_tmp (prevent 'disk backup') on crash -re-use con create tbl_temp_real as select * from tbl_temp
 #  (framework) series: 
 #       mm_prchg_ann  
@@ -5655,7 +5657,7 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
 # financial stress index and components data provided by the Federal Reserve Bank of Cleveland ('risk/fear') SEE MY OTHER NOTES
 #   Real_Sortino of Gold & Silver sector returns('risk')
 #    NEG inverse SORTINO - from ANYWHERE WHERE APPROPRIATE
-# Large ticket sales
+# Large ticket sales (MORE APPROPRIATE fo FIND if these MEAN anything: see FURNATURE )
 #   Housing Indusry
 #   Automobile Indusry
 # OTHER countries returns ON foreign bonds ( historical data ) - SEE my economic indicator NOTES
