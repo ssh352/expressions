@@ -1651,7 +1651,7 @@ upsert2 <-  function(value = NULL, keys = NULL, target_table_name = "si_finecon2
   # EXPECTED 'IF-THEN' to be extended
   if(length(fc_new_columns) > 0L) {
   
-    # to fc, add new columns ( of 'new columns' from 'value' that do not exist in 'fc' ) ### LEFT_OFF
+    # to fc, add new columns ( of 'new columns' from 'value' that do not exist in 'fc' ) 
     str_trim(str_c(rstring(str_c('
     alter table if exists ', dbQuoteIdentifier(con, target_table_name), '
       <% for (i in seq_along(fc_new_columns)) { -%>
@@ -3942,6 +3942,11 @@ liquifyDF <- function(x, const_cols_regexpr = "^id", fctr_cols_rexpr = "_fct$") 
   # A1__B1____aggr2 A1__B2____aggr2 A2__B1____aggr2 A2__B2____aggr2
 # 1           10008           10016           10032           10064
 
+# CHANGE TEST USAGE TO 
+# liquifyDF(SFS,"^dateindex.*")
+# BECAUSE I HAVE USED DATEINDEX IN THE MIDDLE OF THE WORD
+# count_now_inbnd_stmtstat_dateindex AND rat_count_now_inbnd_stmtstat_dateindex_o_last_x_100
+
 # liquifyDF(GT, const_cols_regexpr = "^dateindex.*", fctr_cols_rexpr = ".*_fct$")
 # > str(GT)
 # 'data.frame':   8 obs. of  13 variables:
@@ -5646,9 +5651,9 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
 # [x] Inbound Sales/Market,Net_Income/Market,Net_Income/Sales 
 #   [ ] by (since last time, since last year this time ) ... can/will be done using xts
 # [x] derived data rations:  price, net_income, sales -  [x]
-# perhaps MORE from ( through Quandl? ): http://www.multpl.com/
-# MY FIX and/or *new* DATA from
-#   qmao::.getEconomicCalendarBriefing ( my fix of ) # and/or/xor # library(censusapi
+# perhaps MORE from ( through library(Quandl? ): http://www.multpl.com/  # 
+# MY FIX and/or *new* DATA from # ALT Tech Indicator Sites: library(AlphaVantageClient WORKS_WELL NEW SEP 2017 (daily, adj close, sma )
+#   qmao::.getEconomicCalendarBriefing ( my fix of ) # and/or/xor # library(censusapi # American Community Survey
 # INBOUND DATA  
 #   missing data
 #   [TO REVIEW CODE]  na.locf
