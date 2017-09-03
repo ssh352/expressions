@@ -3867,7 +3867,8 @@ liquifyDF <- function(x, const_cols_regexpr = "^id", fctr_cols_rexpr = "_fct$") 
   # R version 3.4.1 (2017-06-30)
   # LATE AUG 2017
 
-  require(magrittr) # `%>%`
+  #X# require(magrittr) # `%>%`
+  
   # dplyr       select
   # tidyr       unite
   # tidyselect  vars_select matches
@@ -3878,8 +3879,9 @@ liquifyDF <- function(x, const_cols_regexpr = "^id", fctr_cols_rexpr = "_fct$") 
   
   # NOT WORK
   # magrittr::`%>%` -> `%M%` # NOTE: DOES WORK; magrittr::`%>%` -> `%>%`
+  magrittr::`%>%` -> `%>%`
   
-  if(NROW(x) == 0) { warning("liquifyDF found zero rows"); return(x) }
+  if(NROW(x) == 0) { warning("liquifyDF found zero rows"); return(data.frame()) }
   
   # typically "id" columns
   const_cols <- tidyselect::vars_select(names(x), tidyselect::matches(const_cols_regexpr))
@@ -3908,6 +3910,7 @@ liquifyDF <- function(x, const_cols_regexpr = "^id", fctr_cols_rexpr = "_fct$") 
   
   colnames(res) <- tolower(colnames(res))
   colnames(res) <- stringr::str_replace_all(colnames(res),"[ ]","_")
+  colnames(res) <- stringr::str_replace_all(colnames(res),"&"  ,"and")
   
   return(res)
 }
