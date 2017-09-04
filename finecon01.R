@@ -3595,15 +3595,18 @@ load_division_aggregated_now_last_mktcap_per_company_id <- function(dateindex = 
   
   require(PivotalR)
   # R.rsp rstring
+  
+  require(R.rsp)
+  stringi::`%s+%` -> `%s+%`
 
   DATEINDEX         <- dateindex
 
-  DIVISION          <- c("sector_desc", "industry_desc")
+  DIVISION          <- c("", "sector_desc", "industry_desc")
   
-  SP_OPS_WHAT       <- c("('500')","('500','400','600')")
-  SP_OPS_WHAT_SHORT <- c("sp500"  ,"sp"                 )
+  SP_OPS_WHAT       <- c("('500','400','600')", "('500')")
+  SP_OPS_WHAT_SHORT <- c("sp"                 , "sp500"  ) 
 
-  combo_grid   <- expand.grid(DIVISION=DIVISION, SP_OPS_WHAT=SP_OPS_WHAT)
+  combo_grid   <- expand.grid(DIVISION=DIVISION, SP_OPS_WHAT=SP_OPS_WHAT, stringsAsFactors = FALSE)
   combo_grid_f <- seq_along(row.names(combo_grid))
 
   verify_connection()
@@ -3616,25 +3619,40 @@ load_division_aggregated_now_last_mktcap_per_company_id <- function(dateindex = 
     
     warning(paste0("Beginning load_division_aggregated_now_last_mktcap_per_company_id query SQL of dateindex: ", dateindex, " and ", paste0(as.matrix(combo_i), collapse = " ")))
     
+    # ANDRE SAFE FORM concatination operator
+    `%S+%` <- function(x,y) {
+    
+      if(is.null(x) || is.na(x) || !length(x) ) '' -> x
+      if(is.null(y) || is.na(y) || !length(y) ) '' -> y
+    
+      return(stringi::stri_join(x, y, sep=""))
+
+    }
+    
+    # [ ] TO DO MAKE THAT REPEATED STUFF INTO A FUNCTION
     local({R.rsp::rstring("
       select 
-          sr.company_id
+          sr.company_id  -- REQUIRED SO I ONLY UPSERT specific OPS/DIVISION member COMPANIES
         , sq1.*                     
       from si_finecon2 sr inner join
       ( -- sq1
         select 
-            dateindex 
-          , <%=DIVISION_I%>  
-          , count(1)                         count_<%=SP_OPS_WHAT_SHORT_I%>_<%=DIVISION_I%>
-          , sum(now_inbnd_stmtstat_mktcap)     sum_<%=SP_OPS_WHAT_SHORT_I%>_<%=DIVISION_I%>_now_inbnd_stmtstat_mktcap
-          , sum(last_inbnd_stmtstat_mktcap)    sum_<%=SP_OPS_WHAT_SHORT_I%>_<%=DIVISION_I%>_last_now_inbnd_stmtstat_mktcap
-          , sum(mktcap)                        sum_<%=SP_OPS_WHAT_SHORT_I%>_<%=DIVISION_I%>_mktcap
-        from si_finecon2 where dateindex = <%=DATEINDEX%> and sp in <%=SP_OPS_WHAT_I%>
-        group by dateindex, <%=DIVISION_I%>) sq1
+            dateindex <%= -%>
+           <%= if(DIVISION_I != '') { ', ' %S+% DIVISION_I %S+% '' } %>  
+          , count(1)                          count<%= {if(SP_OPS_WHAT_I != '') { '_' %S+% SP_OPS_WHAT_SHORT_I }}  %S+% {if(DIVISION_I != '') { '_' %S+% DIVISION_I }}  %>
+          , count(now_inbnd_stmtstat_mktcap)  count<%= {if(SP_OPS_WHAT_I != '') { '_' %S+% SP_OPS_WHAT_SHORT_I }}  %S+% {if(DIVISION_I != '') { '_' %S+% DIVISION_I }}  %>_now_inbnd_stmtstat_mktcap
+          , sum(now_inbnd_stmtstat_mktcap)      sum<%= {if(SP_OPS_WHAT_I != '') { '_' %S+% SP_OPS_WHAT_SHORT_I }}  %S+% {if(DIVISION_I != '') { '_' %S+% DIVISION_I }}  %>_now_inbnd_stmtstat_mktcap
+          , count(last_inbnd_stmtstat_mktcap) count<%= {if(SP_OPS_WHAT_I != '') { '_' %S+% SP_OPS_WHAT_SHORT_I }}  %S+% {if(DIVISION_I != '') { '_' %S+% DIVISION_I }}  %>_last_now_inbnd_stmtstat_mktcap
+          , sum(last_inbnd_stmtstat_mktcap)     sum<%= {if(SP_OPS_WHAT_I != '') { '_' %S+% SP_OPS_WHAT_SHORT_I }}  %S+% {if(DIVISION_I != '') { '_' %S+% DIVISION_I }}  %>_last_now_inbnd_stmtstat_mktcap
+          , sum(mktcap)                         sum<%= {if(SP_OPS_WHAT_I != '') { '_' %S+% SP_OPS_WHAT_SHORT_I }}  %S+% {if(DIVISION_I != '') { '_' %S+% DIVISION_I }}  %>_mktcap
+        from si_finecon2 where dateindex = <%=DATEINDEX%> and 
+                              <%= {if(SP_OPS_WHAT_I != '') { ' sp in ' %S+% SP_OPS_WHAT_I }} %S+% ' and ' %> 
+                              adr = 0 AND exchange <> 'O'::text  AND company !~~ '%iShares%'::text AND company !~~ '%Vanguard%'::text AND company !~~ 'SPDR'::text AND company !~~ '%PowerShares%'::text AND company !~~ '%Fund%'::text AND company !~~ '%Holding%'::text AND industry_desc !~~ '%Investment Service%'::text 
+        group by dateindex <%= {if(DIVISION_I != '') { ', ' %S+% DIVISION_I }} %> ) sq1 
       on sr.dateindex = sq1.dateindex and 
-         sr.sp in <%=SP_OPS_WHAT_I%> and
-         sr.<%=DIVISION_I%> = sq1.<%=DIVISION_I%> and
-         sr.adr = 0 AND sr.exchange <> 'O'::text  AND sr.company !~~ '%iShares%'::text AND sr.company !~~ '%Vanguard%'::text AND sr.company !~~ 'SPDR'::text AND sr.company !~~ '%PowerShares%'::text AND sr.company !~~ '%Fund%'::text AND sr.company !~~ '%Holding%'::text AND sr.industry_desc !~~ '%Investment Service%'::text and
+         <%= {if(SP_OPS_WHAT_I != '') { 'sr.sp in ' %S+% SP_OPS_WHAT_I }} %S+% ' and ' -%> 
+         <%= {if(DIVISION_I != '') { 'sr.' %S+% DIVISION_I %S+% ' = sq1.' %S+% DIVISION_I %S+% ' and ' }} %> 
+         sr.adr = 0 AND sr.exchange <> 'O'::text  AND sr.company !~~ '%iShares%'::text AND sr.company !~~ '%Vanguard%'::text AND sr.company !~~ 'SPDR'::text AND sr.company !~~ '%PowerShares%'::text AND sr.company !~~ '%Fund%'::text AND sr.company !~~ '%Holding%'::text AND sr.industry_desc !~~ '%Investment Service%'::text and 
          sr.dateindex = <%=DATEINDEX%>
       ")}, envir = list2env(list(DIVISION_I = combo_i[["DIVISION"]], SP_OPS_WHAT_I = combo_i[["SP_OPS_WHAT"]]
                              , SP_OPS_WHAT_SHORT_I=SP_OPS_WHAT_SHORT_I
