@@ -1546,7 +1546,7 @@ upsert2 <-  function(value = NULL, keys = NULL, target_table_name = "si_finecon2
   # RStudio: Options->Code->Dislplay: Console; Limit length of lines displayed in console to: 0
   options(warn=1)
   
-  # loading forward ( and backward dates ) that 'do not use company_id'
+  # loading forward ( and backward dates ) that 'do not use company_id' 
   if(is.null(keys)) character() -> keys
   
   verify_connection()
@@ -3747,7 +3747,31 @@ load_division_aggregated_per_dateindex <- function(dateindex = NULL) {
     
     # [ ] TO DO MAKE THAT REPEATED STUFF INTO A FUNCTION
     local({R.rsp::rstring("
-
+      select
+          dateindex
+        , dateindexlwd
+        , dateindexeom
+        , dateindexeom::text dateindexeom_fct
+        , 'sp_desc'::text collection_name01_fct
+        ,     case when sp in ('500') then 'sp500'::text else 'notsp500'::text end sp_desc_fct
+        , 'industry_desc'::text collection_name02_fct
+        ,     industry_desc industry_desc_fct
+        , sum(now_inbnd_stmtstat_sales_q1)  / nullif(sum(now_inbnd_stmtstat_mktcap), 0)   * 100.00  rat_now_inbnd_stmtstat_sales_q1_o_mktcap_x_100
+        , sum(now_inbnd_stmtstat_netinc_q1) / nullif(sum(now_inbnd_stmtstat_mktcap), 0)  * 1000.00  rat_now_inbnd_stmtstat_netinc_q1_o_mktcap_x_1000
+        , sum(now_inbnd_stmtstat_netinc_q1) / nullif(sum(now_inbnd_stmtstat_sales_q1), 0) * 100.00  rat_now_inbnd_stmtstat_netinc_q1_o_sales_q1_x_100
+        , count(now_inbnd_stmtid_dateindex)::numeric                                                                     count_now_inbnd_stmtstat_dateindex
+        , count(now_inbnd_stmtid_dateindex)::numeric / nullif(count(last_inbnd_stmtid_dateindex)::numeric,0) * 100.0 rat_count_now_inbnd_stmtstat_dateindex_o_last_x_100
+        , sum(mktcap) sum_mktcap
+        , avg(pct_freeprice_ret_01m_ann * mktcap / nullif(sum_sp500_industry_desc_mktcap,0) )  avg_mktcap_wdt_pct_freeprice_ret_01m_ann  -- FROM *** load_division_aggregated_now_last_mktcap_per_company_id *** FROM
+        , sum(now_inbnd_stmtstat_mktcap)                                                   sum_now_inbnd_stmtstat_mktcap
+        , sum(now_inbnd_stmtstat_mktcap) / nullif(sum(last_inbnd_stmtstat_mktcap), 0)  rat_sum_now_inbnd_stmtstat_mktcap_o_last_x_100
+      from si_finecon2 where
+            sp in ('500') 
+        and industry_desc in ('Gold & Silver', 'Furniture & Fixtures') 
+        and adr = 0 AND exchange <> 'O'::text  AND company !~~ '%iShares%'::text AND company !~~ '%Vanguard%'::text AND company !~~ 'SPDR'::text AND company !~~ '%PowerShares%'::text AND company !~~ '%Fund%'::text AND company !~~ '%Holding%'::text AND industry_desc !~~ '%Investment Service%'::text
+        and dateindexeom = 17378
+      group by dateindex, dateindexlwd, dateindexeom, sp_desc_fct, industry_desc_fct
+      order by dateindex, dateindexlwd, dateindexeom, sp_desc_fct, industry_desc_fct
     ")}, envir = list2env(list(DIVISION_I = combo_i[["DIVISION"]], SP_OPS_WHAT_I = combo_i[["SP_OPS_WHAT"]]
                              , SP_OPS_WHAT_SHORT_I=SP_OPS_WHAT_SHORT_I
                              , DATEINDEX=DATEINDEX))
@@ -3757,7 +3781,11 @@ load_division_aggregated_per_dateindex <- function(dateindex = NULL) {
     
     financize(si_all_df, char_col_numeric_limit = 99999999999999.99) -> si_all_df # SFS
     
-    upsert2(value = SFS, target_table_name = "si_finecon2_aggregates", upsert_temp_perform_upsert_force = TRUE)
+    # SFS
+    liquifyDF(si_all_df, const_cols_regexpr = "^dateindex.*", fctr_cols_rexpr = ".*_fct$") -> si_all_df
+    
+    # SFS
+    upsert2(value = si_all_df, target_table_name = "si_finecon2_aggregates", upsert_temp_perform_upsert_force = TRUE)
     
 
     warning(paste0("Ending load_division_aggregated_now_last_mktcap_per_company_id query SQL of dateindex: ", dateindex, " and ", paste0(as.matrix(combo_i), collapse = " ")))
@@ -3783,6 +3811,7 @@ load_division_aggregated_per_dateindex <- function(dateindex = NULL) {
 # sapply(wd_dbf_dirs_ordered, load_division_aggregated_per_dateindex)
 # INDIVIDUAL
 # load_division_aggregated_per_dateindex(dateindex = 17347)
+# load_division_aggregated_per_dateindex(dateindex = 17378) # data already in aggr
 # load_division_aggregated_per_dateindex(dateindex = 17409)
 
 
