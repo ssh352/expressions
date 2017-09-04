@@ -3657,8 +3657,8 @@ load_division_aggregated_now_last_mktcap_per_company_id <- function(dateindex = 
          sr.adr = 0 AND sr.exchange <> 'O'::text  AND sr.company !~~ '%iShares%'::text AND sr.company !~~ '%Vanguard%'::text AND sr.company !~~ 'SPDR'::text AND sr.company !~~ '%PowerShares%'::text AND sr.company !~~ '%Fund%'::text AND sr.company !~~ '%Holding%'::text AND sr.industry_desc !~~ '%Investment Service%'::text and 
          sr.dateindex = <%=DATEINDEX%>
       ")}, envir = list2env(list(DIVISION_I = combo_i[["DIVISION"]], SP_OPS_WHAT_I = combo_i[["SP_OPS_WHAT"]]
-                             , SP_OPS_WHAT_SHORT_I=SP_OPS_WHAT_SHORT_I
-                             , DATEINDEX=DATEINDEX))
+                             , SP_OPS_WHAT_SHORT_I = SP_OPS_WHAT_SHORT_I
+                             , DATEINDEX = DATEINDEX))
     ) -> add_columns_sql
     
     db.q(add_columns_sql, nrows = "all", conn.id = cid) -> si_all_df
@@ -3781,14 +3781,14 @@ load_division_aggregated_per_dateindex <- function(dateindex = NULL) {
         <%= {if(SP_OPS_WHAT_I != '') { 'sp in ' %S+% SP_OPS_WHAT_I %S+% ' and ' }} %>
         <%= {if(!is.null(DIVISION_ITEMS_I)) { DIVISION_I %S+% ' in (' %S+% stringi::stri_c(sapply(DIVISION_ITEMS_I, sQuote), collapse = ', ')  %S+% ') and ' }} %>
         adr = 0 AND exchange <> 'O'::text  AND company !~~ '%iShares%'::text AND company !~~ '%Vanguard%'::text AND company !~~ 'SPDR'::text AND company !~~ '%PowerShares%'::text AND company !~~ '%Fund%'::text AND company !~~ '%Holding%'::text AND industry_desc !~~ '%Investment Service%'::text
-      group by dateindex, dateindexlwd, dateindexeom, sp_desc_fct, industry_desc_fct
-      order by dateindex, dateindexlwd, dateindexeom, sp_desc_fct, industry_desc_fct
+      group by dateindex, dateindexlwd, dateindexeom<%= {if(SP_OPS_WHAT_I != '') { ', ' %S+% SP_OPS_WHAT_SHORT_I %S+% '_desc_fct' }} %><%= {if(DIVISION_I != '') { ', ' %S+% DIVISION_I %S+% '_fct' }} %> 
+      order by dateindex, dateindexlwd, dateindexeom<%= {if(SP_OPS_WHAT_I != '') { ', ' %S+% SP_OPS_WHAT_SHORT_I %S+% '_desc_fct' }} %><%= {if(DIVISION_I != '') { ', ' %S+% DIVISION_I %S+% '_fct' }} %> 
     ")}, envir = list2env(list(
-                               DIVISION_I = combo_i[["DIVISION"]]
+                               DIVISION_I    = combo_i[["DIVISION"]]
                              , SP_OPS_WHAT_I = combo_i[["SP_OPS_WHAT"]]
                              , SP_OPS_WHAT_SHORT_I = SP_OPS_WHAT_SHORT_I
-                             , DIVISION_ITEMS_I =  DIVISION_ITEMS[[as.list(combo_i)[["DIVISION"]]]] #  "Gold & Silver" "Furniture & Fixtures"
-                             , DATEINDEX=DATEINDEX))
+                             , DIVISION_ITEMS_I    =  DIVISION_ITEMS[[as.list(combo_i)[["DIVISION"]]]] #  "Gold & Silver" "Furniture & Fixtures"
+                             , DATEINDEX           = DATEINDEX))
     ) -> add_columns_sql
     
     db.q(add_columns_sql, nrows = "all", conn.id = cid) -> si_all_df              # SFS
