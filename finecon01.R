@@ -3777,11 +3777,10 @@ load_division_aggregated_per_dateindex <- function(dateindex = NULL) {
         , avg(pct_freeprice_ret_01m_ann * mktcap / nullif(sum_sp500_industry_desc_mktcap,0) )  avg_mktcap_wdt_pct_freeprice_ret_01m_ann  -- FROM *** load_division_aggregated_now_last_mktcap_per_company_id *** FROM
         , sum(now_inbnd_stmtstat_mktcap)                                                   sum_now_inbnd_stmtstat_mktcap
         , sum(now_inbnd_stmtstat_mktcap) / nullif(sum(last_inbnd_stmtstat_mktcap), 0)  rat_sum_now_inbnd_stmtstat_mktcap_o_last_x_100
-      from si_finecon2 where
-            sp in ('500') 
-        and industry_desc in ('Gold & Silver', 'Furniture & Fixtures') 
-        and adr = 0 AND exchange <> 'O'::text  AND company !~~ '%iShares%'::text AND company !~~ '%Vanguard%'::text AND company !~~ 'SPDR'::text AND company !~~ '%PowerShares%'::text AND company !~~ '%Fund%'::text AND company !~~ '%Holding%'::text AND industry_desc !~~ '%Investment Service%'::text
-        and dateindexeom = 17378
+      from si_finecon2 where dateindexeom = <%= DATEINDEX %> and
+        sp in ('500') and
+        <%= {if(!is.null(DIVISION_ITEMS_I)) { DIVISION_I %S+% ' in (' %S+% stringi::stri_c(sapply(DIVISION_ITEMS_I, sQuote), collapse = ', ')  %S+% ') and ' }} %>
+        adr = 0 AND exchange <> 'O'::text  AND company !~~ '%iShares%'::text AND company !~~ '%Vanguard%'::text AND company !~~ 'SPDR'::text AND company !~~ '%PowerShares%'::text AND company !~~ '%Fund%'::text AND company !~~ '%Holding%'::text AND industry_desc !~~ '%Investment Service%'::text
       group by dateindex, dateindexlwd, dateindexeom, sp_desc_fct, industry_desc_fct
       order by dateindex, dateindexlwd, dateindexeom, sp_desc_fct, industry_desc_fct
     ")}, envir = list2env(list(
