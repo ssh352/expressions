@@ -3699,6 +3699,94 @@ load_division_aggregated_now_last_mktcap_per_company_id <- function(dateindex = 
 # load_division_aggregated_now_last_mktcap_per_company_id(dateindex = dir_i)
 
 
+# uses now_inbnd_stmtstat last_inbnd_stmtstat
+# since MANY SQLs upsertS are done inside
+load_division_aggregated_per_dateindex <- function(dateindex = NULL) {
+
+  ops <- options() 
+  options(warn = 1)
+  
+  require(PivotalR)
+  # R.rsp    rstring
+  # stringi  stri_join
+  
+  #                 **** SAME AS ****
+  # load_division_aggregated_now_last_mktcap_per_company_id
+
+  DATEINDEX         <- dateindex
+
+  DIVISION          <- c("", "sector_desc", "industry_desc")
+  
+  SP_OPS_WHAT       <- c("('500','400','600')", "('500')")
+  SP_OPS_WHAT_SHORT <- c("sp"                 , "sp500"  ) 
+
+  combo_grid   <- expand.grid(DIVISION=DIVISION, SP_OPS_WHAT=SP_OPS_WHAT, stringsAsFactors = FALSE)
+  combo_grid_f <- seq_along(row.names(combo_grid))
+
+  verify_connection()
+    
+
+  for(combo_i in split(combo_grid, combo_grid_f)) {
+
+
+    SP_OPS_WHAT_SHORT_I <- SP_OPS_WHAT_SHORT[match(combo_i[["SP_OPS_WHAT"]],SP_OPS_WHAT)]
+    
+    warning(paste0("Beginning load_division_aggregated_now_last_mktcap_per_company_id query SQL of dateindex: ", dateindex, " and ", paste0(as.matrix(combo_i), collapse = " ")))
+    
+    # ANDRE SAFE FORM concatination operator
+    `%S+%` <- function(x,y) {
+    
+      if(is.null(x) || is.na(x) || !length(x) ) '' -> x
+      if(is.null(y) || is.na(y) || !length(y) ) '' -> y
+    
+      return(stringi::stri_join(x, y, sep=""))
+
+    }
+    
+    ## IN load_division_aggregated_per_dateindex ##
+    
+    # [ ] TO DO MAKE THAT REPEATED STUFF INTO A FUNCTION
+    local({R.rsp::rstring("
+
+    ")}, envir = list2env(list(DIVISION_I = combo_i[["DIVISION"]], SP_OPS_WHAT_I = combo_i[["SP_OPS_WHAT"]]
+                             , SP_OPS_WHAT_SHORT_I=SP_OPS_WHAT_SHORT_I
+                             , DATEINDEX=DATEINDEX))
+    ) -> add_columns_sql
+    
+    db.q(add_columns_sql, nrows = "all", conn.id = cid) -> si_all_df              # SFS
+    
+    financize(si_all_df, char_col_numeric_limit = 99999999999999.99) -> si_all_df # SFS
+    
+    upsert2(value = SFS, target_table_name = "si_finecon2_aggregates", upsert_temp_perform_upsert_force = TRUE)
+    
+
+    warning(paste0("Ending load_division_aggregated_now_last_mktcap_per_company_id query SQL of dateindex: ", dateindex, " and ", paste0(as.matrix(combo_i), collapse = " ")))
+
+  }
+  
+
+  options(ops)
+  
+  return(TRUE)
+  
+}
+## TIGHTLY CORRELATED PREREQUISITE:  oad_division_aggregated_now_last_mktcap_per_company_id
+#
+## uses now_inbnd_stmtstat last_inbnd_stmtstat
+## REALISTIC mass updates ( per dateindex )
+# sapply(wd_dbf_dirs_ordered, function(x) { 
+#   ## uses now_inbnd_stmtstat last_inbnd_stmtstat
+#   load_division_aggregated_now_last_mktcap_per_company_id(x)
+#   load_division_aggregated_per_dateindex(x)
+# })
+## QUICK MASS UPDATE (if I am sure ABOUT load_division_aggregated_now_last_mktcap_per_company_id(x)
+# sapply(wd_dbf_dirs_ordered, load_division_aggregated_per_dateindex)
+# INDIVIDUAL
+# load_division_aggregated_per_dateindex(dateindex = 17347)
+# load_division_aggregated_per_dateindex(dateindex = 17409)
+
+
+
 
 create_inbnd_stmtstats_aggregates_db <- function(exact_lwd_dbf_dirs = NULL) {
 
