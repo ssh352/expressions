@@ -3715,11 +3715,23 @@ load_division_aggregated_per_dateindex <- function(dateindex = NULL) {
 
   DATEINDEX         <- dateindex
 
-  DIVISION          <- c("", "sector_desc", "industry_desc")
-  
-  SP_OPS_WHAT       <- c("('500','400','600')", "('500')")
-  SP_OPS_WHAT_SHORT <- c("sp"                 , "sp500"  ) 
+  # DIVISION          <- c("", "sector_desc", "industry_desc")
+  # 
+  # SP_OPS_WHAT       <- c("('500','400','600')", "('500')")
+  # SP_OPS_WHAT_SHORT <- c("sp"                 , "sp500"  ) 
 
+  # Re-organized for debugging ( TEMPORARY ) 
+  
+  DIVISION          <- c("industry_desc", "sector_desc", "")
+  SP_OPS_WHAT       <- c("('500')", "('500','400','600')")
+  SP_OPS_WHAT_SHORT <- c("sp500"  , "sp"                 ) 
+  
+  # NEW
+  DIVISION_ITEMS <- list()
+  DIVISION_ITEMS[["industry_desc"]] <- c("Gold & Silver", "Furniture & Fixtures") #  FUTURE "Oil & Gas Operations"
+  
+  # OLD AGAIN
+  
   combo_grid   <- expand.grid(DIVISION=DIVISION, SP_OPS_WHAT=SP_OPS_WHAT, stringsAsFactors = FALSE)
   combo_grid_f <- seq_along(row.names(combo_grid))
 
@@ -3746,7 +3758,7 @@ load_division_aggregated_per_dateindex <- function(dateindex = NULL) {
     ## IN load_division_aggregated_per_dateindex ##
     
     # [ ] TO DO MAKE THAT REPEATED STUFF INTO A FUNCTION
-    local({R.rsp::rstring("
+    local({browser();R.rsp::rstring("
       select
           dateindex
         , dateindexlwd
@@ -3772,8 +3784,11 @@ load_division_aggregated_per_dateindex <- function(dateindex = NULL) {
         and dateindexeom = 17378
       group by dateindex, dateindexlwd, dateindexeom, sp_desc_fct, industry_desc_fct
       order by dateindex, dateindexlwd, dateindexeom, sp_desc_fct, industry_desc_fct
-    ")}, envir = list2env(list(DIVISION_I = combo_i[["DIVISION"]], SP_OPS_WHAT_I = combo_i[["SP_OPS_WHAT"]]
-                             , SP_OPS_WHAT_SHORT_I=SP_OPS_WHAT_SHORT_I
+    ")}, envir = list2env(list(
+                               DIVISION_I = combo_i[["DIVISION"]]
+                             , SP_OPS_WHAT_I = combo_i[["SP_OPS_WHAT"]]
+                             , SP_OPS_WHAT_SHORT_I = SP_OPS_WHAT_SHORT_I
+                             , DIVISION_ITEMS_I =  DIVISION_ITEMS[[as.list(combo_i)[["DIVISION"]]]] #  "Gold & Silver" "Furniture & Fixtures"
                              , DATEINDEX=DATEINDEX))
     ) -> add_columns_sql
     
