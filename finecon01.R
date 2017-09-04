@@ -3594,10 +3594,12 @@ load_division_aggregated_now_last_mktcap_per_company_id <- function(dateindex = 
   options(warn = 1)
   
   require(PivotalR)
-  # R.rsp rstring
+  # R.rsp    rstring
+  # stringi  stri_join
   
-  require(R.rsp)
-  stringi::`%s+%` -> `%s+%`
+  # require(R.rsp)
+  ##NOT USED
+  ##stringi::`%s+%` -> `%s+%`
 
   DATEINDEX         <- dateindex
 
@@ -3637,8 +3639,8 @@ load_division_aggregated_now_last_mktcap_per_company_id <- function(dateindex = 
       from si_finecon2 sr inner join
       ( -- sq1
         select 
-            dateindex <%= -%>
-           <%= if(DIVISION_I != '') { ', ' %S+% DIVISION_I %S+% '' } %>  
+            dateindex
+          <%= {if(DIVISION_I != '') { ', ' %S+% DIVISION_I }} %>
           , count(1)                          count<%= {if(SP_OPS_WHAT_I != '') { '_' %S+% SP_OPS_WHAT_SHORT_I }}  %S+% {if(DIVISION_I != '') { '_' %S+% DIVISION_I }}  %>
           , count(now_inbnd_stmtstat_mktcap)  count<%= {if(SP_OPS_WHAT_I != '') { '_' %S+% SP_OPS_WHAT_SHORT_I }}  %S+% {if(DIVISION_I != '') { '_' %S+% DIVISION_I }}  %>_now_inbnd_stmtstat_mktcap
           , sum(now_inbnd_stmtstat_mktcap)      sum<%= {if(SP_OPS_WHAT_I != '') { '_' %S+% SP_OPS_WHAT_SHORT_I }}  %S+% {if(DIVISION_I != '') { '_' %S+% DIVISION_I }}  %>_now_inbnd_stmtstat_mktcap
@@ -3650,8 +3652,8 @@ load_division_aggregated_now_last_mktcap_per_company_id <- function(dateindex = 
                               adr = 0 AND exchange <> 'O'::text  AND company !~~ '%iShares%'::text AND company !~~ '%Vanguard%'::text AND company !~~ 'SPDR'::text AND company !~~ '%PowerShares%'::text AND company !~~ '%Fund%'::text AND company !~~ '%Holding%'::text AND industry_desc !~~ '%Investment Service%'::text 
         group by dateindex <%= {if(DIVISION_I != '') { ', ' %S+% DIVISION_I }} %> ) sq1 
       on sr.dateindex = sq1.dateindex and 
-         <%= {if(SP_OPS_WHAT_I != '') { 'sr.sp in ' %S+% SP_OPS_WHAT_I }} %S+% ' and ' -%> 
-         <%= {if(DIVISION_I != '') { 'sr.' %S+% DIVISION_I %S+% ' = sq1.' %S+% DIVISION_I %S+% ' and ' }} %> 
+         <%= {if(SP_OPS_WHAT_I != '') { 'sr.sp in ' %S+% SP_OPS_WHAT_I }} %S+% ' and ' %> 
+         <%= {if(DIVISION_I != '') { 'sr.' %S+% DIVISION_I %S+% ' = sq1.' %S+% DIVISION_I %S+% ' and ' }} %>
          sr.adr = 0 AND sr.exchange <> 'O'::text  AND sr.company !~~ '%iShares%'::text AND sr.company !~~ '%Vanguard%'::text AND sr.company !~~ 'SPDR'::text AND sr.company !~~ '%PowerShares%'::text AND sr.company !~~ '%Fund%'::text AND sr.company !~~ '%Holding%'::text AND sr.industry_desc !~~ '%Investment Service%'::text and 
          sr.dateindex = <%=DATEINDEX%>
       ")}, envir = list2env(list(DIVISION_I = combo_i[["DIVISION"]], SP_OPS_WHAT_I = combo_i[["SP_OPS_WHAT"]]
