@@ -3619,7 +3619,7 @@ load_division_aggregated_now_last_mktcap_per_company_id <- function(dateindex = 
 
     SP_OPS_WHAT_SHORT_I <- SP_OPS_WHAT_SHORT[match(combo_i[["SP_OPS_WHAT"]],SP_OPS_WHAT)]
     
-    warning(paste0("Beginning load_division_aggregated_now_last_mktcap_per_company_id query SQL of dateindex: ", dateindex, " and ", paste0(as.matrix(combo_i), collapse = " ")))
+    warning(paste0("Beginning load_division_aggregated_now_last_mktcap_per_company_id query SQL of dateindex: ", dateindex, " and ", paste0(names(combo_i),"_" , combo_i)  ))
     
     # ANDRE SAFE FORM concatination operator
     `%S+%` <- function(x,y) {
@@ -3666,7 +3666,7 @@ load_division_aggregated_now_last_mktcap_per_company_id <- function(dateindex = 
     financize(si_all_df, char_col_numeric_limit = 99999999999999.99) -> si_all_df
     upsert(si_all_df, keys = c("company_id"))
   
-    warning(paste0("Ending load_division_aggregated_now_last_mktcap_per_company_id query SQL of dateindex: ", dateindex, " and ", paste0(as.matrix(combo_i), collapse = " ")))
+    warning(paste0("Ending load_division_aggregated_now_last_mktcap_per_company_id query SQL of dateindex: ", dateindex, " and ", paste0(names(combo_i),"_" , combo_i)  ))
 
   }
   
@@ -3743,7 +3743,7 @@ load_division_aggregated_per_dateindex <- function(dateindex = NULL) {
 
     SP_OPS_WHAT_SHORT_I <- SP_OPS_WHAT_SHORT[match(combo_i[["SP_OPS_WHAT"]],SP_OPS_WHAT)]
     
-    warning(paste0("Beginning load_division_aggregated_now_last_mktcap_per_company_id query SQL of dateindex: ", dateindex, " and ", paste0(as.matrix(combo_i), collapse = " ")))
+    warning(paste0("Beginning load_division_aggregated_per_dateindex of dateindex: ", dateindex, " and ",  paste0(names(combo_i),"_" , combo_i)  ))
     
     # ANDRE SAFE FORM concatination operator
     `%S+%` <- function(x,y) {
@@ -3802,7 +3802,7 @@ load_division_aggregated_per_dateindex <- function(dateindex = NULL) {
     upsert2(value = si_all_df, target_table_name = "si_finecon2_aggregates", upsert_temp_perform_upsert_force = TRUE)
     
 
-    warning(paste0("Ending load_division_aggregated_now_last_mktcap_per_company_id query SQL of dateindex: ", dateindex, " and ", paste0(as.matrix(combo_i), collapse = " ")))
+    warning(paste0("Ending load_division_aggregated_per_dateindex query SQL of dateindex: ", dateindex, " and ", paste0(as.matrix(combo_i), collapse = " ")))
 
   }
   
