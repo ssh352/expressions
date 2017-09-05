@@ -2025,7 +2025,7 @@ upsert2 <-  function(value = NULL, keys = NULL, target_table_name = "si_finecon2
     "    from upsert_temp t " %s+% " \n" %s+%
     "      where " %s+% "s." %s+% conflict_column %s+% " = " %s+% "t." %s+% conflict_column  %s+% ";" 
     )
-    %>'))))  %>% clean_text(.) 
+    %>'))))  %>% clean_text(.) -> fc_col_val_changes_sql
 
     print("UPDATE")
     
