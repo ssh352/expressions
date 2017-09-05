@@ -3766,8 +3766,8 @@ load_division_aggregated_per_dateindex <- function(dateindex = NULL) {
         , dateindexeom::text dateindexeom_fct
         <%= {if(SP_OPS_WHAT_I != '') { ', ' %S+% sQuote('sp_desc') %S+% '::text collection_name01_fct' }} %>
         <%= {if(SP_OPS_WHAT_I != '') { ',     case when sp in ' %S+% SP_OPS_WHAT_I %S+% ' then ' %S+%  sQuote(SP_OPS_WHAT_SHORT_I)  %S+% '::text else ' %S+% sQuote('not' %S+% SP_OPS_WHAT_SHORT_I)  %S+% '::text end sp_desc_fct'  }} %>
-        , 'industry_desc'::text collection_name02_fct
-        ,     industry_desc industry_desc_fct
+        <%= {if(DIVISION_I != '') { ', ' %S+% sQuote(DIVISION_I) %S+% '::text collection_name02_fct' }} %>
+        <%= {if(DIVISION_I != '') { ',     ' %S+% DIVISION_I %S+% ' ' %S+% DIVISION_I %S+% '_fct' }} %>
         , sum(now_inbnd_stmtstat_sales_q1)  / nullif(sum(now_inbnd_stmtstat_mktcap), 0)   * 100.00  rat_now_inbnd_stmtstat_sales_q1_o_mktcap_x_100
         , sum(now_inbnd_stmtstat_netinc_q1) / nullif(sum(now_inbnd_stmtstat_mktcap), 0)  * 1000.00  rat_now_inbnd_stmtstat_netinc_q1_o_mktcap_x_1000
         , sum(now_inbnd_stmtstat_netinc_q1) / nullif(sum(now_inbnd_stmtstat_sales_q1), 0) * 100.00  rat_now_inbnd_stmtstat_netinc_q1_o_sales_q1_x_100
@@ -3781,8 +3781,8 @@ load_division_aggregated_per_dateindex <- function(dateindex = NULL) {
         <%= {if(SP_OPS_WHAT_I != '') { 'sp in ' %S+% SP_OPS_WHAT_I %S+% ' and ' }} %>
         <%= {if(!is.null(DIVISION_ITEMS_I)) { DIVISION_I %S+% ' in (' %S+% stringi::stri_c(sapply(DIVISION_ITEMS_I, sQuote), collapse = ', ')  %S+% ') and ' }} %>
         adr = 0 AND exchange <> 'O'::text  AND company !~~ '%iShares%'::text AND company !~~ '%Vanguard%'::text AND company !~~ 'SPDR'::text AND company !~~ '%PowerShares%'::text AND company !~~ '%Fund%'::text AND company !~~ '%Holding%'::text AND industry_desc !~~ '%Investment Service%'::text
-      group by dateindex, dateindexlwd, dateindexeom<%= {if(SP_OPS_WHAT_I != '') { ', ' %S+% SP_OPS_WHAT_SHORT_I %S+% '_desc_fct' }} %><%= {if(DIVISION_I != '') { ', ' %S+% DIVISION_I %S+% '_fct' }} %> 
-      order by dateindex, dateindexlwd, dateindexeom<%= {if(SP_OPS_WHAT_I != '') { ', ' %S+% SP_OPS_WHAT_SHORT_I %S+% '_desc_fct' }} %><%= {if(DIVISION_I != '') { ', ' %S+% DIVISION_I %S+% '_fct' }} %> 
+      group by dateindex, dateindexlwd, dateindexeom<%= {if(SP_OPS_WHAT_I != '') { ', sp_desc_fct' }} %><%= {if(DIVISION_I != '') { ', ' %S+% DIVISION_I %S+% '_fct' }} %> 
+      order by dateindex, dateindexlwd, dateindexeom<%= {if(SP_OPS_WHAT_I != '') { ', sp_desc_fct' }} %><%= {if(DIVISION_I != '') { ', ' %S+% DIVISION_I %S+% '_fct' }} %> 
     ")}, envir = list2env(list(
                                DIVISION_I    = combo_i[["DIVISION"]]
                              , SP_OPS_WHAT_I = combo_i[["SP_OPS_WHAT"]]
