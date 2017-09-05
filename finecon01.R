@@ -3774,7 +3774,7 @@ load_division_aggregated_per_dateindex <- function(dateindex = NULL) {
         , count(now_inbnd_stmtid_dateindex)::numeric                                                                     count_now_inbnd_stmtstat_dateindex
         , count(now_inbnd_stmtid_dateindex)::numeric / nullif(count(last_inbnd_stmtid_dateindex)::numeric,0) * 100.0 rat_count_now_inbnd_stmtstat_dateindex_o_last_x_100
         , sum(mktcap) sum_mktcap
-        , avg(pct_freeprice_ret_01m_ann * mktcap / nullif(sum_sp500_industry_desc_mktcap,0) )  avg_mktcap_wdt_pct_freeprice_ret_01m_ann  -- FROM *** load_division_aggregated_now_last_mktcap_per_company_id *** FROM
+        , avg(pct_freeprice_ret_01m_ann * mktcap / nullif(sum<%= {if(SP_OPS_WHAT_I != ''){'_' %S+% SP_OPS_WHAT_SHORT_I}} %><%= {if(DIVISION_I != ''){'_' %S+% DIVISION_I}} %>_mktcap,0) )  avg_mktcap_wdt_pct_freeprice_ret_01m_ann  -- FROM *** load_division_aggregated_now_last_mktcap_per_company_id *** FROM
         , sum(now_inbnd_stmtstat_mktcap)                                                   sum_now_inbnd_stmtstat_mktcap
         , sum(now_inbnd_stmtstat_mktcap) / nullif(sum(last_inbnd_stmtstat_mktcap), 0)  rat_sum_now_inbnd_stmtstat_mktcap_o_last_x_100
       from si_finecon2 where dateindexeom = <%= DATEINDEX %> and
