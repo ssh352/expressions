@@ -3770,6 +3770,9 @@ load_division_aggregated_per_dateindex <- function(dateindex = NULL) {
 
     }
     
+    # Safe single quote: direction is down/up ( not left/right )
+    SQuote <- function(x) paste0("'",x,"'")
+    
     ## IN load_division_aggregated_per_dateindex ##
     
     # [ ] TO DO MAKE THAT REPEATED STUFF INTO A FUNCTION
