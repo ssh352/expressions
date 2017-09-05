@@ -3693,6 +3693,8 @@ load_division_aggregated_now_last_mktcap_per_company_id <- function(dateindex = 
     
     db.q(add_columns_sql, nrows = "all", conn.id = cid) -> si_all_df
     
+    if(!NROW(si_all_df)) stop(paste0("Returned zero records ", dateindex))
+    
     financize(si_all_df, char_col_numeric_limit = 99999999999999.99) -> si_all_df
     upsert(si_all_df, keys = c("company_id"))
   
@@ -3827,7 +3829,7 @@ load_division_aggregated_per_dateindex <- function(dateindex = NULL) {
         , avg(pct_freeprice_ret_01m_ann * mktcap / nullif(sum<%= {if(SP_OPS_WHAT_I != ''){'_' %S+% SP_OPS_WHAT_SHORT_I}} %><%= {if(DIVISION_I != ''){'_' %S+% DIVISION_I}} %>_mktcap,0) )  avg_mktcap_wdt_pct_freeprice_ret_01m_ann  -- FROM *** load_division_aggregated_now_last_mktcap_per_company_id *** FROM
         , sum(now_inbnd_stmtstat_mktcap)                                                   sum_now_inbnd_stmtstat_mktcap
         , sum(now_inbnd_stmtstat_mktcap) / nullif(sum(last_inbnd_stmtstat_mktcap), 0)  rat_sum_now_inbnd_stmtstat_mktcap_o_last_x_100
-      from si_finecon2 where dateindexeom = <%= DATEINDEX %> and
+      from si_finecon2 where dateindex = <%= DATEINDEX %> and
         <%= {if(SP_OPS_WHAT_I != '') { 'sp in ' %S+% SP_OPS_WHAT_I %S+% ' and ' }} %>
         <%= {if(!is.null(DIVISION_ITEMS_I)) { DIVISION_I %S+% ' in (' %S+% stringi::stri_c(sapply(DIVISION_ITEMS_I, SQuote), collapse = ', ')  %S+% ') and ' }} %>
         adr = 0 AND exchange <> 'O'::text  AND company !~~ '%iShares%'::text AND company !~~ '%Vanguard%'::text AND company !~~ 'SPDR'::text AND company !~~ '%PowerShares%'::text AND company !~~ '%Fund%'::text AND company !~~ '%Holding%'::text AND industry_desc !~~ '%Investment Service%'::text
@@ -3844,6 +3846,8 @@ load_division_aggregated_per_dateindex <- function(dateindex = NULL) {
     db.q(add_columns_sql, nrows = "all", conn.id = cid) -> si_all_df              # SFS
     
     financize(si_all_df, char_col_numeric_limit = 99999999999999.99) -> si_all_df # SFS
+    
+    if(!NROW(si_all_df)) stop(paste0("Returned zero records ", dateindex))
     
     # SFS
     liquifyDF(si_all_df, const_cols_regexpr = "^dateindex.*", fctr_cols_rexpr = ".*_fct$") -> si_all_df
