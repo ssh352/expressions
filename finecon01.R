@@ -1461,7 +1461,7 @@ upsert <-  function(value = NULL, keys = NULL) { # vector of primary key values
   
     # actually perform the upsert
     str_trim(str_c(rstring('<%= 
-    sprintf(
+    paste0(
     "insert into si_finecon2(" %s+% str_c(names(upsert_meta), collapse = ", ") %s+% ")" %s+% " \n" %s+% 
     "  select " %s+% str_c(names(upsert_meta), collapse = ", ") %s+% " \n" %s+% 
     "    from upsert_temp" %s+% " \n" %s+% 
@@ -1484,16 +1484,28 @@ upsert <-  function(value = NULL, keys = NULL) { # vector of primary key values
     
   if(!upsert_temp_perform_nothing && !upsert_temp_perform_upsert) {
   
-    # actually perform the update 
-    str_trim(str_c(rstring('<%= 
-    sprintf(
-    "update si_finecon2 s " %s+% " set " %s+% 
-     str_c(sprintf("\n  %1$s = t.%1$s", names(upsert_meta)[!names(upsert_meta) %in% c("dateindex", "company_id", "dateindex_company_id", "company_id_orig", "dateindex_company_id_orig")] ), collapse = ", ") %s+% " \n" %s+%
+    # avoid sprintf 8192 character limit
+    # # actually perform the update 
+    # str_trim(str_c(rstring(str_c('<%= 
+    # paste0(
+    # "update \\"', target_table_name, '\\" s " %s+% " set " %s+% 
+    #  str_c(sprintf("\n  %1$s = t.%1$s", names(upsert_meta)[!names(upsert_meta) %in% c("dateindex", "company_id", "dateindex_company_id", "company_id_orig", "dateindex_company_id_orig")] ), collapse = ", ") %s+% " \n" %s+%
+    # "    from upsert_temp t " %s+% " \n" %s+%
+    # "      where " %s+% "s." %s+% conflict_column %s+% " = " %s+% "t." %s+% conflict_column  %s+% ";" 
+    # )
+    # %>'))))  %>% clean_text(.) -> fc_col_val_changes_sql
+    
+    col_names <- names(upsert_meta)[!names(upsert_meta) %in% c("dateindex", "company_id", "dateindex_company_id", "company_id_orig", "dateindex_company_id_orig")]
+    # actually perform the update
+    str_trim(str_c(rstring(str_c('<%= 
+    paste0(
+    "update \\"', target_table_name, '\\" s " %s+% " set " %s+% 
+     str_c(str_c(str_c("\n ", col_names), str_c(" = t.", col_names)), collapse = ", ") %s+% " \n" %s+%
     "    from upsert_temp t " %s+% " \n" %s+%
     "      where " %s+% "s." %s+% conflict_column %s+% " = " %s+% "t." %s+% conflict_column  %s+% ";" 
     )
-    %>')))  %>% clean_text(.) -> fc_col_val_changes_sql
-
+    %>'))))  %>% clean_text(.) -> fc_col_val_changes_sql
+    
     print("UPDATE")
     
   }
@@ -2017,16 +2029,28 @@ upsert2 <-  function(value = NULL, keys = NULL, target_table_name = "si_finecon2
     
   if(!upsert_temp_perform_nothing && !upsert_temp_perform_upsert && !upsert_temp_perform_upsert_force) {
   
-    # actually perform the update 
+    # avoid sprintf 8192 character limit
+    # # actually perform the update 
+    # str_trim(str_c(rstring(str_c('<%= 
+    # paste0(
+    # "update \\"', target_table_name, '\\" s " %s+% " set " %s+% 
+    #  str_c(sprintf("\n  %1$s = t.%1$s", names(upsert_meta)[!names(upsert_meta) %in% c("dateindex", "company_id", "dateindex_company_id", "company_id_orig", "dateindex_company_id_orig")] ), collapse = ", ") %s+% " \n" %s+%
+    # "    from upsert_temp t " %s+% " \n" %s+%
+    # "      where " %s+% "s." %s+% conflict_column %s+% " = " %s+% "t." %s+% conflict_column  %s+% ";" 
+    # )
+    # %>'))))  %>% clean_text(.) -> fc_col_val_changes_sql
+    
+    col_names <- names(upsert_meta)[!names(upsert_meta) %in% c("dateindex", "company_id", "dateindex_company_id", "company_id_orig", "dateindex_company_id_orig")]
+    # actually perform the update
     str_trim(str_c(rstring(str_c('<%= 
-    sprintf(
+    paste0(
     "update \\"', target_table_name, '\\" s " %s+% " set " %s+% 
-     str_c(sprintf("\n  %1$s = t.%1$s", names(upsert_meta)[!names(upsert_meta) %in% c("dateindex", "company_id", "dateindex_company_id", "company_id_orig", "dateindex_company_id_orig")] ), collapse = ", ") %s+% " \n" %s+%
+     str_c(str_c(str_c("\n ", col_names), str_c(" = t.", col_names)), collapse = ", ") %s+% " \n" %s+%
     "    from upsert_temp t " %s+% " \n" %s+%
     "      where " %s+% "s." %s+% conflict_column %s+% " = " %s+% "t." %s+% conflict_column  %s+% ";" 
     )
     %>'))))  %>% clean_text(.) -> fc_col_val_changes_sql
-
+    
     print("UPDATE")
     
   }
