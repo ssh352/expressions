@@ -1988,9 +1988,13 @@ upsert2 <-  function(value = NULL, keys = NULL, target_table_name = "si_finecon2
   
   if((!upsert_temp_perform_nothing && upsert_temp_perform_upsert) || upsert_temp_perform_upsert_force) {
   
+    
+    # Error in sprintf("insert into \"si_finecon2_aggregates\"(" %s+% str_c(names(upsert_meta),  : 
+    # 'fmt' length exceeds maximal format length 8192
+    
     # actually perform the upsert
     str_trim(str_c(rstring(str_c('<%= 
-    sprintf(
+    paste0(
     "insert into \\"', target_table_name, '\\"(" %s+% str_c(names(upsert_meta), collapse = ", ") %s+% ")" %s+% " \n" %s+% 
     "  select " %s+% str_c(names(upsert_meta), collapse = ", ") %s+% " \n" %s+% 
     "    from upsert_temp" %s+% " \n" %s+% 
@@ -2021,7 +2025,7 @@ upsert2 <-  function(value = NULL, keys = NULL, target_table_name = "si_finecon2
     "    from upsert_temp t " %s+% " \n" %s+%
     "      where " %s+% "s." %s+% conflict_column %s+% " = " %s+% "t." %s+% conflict_column  %s+% ";" 
     )
-    %>'))))  %>% clean_text(.)
+    %>'))))  %>% clean_text(.) 
 
     print("UPDATE")
     
