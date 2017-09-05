@@ -3710,25 +3710,40 @@ load_division_aggregated_per_dateindex <- function(dateindex = NULL) {
   # R.rsp    rstring
   # stringi  stri_join
   
-  #                 **** SAME AS ****
+  # NOTE: COULD/SHOULD LIBERALIZE ... 
+  # 
+  # , ‘sp_desc’::text collection_name01_fct
+  # end sp_desc_fct
+  # sp in 
+  # , sp_desc_fct
+  # 
+  # BUT currently hightly correlated with
+  #
+  # load_inbnd_stmtstats
   # load_division_aggregated_now_last_mktcap_per_company_id
+  #
+  # SO WHEN I DO LIBERALIZE ALSO THEN LIBERALIZE THESE TOO
+  #
+  
+  #                 **** SAME AS ****
+  # load_division_aggregated_now_last_mktcap_per_company_id 
 
   DATEINDEX         <- dateindex
 
-  # DIVISION          <- c("", "sector_desc", "industry_desc")
-  # 
-  # SP_OPS_WHAT       <- c("('500','400','600')", "('500')")
-  # SP_OPS_WHAT_SHORT <- c("sp"                 , "sp500"  ) 
+  DIVISION          <- c("industry_desc", "sector_desc", "")
+  SP_OPS_WHAT       <- c("('500','400','600')", "('500')")
+  SP_OPS_WHAT_SHORT <- c("sp"                 , "sp500"  ) 
 
   # Re-organized for debugging ( TEMPORARY ) 
   
-  DIVISION          <- c("industry_desc", "sector_desc", "")
-  SP_OPS_WHAT       <- c("('500')", "('500','400','600')")
-  SP_OPS_WHAT_SHORT <- c("sp500"  , "sp"                 ) 
+  # DIVISION          <- c("", "sector_desc", "industry_desc")
+  # SP_OPS_WHAT       <- c("('500')", "('500','400','600')")
+  # SP_OPS_WHAT_SHORT <- c("sp500"  , "sp"                 ) 
   
   # NEW
   DIVISION_ITEMS <- list()
-  DIVISION_ITEMS[["industry_desc"]] <- c("Gold & Silver", "Furniture & Fixtures") #  FUTURE "Oil & Gas Operations"
+  DIVISION_ITEMS[["industry_desc"]] <- c("Gold & Silver",   "Furniture & Fixtures", "Oil & Gas Operations") 
+  DIVISION_ITEMS[["sector_desc"]]   <- c("Basic Materials", "Energy")
   
   # OLD AGAIN
   
@@ -3758,7 +3773,7 @@ load_division_aggregated_per_dateindex <- function(dateindex = NULL) {
     ## IN load_division_aggregated_per_dateindex ##
     
     # [ ] TO DO MAKE THAT REPEATED STUFF INTO A FUNCTION
-    local({browser();R.rsp::rstring("
+    local({R.rsp::rstring("
       select
           dateindex
         , dateindexlwd
@@ -4787,11 +4802,17 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
     #                           # current or earlier                               # current or up to 10 earlier
     load_inbnd_stmtstats(dir_i, lwd_dbf_dirs_ordered[dir_i>= lwd_dbf_dirs_ordered][seq_len(min(sum(dir_i >= lwd_dbf_dirs_ordered),11))], char_col_numeric_limit = 99999999999999.99) -> si_all_g_df
     upsert(si_all_g_df, keys = c("company_id"))
-    
+    # 
     # uses now_inbnd_stmtstat last_inbnd_stmtstat
     # since MANY SQLs upsertS are done inside                                      # if NOT an UPDATE on COMPANY_ID then I CAN go on the OUTSIDE
     # load_division_aggregated_now_last_mktcap_per_company_id(dateindex = dir_i) # # head(lwd_dbf_dirs_ordered,1) ( BUT WILL NOT do this now )
     load_division_aggregated_now_last_mktcap_per_company_id(dateindex = dir_i)
+    # 
+    # uses
+    # load_inbnd_stmtstats
+    # load_division_aggregated_now_last_mktcap_per_company_id
+    # since MANY SQLs upsertS are done inside
+    load_division_aggregated_per_dateindex(dateindex = dir_i)
     
   }
   
