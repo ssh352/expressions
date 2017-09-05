@@ -3764,8 +3764,8 @@ load_division_aggregated_per_dateindex <- function(dateindex = NULL) {
         , dateindexlwd
         , dateindexeom
         , dateindexeom::text dateindexeom_fct
-        , 'sp_desc'::text collection_name01_fct
-        ,     case when sp in ('500') then 'sp500'::text else 'notsp500'::text end sp_desc_fct
+        <%= {if(SP_OPS_WHAT_I != '') { ', ' %S+% sQuote('sp_desc') %S+% '::text collection_name01_fct' }} %>
+        <%= {if(SP_OPS_WHAT_I != '') { ',     case when sp in ' %S+% SP_OPS_WHAT_I %S+% ' then ' %S+%  sQuote(SP_OPS_WHAT_SHORT_I)  %S+% '::text else ' %S+% sQuote('not' %S+% SP_OPS_WHAT_SHORT_I)  %S+% '::text end sp_desc_fct'  }} %>
         , 'industry_desc'::text collection_name02_fct
         ,     industry_desc industry_desc_fct
         , sum(now_inbnd_stmtstat_sales_q1)  / nullif(sum(now_inbnd_stmtstat_mktcap), 0)   * 100.00  rat_now_inbnd_stmtstat_sales_q1_o_mktcap_x_100
