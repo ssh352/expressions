@@ -5873,7 +5873,12 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
 # OTHER
 # Real_Sortino of monthly stock returns ('risk')
 # Gold & Silver sector returns ('fear')
-# financial stress index and components data provided by the Federal Reserve Bank of Cleveland ('risk/fear') SEE MY OTHER NOTES
+# financial stress index and components data provided by the xFederal Reserve Bank of Clevelandx ('risk/fear') SEE MY OTHER NOTES
+# 
+# Chicago Fed National Financial Conditions Index Nonfinancial Leveral Subindex (NFCINONFINLEVERAGE) 'awesome'
+# 
+# MULTPL/SP500_EARNINGS_MONTH-S-P-500 'awesome'
+#
 #   Real_Sortino of Gold & Silver sector returns('risk')
 #    NEG inverse SORTINO - from ANYWHERE WHERE APPROPRIATE
 # Large ticket sales (MORE APPROPRIATE fo FIND if these MEAN anything: see FURNATURE )
@@ -5907,6 +5912,8 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
 # 
 # workflow
 # --------
+#
+# Hmisc::varclus
 # 
 # add [my] transforms(<none>/ROLLING/SMA/PCTCHG/LAG[/CORRELATION]/QUANTILE(FINDINTERRVAL) &+ _WEIGHTED .. &+ _12_MO_SEASONAL-> 
 #     time(in_days)_since_report_release_date
