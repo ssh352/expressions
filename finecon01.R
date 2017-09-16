@@ -14,7 +14,7 @@
 # FEB 20, 2017 R-DEV ( MEANT FOR R_NEXT 3.3.3 )
 # https://svn.r-project.org/R/trunk/src/library/stats/R/quantile.R
 # REPLACE
-# stats:::quantile.default
+# stats:::quantile.default 
 
 
 if(exists("copyDirectoryByPattern.default")) suppressWarnings(rm("copyDirectoryByPattern.default"))
