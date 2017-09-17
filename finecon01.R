@@ -5656,9 +5656,9 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
   # what I am I interested in 
   
   # latest to earliest
-  # disk_dateindexes    <- rev(sort(as.integer(dir(sipro_dbfs_disk_loc))))
+  disk_dateindexes    <- rev(sort(as.integer(dir(sipro_dbfs_disk_loc))))
   # debuggng
-  disk_dateindexes    <- c(12083, 12055)
+  # disk_dateindexes    <- c(12083, 12055)
   
   if(any(disk_dateindexes < 15184)) {
   
@@ -5668,8 +5668,8 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
     si_tbl_df_15184 <- setNames(si_tbl_df_15184, tolower(colnames(si_tbl_df_15184)))
     
     # remove duplicas
-    si_tbl_df_15184 <- si_tbl_df_15184[!(duplicated(si_tbl_df_15184[["company_id"]]) || duplicated(si_tbl_df_15184[["company_id"]], fromLast = TRUE)),,drop = FALSE]
-    si_tbl_df_15184 <- si_tbl_df_15184[!(duplicated(si_tbl_df_15184[["ticker"]])     || duplicated(si_tbl_df_15184[["ticker"]]    , fromLast = TRUE)),,drop = FALSE]
+    si_tbl_df_15184 <- si_tbl_df_15184[!(duplicated(si_tbl_df_15184[["company_id"]]) | duplicated(si_tbl_df_15184[["company_id"]], fromLast = TRUE)),,drop = FALSE]
+    si_tbl_df_15184 <- si_tbl_df_15184[!(duplicated(si_tbl_df_15184[["ticker"]])     | duplicated(si_tbl_df_15184[["ticker"]]    , fromLast = TRUE)),,drop = FALSE]
 
     si_tbl_df_15184_ids <- si_tbl_df_15184[,c("company_id", "ticker", "company", "street"), drop = FALSE]
     
@@ -5696,10 +5696,10 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
       si_tbl_df <- si_tbl_df[, fields[fields %in% colnames(si_tbl_df)], drop = FALSE]
       
       # remove duplicas
-      si_tbl_df <- si_tbl_df[!(duplicated(si_tbl_df[["company_id"]]) || duplicated(si_tbl_df[["company_id"]], fromLast = TRUE)),,drop = FALSE]
+      si_tbl_df <- si_tbl_df[!(duplicated(si_tbl_df[["company_id"]]) | duplicated(si_tbl_df[["company_id"]], fromLast = TRUE)),,drop = FALSE]
       
       if(si_tbl_i == "si_ci") {
-        si_tbl_df <- si_tbl_df[!(duplicated(si_tbl_df[["ticker"]])   || duplicated(si_tbl_df[["ticker"]],     fromLast = TRUE)),,drop = FALSE]
+        si_tbl_df <- si_tbl_df[!(duplicated(si_tbl_df[["ticker"]])   | duplicated(si_tbl_df[["ticker"]],     fromLast = TRUE)),,drop = FALSE]
       }
       
       if(si_tbl_i == "si_ci") {
@@ -5767,37 +5767,37 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
     # just ONE date.frame to represent a dateindex
     si_tbl_df  <- plyr::join_all(si_tbl_dfs, by = c("dateindex","company_id")) 
     
-    # put out to database ( 4 seconds )
-    # match old company_ids to company_ids
-    if(disk_dateindexes_i < 15184) {
-      
-      db.q("drop table if exists si_tbl_df_15184_ids;", conn.id = 1)
-      db.q("drop table if exists si_tbl_df          ;", conn.id = 1)
-      
-      si_tbl_df_15184_ids_db_ptr <- as.db.data.frame(si_tbl_df_15184_ids, "si_tbl_df_15184_ids", conn.id = 1, is.temp = TRUE)
-      si_tbl_df_db_ptr           <- as.db.data.frame(si_tbl_df          , "si_tbl_df"          , conn.id = 1, is.temp = TRUE)
-      
-      # update old company_id to that company_id in 15184 ( match by 'ticker' )
-      # RAWER # simplified version ( just ticker , no 'street and/or company')
-      db.q("
-        update si_tbl_df
-          set           company_id =                     si_tbl_df_15184_ids.company_id,
-              dateindex_company_id = dateindex || '_' || si_tbl_df_15184_ids.company_id
-       from si_tbl_df_15184_ids
-         where si_tbl_df_15184_ids.company_id != si_tbl_df.company_id and
-               si_tbl_df_15184_ids.ticker      = si_tbl_df.ticker
-      ", conn.id = cid)
-      si_tbl_df <- si_tbl_df <- db.q("select * from si_tbl_df", nrows = "all", conn.id = cid) 
-      
-      delete(si_tbl_df_15184_ids_db_ptr)
-      delete(si_tbl_df_db_ptr)
-
-    }
+    # # put out to database ( 4 seconds )
+    # # match old company_ids to company_ids
+    # if(disk_dateindexes_i < 15184) {
+    #   
+    #   db.q("drop table if exists si_tbl_df_15184_ids;", conn.id = 1)
+    #   db.q("drop table if exists si_tbl_df          ;", conn.id = 1)
+    #   
+    #   si_tbl_df_15184_ids_db_ptr <- as.db.data.frame(si_tbl_df_15184_ids, "si_tbl_df_15184_ids", conn.id = 1, is.temp = TRUE)
+    #   si_tbl_df_db_ptr           <- as.db.data.frame(si_tbl_df          , "si_tbl_df"          , conn.id = 1, is.temp = TRUE)
+    #   
+    #   # update old company_id to that company_id in 15184 ( match by 'ticker' )
+    #   # RAWER # simplified version ( just ticker , no 'street and/or company')
+    #   db.q("
+    #     update si_tbl_df
+    #       set           company_id =                     si_tbl_df_15184_ids.company_id,
+    #           dateindex_company_id = dateindex || '_' || si_tbl_df_15184_ids.company_id
+    #    from si_tbl_df_15184_ids
+    #      where si_tbl_df_15184_ids.company_id != si_tbl_df.company_id and
+    #            si_tbl_df_15184_ids.ticker      = si_tbl_df.ticker
+    #   ", conn.id = cid)
+    #   si_tbl_df <- si_tbl_df <- db.q("select * from si_tbl_df", nrows = "all", conn.id = cid) 
+    #   
+    #   delete(si_tbl_df_15184_ids_db_ptr)
+    #   delete(si_tbl_df_db_ptr)
+    # 
+    # }
  
     if(exists("si_tbl_df_all")) { 
       si_tbl_df_all <- c(si_tbl_df_all,list(si_tbl_df))
     } else {
-      si_tbl_df_all <-  list(si_tbl_df)
+      si_tbl_df_all <- list(si_tbl_df)
     }
     
     warning(paste0("sipro_adhoc_disk - End disk_dateindexes_i: ", disk_dateindexes_i), call. = FALSE)
@@ -5807,14 +5807,38 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
   # High performance (instananteous)
   si_tbl_df_all <- data.frame(data.table::rbindlist(si_tbl_df_all))
   
-  
   if("db" %in% out) {
     
     # this one line; NOT for public release
     db.q(paste0("drop table if exists ", out_db_tablename, ";"), conn.id = cid)
     
+    # write to the database
     sipro_adhoc_disk_ptr <- as.db.data.frame(si_tbl_df_all, out_db_tablename, conn.id = 1)
     
+    # put out to database ( 4 seconds )
+    # match old company_ids to company_ids
+
+    db.q("drop table if exists si_tbl_df_15184_ids;", conn.id = 1)
+    
+    si_tbl_df_15184_ids_db_ptr <- as.db.data.frame(si_tbl_df_15184_ids, "si_tbl_df_15184_ids", conn.id = 1, is.temp = TRUE)
+
+    # update old company_id to that company_id in 15184 ( match by 'ticker' )
+    # RAWER # simplified version ( just ticker , no 'street and/or company')
+    db.q(paste0("
+      update ", out_db_tablename, "
+        set           company_id =                     si_tbl_df_15184_ids.company_id,
+            dateindex_company_id = dateindex || '_' || si_tbl_df_15184_ids.company_id
+     from si_tbl_df_15184_ids
+       where si_tbl_df_15184_ids.company_id != ", out_db_tablename, ".company_id and
+             si_tbl_df_15184_ids.ticker      = ", out_db_tablename, ".ticker and 
+             ", out_db_tablename, ".dateindex < 15184
+    "), conn.id = cid)
+    
+    # new data.frame
+    si_tbl_df <- si_tbl_df <- db.q("select * from ", out_db_tablename, ";", nrows = "all", conn.id = cid) 
+    
+    delete(si_tbl_df_15184_ids_db_ptr)
+
     for(iter_i in seq_along(fields)) {
       if( fields_db_types[iter_i] == "numeric(EXPLODE,2)") {
         # could find local or data base left side of the decimal size 
@@ -5843,7 +5867,7 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
   Sys.setenv(TZ=oldtz)
   
   if("data.frame" %in% out) {
-    return(si_tbl_df_all)
+    return(si_tbl_df)
   } else {
     return(TRUE)
   }
