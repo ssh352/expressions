@@ -5622,7 +5622,7 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
 sipro_adhoc_disk <- function(   fields           = c("company_id")
                               , fields_db_types  = c("text") 
                               , tables           = c("si_ci") 
-                              , out              = c("db","data.frame")
+                              , data.frame.out   = TRUE
                               , out_db_tablename = "query01"
                               , sipro_dbfs_disk_loc = "W:\\AAIISIProDBFs"
                             ) {
@@ -5807,21 +5807,25 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
   # High performance (instananteous)
   si_tbl_df_all <- data.frame(data.table::rbindlist(si_tbl_df_all))
   
-  if("db" %in% out) {
+  # if("db" %in% out) {
     
-    # this one line; NOT for public release
-    db.q(paste0("drop table if exists ", out_db_tablename, ";"), conn.id = cid)
-    
-    # write to the database
-    sipro_adhoc_disk_ptr <- as.db.data.frame(si_tbl_df_all, out_db_tablename, conn.id = 1)
-    
-    # put out to database ( 4 seconds )
-    # match old company_ids to company_ids
+  # this one line; NOT for public release
+  db.q(paste0("drop table if exists ", out_db_tablename, ";"), conn.id = cid)
+  
+  # write to the database
+  sipro_adhoc_disk_ptr <- as.db.data.frame(si_tbl_df_all, out_db_tablename, conn.id = 1)
+  
+  # put out to database ( 4 seconds )
+  # match old company_ids to company_ids
 
+  if("company_id" %in% colnames(si_tbl_df_all)) {
+  
     db.q("drop table if exists si_tbl_df_15184_ids;", conn.id = 1)
     
     si_tbl_df_15184_ids_db_ptr <- as.db.data.frame(si_tbl_df_15184_ids, "si_tbl_df_15184_ids", conn.id = 1, is.temp = TRUE)
 
+    db.q(paste0("create index ", out_db_tablename, "_partial_company_id_lt_15184_idx on ", out_db_tablename, "(dateindex) where dateindex < 15184;"), conn.id = 1)
+    
     # update old company_id to that company_id in 15184 ( match by 'ticker' )
     # RAWER # simplified version ( just ticker , no 'street and/or company')
     db.q(paste0("
@@ -5833,40 +5837,42 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
              si_tbl_df_15184_ids.ticker      = ", out_db_tablename, ".ticker and 
              ", out_db_tablename, ".dateindex < 15184
     "), conn.id = cid)
-    
-    # new data.frame
-    si_tbl_df <- si_tbl_df <- db.q("select * from ", out_db_tablename, ";", nrows = "all", conn.id = cid) 
-    
-    delete(si_tbl_df_15184_ids_db_ptr)
-
-    for(iter_i in seq_along(fields)) {
-      if( fields_db_types[iter_i] == "numeric(EXPLODE,2)") {
-        # could find local or data base left side of the decimal size 
-        # slightly SAFER to get from the database
-        field_max <- db.q(paste0("select max(",fields[iter_i] ,") from ", out_db_tablename, ";"), nrows = "all", conn.id = cid)[["max"]]
-          
-        # get numer of 9s to the left of the decimal
-        new_numeric <- numb.digits.left.of.decimal(field_max)
-          
-        # 5067.4 -> numeric(7,2) # STRANGE ... for now just add an extra digit (+1)
-        db.q(paste0("alter table ", out_db_tablename, " alter column ", fields[iter_i], " type numeric(", new_numeric + 2 + (1), ", 2);"), conn.id = cid)
-
-      }
-    }
-    
-    # single column primary_key ( many 3rd party applications require exactly this ONE field)
-    db.q(paste0("create unique index ", out_db_tablename, "_dateindex_company_id_composite_unqpkidx on ", out_db_tablename, "(dateindex_company_id);"), conn.id = cid)
-    db.q(paste0("alter table         ", out_db_tablename, " add primary key using index ", out_db_tablename, "_dateindex_company_id_composite_unqpkidx;"), conn.id = cid)
-    
-    # useful index
-    db.q(paste0("create unique index ", out_db_tablename, "_dateindex_company_id_idx on ", out_db_tablename, "(dateindex, company_id);"), conn.id = cid)
- 
+  
   }
+  
+  # new data.frame
+  si_tbl_df <- si_tbl_df <- db.q("select * from ", out_db_tablename, ";", nrows = "all", conn.id = cid) 
+  
+  delete(si_tbl_df_15184_ids_db_ptr)
+
+  for(iter_i in seq_along(fields)) {
+    if( fields_db_types[iter_i] == "numeric(EXPLODE,2)") {
+      # could find local or data base left side of the decimal size 
+      # slightly SAFER to get from the database
+      field_max <- db.q(paste0("select max(",fields[iter_i] ,") from ", out_db_tablename, ";"), nrows = "all", conn.id = cid)[["max"]]
+        
+      # get numer of 9s to the left of the decimal
+      new_numeric <- numb.digits.left.of.decimal(field_max)
+        
+      # 5067.4 -> numeric(7,2) # STRANGE ... for now just add an extra digit (+1)
+      db.q(paste0("alter table ", out_db_tablename, " alter column ", fields[iter_i], " type numeric(", new_numeric + 2 + (1), ", 2);"), conn.id = cid)
+
+    }
+  }
+  
+  # single column primary_key ( many 3rd party applications require exactly this ONE field)
+  db.q(paste0("create unique index ", out_db_tablename, "_dateindex_company_id_composite_unqpkidx on ", out_db_tablename, "(dateindex_company_id);"), conn.id = cid)
+  db.q(paste0("alter table         ", out_db_tablename, " add primary key using index ", out_db_tablename, "_dateindex_company_id_composite_unqpkidx;"), conn.id = cid)
+  
+  # useful index
+  db.q(paste0("create unique index ", out_db_tablename, "_dateindex_company_id_idx on ", out_db_tablename, "(dateindex, company_id);"), conn.id = cid)
+ 
+  # }
   
   options(ops)
   Sys.setenv(TZ=oldtz)
   
-  if("data.frame" %in% out) {
+  if(data.frame.out == TRUE) {
     return(si_tbl_df)
   } else {
     return(TRUE)
@@ -5876,7 +5882,7 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
 # sipro_adhoc_disk_out <- sipro_adhoc_disk(   fields          = c("company_id", "ticker", "company", "sp"  , "netinc_q1")
                                           # , fields_db_types = c("text"      , "text"  , "text"   , "text", "numeric(EXPLODE,2)") #
                                           # , tables          = c("si_ci","si_isq") 
-                                          # , out             = c("db","data.frame")
+                                          # , data.frame.out  = TRUE
 #                                         )
 
 # [ ] need # http://www.fstpackage.org/ # library(fst)
