@@ -5876,15 +5876,15 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
   }
 
 }
-# sipro_adhoc_disk_out <- sipro_adhoc_disk(   fields          = c("company_id"  , "ticker", "company", "sp"  , "netinc_q1")
-                                          # , fields_db_types = c("text"        , "text"  , "text"   , "text", "numeric(EXPLODE,2)") #
-                                          # , tables          = list(c("si_ci"  ,
-                                          #                            "si_isq"), "si_ci" , "si_ci" , "si_ci", "si_isq") 
-                                          # , data.frame.out  = TRUE
+# sipro_adhoc_disk_out <- sipro_adhoc_disk(   fields          = c("company_id"   , "ticker", "company", "sp"  , "mktcap"              , "price"              , "netinc_q1"          , "netinc_q2"           ,"perend_q1", "perend_q2")
+#                                           , fields_db_types = c("text"         , "text"  , "text"   , "text", "numeric(EXPLODE,2)"  , "numeric(EXPLODE,2)" , "numeric(EXPLODE,2)" , "numeric(EXPLODE,2)"  ,"integer"  , "integer"  )
+#                                           , tables          = list(c("si_ci"   ,
+#                                                                      "si_isq"  ,
+#                                                                      "si_psd"  ,
+#                                                                      "si_date"), "si_ci" , "si_ci" , "si_ci", "si_psd"              , "si_psd"             , "si_isq"             , "si_isq"              ,"si_date"  , "si_date"  ) 
+#                                           , data.frame.out  = TRUE
 #                                         )
 
-# [ ] need # http://www.fstpackage.org/ # library(fst)
-# can read by columns
 
 # LATER HARD_CODE program in sector_desc, industry_desc 
 
