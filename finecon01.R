@@ -5617,13 +5617,15 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
 #      -7296 |        -7275 |        -7275 |     17.03 |     17.03 |    17.03 |      17.03 |   999999.99 |         17.03
 # (6 rows)
 
+
+
 sipro_adhoc_disk <- function(   fields           = c("company_id")
                               , fields_db_types  = c("text") 
                               , tables           = c("si_ci") 
                               , out              = c("db","data.frame")
                               , out_db_tablename = "query01"
                               , sipro_dbfs_disk_loc = "W:\\AAIISIProDBFs"
-) {
+                            ) {
   ops <- options()
   oldtz <- Sys.getenv('TZ')
   if(oldtz=='') {
@@ -5631,14 +5633,16 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
   }
   
   options(width = 255)
+  options(warn = 1)
   
   require(PivotalR)
-  `%like%` <- Tmisc::`%like%`
+
   # uses zoo         as.Date.integer (expected) # S3 dispatch of either base or zoo garanteed ( or other loaded )
-  #      iterators   iter nextElem
   #      ti          ti.Date # S3 dispatch
   #      ti          lastBusinessDayOfMonth.ti lastDayOf.ti # S3 dispatch
   #      DataCombine MoveFront
+  #      stringr     str_detect  # more flexible regular expressions
+  `%>%` <- magrittr::`%>%`
   
   # already in code, I should not repeat HERE move LATER
   numb.digits.left.of.decimal <- function(x) {
@@ -5652,11 +5656,13 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
   # what I am I interested in 
   
   # latest to earliest
-  disk_dateindexes    <- rev(sort(as.integer(dir(sipro_dbfs_disk_loc))))
+  # disk_dateindexes    <- rev(sort(as.integer(dir(sipro_dbfs_disk_loc))))
+  # debuggng
+  disk_dateindexes    <- c(12083, 12055)
   
   if(any(disk_dateindexes < 15184)) {
   
-    si_tbl_df_15184 <- suppressWarnings(suppressMessages(foreign::read.dbf(file = paste0("W:\\AAIISIProDBFs\\15814|si_ci.dbf"), as.is = TRUE)))
+    si_tbl_df_15184 <- suppressWarnings(suppressMessages(foreign::read.dbf(file = paste0(sipro_dbfs_disk_loc, "\\15184\\si_ci.dbf"), as.is = TRUE)))
    
     # colnames to lower
     si_tbl_df_15184 <- setNames(si_tbl_df_15184, tolower(colnames(si_tbl_df_15184)))
@@ -5669,9 +5675,9 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
     
   }
     
-  si_tbl_dfs_all <- list()
-  
   for(disk_dateindexes_i in disk_dateindexes) {
+    
+    warning(paste0("sipro_adhoc_disk - Beginning disk_dateindexes_i: ", disk_dateindexes_i), call. = FALSE)
   
     si_tbl_dfs <- list()
     
@@ -5684,10 +5690,10 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
        si_tbl_df <- setNames(si_tbl_df, tolower(colnames(si_tbl_df)))
       
       # remove useless columns
-      si_tbl_df  <- si_tbl_df[,!colnames(si_tbl_df) %like% "^x\\.?+|^repno$|^updated$|^business$|^analyst_fn$",drop = FALSE]
+      si_tbl_df  <- si_tbl_df[,!stringr::str_detect(colnames(si_tbl_df),"^x\\.?+|^repno$|^updated$|^business$|^analyst_fn$"),drop = FALSE]
       
       # just my fields of interest
-      si_tbl_df <- si_tbl_df[, fields, drop = FALSE]
+      si_tbl_df <- si_tbl_df[, fields[fields %in% colnames(si_tbl_df)], drop = FALSE]
       
       # remove duplicas
       si_tbl_df <- si_tbl_df[!(duplicated(si_tbl_df[["company_id"]]) || duplicated(si_tbl_df[["company_id"]], fromLast = TRUE)),,drop = FALSE]
@@ -5696,54 +5702,78 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
         si_tbl_df <- si_tbl_df[!(duplicated(si_tbl_df[["ticker"]])   || duplicated(si_tbl_df[["ticker"]],     fromLast = TRUE)),,drop = FALSE]
       }
       
-      # add id columns
-      si_tbl_df <- cbind(dateindex_company_id_orig = paste0(disk_dateindexes_i, "_", si_tbl_df[["company_id"]])               , si_tbl_df)
-      si_tbl_df <- cbind(dateindex_company_id      =                                 si_tbl_df[["dateindex_company_id_orig"]] , si_tbl_df)
+      if(si_tbl_i == "si_ci") {
       
-      si_tbl_df <- cbind(dateindex = disk_dateindexes_i, si_tbl_df)
-      si_tbl_df <- cbind(dateindexlbd = as.integer(zoo::as.Date(lastBusinessDayOfMonth(ti(zoo::as.Date(disk_dateindexes_i),"daily")))), si_tbl_df)
-      si_tbl_df <- cbind(dateindexeom = as.integer(zoo::as.Date(             lastDayOf(ti(zoo::as.Date(disk_dateindexes_i),"daily")))), si_tbl_df)
-      
-      si_tbl_df <- cbind(company_id_orig = si_tbl_df[["company_id"]], si_tbl_df)
-      
-      si_tbl_df <- DataCombine::MoveFront(si_tbl_df
-        , "dateindex_company_id_orig"
-        , "dateindex_company_id"
-        , "dateindex"
-        , "dateindexlbd"
-        , "dateindexeom"
-        , "company_id_orig"
-      )
-      
-      # convert to fields_db_types (if any)
-      iter_i <- iterators::iter(seq_along(fields))
-      for(fields_i in fields_db_types) {
-        iter_i <- iterators::nextElem(iter_i)
-        if(fields_db_types[iter_i] == "integer") si_tbl_df[[fields_i]]  <- as.integer(  si_tbl_df[[fields_i]])
-        if(fields_db_types[iter_i] == "text")    si_tbl_df[[fields_i]]  <- as.character(si_tbl_df[[fields_i]])
-        if(fields_db_types[iter_i] == "boolean") si_tbl_df[[fields_i]]  <-              si_tbl_df[[fields_i]] & rep(1,NROW(si_tbl_df))
-        if(fields_db_types[iter_i] == "float8")  si_tbl_df[[fields_i]]  <- as.numeric(  si_tbl_df[[fields_i]])  
-                                                                          # Supports base or zoo or other loaded S3 displatch
-        if(fields_db_types[iter_i] == "Date")    si_tbl_df[[fields_i]]  <- zoo::as.Date(si_tbl_df[[fields_i]])
+        # add id columns
+        si_tbl_df <- cbind(dateindex_company_id_orig = paste0(disk_dateindexes_i, "_", si_tbl_df[["company_id"]])               , si_tbl_df, stringsAsFactors = FALSE)
+        si_tbl_df <- cbind(dateindex_company_id      =                                 si_tbl_df[["dateindex_company_id_orig"]] , si_tbl_df, stringsAsFactors = FALSE)
         
-        if(fields_db_types[iter_i] == "numeric(EXPLODE,2)") {
         
-           si_tbl_df[[fields_i]]  <- as.numeric(si_tbl_df[[fields_i]])
-           # further processing LATER below #
+        { zoo::as.Date(disk_dateindexes_i) } %>%
+          { tis::ti(., "daily") } -> disk_dateindexes_i_ti # loads ti # and and makes S3 available as.Date.ti
         
-        }
+        { tis::lastBusinessDayOfMonth(disk_dateindexes_i_ti) } %>%
+            as.Date %>%                                      # as.Date.ti # S3 dispatch
+                 as.integer -> dateindexlbd
+  
+        { tis::lastDayOf(disk_dateindexes_i_ti) } %>%
+            as.Date %>%                                      # as.Date.ti # S3 dispatch
+                 as.integer -> dateindexeom
+        
+        si_tbl_df <- cbind(dateindex    = disk_dateindexes_i, si_tbl_df, stringsAsFactors = FALSE)
+        si_tbl_df <- cbind(dateindexlbd = dateindexlbd,       si_tbl_df, stringsAsFactors = FALSE)
+        si_tbl_df <- cbind(dateindexeom = dateindexeom,       si_tbl_df, stringsAsFactors = FALSE)
+        
+        si_tbl_df <- cbind(company_id_orig = si_tbl_df[["company_id"]], si_tbl_df, stringsAsFactors = FALSE)
+        
+        si_tbl_df <- DataCombine::MoveFront(si_tbl_df,
+          c( "dateindex_company_id_orig"
+           , "dateindex_company_id"
+           , "dateindex"
+           , "dateindexlbd"
+           , "dateindexeom"
+           , "company_id_orig"
+          )
+        )
+      
+      }
+      
+      if(si_tbl_i != "si_ci") {
+        
+        si_tbl_df <- cbind(dateindex    = disk_dateindexes_i, si_tbl_df, stringsAsFactors = FALSE)
+        si_tbl_df <- DataCombine::MoveFront(si_tbl_df, "dateindex")
         
       }
       
+      # convert to fields_db_types (if any)
+
+      for(iter_i in seq_along(fields)) {
+        
+        if(fields[iter_i] %in% colnames(si_tbl_df)) {
+          if(fields_db_types[iter_i] == "integer") si_tbl_df[[fields[iter_i]]]  <- as.integer(  si_tbl_df[[fields[iter_i]]])
+          if(fields_db_types[iter_i] == "text")    si_tbl_df[[fields[iter_i]]]  <- as.character(si_tbl_df[[fields[iter_i]]])
+          if(fields_db_types[iter_i] == "boolean") si_tbl_df[[fields[iter_i]]]  <-              si_tbl_df[[fields[iter_i]]] & rep(1,NROW(si_tbl_df))
+          if(fields_db_types[iter_i] %in% c("float8" , "numeric(EXPLODE,2)"))  si_tbl_df[[fields[iter_i]]]  <- as.numeric(  si_tbl_df[[fields[iter_i]]])  
+                                                                                   # Supports base or zoo or other loaded S3 displatch
+          if(fields_db_types[iter_i] == "Date")    si_tbl_df[[fields[iter_i]]]  <- zoo::as.Date(si_tbl_df[[fields[iter_i]]])
+          
+        }
+      }
+      
       # together with the previous si_*
-      si_tbl_dfs <- c(si_tbl_dfs, si_tbl_df)
-      si_tbl_df  <- plyr::join_all(si_tbl_dfs, by = c("dateindex","company_id")) 
+      si_tbl_dfs <- c(si_tbl_dfs, list(si_tbl_df))
       
     }
-      
-    # match old company_ids to company_ids
-    if(disk_dateindexes_i < 15184){
+    # just ONE date.frame to represent a dateindex
+    si_tbl_df  <- plyr::join_all(si_tbl_dfs, by = c("dateindex","company_id")) 
     
+    # put out to database ( 4 seconds )
+    # match old company_ids to company_ids
+    if(disk_dateindexes_i < 15184) {
+      
+      db.q("drop table if exists si_tbl_df_15184_ids;", conn.id = 1)
+      db.q("drop table if exists si_tbl_df          ;", conn.id = 1)
+      
       si_tbl_df_15184_ids_db_ptr <- as.db.data.frame(si_tbl_df_15184_ids, "si_tbl_df_15184_ids", conn.id = 1, is.temp = TRUE)
       si_tbl_df_db_ptr           <- as.db.data.frame(si_tbl_df          , "si_tbl_df"          , conn.id = 1, is.temp = TRUE)
       
@@ -5752,57 +5782,60 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
       db.q("
         update si_tbl_df
           set           company_id =                     si_tbl_df_15184_ids.company_id,
-              dateindex_company_id = dateindex || '_' || si_tbl_df_15184_ids.company_id,
+              dateindex_company_id = dateindex || '_' || si_tbl_df_15184_ids.company_id
        from si_tbl_df_15184_ids
          where si_tbl_df_15184_ids.company_id != si_tbl_df.company_id and
                si_tbl_df_15184_ids.ticker      = si_tbl_df.ticker
       ", conn.id = cid)
-      si_tbl_df <- si_tbl_df <- db.q("select * from si_tbl_df", nrows = "all", conn.id = cid)
+      si_tbl_df <- si_tbl_df <- db.q("select * from si_tbl_df", nrows = "all", conn.id = cid) 
       
       delete(si_tbl_df_15184_ids_db_ptr)
       delete(si_tbl_df_db_ptr)
 
     }
  
-  # together with the previous (latest to earliest) dateindex
-  # maybe slower to do every time instead of store in memory at the end
-  # but this is 'business' safer such that it allows for inter-dateindex processing
-  si_tbl_dfs_all <- si_tbl_dfs_all <- plyr::join_all(si_tbl_dfs_all, by = c("dateindex","company_id")) 
+    if(exists("si_tbl_df_all")) { 
+      si_tbl_df_all <- c(si_tbl_df_all,list(si_tbl_df))
+    } else {
+      si_tbl_df_all <-  list(si_tbl_df)
+    }
+    
+    warning(paste0("sipro_adhoc_disk - End disk_dateindexes_i: ", disk_dateindexes_i), call. = FALSE)
     
   }
 
+  # High performance (instananteous)
+  si_tbl_df_all <- data.frame(data.table::rbindlist(si_tbl_df_all))
+  
   
   if("db" %in% out) {
     
     # this one line; NOT for public release
     db.q(paste0("drop table if exists ", out_db_tablename, ";"), conn.id = cid)
     
-    # put out to database
-    sipro_adhoc_disk_ptr <- as.db.data.frame(si_tbl_dfs_all, out_db_tablename, conn.id = 1)
+    sipro_adhoc_disk_ptr <- as.db.data.frame(si_tbl_df_all, out_db_tablename, conn.id = 1)
     
-  
-    iter_i <- iterators::iter(seq_along(fields))
-    for(fields_i in fields) {
-      iter_i <- iterators::nextElem(iter_i)
+    for(iter_i in seq_along(fields)) {
       if( fields_db_types[iter_i] == "numeric(EXPLODE,2)") {
         # could find local or data base left side of the decimal size 
         # slightly SAFER to get from the database
-        field_max <- db.q(paste0("select max(",fields[iter_i] ,") from ", out_db_tablename, ";"), nrows = "all", conn.id = cid)
+        field_max <- db.q(paste0("select max(",fields[iter_i] ,") from ", out_db_tablename, ";"), nrows = "all", conn.id = cid)[["max"]]
           
         # get numer of 9s to the left of the decimal
         new_numeric <- numb.digits.left.of.decimal(field_max)
           
-        db.q(paste0("alter table ", out_db_tablename, " alter column ", colnames_i, " type numeric(", new_numeric + 2, ", 2);"), conn.id = cid)
+        # 5067.4 -> numeric(7,2) # STRANGE ... for now just add an extra digit (+1)
+        db.q(paste0("alter table ", out_db_tablename, " alter column ", fields[iter_i], " type numeric(", new_numeric + 2 + (1), ", 2);"), conn.id = cid)
 
       }
     }
     
     # single column primary_key ( many 3rd party applications require exactly this ONE field)
-    db.q(paste0("create unique index ", out_db_tablename, "_dateindex_company_id_both_unqpkidx on ", out_db_tablename, "(dateindex_company_id);"), conn.id = cid)
-    db.q(paste0("alter table         ", out_db_tablename, " add primary key(dateindex_company_id) using index ", out_db_tablename, "_dateindex_company_id_both_unqpkidx;"), conn.id = cid)
+    db.q(paste0("create unique index ", out_db_tablename, "_dateindex_company_id_composite_unqpkidx on ", out_db_tablename, "(dateindex_company_id);"), conn.id = cid)
+    db.q(paste0("alter table         ", out_db_tablename, " add primary key using index ", out_db_tablename, "_dateindex_company_id_composite_unqpkidx;"), conn.id = cid)
     
     # useful index
-    db.q(paste0("create unique index ", out_db_tablename, "_dateindex_company_id_unqidx on ", out_db_tablename, "(dateindex_company_id);"), conn.id = cid)
+    db.q(paste0("create unique index ", out_db_tablename, "_dateindex_company_id_idx on ", out_db_tablename, "(dateindex, company_id);"), conn.id = cid)
  
   }
   
@@ -5810,19 +5843,22 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
   Sys.setenv(TZ=oldtz)
   
   if("data.frame" %in% out) {
-    return(si_tbl_dfs_all)
+    return(si_tbl_df_all)
   } else {
     return(TRUE)
   }
 
 }
 # sipro_adhoc_disk_out <- sipro_adhoc_disk(   fields          = c("company_id", "ticker", "company", "sp"  , "netinc_q1")
-                                          # , fields_db_types = c("integer"   , "text"  , "text"   , "text", "numeric(EXPLODE,2)") #
+                                          # , fields_db_types = c("text"      , "text"  , "text"   , "text", "numeric(EXPLODE,2)") #
                                           # , tables          = c("si_ci","si_isq") 
                                           # , out             = c("db","data.frame")
+#                                         )
 
 # [ ] need # http://www.fstpackage.org/ # library(fst)
 # can read by columns
+
+# LATER HARD_CODE program in sector_desc, industry_desc 
 
 # [ ]
 # need a a 'table rename' function that also renames 'indexes/primariy keys'
