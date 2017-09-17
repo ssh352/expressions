@@ -5838,7 +5838,7 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
   }
   
   # new data.frame
-  si_tbl_df <- si_tbl_df <- db.q("select * from ", out_db_tablename, ";", nrows = "all", conn.id = cid) 
+  si_tbl_df <- si_tbl_df <- db.q(paste0("select * from ", out_db_tablename, ";"), nrows = "all", conn.id = cid) 
   
   delete(si_tbl_df_15184_ids_db_ptr)
 
