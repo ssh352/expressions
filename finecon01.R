@@ -5624,7 +5624,7 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
                               , tables           = c("si_ci") 
                               , data.frame.out   = TRUE
                               , out_db_tablename = "query01"
-                              , sipro_dbfs_disk_loc = "W:\\AAIISIProDBFs"
+                              , sipro_files_disk_loc = "W:\\AAIISIProDBFs"
                             ) {
   ops <- options()
   oldtz <- Sys.getenv('TZ')
@@ -5653,16 +5653,28 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
   
   }
   
+  path_file_dbf       <- paste0(sipro_files_disk_loc, "\\15184\\si_ci.dbf")
+  path_file_fst       <- paste0(sipro_files_disk_loc, "\\15184\\si_ci.fst")
+  tables_fields_types <- rlist::list.zip(fields, fields_db_types, tables)
+  
+  
   # what I am I interested in 
   
   # latest to earliest
-  disk_dateindexes    <- rev(sort(as.integer(dir(sipro_dbfs_disk_loc))))
+  disk_dateindexes    <- rev(sort(as.integer(dir(sipro_files_disk_loc))))
   # debuggng
-  # disk_dateindexes    <- c(12083, 12055)
+  # disk_dateindexes    <- c(12083, 12055) 
   
   if(any(disk_dateindexes < 15184)) {
-  
-    si_tbl_df_15184 <- suppressWarnings(suppressMessages(foreign::read.dbf(file = paste0(sipro_dbfs_disk_loc, "\\15184\\si_ci.dbf"), as.is = TRUE)))
+    
+    si_tbl_df_15184 <- try( { fst::read.fst(path_file_fst, toupper(c("company_id", "ticker", "company", "street"))) }, silent = TRUE)
+    if(inherits(si_tbl_df_15184, "try-error")) {
+      si_tbl_df_15184 <- suppressWarnings(suppressMessages(foreign::read.dbf(file = path_file_dbf, as.is = TRUE)))
+      si_tbl_df_15184 <-fst::write.fst(si_tbl_df_15184, path_file_fst)
+      si_tbl_df_15184 <- fst::read.fst(path_file_fst, column_names_fst)
+    }
+        
+    # si_tbl_df_15184 <- suppressWarnings(suppressMessages(foreign::read.dbf(file = paste0(sipro_files_disk_loc, "\\15184\\si_ci.dbf"), as.is = TRUE)))
    
     # colnames to lower
     si_tbl_df_15184 <- setNames(si_tbl_df_15184, tolower(colnames(si_tbl_df_15184)))
@@ -5681,10 +5693,22 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
   
     si_tbl_dfs <- list()
     
-    si_tbls <- tables
-    for(si_tbl_i in si_tbls) {
+    # si_tbls <- tables
+    for(si_tbl_i in unique(unlist(tables))) {
+      
+      column_names_fst <- toupper(unlist(sapply(tables_fields_types, function(x) { if(si_tbl_i %in% x[["tables"]] ) { x[["fields"]] } } )))
     
-      si_tbl_df <- suppressWarnings(suppressMessages(foreign::read.dbf(file = paste0("W:\\AAIISIProDBFs\\", disk_dateindexes_i, "\\", si_tbl_i,".dbf"), as.is = TRUE)))
+      # si_tbl_df <- suppressWarnings(suppressMessages(foreign::read.dbf(file = paste0(sipro_files_disk_loc, "\\", disk_dateindexes_i, "\\", si_tbl_i,".dbf"), as.is = TRUE)))
+      
+      path_file_dbf  <- paste0(sipro_files_disk_loc, "\\", disk_dateindexes_i, "\\", si_tbl_i,".dbf")
+      path_file_fst  <- paste0(sipro_files_disk_loc, "\\", disk_dateindexes_i, "\\", si_tbl_i,".fst")
+
+      si_tbl_df <- try( { fst::read.fst(path_file_fst, column_names_fst) }, silent = TRUE)
+      if(inherits(si_tbl_df, "try-error")) {
+        si_tbl_df <- suppressWarnings(suppressMessages(foreign::read.dbf(file = path_file_dbf, as.is = TRUE)))
+        si_tbl_df <- fst::write.fst(si_tbl_df, path_file_fst)
+        si_tbl_df <- fst::read.fst(path_file_fst, column_names_fst)
+      }
       
       # colnames to lower
        si_tbl_df <- setNames(si_tbl_df, tolower(colnames(si_tbl_df)))
@@ -5767,33 +5791,6 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
     # just ONE date.frame to represent a dateindex
     si_tbl_df  <- plyr::join_all(si_tbl_dfs, by = c("dateindex","company_id")) 
     
-    # # put out to database ( 4 seconds )
-    # # match old company_ids to company_ids
-    # if(disk_dateindexes_i < 15184) {
-    #   
-    #   db.q("drop table if exists si_tbl_df_15184_ids;", conn.id = 1)
-    #   db.q("drop table if exists si_tbl_df          ;", conn.id = 1)
-    #   
-    #   si_tbl_df_15184_ids_db_ptr <- as.db.data.frame(si_tbl_df_15184_ids, "si_tbl_df_15184_ids", conn.id = 1, is.temp = TRUE)
-    #   si_tbl_df_db_ptr           <- as.db.data.frame(si_tbl_df          , "si_tbl_df"          , conn.id = 1, is.temp = TRUE)
-    #   
-    #   # update old company_id to that company_id in 15184 ( match by 'ticker' )
-    #   # RAWER # simplified version ( just ticker , no 'street and/or company')
-    #   db.q("
-    #     update si_tbl_df
-    #       set           company_id =                     si_tbl_df_15184_ids.company_id,
-    #           dateindex_company_id = dateindex || '_' || si_tbl_df_15184_ids.company_id
-    #    from si_tbl_df_15184_ids
-    #      where si_tbl_df_15184_ids.company_id != si_tbl_df.company_id and
-    #            si_tbl_df_15184_ids.ticker      = si_tbl_df.ticker
-    #   ", conn.id = cid)
-    #   si_tbl_df <- si_tbl_df <- db.q("select * from si_tbl_df", nrows = "all", conn.id = cid) 
-    #   
-    #   delete(si_tbl_df_15184_ids_db_ptr)
-    #   delete(si_tbl_df_db_ptr)
-    # 
-    # }
- 
     if(exists("si_tbl_df_all")) { 
       si_tbl_df_all <- c(si_tbl_df_all,list(si_tbl_df))
     } else {
@@ -5879,9 +5876,10 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
   }
 
 }
-# sipro_adhoc_disk_out <- sipro_adhoc_disk(   fields          = c("company_id", "ticker", "company", "sp"  , "netinc_q1")
-                                          # , fields_db_types = c("text"      , "text"  , "text"   , "text", "numeric(EXPLODE,2)") #
-                                          # , tables          = c("si_ci","si_isq") 
+# sipro_adhoc_disk_out <- sipro_adhoc_disk(   fields          = c("company_id"  , "ticker", "company", "sp"  , "netinc_q1")
+                                          # , fields_db_types = c("text"        , "text"  , "text"   , "text", "numeric(EXPLODE,2)") #
+                                          # , tables          = list(c("si_ci"  ,
+                                          #                            "si_isq"), "si_ci" , "si_ci" , "si_ci", "si_isq") 
                                           # , data.frame.out  = TRUE
 #                                         )
 
