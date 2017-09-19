@@ -5751,11 +5751,11 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
             as.integer -> dateindexlbd
 
         { RQuantLib::getEndOfMonth("WeekendsOnly"     , disk_dateindexes_i_dt) } %>%
-            as.integer -> dateindexeom
+            as.integer -> dateindexlwd
         
         si_tbl_df <- cbind(dateindex    = disk_dateindexes_i, si_tbl_df, stringsAsFactors = FALSE)
         si_tbl_df <- cbind(dateindexlbd = dateindexlbd,       si_tbl_df, stringsAsFactors = FALSE)
-        si_tbl_df <- cbind(dateindexeom = dateindexeom,       si_tbl_df, stringsAsFactors = FALSE)
+        si_tbl_df <- cbind(dateindexlwd = dateindexlwd,       si_tbl_df, stringsAsFactors = FALSE)
         
         si_tbl_df <- cbind(company_id_orig = si_tbl_df[["company_id"]], si_tbl_df, stringsAsFactors = FALSE)
         
@@ -5764,7 +5764,7 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
            , "dateindex_company_id"
            , "dateindex"
            , "dateindexlbd"
-           , "dateindexeom"
+           , "dateindexlwd"
            , "company_id_orig"
           )
         )
