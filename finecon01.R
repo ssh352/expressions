@@ -5732,29 +5732,43 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
         si_tbl_df <- cbind(dateindex_company_id_orig = paste0(disk_dateindexes_i, "_", si_tbl_df[["company_id"]])               , si_tbl_df, stringsAsFactors = FALSE)
         si_tbl_df <- cbind(dateindex_company_id      =                                 si_tbl_df[["dateindex_company_id_orig"]] , si_tbl_df, stringsAsFactors = FALSE)
         
+        # originals                             # (-5): sipro dates ON or BEFORE 2004-12-03
         { zoo::as.Date(disk_dateindexes_i) } ->
            disk_dateindexes_i_dt
-
-        { DescTools::Year(disk_dateindexes_i_dt) } %>%
+        
+        {                 disk_dateindexes_i_dt } %>%
+            as.integer -> dateindexorig
+        
+        # paritions
+        { DescTools::Year(disk_dateindexes_i_dt  - 5) } %>%
             as.integer -> dateindexyear
 
-        { DescTools::Month(disk_dateindexes_i_dt) } %>%
+        { DescTools::Month(disk_dateindexes_i_dt - 5) } %>%
             as.integer -> dateindexmonth
 
-        { RQuantLib::getEndOfMonth("UnitedStates/NYSE", disk_dateindexes_i_dt) } %>%
+        # references
+        { RQuantLib::getEndOfMonth("UnitedStates/NYSE", disk_dateindexes_i_dt - 5) } %>%   # TEST!: zoo::as.Date("2010-04-28")
             as.integer -> dateindexlbd
 
-        { RQuantLib::getEndOfMonth("WeekendsOnly"     , disk_dateindexes_i_dt) } %>%
+        { RQuantLib::getEndOfMonth("WeekendsOnly"     , disk_dateindexes_i_dt - 5) } %>%
             as.integer -> dateindexlwd
         
-        { DescTools::LastDayOfMonth(disk_dateindexes_i_dt) } %>%
+        { DescTools::LastDayOfMonth(disk_dateindexes_i_dt - 5) } %>%
             as.integer -> dateindexeom
         
-        si_tbl_df <- cbind(dateindex      = disk_dateindexes_i, si_tbl_df, stringsAsFactors = FALSE)
+        # row number ( future? performance for fst::read.fst( . . . from = 1, to = NULL . . . )  )
+        si_tbl_df <- cbind(TABLE_NAME      = seq_along(row.names(si_tbl_df)), si_tbl_df, stringsAsFactors = FALSE)
+        colnames(si_tbl_df)[NCOL(si_tbl_df)] <- paste0(out_db_tablename, "_rn")
         
-        si_tbl_df <- cbind(dateindexyear  = dateindexyear,       si_tbl_df, stringsAsFactors = FALSE)
+        # originals
+        si_tbl_df <- cbind(dateindex      = disk_dateindexes_i, si_tbl_df, stringsAsFactors = FALSE) # CURR NOT CHANGED
+        si_tbl_df <- cbind(dateindexorig  = disk_dateindexes_i, si_tbl_df, stringsAsFactors = FALSE) 
+        
+        # partitions
+        si_tbl_df <- cbind(dateindexyear  = dateindexyear,        si_tbl_df, stringsAsFactors = FALSE)
         si_tbl_df <- cbind(dateindexmonth = dateindexmonth,       si_tbl_df, stringsAsFactors = FALSE)
         
+        # references
         si_tbl_df <- cbind(dateindexlbd = dateindexlbd,       si_tbl_df, stringsAsFactors = FALSE)
         si_tbl_df <- cbind(dateindexlwd = dateindexlwd,       si_tbl_df, stringsAsFactors = FALSE)
         si_tbl_df <- cbind(dateindexeom = dateindexeom,       si_tbl_df, stringsAsFactors = FALSE)
@@ -5762,9 +5776,11 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
         si_tbl_df <- cbind(company_id_orig = si_tbl_df[["company_id"]], si_tbl_df, stringsAsFactors = FALSE)
         
         si_tbl_df <- DataCombine::MoveFront(si_tbl_df,
-          c( "dateindex_company_id_orig"
+             c(paste0(out_db_tablename, "_rn")
+           , "dateindex_company_id_orig"
            , "dateindex_company_id"
-           , "dateindex"
+           , "dateindex"            # CURR NOT CHANGED
+           , "dateindexorig"
            , "dateindexyear"
            , "dateindexmonth"
            , "dateindexlbd"
