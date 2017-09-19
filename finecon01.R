@@ -5747,7 +5747,7 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
             as.integer -> dateindexmonth
 
         # references
-        { RQuantLib::getEndOfMonth("UnitedStates/NYSE", disk_dateindexes_i_dt - 5) } %>%   # TEST!: zoo::as.Date("2010-04-28")
+        { RQuantLib::getEndOfMonth("UnitedStates/NYSE", disk_dateindexes_i_dt - 5) } %>%   # TEST!: zoo::as.Date("2010-05-28")
             as.integer -> dateindexlbd
 
         { RQuantLib::getEndOfMonth("WeekendsOnly"     , disk_dateindexes_i_dt - 5) } %>%
