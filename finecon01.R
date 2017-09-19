@@ -5732,20 +5732,14 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
         si_tbl_df <- cbind(dateindex_company_id_orig = paste0(disk_dateindexes_i, "_", si_tbl_df[["company_id"]])               , si_tbl_df, stringsAsFactors = FALSE)
         si_tbl_df <- cbind(dateindex_company_id      =                                 si_tbl_df[["dateindex_company_id_orig"]] , si_tbl_df, stringsAsFactors = FALSE)
         
-        
-        # { zoo::as.Date(disk_dateindexes_i) } %>%
-        #   { tis::ti(., "daily") } -> disk_dateindexes_i_ti # loads ti # and and makes S3 available as.Date.ti
-        # 
-        # { tis::lastBusinessDayOfMonth(disk_dateindexes_i_ti) } %>%
-        #     as.Date %>%                                      # as.Date.ti # S3 dispatch
-        #          as.integer -> dateindexlbd
-        # 
-        # { tis::lastDayOf(disk_dateindexes_i_ti) } %>%
-        #     as.Date %>%                                      # as.Date.ti # S3 dispatch
-        #          as.integer -> dateindexeom
-        
         { zoo::as.Date(disk_dateindexes_i) } ->
            disk_dateindexes_i_dt
+
+        { DescTools::Year(disk_dateindexes_i_dt) } %>%
+            as.integer -> dateindexyear
+
+        { DescTools::Month(disk_dateindexes_i_dt) } %>%
+            as.integer -> dateindexmonth
 
         { RQuantLib::getEndOfMonth("UnitedStates/NYSE", disk_dateindexes_i_dt) } %>%
             as.integer -> dateindexlbd
@@ -5753,9 +5747,17 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
         { RQuantLib::getEndOfMonth("WeekendsOnly"     , disk_dateindexes_i_dt) } %>%
             as.integer -> dateindexlwd
         
-        si_tbl_df <- cbind(dateindex    = disk_dateindexes_i, si_tbl_df, stringsAsFactors = FALSE)
+        { DescTools::LastDayOfMonth(disk_dateindexes_i_dt) } %>%
+            as.integer -> dateindexeom
+        
+        si_tbl_df <- cbind(dateindex      = disk_dateindexes_i, si_tbl_df, stringsAsFactors = FALSE)
+        
+        si_tbl_df <- cbind(dateindexyear  = dateindexyear,       si_tbl_df, stringsAsFactors = FALSE)
+        si_tbl_df <- cbind(dateindexmonth = dateindexmonth,       si_tbl_df, stringsAsFactors = FALSE)
+        
         si_tbl_df <- cbind(dateindexlbd = dateindexlbd,       si_tbl_df, stringsAsFactors = FALSE)
         si_tbl_df <- cbind(dateindexlwd = dateindexlwd,       si_tbl_df, stringsAsFactors = FALSE)
+        si_tbl_df <- cbind(dateindexeom = dateindexeom,       si_tbl_df, stringsAsFactors = FALSE)
         
         si_tbl_df <- cbind(company_id_orig = si_tbl_df[["company_id"]], si_tbl_df, stringsAsFactors = FALSE)
         
@@ -5763,8 +5765,11 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
           c( "dateindex_company_id_orig"
            , "dateindex_company_id"
            , "dateindex"
+           , "dateindexyear"
+           , "dateindexmonth"
            , "dateindexlbd"
            , "dateindexlwd"
+           , "dateindexeom"
            , "company_id_orig"
           )
         )
