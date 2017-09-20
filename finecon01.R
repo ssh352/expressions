@@ -5740,10 +5740,13 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
             as.integer -> dateindexorig
         
         # paritions
-        { DescTools::Year(disk_dateindexes_i_dt  - 5) } %>%
+        { DescTools::Year(disk_dateindexes_i_dt       - 5) } %>%
             as.integer -> dateindexyear
 
-        { DescTools::Month(disk_dateindexes_i_dt - 5) } %>%
+        { DescTools::YearMonth(disk_dateindexes_i_dt  - 5) } %>%
+            as.integer -> dateindexyearmonth
+        
+        { DescTools::Month(disk_dateindexes_i_dt      - 5) } %>%
             as.integer -> dateindexmonth
 
         # references
@@ -5765,8 +5768,9 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
         si_tbl_df <- cbind(dateindexorig  = disk_dateindexes_i, si_tbl_df, stringsAsFactors = FALSE) 
         
         # partitions
-        si_tbl_df <- cbind(dateindexyear  = dateindexyear,        si_tbl_df, stringsAsFactors = FALSE)
-        si_tbl_df <- cbind(dateindexmonth = dateindexmonth,       si_tbl_df, stringsAsFactors = FALSE)
+        si_tbl_df <- cbind(dateindexyear      = dateindexyear,        si_tbl_df, stringsAsFactors = FALSE)
+        si_tbl_df <- cbind(dateindexyearmonth = dateindexyearmonth,   si_tbl_df, stringsAsFactors = FALSE)
+        si_tbl_df <- cbind(dateindexmonth     = dateindexmonth,       si_tbl_df, stringsAsFactors = FALSE)
         
         # references
         si_tbl_df <- cbind(dateindexlbd = dateindexlbd,       si_tbl_df, stringsAsFactors = FALSE)
@@ -5782,6 +5786,7 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
            , "dateindex"            # CURR NOT CHANGED
            , "dateindexorig"
            , "dateindexyear"
+           , "dateindexyearmonth"
            , "dateindexmonth"
            , "dateindexlbd"
            , "dateindexlwd"
@@ -5929,6 +5934,9 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
 
 #### BEGIN WORKFLOW ####
 
+# SOON [ ] **HIGHER** PRIORITY
+# TO DO: FIX EVERYWHERE FOUND
+# REPLACE   company !~~ '%iShares%' ...   with sp in ('500','400','600')
 
 # LEFT_OFF
 
@@ -6655,6 +6663,192 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
 
 
 #### QUERIES ENDED ####
+
+# TO DO: FIX EVERYWHERE FOUND
+# REPLACE   company !~~ '%iShares%' ...   with sp in ('500','400','600')
+
+# a market cap of $5.3 billion
+# its headquarters in the U.S.
+# the value of its market capitalization trade annually
+# at least a quarter-million of its shares trade in each of the previous six months
+# most of its shares in the public’s hands
+# at least half a year since its initial public offering
+# Four straight quarters of positive as-reported earnings.
+# 
+# http://www.investopedia.com/articles/investing/090414/sp-500-index-you-need-know.asp?optly_redirect=integrated&lgl=vtas-baseline
+
+# -- last ONE: others after: ONE: 15856 ("2013-05-31")
+# 
+# "XLY";"Consumer Discretionary SPDR (E"
+# "XLE";"Energy Select Sector SPDR (ETF"
+# "XLF";"Financial Select Sector SPDR ("
+# "XLV";"Health Care SPDR (ETF)"
+# "XLI";"Sector Spdr Trust Sbi"
+# "DGT";"SPDR DJ Global Titans (ETF)"
+# "RWX";"SPDR DJ International Real Est"
+# "DIA";"SPDR Dow Jones Industrial Aver"
+# "ELR";"SPDR Dow Jones Large Cap ETF"
+# "EMM";"SPDR Dow Jones Mid Cap ETF"
+# "RWR";"SPDR Dow Jones REIT ETF"
+# "TMW";"SPDR Dow Jones Total Market (E"
+# "FEZ";"SPDR EURO STOXX 50 ETF"
+# "GLD";"SPDR Gold Trust (ETF)"
+# "KBE";"SPDR KBW Bank (ETF)"
+# "KCE";"SPDR KBW Capital Markets (ETF)"
+# "KRE";"SPDR KBW Regional Banking (ETF"
+# "MTK";"SPDR Morgan Stanley Technology"
+# "MDYG";"SPDR S&P 400 Mid Cap Growth ET"
+# "MDYV";"SPDR S&P 400 Mid Cap Value ETF"
+# "SPY";"SPDR S&P 500 ETF Trust"           ****
+# "SPYG";"SPDR S&P 500 Growth ETF"
+# "SPYV";"SPDR S&P 500 Value ETF"
+# "SLY";"SPDR S&P 600 Small Cap ETF"
+# "SLYG";"SPDR S&P 600 Small Cap Growth"
+# "SLYV";"SPDR S&P 600 Small Cap Value E"
+# "XBI";"SPDR S&P Biotech (ETF)"
+# "SDY";"SPDR S&P Dividend (ETF)"
+# "XHB";"SPDR S&P Homebuilders (ETF)"
+# "KIE";"SPDR S&P Insurance ETF"
+# "XME";"SPDR S&P Metals and Mining (ET"
+# "XES";"SPDR S&P Oil & Gas Equipt & Se"
+# "XOP";"SPDR S&P Oil & Gas Explore & P"
+# "XPH";"SPDR S&P Pharmaceuticals (ETF)"
+# "XRT";"SPDR S&P Retail (ETF)"
+# "XSD";"SPDR S&P Semiconductor (ETF)"
+# "FEU";"SPDR STOXX Europe 50 ETF"
+# "XLK";"Technology SPDR (ETF)"
+# "XLU";"Utilities SPDR (ETF)"
+# 
+# 
+# 
+# select distinct company from si_finecon2 where industry_desc = 'Misc. Financial Services' order by 1;
+# 
+# industry_desc = 'Misc. Financial Service' (since fall of 2010) -- TODO [ ] 2003-2010
+# ---------------------------------------------------------------------------------------
+# 
+# -- mistake or (later) rename
+# "iGen Networks Corp"
+# "IGEN Networks Corp"
+# "Jupiter Enterprises Inc"
+# "Jupiter Enterprises, Inc."
+# "Komodo, Inc"
+# "Komodo, Inc."
+# "Peregrine Industries Inc"
+# "Peregrine Industries Inc(NDA)"
+# "Rahaxi Inc"
+# "Rahaxi, Inc."
+# "Resource America Inc"
+# "Resource America, Inc."
+# "Spi Energy Co Ltd"
+# "Spi Energy Co Ltd (ADR)"
+# "Star Energy Corp(NDA)"
+# "Star Energy Corporation"
+# "Stellar Resources Ltd"
+# "Stellar Resources Ltd(NDA)"
+# "Thrive World Wide Inc"
+# "Thrive World Wide, Inc."
+# "Tintic Gold Mining Co"
+# "Tintic Gold Mining Co(NDA)"
+# "Zaxis International Inc"
+# "Zaxis International, Inc."
+# 
+# --industry_desc = 'Misc. Financial Services'
+# --si_finecon2(late 2010) -- TODO [ ] 2003-2010
+# --%XXX% unless otherise noted
+# 
+# Capital
+# BlackRock
+# BLDRS
+# Holding
+# Cohen & Steers%
+# "Consumer Staples Select Sect."
+# Fund
+# Investment
+# "Direxion"
+# Dow%
+# Dreyfus
+# DWS
+# Dividen
+#   Dividend
+# Fnd
+#   Fund
+# Eaton Vance
+# Ventures
+# Empire Global ?
+# Everyware Global ?
+# Technologies
+#   Technology
+# FinTech Acquisition
+#   Acquisition
+#     Acquisit
+# First Trust
+#   Trust
+# Merger
+# Global%
+# Guggenheim
+# Helios
+# ING%
+# Invesco%
+# iShares%
+# John Hancock%
+# Kayne Anderson%
+# Total Return
+# Leg Mason% (just one)
+# Market Vectors
+# ETF
+# Merrill Lynch
+# Trus
+# "Montgomery Street Income Secur"
+# Morgan Stanley%
+# Holdi
+#   Holdin
+# "Income & Growth"
+# Neuberger Ber%
+# Income Fund
+# Nuveen%
+# Investment
+#   Investors
+# "Peoples Federal Bancshares, In"
+# Pimco%
+# PIMCO%
+# Pioneer%
+# PowerShares%
+# ProShares%
+# Putnam%
+# RevenueShares%
+# RMK%
+# ROI%
+# Royale%
+# Royce%
+# Rydex% (S&P derivatives)
+# Resource Corp
+# Investment Corp
+# SPDR%
+# Sunrise%
+# Templeton%
+# Tortoise%
+# United States%
+# Vanguard%
+# High Div
+# Wells Fargo%
+# Western Asset%
+# Whiting USA%
+# WisdomTree
+# Zweig
+# 
+# select distinct company 
+# from si_finecon2 
+#   where industry_desc = 'Misc. Financial Services' 
+#     and sp in ('500','400','600')
+# order by 1;
+# -- just 7
+# "Apollo Investment Corp."
+# "Broadridge Financial Solutions"
+# "Cash America International Inc"
+# "Cash America International, In"
+# "Encore Capital Group, Inc."
+# "FactSet Research Systems Inc."
+# "Prospect Capital Corporation"
 
 #        
 #          
