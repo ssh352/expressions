@@ -5921,6 +5921,122 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
 #                                         )
 
 
+# sipro_adhoc_disk_out <- sipro_adhoc_disk(   fields          = c("company_id"   , "ticker", "company", "sp"  , "mktcap"              , "price"              , "netinc_q1"          , "netinc_q2"          , "sales_q1"          , "sales_q2"          , "ncc_q1"            , "ncc_q2"            , "assets_q1"          , "assets_q2"          , "perend_q1", "perend_q2" )
+#                                           , fields_db_types = c("text"         , "text"  , "text"   , "text", "numeric(EXPLODE,2)"  , "numeric(EXPLODE,2)" , "numeric(EXPLODE,2)" , "numeric(EXPLODE,2)" , "numeric(EXPLODE,2)", "numeric(EXPLODE,2)", "numeric(EXPLODE,2)", "numeric(EXPLODE,2)", "numeric(EXPLODE,2)" , "numeric(EXPLODE,2)" , "integer"  , "integer"   )
+#                                           , tables          = list(c("si_ci"   ,                                                                                                                                                                                                                                       
+#                                                                      "si_isq"  , 
+#                                                                      "si_psd"  ,                                                                      
+#                                                                      "si_cfq"  ,
+#                                                                      "si_bsq"  ,
+#                                                                      "si_date"), "si_ci" , "si_ci" , "si_ci", "si_psd"              , "si_psd"             , "si_isq"             , "si_isq"             , "si_isq"            , "si_isq"            , "si_cfq"            , "si_cfq"            , "si_bsq"             , "si_bsq"             , "si_date"  , "si_date"   ) 
+#                                           , data.frame.out  = TRUE
+#                                         )
+
+# -- BEGIN OUTLIER DETECTION --
+# 
+# -- KEEP
+#   drop type r_lof4c_type;
+# create type r_lof4c_type as (rn int, val int);
+# 
+# -- KEEP -- NON PARALLEL VERSION
+#              drop function fe_data_store.r_lof4c(in rn bigint[], in col1 anyarray, in col2 anyarray, in col3 anyarray, in col4 anyarray, in k int);
+# create or replace function fe_data_store.r_lof4c(in rn bigint[], in col1 anyarray, in col2 anyarray, in col3 anyarray, in col4 anyarray, in k int)
+#   returns setof r_lof4c_type as
+# $body$
+# 
+#   Rlof___f.dist.to.knn <- function(dataset, neighbors, ...){
+# 
+#       m.dist <- as.matrix( Rlof:::distmc(dataset, ...))
+#       num.col <- dim(m.dist)[2]
+#       l.knndist <- lapply(c(1:num.col), function(i) {
+#           order.x <- order(m.dist[, i])
+#           kdist <- m.dist[, i][order.x[neighbors + 1]]
+#           numnei <- sum(m.dist[, i] <= kdist)
+#           data.frame(v.order = order.x[2:numnei], v.dist = m.dist[,
+#               i][order.x[2:numnei]])
+#       })
+#       rm(m.dist)
+#       maxnum <- max(unlist(lapply(l.knndist, function(x) {
+#           dim(x)[1]
+#       })))
+#       i <- numeric()
+#       knndist <- NULL
+#       for(i in 1:num.col)
+#           {
+#               len <- dim(l.knndist[[i]])[1]
+#               RES <- c(l.knndist[[i]]$v.order, rep(NA, (maxnum - len)),
+#                   l.knndist[[i]]$v.dist, rep(NA, (maxnum - len)))
+#               knndist <- cbind(knndist,RES)
+#           }
+#       knndist
+#   }
+# 
+#   Rlof__lof <- function(data, k, ...){
+# 
+#       if (is.null(k))
+#           stop("k is missing")
+#       if (!is.numeric(k))
+#           stop("k is not numeric")
+#       data <- as.matrix(data)
+#       if (!is.numeric(data))
+#           stop("the data contains non-numeric data type")
+#       v.k <- as.integer(k)
+#       if (max(v.k) >= dim(data)[1])
+#           stop("the maximum k value has to be less than the length of the data")
+#       distdata <- Rlof___f.dist.to.knn(data, max(v.k), ...)
+#       p <- dim(distdata)[2L]
+#       dist.start <- as.integer((dim(distdata)[1])/2)
+#       dist.end <- dim(distdata)[1]
+#       ik <- numeric()
+#       m.lof <- NULL
+#       for(ik in v.k) 
+#       {
+#           lrddata <- Rlof:::f.reachability(distdata, ik)
+#           v.lof <- rep(0, p)
+#           for (i in 1:p) {
+#               nneigh <- sum(!is.na(distdata[c((dist.start + 1):dist.end),
+#                   i]) & (distdata[c((dist.start + 1):dist.end),
+#                   i] <= distdata[(dist.start + ik), i]))
+#               v.lof[i] <- sum(lrddata[distdata[(1:nneigh), i]]/lrddata[i])/nneigh
+#           }
+#           m.lof <- cbind(m.lof, v.lof)
+#       }
+#       if (length(v.k) > 1)
+#           colnames(m.lof) <- v.k
+#       return(m.lof)
+#   }
+# 
+#   set.seed(1L)
+#   res <- Rlof__lof(data = data.frame(col1, col2, col3, col4), k = k)
+#   if(length(res) > 0L) {
+#     res <- order(res, decreasing = TRUE)[seq(1,min(20,length(res)),1)]
+#   } else {
+#     res <- integer()
+#   }
+#   return(data.frame(rn[seq(1,min(20,length(res)),1)], res))
+# $body$
+#   language plr;
+# 
+# 
+# 
+# -- KEEP
+# select row_number() over (), sq.rn sq_rn, sr.rn sr_rn, sr.val sr_val, sq.dateindex, sq.company_id, sq.sp, sq.ticker, sq.company, sq.price, sq.mktcap, sq.netinc_q1, sq.sales_q1  from 
+# (
+# select row_number() over () rn, dateindex, company_id, sp, ticker, company, price, mktcap, netinc_q1, sales_q1
+# from query01 
+#   where sp = '500' and dateindex = 17409 order by company_id
+# ) sq, 
+# (
+#   select (sq_r2.out).* from
+#   (
+#     select r_lof4c(array_agg(rn), array_agg(price), array_agg(mktcap), array_agg(netinc_q1), array_agg(sales_q1), k := 5) as out
+#     from ( select row_number() over () rn, price, mktcap, netinc_q1, sales_q1 from  query01 where sp = '500' and dateindex = 17409 order by company_id ) sq_r  
+#   ) sq_r2
+# ) sr
+# where sq.rn = sr.val
+# order by      sr.rn
+# 
+# -- END OUTLIER DETECTION (THIS WORKS) --
 
 
 
@@ -6853,6 +6969,11 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
 #        
 #          
 #                                                   
+
+
+
+
+
 
 # LATELY
 # 
