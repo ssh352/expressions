@@ -3941,7 +3941,7 @@ load_division_aggregated_per_dateindex <- function(dateindex = NULL) {
     local({R.rsp::rstring("
       select
           dateindex
-        , dateindexlwd
+        , dateindexlbd
         , dateindexeom
         , dateindexeom::text dateindexeom_fct
         <%= {if(SP_OPS_WHAT_I != '') { ', ' %S+% SQuote('sp_desc') %S+% '::text collection_name01_fct' }} %>
@@ -3961,8 +3961,8 @@ load_division_aggregated_per_dateindex <- function(dateindex = NULL) {
         <%= {if(SP_OPS_WHAT_I != '') { 'sp in ' %S+% SP_OPS_WHAT_I %S+% ' and ' }} %>
         <%= {if(!is.null(DIVISION_ITEMS_I)) { DIVISION_I %S+% ' in (' %S+% stringi::stri_c(sapply(DIVISION_ITEMS_I, SQuote), collapse = ', ')  %S+% ') and ' }} %>
         adr = 0 AND exchange <> 'O'::text  AND company !~~ '%iShares%'::text AND company !~~ '%Vanguard%'::text AND company !~~ 'SPDR'::text AND company !~~ '%PowerShares%'::text AND company !~~ '%Fund%'::text AND company !~~ '%Holding%'::text AND industry_desc !~~ '%Investment Service%'::text
-      group by dateindex, dateindexlwd, dateindexeom<%= {if(SP_OPS_WHAT_I != '') { ', sp_desc_fct' }} %><%= {if(DIVISION_I != '') { ', ' %S+% DIVISION_I %S+% '_fct' }} %> 
-      order by dateindex, dateindexlwd, dateindexeom<%= {if(SP_OPS_WHAT_I != '') { ', sp_desc_fct' }} %><%= {if(DIVISION_I != '') { ', ' %S+% DIVISION_I %S+% '_fct' }} %> 
+      group by dateindex, dateindexlbd, dateindexeom<%= {if(SP_OPS_WHAT_I != '') { ', sp_desc_fct' }} %><%= {if(DIVISION_I != '') { ', ' %S+% DIVISION_I %S+% '_fct' }} %> 
+      order by dateindex, dateindexlbd, dateindexeom<%= {if(SP_OPS_WHAT_I != '') { ', sp_desc_fct' }} %><%= {if(DIVISION_I != '') { ', ' %S+% DIVISION_I %S+% '_fct' }} %> 
     ")}, envir = list2env(list(
                                DIVISION_I    = combo_i[["DIVISION"]]
                              , SP_OPS_WHAT_I = combo_i[["SP_OPS_WHAT"]]
