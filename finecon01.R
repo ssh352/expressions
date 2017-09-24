@@ -5157,10 +5157,16 @@ xtsobjs_2_db_ready_df <- function(xtsobj = NULL, split_search = NULL, split_repl
   # common columns
   cdata <- as.data.frame(cdata,stringsAsFactors = FALSE)
   cdata[,c("dateindex")   ] <-        as.integer(xts:::index.xts(xtsobj)) 
-  cdata[,c("dateindexlwd")] <- as.integer(xts:::index.xts(to.monthly.lwd(xtsobj))) # not use the coredata(I do not need)
+
+  cdata[,c("dateindexyear")]      <- yr_of_month(    as.integer(xts:::index.xts(xtsobj)))
+  cdata[,c("dateindexyearmonth")] <- yrmnth_of_month(as.integer(xts:::index.xts(xtsobj)))
+  cdata[,c("dateindexmonth")]     <- mnth_of_month(  as.integer(xts:::index.xts(xtsobj)))
+  cdata[,c("dateindexlbd")] <- lbd_of_month(         as.integer(xts:::index.xts(xtsobj)))
+
+  cdata[,c("dateindexlwd")] <- lwd_of_month(         as.integer(xts:::index.xts(xtsobj))) # not use the coredata(I do not need)
   cdata[,c("dateindexeom")] <- last_day_of_month(xts:::index.xts(xtsobj)) 
   
-  dfobj <- DataCombine::MoveFront(cdata, Var=c("dateindex","dateindexlwd","dateindexeom")); rm(cdata)
+  dfobj <- DataCombine::MoveFront(cdata, Var=c("dateindex", "dateindexyear", "dateindexyearmonth", "dateindexmonth", "dateindexlbd", "dateindexlwd", "dateindexeom")); rm(cdata)
   
   # reshape
   gathered <- tidyr::gather(dfobj, instrument, instrument_value, -dateindex, -dateindexlwd, -dateindexeom)
