@@ -3084,7 +3084,7 @@ verify_return_dates <- function(dateindex = NULL, months_limit = NULL, within_ba
     ) -> column_names_f
     
     column_names <- c(column_names_p, column_names_f)
-    c("dateindex", "dateindexlwd", "dateindexeom", column_names) -> all_col_names 
+    c("dateindex", "dateindexlbd", "dateindexlwd", "dateindexeom", column_names) -> all_col_names 
     
     # eval(parse(text=str_c("data.frame(dateindex=integer(), dateindexlwd=integer(), dateindexeom=integer()," %s+% str_c(column_names,"=integer()",collapse = ", ") %s+% ")"))) -> si_all_df
     
@@ -3099,12 +3099,13 @@ verify_return_dates <- function(dateindex = NULL, months_limit = NULL, within_ba
       Hmisc::trunc.POSIXt(., units='months') %m+% days(-1) %>% 
         zoo::as.Date(.)  %>%
           # add in lwd ( Sat or Sun falls back to Fri)
-          lapply(.,function(x) { (x - match(weekdays(x), c('Saturday','Sunday'), nomatch = 0)) %>% 
-                                  # lwd, eom
-                                  c(.,x)
+          lapply(.,function(x) { RQuantLib::getEndOfMonth("UnitedStates/NYSE", x)              -> lbd
+                                 (x - match(weekdays(x), c('Saturday','Sunday'), nomatch = 0)) -> lwd
+                                  # lbd, lwd, eom
+                                  c(lbd, lwd , x)
                                } ) %>% 
             # flattened (Date class is stripped)
-            unlist(.) %>% zoo::as.Date(.) -> now_lwd_eom_dates
+            unlist(.) %>% zoo::as.Date(.) -> now_calc_dates
 
     # past lwd eom dates
 
@@ -3145,7 +3146,7 @@ verify_return_dates <- function(dateindex = NULL, months_limit = NULL, within_ba
                 unlist(.) %>% zoo::as.Date(.) -> future_lwd_eom_dates
 
 
-    c(now_date,now_lwd_eom_dates,past_lwd_eom_dates,future_lwd_eom_dates) %>% as.integer(.) -> all_dates
+    c(now_date,now_calc_dates,past_lwd_eom_dates,future_lwd_eom_dates) %>% as.integer(.) -> all_dates
 
     # actual fill 
     
