@@ -3067,24 +3067,24 @@ verify_return_dates <- function(dateindex = NULL, months_limit = NULL, within_ba
     
     # past
     
-    str_c(                        # c("lbd","lwd","eom")
-      rep("dateindex" %s+% "p",   each = len_past_months_range * 3), 
-                               # c("lbd","lwd","eom")
-      rep(  past_months_range, each = 3) %>% str_pad(.,2,'left','0'), 
-      rep(c("lbd","lwd","eom"), times = len_past_months_range) 
+    str_c(                        # c("year", "yearmonth", "month", "lbd","lwd","eom")
+      rep("dateindex" %s+% "p",   each = len_past_months_range * 6), 
+                               # c("year", "yearmonth", "month", "lbd","lwd","eom")
+      rep(  past_months_range, each = 6) %>% str_pad(.,2,'left','0'), 
+      rep(c("year", "yearmonth", "month", "lbd","lwd","eom"), times = len_past_months_range) 
     ) -> column_names_p
     
     # future
     
-    str_c(                        # c("lbd","lwd","eom")
-      rep("dateindex" %s+% "f",   each = len_future_months_range * 3), 
-                                 # c("lbd","lwd","eom")
-      rep(  future_months_range, each = 3) %>% str_pad(.,2,'left','0'), 
-      rep(c("lbd","lwd","eom"), times = len_future_months_range) 
+    str_c(                        # c("year", "yearmonth", "month", "lbd","lwd","eom")
+      rep("dateindex" %s+% "f",   each = len_future_months_range * 6), 
+                                 # c("year", "yearmonth", "month", "lbd","lwd","eom")
+      rep(  future_months_range, each = 6) %>% str_pad(.,2,'left','0'), 
+      rep(c("year", "yearmonth", "month", "lbd","lwd","eom"), times = len_future_months_range) 
     ) -> column_names_f
     
     column_names <- c(column_names_p, column_names_f)
-    c("dateindex", "dateindexlbd", "dateindexlwd", "dateindexeom", column_names) -> all_col_names 
+    c("dateindex", "dateindexyear", "dateindexyearmonth", "dateindexmonth", "dateindexlbd", "dateindexlwd", "dateindexeom", column_names) -> all_col_names 
     
     # eval(parse(text=str_c("data.frame(dateindex=integer(), dateindexlwd=integer(), dateindexeom=integer()," %s+% str_c(column_names,"=integer()",collapse = ", ") %s+% ")"))) -> si_all_df
     
@@ -3099,10 +3099,14 @@ verify_return_dates <- function(dateindex = NULL, months_limit = NULL, within_ba
       Hmisc::trunc.POSIXt(., units='months') %m+% days(-1) %>% 
         zoo::as.Date(.)  %>%
           # add in lwd ( Sat or Sun falls back to Fri)
-          lapply(.,function(x) { RQuantLib::getEndOfMonth("UnitedStates/NYSE", x)              -> lbd
-                                 (x - match(weekdays(x), c('Saturday','Sunday'), nomatch = 0)) -> lwd
-                                  # lbd, lwd, eom
-                                  c(lbd, lwd , x)
+          lapply(.,function(x) {  
+                                  DescTools::Year(x)                                            -> yr
+                                  DescTools::YearMonth(x)                                       -> yrmnth
+                                  DescTools::Month(x)                                           -> mnth
+                                  RQuantLib::getEndOfMonth("UnitedStates/NYSE", x)              -> lbd
+                                  (x - match(weekdays(x), c('Saturday','Sunday'), nomatch = 0)) -> lwd
+                                  # yr, yrmnth, mnth, lbd, lwd, eom
+                                  c(yr, yrmnth, mnth, lbd, lwd , x)
                                } ) %>% 
             # flattened (Date class is stripped)
             unlist(.) %>% zoo::as.Date(.) -> now_calc_dates
@@ -3119,10 +3123,14 @@ verify_return_dates <- function(dateindex = NULL, months_limit = NULL, within_ba
           months(1) %m+% days(-1) %>% 
             zoo::as.Date(.) %>% 
               # add in lwd ( Sat or Sun falls back to Fri)
-              lapply(.,function(x) { RQuantLib::getEndOfMonth("UnitedStates/NYSE", x)              -> lbd
-                                     (x - match(weekdays(x), c('Saturday','Sunday'), nomatch = 0)) -> lwd
-                                     # lwd, eom
-                                     c(lbd, lwd, x)
+              lapply(.,function(x) { 
+                                    DescTools::Year(x)                                            -> yr
+                                    DescTools::YearMonth(x)                                       -> yrmnth
+                                    DescTools::Month(x)                                           -> mnth
+                                    RQuantLib::getEndOfMonth("UnitedStates/NYSE", x)              -> lbd
+                                    (x - match(weekdays(x), c('Saturday','Sunday'), nomatch = 0)) -> lwd
+                                    # yr, yrmnth, mnth, lbd, lwd, eom
+                                    c(yr, yrmnth, mnth, lbd, lwd , x)
                                    } ) %>% 
                 # flattened (Date class is stripped)
                 unlist(.) %>% zoo::as.Date(.) -> past_calc_dates
@@ -3139,10 +3147,14 @@ verify_return_dates <- function(dateindex = NULL, months_limit = NULL, within_ba
           months(1) %m+% days(-1) %>% 
             zoo::as.Date(.) %>% 
               # add in lwd ( Sat or Sun falls back to Fri)
-              lapply(.,function(x) { RQuantLib::getEndOfMonth("UnitedStates/NYSE", x)              -> lbd
-                                     (x - match(weekdays(x), c('Saturday','Sunday'), nomatch = 0)) -> lwd 
-                                     # lwd, eom
-                                     c(lbd, lwd, x)
+              lapply(.,function(x) { 
+                                    DescTools::Year(x)                                            -> yr
+                                    DescTools::YearMonth(x)                                       -> yrmnth
+                                    DescTools::Month(x)                                           -> mnth
+                                    RQuantLib::getEndOfMonth("UnitedStates/NYSE", x)              -> lbd
+                                    (x - match(weekdays(x), c('Saturday','Sunday'), nomatch = 0)) -> lwd
+                                    # yr, yrmnth, mnth, lbd, lwd, eom
+                                    c(yr, yrmnth, mnth, lbd, lwd , x)
                                    } ) %>% 
                 # flattened (Date class is stripped)
                 unlist(.) %>% zoo::as.Date(.) -> future_calc_dates
