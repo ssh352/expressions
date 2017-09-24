@@ -3012,7 +3012,7 @@ verify_company_details <- function(dateindex = NULL,  table_f = NULL, cnames_e =
 
 
 
-verify_return_dates <- function(dateindex = NULL, months_limit = NULL) {
+verify_return_dates <- function(dateindex = NULL, months_limit = NULL, within_back = 5) {
   
   # R version 3.3.2 (2016-10-31) # sessionInfo()
   
@@ -3029,7 +3029,7 @@ verify_return_dates <- function(dateindex = NULL, months_limit = NULL) {
     Sys.setenv(TZ="UTC")
   }
   
-  verify_return_dates_inner <- function (dateindex = NULL, months_limit = NULL) {
+  verify_return_dates_inner <- function (dateindex = NULL, months_limit = NULL, within_back = NULL) {
     
     verify_si_finecon_exists()
     
@@ -3094,7 +3094,7 @@ verify_return_dates <- function(dateindex = NULL, months_limit = NULL) {
     zoo::as.Date(now_date) -> now_date
 
     # this month
-    now_date %m+% months(1) %>%
+    (now_date - within_back) %m+% months(1) %>%
       # 1st day of next month # last day of this month
       Hmisc::trunc.POSIXt(., units='months') %m+% days(-1) %>% 
         zoo::as.Date(.)  %>%
@@ -3109,7 +3109,7 @@ verify_return_dates <- function(dateindex = NULL, months_limit = NULL) {
     # past lwd eom dates
 
     # previous Nth(months_limit) month back
-    now_date %m+% months(-months_limit) %>%
+    (now_date - within_back) %m+% months(-months_limit) %>%
       # 1st day of previous Nth month
       Hmisc::trunc.POSIXt(., units='months')  %>%
         # N(months_limit) or so months
@@ -3128,7 +3128,7 @@ verify_return_dates <- function(dateindex = NULL, months_limit = NULL) {
     # future lwd eom dates
 
     # next month
-    now_date %m+% months(1) %>%
+    (now_date - within_back) %m+% months(1) %>%
       # 1st day of next month
       Hmisc::trunc.POSIXt(., units='months') %>%
         # N(months_limit) or so months
@@ -3154,7 +3154,7 @@ verify_return_dates <- function(dateindex = NULL, months_limit = NULL) {
     return(si_all_df) 
 
   }
-  ret <- verify_return_dates_inner(dateindex = dateindex, months_limit = months_limit)
+  ret <- verify_return_dates_inner(dateindex = dateindex, months_limit = months_limit, within_back = within_back)
                                       
   Sys.setenv(TZ=oldtz)
   options(ops)
