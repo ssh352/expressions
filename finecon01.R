@@ -5169,7 +5169,7 @@ xtsobjs_2_db_ready_df <- function(xtsobj = NULL, split_search = NULL, split_repl
   dfobj <- DataCombine::MoveFront(cdata, Var=c("dateindex", "dateindexyear", "dateindexyearmonth", "dateindexmonth", "dateindexlbd", "dateindexlwd", "dateindexeom")); rm(cdata)
   
   # reshape
-  gathered <- tidyr::gather(dfobj, instrument, instrument_value, -dateindex, -dateindexlwd, -dateindexeom)
+  gathered <- tidyr::gather(dfobj, instrument, instrument_value, -dateindex, -dateindexyear, -dateindexyearmonth, -dateindexmonth, -dateindexlbd, -dateindexlwd, -dateindexeom)
   # need later to separate on the dot
   if(!is.null(split_search)) gathered$instrument <- stringr::str_replace(gathered$instrument,split_search,split_replace)
   # into columns called "instrument" and "change"  "change" column has MANY values "chg_XXw_ann"
