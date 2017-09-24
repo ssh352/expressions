@@ -2270,6 +2270,18 @@ verify_company_basics <- function (dateindex = NULL) {
           within( si_si_tbl_df, { assign("dateindexlwd", rep(     lwd_of_month(dateindex_redux_i),NROW(si_si_tbl_df[,1])) )  } ) -> si_si_tbl_df
           DataCombine::MoveFront(si_si_tbl_df,   "dateindexlwd") -> si_si_tbl_df
           
+          within( si_si_tbl_df, { assign("dateindexlbd", rep(     lbd_of_month(dateindex_redux_i),NROW(si_si_tbl_df[,1])) )  } ) -> si_si_tbl_df
+          DataCombine::MoveFront(si_si_tbl_df,   "dateindexlbd") -> si_si_tbl_df
+
+          within( si_si_tbl_df, { assign("dateindexmonth", rep(     mnth_of_month(dateindex_redux_i),NROW(si_si_tbl_df[,1])) )  } ) -> si_si_tbl_df
+          DataCombine::MoveFront(si_si_tbl_df,   "dateindexmonth") -> si_si_tbl_df
+
+          within( si_si_tbl_df, { assign("dateindexyearmonth", rep(     yrmnth_of_month(dateindex_redux_i),NROW(si_si_tbl_df[,1])) )  } ) -> si_si_tbl_df
+          DataCombine::MoveFront(si_si_tbl_df,   "dateindexyearmonth") -> si_si_tbl_df
+
+          within( si_si_tbl_df, { assign("dateindexyear", rep(     yr_of_month(dateindex_redux_i),NROW(si_si_tbl_df[,1])) )  } ) -> si_si_tbl_df
+          DataCombine::MoveFront(si_si_tbl_df,   "dateindexyear") -> si_si_tbl_df
+
         }
         
         within( si_si_tbl_df, { assign("dateindex", rep(as.integer(dateindex_redux_i),NROW(si_si_tbl_df[,1]))      )  } ) -> si_si_tbl_df
