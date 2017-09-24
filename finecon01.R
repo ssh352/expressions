@@ -340,6 +340,12 @@ verify_si_finecon_exists <- function () {
     db.q("alter table si_finecon2 add if not exists dateindex_company_id_orig text;", conn.id = cid)
     db.q("alter table si_finecon2 add if not exists dateindex_company_id text;", conn.id = cid)
     db.q("alter table si_finecon2 add if not exists dateindex    int;", conn.id = cid)
+    
+    db.q("alter table si_finecon2 add if not exists dateindexyear      int;", conn.id = cid)
+    db.q("alter table si_finecon2 add if not exists dateindexyearmonth int;", conn.id = cid)
+    db.q("alter table si_finecon2 add if not exists dateindexyear      int;", conn.id = cid)
+    db.q("alter table si_finecon2 add if not exists dateindexlbd       int;", conn.id = cid)
+    
     db.q("alter table si_finecon2 add if not exists dateindexlwd int;", conn.id = cid)
     db.q("alter table si_finecon2 add if not exists dateindexeom int;", conn.id = cid)
     db.q("alter table si_finecon2 add if not exists company_id_orig  text;", conn.id = cid)
@@ -527,13 +533,13 @@ to.monthly.lwd <- function(x) {
 
 
 # vectorized
-lwd_of_month <- function(anyday = NULL) {  
+lwd_of_month <- function(anyday = NULL, within_back = 5) {  
   #
   # uses # to.monthly.lwd
   # uses package zoo
   #
   logical() -> result
-  for(anyday_i in anyday) {
+  for(anyday_i in (anyday - within_back)) {
     seq(from = as.integer(zoo::as.Date(zoo::as.yearmon(zoo::as.Date(anyday_i)), frac = 0)),
         to = as.integer(zoo::as.Date(zoo::as.yearmon(zoo::as.Date(anyday_i)), frac = 1)),
         by = 1) -> all_month_days
@@ -550,7 +556,7 @@ lwd_of_month <- function(anyday = NULL) {
 
 is_lwd_of_month <- function(anyday = NULL) { 
   # uses lwd_of_month
-  return(anyday == lwd_of_month(anyday)) 
+  return(anyday == lwd_of_month(anyday, within_back = 0)) 
 
 }
 # is_lwd_of_month(c(17164, 17165, 17166))
@@ -558,9 +564,27 @@ is_lwd_of_month <- function(anyday = NULL) {
 
 
 
-last_day_of_month <- function(anyday = NULL) {  
+lbd_of_month <- function(anyday = NULL, within_back = 5) {  
+
   # uses package zoo
-  as.integer(zoo::as.Date(zoo::as.yearmon(zoo::as.Date(anyday)), frac = 1))
+
+  logical() -> result
+  for(anyday_i in anyday) {
+    RQuantLib::getEndOfMonth("UnitedStates/NYSE", zoo::as.Date(anyday_i) -  within_back) -> month_day
+    as.integer(month_day) -> result_i
+    c(result, result_i) -> result
+  }
+  return(result)
+    
+}
+# lbd_of_month(c(17164, 17165, 17166))
+# [1] 17165 17165 17165
+
+
+
+last_day_of_month <- function(anyday = NULL, within_back =  5) {  
+  # uses package zoo
+  as.integer(zoo::as.Date(zoo::as.yearmon(zoo::as.Date((anyday - within_back))), frac = 1))
 }
 #  last_day_of_month(17164)
 # [1] 17166
@@ -3888,7 +3912,7 @@ load_division_aggregated_per_dateindex <- function(dateindex = NULL) {
     
     if(!NROW(si_all_df)) stop(paste0("Returned zero records ", dateindex))
     
-    # SFS
+    # SFS ( I REALLY! regret programming using regular expressions )
     liquifyDF(si_all_df, const_cols_regexpr = "^dateindex.*", fctr_cols_rexpr = ".*_fct$") -> si_all_df
     
     # SFS
