@@ -5251,6 +5251,10 @@ load_instruments <- function(dfobj = NULL, no_update_earliest_year = NULL) {
          create table if not exists fe_data_store.instruments
          (
          dateindex integer,
+         dateindexyear integer,
+         dateindexyearmonth integer,
+         dateindexmonth integer,
+         dateindexlbd integer,
          dateindexlwd integer,
          dateindexeom integer,
          instrument text,
