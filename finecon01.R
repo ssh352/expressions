@@ -3046,20 +3046,44 @@ verify_return_dates <- function(dateindex = NULL, months_limit = NULL) {
     
     1:months_limit -> both_months_range 
 
-    both_months_range ->   future_months_range
-                    length(future_months_range) -> len_direction_months_range
-
-    c(rev(future_months_range),future_months_range) -> past_and_future_months_range
-      length(past_and_future_months_range)          -> len_past_and_future_months_range
-
-    rep(c('p','f'), each = len_past_and_future_months_range) %>%
-      # TWO_m per month
-      str_c(., rep(past_and_future_months_range, each= 2) %>% str_pad(.,2,'left','0') ) %>%
-        # suffix 'eom','lwd'
-        str_c( .,rep(c('lwd','eom'), times = len_past_and_future_months_range)) %>%
-          # prefix 'dateindex'
-          str_c('dateindex', .) -> column_names
+        both_months_range ->  future_months_range
+                    # not used
+                    # length(future_months_range) -> len_direction_months_range
+                       length(future_months_range) -> len_future_months_range
     
+    rev(both_months_range) -> past_months_range 
+                       length(past_months_range)   -> len_past_months_range
+    
+    c(rev(future_months_range), future_months_range) ->    past_and_future_months_range
+    length(past_and_future_months_range)             -> len_past_and_future_months_range
+
+    # rep(c('p','f'), each = len_past_and_future_months_range) %>%
+    #   # TWO_m per month
+    #   str_c(., rep(past_and_future_months_range, each= 2) %>% str_pad(.,2,'left','0') ) %>%
+    #     # suffix 'eom','lwd'
+    #     str_c( .,rep(c('lwd','eom'), times = len_past_and_future_months_range)) %>%
+    #       # prefix 'dateindex'
+    #       str_c('dateindex', .) -> column_names
+    
+    # past
+    
+    str_c(                        # c("lwd","eom")
+      rep("dateindex" %s+% "p",   each = len_past_months_range * 2), 
+                               # c("lwd","eom")
+      rep(  past_months_range, each = 2) %>% str_pad(.,2,'left','0'), 
+      rep(c("lwd","eom"), times = len_past_months_range) 
+    ) -> column_names_p
+    
+    # future
+    
+    str_c(                        # c("lwd","eom")
+      rep("dateindex" %s+% "f",   each = len_future_months_range * 2), 
+                                 # c("lwd","eom")
+      rep(  future_months_range, each = 2) %>% str_pad(.,2,'left','0'), 
+      rep(c("lwd","eom"), times = len_future_months_range) 
+    ) -> column_names_f
+    
+    column_names <- c(column_names_p, column_names_f)
     c("dateindex", "dateindexlwd", "dateindexeom", column_names) -> all_col_names 
     
     # eval(parse(text=str_c("data.frame(dateindex=integer(), dateindexlwd=integer(), dateindexeom=integer()," %s+% str_c(column_names,"=integer()",collapse = ", ") %s+% ")"))) -> si_all_df
