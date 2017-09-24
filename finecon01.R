@@ -599,6 +599,22 @@ yr_of_month <- function(anyday = NULL, within_back = 5) {
 # [1] 2016 2016 2016
 
 
+yrmnth_of_month <- function(anyday = NULL, within_back = 5) {  
+
+  # uses package zoo
+
+  logical() -> result
+  for(anyday_i in anyday) {
+    DescTools::YearMonth(zoo::as.Date(anyday_i) -  within_back) -> month_day
+    as.integer(month_day) -> result_i
+    c(result, result_i) -> result
+  }
+  return(result)
+    
+}
+# yrmnth_of_month(c(17164, 17165, 17166))
+# [1] 201612 201612 201612
+
 
 
 last_day_of_month <- function(anyday = NULL, within_back =  5) {  
