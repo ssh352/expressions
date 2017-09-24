@@ -582,6 +582,25 @@ lbd_of_month <- function(anyday = NULL, within_back = 5) {
 
 
 
+yr_of_month <- function(anyday = NULL, within_back = 5) {  
+
+  # uses package zoo
+
+  logical() -> result
+  for(anyday_i in anyday) {
+    DescTools::Year(zoo::as.Date(anyday_i) -  within_back) -> month_day
+    as.integer(month_day) -> result_i
+    c(result, result_i) -> result
+  }
+  return(result)
+    
+}
+# yr_of_month(c(17164, 17165, 17166))
+# [1] 2016 2016 2016
+
+
+
+
 last_day_of_month <- function(anyday = NULL, within_back =  5) {  
   # uses package zoo
   as.integer(zoo::as.Date(zoo::as.yearmon(zoo::as.Date((anyday - within_back))), frac = 1))
