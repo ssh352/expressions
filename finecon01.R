@@ -5486,9 +5486,9 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
     
     verify_connection()
     
-    db.q(str_c("create table if not exists ", tblobj_name,"(dateindex int4, dateindexlwd int4, dateindexeom int4);"), conn.id = cid)
+    db.q(str_c("create table if not exists ", tblobj_name,"(dateindex int4, dateindexyear int4, dateindexyearmonth int4, dateindexmonth int4, dateindexlbd int4, dateindexlwd int4, dateindexeom int4);"), conn.id = cid)
     
-    # most have ONE column to be eligible to be pointed_at ( REPORT THIS BUG )
+    # most have ONE column to be eligible to be pointed_at ( REPORT THIS BUG ) # TODO [ ]
     tblobj_db_ptr <- db.data.frame(tblobj_name, cid)
     
     # cycle through the column names in tblobj_db
@@ -5568,17 +5568,28 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
       # assume if the column dateindex[lwd/oem] is not there in tblobj then a 'custom' fill is not exptected to be done
       # so I can do an automatic fill
       dateindex <- tblobj[,"dateindex",drop =TRUE]
-      if(!"dateindexlwd" %in% colnames(tblobj)) tblobj$dateindexlwd <-       lwd_of_month(tblobj$dateindex); 
-      if(!"dateindexeom" %in% colnames(tblobj)) tblobj$dateindexeom <-  last_day_of_month(tblobj$dateindex); 
+      
+      if(!"dateindexyear" %in% colnames(tblobj))      tblobj$dateindexyear      <- yr_of_month(    tblobj$dateindex)
+      if(!"dateindexyearmonth" %in% colnames(tblobj)) tblobj$dateindexyearmonth <- yrmnth_of_month(tblobj$dateindex)
+      if(!"dateindexmonth" %in% colnames(tblobj))     tblobj$dateindexmonth     <- mnth_of_month(  tblobj$dateindex)
+      if(!"dateindexlbd" %in% colnames(tblobj))       tblobj$dateindexlbd <- lbd_of_month(         tblobj$dateindex)
+      
+      if(!"dateindexlwd" %in% colnames(tblobj)) tblobj$dateindexlwd <-       lwd_of_month(tblobj$dateindex)
+      if(!"dateindexeom" %in% colnames(tblobj)) tblobj$dateindexeom <-  last_day_of_month(tblobj$dateindex)
     }
     
     # re-order columns that I have
-    matched <- match(c("dateindex","dateindexlwd","dateindexeom"), colnames(tblobj))
+    matched <- match(c("dateindex", "dateindexyear", "dateindexyearmonth", "dateindexmonth", "dateindexlbd", "dateindexlwd", "dateindexeom"), colnames(tblobj))
     matched <- matched[complete.cases(matched)]
     tblobj <- DataCombine::MoveFront(tblobj,colnames(tblobj)[matched])
     
     # unconditionally put htere
     # only case accidentally/purposelydropped on the target
+    db.q(str_c("alter table ", tblobj_name," add if not exists dateindexyear int4;"), conn.id = cid)
+    db.q(str_c("alter table ", tblobj_name," add if not exists dateindexyearmonth int4;"), conn.id = cid)
+    db.q(str_c("alter table ", tblobj_name," add if not exists dateindexmonth int4;"), conn.id = cid)
+    db.q(str_c("alter table ", tblobj_name," add if not exists dateindexlbd int4;"), conn.id = cid)
+
     db.q(str_c("alter table ", tblobj_name," add if not exists dateindexlwd int4;"), conn.id = cid)
     db.q(str_c("alter table ", tblobj_name," add if not exists dateindexeom int4;"), conn.id = cid)
     
