@@ -994,10 +994,7 @@ verify_finecon_jamesos_partial_idx <- function() {
     
     db.q("create index if not exists si_finecon2_finecon_jamesos_partial_idx on
                   si_finecon2(dateindex,adr,exchange,mktcap,industry_desc,company) where
-                    adr = 0 and exchange != 'O' and mktcap > 200.0
-                    and (company !~~ '%iShares%') and (company !~~ '%Vanguard%') and (company !~~ 'SPDR')
-                    and (company !~~ '%PowerShares%') and (company !~~ '%Fund%')
-                    and (company !~~ '%Holding%') and (industry_desc !~~ '%Investment Service%')
+                    adr = 0 and exchange != 'O' and mktcap > 200.0)
               ;", conn.id = cid)
 
     # SAVE FOR LATER
@@ -3765,6 +3762,7 @@ load_inbnd_stmtstats <- function (dateindex = NULL, support_dateindex_collection
 #   , char_col_numeric_limit = 999999.99    # for right NOW pure AAII data ( unratio-ed )
 # )  -> si_all_g_df
 
+# LEFT_OFF LEFT_OFF
 
 # uses now_inbnd_stmtstat last_inbnd_stmtstat
 # since MANY SQLs upsertS are done inside
@@ -3830,13 +3828,11 @@ load_division_aggregated_now_last_mktcap_per_company_id <- function(dateindex = 
           , sum(last_inbnd_stmtstat_mktcap)     sum<%= {if(SP_OPS_WHAT_I != '') { '_' %S+% SP_OPS_WHAT_SHORT_I }}  %S+% {if(DIVISION_I != '') { '_' %S+% DIVISION_I }}  %>_last_now_inbnd_stmtstat_mktcap
           , sum(mktcap)                         sum<%= {if(SP_OPS_WHAT_I != '') { '_' %S+% SP_OPS_WHAT_SHORT_I }}  %S+% {if(DIVISION_I != '') { '_' %S+% DIVISION_I }}  %>_mktcap
         from si_finecon2 where dateindex = <%=DATEINDEX%> and 
-                              <%= {if(SP_OPS_WHAT_I != '') { ' sp in ' %S+% SP_OPS_WHAT_I %S+% ' and ' }} %> 
-                              adr = 0 AND exchange <> 'O'::text  AND company !~~ '%iShares%'::text AND company !~~ '%Vanguard%'::text AND company !~~ 'SPDR'::text AND company !~~ '%PowerShares%'::text AND company !~~ '%Fund%'::text AND company !~~ '%Holding%'::text AND industry_desc !~~ '%Investment Service%'::text 
+                              <%= {if(SP_OPS_WHAT_I != '') { ' sp in ' %S+% SP_OPS_WHAT_I %S+% '     ' }} %> 
         group by dateindex <%= {if(DIVISION_I != '') { ', ' %S+% DIVISION_I }} %> ) sq1 
       on sr.dateindex = sq1.dateindex and 
          <%= {if(SP_OPS_WHAT_I != '') { 'sr.sp in ' %S+% SP_OPS_WHAT_I %S+% ' and ' }} %> 
          <%= {if(DIVISION_I != '') { 'sr.' %S+% DIVISION_I %S+% ' = sq1.' %S+% DIVISION_I %S+% ' and ' }} %>
-         sr.adr = 0 AND sr.exchange <> 'O'::text  AND sr.company !~~ '%iShares%'::text AND sr.company !~~ '%Vanguard%'::text AND sr.company !~~ 'SPDR'::text AND sr.company !~~ '%PowerShares%'::text AND sr.company !~~ '%Fund%'::text AND sr.company !~~ '%Holding%'::text AND sr.industry_desc !~~ '%Investment Service%'::text and 
          sr.dateindex = <%=DATEINDEX%>
       ")}, envir = list2env(list(DIVISION_I = combo_i[["DIVISION"]], SP_OPS_WHAT_I = combo_i[["SP_OPS_WHAT"]]
                              , SP_OPS_WHAT_SHORT_I = SP_OPS_WHAT_SHORT_I
@@ -3983,8 +3979,7 @@ load_division_aggregated_per_dateindex <- function(dateindex = NULL) {
         , sum(now_inbnd_stmtstat_mktcap) / nullif(sum(last_inbnd_stmtstat_mktcap), 0)  rat_sum_now_inbnd_stmtstat_mktcap_o_last_x_100
       from si_finecon2 where dateindex = <%= DATEINDEX %> and
         <%= {if(SP_OPS_WHAT_I != '') { 'sp in ' %S+% SP_OPS_WHAT_I %S+% ' and ' }} %>
-        <%= {if(!is.null(DIVISION_ITEMS_I)) { DIVISION_I %S+% ' in (' %S+% stringi::stri_c(sapply(DIVISION_ITEMS_I, SQuote), collapse = ', ')  %S+% ') and ' }} %>
-        adr = 0 AND exchange <> 'O'::text  AND company !~~ '%iShares%'::text AND company !~~ '%Vanguard%'::text AND company !~~ 'SPDR'::text AND company !~~ '%PowerShares%'::text AND company !~~ '%Fund%'::text AND company !~~ '%Holding%'::text AND industry_desc !~~ '%Investment Service%'::text
+        <%= {if(!is.null(DIVISION_ITEMS_I)) { DIVISION_I %S+% ' in (' %S+% stringi::stri_c(sapply(DIVISION_ITEMS_I, SQuote), collapse = ', ')  %S+% ')     ' }} %>
       group by dateindex, dateindexlbd, dateindexeom<%= {if(SP_OPS_WHAT_I != '') { ', sp_desc_fct' }} %><%= {if(DIVISION_I != '') { ', ' %S+% DIVISION_I %S+% '_fct' }} %> 
       order by dateindex, dateindexlbd, dateindexeom<%= {if(SP_OPS_WHAT_I != '') { ', sp_desc_fct' }} %><%= {if(DIVISION_I != '') { ', ' %S+% DIVISION_I %S+% '_fct' }} %> 
     ")}, envir = list2env(list(
@@ -4153,10 +4148,10 @@ create_inbnd_stmtstats_aggregates_db <- function(exact_lwd_dbf_dirs = NULL) {
             , now_inbnd_stmtstat_sales_q1
             , last_inbnd_stmtstat_sales_q1
             , case when pct_freeprice_ret_01m_ann > 100.00 or pct_freeprice_ret_01m_ann < -100.00 then null else pct_freeprice_ret_01m_ann end pct_freeprice_ret_01m_ann
-          from fe_data_store.si_finecon2 where adr = 0 AND exchange <> 'O'::text  AND company !~~ '%iShares%'::text AND company !~~ '%Vanguard%'::text AND company !~~ 'SPDR'::text AND company !~~ '%PowerShares%'::text AND company !~~ '%Fund%'::text AND company !~~ '%Holding%'::text AND industry_desc !~~ '%Investment Service%'::text
-          -- AND mktcap > 200.0
-          -- and dateindex in (17347, 17317) 
-          and dateindex = ", dateindex, "  -- EVERYTHING HERE 2.7 SECONDS
+          from fe_data_store.si_finecon2 where 
+          -- mktcap > 200.0 and
+          -- dateindex in (17347, 17317) and
+          dateindex = ", dateindex, "  -- EVERYTHING HERE 2.7 SECONDS
           ) sq1
         group by cube(dateindex_fct, is_sp_fct, is_sp500_fct, sector_desc_fct, is_materials_fct, industry_desc_fct, is_gld_fct)
       ) sq2 where sq2.dateindex_fct not in ('emptydateindex','alldateindex')  -- (NO COST DIFFERENCE): SPEED INCREASE by LESS DATA MANIP/RETURNED
