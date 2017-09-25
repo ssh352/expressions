@@ -4841,30 +4841,33 @@ pgListTableColumns2 <- function(con, schema_name = NULL, table_name = NULL, colu
 
                                                                                                 # NO CHECK: I must verify
                                                                                                 # that (1) exists AND (2) lwd
-upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_only_back = NULL, exact_lwd_dbf_dirs = NULL) {
+upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_only_back = NULL, exact_near_month_end_dbf_dirs = NULL) {
 
   ops <- options()
   options(warn=1) # If 'warn' is one, warnings are printed as they occur. ( Because I can not print colors )
   
-  if(is.null(exact_lwd_dbf_dirs)){
+  if(is.null(exact_near_month_end_dbf_dirs)){
     as.integer(dir(from_dir))         ->     all_dbf_dirs
-    is_lwd_of_month(all_dbf_dirs)     -> lwd_all_dbf_dirs_tf 
-    all_dbf_dirs[lwd_all_dbf_dirs_tf] ->     lwd_dbf_dirs
+    ## They are not all 'near month end'
+    # is_lwd_of_month(all_dbf_dirs)     -> lwd_all_dbf_dirs_tf 
+    #
+    # all_dbf_dirs[lwd_all_dbf_dirs_tf] ->     lwd_dbf_dirs
+    all_dbf_dirs                        ->     near_month_end_dbf_dirs
   } else {
-                      exact_lwd_dbf_dirs -> lwd_dbf_dirs
+                      exact_near_month_end_dbf_dirs -> near_month_end_dbf_dirs
   }
   
   # latest to earliest 
   # NOTE: any *new* month, I have to iterate back (months_only_back = 13) 13 months to calculate any *new* future returns
   # 
   # index of lwd months
-  seq_along(lwd_dbf_dirs) -> lwd_months_idx
+  seq_along(near_month_end_dbf_dirs) -> near_month_end_dbf_dirs_idx
   if(is.null(months_only_back)) { 
     # everything
-    sort(lwd_dbf_dirs, decreasing = TRUE)[lwd_months_idx]  -> lwd_dbf_dirs_ordered
+    sort(near_month_end_dbf_dirs, decreasing = TRUE)[near_month_end_dbf_dirs_idx]  -> near_month_end_dbf_dirs_ordered
   } else {
     # just the *new* month and the previous 12 months redone (months_only_back = 13)
-    sort(lwd_dbf_dirs, decreasing = TRUE)[head(lwd_months_idx,months_only_back)]  -> lwd_dbf_dirs_ordered
+    sort(near_month_end_dbf_dirs, decreasing = TRUE)[head(near_month_end_dbf_dirs_idx,months_only_back)]  -> near_month_end_dbf_dirs_ordered
   }
   
   # load_us_bond_instruments
@@ -4873,7 +4876,7 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
   ## # load_inbnd_stmtstats
   ## # for_inbnd_stmtstats_is_null_months_only_back_check_NOT_done <- TRUE
   
-  for(dir_i in lwd_dbf_dirs_ordered) {
+  for(dir_i in near_month_end_dbf_dirs_ordered) {
     
     warning(paste0("Beginning disk dbf dir: ",dir_i))
     
@@ -4967,7 +4970,7 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
     # support_dateindex_collection is the 
     # minimum of 11 months: current + ( 6 month Quarter period reporter with 4 month Q-10 report filing delay ) 
     #                           # current or earlier                               # current or up to 10 earlier
-    load_inbnd_stmtstats(dir_i, lwd_dbf_dirs_ordered[dir_i>= lwd_dbf_dirs_ordered][seq_len(min(sum(dir_i >= lwd_dbf_dirs_ordered),11))], char_col_numeric_limit = 99999999999999.99) -> si_all_g_df
+    load_inbnd_stmtstats(dir_i, near_month_end_dbf_dirs_ordered[dir_i>= near_month_end_dbf_dirs_ordered][seq_len(min(sum(dir_i >= near_month_end_dbf_dirs_ordered),11))], char_col_numeric_limit = 99999999999999.99) -> si_all_g_df
     upsert(si_all_g_df, keys = c("company_id"))
     # 
     # uses now_inbnd_stmtstat last_inbnd_stmtstat
@@ -5008,10 +5011,10 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
 
 # upload_lwd_sipro_dbfs_to_db() # HARD NOTE: THIS DOES EVERYTHING 7+ YEARS
 # upload_lwd_sipro_dbfs_to_db(months_only_back = 13)
-# upload_lwd_sipro_dbfs_to_db(exact_lwd_dbf_dirs = 16678) 
+# upload_lwd_sipro_dbfs_to_db(exact_near_month_end_dbf_dirs = 16678) 
 
 # untried BUT truncate table is BETTER for company_id/ticker SYSTEM change PROBLEMS
-# upload_lwd_sipro_dbfs_to_db(exact_lwd_dbf_dirs = sort(all_load_days_lwd[all_load_days_lwd <= (15155 + 400)], decreasing = TRUE))
+# upload_lwd_sipro_dbfs_to_db(exact_near_month_end_dbf_dirs = sort(all_load_days_lwd[all_load_days_lwd <= (15155 + 400)], decreasing = TRUE))
 
 
 
