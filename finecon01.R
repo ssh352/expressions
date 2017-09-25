@@ -3974,15 +3974,50 @@ load_division_aggregated_per_dateindex <- function(dateindex = NULL) {
         <%= {if(SP_OPS_WHAT_I != '') { ',     case when sp in ' %S+% SP_OPS_WHAT_I %S+% ' then ' %S+%  SQuote(SP_OPS_WHAT_SHORT_I)  %S+% '::text else ' %S+% SQuote('not' %S+% SP_OPS_WHAT_SHORT_I)  %S+% '::text end sp_desc_fct'  }} %>
         <%= {if(DIVISION_I != '') { ', ' %S+% SQuote(DIVISION_I) %S+% '::text collection_name02_fct' }} %>
         <%= {if(DIVISION_I != '') { ',     ' %S+% DIVISION_I %S+% ' ' %S+% DIVISION_I %S+% '_fct' }} %>
-        , sum(now_inbnd_stmtstat_sales_q1)  / nullif(sum(now_inbnd_stmtstat_mktcap), 0)   * 100.00  rat_now_inbnd_stmtstat_sales_q1_o_mktcap_x_100
-        , sum(now_inbnd_stmtstat_netinc_q1) / nullif(sum(now_inbnd_stmtstat_mktcap), 0)  * 1000.00  rat_now_inbnd_stmtstat_netinc_q1_o_mktcap_x_1000
-        , sum(now_inbnd_stmtstat_netinc_q1) / nullif(sum(now_inbnd_stmtstat_sales_q1), 0) * 100.00  rat_now_inbnd_stmtstat_netinc_q1_o_sales_q1_x_100
-        , count(now_inbnd_stmtid_dateindex)::numeric                                                                     count_now_inbnd_stmtstat_dateindex
-        , count(now_inbnd_stmtid_dateindex)::numeric / nullif(count(last_inbnd_stmtid_dateindex)::numeric,0) * 100.0 rat_count_now_inbnd_stmtstat_dateindex_o_last_x_100
-        , sum(mktcap) sum_mktcap
-        , avg(pct_freeprice_ret_01m_ann * mktcap / nullif(sum<%= {if(SP_OPS_WHAT_I != ''){'_' %S+% SP_OPS_WHAT_SHORT_I}} %><%= {if(DIVISION_I != ''){'_' %S+% DIVISION_I}} %>_mktcap,0) )  avg_mktcap_wdt_pct_freeprice_ret_01m_ann  -- FROM *** load_division_aggregated_now_last_mktcap_per_company_id *** FROM
-        , sum(now_inbnd_stmtstat_mktcap)                                                   sum_now_inbnd_stmtstat_mktcap
+        , sum(now_inbnd_stmtstat_ncc_q1)    / nullif(sum(now_inbnd_stmtstat_mktcap), 0)    * 100.00  rat_now_inbnd_stmtstat_ncc_q1_o_mktcap_x_100
+        , sum(now_inbnd_stmtstat_sales_q1)  / nullif(sum(now_inbnd_stmtstat_mktcap), 0)    * 100.00  rat_now_inbnd_stmtstat_sales_q1_o_mktcap_x_100
+        , sum(now_inbnd_stmtstat_netinc_q1) / nullif(sum(now_inbnd_stmtstat_mktcap), 0)   * 1000.00  rat_now_inbnd_stmtstat_netinc_q1_o_mktcap_x_1000
+        , sum(now_inbnd_stmtstat_netinc_q1) / nullif(sum(now_inbnd_stmtstat_sales_q1), 0)  * 100.00  rat_now_inbnd_stmtstat_netinc_q1_o_sales_q1_x_100
+        , sum(now_inbnd_stmtstat_ncc_q1)    / nullif(sum(now_inbnd_stmtstat_assets_q1), 0)    * 100.00  rat_now_inbnd_stmtstat_ncc_q1_o_assets_q1_x_10
+        , sum(now_inbnd_stmtstat_sales_q1)  / nullif(sum(now_inbnd_stmtstat_assets_q1), 0)    * 100.00  rat_now_inbnd_stmtstat_sales_q1_o_assets_q1_x_10
+        , sum(now_inbnd_stmtstat_netinc_q1) / nullif(sum(now_inbnd_stmtstat_assets_q1), 0)   * 1000.00  rat_now_inbnd_stmtstat_netinc_q1_o_assets_q1_x_100
+        , sum(now_inbnd_stmtstat_ncc_q1)    / nullif(sum(now_inbnd_stmtstat_sales_q1), 0)     * 100.00  rat_now_inbnd_stmtstat_ncc_q1_o_sales_q1_x_100
+        , sum(last_inbnd_stmtstat_ncc_q1)    / nullif(sum(last_inbnd_stmtstat_mktcap), 0)    * 100.00  rat_last_inbnd_stmtstat_ncc_q1_o_mktcap_x_100
+        , sum(last_inbnd_stmtstat_sales_q1)  / nullif(sum(last_inbnd_stmtstat_mktcap), 0)    * 100.00  rat_last_inbnd_stmtstat_sales_q1_o_mktcap_x_100
+        , sum(last_inbnd_stmtstat_netinc_q1) / nullif(sum(last_inbnd_stmtstat_mktcap), 0)   * 1000.00  rat_last_inbnd_stmtstat_netinc_q1_o_mktcap_x_1000
+        , sum(last_inbnd_stmtstat_netinc_q1) / nullif(sum(last_inbnd_stmtstat_sales_q1), 0)  * 100.00  rat_last_inbnd_stmtstat_netinc_q1_o_sales_q1_x_100
+        , sum(last_inbnd_stmtstat_ncc_q1)    / nullif(sum(last_inbnd_stmtstat_assets_q1), 0)    * 100.00  rat_last_inbnd_stmtstat_ncc_q1_o_assets_q1_x_10
+        , sum(last_inbnd_stmtstat_sales_q1)  / nullif(sum(last_inbnd_stmtstat_assets_q1), 0)    * 100.00  rat_last_inbnd_stmtstat_sales_q1_o_assets_q1_x_10
+        , sum(last_inbnd_stmtstat_netinc_q1) / nullif(sum(last_inbnd_stmtstat_assets_q1), 0)   * 1000.00  rat_last_inbnd_stmtstat_netinc_q1_o_assets_q1_x_100
+        , sum(last_inbnd_stmtstat_ncc_q1)    / nullif(sum(last_inbnd_stmtstat_sales_q1), 0)     * 100.00  rat_last_inbnd_stmtstat_ncc_q1_o_sales_q1_x_100
+        , count(now_inbnd_stmtid_dateindex)::numeric                                                                           count_now_inbnd_stmtstat_dateindex
+        , count(now_inbnd_stmtid_dateindex)::numeric    / nullif(count(last_inbnd_stmtid_dateindex)::numeric,0)    * 100.0 rat_count_now_inbnd_stmtstat_dateindex_o_last_x_100
+        , count(now_inbnd_stmtid_dateindexlbd)::numeric                                                                        count_now_inbnd_stmtstat_dateindexlbd
+        , count(now_inbnd_stmtid_dateindexlbd)::numeric / nullif(count(last_inbnd_stmtid_dateindexlbd)::numeric,0) * 100.0 rat_count_now_inbnd_stmtstat_dateindexlbd_o_last_x_100
+        , sum(sales_q1)  sum_sales_q1
+        , sum(netinc_q1) sum_netinc_q1
+        , sum(ncc_q1)    sum_ncc_q1
+        , sum(assets_q1) sum_assets_q1
+        , sum(mktcap)    sum_mktcap
+        , sum(now_inbnd_stmtstat_sales_q1)  sum_now_inbnd_stmtstat_sales_q1
+        , sum(now_inbnd_stmtstat_netinc_q1) sum_now_inbnd_stmtstat_netinc_q1
+        , sum(now_inbnd_stmtstat_ncc_q1)    sum_now_inbnd_stmtstat_ncc_q1
+        , sum(now_inbnd_stmtstat_assets_q1) sum_now_inbnd_stmtstat_assets_q1
+        , sum(now_inbnd_stmtstat_mktcap)    sum_now_inbnd_stmtstat_mktcap
         , sum(now_inbnd_stmtstat_mktcap) / nullif(sum(last_inbnd_stmtstat_mktcap), 0)  rat_sum_now_inbnd_stmtstat_mktcap_o_last_x_100
+        , sum(last_inbnd_stmtstat_sales_q1)  sum_last_inbnd_stmtstat_sales_q1
+        , sum(last_inbnd_stmtstat_netinc_q1) sum_last_inbnd_stmtstat_netinc_q1
+        , sum(last_inbnd_stmtstat_ncc_q1)    sum_last_inbnd_stmtstat_ncc_q1
+        , sum(last_inbnd_stmtstat_assets_q1) sum_last_inbnd_stmtstat_assets_q1
+        , sum(last_inbnd_stmtstat_mktcap)    sum_last_inbnd_stmtstat_mktcap
+        , avg(now_inbnd_stmtstat_price)      avg_now_inbnd_stmtstat_price
+        , avg(last_inbnd_stmtstat_price)     avg_last_inbnd_stmtstat_price
+        , avg(last_inbnd_stmtstat_price * mktcap    / nullif(sum<%= {if(SP_OPS_WHAT_I != ''){'_' %S+% SP_OPS_WHAT_SHORT_I}} %><%= {if(DIVISION_I != ''){'_' %S+% DIVISION_I}} %>_last_inbnd_stmtstat_mktcap,0) )    avg_mktcap_wdt_last_inbnd_stmtstat_price
+        , avg( now_inbnd_stmtstat_price * mktcap    / nullif(sum<%= {if(SP_OPS_WHAT_I != ''){'_' %S+% SP_OPS_WHAT_SHORT_I}} %><%= {if(DIVISION_I != ''){'_' %S+% DIVISION_I}} %>_now_inbnd_stmtstat_mktcap, 0) )    avg_mktcap_wdt_now_inbnd_stmtstat_price
+        , avg(last_inbnd_stmtstat_price * assets_q1 / nullif(sum<%= {if(SP_OPS_WHAT_I != ''){'_' %S+% SP_OPS_WHAT_SHORT_I}} %><%= {if(DIVISION_I != ''){'_' %S+% DIVISION_I}} %>_last_inbnd_stmtstat_assets_q1,0) ) avg_assets_q1_wdt_last_inbnd_stmtstat_price
+        , avg( now_inbnd_stmtstat_price * assets_q1 / nullif(sum<%= {if(SP_OPS_WHAT_I != ''){'_' %S+% SP_OPS_WHAT_SHORT_I}} %><%= {if(DIVISION_I != ''){'_' %S+% DIVISION_I}} %>_now_inbnd_stmtstat_assets_q1, 0) ) avg_assets_q1_wdt_now_inbnd_stmtstat_price
+        , avg(pct_freeprice_ret_01m_ann * mktcap    / nullif(sum<%= {if(SP_OPS_WHAT_I != ''){'_' %S+% SP_OPS_WHAT_SHORT_I}} %><%= {if(DIVISION_I != ''){'_' %S+% DIVISION_I}} %>_mktcap,0) )                        avg_mktcap_wdt_pct_freeprice_ret_01m_ann  -- FROM *** load_division_aggregated_now_last_mktcap_per_company_id *** FROM
+        , avg(pct_freeprice_ret_01m_ann * assets_q1 / nullif(sum<%= {if(SP_OPS_WHAT_I != ''){'_' %S+% SP_OPS_WHAT_SHORT_I}} %><%= {if(DIVISION_I != ''){'_' %S+% DIVISION_I}} %>_assets_q1,0) )                     avg_assets_q1_wdt_pct_freeprice_ret_01m_ann 
       from si_finecon2 where dateindex = <%= DATEINDEX %> and
         <%= {if(SP_OPS_WHAT_I != '') { 'sp in ' %S+% SP_OPS_WHAT_I %S+% ' and ' }} %>
         <%= {if(!is.null(DIVISION_ITEMS_I)) { DIVISION_I %S+% ' in (' %S+% stringi::stri_c(sapply(DIVISION_ITEMS_I, SQuote), collapse = ', ')  %S+% ')     ' }} %>
@@ -3992,7 +4027,7 @@ load_division_aggregated_per_dateindex <- function(dateindex = NULL) {
                                DIVISION_I    = combo_i[["DIVISION"]]
                              , SP_OPS_WHAT_I = combo_i[["SP_OPS_WHAT"]]
                              , SP_OPS_WHAT_SHORT_I = SP_OPS_WHAT_SHORT_I
-                             , DIVISION_ITEMS_I    =  DIVISION_ITEMS[[as.list(combo_i)[["DIVISION"]]]] #  "Gold & Silver" "Furniture & Fixtures"
+                             , DIVISION_ITEMS_I    = DIVISION_ITEMS[[as.list(combo_i)[["DIVISION"]]]] #  "Gold & Silver" "Furniture & Fixtures"
                              , DATEINDEX           = DATEINDEX))
     ) -> add_columns_sql
     
