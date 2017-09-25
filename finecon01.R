@@ -4926,6 +4926,12 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
     verify_company_details(dateindex = c(dir_i),  table_f = "si_isq", cnames_e = "^netinc_q.$") -> si_all_g_df
     upsert(si_all_g_df, keys = c("company_id"))
     
+    verify_company_details(dateindex = c(dir_i),  table_f = "si_cfq", cnames_e = "^ncc_q.$") -> si_all_g_df
+    upsert(si_all_g_df, keys = c("company_id"))
+    
+    verify_company_details(dateindex = c(dir_i),  table_f = "si_bsq", cnames_e = "^assets_q.$") -> si_all_g_df
+    upsert(si_all_g_df, keys = c("company_id"))
+    
     # # debug(load_inbnd_stmtstats)
     # load_inbnd_stmtstats(
     #     dateindex = 17347 # e.g. last loaded pay period
