@@ -3762,8 +3762,9 @@ load_inbnd_stmtstats <- function (dateindex = NULL, support_dateindex_collection
 #   , char_col_numeric_limit = 999999.99    # for right NOW pure AAII data ( unratio-ed )
 # )  -> si_all_g_df
 
-# LEFT_OFF LEFT_OFF
+# 
 
+# REASON: SO I CAN DO 'WEIGHTED' MEASURES
 # uses now_inbnd_stmtstat last_inbnd_stmtstat
 # since MANY SQLs upsertS are done inside
 load_division_aggregated_now_last_mktcap_per_company_id <- function(dateindex = NULL) {
@@ -3811,7 +3812,7 @@ load_division_aggregated_now_last_mktcap_per_company_id <- function(dateindex = 
 
     }
     
-    # [ ] TO DO MAKE THAT REPEATED STUFF INTO A FUNCTION
+    # [ ] TODO - MAKE THAT REPEATED STUFF INTO A FUNCTION
     local({R.rsp::rstring("
       select 
           sr.company_id  -- REQUIRED SO I ONLY UPSERT specific OPS/DIVISION member COMPANIES
@@ -3827,6 +3828,11 @@ load_division_aggregated_now_last_mktcap_per_company_id <- function(dateindex = 
           , count(last_inbnd_stmtstat_mktcap) count<%= {if(SP_OPS_WHAT_I != '') { '_' %S+% SP_OPS_WHAT_SHORT_I }}  %S+% {if(DIVISION_I != '') { '_' %S+% DIVISION_I }}  %>_last_now_inbnd_stmtstat_mktcap
           , sum(last_inbnd_stmtstat_mktcap)     sum<%= {if(SP_OPS_WHAT_I != '') { '_' %S+% SP_OPS_WHAT_SHORT_I }}  %S+% {if(DIVISION_I != '') { '_' %S+% DIVISION_I }}  %>_last_now_inbnd_stmtstat_mktcap
           , sum(mktcap)                         sum<%= {if(SP_OPS_WHAT_I != '') { '_' %S+% SP_OPS_WHAT_SHORT_I }}  %S+% {if(DIVISION_I != '') { '_' %S+% DIVISION_I }}  %>_mktcap
+          , count(now_inbnd_stmtstat_assets_q1)  count<%= {if(SP_OPS_WHAT_I != '') { '_' %S+% SP_OPS_WHAT_SHORT_I }}  %S+% {if(DIVISION_I != '') { '_' %S+% DIVISION_I }}  %>_now_inbnd_stmtstat_assets_q1
+          , sum(now_inbnd_stmtstat_assets_q1)      sum<%= {if(SP_OPS_WHAT_I != '') { '_' %S+% SP_OPS_WHAT_SHORT_I }}  %S+% {if(DIVISION_I != '') { '_' %S+% DIVISION_I }}  %>_now_inbnd_stmtstat_assets_q1
+          , count(last_inbnd_stmtstat_assets_q1) count<%= {if(SP_OPS_WHAT_I != '') { '_' %S+% SP_OPS_WHAT_SHORT_I }}  %S+% {if(DIVISION_I != '') { '_' %S+% DIVISION_I }}  %>_last_now_inbnd_stmtstat_assets_q1
+          , sum(last_inbnd_stmtstat_assets_q1)     sum<%= {if(SP_OPS_WHAT_I != '') { '_' %S+% SP_OPS_WHAT_SHORT_I }}  %S+% {if(DIVISION_I != '') { '_' %S+% DIVISION_I }}  %>_last_now_inbnd_stmtstat_assets_q1
+          , sum(assets_q1)                         sum<%= {if(SP_OPS_WHAT_I != '') { '_' %S+% SP_OPS_WHAT_SHORT_I }}  %S+% {if(DIVISION_I != '') { '_' %S+% DIVISION_I }}  %>_assets_q1
         from si_finecon2 where dateindex = <%=DATEINDEX%> and 
                               <%= {if(SP_OPS_WHAT_I != '') { ' sp in ' %S+% SP_OPS_WHAT_I %S+% '     ' }} %> 
         group by dateindex <%= {if(DIVISION_I != '') { ', ' %S+% DIVISION_I }} %> ) sq1 
