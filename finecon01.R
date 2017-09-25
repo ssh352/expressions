@@ -3764,7 +3764,7 @@ load_inbnd_stmtstats <- function (dateindex = NULL, support_dateindex_collection
 
 # 
 
-# REASON: SO I CAN DO 'WEIGHTED' MEASURES
+# REASON: SO I CAN DO 'WEIGHTED' MEASURES (SEEMS NOT WORTH THE EFFORT)
 # uses now_inbnd_stmtstat last_inbnd_stmtstat
 # since MANY SQLs upsertS are done inside
 load_division_aggregated_now_last_mktcap_per_company_id <- function(dateindex = NULL) {
