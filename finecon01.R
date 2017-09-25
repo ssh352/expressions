@@ -3312,9 +3312,9 @@ verify_week_often_week_returns <- function(dateindex = NULL) {
     names(ptr_si_finecon2)     -> names(fc_meta)
     
     # requires 
-    #   dateindexf##lwd, price, prchg_##w, perend_q#, dps_q# 
+    #   dateindexf##eom, price, prchg_##w, perend_q#, dps_q# 
     # 
-    c("dateindexf01lwd","price","prchg_04w","perend_q1","dps_q1") -> sample_columns
+    c("dateindexf01eom","price","prchg_04w","perend_q1","dps_q1") -> sample_columns
     
     if(any(!sample_columns %in% names(fc_meta))) { 
       warning("Minumum columns are missing.") 
@@ -3364,7 +3364,7 @@ verify_week_often_week_returns <- function(dateindex = NULL) {
             fe_04w.price price_f04w
           from 
               si_finecon2 fe_04w
-    ) fe_04w_o on fe.dateindexf01lwd  = fe_04w_o.dateindex and fe.company_id = fe_04w_o.company_id                              
+    ) fe_04w_o on fe.dateindexf01eom  = fe_04w_o.dateindexeom and fe.company_id = fe_04w_o.company_id                              
     left join lateral ( 
         select 
           fe_13w.dateindex, fe_13w.company_id,
@@ -3375,7 +3375,7 @@ verify_week_often_week_returns <- function(dateindex = NULL) {
             fe_13w.price price_f13w
           from 
               si_finecon2 fe_13w
-    ) fe_13w_o on fe.dateindexf03lwd  = fe_13w_o.dateindex and fe.company_id = fe_13w_o.company_id 
+    ) fe_13w_o on fe.dateindexf03eom  = fe_13w_o.dateindexeom and fe.company_id = fe_13w_o.company_id 
     left join lateral ( 
         select 
           fe_26w.dateindex, fe_26w.company_id,
@@ -3388,7 +3388,7 @@ verify_week_often_week_returns <- function(dateindex = NULL) {
             fe_26w.price price_f26w
           from 
               si_finecon2 fe_26w
-    ) fe_26w_o on fe.dateindexf06lwd  = fe_26w_o.dateindex and fe.company_id = fe_26w_o.company_id 
+    ) fe_26w_o on fe.dateindexf06eom  = fe_26w_o.dateindexeom and fe.company_id = fe_26w_o.company_id 
     left join lateral ( 
         select 
           fe_52w.dateindex, fe_52w.company_id,
@@ -3405,7 +3405,7 @@ verify_week_often_week_returns <- function(dateindex = NULL) {
             fe_52w.price price_f52w
           from 
               si_finecon2 fe_52w
-    ) fe_52w_o on fe.dateindexf12lwd  = fe_52w_o.dateindex and fe.company_id = fe_52w_o.company_id 
+    ) fe_52w_o on fe.dateindexf12eom  = fe_52w_o.dateindexeom and fe.company_id = fe_52w_o.company_id 
     where fe.dateindex = " %s+% dateindex %s+% ";" -> add_columns_sql
 
     db.q(add_columns_sql, nrows = -1, conn.id = cid) -> si_all_df
