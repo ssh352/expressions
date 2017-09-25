@@ -384,6 +384,10 @@ verify_si_finecon_exists <- function () {
     
     # (if unamed ndex?) ... WILL JUST KEEP ADDING MORE ... so I name it
     try( { db.q("create unique index if not exists si_finecon2_dateindex_company_id_key       on si_finecon2(dateindex, company_id);", conn.id = cid) }, silent = TRUE )
+    
+    try( { db.q("create unique index if not exists si_finecon2_dateindexlbd_company_id_key       on si_finecon2(dateindexlbd, company_id);", conn.id = cid) }, silent = TRUE )
+    try( { db.q("create unique index if not exists si_finecon2_dateindexeom_company_id_key       on si_finecon2(dateindexeom, company_id);", conn.id = cid) }, silent = TRUE )
+
     # can be many
     try( { db.q("create unique index if not exists si_finecon2_dateindex_company_id_orig_key  on si_finecon2(dateindex, company_id_orig);", conn.id = cid) }, silent = TRUE )
     # can be many
