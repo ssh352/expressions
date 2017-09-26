@@ -1577,7 +1577,7 @@ upsert <-  function(value = NULL, keys = NULL) { # vector of primary key values
     # actually perform the update
     str_trim(str_c(rstring(str_c('<%= 
     paste0(
-    "update \\"', target_table_name, '\\" s " %s+% " set " %s+% 
+    "update \\"', "si_finecon2", '\\" s " %s+% " set " %s+% 
      str_c(str_c(str_c("\n ", col_names), str_c(" = t.", col_names)), collapse = ", ") %s+% " \n" %s+%
     "    from upsert_temp t " %s+% " \n" %s+%
     "      where " %s+% "s." %s+% conflict_column %s+% " = " %s+% "t." %s+% conflict_column  %s+% ";" 
