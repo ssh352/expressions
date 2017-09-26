@@ -998,7 +998,7 @@ verify_finecon_jamesos_partial_idx <- function() {
     
     db.q("create index if not exists si_finecon2_finecon_jamesos_partial_idx on
                   si_finecon2(dateindex,adr,exchange,mktcap,industry_desc,company) where
-                    adr = 0 and exchange != 'O' and mktcap > 200.0)
+                    adr = 0 and exchange != 'O' and mktcap > 200.0
               ;", conn.id = cid)
 
     # SAVE FOR LATER
