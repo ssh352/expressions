@@ -4965,8 +4965,11 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
   
   for(dir_i in near_month_end_dbf_dirs_ordered) {
     
-    warning(paste0("Beginning disk dbf dir: ",dir_i))
-    
+    warning(paste0("**** Beginning disk dbf dir: ",dir_i," ", dir_i," ******************"))
+    warning(paste0("**** Beginning disk dbf dir: ",dir_i," ", dir_i," ******************"))
+    warning(paste0("**** Beginning disk dbf dir: ",dir_i," ", dir_i," ******************"))
+    warning(paste0("**** Beginning disk dbf dir: ",dir_i," ", dir_i," ******************"))
+    warning(paste0("**** Beginning disk dbf dir: ",dir_i," ", dir_i," ******************"))
     
     verify_company_basics(dateindex = c(dir_i)) -> si_all_g_df
     update_from_future_new_company_ids(df = si_all_g_df, ref = dir_i) -> si_all_g_df
@@ -5076,6 +5079,13 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
     # load_division_aggregated_now_last_mktcap_per_company_id
     # since MANY SQLs upsertS are done inside
     load_division_aggregated_per_dateindex(dateindex = dir_i)
+    
+    warning(paste0("**** Ending disk dbf dir: ",dir_i," ", dir_i," ******************"))
+    warning(paste0("**** Ending disk dbf dir: ",dir_i," ", dir_i," ******************"))
+    warning(paste0("**** Ending disk dbf dir: ",dir_i," ", dir_i," ******************"))
+    warning(paste0("**** Ending disk dbf dir: ",dir_i," ", dir_i," ******************"))
+    warning(paste0("**** Ending disk dbf dir: ",dir_i," ", dir_i," ******************"))
+    warning(paste0("**** Ending disk dbf dir: ",dir_i," ", dir_i," ******************"))
     
   }
   
