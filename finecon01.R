@@ -6153,16 +6153,17 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
 #                                                                      "si_date"), "si_ci" , "si_ci" , "si_ci", "si_psd"              , "si_psd"             , "si_isq"             , "si_isq"             , "si_isq"            , "si_isq"            , "si_cfq"            , "si_cfq"            , "si_bsq"             , "si_bsq"             , "si_date"  , "si_date"   ) 
 #                                           , data.frame.out  = TRUE
 #                                         )
-
+# 
+# -- [X] ALREADY IN SIFINECON.01
 # -- BEGIN OUTLIER DETECTION --
 # 
-# -- KEEP
+# -- KEEP 
 #   drop type r_lof4c_type;
 # create type r_lof4c_type as (rn int, val int);
 # 
-# -- KEEP -- NON PARALLEL VERSION
-#              drop function fe_data_store.r_lof4c(in rn bigint[], in col1 anyarray, in col2 anyarray, in col3 anyarray, in col4 anyarray, in k int);
-# create or replace function fe_data_store.r_lof4c(in rn bigint[], in col1 anyarray, in col2 anyarray, in col3 anyarray, in col4 anyarray, in k int)
+# -- KEEP  -- NON PARALLEL VERSION
+#              drop function fe_data_store.r_lof4c(in rn bigint[], in col1 anyarray, in col2 anyarray, in col3 anyarray, in col4 anyarray, in k int, in retcount int);
+# create or replace function fe_data_store.r_lof4c(in rn bigint[], in col1 anyarray, in col2 anyarray, in col3 anyarray, in col4 anyarray, in k int, in retcount int)
 #   returns setof r_lof4c_type as
 # $body$
 # 
@@ -6231,32 +6232,85 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
 #   set.seed(1L)
 #   res <- Rlof__lof(data = data.frame(col1, col2, col3, col4), k = k)
 #   if(length(res) > 0L) {
-#     res <- order(res, decreasing = TRUE)[seq(1,min(20,length(res)),1)]
+#     res <- order(res, decreasing = TRUE)[seq(1,min(retcount,length(res)),1)]
 #   } else {
 #     res <- integer()
 #   }
-#   return(data.frame(rn[seq(1,min(20,length(res)),1)], res))
+#   return(data.frame(rn[seq(1,min(retcount,length(res)),1)], res))
 # $body$
 #   language plr;
 # 
 # 
+# -- [?] ADD netinc < sales ( BUT caught Duke Realty: netinc > sales : SEE BELOW)
+# -- [?] ADD MUST have all entries(mktcap, netinc, sales, ncc, assets) over range search e.g. if go back 6 months THAT company MUST pass all filters
+# -- -- --- not refound in this one: 'AB NAMARO' missng data AND one ENTRY wrong MKTCAP ( seems NOT in 500: is s european bank (ABN Amro))
+# -- [X] ALREADY IN SIFINECON.01
+# -- KEEP
+# -- all s&p500 members ranked (most outlier-ish)(#1) to (least outlier-ish(#~500)
+# select 
+#     sq.dateindex, sq.company_id
+#   -- -- required in join ( not necessary to view )
+#   -- -- orderer ( not necessary to view ) ( but very useful in portability )
+#   , sq_r3.rn  sq_r3_rn
+#   , sq_r3.val sq_r3_val 
+#   ---- redundant of above
+#   --, sq.rn sq_rn
+#   -- -- redundant payload ( not necessary at all ) 
+#   , sq.sp, sq.ticker, sq.company, sq.price, sq.mktcap, sq.netinc_q1, sq.sales_q1 
+# from 
+#   ( -- sq, sq.rn(1,2,3,...)
+#   select 
+#       row_number() over (partition by qu2.dateindex order by qu2.company_id) rn
+#     , qu2.dateindex, qu2.company_id
+#     -- -- redundant payload
+#     , qu2.sp, qu2.ticker, qu2.company, qu2.price, qu2.mktcap, qu2.netinc_q1, qu2.sales_q1
+#   from query01 qu2
+#   where qu2.sp = '500' and qu2.dateindex = 17409 order by qu2.company_id
+#   ) sq, 
+#   ( -- sq_r3 -- sq_r3.rn(1,2,3,...) sq_r3.val(137,316,43,...)
+#     select (sq_r2.out).* --sq_r2.rn(NEED TO CARRY), sq_r2.val 
+#     from
+#     ( -- sq_r2
+#       select r_lof4c(array_agg(sq_r.rn), array_agg(sq_r.price), array_agg(sq_r.mktcap), array_agg(sq_r.netinc_q1), array_agg(sq_r.sales_q1), k := 5, retcount := 20000) as out 
+#       from 
+#       ( -- sq_r
+#         select 
+#             row_number() over (partition by qu.dateindex order by qu.company_id) rn -- random
+#           ,                                           qu.price,              qu.mktcap,              qu.netinc_q1,              qu.sales_q1 
+#         from  query01 qu
+#         where qu.sp = '500' and qu.dateindex = 17409 order by qu.company_id 
+#       ) sq_r  
+#     ) sq_r2
+#   ) sq_r3
+# where sq.rn = sq_r3.val
+# order by sq_r3.rn
+# -- ... k:= 20000(max rows of rowcount is returned)
+# 
+# -- TECHNOLOGY:WORKS
+# -- LATERAL TO GET OUTLIER SP RECORDS IN THE DATABASE
+# -- KEEP
+# select                quo2.dateindex,      sro2.company_id ,sro2.query_rnk, sro2.sr_val
+# from ( select distinct quo.dateindex from query01 quo where quo.sp = '500' order by quo.dateindex ) quo2
+# join lateral 
+#   ( -- sro2
+#     -- COPY AND PASTE FROM ABOVE ( replace ".dateindex = 17409" using ".dateindex = quo2.dateindex"
+#     -- WORKS
+#   ) sro2 on true
+# --30 seconds -> 88,000 rows (GOOD)
 # 
 # -- KEEP
-# select row_number() over (), sq.rn sq_rn, sr.rn sr_rn, sr.val sr_val, sq.dateindex, sq.company_id, sq.sp, sq.ticker, sq.company, sq.price, sq.mktcap, sq.netinc_q1, sq.sales_q1  from 
-# (
-# select row_number() over () rn, dateindex, company_id, sp, ticker, company, price, mktcap, netinc_q1, sales_q1
-# from query01 
-#   where sp = '500' and dateindex = 17409 order by company_id
-# ) sq, 
-# (
-#   select (sq_r2.out).* from
-#   (
-#     select r_lof4c(array_agg(rn), array_agg(price), array_agg(mktcap), array_agg(netinc_q1), array_agg(sales_q1), k := 5) as out
-#     from ( select row_number() over () rn, price, mktcap, netinc_q1, sales_q1 from  query01 where sp = '500' and dateindex = 17409 order by company_id ) sq_r  
-#   ) sq_r2
-# ) sr
-# where sq.rn = sr.val
-# order by      sr.rn
+# -- all s&p500 members except these (20) ones ( and I do not care about tracking 'rank' )
+# select 
+#     qu3.dateindex, qu3.company_id
+#   , qu3.sp, qu3.ticker, qu3.company, qu3.price, qu3.mktcap, qu3.netinc_q1, qu3.sales_q1
+# from query01 qu3
+# where qu3.sp = '500' and qu3.dateindex = 17409 and ( qu3.dateindex, qu3.company_id ) not in 
+#   ( 
+#   -- k:= 20
+#   ) -- xyz: must not be an alias 'here'
+# order by qu3.dateindex, qu3.company_id
+# -- 480 rows
+# 
 # 
 # -- END OUTLIER DETECTION (THIS WORKS) --
 
