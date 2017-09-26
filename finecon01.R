@@ -620,6 +620,26 @@ yrmnth_of_month <- function(anyday = NULL, within_back = 5) {
 # [1] 201612 201612 201612
 
 
+# within the xTh month
+mnth_since_birth <- function(anyday = NULL, within_back = 5) {
+
+  # "1970-01-01" is 0L
+
+  # uses package zoo
+
+  logical() -> result
+  for(anyday_i in anyday) {
+                                                              # zoo must be loaded via namespace
+    (DescTools::Year(zoo::as.Date(anyday_i)) - 1970) * 12 + cycle(zoo::as.yearmon(zoo::as.Date(anyday_i))) -> month_day
+    as.integer(month_day) - 1L -> result_i
+    c(result, result_i) -> result
+  }
+  return(result)
+
+}
+# mnth_since_birth(c(17164, 17165, 17166))
+# [1] 563 563 563
+
 
 mnth_of_month <- function(anyday = NULL, within_back = 5) {  
 
