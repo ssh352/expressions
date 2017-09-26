@@ -4046,8 +4046,8 @@ load_division_aggregated_per_dateindex <- function(dateindex = NULL) {
         , avg(pct_freeprice_ret_01m_ann * mktcap    / nullif(sum<%= {if(SP_OPS_WHAT_I != ''){'_' %S+% SP_OPS_WHAT_SHORT_I}} %><%= {if(DIVISION_I != ''){'_' %S+% DIVISION_I}} %>_mktcap,0) )                        avg_mktcap_wdt_pct_freeprice_ret_01m_ann  -- FROM *** load_division_aggregated_now_last_mktcap_per_company_id *** FROM
         , avg(pct_freeprice_ret_01m_ann * assets_q1 / nullif(sum<%= {if(SP_OPS_WHAT_I != ''){'_' %S+% SP_OPS_WHAT_SHORT_I}} %><%= {if(DIVISION_I != ''){'_' %S+% DIVISION_I}} %>_assets_q1,0) )                     avg_assets_q1_wdt_pct_freeprice_ret_01m_ann 
       from si_finecon2 where dateindex = <%= DATEINDEX %> and
-        <%= {if(SP_OPS_WHAT_I != '') { 'sp in ' %S+% SP_OPS_WHAT_I %S+% ' and ' }} %>
-        <%= {if(!is.null(DIVISION_ITEMS_I)) { DIVISION_I %S+% ' in (' %S+% stringi::stri_c(sapply(DIVISION_ITEMS_I, SQuote), collapse = ', ')  %S+% ')     ' }} %>
+        <%= {if(SP_OPS_WHAT_I != '') { 'sp in ' %S+% SP_OPS_WHAT_I }} %>
+        <%= {if(!is.null(DIVISION_ITEMS_I)) { ' and ' %S+% DIVISION_I %S+% ' in (' %S+% stringi::stri_c(sapply(DIVISION_ITEMS_I, SQuote), collapse = ', ')  %S+% ')     ' }} %>
       group by dateindex, dateindexlbd, dateindexeom<%= {if(SP_OPS_WHAT_I != '') { ', sp_desc_fct' }} %><%= {if(DIVISION_I != '') { ', ' %S+% DIVISION_I %S+% '_fct' }} %> 
       order by dateindex, dateindexlbd, dateindexeom<%= {if(SP_OPS_WHAT_I != '') { ', sp_desc_fct' }} %><%= {if(DIVISION_I != '') { ', ' %S+% DIVISION_I %S+% '_fct' }} %> 
     ")}, envir = list2env(list(
