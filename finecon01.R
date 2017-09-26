@@ -4944,12 +4944,20 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
     # next from the beginning, go forward up and through 15184
     #   this updates the now/last 
   
-  # NOTE: to build a *new* month ( if done "NOTE: to build from scratch )
+  # NOTE: last(current): to build a *new* month ( if done "NOTE: to build from scratch )
   #    (to build a new month), at the current date, go backwards 13 months ( and fill in the weekly percent changes)
   
   # to do ALL OF THAT ABOVE SUPER REBUILD FROM SCRATCH in one long VERY VERY LONG session
   # need a sequence
   # last to first + ( first and back 13 ) + ( 15814 through first ) + ( first thorugh 15184 )
+  
+  # best last(current) tester
+  # last and go back 3 + back 3 to last(current) see 4w,13w prices, see now/last
+  # best 15184 tester
+  # 15184 and back 3 + then go back up to 1584 see 4w,13w,26w,52w prices, see now/last
+  # best 12055 tester
+  # 12055 and go forward 3 + then go back 3
+  
   
   ops <- options()
   options(warn=1) # If 'warn' is one, warnings are printed as they occur. ( Because I can not print colors )
@@ -4991,6 +4999,7 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
     warning(paste0("**** Beginning disk dbf dir: ",dir_i," ", dir_i," ******************"))
     warning(paste0("**** Beginning disk dbf dir: ",dir_i," ", dir_i," ******************"))
     warning(paste0("**** Beginning disk dbf dir: ",dir_i," ", dir_i," ******************"))
+    Sys.sleep(5)
     
     verify_company_basics(dateindex = c(dir_i)) -> si_all_g_df
     update_from_future_new_company_ids(df = si_all_g_df, ref = dir_i) -> si_all_g_df
@@ -5107,6 +5116,7 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
     warning(paste0("**** Ending disk dbf dir: ",dir_i," ", dir_i," ******************"))
     warning(paste0("**** Ending disk dbf dir: ",dir_i," ", dir_i," ******************"))
     warning(paste0("**** Ending disk dbf dir: ",dir_i," ", dir_i," ******************"))
+    Sys.sleep(5)
     
   }
   
