@@ -4930,6 +4930,27 @@ pgListTableColumns2 <- function(con, schema_name = NULL, table_name = NULL, colu
                                                                                                 # that (1) exists AND (2) lwd
 upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_only_back = NULL, exact_near_month_end_dbf_dirs = NULL) {
 
+  # NOTE: to build from scratch
+  # start from the earliest date (not default) and go thorugh the current date
+  #   this fills in the lwd,lbd,eom dates needed for joins 
+  # next(to build a new month), at the current date, go backwards 13 months 
+  #   this fills in the weekly percent changes
+  
+    # next:NOTE: to update: update_from_future_new_company_ids
+    # start at 15184 and go backwards to the beginning
+    #   this updates the company_ids
+    #   this fills in the weekly percent changes
+    #   this updates the now/last 
+    # next from the beginning, go forward up and through 15184
+    #   this updates the now/last 
+  
+  # NOTE: to build a *new* month ( if done "NOTE: to build from scratch )
+  #    (to build a new month), at the current date, go backwards 13 months ( and fill in the weekly percent changes)
+  
+  # to do ALL OF THAT ABOVE SUPER REBUILD FROM SCRATCH in one long VERY VERY LONG session
+  # need a sequence
+  # last to first + ( first and back 13 ) + ( 15814 through first ) + ( first thorugh 15184 )
+  
   ops <- options()
   options(warn=1) # If 'warn' is one, warnings are printed as they occur. ( Because I can not print colors )
   
