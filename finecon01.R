@@ -5390,6 +5390,7 @@ load_instruments <- function(dfobj = NULL, no_update_earliest_year = NULL) {
          dateindex integer,
          dateindexyear integer,
          dateindexyearmonth integer,
+         dateindexmonthsincebirth integer,
          dateindexmonth integer,
          dateindexlbd integer,
          dateindexlwd integer,
