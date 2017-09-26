@@ -2297,6 +2297,9 @@ verify_company_basics <- function (dateindex = NULL) {
           within( si_si_tbl_df, { assign("dateindexmonth", rep(     mnth_of_month(dateindex_redux_i),NROW(si_si_tbl_df[,1])) )  } ) -> si_si_tbl_df
           DataCombine::MoveFront(si_si_tbl_df,   "dateindexmonth") -> si_si_tbl_df
 
+          within( si_si_tbl_df, { assign("dateindexmonthsincebirth", rep(     mnth_since_birth(dateindex_redux_i),NROW(si_si_tbl_df[,1])) )  } ) -> si_si_tbl_df
+          DataCombine::MoveFront(si_si_tbl_df,   "dateindexmonthsincebirth") -> si_si_tbl_df
+          
           within( si_si_tbl_df, { assign("dateindexyearmonth", rep(     yrmnth_of_month(dateindex_redux_i),NROW(si_si_tbl_df[,1])) )  } ) -> si_si_tbl_df
           DataCombine::MoveFront(si_si_tbl_df,   "dateindexyearmonth") -> si_si_tbl_df
 
@@ -3849,13 +3852,13 @@ load_division_aggregated_now_last_mktcap_per_company_id <- function(dateindex = 
           , count(1)                          count<%= {if(SP_OPS_WHAT_I != '') { '_' %S+% SP_OPS_WHAT_SHORT_I }}  %S+% {if(DIVISION_I != '') { '_' %S+% DIVISION_I }}  %>
           , count(now_inbnd_stmtstat_mktcap)  count<%= {if(SP_OPS_WHAT_I != '') { '_' %S+% SP_OPS_WHAT_SHORT_I }}  %S+% {if(DIVISION_I != '') { '_' %S+% DIVISION_I }}  %>_now_inbnd_stmtstat_mktcap
           , sum(now_inbnd_stmtstat_mktcap)      sum<%= {if(SP_OPS_WHAT_I != '') { '_' %S+% SP_OPS_WHAT_SHORT_I }}  %S+% {if(DIVISION_I != '') { '_' %S+% DIVISION_I }}  %>_now_inbnd_stmtstat_mktcap
-          , count(last_inbnd_stmtstat_mktcap) count<%= {if(SP_OPS_WHAT_I != '') { '_' %S+% SP_OPS_WHAT_SHORT_I }}  %S+% {if(DIVISION_I != '') { '_' %S+% DIVISION_I }}  %>_last_now_inbnd_stmtstat_mktcap
-          , sum(last_inbnd_stmtstat_mktcap)     sum<%= {if(SP_OPS_WHAT_I != '') { '_' %S+% SP_OPS_WHAT_SHORT_I }}  %S+% {if(DIVISION_I != '') { '_' %S+% DIVISION_I }}  %>_last_now_inbnd_stmtstat_mktcap
+          , count(last_inbnd_stmtstat_mktcap) count<%= {if(SP_OPS_WHAT_I != '') { '_' %S+% SP_OPS_WHAT_SHORT_I }}  %S+% {if(DIVISION_I != '') { '_' %S+% DIVISION_I }}  %>_last_inbnd_stmtstat_mktcap
+          , sum(last_inbnd_stmtstat_mktcap)     sum<%= {if(SP_OPS_WHAT_I != '') { '_' %S+% SP_OPS_WHAT_SHORT_I }}  %S+% {if(DIVISION_I != '') { '_' %S+% DIVISION_I }}  %>_last_inbnd_stmtstat_mktcap
           , sum(mktcap)                         sum<%= {if(SP_OPS_WHAT_I != '') { '_' %S+% SP_OPS_WHAT_SHORT_I }}  %S+% {if(DIVISION_I != '') { '_' %S+% DIVISION_I }}  %>_mktcap
           , count(now_inbnd_stmtstat_assets_q1)  count<%= {if(SP_OPS_WHAT_I != '') { '_' %S+% SP_OPS_WHAT_SHORT_I }}  %S+% {if(DIVISION_I != '') { '_' %S+% DIVISION_I }}  %>_now_inbnd_stmtstat_assets_q1
           , sum(now_inbnd_stmtstat_assets_q1)      sum<%= {if(SP_OPS_WHAT_I != '') { '_' %S+% SP_OPS_WHAT_SHORT_I }}  %S+% {if(DIVISION_I != '') { '_' %S+% DIVISION_I }}  %>_now_inbnd_stmtstat_assets_q1
-          , count(last_inbnd_stmtstat_assets_q1) count<%= {if(SP_OPS_WHAT_I != '') { '_' %S+% SP_OPS_WHAT_SHORT_I }}  %S+% {if(DIVISION_I != '') { '_' %S+% DIVISION_I }}  %>_last_now_inbnd_stmtstat_assets_q1
-          , sum(last_inbnd_stmtstat_assets_q1)     sum<%= {if(SP_OPS_WHAT_I != '') { '_' %S+% SP_OPS_WHAT_SHORT_I }}  %S+% {if(DIVISION_I != '') { '_' %S+% DIVISION_I }}  %>_last_now_inbnd_stmtstat_assets_q1
+          , count(last_inbnd_stmtstat_assets_q1) count<%= {if(SP_OPS_WHAT_I != '') { '_' %S+% SP_OPS_WHAT_SHORT_I }}  %S+% {if(DIVISION_I != '') { '_' %S+% DIVISION_I }}  %>_last_inbnd_stmtstat_assets_q1
+          , sum(last_inbnd_stmtstat_assets_q1)     sum<%= {if(SP_OPS_WHAT_I != '') { '_' %S+% SP_OPS_WHAT_SHORT_I }}  %S+% {if(DIVISION_I != '') { '_' %S+% DIVISION_I }}  %>_last_inbnd_stmtstat_assets_q1
           , sum(assets_q1)                         sum<%= {if(SP_OPS_WHAT_I != '') { '_' %S+% SP_OPS_WHAT_SHORT_I }}  %S+% {if(DIVISION_I != '') { '_' %S+% DIVISION_I }}  %>_assets_q1
         from si_finecon2 where dateindex = <%=DATEINDEX%> and 
                               <%= {if(SP_OPS_WHAT_I != '') { ' sp in ' %S+% SP_OPS_WHAT_I %S+% '     ' }} %> 
