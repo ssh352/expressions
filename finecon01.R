@@ -661,7 +661,9 @@ mnth_of_month <- function(anyday = NULL, within_back = 5) {
 
 last_day_of_month <- function(anyday = NULL, within_back =  5) {  
   # uses package zoo
-  as.integer(zoo::as.Date(zoo::as.yearmon(zoo::as.Date((anyday - within_back))), frac = 1))
+             # S3 dispatch
+             # zoo::as.Date.yearmon(. . . , frac = 1)
+  as.integer(zoo::as.Date(zoo::as.yearmon(zoo::as.Date(anyday) - within_back), frac = 1))
 }
 #  last_day_of_month(17164)
 # [1] 17166
