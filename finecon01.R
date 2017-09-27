@@ -543,8 +543,8 @@ lwd_of_month <- function(anyday = NULL, within_back = 5) {
   # uses package zoo
   #
   logical() -> result
-  for(anyday_i in (anyday - within_back)) {
-    seq(from = as.integer(zoo::as.Date(zoo::as.yearmon(zoo::as.Date(anyday_i)), frac = 0)),
+  for(anyday_i in anyday) {
+    seq(from = as.integer(zoo::as.Date(zoo::as.yearmon(zoo::as.Date(anyday_i) - within_back), frac = 0)),
         to = as.integer(zoo::as.Date(zoo::as.yearmon(zoo::as.Date(anyday_i)), frac = 1)),
         by = 1) -> all_month_days
     as.integer(zoo::index(to.monthly.lwd(xts::xts(rep(NA_real_,length(all_month_days)),zoo::as.Date(all_month_days))))) -> result_i
