@@ -5297,16 +5297,16 @@ xtsobjs_2_db_ready_df <- function(xtsobj = NULL, split_search = NULL, split_repl
   cdata <- as.data.frame(cdata,stringsAsFactors = FALSE)
   cdata[,c("dateindex")   ] <-        as.integer(xts:::index.xts(xtsobj)) 
 
-  cdata[,c("dateindexyear")]      <- yr_of_month(    as.integer(xts:::index.xts(xtsobj)))
-  cdata[,c("dateindexyearmonth")] <- yrmnth_of_month(as.integer(xts:::index.xts(xtsobj)))
+  cdata[,c("dateindexyear")]      <- yr_of_month(    as.integer(xts:::index.xts(xtsobj)), within_back = 0)
+  cdata[,c("dateindexyearmonth")] <- yrmnth_of_month(as.integer(xts:::index.xts(xtsobj)), within_back = 0)
   
-  cdata[,c("dateindexmonthsincebirth")] <- mnth_since_birth(as.integer(xts:::index.xts(xtsobj)))
+  cdata[,c("dateindexmonthsincebirth")] <- mnth_since_birth(as.integer(xts:::index.xts(xtsobj)), within_back = 0)
   
-  cdata[,c("dateindexmonth")]     <- mnth_of_month(  as.integer(xts:::index.xts(xtsobj)))
-  cdata[,c("dateindexlbd")] <- lbd_of_month(         as.integer(xts:::index.xts(xtsobj)))
+  cdata[,c("dateindexmonth")]     <- mnth_of_month(  as.integer(xts:::index.xts(xtsobj)), within_back = 0)
+  cdata[,c("dateindexlbd")] <- lbd_of_month(         as.integer(xts:::index.xts(xtsobj)), within_back = 0)
 
-  cdata[,c("dateindexlwd")] <- lwd_of_month(         as.integer(xts:::index.xts(xtsobj))) # not use the coredata(I do not need)
-  cdata[,c("dateindexeom")] <- last_day_of_month(xts:::index.xts(xtsobj)) 
+  cdata[,c("dateindexlwd")] <- lwd_of_month(         as.integer(xts:::index.xts(xtsobj)), within_back = 0) # not use the coredata(I do not need)
+  cdata[,c("dateindexeom")] <- last_day_of_month(xts:::index.xts(xtsobj), within_back = 0) 
   
   dfobj <- DataCombine::MoveFront(cdata, Var=c("dateindex", "dateindexyear", "dateindexyearmonth", "dateindexmonthsincebirth", "dateindexmonth", "dateindexlbd", "dateindexlwd", "dateindexeom")); rm(cdata)
   
