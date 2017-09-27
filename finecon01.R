@@ -630,7 +630,7 @@ mnth_since_birth <- function(anyday = NULL, within_back = 5) {
   logical() -> result
   for(anyday_i in anyday) {
                                                               # zoo must be loaded via namespace
-    (DescTools::Year(zoo::as.Date(anyday_i)) - 1970) * 12 + cycle(zoo::as.yearmon(zoo::as.Date(anyday_i))) -> month_day
+    (DescTools::Year(zoo::as.Date(anyday_i)) - 1970) * 12 + cycle(zoo::as.yearmon(zoo::as.Date(anyday_i)  -  within_back)) -> month_day
     as.integer(month_day) - 1L -> result_i
     c(result, result_i) -> result
   }
@@ -7319,7 +7319,7 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
 
 
 
-# LATELY  
+# LATELY
 # 
 # quantmod::getSymbols("^GSPC", from = "1940-01-01")
 # rm(list=setdiff(ls(all.names=TRUE),c("con","cid","GSPC"))); debugSource('W:/R-3.4._/finecon01.R'); debugSource('W:/R-3.4._/goodsight01.R');verify_connection();options(upsert_temp_is_temporary=Inf)
