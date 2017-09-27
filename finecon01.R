@@ -7319,7 +7319,7 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
 
 
 
-# LATELY
+# LATELY  
 # 
 # quantmod::getSymbols("^GSPC", from = "1940-01-01")
 # rm(list=setdiff(ls(all.names=TRUE),c("con","cid","GSPC"))); debugSource('W:/R-3.4._/finecon01.R'); debugSource('W:/R-3.4._/goodsight01.R');verify_connection();options(upsert_temp_is_temporary=Inf)
