@@ -4928,7 +4928,7 @@ pgListTableColumns2 <- function(con, schema_name = NULL, table_name = NULL, colu
 
                                                                                                 # NO CHECK: I must verify
                                                                                                 # that (1) exists AND (2) lwd
-upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_only_back = NULL, exact_near_month_end_dbf_dirs = NULL) {
+upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_only_back = NULL, exact_near_month_end_dbf_dirs = NULL, decreasing_sort_order = TRUE) {
 
   # NOTE: to build from scratch
   # start from the earliest date (not default) and go thorugh the current date
@@ -4979,11 +4979,11 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
   # index of lwd months
   seq_along(near_month_end_dbf_dirs) -> near_month_end_dbf_dirs_idx
   if(is.null(months_only_back)) { 
-    # everything
-    sort(near_month_end_dbf_dirs, decreasing = TRUE)[near_month_end_dbf_dirs_idx]  -> near_month_end_dbf_dirs_ordered
+    # everything                               # from args: default TRUE
+    sort(near_month_end_dbf_dirs, decreasing = decreasing_sort_order)[near_month_end_dbf_dirs_idx]  -> near_month_end_dbf_dirs_ordered
   } else {
     # just the *new* month and the previous 12 months redone (months_only_back = 13)
-    sort(near_month_end_dbf_dirs, decreasing = TRUE)[head(near_month_end_dbf_dirs_idx,months_only_back)]  -> near_month_end_dbf_dirs_ordered
+    sort(near_month_end_dbf_dirs, decreasing = decreasing_sort_order)[head(near_month_end_dbf_dirs_idx,months_only_back)]  -> near_month_end_dbf_dirs_ordered
   }
   
   # load_us_bond_instruments
