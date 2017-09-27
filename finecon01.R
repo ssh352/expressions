@@ -6032,24 +6032,40 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
             as.integer -> dateindexorig
         
         # paritions
-        { DescTools::Year(disk_dateindexes_i_dt       - 5) } %>%
-            as.integer -> dateindexyear
-
-        { DescTools::YearMonth(disk_dateindexes_i_dt  - 5) } %>%
-            as.integer -> dateindexyearmonth
         
-        { DescTools::Month(disk_dateindexes_i_dt      - 5) } %>%
-            as.integer -> dateindexmonth
+        # { DescTools::Year(disk_dateindexes_i_dt       - 5) } %>%
+        #     as.integer -> dateindexyear
+        
+        yr_of_month(disk_dateindexes_i_dt) -> dateindexyear
+        
+        # { DescTools::YearMonth(disk_dateindexes_i_dt  - 5) } %>%
+        #     as.integer -> dateindexyearmonth
+        
+        yrmnth_of_month(disk_dateindexes_i_dt) -> dateindexyearmonth
+        
+        mnth_since_birth(disk_dateindexes_i_dt) -> dateindexmonthsincebirth
+        
+        # { DescTools::Month(disk_dateindexes_i_dt      - 5) } %>%
+        #     as.integer -> dateindexmonth
+        
+        mnth_of_month(disk_dateindexes_i_dt) -> dateindexmonth
 
         # references
-        { RQuantLib::getEndOfMonth("UnitedStates/NYSE", disk_dateindexes_i_dt - 5) } %>%   # TEST!: zoo::as.Date("2010-05-28")
-            as.integer -> dateindexlbd
-
-        { RQuantLib::getEndOfMonth("WeekendsOnly"     , disk_dateindexes_i_dt - 5) } %>%
-            as.integer -> dateindexlwd
         
-        { DescTools::LastDayOfMonth(disk_dateindexes_i_dt - 5) } %>%
-            as.integer -> dateindexeom
+        # { RQuantLib::getEndOfMonth("UnitedStates/NYSE", disk_dateindexes_i_dt - 5) } %>%   # TEST!: zoo::as.Date("2010-05-28")
+        #     as.integer -> dateindexlbd
+
+        dateindexlbd(disk_dateindexes_i_dt) -> dateindexlbd
+        
+        # { RQuantLib::getEndOfMonth("WeekendsOnly"     , disk_dateindexes_i_dt - 5) } %>%
+        #     as.integer -> dateindexlwd
+        
+        lwd_of_month(disk_dateindexes_i_dt) -> dateindexlwd
+        
+        # { DescTools::LastDayOfMonth(disk_dateindexes_i_dt - 5) } %>%
+        #     as.integer -> dateindexeom
+        
+        last_day_of_month(disk_dateindexes_i_dt) -> dateindexeom
         
         # row number ( future? performance for fst::read.fst( . . . from = 1, to = NULL . . . )  )
         si_tbl_df <- cbind(TABLE_NAME      = seq_along(row.names(si_tbl_df)), si_tbl_df, stringsAsFactors = FALSE)
@@ -6062,7 +6078,8 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
         # partitions
         si_tbl_df <- cbind(dateindexyear      = dateindexyear,        si_tbl_df, stringsAsFactors = FALSE)
         si_tbl_df <- cbind(dateindexyearmonth = dateindexyearmonth,   si_tbl_df, stringsAsFactors = FALSE)
-        si_tbl_df <- cbind(dateindexmonth     = dateindexmonth,       si_tbl_df, stringsAsFactors = FALSE)
+        si_tbl_df <- cbind(dateindexmonthsincebirth = dateindexmonthsincebirth,       si_tbl_df, stringsAsFactors = FALSE)
+        si_tbl_df <- cbind(dateindexmonth           = dateindexmonth,                 si_tbl_df, stringsAsFactors = FALSE)
         
         # references
         si_tbl_df <- cbind(dateindexlbd = dateindexlbd,       si_tbl_df, stringsAsFactors = FALSE)
@@ -6079,6 +6096,7 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
            , "dateindexorig"
            , "dateindexyear"
            , "dateindexyearmonth"
+           , "dateindexmonthsincebirth"
            , "dateindexmonth"
            , "dateindexlbd"
            , "dateindexlwd"
