@@ -5297,16 +5297,19 @@ xtsobjs_2_db_ready_df <- function(xtsobj = NULL, split_search = NULL, split_repl
 
   cdata[,c("dateindexyear")]      <- yr_of_month(    as.integer(xts:::index.xts(xtsobj)))
   cdata[,c("dateindexyearmonth")] <- yrmnth_of_month(as.integer(xts:::index.xts(xtsobj)))
+  
+  cdata[,c("dateindexmonthsincebirth")] <- mnth_since_birth(as.integer(xts:::index.xts(xtsobj)))
+  
   cdata[,c("dateindexmonth")]     <- mnth_of_month(  as.integer(xts:::index.xts(xtsobj)))
   cdata[,c("dateindexlbd")] <- lbd_of_month(         as.integer(xts:::index.xts(xtsobj)))
 
   cdata[,c("dateindexlwd")] <- lwd_of_month(         as.integer(xts:::index.xts(xtsobj))) # not use the coredata(I do not need)
   cdata[,c("dateindexeom")] <- last_day_of_month(xts:::index.xts(xtsobj)) 
   
-  dfobj <- DataCombine::MoveFront(cdata, Var=c("dateindex", "dateindexyear", "dateindexyearmonth", "dateindexmonth", "dateindexlbd", "dateindexlwd", "dateindexeom")); rm(cdata)
+  dfobj <- DataCombine::MoveFront(cdata, Var=c("dateindex", "dateindexyear", "dateindexyearmonth", "dateindexmonthsincebirth", "dateindexmonth", "dateindexlbd", "dateindexlwd", "dateindexeom")); rm(cdata)
   
   # reshape
-  gathered <- tidyr::gather(dfobj, instrument, instrument_value, -dateindex, -dateindexyear, -dateindexyearmonth, -dateindexmonth, -dateindexlbd, -dateindexlwd, -dateindexeom)
+  gathered <- tidyr::gather(dfobj, instrument, instrument_value, -dateindex, -dateindexyear, -dateindexyearmonth, -dateindexmonthsincebirth, -dateindexmonth, -dateindexlbd, -dateindexlwd, -dateindexeom)
   # need later to separate on the dot
   if(!is.null(split_search)) gathered$instrument <- stringr::str_replace(gathered$instrument,split_search,split_replace)
   # into columns called "instrument" and "change"  "change" column has MANY values "chg_XXw_ann"
