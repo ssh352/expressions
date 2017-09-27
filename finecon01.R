@@ -3215,11 +3215,11 @@ verify_return_dates <- function(dateindex = NULL, months_limit = NULL, within_ba
         zoo::as.Date(.)  %>%
           # add in lwd ( Sat or Sun falls back to Fri)
           lapply(.,function(x) {  
-                                  DescTools::Year(x)                                            -> yr
-                                  DescTools::YearMonth(x)                                       -> yrmnth
-                                  DescTools::Month(x)                                           -> mnth
-                                  RQuantLib::getEndOfMonth("UnitedStates/NYSE", x)              -> lbd
-                                  (x - match(weekdays(x), c('Saturday','Sunday'), nomatch = 0)) -> lwd
+                                  yr_of_month(x)                                                -> yr
+                                  yrmnth_of_month(x)                                            -> yrmnth
+                                  mnth_of_month(x)                                              -> mnth
+                                  lbd_of_month(x)                                               -> lbd
+                                  lwd_of_month(x)                                               -> lwd
                                   # yr, yrmnth, mnth, lbd, lwd, eom
                                   c(yr, yrmnth, mnth, lbd, lwd , x)
                                } ) %>% 
@@ -3239,11 +3239,11 @@ verify_return_dates <- function(dateindex = NULL, months_limit = NULL, within_ba
             zoo::as.Date(.) %>% 
               # add in lwd ( Sat or Sun falls back to Fri)
               lapply(.,function(x) { 
-                                    DescTools::Year(x)                                            -> yr
-                                    DescTools::YearMonth(x)                                       -> yrmnth
-                                    DescTools::Month(x)                                           -> mnth
-                                    RQuantLib::getEndOfMonth("UnitedStates/NYSE", x)              -> lbd
-                                    (x - match(weekdays(x), c('Saturday','Sunday'), nomatch = 0)) -> lwd
+                                    yr_of_month(x)                                                -> yr
+                                    yrmnth_of_month(x)                                            -> yrmnth
+                                    mnth_of_month(x)                                              -> mnth
+                                    lbd_of_month(x)                                               -> lbd
+                                    lwd_of_month(x)                                               -> lwd
                                     # yr, yrmnth, mnth, lbd, lwd, eom
                                     c(yr, yrmnth, mnth, lbd, lwd , x)
                                    } ) %>% 
