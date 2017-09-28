@@ -5104,47 +5104,6 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
     verify_company_details(dateindex = c(dir_i),  table_f = "si_bsq", cnames_e = "^assets_q.$") -> si_all_g_df
     print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
     
-    # # debug(load_inbnd_stmtstats)
-    # load_inbnd_stmtstats(
-    #     dateindex = 17347 # e.g. last loaded pay period
-    #   , support_dateindex_collection = c(17347, 17317, 17284, 17256, 17225, 17197, 17165, 17135, 17105, 17074, 17044, 17011, 16982)
-    #   , char_col_numeric_limit = 999999.99    # for right NOW pure AAII data ( unratio-ed )
-    # )  -> si_all_g_df
-    # 
-    # # str(si_all_g_df)
-    # upsert(si_all_g_df, keys = c("company_id"))
-    # 
-    # if(for_inbnd_stmtstats_is_null_months_only_back_check_NOT_done && !is.null(months_only_back)) {
-    #   for_inbnd_stmtstats_is_null_months_only_back_check_NOT_done <- FALSE
-    #   # 
-    #   # only ever load ONE month THE MOST recent MONTH 
-    #   # ( 13 seconds/month: return; current + 10 support data  ) 
-    #   # (2.7 seconds/month; return; current _throw out support data_), 
-    #   # (7:40 minutes/all; return; current +  80 support months )
-    #   # 
-    #   # support_dateindex_collection is the 
-    #   # minimum of 11 months: current + ( 6 month Quarter period reporter with 4 month Q-10 report filing delay ) 
-    #   #                           # current or earlier                               # current or up to 10 earlier
-    #   load_inbnd_stmtstats(dir_i, lwd_dbf_dirs_ordered[dir_i>= lwd_dbf_dirs_ordered][seq_len(min(sum(dir_i >= lwd_dbf_dirs_ordered),11))], char_col_numeric_limit = 99999999999999.99) -> si_all_g_df
-    #   upsert(si_all_g_df, keys = c("company_id"))
-    # }
-    # 
-    # if(for_inbnd_stmtstats_is_null_months_only_back_check_NOT_done && is.null(months_only_back)) {
-    #   for_inbnd_stmtstats_is_null_months_only_back_check_NOT_done <- FALSE
-    #   # x WRONG X # load_inbnd_stmtstats( char_col_numeric_limit = 99999999999999.99) -> si_all_g_df # ALL OF the data ( 81 months = 7 minutes and 40 seconds ( SQL alone ) # x WRONG X 
-    #   upsert(si_all_g_df, keys = c("company_id"))
-    # }
-
-    # col required
-    # # not used anymore: perlen_q1, pertyp_q1
-    # # required date_eq0, perend_q1, perend_q1, dateindex_company_id, dateindex, dateindexp01lwd, company_id, sales_q1, netinc_q1, mktcap, price
-    # 
-    
-    # if( is.null(months_only_back) )  # reloadS           the entire history ( 1 HOUR )
-    # 
-    #                                  # typically 13
-    # if( is.null(months_only_back) )  # reloadS subset of the entire history ( 1 HOUR )
-    
     # support_dateindex_collection is the 
     # minimum of 11 months: current + ( 6 month Quarter period reporter with 4 month Q-10 report filing delay ) 
     #                           # current or earlier                               # current or up to 10 earlier
