@@ -5022,9 +5022,10 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
   # 
   # need a sequence
   #
-  #         last to first + ( first and back 13 ) + ( 15814 through first ) + ( first thorugh 15184 )
+  #       (first to last(current)) + ( exactly_only_future_returns: last(current) to back 13 back to first ) 
+  #     + (first to 15814 + 13   ) + ( exactly_only_future_returns: (15814 + 13) back to first )
   # XOR
-  # 15814 + last to first + ( first and back 13 )
+  # 15814 + first to last(current) + ( exactly_only_future_returns: last(current) to back 13 back to first )
   
   # best last(current) tester
   # last and go back 3 + back 3 to last(current) see 4w,13w prices, see now/last
