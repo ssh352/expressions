@@ -5437,7 +5437,7 @@ load_instruments <- function(dfobj = NULL, no_update_earliest_year = NULL) {
       if(is.numeric(col_vector_data) && !is.integer(col_vector_data)) {
         within( dfobj, { 
           assign( colnames_i, 
-                  ifelse(get(colnames_i) > 999999.99,99999999999999.99, get(colnames_i)) 
+                  ifelse(get(colnames_i) > 999999.99,999999.99, get(colnames_i)) 
           )      } 
         ) -> dfobj
       }
