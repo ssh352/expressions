@@ -1651,6 +1651,9 @@ upsert <-  function(value = NULL, keys = NULL) { # vector of primary key values
 # NOTE: keys MUST be entered in lowercase
 upsert2 <-  function(value = NULL, keys = NULL, target_table_name = "si_finecon2", upsert_temp_perform_upsert_force = FALSE) { # vector of primary key values
 
+  print(capture.output(match.call()))
+  print(keys);
+  
   require(magrittr)
   require(RPostgreSQL)
   require(PivotalR)
@@ -4101,7 +4104,7 @@ load_division_aggregated_per_dateindex <- function(dateindex = NULL) {
     liquifyDF(si_all_df, const_cols_regexpr = "^dateindex.*", fctr_cols_rexpr = ".*_fct$") -> si_all_df
     
     # SFS
-    upsert2(value = si_all_df, target_table_name = "si_finecon2_aggregates", upsert_temp_perform_upsert_force = TRUE)
+    print(dateindex);upsert2(value = si_all_df, target_table_name = "si_finecon2_aggregates", upsert_temp_perform_upsert_force = TRUE)
     
 
     warning(paste0("Ending load_division_aggregated_per_dateindex query SQL of dateindex: ", dateindex, " and ", long_message  ))
@@ -5043,13 +5046,12 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
   
   for(dir_i in near_month_end_dbf_dirs_ordered) {
     
-    warning(paste0("**** Beginning disk dbf dir: ",dir_i," ", dir_i," ******************"))
-    warning(paste0("**** Beginning disk dbf dir: ",dir_i," ", dir_i," ******************"))
-    warning(paste0("**** Beginning disk dbf dir: ",dir_i," ", dir_i," ******************"))
-    warning(paste0("**** Beginning disk dbf dir: ",dir_i," ", dir_i," ******************"))
-    warning(paste0("**** Beginning disk dbf dir: ",dir_i," ", dir_i," ******************"))
     Sys.sleep(5)
-    
+    message(paste0("**** Beginning disk dbf dir: ",dir_i," ", dir_i," ****"))
+    message(paste0("**** Beginning disk dbf dir: ",dir_i," ", dir_i," ****"))
+    message(paste0("**** Beginning disk dbf dir: ",dir_i," ", dir_i," ****"))
+    message(paste0("**** Beginning disk dbf dir: ",dir_i," ", dir_i," ****"))
+    Sys.sleep(5)
     
     verify_company_basics(dateindex = c(dir_i)) -> si_all_g_df
     update_from_future_new_company_ids(df = si_all_g_df, ref = dir_i) -> si_all_g_df
@@ -5160,12 +5162,10 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
     # since MANY SQLs upsertS are done inside
     load_division_aggregated_per_dateindex(dateindex = dir_i)
     
-    warning(paste0("**** Ending disk dbf dir: ",dir_i," ", dir_i," ******************"))
-    warning(paste0("**** Ending disk dbf dir: ",dir_i," ", dir_i," ******************"))
-    warning(paste0("**** Ending disk dbf dir: ",dir_i," ", dir_i," ******************"))
-    warning(paste0("**** Ending disk dbf dir: ",dir_i," ", dir_i," ******************"))
-    warning(paste0("**** Ending disk dbf dir: ",dir_i," ", dir_i," ******************"))
-    warning(paste0("**** Ending disk dbf dir: ",dir_i," ", dir_i," ******************"))
+    message(paste0("**** Ending disk dbf dir: ",dir_i," ", dir_i," ****"))
+    message(paste0("**** Ending disk dbf dir: ",dir_i," ", dir_i," ****"))
+    message(paste0("**** Ending disk dbf dir: ",dir_i," ", dir_i," ****"))
+    message(paste0("**** Ending disk dbf dir: ",dir_i," ", dir_i," ****"))
     Sys.sleep(5)
     
   }
