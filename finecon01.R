@@ -818,7 +818,7 @@ financize <- function(df                                                      # 
                 if ( !"try-error" %in% class(out))  { 
                   x <- out 
                 } else { 
-                  warning(stri_c("numeric(x) conversion failed for column: " %s+% col__names[col__names_iter])) 
+                  message(stri_c("numeric(x) conversion failed for column: " %s+% col__names[col__names_iter])) 
                   return(x)
                 }
                 if(!is.null(round_to_decimal_places)) {
@@ -826,7 +826,7 @@ financize <- function(df                                                      # 
                   if ( !"try-error" %in% class(out)) { 
                     x <- out 
                   } else { 
-                    warning(stri_c("round(x, digits=round_to_decimal_places) conversion failed for column: " %s+% col__names[col__names_iter])) 
+                    message(stri_c("round(x, digits=round_to_decimal_places) conversion failed for column: " %s+% col__names[col__names_iter])) 
                     return(x)
                   }
                 }
@@ -834,7 +834,7 @@ financize <- function(df                                                      # 
                   over_the_limit_tf <- {char_col_numeric_limit < x}
                   print(stringi::stri_c("  Note, these many NA_real_s found in x: " %s+% sum(is.na(x)), ignore_null = TRUE))
                   if(any(over_the_limit_tf, na.rm = TRUE)) {                           #  NROW(x[!is.na(x)][x[!is.na(x)] > char_col_numeric_limit]) # SAME
-                    warning(stri_c("  Note, these many OVER THE LIMIT found in x: " %s+% sum(over_the_limit_tf, na.rm = TRUE), ignore_null = TRUE))
+                    message(stri_c("  Note, these many OVER THE LIMIT found in x: " %s+% sum(over_the_limit_tf, na.rm = TRUE), ignore_null = TRUE))
                     print(stri_c("over_the_limit_tf <- x[" %s+% char_col_numeric_limit %s+% " < x] records found for column: " %s+% col__names[col__names_iter]))
                     print(stri_c("Printing those " %s+% sum(over_the_limit_tf, na.rm = TRUE) %s+% " (column_ids)(if any) records Now."))
                     if("company_id" %in% col__names) { print(cbind(df[,"company_id",drop = FALSE],x = x)[!is.na(x) &  { x > 999999.9 },,drop = FALSE])  }
@@ -843,7 +843,7 @@ financize <- function(df                                                      # 
                       print(stri_c("  SUCCESS for ... over_the_limit_tf <- x[char_col_numeric_limit < x] records found for column: " %s+% col__names[col__names_iter]))
                       x <- out 
                     } else { 
-                      warning(stri_c("Conversion ACTUALLY failed for ... x[char_col_numeric_limit < x] <- NA_real_ conversion failed for column: " %s+% col__names[col__names_iter])) 
+                      message(stri_c("Conversion ACTUALLY failed for ... x[char_col_numeric_limit < x] <- NA_real_ conversion failed for column: " %s+% col__names[col__names_iter])) 
                       return(x)
                     }
                   }
@@ -860,7 +860,7 @@ financize <- function(df                                                      # 
                   if ( !"try-error" %in% class(out)) { 
                     x <- out 
                   } else { 
-                    warning(stri_c("round(x, digits=round_to_decimal_places) conversion failed for column: " %s+% col__names[col__names_iter])) 
+                    message(stri_c("round(x, digits=round_to_decimal_places) conversion failed for column: " %s+% col__names[col__names_iter])) 
                     return(x)
                   }
                 }
@@ -868,7 +868,7 @@ financize <- function(df                                                      # 
                   over_the_limit_tf <- {char_col_numeric_limit < x}
                   print(stringi::stri_c("  Note, these many NA_real_s found in x: " %s+% sum(is.na(x)), ignore_null = TRUE))
                   if(any(over_the_limit_tf, na.rm = TRUE)) {                           #  NROW(x[!is.na(x)][x[!is.na(x)] > char_col_numeric_limit]) # SAME
-                    warning(stri_c("  Note, these many OVER THE LIMIT found in x: " %s+% sum(over_the_limit_tf, na.rm = TRUE), ignore_null = TRUE))
+                    message(stri_c("  Note, these many OVER THE LIMIT found in x: " %s+% sum(over_the_limit_tf, na.rm = TRUE), ignore_null = TRUE))
                     print(stri_c("over_the_limit_tf <- x[" %s+% char_col_numeric_limit %s+% " < x] records found for column: " %s+% col__names[col__names_iter]))
                     print(stri_c("Printing those " %s+% sum(over_the_limit_tf, na.rm = TRUE) %s+% " (column_ids)(if any) records Now."))
                     if("company_id" %in% col__names) { print(cbind(df[,"company_id",drop = FALSE],x = x)[!is.na(x) &  { x > 999999.9 },,drop = FALSE])  }
@@ -877,7 +877,7 @@ financize <- function(df                                                      # 
                       print(stri_c("  SUCCESS for ... over_the_limit_tf <- x[char_col_numeric_limit < x] records found for column: " %s+% col__names[col__names_iter]))
                       x <- out 
                     } else { 
-                      warning(stri_c("Conversion ACTUALLY failed for ... x[char_col_numeric_limit < x] <- NA_real_ conversion failed for column: " %s+% col__names[col__names_iter])) 
+                      message(stri_c("Conversion ACTUALLY failed for ... x[char_col_numeric_limit < x] <- NA_real_ conversion failed for column: " %s+% col__names[col__names_iter])) 
                       return(x)
                     }
                   }
@@ -920,11 +920,11 @@ rm_df_dups <- function(df = NULL, cols = NULL) {
                stringi::stri_duplicated(get(col_i), fromLast = TRUE) 
           }),,drop = FALSE] -> df
       } else {
-        warning(stringi::stri_c("In the call to rm_df_dups, parameter element cols[i] '", col_i, "' was entered that does not exist in df"))
+        message(stringi::stri_c("In the call to rm_df_dups, parameter element cols[i] '", col_i, "' was entered that does not exist in df"))
       }
     }
   } else {
-    warning(stringi::stri_c("In the call to rm_df_dups, no parameter element cols[i] was entered that exists in df"))
+    message(stringi::stri_c("In the call to rm_df_dups, no parameter element cols[i] was entered that exists in df"))
   }
   options(ops)
   return(df[,,drop = FALSE])
@@ -1246,7 +1246,7 @@ upsert <-  function(value = NULL, keys = NULL) { # vector of primary key values
         names(ptr_si_finecon2) -> names(fc_meta) 
     
   } else {
-    warning("in call to function upsert, no new columns were found to be needed to be added to si_finecon2.  Is this correct?")
+    message("in call to function upsert, no new columns were found to be needed to be added to si_finecon2.  Is this correct?")
   }
   
   # current columns ( or columns added or not added by ""if(length(fc_new_columns) > 0L)"" ) to be updated
@@ -1291,7 +1291,7 @@ upsert <-  function(value = NULL, keys = NULL) { # vector of primary key values
   
   # eventually
   # CAN GET HUNG UP HERE!!
-  warning("Begin - drop table if exists upsert_temp")
+  message("Begin - drop table if exists upsert_temp")
   {function() { db.q("drop table if exists upsert_temp", conn.id = cid) }} -> drop_upsert_temp
   # TRY LESSEN THE CONGESTION 
   # try( { db.q("delete from upsert_temp;", conn.id = cid) }, silent = TRUE )
@@ -1299,7 +1299,7 @@ upsert <-  function(value = NULL, keys = NULL) { # vector of primary key values
   db.q("select pg_sleep(1);", conn.id = cid)
   drop_upsert_temp()
   db.q("select pg_sleep(1);", conn.id = cid)
-  warning("END - drop table if exists upsert_temp")
+  message("END - drop table if exists upsert_temp")
   # # upsert into the database
   # SEEMS must CREATE A pk THIS WAY
   db.q("select pg_sleep(1);", conn.id = cid)
@@ -1795,7 +1795,7 @@ upsert2 <-  function(value = NULL, keys = NULL, target_table_name = "si_finecon2
         names(ptr_target_table_name) -> names(fc_meta) 
     
   } else {
-    warning(str_c("in call to function upsert, no new columns were found to be needed to be added to ", target_table_name, ".  Is this correct?"))
+    message(str_c("in call to function upsert, no new columns were found to be needed to be added to ", target_table_name, ".  Is this correct?"))
   }
   
   # current columns ( or columns added or not added by ""if(length(fc_new_columns) > 0L)"" ) to be updated
@@ -1840,7 +1840,7 @@ upsert2 <-  function(value = NULL, keys = NULL, target_table_name = "si_finecon2
   
   # eventually
   # CAN GET HUNG UP HERE!!
-  warning("Begin - drop table if exists upsert_temp")
+  message("Begin - drop table if exists upsert_temp")
   {function() { db.q("drop table if exists upsert_temp", conn.id = cid) }} -> drop_upsert_temp
   # TRY LESSEN THE CONGESTION 
   # try( { db.q("delete from upsert_temp;", conn.id = cid) }, silent = TRUE )
@@ -2253,7 +2253,7 @@ verify_company_basics <- function (dateindex = NULL) {
     # some dateindexs in arg not found on disk
     if(any(!dateindex %in% getvar_all_load_days_lwd_var)) { 
       dateindex[!dateindex %in% getvar_all_load_days_lwd_var] -> dateindexes_not_found_on_disk
-      warning("one/some arg dateindex not found on disk" %s+% str_c(dateindexes_not_found_on_disk, collapse = "") )
+      message("one/some arg dateindex not found on disk" %s+% str_c(dateindexes_not_found_on_disk, collapse = "") )
     }
     
     # getsetvar_aaii_sipro_dir() 
@@ -3368,8 +3368,8 @@ verify_week_often_week_returns <- function(dateindex = NULL) {
     c("dateindexf01eom","price","prchg_04w","perend_q1","dps_q1") -> sample_columns
     
     if(any(!sample_columns %in% names(fc_meta))) { 
-      warning("Minumum columns are missing.") 
-      warning("Sample Missing columns are the following:"  %s+% ' ' %s+% str_c(sample_columns[!sample_columns %in% names(fc_meta)], collapse = " "))
+      message("Minumum columns are missing.") 
+      message("Sample Missing columns are the following:"  %s+% ' ' %s+% str_c(sample_columns[!sample_columns %in% names(fc_meta)], collapse = " "))
       browser()
     } 
     
@@ -3524,8 +3524,8 @@ verify_month_often_month_past_returns <- function(dateindex = NULL, months_limit
     c("price_m001") -> sample_columns
     
     if(any(!sample_columns %in% names(fc_meta))) { 
-      warning("Minumum columns are missing.") 
-      warning("Sample Missing columns are the following:"  %s+% ' ' %s+% str_c(sample_columns[!sample_columns %in% names(fc_meta)], collapse = " "))
+      message("Minumum columns are missing.") 
+      message("Sample Missing columns are the following:"  %s+% ' ' %s+% str_c(sample_columns[!sample_columns %in% names(fc_meta)], collapse = " "))
       browser()
     } 
     
@@ -3661,7 +3661,7 @@ load_inbnd_stmtstats <- function (dateindex = NULL, support_dateindex_collection
     
     verify_connection()
     
-    warning(paste0("Beginning load_inbnd_stmtstats query SQL of dateindex: ", dateindex))
+    message(paste0("Beginning load_inbnd_stmtstats query SQL of dateindex: ", dateindex))
     
     ## ratios not usefull 'right now' because of explosion
     ## interesting compare (current) mktcap vs last_inbnd_stmtstat_mktcap
@@ -3799,7 +3799,7 @@ load_inbnd_stmtstats <- function (dateindex = NULL, support_dateindex_collection
 
     db.q(add_columns_sql, nrows = "all", conn.id = cid) -> si_all_df
     
-    warning(paste0("Ending load_inbnd_stmtstats query SQL of dateindex: ", dateindex))
+    message(paste0("Ending load_inbnd_stmtstats query SQL of dateindex: ", dateindex))
     
     financize(si_all_df,  char_col_numeric_limit = char_col_numeric_limit) -> si_all_df
     return(si_all_df) 
@@ -3860,7 +3860,7 @@ load_division_aggregated_now_last_mktcap_per_company_id <- function(dateindex = 
     
     long_message <- paste0(names(combo_i),"_" , combo_i, collapse = "__")
     
-    warning(paste0("Beginning load_division_aggregated_now_last_mktcap_per_company_id query SQL of dateindex: ", dateindex, " and ", long_message  ))
+    message(paste0("Beginning load_division_aggregated_now_last_mktcap_per_company_id query SQL of dateindex: ", dateindex, " and ", long_message  ))
     
     # ANDRE SAFE FORM concatination operator
     `%S+%` <- function(x,y) {
@@ -3912,7 +3912,7 @@ load_division_aggregated_now_last_mktcap_per_company_id <- function(dateindex = 
     financize(si_all_df, char_col_numeric_limit = 99999999999999.99) -> si_all_df
     upsert(si_all_df, keys = c("company_id"))
   
-    warning(paste0("Ending load_division_aggregated_now_last_mktcap_per_company_id query SQL of dateindex: ", dateindex, " and ", long_message  ))
+    message(paste0("Ending load_division_aggregated_now_last_mktcap_per_company_id query SQL of dateindex: ", dateindex, " and ", long_message  ))
 
   }
   
@@ -4009,7 +4009,7 @@ load_division_aggregated_per_dateindex <- function(dateindex = NULL) {
     
     long_message <- paste0(paste0(names(combo_i),"_" , combo_i,collapse = "__"), "__", paste0(DIVISION_ITEMS[[as.list(combo_i)[["DIVISION"]]]], colapse ="__"), collapse = "____") 
     
-    warning(paste0("Beginning load_division_aggregated_per_dateindex of dateindex: ", dateindex, " and ",  long_message  ))
+    message(paste0("Beginning load_division_aggregated_per_dateindex of dateindex: ", dateindex, " and ",  long_message  ))
     
     # ANDRE SAFE FORM concatination operator
     `%S+%` <- function(x,y) {
@@ -4107,7 +4107,7 @@ load_division_aggregated_per_dateindex <- function(dateindex = NULL) {
     print(dateindex);upsert2(value = si_all_df, target_table_name = "si_finecon2_aggregates", upsert_temp_perform_upsert_force = TRUE)
     
 
-    warning(paste0("Ending load_division_aggregated_per_dateindex query SQL of dateindex: ", dateindex, " and ", long_message  ))
+    message(paste0("Ending load_division_aggregated_per_dateindex query SQL of dateindex: ", dateindex, " and ", long_message  ))
 
   }
   
@@ -4192,7 +4192,7 @@ create_inbnd_stmtstats_aggregates_db <- function(exact_lwd_dbf_dirs = NULL) {
   
   for(dateindex in dateindexes) {
   
-    warning(paste0("Beginning inbnd_stmtstats_aggregates query SQL of dateindex: ", dateindex))
+    message(paste0("Beginning inbnd_stmtstats_aggregates query SQL of dateindex: ", dateindex))
     
     db.q(str_c("delete from fe_data_store.inbnd_stmtstats_aggregates where dateindex = ", dateindex,";"), conn.id = cid)
     
@@ -4262,7 +4262,7 @@ create_inbnd_stmtstats_aggregates_db <- function(exact_lwd_dbf_dirs = NULL) {
       order by dateindex_fct, is_sp_fct , is_sp500_fct, sector_desc_fct, is_materials_fct, industry_desc_fct, is_gld_fct;
     "), conn.id = cid) -> add_data_sql
     
-    warning(paste0("Ending    inbnd_stmtstats_aggregates query SQL of dateindex: ", dateindex))
+    message(paste0("Ending    inbnd_stmtstats_aggregates query SQL of dateindex: ", dateindex))
     
   }
     
@@ -4337,7 +4337,7 @@ liquifyDF <- function(x, const_cols_regexpr = "^id", fctr_cols_rexpr = "_fct$") 
   # magrittr::`%>%` -> `%M%` # NOTE: DOES WORK; magrittr::`%>%` -> `%>%`
   magrittr::`%>%` -> `%>%`
   
-  if(NROW(x) == 0) { warning("liquifyDF found zero rows"); return(data.frame()) }
+  if(NROW(x) == 0) { message("liquifyDF found zero rows"); return(data.frame()) }
   
   # typically "id" columns
   const_cols <- tidyselect::vars_select(names(x), tidyselect::matches(const_cols_regexpr))
@@ -4677,7 +4677,7 @@ pgListTableColumns2 <- function(con, schema_name = NULL, table_name = NULL, colu
       ))) -> schema_name
   
     if(is.null(schema_name)) { 
-      warning(stringr::str_c("pgListTableColumns2 can not find TEMPORARY table_name ", table_name, " (w/wo the column_name)"))
+      message(stringr::str_c("pgListTableColumns2 can not find TEMPORARY table_name ", table_name, " (w/wo the column_name)"))
       return(data.frame()) 
     }
         
@@ -4705,7 +4705,7 @@ pgListTableColumns2 <- function(con, schema_name = NULL, table_name = NULL, colu
         pg_catalog.pg_attribute.attrelid_phrase <- stringr::str_c("pg_catalog.pg_attribute.attrelid = ('", schema_name,"' || '.' || '", table_name,"')::regclass")
       } else {
         # pg_catalog.pg_attribute.attrelid_phrase <- "'f'"
-        warning(stringr::str_c("In table ", table_name," column ", column_name," is not found."))
+        message(stringr::str_c("In table ", table_name," column ", column_name," is not found."))
         return(data.frame())
       }
     } else { # no column sent in by the caller
@@ -4713,7 +4713,7 @@ pgListTableColumns2 <- function(con, schema_name = NULL, table_name = NULL, colu
     }
   } else { # both 'table_and_schema' do not exist and/or each/any does not exist with each other
     # pg_catalog.pg_attribute.attrelid_phrase <- "'f'"
-    warning(stringr::str_c("schema ", schema_name," and/or/xor table ", table_name," is not found [together]"))
+    message(stringr::str_c("schema ", schema_name," and/or/xor table ", table_name," is not found [together]"))
     return(data.frame())
   }
   
@@ -5728,7 +5728,7 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
              (tblobj_db_ptr@.col.udt_name[match_index] == "int4") && column_not_addressed == TRUE) {
              within(tblobj, { assign( colnames(tblobj)[col_index_i], as.integer(get(colnames(tblobj)[col_index_i])) / (3600*24) ) }) -> tblobj
              column_not_addressed <- FALSE
-             warning(str_c("column ", colnames(tblobj)[col_index_i], " datatype converion attempt to match what is in ", tblobj_name, " in ", tblobj_db_ptr@.col.name[match_index], " type ", tblobj_db_ptr@.col.udt_name[match_index]))
+             message(str_c("column ", colnames(tblobj)[col_index_i], " datatype converion attempt to match what is in ", tblobj_name, " in ", tblobj_db_ptr@.col.name[match_index], " type ", tblobj_db_ptr@.col.udt_name[match_index]))
           } 
           # is.Date # still will keep Date datatype on drop = TRUE
           if(xts::xtsible(tblobj[,col_index_i]) && 
@@ -5736,32 +5736,32 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
              (tblobj_db_ptr@.col.udt_name[match_index] == "int4") && column_not_addressed == TRUE) {
              within(tblobj, { assign( colnames(tblobj)[col_index_i], as.integer(get(colnames(tblobj)[col_index_i]))) }) -> tblobj
              column_not_addressed <- FALSE
-             warning(str_c("column ", colnames(tblobj)[col_index_i], " datatype converion attempt to match what is in ", tblobj_name, " in ", tblobj_db_ptr@.col.name[match_index], " type ", tblobj_db_ptr@.col.udt_name[match_index]))
+             message(str_c("column ", colnames(tblobj)[col_index_i], " datatype converion attempt to match what is in ", tblobj_name, " in ", tblobj_db_ptr@.col.name[match_index], " type ", tblobj_db_ptr@.col.udt_name[match_index]))
           } 
           if(is.factor(tblobj[,col_index_i]) && 
           (tblobj_db_ptr@.col.udt_name[match_index] == "text") && column_not_addressed == TRUE) {
              within(tblobj, { assign( colnames(tblobj)[col_index_i], as.character(get(colnames(tblobj)[col_index_i]))) }) -> tblobj
              column_not_addressed <- FALSE
-             warning(str_c("column ", colnames(tblobj)[col_index_i], " datatype converion attempt to match what is in ", tblobj_name, " in ", tblobj_db_ptr@.col.name[match_index], " type ", tblobj_db_ptr@.col.udt_name[match_index]))
+             message(str_c("column ", colnames(tblobj)[col_index_i], " datatype converion attempt to match what is in ", tblobj_name, " in ", tblobj_db_ptr@.col.name[match_index], " type ", tblobj_db_ptr@.col.udt_name[match_index]))
           } 
           if(!is.numeric(tblobj[,col_index_i]) && 
              (tblobj_db_ptr@.col.udt_name[match_index] == "numeric") && column_not_addressed == TRUE) {
              within(tblobj, { assign( colnames(tblobj)[col_index_i], as.numeric(get(colnames(tblobj)[col_index_i]))) }) -> tblobj
              column_not_addressed <- FALSE
-             warning(str_c("column ", colnames(tblobj)[col_index_i], " datatype converion attempt to match what is in ", tblobj_name, " in ", tblobj_db_ptr@.col.name[match_index], " type ", tblobj_db_ptr@.col.udt_name[match_index]))
+             message(str_c("column ", colnames(tblobj)[col_index_i], " datatype converion attempt to match what is in ", tblobj_name, " in ", tblobj_db_ptr@.col.name[match_index], " type ", tblobj_db_ptr@.col.udt_name[match_index]))
           }
           # note: POSIXct will(would have if where here) drop down to 'numeric'(!integer) 'days * seconds'
           if(!is.integer(tblobj[,col_index_i]) && 
              (tblobj_db_ptr@.col.udt_name[match_index] == "int4") && column_not_addressed == TRUE) {
              within(tblobj, { assign( colnames(tblobj)[col_index_i], as.integer(get(colnames(tblobj)[col_index_i]))) }) -> tblobj
              column_not_addressed <- FALSE
-             warning(str_c("column ", colnames(tblobj)[col_index_i], " datatype converion attempt to match what is in ", tblobj_name, " in ", tblobj_db_ptr@.col.name[match_index], " type ", tblobj_db_ptr@.col.udt_name[match_index]))
+             message(str_c("column ", colnames(tblobj)[col_index_i], " datatype converion attempt to match what is in ", tblobj_name, " in ", tblobj_db_ptr@.col.name[match_index], " type ", tblobj_db_ptr@.col.udt_name[match_index]))
           }
           if(!is.character(tblobj[,col_index_i]) && 
              (tblobj_db_ptr@.col.udt_name[match_index] == "text") && column_not_addressed == TRUE) {
              within(tblobj, { assign( colnames(tblobj)[col_index_i], as.character(get(colnames(tblobj)[col_index_i]))) }) -> tblobj
              column_not_addressed <- FALSE
-             warning(str_c("column ", colnames(tblobj)[col_index_i], " datatype converion attempt to match what is in ", tblobj_name, " in ", tblobj_db_ptr@.col.name[match_index], " type ", tblobj_db_ptr@.col.udt_name[match_index]))
+             message(str_c("column ", colnames(tblobj)[col_index_i], " datatype converion attempt to match what is in ", tblobj_name, " in ", tblobj_db_ptr@.col.name[match_index], " type ", tblobj_db_ptr@.col.udt_name[match_index]))
           } 
         }
       }
@@ -5854,7 +5854,7 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
     
     # eventually
     # CAN GET HUNG UP HERE!!
-    warning("Begin - drop table if exists upsert_temp")
+    message("Begin - drop table if exists upsert_temp")
     {function() { db.q("drop table if exists upsert_temp", conn.id = cid) }} -> drop_upsert_temp
     # TRY LESSEN THE CONGESTION 
     # try( { db.q("delete from upsert_temp;", conn.id = cid) }, silent = TRUE )
@@ -5876,7 +5876,7 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
     
     # eventually
     # CAN GET HUNG UP HERE!!
-    warning("Begin - drop table if exists upsert_temp")
+    message("Begin - drop table if exists upsert_temp")
     {function() { db.q("drop table if exists upsert_temp", conn.id = cid) }} -> drop_upsert_temp
     # TRY LESSEN THE CONGESTION 
     # try( { db.q("delete from upsert_temp;", conn.id = cid) }, silent = TRUE )
@@ -6064,7 +6064,7 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
     
   for(disk_dateindexes_i in disk_dateindexes) {
     
-    warning(paste0("sipro_adhoc_disk - Beginning disk_dateindexes_i: ", disk_dateindexes_i), call. = FALSE)
+    message(paste0("sipro_adhoc_disk - Beginning disk_dateindexes_i: ", disk_dateindexes_i), call. = FALSE)
   
     si_tbl_dfs <- list()
     
@@ -6225,7 +6225,7 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
       si_tbl_df_all <- list(si_tbl_df)
     }
     
-    warning(paste0("sipro_adhoc_disk - End disk_dateindexes_i: ", disk_dateindexes_i), call. = FALSE)
+    message(paste0("sipro_adhoc_disk - End disk_dateindexes_i: ", disk_dateindexes_i), call. = FALSE)
     
   }
 
