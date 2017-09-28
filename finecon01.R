@@ -2435,7 +2435,11 @@ verify_company_basics <- function (dateindex = NULL) {
       within(si_all_df, { rm("rn_si_mgdsc") } ) -> si_all_df
       within(  si_mgdsc , { rm("sector_code") }) -> si_mgdsc
 
-      financize(si_all_df) -> si_all_df
+      
+      # financize(si_all_df) -> si_all_df
+      # inconsistent when/where logic SO I AM deciding NOT to 'repalce with NA' here
+      financize(si_all_df, char_col_numeric_limit = 99999999999999.99) -> si_all_df
+      
       # optimize(si_all_df) -> si_all_df
       
       rm("si_mgdsc")
@@ -2976,7 +2980,9 @@ verify_company_details <- function(dateindex = NULL,  table_f = NULL, cnames_e =
     # 
     
     # KEEP
-    financize(si_all_df) -> si_all_df
+    # financize(si_all_df) -> si_all_df
+    # inconsistent when/where logic SO I AM deciding NOT to 'repalce with NA' here
+    financize(si_all_df, char_col_numeric_limit = 99999999999999.99) -> si_all_df
     
     # NOT APPLICABLE
     # # optimize(si_all_df) -> si_all_df
@@ -3462,7 +3468,9 @@ verify_week_often_week_returns <- function(dateindex = NULL) {
     db.q(add_columns_sql, nrows = -1, conn.id = cid) -> si_all_df
 
     # KEEP
-    financize(si_all_df) -> si_all_df
+    # financize(si_all_df) -> si_all_df
+    # inconsistent when/where logic SO I AM deciding NOT to 'repalce with NA' here
+    financize(si_all_df, char_col_numeric_limit = 99999999999999.99) -> si_all_df
     
     return(si_all_df) 
 
@@ -3607,7 +3615,9 @@ verify_month_often_month_past_returns <- function(dateindex = NULL, months_limit
     db.q(add_columns_sql, nrows = -1, conn.id = cid) -> si_all_df
 
     # KEEP
-    financize(si_all_df) -> si_all_df
+    # financize(si_all_df) -> si_all_df
+    # inconsistent when/where logic SO I AM deciding NOT to 'repalce with NA' here
+    financize(si_all_df, char_col_numeric_limit = 99999999999999.99) -> si_all_df
     
     return(si_all_df) 
 
