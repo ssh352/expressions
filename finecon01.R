@@ -5071,12 +5071,12 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
   
   for(dir_i in near_month_end_dbf_dirs_ordered) {
     
-    Sys.sleep(5)
+    Sys.sleep(2)
     message(paste0("**** Beginning disk dbf dir: ",dir_i," ", dir_i," ****"))
     message(paste0("**** Beginning disk dbf dir: ",dir_i," ", dir_i," ****"))
     message(paste0("**** Beginning disk dbf dir: ",dir_i," ", dir_i," ****"))
     message(paste0("**** Beginning disk dbf dir: ",dir_i," ", dir_i," ****"))
-    Sys.sleep(5)
+    Sys.sleep(2)
     
     if(!exactly_only_future_returns) {
     
@@ -5158,11 +5158,12 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
     
     }
     
+    Sys.sleep(2)
     message(paste0("**** Ending disk dbf dir: ",dir_i," ", dir_i," ****"))
     message(paste0("**** Ending disk dbf dir: ",dir_i," ", dir_i," ****"))
     message(paste0("**** Ending disk dbf dir: ",dir_i," ", dir_i," ****"))
     message(paste0("**** Ending disk dbf dir: ",dir_i," ", dir_i," ****"))
-    Sys.sleep(5)
+    Sys.sleep(2)
     
   }
   
@@ -5210,12 +5211,12 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
 #   upload_lwd_sipro_dbfs_to_db(exact_near_month_end_dbf_dirs = c(17284, 17317,17347,17378,17409),       decreasing_sort_order = NULL) 
 # }
 
-# tester
-# upload_lwd_sipro_dbfs_to_db(exact_near_month_end_dbf_dirs = c(17409), months_only_back = 4, exactly_only_future_returns = TRUE) 
+# tester                                                                  # assuming all of the previous months isq,bsq,cfq have been loaded
+# upload_lwd_sipro_dbfs_to_db(                                             months_only_back = 4, exactly_only_future_returns = TRUE) 
 
-# typical *new month*
-# { upload_lwd_sipro_dbfs_to_db(exact_near_month_end_dbf_dirs = c(17409) # assuming all of the previous months have been loaded
-#   upload_lwd_sipro_dbfs_to_db(exact_near_month_end_dbf_dirs = c(17409), months_only_back = 13, exactly_only_future_returns = TRUE) 
+# typical *new month*                                 # *new(top) month* 
+# { upload_lwd_sipro_dbfs_to_db(exact_near_month_end_dbf_dirs = c(17409)  # assuming all of the previous months isq,bsq,cfq have been loaded
+#   upload_lwd_sipro_dbfs_to_db(                                            months_only_back = 13, exactly_only_future_returns = TRUE) 
 # }
 
 
