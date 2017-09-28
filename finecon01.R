@@ -4936,7 +4936,7 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
   # start from the earliest date (not default) and go thorugh the current date
   #   this fills in the lwd,lbd,eom dates needed for joins 
   # next(to build a new month), at the current date, go backwards 13 months 
-  #   this fills in the weekly percent changes
+  #   this fills in the weekly percent changes in future pct returns
   
     # next:NOTE: to update: update_from_future_new_company_ids
     # start at 15184 and go backwards to the beginning
@@ -4946,12 +4946,16 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
     # next from the beginning, go forward up and through 15184
     #   this updates the now/last 
   
-  # NOTE: last(current): to build a *new* month ( if done "NOTE: to build from scratch )
+  # NOTE: last(current): to build a *new* month ( if done "NOTE: to build from scratch" )
   #    (to build a new month), at the current date, go backwards 13 months ( and fill in the weekly percent changes)
   
   # to do ALL OF THAT ABOVE SUPER REBUILD FROM SCRATCH in one long VERY VERY LONG session
+  # 
   # need a sequence
-  # last to first + ( first and back 13 ) + ( 15814 through first ) + ( first thorugh 15184 )
+  #
+  #         last to first + ( first and back 13 ) + ( 15814 through first ) + ( first thorugh 15184 )
+  # XOR
+  # 15814 + last to first + ( first and back 13 )
   
   # best last(current) tester
   # last and go back 3 + back 3 to last(current) see 4w,13w prices, see now/last
@@ -4981,11 +4985,23 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
   # index of lwd months
   seq_along(near_month_end_dbf_dirs) -> near_month_end_dbf_dirs_idx
   if(is.null(months_only_back)) { 
-    # everything                               # from args: default TRUE
-    sort(near_month_end_dbf_dirs, decreasing = decreasing_sort_order)[near_month_end_dbf_dirs_idx]  -> near_month_end_dbf_dirs_ordered
-  } else {
-    # just the *new* month and the previous 12 months redone (months_only_back = 13)
-    sort(near_month_end_dbf_dirs, decreasing = decreasing_sort_order)[head(near_month_end_dbf_dirs_idx,months_only_back)]  -> near_month_end_dbf_dirs_ordered
+    if(is.null(decreasing_sort_order)) {
+      # everything - do not bother to order them
+      near_month_end_dbf_dirs -> near_month_end_dbf_dirs_ordered                             # no order at all
+    } else {
+      # everything - ordered                     # from args: default TRUE
+      sort(near_month_end_dbf_dirs, decreasing = decreasing_sort_order)[near_month_end_dbf_dirs_idx]  -> near_month_end_dbf_dirs_ordered
+    }
+    
+  } else { # months_only_back - ! is.null 
+    
+    if(is.null(decreasing_sort_order)) {
+      # not ordered - just the *new(head)* month and the other exact entered 12 months redone (months_only_back = 13) 
+      head(near_month_end_dbf_dirs, months_only_back) -> near_month_end_dbf_dirs_ordered     # no order at all
+    } else {
+      #    ordered - just the *new(head)* month and the             previous 12 months redone (months_only_back = 13)
+      sort(near_month_end_dbf_dirs, decreasing = decreasing_sort_order)[head(near_month_end_dbf_dirs_idx,months_only_back)]  -> near_month_end_dbf_dirs_ordered
+    }
   }
   
   # load_us_bond_instruments
@@ -5122,9 +5138,6 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
     
   }
   
-
-  
-  
   # WARNING: NOT 'dir_i TIME by database BASED' ( SHOULD REWRITE? IF POSSIBLE? )
   # NOTE: IF missed *MANY* months in LOADING cheaper to REBUILD the entire DATABASE
   if(for_bonds_is_null_months_only_back_check_NOT_done && !is.null(months_only_back)) {
@@ -5145,12 +5158,29 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
   
 }
 
-# upload_lwd_sipro_dbfs_to_db() # HARD NOTE: THIS DOES EVERYTHING 7+ YEARS
+# 
+# upload_lwd_sipro_dbfs_to_db(from_dir = "W:/AAIISIProDBFs", months_only_back = NULL, exact_near_month_end_dbf_dirs = NULL, decreasing_sort_order = TRUE)
+#
+# upload_lwd_sipro_dbfs_to_db() # HARD NOTE: THIS DOES EVERYTHING - ALL (14) YEARS
 # upload_lwd_sipro_dbfs_to_db(months_only_back = 13)
 # upload_lwd_sipro_dbfs_to_db(exact_near_month_end_dbf_dirs = 16678) 
 
-# untried BUT truncate table is BETTER for company_id/ticker SYSTEM change PROBLEMS
-# upload_lwd_sipro_dbfs_to_db(exact_near_month_end_dbf_dirs = sort(all_load_days_lwd[all_load_days_lwd <= (15155 + 400)], decreasing = TRUE))
+#
+# exactly what I want 
+#                     eactly in this order ( processed left to right in for-loop)
+# upload_lwd_sipro_dbfs_to_db(                      exact_near_month_end_dbf_dirs = any # of elements, decreasing_sort_order = NULL )
+# 
+# tester
+# upload_lwd_sipro_dbfs_to_db(exact_near_month_end_dbf_dirs = c(17409,17378,17347,17317, 17284, 17317,17347,17378,17409), decreasing_sort_order = NULL )
+
+# probably not useful
+# head of 4 elements, eactly in this order ( processed left to right in for-loop)
+# upload_lwd_sipro_dbfs_to_db(months_only_back = 4, exact_near_month_end_dbf_dirs = any # of elements, decreasing_sort_order = NULL)
+
+
+
+  # untried BUT truncate table is BETTER for company_id/ticker SYSTEM change PROBLEMS
+  # upload_lwd_sipro_dbfs_to_db(exact_near_month_end_dbf_dirs = sort(all_load_days_lwd[all_load_days_lwd <= (15155 + 400)], decreasing = TRUE))
 
 
 
