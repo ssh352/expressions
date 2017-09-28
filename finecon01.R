@@ -4962,6 +4962,31 @@ pgListTableColumns2 <- function(con, schema_name = NULL, table_name = NULL, colu
 # upsert(si_all_g_df, keys = c("company_id"))
 #
 
+upload_us_gov_bonds_to_db <- function(months_only_back = NULL) {
+
+  # load_us_bond_instruments
+  for_bonds_is_null_months_only_back_check_NOT_done <- TRUE
+
+  # WARNING: NOT 'dir_i TIME by database BASED' ( SHOULD REWRITE? IF POSSIBLE? )
+  # NOTE: IF missed *MANY* months in LOADING cheaper to REBUILD the entire DATABASE
+  if(for_bonds_is_null_months_only_back_check_NOT_done && !is.null(months_only_back)) {
+    for_bonds_is_null_months_only_back_check_NOT_done <- FALSE
+    # NOTE:US BONDS SOME GAPS DO EXIST IN THE DATA ( TO DO [ ] DETECT NULL AND APPROXIMATION [ ]
+    load_us_bond_instruments(us_bonds_year_back = (months_only_back %/% 12 + 2) ) # MIMIMUM OF 2 YEARS OF DATA
+  }
+
+  if(for_bonds_is_null_months_only_back_check_NOT_done && is.null(months_only_back)) {
+    for_bonds_is_null_months_only_back_check_NOT_done <- FALSE
+    # NOTE: US BONDS SOME GAPS DO EXIST IN THE DATA ( TO DO [ ] DETECT NULL AND APPROXIMATION [ ]
+    load_us_bond_instruments() # ALL OF the data
+  }
+
+}
+# upload_us_gov_bonds_to_db() # all of the data
+# upload_us_gov_bonds_to_db(months_only_back = 13) # recent data
+
+
+
                                                                                                 # NO CHECK: I must verify
                                                                                                 # that (1) exists AND (2) lwd
 upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_only_back = NULL, exact_near_month_end_dbf_dirs = NULL, decreasing_sort_order = TRUE) {
@@ -5038,8 +5063,8 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
     }
   }
   
-  # load_us_bond_instruments
-  for_bonds_is_null_months_only_back_check_NOT_done <- TRUE
+  # # load_us_bond_instruments
+  # for_bonds_is_null_months_only_back_check_NOT_done <- TRUE
   
   ## # load_inbnd_stmtstats
   ## # for_inbnd_stmtstats_is_null_months_only_back_check_NOT_done <- TRUE
@@ -5129,19 +5154,19 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
     
   }
   
-  # WARNING: NOT 'dir_i TIME by database BASED' ( SHOULD REWRITE? IF POSSIBLE? )
-  # NOTE: IF missed *MANY* months in LOADING cheaper to REBUILD the entire DATABASE
-  if(for_bonds_is_null_months_only_back_check_NOT_done && !is.null(months_only_back)) {
-    for_bonds_is_null_months_only_back_check_NOT_done <- FALSE
-    # NOTE:US BONDS SOME GAPS DO EXIST IN THE DATA ( TO DO [ ] DETECT NULL AND APPROXIMATION [ ]
-    load_us_bond_instruments(us_bonds_year_back = (months_only_back %/% 12 + 2) ) # MIMIMUM OF 2 YEARS OF DATA
-  }
-
-  if(for_bonds_is_null_months_only_back_check_NOT_done && is.null(months_only_back)) {
-    for_bonds_is_null_months_only_back_check_NOT_done <- FALSE
-    # NOTE: US BONDS SOME GAPS DO EXIST IN THE DATA ( TO DO [ ] DETECT NULL AND APPROXIMATION [ ]
-    load_us_bond_instruments() # ALL OF the data
-  }
+  # # WARNING: NOT 'dir_i TIME by database BASED' ( SHOULD REWRITE? IF POSSIBLE? )
+  # # NOTE: IF missed *MANY* months in LOADING cheaper to REBUILD the entire DATABASE
+  # if(for_bonds_is_null_months_only_back_check_NOT_done && !is.null(months_only_back)) {
+  #   for_bonds_is_null_months_only_back_check_NOT_done <- FALSE
+  #   # NOTE:US BONDS SOME GAPS DO EXIST IN THE DATA ( TO DO [ ] DETECT NULL AND APPROXIMATION [ ]
+  #   load_us_bond_instruments(us_bonds_year_back = (months_only_back %/% 12 + 2) ) # MIMIMUM OF 2 YEARS OF DATA
+  # }
+  # 
+  # if(for_bonds_is_null_months_only_back_check_NOT_done && is.null(months_only_back)) {
+  #   for_bonds_is_null_months_only_back_check_NOT_done <- FALSE
+  #   # NOTE: US BONDS SOME GAPS DO EXIST IN THE DATA ( TO DO [ ] DETECT NULL AND APPROXIMATION [ ]
+  #   load_us_bond_instruments() # ALL OF the data
+  # }
 
   options(ops)
   
@@ -5397,7 +5422,7 @@ load_instruments <- function(dfobj = NULL, no_update_earliest_year = NULL) {
     
     # eventually
     # CAN GET HUNG UP HERE!!
-    warning("Begin - drop table if exists upsert_temp")
+    message("Begin - drop table if exists upsert_temp")
     {function() { db.q("drop table if exists upsert_temp", conn.id = cid) }} -> drop_upsert_temp
     # TRY LESSEN THE CONGESTION 
     # try( { db.q("delete from upsert_temp;", conn.id = cid) }, silent = TRUE )
@@ -5452,11 +5477,11 @@ load_instruments <- function(dfobj = NULL, no_update_earliest_year = NULL) {
                select    " %s+% str_c(colnames(dfobj), collapse = ", ")  %s+% " from upsert_temp " %s+% no_update_earliest_year_f(no_update_earliest_year, earl_loaded_year) %s+% "
          on conflict(dateindex, instrument)
          do update set ( " %s+% str_c(colnames(dfobj), collapse = ", ")  %s+% " ) = 
-                       ( " %s+% str_c(str_c("excluded.",colnames(dfobj)), collapse = ", ") %s+% " );")
+                       ( " %s+% str_c(str_c("excluded.",colnames(dfobj)), collapse = ", ") %s+% " );", conn.id = cid)
     
     # eventually
     # CAN GET HUNG UP HERE!!
-    warning("Begin - drop table if exists upsert_temp")
+    message("Begin - drop table if exists upsert_temp")
     {function() { db.q("drop table if exists upsert_temp", conn.id = cid) }} -> drop_upsert_temp
     # TRY LESSEN THE CONGESTION 
     # try( { db.q("delete from upsert_temp;", conn.id = cid) }, silent = TRUE )
