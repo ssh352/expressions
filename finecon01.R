@@ -1291,13 +1291,17 @@ upsert <-  function(value = NULL, keys = NULL) { # vector of primary key values
   warning("Begin - drop table if exists upsert_temp")
   {function() { db.q("drop table if exists upsert_temp", conn.id = cid) }} -> drop_upsert_temp
   # TRY LESSEN THE CONGESTION 
-  try( { db.q("delete from upsert_temp;", conn.id = cid) }, silent = TRUE )
-  try( { db.q("truncate table upsert_temp;", conn.id = cid) }, silent = TRUE )
+  # try( { db.q("delete from upsert_temp;", conn.id = cid) }, silent = TRUE )
+  # try( { db.q("truncate table upsert_temp;", conn.id = cid) }, silent = TRUE )
+  db.q("select pg_sleep(1);", conn.id = cid)
   drop_upsert_temp()
+  db.q("select pg_sleep(1);", conn.id = cid)
   warning("END - drop table if exists upsert_temp")
   # # upsert into the database
   # SEEMS must CREATE A pk THIS WAY
+  db.q("select pg_sleep(1);", conn.id = cid)
   as.db.data.frame(value, "upsert_temp", is.temp = if(!is.null(getOption("upsert_temp_is_temporary"))) { TRUE } else { FALSE }, conn.id = cid, verbose = FALSE, key = value_primary_key) -> ptr_upsert_temp
+  db.q("select pg_sleep(1);", conn.id = cid)
   
   # db.q(str_c("create unique index upsert_temp_unqpkidx on upsert_temp(" %s+% value_primary_key %s+% ");"), conn.id = cid)
 
@@ -1833,13 +1837,16 @@ upsert2 <-  function(value = NULL, keys = NULL, target_table_name = "si_finecon2
   warning("Begin - drop table if exists upsert_temp")
   {function() { db.q("drop table if exists upsert_temp", conn.id = cid) }} -> drop_upsert_temp
   # TRY LESSEN THE CONGESTION 
-  try( { db.q("delete from upsert_temp;", conn.id = cid) }, silent = TRUE )
-  try( { db.q("truncate table upsert_temp;", conn.id = cid) }, silent = TRUE )
+  # try( { db.q("delete from upsert_temp;", conn.id = cid) }, silent = TRUE )
+  # try( { db.q("truncate table upsert_temp;", conn.id = cid) }, silent = TRUE )
+  db.q("select pg_sleep(1);", conn.id = cid)
   drop_upsert_temp()
+  db.q("select pg_sleep(1);", conn.id = cid)
   # # upsert into the database
   # SEEMS must CREATE A pk THIS WAY
+  db.q("select pg_sleep(1);", conn.id = cid)
   as.db.data.frame(value, "upsert_temp", is.temp = if(!is.null(getOption("upsert_temp_is_temporary"))) { TRUE } else { FALSE }, conn.id = cid, verbose = FALSE, key = value_primary_key) -> ptr_upsert_temp
-  
+  db.q("select pg_sleep(1);", conn.id = cid)
   # db.q(str_c("create unique index upsert_temp_unqpkidx on upsert_temp(" %s+% value_primary_key %s+% ");"), conn.id = cid)
 
   # garantee that upsert_Temp values are unique
@@ -5409,11 +5416,13 @@ load_instruments <- function(dfobj = NULL, no_update_earliest_year = NULL) {
     warning("Begin - drop table if exists upsert_temp")
     {function() { db.q("drop table if exists upsert_temp", conn.id = cid) }} -> drop_upsert_temp
     # TRY LESSEN THE CONGESTION 
-    try( { db.q("delete from upsert_temp;", conn.id = cid) }, silent = TRUE )
-    try( { db.q("truncate table upsert_temp;", conn.id = cid) }, silent = TRUE )
+    # try( { db.q("delete from upsert_temp;", conn.id = cid) }, silent = TRUE )
+    # try( { db.q("truncate table upsert_temp;", conn.id = cid) }, silent = TRUE )
+    db.q("select pg_sleep(1);", conn.id = cid)
     drop_upsert_temp()
-
+    db.q("select pg_sleep(1);", conn.id = cid)
     dbWriteTable(con, "upsert_temp", temporary = if(!is.null(getOption("upsert_temp_is_temporary"))) { TRUE } else { FALSE }, value = dfobj, append = FALSE, row.names = FALSE)
+    db.q("select pg_sleep(1);", conn.id = cid)
     
     # garantee that upsert_Temp values are unique
     db.q("create unique index if not exists upsert_temp_dateindex_instruments_key on upsert_temp(dateindex, instrument);", conn.id = cid)
@@ -5466,9 +5475,11 @@ load_instruments <- function(dfobj = NULL, no_update_earliest_year = NULL) {
     warning("Begin - drop table if exists upsert_temp")
     {function() { db.q("drop table if exists upsert_temp", conn.id = cid) }} -> drop_upsert_temp
     # TRY LESSEN THE CONGESTION 
-    try( { db.q("delete from upsert_temp;", conn.id = cid) }, silent = TRUE )
-    try( { db.q("truncate table upsert_temp;", conn.id = cid) }, silent = TRUE )
+    # try( { db.q("delete from upsert_temp;", conn.id = cid) }, silent = TRUE )
+    # try( { db.q("truncate table upsert_temp;", conn.id = cid) }, silent = TRUE )
+    db.q("select pg_sleep(1);", conn.id = cid)
     drop_upsert_temp()
+    db.q("select pg_sleep(1);", conn.id = cid)
     
     return(TRUE)
     
@@ -5808,12 +5819,14 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
     warning("Begin - drop table if exists upsert_temp")
     {function() { db.q("drop table if exists upsert_temp", conn.id = cid) }} -> drop_upsert_temp
     # TRY LESSEN THE CONGESTION 
-    try( { db.q("delete from upsert_temp;", conn.id = cid) }, silent = TRUE )
-    try( { db.q("truncate table upsert_temp;", conn.id = cid) }, silent = TRUE )
+    # try( { db.q("delete from upsert_temp;", conn.id = cid) }, silent = TRUE )
+    # try( { db.q("truncate table upsert_temp;", conn.id = cid) }, silent = TRUE )
+    db.q("select pg_sleep(1);", conn.id = cid)
     drop_upsert_temp()
-    
+    db.q("select pg_sleep(1);", conn.id = cid)
     # would have used as.db.data.frame but 'mult-column primary key is 'not allowed' ( I SHOULD REPORT THIS BUG )
     dbWriteTable(con, "upsert_temp", temporary = if(!is.null(getOption("upsert_temp_is_temporary"))) { TRUE } else { FALSE }, value = tblobj, append = FALSE, row.names = FALSE)
+    db.q("select pg_sleep(1);", conn.id = cid)
     
     # load "upsert_temp" into tblobj_db_ptr ( upsize tblobj_db_ptr )
     db.q("insert into " %s+%
@@ -5828,9 +5841,11 @@ load_obj_direct <- function(tblobj = NULL, key_columns = NULL) {
     warning("Begin - drop table if exists upsert_temp")
     {function() { db.q("drop table if exists upsert_temp", conn.id = cid) }} -> drop_upsert_temp
     # TRY LESSEN THE CONGESTION 
-    try( { db.q("delete from upsert_temp;", conn.id = cid) }, silent = TRUE )
-    try( { db.q("truncate table upsert_temp;", conn.id = cid) }, silent = TRUE )
+    # try( { db.q("delete from upsert_temp;", conn.id = cid) }, silent = TRUE )
+    # try( { db.q("truncate table upsert_temp;", conn.id = cid) }, silent = TRUE )
+    db.q("select pg_sleep(1);", conn.id = cid)
     drop_upsert_temp()
+    db.q("select pg_sleep(1);", conn.id = cid)
     
     options(ops)
     return(TRUE)
@@ -7367,7 +7382,7 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
 
 
 
-
+# finecon01.R   
 
 # LATELY
 # 
