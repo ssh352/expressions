@@ -1108,6 +1108,9 @@ clean_text <- function(x) {
 # NOTE: keys MUST be entered in lowercase
 upsert <-  function(value = NULL, keys = NULL) { # vector of primary key values
 
+  print(capture.output(match.call()))
+  print(keys)
+  
   require(magrittr)
   require(RPostgreSQL)
   require(PivotalR)
@@ -2199,6 +2202,9 @@ upsert2 <-  function(value = NULL, keys = NULL, target_table_name = "si_finecon2
 # 
 verify_company_basics <- function (dateindex = NULL) {
   
+  print(capture.output(match.call()))
+  print(dateindex)
+  
   # R version 3.3.2 (2016-10-31) # sessionInfo()
   
   ops <- options() 
@@ -2462,6 +2468,9 @@ verify_company_basics <- function (dateindex = NULL) {
 # (future) SHOULD BE VECTORIZED: should be INPUT MANY 'ref's AND then RETERN 'A 'LIST OF DATA.FRAMES'
 # 
 update_from_future_new_company_ids <- function(df = NULL, ref = NULL) {
+  
+  print(capture.output(match.call()))
+  print(ref)
   
   require(magrittr)
   require(lubridate)
@@ -2734,6 +2743,9 @@ update_from_future_new_company_ids <- function(df = NULL, ref = NULL) {
 
 # SEE BELOW (for how to use)
 verify_company_details <- function(dateindex = NULL,  table_f = NULL, cnames_e = NULL) {
+  
+  print(capture.output(match.call()))
+  print(dateindex)
   
   # R version 3.3.2 (2016-10-31) # sessionInfo()
   
@@ -3311,6 +3323,9 @@ verify_return_dates <- function(dateindex = NULL, months_limit = NULL, within_ba
 # 
 verify_week_often_week_returns <- function(dateindex = NULL) {
 
+  print(capture.output(match.call()))
+  print(dateindex)
+  
   # R version 3.3.2 (2016-10-31) # sessionInfo()
   
   ops <- options() 
@@ -3605,6 +3620,9 @@ verify_month_often_month_past_returns <- function(dateindex = NULL, months_limit
 
 load_inbnd_stmtstats <- function (dateindex = NULL, support_dateindex_collection = NULL,  char_col_numeric_limit = NULL) {
   
+  print(capture.output(match.call()))
+  print(dateindex)
+  
   # R version 3.4.1 (2017-06-30) # sessionInfo()
   
   require(RPostgreSQL)
@@ -3805,6 +3823,9 @@ load_inbnd_stmtstats <- function (dateindex = NULL, support_dateindex_collection
 # since MANY SQLs upsertS are done inside
 load_division_aggregated_now_last_mktcap_per_company_id <- function(dateindex = NULL) {
 
+  print(capture.output(match.call()))
+  print(dateindex)
+  
   ops <- options() 
   options(warn = 1)
   
@@ -3925,6 +3946,9 @@ load_division_aggregated_now_last_mktcap_per_company_id <- function(dateindex = 
 # since MANY SQLs upsertS are done inside
 load_division_aggregated_per_dateindex <- function(dateindex = NULL) {
 
+  print(capture.output(match.call()))
+  print(dateindex)
+  
   ops <- options() 
   options(warn = 1)
   
@@ -5026,56 +5050,57 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
     warning(paste0("**** Beginning disk dbf dir: ",dir_i," ", dir_i," ******************"))
     Sys.sleep(5)
     
+    
     verify_company_basics(dateindex = c(dir_i)) -> si_all_g_df
     update_from_future_new_company_ids(df = si_all_g_df, ref = dir_i) -> si_all_g_df
-    upsert(si_all_g_df, keys = c("company_id")) # HERE #
+    print(dir_i);upsert(si_all_g_df, keys = c("company_id")) # HERE #
 
     verify_company_details(dateindex = c(dir_i),  table_f = "si_psd", cnames_e = "^price$|^mktcap$|^split_fact$|^split_date$") -> si_all_g_df
-    upsert(si_all_g_df, keys = c("company_id"))
+    print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
 
     verify_company_details(dateindex = c(dir_i),  table_f = "si_psd", cnames_e = "^prchg_\\d\\dw$") -> si_all_g_df
     upsert(si_all_g_df, keys = c("company_id"))
 
     verify_return_dates(dateindex = c(dir_i), months_limit = 38)  -> si_all_g_df
-    upsert(si_all_g_df, keys = NULL) # ONLY dateindex is the pk
+    print(dir_i);upsert(si_all_g_df, keys = NULL) # ONLY dateindex is the pk
 
     verify_company_details(dateindex = c(dir_i),  table_f = "si_isq", cnames_e = "^dps_q.$") -> si_all_g_df
-    upsert(si_all_g_df, keys = c("company_id"))
+    print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
 
     verify_company_details(dateindex = c(dir_i),  table_f = "si_date", cnames_e = "^perend_q.$|^perlen_q.$|^pertyp_q.$") -> si_all_g_df
-    upsert(si_all_g_df, keys = c("company_id"))
+    print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
 
     # MAY? have not been reliable?
     verify_company_details(dateindex = c(dir_i),  table_f = "si_ee"  , cnames_e = "^date_eq0$") -> si_all_g_df
     upsert(si_all_g_df, keys = c("company_id"))
     
     verify_company_details(dateindex = c(dir_i),  table_f = "si_mlt", cnames_e = "^bby_1t$") -> si_all_g_df
-    upsert(si_all_g_df, keys = c("company_id"))
+    print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
     
     # requires
     #   dateindexf##lwd, price, prchg_##w, perend_q#, dps_q#
     verify_week_often_week_returns(dir_i) -> si_all_g_df
-    upsert(si_all_g_df, keys = c("company_id"))
+    print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
 
     verify_company_details(dateindex = c(dir_i),  table_f = "si_psdc", cnames_e = "^price_m00[1-9]$|^price_m01[0-7]$") -> si_all_g_df
-    upsert(si_all_g_df, keys = c("company_id"))
+    print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
     
     # requires (above)
     #    price_m001 through price_m017
     verify_month_often_month_past_returns(dir_i,  months_limit = 17) -> si_all_g_df
-    upsert(si_all_g_df, keys = c("company_id"))
+    print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
     
     verify_company_details(dateindex = c(dir_i),  table_f = "si_isq", cnames_e = "^sales_q.$") -> si_all_g_df
-    upsert(si_all_g_df, keys = c("company_id"))
+    print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
 
     verify_company_details(dateindex = c(dir_i),  table_f = "si_isq", cnames_e = "^netinc_q.$") -> si_all_g_df
-    upsert(si_all_g_df, keys = c("company_id"))
+    print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
     
     verify_company_details(dateindex = c(dir_i),  table_f = "si_cfq", cnames_e = "^ncc_q.$") -> si_all_g_df
-    upsert(si_all_g_df, keys = c("company_id"))
+    print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
     
     verify_company_details(dateindex = c(dir_i),  table_f = "si_bsq", cnames_e = "^assets_q.$") -> si_all_g_df
-    upsert(si_all_g_df, keys = c("company_id"))
+    print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
     
     # # debug(load_inbnd_stmtstats)
     # load_inbnd_stmtstats(
@@ -5121,8 +5146,8 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
     # support_dateindex_collection is the 
     # minimum of 11 months: current + ( 6 month Quarter period reporter with 4 month Q-10 report filing delay ) 
     #                           # current or earlier                               # current or up to 10 earlier
-    load_inbnd_stmtstats(dir_i, near_month_end_dbf_dirs_ordered[dir_i>= near_month_end_dbf_dirs_ordered][seq_len(min(sum(dir_i >= near_month_end_dbf_dirs_ordered),11))], char_col_numeric_limit = 99999999999999.99) -> si_all_g_df
-    upsert(si_all_g_df, keys = c("company_id"))
+    print(dir_i);load_inbnd_stmtstats(dir_i, near_month_end_dbf_dirs_ordered[dir_i>= near_month_end_dbf_dirs_ordered][seq_len(min(sum(dir_i >= near_month_end_dbf_dirs_ordered),11))], char_col_numeric_limit = 99999999999999.99) -> si_all_g_df
+    print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
     # 
     # uses now_inbnd_stmtstat last_inbnd_stmtstat
     # since MANY SQLs upsertS are done inside                                      # if NOT an UPDATE on COMPANY_ID then I CAN go on the OUTSIDE
@@ -5508,6 +5533,9 @@ load_instruments <- function(dfobj = NULL, no_update_earliest_year = NULL) {
 # 
 load_us_bond_instruments <- function(us_bonds_year_back = NULL) {
  
+  print(capture.output(match.call()))
+  print(us_bonds_year_back)
+  
   load_us_bond_instruments_inner <- function(us_bonds_year_back = NULL) {
  
     print("BEGIN LOADING US BONDS")
