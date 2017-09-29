@@ -716,6 +716,43 @@ getvar_all_load_days_lwd <- function () {
 }
 # getvar_all_load_days_lwd()
 
+# uses to.monthly.lwd, getsetvar_aaii_sipro_dir, package zoo
+getvar_all_load_days <- function () {
+  
+  # R version 3.3.2 (2016-10-31) # sessionInfo()
+  
+  ops <- options()
+  
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  getvar_all_load_days_lwd_inner <- function () {
+    
+    as.integer(dir(getsetvar_aaii_sipro_dir())) -> all_load_days
+    
+    return(all_load_days)
+    
+  }
+  ret <- getvar_all_load_days_lwd_inner()
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  return(ret)
+}
+# getvar_all_load_days()
+
+
+
+
+
 
 
 optimize <- function(tb = NULL, colz = c("dateindex","company_id")) {
@@ -2249,22 +2286,29 @@ verify_company_basics <- function (dateindex = NULL) {
     }
     
     # run once
-    getvar_all_load_days_lwd_var <- getvar_all_load_days_lwd()
+    # getvar_all_load_days_lwd_var <- getvar_all_load_days_lwd()
+    getvar_all_load_days_var <- getvar_all_load_days()
     
-    bm <- 1
+    # # some dateindexs in arg not found on disk
+    # if(any(!dateindex %in% getvar_all_load_days_lwd_var)) { 
+    #   dateindex[!dateindex %in% getvar_all_load_days_lwd_var] -> dateindexes_not_found_on_disk
+    #   message("one/some arg dateindex not found on disk" %s+% str_c(dateindexes_not_found_on_disk, collapse = "") )
+    # }
     
-    # some dateindexs in arg not found on disk
-    if(any(!dateindex %in% getvar_all_load_days_lwd_var)) { 
-      dateindex[!dateindex %in% getvar_all_load_days_lwd_var] -> dateindexes_not_found_on_disk
-      message("one/some arg dateindex not found on disk" %s+% str_c(dateindexes_not_found_on_disk, collapse = "") )
+    # # some dateindexs in arg not found on disk
+    if(any(!dateindex %in% getvar_all_load_days_var)) { 
+      dateindex[!dateindex %in% getvar_all_load_days_var] -> dateindexes_not_found_on_disk
+      message("one/some arg dateindex not found on disk: " %s+% str_c(dateindexes_not_found_on_disk, collapse = "") )
     }
     
     # getsetvar_aaii_sipro_dir() 
-    if(!any(dateindex %in% getvar_all_load_days_lwd_var)) stop("no arg dateindex was found on disk")
+    # if(!any(dateindex %in% getvar_all_load_days_lwd_var)) stop("no arg dateindex was found on disk")
+    if(!dateindex %in% getvar_all_load_days_var) stop("no arg dateindex was found on disk")
     
     # just the ones on found on disk    
     # spec date(not all dates) IN 'all disk possible aaii si_pro last weekday of the month'
-    dateindex_redux <- dateindex[dateindex %in% getvar_all_load_days_lwd_var]
+    # dateindex_redux <- dateindex[dateindex %in% getvar_all_load_days_lwd_var]
+    dateindex_redux <- dateindex[dateindex %in% getvar_all_load_days_var]
     
     # at least one
     for(dateindex_redux_i in dateindex_redux) { 
@@ -2789,15 +2833,24 @@ verify_company_details <- function(dateindex = NULL,  table_f = NULL, cnames_e =
     # uses insert_df
     
     # run once
-    getvar_all_load_days_lwd_var <- getvar_all_load_days_lwd()
+    # getvar_all_load_days_lwd_var <- getvar_all_load_days_lwd()
+    getvar_all_load_days_var <- getvar_all_load_days()
     
-    bm <- 1
+    # # some dateindexs in arg not found on disk
+    # if(any(!dateindex %in% getvar_all_load_days_lwd_var)) { 
+    #   dateindex[!dateindex %in% getvar_all_load_days_lwd_var] -> dateindexes_not_found_on_disk
+    #   message("one/some arg dateindex not found on disk" %s+% str_c(dateindexes_not_found_on_disk, collapse = "") )
+    # }
     
-    # dateindex in arg not found on disk
-    if(!dateindex %in% getvar_all_load_days_lwd_var) { 
-      dateindex[!dateindex %in% getvar_all_load_days_lwd_var] -> dateindex_not_found_on_disk
-      stop("arg dateindex not found on disk" %s+% str_c(dateindex_not_found_on_disk, collapse = "") )
+    # # some dateindexs in arg not found on disk
+    if(any(!dateindex %in% getvar_all_load_days_var)) { 
+      dateindex[!dateindex %in% getvar_all_load_days_var] -> dateindexes_not_found_on_disk
+      message("one/some arg dateindex not found on disk: " %s+% str_c(dateindexes_not_found_on_disk, collapse = "") )
     }
+    
+    
+    
+    
     
     ## SINGLE value NOW A REDUNDANT CHECK
     ## getsetvar_aaii_sipro_dir()
