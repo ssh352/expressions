@@ -5026,9 +5026,9 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
   # need a sequence
   #
   #       (first to last(current)) + ( exactly_only_future_returns: last(current) to back 13 back to first ) 
-  #     + (first to 15814 + 13   ) + ( exactly_only_future_returns: (15814 + 13) back to first )
+  #     + (first to 15184 + 13   ) + ( exactly_only_future_returns: (15184 + 13) back to first )
   # XOR
-  # 15814 + first to last(current) + ( exactly_only_future_returns: last(current) to back 13 back to first )
+  # 15184 + first to last(current) + ( exactly_only_future_returns: last(current) to back 13 back to first )
   
   # best last(current) tester
   # last and go back 3 + back 3 to last(current) see 4w,13w prices, see now/last
@@ -5274,7 +5274,7 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
 # rm(list=setdiff(ls(all.names=TRUE),c("con","cid"))); debugSource('W:/R-3.4._/finecon01.R'); debugSource('W:/R-3.4._/goodsight01.R');verify_connection();options(upsert_temp_is_temporary=Inf)
 
 # { 
-#   upload_lwd_sipro_dbfs_to_db(exact_near_month_end_dbf_dirs = c(15814)) 
+#   upload_lwd_sipro_dbfs_to_db(exact_near_month_end_dbf_dirs = c(15184)) 
 #   upload_lwd_sipro_dbfs_to_db(decreasing_sort_order = FALSE) # bsq,isq,cfq # first to last(current)
 #   upload_lwd_sipro_dbfs_to_db(exactly_only_future_returns = TRUE)          # last(current) to first
 # }
