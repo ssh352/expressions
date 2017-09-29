@@ -5311,6 +5311,8 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
 # COMMENT ON SCHEMA fe_data_store
 #   IS 'finance and economics data store';
 
+# CREATE EXTENSION plr; -- sif_agrep(pattern text, x text)
+
 # start RStudio
 
 # verify_connection()
