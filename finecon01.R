@@ -2848,10 +2848,6 @@ verify_company_details <- function(dateindex = NULL,  table_f = NULL, cnames_e =
       message("one/some arg dateindex not found on disk: " %s+% str_c(dateindexes_not_found_on_disk, collapse = "") )
     }
     
-    
-    
-    
-    
     ## SINGLE value NOW A REDUNDANT CHECK
     ## getsetvar_aaii_sipro_dir()
     ## if(!dateindex %in% getvar_all_load_days_lwd_var) stop("no arg dateindex was found on disk")
