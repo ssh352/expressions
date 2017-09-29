@@ -5274,7 +5274,7 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
 # rm(list=setdiff(ls(all.names=TRUE),c("con","cid"))); debugSource('W:/R-3.4._/finecon01.R'); debugSource('W:/R-3.4._/goodsight01.R');verify_connection();options(upsert_temp_is_temporary=Inf)
 
 # { 
-#   upload_lwd_sipro_dbfs_to_db(15814) 
+#   upload_lwd_sipro_dbfs_to_db(exact_near_month_end_dbf_dirs = c(15814)) 
 #   upload_lwd_sipro_dbfs_to_db(decreasing_sort_order = FALSE) # bsq,isq,cfq # first to last(current)
 #   upload_lwd_sipro_dbfs_to_db(exactly_only_future_returns = TRUE)          # last(current) to first
 # }
