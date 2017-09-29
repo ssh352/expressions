@@ -375,6 +375,10 @@ verify_si_finecon_exists <- function () {
 
     try( { db.q("create unique index if not exists si_finecon2_dateindex_company_id_orig_both_key on si_finecon2(dateindex_company_id_orig);", conn.id = cid) }, silent = TRUE )
     
+    try( { db.q("create index if not exists si_finecon2_dateindex_idx  on si_finecon2(dateindex);", conn.id = cid) }, silent = TRUE )
+
+    try( { db.q("create index if not exists si_finecon2_company_id_idx on si_finecon2(company_id);", conn.id = cid) }, silent = TRUE )
+    
     # just SIMPLY
     # will ERROR OUT ( will not allow to add a second primary key )
     try( { db.q("alter table if exists si_finecon2 add primary key(dateindex_company_id);", conn.id = cid) }, silent = TRUE ) # only be on
