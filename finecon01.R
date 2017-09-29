@@ -339,15 +339,18 @@ verify_si_finecon_exists <- function () {
     db.q("create table if not exists si_finecon2();", conn.id = cid)
     db.q("alter table si_finecon2 add if not exists dateindex_company_id_orig text;", conn.id = cid)
     db.q("alter table si_finecon2 add if not exists dateindex_company_id text;", conn.id = cid)
+    
     db.q("alter table si_finecon2 add if not exists dateindex    int;", conn.id = cid)
     
     db.q("alter table si_finecon2 add if not exists dateindexyear      int;", conn.id = cid)
     db.q("alter table si_finecon2 add if not exists dateindexyearmonth int;", conn.id = cid)
-    db.q("alter table si_finecon2 add if not exists dateindexyear      int;", conn.id = cid)
-    db.q("alter table si_finecon2 add if not exists dateindexlbd       int;", conn.id = cid)
+    db.q("alter table si_finecon2 add if not exists dateindexmonthsincebirth int;", conn.id = cid)
+    db.q("alter table si_finecon2 add if not exists dateindexmonth      int;", conn.id = cid)
     
+    db.q("alter table si_finecon2 add if not exists dateindexlbd       int;", conn.id = cid)
     db.q("alter table si_finecon2 add if not exists dateindexlwd int;", conn.id = cid)
     db.q("alter table si_finecon2 add if not exists dateindexeom int;", conn.id = cid)
+    
     db.q("alter table si_finecon2 add if not exists company_id_orig  text;", conn.id = cid)
     db.q("alter table si_finecon2 add if not exists company_id  text;", conn.id = cid)
     db.q("alter table si_finecon2 add if not exists ticker  text;", conn.id = cid)
@@ -370,11 +373,11 @@ verify_si_finecon_exists <- function () {
     
     
 
-    try( { db.q("create unique index if not exists si_finecon2_dateindex_company_id_orig_both_key      on si_finecon2(dateindex_company_id_orig);", conn.id = cid) }, silent = TRUE )
+    try( { db.q("create unique index if not exists si_finecon2_dateindex_company_id_orig_both_key on si_finecon2(dateindex_company_id_orig);", conn.id = cid) }, silent = TRUE )
     
     # just SIMPLY
     # will ERROR OUT ( will not allow to add a second primary key )
-    try( { db.q("alter table if exists si_finecon2 add primary key(dateindex_company_id );", conn.id = cid) }, silent = TRUE ) # only be on
+    try( { db.q("alter table if exists si_finecon2 add primary key(dateindex_company_id);", conn.id = cid) }, silent = TRUE ) # only be on
     # si_finecon2_pkey
     # singleton
 
@@ -383,17 +386,17 @@ verify_si_finecon_exists <- function () {
     # can be many
     
     # (if unamed ndex?) ... WILL JUST KEEP ADDING MORE ... so I name it
-    try( { db.q("create unique index if not exists si_finecon2_dateindex_company_id_key       on si_finecon2(dateindex, company_id);", conn.id = cid) }, silent = TRUE )
+    try( { db.q("create unique index if not exists si_finecon2_dateindex_company_id_key          on si_finecon2(dateindex,    company_id);", conn.id = cid) }, silent = TRUE )
     
     try( { db.q("create unique index if not exists si_finecon2_dateindexlbd_company_id_key       on si_finecon2(dateindexlbd, company_id);", conn.id = cid) }, silent = TRUE )
     try( { db.q("create unique index if not exists si_finecon2_dateindexeom_company_id_key       on si_finecon2(dateindexeom, company_id);", conn.id = cid) }, silent = TRUE )
 
     # can be many
-    try( { db.q("create unique index if not exists si_finecon2_dateindex_company_id_orig_key  on si_finecon2(dateindex, company_id_orig);", conn.id = cid) }, silent = TRUE )
+    try( { db.q("create unique index if not exists si_finecon2_dateindex_company_id_orig_key     on si_finecon2(dateindex,    company_id_orig);", conn.id = cid) }, silent = TRUE )
     # can be many
 
     # PROTECT against a LOSS of INTEGRITY
-    try( { db.q("create unique index if not exists si_finecon2_dateindex_ticker_id_key        on si_finecon2(dateindex, ticker);", conn.id = cid) }, silent = TRUE )
+    try( { db.q("create unique index if not exists si_finecon2_dateindex_ticker_id_key           on si_finecon2(dateindex,    ticker);", conn.id = cid) }, silent = TRUE )
     
     try( { db.q("
       
