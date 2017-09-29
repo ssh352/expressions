@@ -5233,10 +5233,60 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
 #   upload_lwd_sipro_dbfs_to_db(                                            months_only_back = 13, exactly_only_future_returns = TRUE) 
 # }
 
+### ###
+
+# load everything from the beginning
+
+# close RStudio
+# db.disconnect(conn.id = SEE_RSTUDIO)
+
+# pgAdmin (as postgres on postgres)
+# pgAdmin (as postgres on postgres)
+# ... rest ...
+
+# MANUALLY ENAME finance_econ TO finance_econ_old_yymmdd
+
+# CREATE DATABASE finance_econ;
+
+# COMMENT ON DATABASE finance_econ
+#  IS 'finance and econ database';
+
+# pgAdmin ( as finance_econ on postgres )
+# pgAdmin ( as finance_econ on postgres )
+# ... rest ....
+# (FROM within NEW database finance_econ)
+
+# CREATE SCHEMA fe_data_store
+#   AUTHORIZATION postgres;
+
+# COMMENT ON SCHEMA fe_data_store
+#   IS 'finance and economics data store';
+
+# start RStudio
+
+# verify_connection()
+# sanity check
+# db.q("select count(*) from si_finecon2;", conn.id = cid)
+# ERROR:  relation "si_finecon2" does not exist
+# dbExistsTable(con, "si_finecon2")
+# [1] FALSE
+
+# rm(list=setdiff(ls(all.names=TRUE),c("con","cid"))); debugSource('W:/R-3.4._/finecon01.R'); debugSource('W:/R-3.4._/goodsight01.R');verify_connection();options(upsert_temp_is_temporary=Inf)
+
+# load everything from the beginning
+# { 
+#   upload_lwd_sipro_dbfs_to_db(15814) 
+#   upload_lwd_sipro_dbfs_to_db(decreasing_sort_order = FALSE) # bsq,isq,cfq # first to last(current)
+#   upload_lwd_sipro_dbfs_to_db(exactly_only_future_returns = TRUE)          # last(current) to first                                               ) 
+# }
+
+### ###
 
 
-  # untried BUT truncate table is BETTER for company_id/ticker SYSTEM change PROBLEMS
-  # upload_lwd_sipro_dbfs_to_db(exact_near_month_end_dbf_dirs = sort(all_load_days_lwd[all_load_days_lwd <= (15155 + 400)], decreasing = TRUE))
+
+
+# # untried BUT truncate table is BETTER for company_id/ticker SYSTEM change PROBLEMS
+# # upload_lwd_sipro_dbfs_to_db(exact_near_month_end_dbf_dirs = sort(all_load_days_lwd[all_load_days_lwd <= (15155 + 400)], decreasing = TRUE))
 
 
 
