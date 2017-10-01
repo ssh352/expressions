@@ -3478,8 +3478,8 @@ verify_week_often_week_returns <- function(dateindex = NULL) {
           fe_04w.dateindex, fe_04w.dateindexeom, fe_04w.company_id,
             nullif(fe_04w.price,0)/(nullif(fe_04w.prchg_04w,-100)/100 + 1)  pricebck_04w,
             fe_04w.prchg_04w * 12                                           prchg_f04w_ann,
-                                    30.5 / ( fe_04w.perend_q1 - fe_04w.perend_q2 ) * ( coalesce(fe_04w.dps_q1,0)    )/(nullif(fe_04w.price,0)/(nullif(fe_04w.prchg_04w,-100)/100 + 1)) * 100 * 12 pct_f_div_ret_ov_pr_04w_q1_ann,
-            fe_04w.prchg_04w * 12 + 30.5 / ( fe_04w.perend_q1 - fe_04w.perend_q2 ) * ( coalesce(fe_04w.dps_q1,0)    )/(nullif(fe_04w.price,0)/(nullif(fe_04w.prchg_04w,-100)/100 + 1)) * 100 * 12 pradchg_f04w_ann,
+                                    30.5 / nullif( fe_04w.perend_q1 - fe_04w.perend_q2, 0) * ( coalesce(fe_04w.dps_q1,0)    )/(nullif(fe_04w.price,0)/(nullif(fe_04w.prchg_04w,-100)/100 + 1)) * 100 * 12 pct_f_div_ret_ov_pr_04w_q1_ann,
+            fe_04w.prchg_04w * 12 + 30.5 / nullif( fe_04w.perend_q1 - fe_04w.perend_q2, 0) * ( coalesce(fe_04w.dps_q1,0)    )/(nullif(fe_04w.price,0)/(nullif(fe_04w.prchg_04w,-100)/100 + 1)) * 100 * 12 pradchg_f04w_ann,
             fe_04w.price price_f04w
           from 
               si_finecon2 fe_04w
@@ -3489,8 +3489,8 @@ verify_week_often_week_returns <- function(dateindex = NULL) {
           fe_13w.dateindex, fe_13w.dateindexeom, fe_13w.company_id,
             nullif(fe_13w.price,0)/(nullif(fe_13w.prchg_13w,-100)/100 + 1)  pricebck_13w,
             fe_13w.prchg_13w * 4                                            prchg_f13w_ann,
-                                    91.0 / ( fe_13w.perend_q1 - fe_13w.perend_q2 ) * ( coalesce(fe_13w.dps_q1,0)    )/(nullif(fe_13w.price,0)/(nullif(fe_13w.prchg_13w,-100)/100 + 1)) * 100 *  4 pct_f_div_ret_ov_pr_13w_q1_ann,
-            fe_13w.prchg_13w * 4 +  91.0 / ( fe_13w.perend_q1 - fe_13w.perend_q2 ) * ( coalesce(fe_13w.dps_q1,0)    )/(nullif(fe_13w.price,0)/(nullif(fe_13w.prchg_13w,-100)/100 + 1)) * 100 *  4 pradchg_f13w_ann,
+                                    91.0 / nullif( fe_13w.perend_q1 - fe_13w.perend_q2, 0) * ( coalesce(fe_13w.dps_q1,0)    )/(nullif(fe_13w.price,0)/(nullif(fe_13w.prchg_13w,-100)/100 + 1)) * 100 *  4 pct_f_div_ret_ov_pr_13w_q1_ann,
+            fe_13w.prchg_13w * 4 +  91.0 / nullif( fe_13w.perend_q1 - fe_13w.perend_q2, 0) * ( coalesce(fe_13w.dps_q1,0)    )/(nullif(fe_13w.price,0)/(nullif(fe_13w.prchg_13w,-100)/100 + 1)) * 100 *  4 pradchg_f13w_ann,
             fe_13w.price price_f13w
           from 
               si_finecon2 fe_13w
@@ -3500,10 +3500,10 @@ verify_week_often_week_returns <- function(dateindex = NULL) {
           fe_26w.dateindex, fe_26w.dateindexeom, fe_26w.company_id,
             nullif(fe_26w.price,0)/(nullif(fe_26w.prchg_26w,-100)/100 + 1)  pricebck_26w,
             fe_26w.prchg_26w * 2                                            prchg_f26w_ann,
-                                    182.0 / ( fe_26w.perend_q1 - fe_26w.perend_q3 ) * ( coalesce(fe_26w.dps_q1,0) + 
-                                                                                        coalesce(fe_26w.dps_q2,0)    )/(nullif(fe_26w.price,0)/(nullif(fe_26w.prchg_26w,-100)/100 + 1)) * 100 *  2 pct_f_div_ret_ov_pr_26w_q12_ann,
-            fe_26w.prchg_26w * 2 +  182.0 / ( fe_26w.perend_q1 - fe_26w.perend_q3 ) * ( coalesce(fe_26w.dps_q1,0) + 
-                                                                                        coalesce(fe_26w.dps_q2,0)    )/(nullif(fe_26w.price,0)/(nullif(fe_26w.prchg_26w,-100)/100 + 1)) * 100 *  2 pradchg_f26w_ann,
+                                    182.0 / nullif( fe_26w.perend_q1 - fe_26w.perend_q3, 0) * ( coalesce(fe_26w.dps_q1,0) + 
+                                                                                                coalesce(fe_26w.dps_q2,0)    )/(nullif(fe_26w.price,0)/(nullif(fe_26w.prchg_26w,-100)/100 + 1)) * 100 *  2 pct_f_div_ret_ov_pr_26w_q12_ann,
+            fe_26w.prchg_26w * 2 +  182.0 / nullif( fe_26w.perend_q1 - fe_26w.perend_q3, 0) * ( coalesce(fe_26w.dps_q1,0) + 
+                                                                                                coalesce(fe_26w.dps_q2,0)    )/(nullif(fe_26w.price,0)/(nullif(fe_26w.prchg_26w,-100)/100 + 1)) * 100 *  2 pradchg_f26w_ann,
             fe_26w.price price_f26w
           from 
               si_finecon2 fe_26w
@@ -3513,14 +3513,14 @@ verify_week_often_week_returns <- function(dateindex = NULL) {
           fe_52w.dateindex, fe_52w.dateindexeom, fe_52w.company_id,
             nullif(fe_52w.price,0)/(nullif(fe_52w.prchg_52w,-100)/100 + 1)  pricebck_52w,
             fe_52w.prchg_52w * 1                                            prchg_f52w_ann,
-                                    365.0 / ( fe_52w.perend_q1 - fe_52w.perend_q5 ) * ( coalesce(fe_52w.dps_q1,0) + 
-                                                                                        coalesce(fe_52w.dps_q2,0) + 
-                                                                                        coalesce(fe_52w.dps_q3,0) + 
-                                                                                        coalesce(fe_52w.dps_q4,0)    )/(nullif(fe_52w.price,0)/(nullif(fe_52w.prchg_52w,-100)/100 + 1)) * 100 *  1 pct_f_div_ret_ov_pr_52w_q1234_ann,
-            fe_52w.prchg_52w * 1 +  365.0 / ( fe_52w.perend_q1 - fe_52w.perend_q5 ) * ( coalesce(fe_52w.dps_q1,0) + 
-                                                                                        coalesce(fe_52w.dps_q2,0) + 
-                                                                                        coalesce(fe_52w.dps_q3,0) + 
-                                                                                        coalesce(fe_52w.dps_q4,0)    )/(nullif(fe_52w.price,0)/(nullif(fe_52w.prchg_52w,-100)/100 + 1)) * 100 *  1 pradchg_f52w_ann,
+                                    365.0 / nullif( fe_52w.perend_q1 - fe_52w.perend_q5, 0) * ( coalesce(fe_52w.dps_q1,0) + 
+                                                                                                coalesce(fe_52w.dps_q2,0) + 
+                                                                                                coalesce(fe_52w.dps_q3,0) + 
+                                                                                                coalesce(fe_52w.dps_q4,0)    )/(nullif(fe_52w.price,0)/(nullif(fe_52w.prchg_52w,-100)/100 + 1)) * 100 *  1 pct_f_div_ret_ov_pr_52w_q1234_ann,
+            fe_52w.prchg_52w * 1 +  365.0 / nullif( fe_52w.perend_q1 - fe_52w.perend_q5, 0) * ( coalesce(fe_52w.dps_q1,0) + 
+                                                                                                coalesce(fe_52w.dps_q2,0) + 
+                                                                                                coalesce(fe_52w.dps_q3,0) + 
+                                                                                                coalesce(fe_52w.dps_q4,0)    )/(nullif(fe_52w.price,0)/(nullif(fe_52w.prchg_52w,-100)/100 + 1)) * 100 *  1 pradchg_f52w_ann,
             fe_52w.price price_f52w
           from 
               si_finecon2 fe_52w
@@ -5322,6 +5322,9 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
 
 # all returns from now through the past to the beginning
 # upload_lwd_sipro_dbfs_to_db(exactly_only_future_returns = TRUE)
+
+# load future returns going backward beyond a certain point
+# upload_lwd_sipro_dbfs_to_db( exact_near_month_end_dbf_dirs = c(sort(as.integer(dir("W:\\AAIISIProDBFs")))[  12664 > sort(as.integer(dir("W:\\AAIISIProDBFs")))]), exactly_only_future_returns = TRUE)
 
 ### ###
 
