@@ -5260,6 +5260,21 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
   
 }
 
+# --YES: THAT IS HOW TO DO IT repair_compact/coalesce_reindex--
+# --
+# --vacuum analyze verbose  fe_data_store.si_finecon2;
+# --reindex (verbose) table fe_data_store.si_finecon2;
+# 
+# --SOLUTION: MACHINE IS HOSED AND INDEXES NOT WORKING---
+# --check indexes if not working
+# --  explain
+# --  select distinct dateindex from si_finecon2 order by dateindex desc;
+# --TYPICALLY LESS THAN 20 MINTUES ( BUT 'AS LONG AS IT TAKES' )
+# --vacuum analyze verbose fe_data_store.si_finecon2;reindex (verbose) table fe_data_store.si_finecon2;
+# --check indexes if not working
+# --explain
+# --select distinct dateindex from si_finecon2 order by dateindex desc;
+
 # 
 # upload_lwd_sipro_dbfs_to_db(from_dir = "W:/AAIISIProDBFs", months_only_back = NULL, exact_near_month_end_dbf_dirs = NULL, decreasing_sort_order = TRUE)
 #
