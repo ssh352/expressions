@@ -5271,6 +5271,8 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
 # --  select distinct dateindex from si_finecon2 order by dateindex desc;
 # --TYPICALLY LESS THAN 20 MINTUES ( BUT 'AS LONG AS IT TAKES' )
 # --vacuum analyze verbose fe_data_store.si_finecon2;reindex (verbose) table fe_data_store.si_finecon2;
+# -- (another psql prompt)
+# --select relid::regclass, * from pg_stat_progress_vacuum;
 # --check indexes if not working
 # --explain
 # --select distinct dateindex from si_finecon2 order by dateindex desc;
