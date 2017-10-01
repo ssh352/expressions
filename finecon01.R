@@ -1152,7 +1152,7 @@ clean_text <- function(x) {
 # NOTE: keys MUST be entered in lowercase
 upsert <-  function(value = NULL, keys = NULL) { # vector of primary key values
 
-  print(capture.output(match.call()))
+  message(gsub("\"","",capture.output(match.call())))
   print(keys)
   
   require(magrittr)
@@ -1698,7 +1698,7 @@ upsert <-  function(value = NULL, keys = NULL) { # vector of primary key values
 # NOTE: keys MUST be entered in lowercase
 upsert2 <-  function(value = NULL, keys = NULL, target_table_name = "si_finecon2", upsert_temp_perform_upsert_force = FALSE) { # vector of primary key values
 
-  print(capture.output(match.call()))
+  message(gsub("\"","",capture.output(match.call())))
   print(keys);
   
   require(magrittr)
@@ -2255,7 +2255,7 @@ upsert2 <-  function(value = NULL, keys = NULL, target_table_name = "si_finecon2
 # 
 verify_company_basics <- function (dateindex = NULL) {
   
-  print(capture.output(match.call()))
+  message(gsub("\"","",capture.output(match.call())))
   print(dateindex)
   
   # R version 3.3.2 (2016-10-31) # sessionInfo()
@@ -2533,7 +2533,7 @@ verify_company_basics <- function (dateindex = NULL) {
 # 
 update_from_future_new_company_ids <- function(df = NULL, ref = NULL) {
   
-  print(capture.output(match.call()))
+  message(gsub("\"","",capture.output(match.call())))
   print(ref)
   
   require(magrittr)
@@ -2808,7 +2808,7 @@ update_from_future_new_company_ids <- function(df = NULL, ref = NULL) {
 # SEE BELOW (for how to use)
 verify_company_details <- function(dateindex = NULL,  table_f = NULL, cnames_e = NULL) {
   
-  print(capture.output(match.call()))
+  message(gsub("\"","",capture.output(match.call())))
   print(dateindex)
   
   # R version 3.3.2 (2016-10-31) # sessionInfo()
@@ -3394,7 +3394,7 @@ verify_return_dates <- function(dateindex = NULL, months_limit = NULL, within_ba
 # 
 verify_week_often_week_returns <- function(dateindex = NULL) {
 
-  print(capture.output(match.call()))
+  message(gsub("\"","",capture.output(match.call())))
   print(dateindex)
   
   # R version 3.3.2 (2016-10-31) # sessionInfo()
@@ -3695,7 +3695,7 @@ verify_month_often_month_past_returns <- function(dateindex = NULL, months_limit
 
 load_inbnd_stmtstats <- function (dateindex = NULL, support_dateindex_collection = NULL,  char_col_numeric_limit = NULL) {
   
-  print(capture.output(match.call()))
+  message(gsub("\"","",capture.output(match.call())))
   print(dateindex)
   
   # R version 3.4.1 (2017-06-30) # sessionInfo()
@@ -3898,7 +3898,7 @@ load_inbnd_stmtstats <- function (dateindex = NULL, support_dateindex_collection
 # since MANY SQLs upsertS are done inside
 load_division_aggregated_now_last_mktcap_per_company_id <- function(dateindex = NULL) {
 
-  print(capture.output(match.call()))
+  message(gsub("\"","",capture.output(match.call())))
   print(dateindex)
   
   ops <- options() 
@@ -4021,7 +4021,7 @@ load_division_aggregated_now_last_mktcap_per_company_id <- function(dateindex = 
 # since MANY SQLs upsertS are done inside
 load_division_aggregated_per_dateindex <- function(dateindex = NULL) {
 
-  print(capture.output(match.call()))
+  message(gsub("\"","",capture.output(match.call())))
   print(dateindex)
   
   ops <- options() 
@@ -5343,6 +5343,7 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
 # }
 
 # everything after a specific date ( DO NOT FORGET: "decreasing_sort_order = NULL" )
+# 'past to future' data loadings
 # 
 # {
 #   upload_lwd_sipro_dbfs_to_db( exact_near_month_end_dbf_dirs = c(15184, sort(as.integer(dir("W:\\AAIISIProDBFs")))[ 12384 < sort(as.integer(dir("W:\\AAIISIProDBFs")))]), decreasing_sort_order = NULL)
@@ -5676,7 +5677,7 @@ load_instruments <- function(dfobj = NULL, no_update_earliest_year = NULL) {
 # 
 load_us_bond_instruments <- function(us_bonds_year_back = NULL) {
  
-  print(capture.output(match.call()))
+  message(gsub("\"","",capture.output(match.call())))
   print(us_bonds_year_back)
   
   load_us_bond_instruments_inner <- function(us_bonds_year_back = NULL) {
