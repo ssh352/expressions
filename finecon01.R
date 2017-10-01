@@ -5061,7 +5061,7 @@ upload_us_gov_bonds_to_db <- function(months_only_back = NULL) {
 
                                                                                                 # NO CHECK: I must verify
                                                                                                 # that (1) exists AND (2) lwd
-upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_only_back = NULL, exact_near_month_end_dbf_dirs = NULL, decreasing_sort_order = TRUE, exactly_only_future_returns = FALSE) {
+upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_only_back = NULL, exact_near_month_end_dbf_dirs = NULL, decreasing_sort_order = TRUE, exactly_only_future_returns = FALSE, exactly_only_aggregates = FALSE) {
 
   # NOTE: to build from scratch
   # start from the earliest date (not default) and go thorugh the current date
@@ -5153,64 +5153,72 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
     
     if(!exactly_only_future_returns) {
     
-      verify_company_basics(dateindex = c(dir_i)) -> si_all_g_df
-      update_from_future_new_company_ids(df = si_all_g_df, ref = dir_i) -> si_all_g_df
-      print(dir_i);upsert(si_all_g_df, keys = c("company_id")) # HERE #
-  
-      verify_company_details(dateindex = c(dir_i),  table_f = "si_psd", cnames_e = "^price$|^mktcap$|^split_fact$|^split_date$") -> si_all_g_df
-      print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
-  
-      verify_company_details(dateindex = c(dir_i),  table_f = "si_psd", cnames_e = "^prchg_\\d\\dw$") -> si_all_g_df
-      upsert(si_all_g_df, keys = c("company_id"))
-  
-      verify_return_dates(dateindex = c(dir_i), months_limit = 38)  -> si_all_g_df
-      print(dir_i);upsert(si_all_g_df, keys = NULL) # ONLY dateindex is the pk
-  
-      verify_company_details(dateindex = c(dir_i),  table_f = "si_isq", cnames_e = "^dps_q.$") -> si_all_g_df
-      print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
-  
-      verify_company_details(dateindex = c(dir_i),  table_f = "si_date", cnames_e = "^perend_q.$|^perlen_q.$|^pertyp_q.$") -> si_all_g_df
-      print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
-  
-      # MAY? have not been reliable?
-      verify_company_details(dateindex = c(dir_i),  table_f = "si_ee"  , cnames_e = "^date_eq0$") -> si_all_g_df
-      upsert(si_all_g_df, keys = c("company_id"))
+      if(!exactly_only_aggregates) {
       
-      verify_company_details(dateindex = c(dir_i),  table_f = "si_mlt", cnames_e = "^bby_1t$") -> si_all_g_df
-      print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
+        verify_company_basics(dateindex = c(dir_i)) -> si_all_g_df
+        update_from_future_new_company_ids(df = si_all_g_df, ref = dir_i) -> si_all_g_df
+        print(dir_i);upsert(si_all_g_df, keys = c("company_id")) # HERE #
     
+        verify_company_details(dateindex = c(dir_i),  table_f = "si_psd", cnames_e = "^price$|^mktcap$|^split_fact$|^split_date$") -> si_all_g_df
+        print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
+    
+        verify_company_details(dateindex = c(dir_i),  table_f = "si_psd", cnames_e = "^prchg_\\d\\dw$") -> si_all_g_df
+        upsert(si_all_g_df, keys = c("company_id"))
+    
+        verify_return_dates(dateindex = c(dir_i), months_limit = 38)  -> si_all_g_df
+        print(dir_i);upsert(si_all_g_df, keys = NULL) # ONLY dateindex is the pk
+    
+        verify_company_details(dateindex = c(dir_i),  table_f = "si_isq", cnames_e = "^dps_q.$") -> si_all_g_df
+        print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
+    
+        verify_company_details(dateindex = c(dir_i),  table_f = "si_date", cnames_e = "^perend_q.$|^perlen_q.$|^pertyp_q.$") -> si_all_g_df
+        print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
+    
+        # MAY? have not been reliable?
+        verify_company_details(dateindex = c(dir_i),  table_f = "si_ee"  , cnames_e = "^date_eq0$") -> si_all_g_df
+        upsert(si_all_g_df, keys = c("company_id"))
+        
+        verify_company_details(dateindex = c(dir_i),  table_f = "si_mlt", cnames_e = "^bby_1t$") -> si_all_g_df
+        print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
+    
+      }
+      
     }
     
-    if(exactly_only_future_returns) {
-    
+    if(!exactly_only_aggregates) {
+  
       # requires
       #   dateindexf##lwd, price, prchg_##w, perend_q#, dps_q#
       verify_week_often_week_returns(dir_i) -> si_all_g_df
       print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
-
+    
     }
-    
+
     if(!exactly_only_future_returns) {
+      
+      if(!exactly_only_aggregates) {
     
-      verify_company_details(dateindex = c(dir_i),  table_f = "si_psdc", cnames_e = "^price_m00[1-9]$|^price_m01[0-7]$") -> si_all_g_df
-      print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
+        verify_company_details(dateindex = c(dir_i),  table_f = "si_psdc", cnames_e = "^price_m00[1-9]$|^price_m01[0-7]$") -> si_all_g_df
+        print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
+        
+        # requires (above)
+        #    price_m001 through price_m017
+        verify_month_often_month_past_returns(dir_i,  months_limit = 17) -> si_all_g_df
+        print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
+        
+        verify_company_details(dateindex = c(dir_i),  table_f = "si_isq", cnames_e = "^sales_q.$") -> si_all_g_df
+        print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
+    
+        verify_company_details(dateindex = c(dir_i),  table_f = "si_isq", cnames_e = "^netinc_q.$") -> si_all_g_df
+        print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
+        
+        verify_company_details(dateindex = c(dir_i),  table_f = "si_cfq", cnames_e = "^ncc_q.$") -> si_all_g_df
+        print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
+        
+        verify_company_details(dateindex = c(dir_i),  table_f = "si_bsq", cnames_e = "^assets_q.$") -> si_all_g_df
+        print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
       
-      # requires (above)
-      #    price_m001 through price_m017
-      verify_month_often_month_past_returns(dir_i,  months_limit = 17) -> si_all_g_df
-      print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
-      
-      verify_company_details(dateindex = c(dir_i),  table_f = "si_isq", cnames_e = "^sales_q.$") -> si_all_g_df
-      print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
-  
-      verify_company_details(dateindex = c(dir_i),  table_f = "si_isq", cnames_e = "^netinc_q.$") -> si_all_g_df
-      print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
-      
-      verify_company_details(dateindex = c(dir_i),  table_f = "si_cfq", cnames_e = "^ncc_q.$") -> si_all_g_df
-      print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
-      
-      verify_company_details(dateindex = c(dir_i),  table_f = "si_bsq", cnames_e = "^assets_q.$") -> si_all_g_df
-      print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
+      }
       
       # support_dateindex_collection is the 
       # minimum of 11 months: current + ( 6 month Quarter period reporter with 4 month Q-10 report filing delay ) 
@@ -5302,12 +5310,16 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
 # }
 
 # tester                                                                  # assuming all of the previous months isq,bsq,cfq have been loaded
-# upload_lwd_sipro_dbfs_to_db(                                             months_only_back = 4, exactly_only_future_returns = TRUE) 
+# upload_lwd_sipro_dbfs_to_db(                                             months_only_back = 5, exactly_only_future_returns = TRUE) 
 
 # typical *new month*                                 # *new(top) month* 
 # { upload_lwd_sipro_dbfs_to_db(exact_near_month_end_dbf_dirs = c(17409)  # assuming all of the previous months isq,bsq,cfq have been loaded
 #   upload_lwd_sipro_dbfs_to_db(                                            months_only_back = 13, exactly_only_future_returns = TRUE) 
 # }
+
+# maybe for loading or re-testing the (past to now) aggregate calculations
+# upload_lwd_sipro_dbfs_to_db(                                              months_only_back = 5, exactly_only_aggregates = TRUE, decreasing_sort_order = FALSE)
+
 
 ### ###
 
