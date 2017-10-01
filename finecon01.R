@@ -7582,7 +7582,235 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
 #          
 #                                                   
 
+# -- CURRENTLY NOT USED ANYWHWERE(YET) --
+# 
+#              drop function r_lof(in rn bigint[], in cols float8[][], in k int, in retcount int);
+# create or replace function r_lof(in rn bigint[], in cols float8[][], in k int, in retcount int)
+#   returns table(rn int, val int) as
+# $body$
+# 
+#   # finds outliers using k neighbors
+# 
+#   # Slightly re-written by Andre Mikulec: pl/r author removed parallelism
+#   # based entirely on 
+#   # Rlof
+#   # Version:	1.1.1
+#   # Published:	2015-09-17
+#   # https://cran.r-project.org/web/packages/Rlof/index.html
+# 
+#   # args
+# 
+#   # rn       - unique integer id for the row: currently: only tested: row_number(): 1,2,3, . . . , n
+#   # cols     - numeric columns of the data.frame
+#   #          - can be sent by array[array_agg(col1),array_agg(col2), ... ]
+#   # k        - nearest neighbors
+#   # retcount - number of ranked rows to return
+#   #          - to return 'all' of the data, enter the PostgreSQL 'integer max'  
+#   #          - i.e.  retcount := 2147483647
+# 
+#   # return
+#   
+#   # table(rn int, val int) -- array of pairs 
+#   # rn                     -- final ranking (lower values are more outlier-ish (goal))
+#   # val                    -- the original input rn of "r_lof( rn := array_agg(.), ... )"
+# 
+#   # example
+# 
+#   # 
+#   # select s.rn_mtcars, s.car, st.rn car_outlier_rnk, s.mpg, s.cyl, s.disp
+#   # from ( -- s 
+#   #   select sq.car, sq.mpg, sq.cyl, sq.disp, row_number() over(order by sq.car) rn_mtcars
+#   #   from ( -- sq
+#   #     select mt."row.names" car, mt.mpg, mt.cyl, mt.disp from mtcars mt order by car 
+#   #   ) sq
+#   # ) s
+#   # , 
+#   # ( --st
+#   #   select rn(r_lof_res.out), val(r_lof_res.out)
+#   #   from ( -- r_lof_res
+#   #     select r_lof( rn := array_agg(rd.rn_mtcars), cols := array[array_agg(rd.mpg), array_agg(rd.cyl), array_agg(rd.disp)], k := 5, retcount := 2147483647) as out
+#   #     from ( -- rd
+#   #       select sq.car, sq.mpg, sq.cyl, sq.disp, row_number() over(order by sq.car) rn_mtcars
+#   #       from ( -- sq
+#   #         select mt."row.names" car, mt.mpg, mt.cyl, mt.disp from mtcars mt order by car 
+#   #       ) sq
+#   #     ) rd
+#   #   ) r_lof_res
+#   # ) st
+#   # where s.rn_mtcars = st.val
+#   # order by car_outlier_rnk;
+#   # 
+#   #  rn_mtcars |         car         | car_outlier_rnk | mpg  | cyl | disp
+#   # -----------+---------------------+-----------------+------+-----+-------
+#   #         31 | Valiant             |               1 | 18.1 |   6 |   225 -- outlier: only 6 cyl over 168
+#   #          2 | Cadillac Fleetwood  |               2 | 10.4 |   8 |   472
+#   #         15 | Lincoln Continental |               3 | 10.4 |   8 |   460
+#   # ...
+# 
+#   Rlof___f.dist.to.knn <- function(dataset, neighbors, ...){
+# 
+#       m.dist <- as.matrix( Rlof:::distmc(dataset, ...))
+#       num.col <- dim(m.dist)[2]
+#       l.knndist <- lapply(c(1:num.col), function(i) {
+#           order.x <- order(m.dist[, i])
+#           kdist <- m.dist[, i][order.x[neighbors + 1]]
+#           numnei <- sum(m.dist[, i] <= kdist)
+#           data.frame(v.order = order.x[2:numnei], v.dist = m.dist[,
+#               i][order.x[2:numnei]])
+#       })
+#       rm(m.dist)
+#       maxnum <- max(unlist(lapply(l.knndist, function(x) {
+#           dim(x)[1]
+#       })))
+#       i <- numeric()
+#       knndist <- NULL
+#       for(i in 1:num.col)
+#           {
+#               len <- dim(l.knndist[[i]])[1]
+#               RES <- c(l.knndist[[i]]$v.order, rep(NA, (maxnum - len)),
+#                   l.knndist[[i]]$v.dist, rep(NA, (maxnum - len)))
+#               knndist <- cbind(knndist,RES)
+#           }
+#       knndist
+#   }
+# 
+#   Rlof__lof <- function(data, k, ...){
+# 
+#       if (is.null(k))
+#           stop("k is missing")
+#       if (!is.numeric(k))
+#           stop("k is not numeric")
+#       data <- as.matrix(data)
+#       if (!is.numeric(data))
+#           stop("the data contains non-numeric data type")
+#       v.k <- as.integer(k)
+#       if (max(v.k) >= dim(data)[1])
+#           stop("the maximum k value has to be less than the length of the data")
+#       distdata <- Rlof___f.dist.to.knn(data, max(v.k), ...)
+#       p <- dim(distdata)[2L]
+#       dist.start <- as.integer((dim(distdata)[1])/2)
+#       dist.end <- dim(distdata)[1]
+#       ik <- numeric()
+#       m.lof <- NULL
+#       for(ik in v.k) 
+#       {
+#           lrddata <- Rlof:::f.reachability(distdata, ik)
+#           v.lof <- rep(0, p)
+#           for (i in 1:p) {
+#               nneigh <- sum(!is.na(distdata[c((dist.start + 1):dist.end),
+#                   i]) & (distdata[c((dist.start + 1):dist.end),
+#                   i] <= distdata[(dist.start + ik), i]))
+#               v.lof[i] <- sum(lrddata[distdata[(1:nneigh), i]]/lrddata[i])/nneigh
+#           }
+#           m.lof <- cbind(m.lof, v.lof)
+#       }
+#       if (length(v.k) > 1)
+#           colnames(m.lof) <- v.k
+#       return(m.lof)
+#   }
+# 
+#   set.seed(1L)
+#   res <- Rlof__lof(data = as.data.frame(t(cols)), k = k)
+#   if(length(res) > 0L) {
+#     res <- order(res, decreasing = TRUE)[seq(1,min(retcount,length(res)),1)]
+#   } else {
+#     res <- (data.frame(rn = integer(), val = integer()))[FALSE,,drop = FALSE]
+#     return(res)
+#   }
+#   return(data.frame(rn[seq(1,min(retcount,length(res)),1)], res))
+# $body$
+#   language plr;
 
+
+
+# -- AUTOMATIC DETERMINATION OF OUTLIERS ( USES pl/r function: r_lof )
+#       
+# select
+#     sq.dateindex, sq.company_id
+#   -- -- required in join ( not necessary to view )
+#   -- -- orderer ( not necessary to view ) ( but very useful in portability )
+#   , sq_r3.rn  outlier_rank -- lower is more 'outlier-ish'
+#   , sq_r3.val rn_id       -- row number position ( from the original (rn := ) of where the outlier occurs     
+#   ---- redundant of above
+#   --, sq.rn sq_rn
+#   -- -- redundant payload ( not necessary at all ) 
+#   , sq.sp, sq.ticker, sq.company, sq.price, sq.mktcap, sq.netinc_q1, sq.sales_q1, sq.ncc_q1, sq.assets_q1
+# from 
+#   ( -- sq, sq.rn(1,2,3,...)
+#   select 
+#       row_number() over (partition by qu2.dateindex order by qu2.company_id) rn
+#     , qu2.dateindex, qu2.company_id
+#     -- -- redundant payload
+#     , qu2.sp, qu2.ticker, qu2.company, qu2.price, qu2.mktcap, qu2.netinc_q1, qu2.sales_q1, qu2.ncc_q1, qu2.assets_q1
+#   from si_finecon2 qu2                  -- 12055
+#   where qu2.sp = '500' and qu2.dateindex = 17409 order by qu2.company_id
+#   ) sq, 
+#   ( -- sq_r3 -- sq_r3.rn(1,2,3,...) sq_r3.val(137,316,43,...)
+#     select (sq_r2.out).* --sq_r2.rn(NEED TO CARRY), sq_r2.val 
+#     from
+#     ( -- sq_r2                                                                                                                                               -- testing: retcount := 20 xor 'all of the data'
+#       select 
+#           r_lof( rn := array_agg(sq_r.rn)
+#         , cols := 
+#             array[
+#                 -- array_agg(sq_r.price),    array_agg(sq_r.mktcap), 
+#                 array_agg(sq_r.netinc_q1 / nullif(sq_r.sales_q1,0))
+#               , array_agg(sq_r.ncc_q1    / nullif(sq_r.sales_q1,0))
+#             ]
+#         , k := 5, retcount := 2147483647) as out 
+#       from 
+#       ( -- sq_r
+#         select 
+#             row_number() over (order by qu.company_id) rn -- random
+#           , case when qu.price     is not null then qu.price::float8  else '-Infinity'::float8 end price
+#           , case when qu.mktcap    is not null then qu.mktcap::float8 else '-Infinity'::float8 end mktcap
+#           , case when qu.netinc_q1 is not null then qu.netinc_q1      else '-Infinity'::float8 end netinc_q1
+#           , case when qu.sales_q1  is not null then qu.sales_q1       else '-Infinity'::float8 end sales_q1
+#           , case when qu.ncc_q1    is not null then qu.ncc_q1         else '-Infinity'::float8 end ncc_q1
+#           -- NOTE: Bear Stearns  assets_q1 == 0.00
+#           , case when qu.assets_q1 is not null then qu.assets_q1      else '-Infinity'::float8 end assets_q1
+#         from  si_finecon2 qu
+#         where qu.sp = '500' and qu.dateindex = 12055 order by qu.company_id 
+#       ) sq_r  
+#     ) sq_r2
+#   ) sq_r3
+# where sq.rn = sq_r3.val
+# order by sq_r3.rn -- limit 10 -- also works 
+# 
+
+
+# 
+# -- MANUAL DETERMINATION OF OUTLIERS ( RESULT COLUMNS MATCH THE 'AUTOMATIC METHOD'(SEE ABOVE) --
+# 
+# select 
+#       sq2_r.dateindex,  sq2_r.company_id
+#     , sq2_r.sq_r3_rn   outlier_rank -- lower is more 'outlier-ish' ( ALWAYS ZERO(0) IN THIS SQL )
+#     , sq2_r.sq_r3_val  rn_id        -- row number position ( from the original (rn := ) of where the outlier occurs  
+#     , sq2_r.sp,    sq2_r.ticker,  sq2_r.company
+#     , sq2_r.price, sq2_r.mktcap,  sq2_r.netinc_q1,  sq2_r.sales_q1, sq2_r.ncc_q1, sq2_r.assets_q1
+# from ( -- sq2_r
+#   select qu2.dateindex, qu2.company_id
+#     -- later -- distinct on -- so if lof detects and bads detects then lof is taken as the single record
+#     -- 2147483647 -- float to the bottom ( zero(0): float to the top )
+#     , 0 sq_r3_rn, row_number() over (partition by qu2.dateindex order by qu2.company_id) sq_r3_val
+#     , qu2.sp,    qu2.ticker, qu2.company
+#     , qu2.price, qu2.mktcap, qu2.netinc_q1, qu2.sales_q1, qu2.ncc_q1, qu2.assets_q1
+#   from si_finecon2 qu2                  -- 12055 
+#   where qu2.sp = '500' and qu2.dateindex = 17409 
+# ) sq2_r
+# where ( 
+#     -- tester
+#     -- sq2_r.price > 20.00
+#     --
+#     -- shuld be never
+#        sq2_r.price is null    or sq2_r.mktcap is null or sq2_r.netinc_q1 is null or 
+#        sq2_r.sales_q1 is null or sq2_r.ncc_q1 is null
+#        -- # (price, mktcap, netinc_q1, sales_q1)
+#        -- # qu2.sp = '500' and qu2.dateindex = 12055 # 1748N # sq_r2_rn == 0, sq_r3_rn == 92 # "CenturyTel, Inc." ( netinc_q1 > sales_q1 )
+#        or ( sq2_r.netinc_q1 > sq2_r.sales_q1 )
+#     )
+# order by sq2_r.company_id 
+# 
 
 
 # finecon01.R   
