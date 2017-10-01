@@ -1328,7 +1328,10 @@ upsert <-  function(value = NULL, keys = NULL) { # vector of primary key values
   # add a 'dataindex + keys'primary key column to input 'value data.fram ( needed for PivotalR and OTHER things ) 
   # currenly 'really' only tested used with/about company_id
   str_c(c("dateindex",keys), collapse = "_")  -> value_primary_key
-  with( value, { eval(parse(text=eval(parse(text=('str_c(c("dateindex",keys), collapse = " %s+% \'_\' %s+% ")'))))) } ) -> value[,value_primary_key]
+  str_c(c("dateindex",keys), collapse = " %s+% \'_\' %s+% ") -> value_primary_key_concat_expr
+  # chokes often
+  # with( value, { eval(parse(text=eval(parse(text=('str_c(c("dateindex",keys), collapse = " %s+% \'_\' %s+% ")'))))) } ) -> value[,value_primary_key]
+  with(value,{ eval(parse(text=value_primary_key_concat_expr)) } ) -> value[[value_primary_key]]
   DataCombine::MoveFront(value,value_primary_key) -> value
   
   # upload 'value' into the database 
@@ -1877,7 +1880,10 @@ upsert2 <-  function(value = NULL, keys = NULL, target_table_name = "si_finecon2
   # add a 'dataindex + keys'primary key column to input 'value data.fram ( needed for PivotalR and OTHER things ) 
   # currenly 'really' only tested used with/about company_id
   str_c(c("dateindex",keys), collapse = "_")  -> value_primary_key
-  with( value, { eval(parse(text=eval(parse(text=('str_c(c("dateindex",keys), collapse = " %s+% \'_\' %s+% ")'))))) } ) -> value[,value_primary_key]
+  str_c(c("dateindex",keys), collapse = " %s+% \'_\' %s+% ") -> value_primary_key_concat_expr
+  # chokes often
+  # with( value, { eval(parse(text=eval(parse(text=('str_c(c("dateindex",keys), collapse = " %s+% \'_\' %s+% ")'))))) } ) -> value[,value_primary_key]
+  with(value,{ eval(parse(text=value_primary_key_concat_expr)) } ) -> value[[value_primary_key]]
   DataCombine::MoveFront(value,value_primary_key) -> value
   
   # upload 'value' into the database 
