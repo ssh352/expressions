@@ -5320,7 +5320,7 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
 # maybe for loading or re-testing the (past to now) aggregate calculations
 # upload_lwd_sipro_dbfs_to_db(                                              months_only_back = 5, exactly_only_aggregates = TRUE, decreasing_sort_order = FALSE)
 
-# all returns from the beginning
+# all returns from now through the past to the beginning
 # upload_lwd_sipro_dbfs_to_db(exactly_only_future_returns = TRUE)
 
 ### ###
