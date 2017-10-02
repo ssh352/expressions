@@ -5235,6 +5235,11 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
       # load_inbnd_stmtstats
       # load_division_aggregated_now_last_mktcap_per_company_id
       # since MANY SQLs upsertS are done inside
+      # 
+      # I BELIEVE CURRENTLY BROKEN 
+      #  ( NOT CREATING ANY GOLD COLUMNS
+      #  ( SEEMS TO BE CREATING THE WORDS: ( _SECTOR_ ) ( _INDUSTRY_ ) )
+      # 
       load_division_aggregated_per_dateindex(dateindex = dir_i)
     
     }
