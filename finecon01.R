@@ -4237,7 +4237,7 @@ load_division_aggregated_per_dateindex <- function(dateindex = NULL) {
 # load_division_aggregated_per_dateindex(dateindex = 17347)
 # load_division_aggregated_per_dateindex(dateindex = 17378) # data already in aggr
 # load_division_aggregated_per_dateindex(dateindex = 17409)
-
+# upload_lwd_sipro_dbfs_to_db(exact_near_month_end_dbf_dirs = 17409, exactly_only_aggregates = TRUE)
 
 
 
@@ -5165,7 +5165,7 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
       head(near_month_end_dbf_dirs, months_only_back) -> near_month_end_dbf_dirs_ordered     # no order at all
     } else {
       #    ordered - just the *new(head)* month and the             previous 12 months redone (months_only_back = 13)
-      sort(near_month_end_dbf_dirs, decreasing = decreasing_sort_order)[head(near_month_end_dbf_dirs_idx,months_only_back)]  -> near_month_end_dbf_dirs_ordered
+      sort(near_month_end_dbf_dirs, decreasing = decreasing_sort_order)[head(near_month_end_dbf_dirs_idx, months_only_back)]  -> near_month_end_dbf_dirs_ordered
     }
   }
   
@@ -5270,9 +5270,7 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
       # load_division_aggregated_now_last_mktcap_per_company_id
       # since MANY SQLs upsertS are done inside
       # 
-      # CURRENTLY BROKEN 
-      #  ( NOT CREATING ANY GOLD COLUMNS
-      #  ( SEEMS TO BE CREATING THE WORDS: ( _SECTOR_ ) ( _INDUSTRY_ ) )
+      # *** WRITES TO ... si_finecon2_aggregates ... ***
       # 
       load_division_aggregated_per_dateindex(dateindex = dir_i)
       # INTERNALLY does MANY upserts
