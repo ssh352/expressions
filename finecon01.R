@@ -3736,7 +3736,7 @@ load_inbnd_stmtstats <- function (dateindex = NULL, support_dateindex_collection
     message(paste0("Beginning load_inbnd_stmtstats query SQL of dateindex: ", dateindex))
     
     ## ratios not usefull 'right now' because of explosion
-    ## interesting compare (current) mktcap vs last_inbnd_stmtstat_mktcap
+    ## interesting compare (current) mktcap vs last_inbnd_stmtstat_mktcap 
 
     str_c("
           select sq4.* 
@@ -3748,10 +3748,13 @@ load_inbnd_stmtstats <- function (dateindex = NULL, support_dateindex_collection
             , sq3.company_id  
             , sq3.now_inbnd_stmtid_dateindex
             , sq3.now_inbnd_stmtid_dateindexlbd
+            , sq3.now_inbnd_stmtstat_perend_q1
+            , sq3.now_inbnd_stmtstat_perend_q2
             , sq3.now_inbnd_stmtstat_sales_q1
             , sq3.now_inbnd_stmtstat_netinc_q1
             , sq3.now_inbnd_stmtstat_ncc_q1
             , sq3.now_inbnd_stmtstat_assets_q1
+            , sq3.now_inbnd_stmtstat_assets_q2
             , sq3.now_inbnd_stmtstat_mktcap
             , sq3.now_inbnd_stmtstat_price
             -- SMALL RATIO EXPLOSIONS MAKE THESE USELESS
@@ -3762,10 +3765,13 @@ load_inbnd_stmtstats <- function (dateindex = NULL, support_dateindex_collection
             ---- , sq3.now_inbnd_stmtid_dateindexlbd_partition -- sql debugging utility
             , first_value(sq3.now_inbnd_stmtid_dateindex)     over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindex_partition    order by sq3.dateindex   ) last_inbnd_stmtid_dateindex
             , first_value(sq3.now_inbnd_stmtid_dateindexlbd)  over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindexlbd_partition order by sq3.dateindexlbd) last_inbnd_stmtid_dateindexlbd
+            , first_value(sq3.now_inbnd_stmtstat_perend_q1)   over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindexlbd_partition order by sq3.dateindexlbd) last_inbnd_stmtid_perend_q1
+            , first_value(sq3.now_inbnd_stmtstat_perend_q2)   over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindexlbd_partition order by sq3.dateindexlbd) last_inbnd_stmtid_perend_q2
             , first_value(sq3.now_inbnd_stmtstat_sales_q1)    over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindexlbd_partition order by sq3.dateindexlbd) last_inbnd_stmtstat_sales_q1
             , first_value(sq3.now_inbnd_stmtstat_netinc_q1)   over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindexlbd_partition order by sq3.dateindexlbd) last_inbnd_stmtstat_netinc_q1
             , first_value(sq3.now_inbnd_stmtstat_ncc_q1)      over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindexlbd_partition order by sq3.dateindexlbd) last_inbnd_stmtstat_ncc_q1
             , first_value(sq3.now_inbnd_stmtstat_assets_q1)   over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindexlbd_partition order by sq3.dateindexlbd) last_inbnd_stmtstat_assets_q1
+            , first_value(sq3.now_inbnd_stmtstat_assets_q2)   over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindexlbd_partition order by sq3.dateindexlbd) last_inbnd_stmtstat_assets_q2
             , first_value(sq3.now_inbnd_stmtstat_mktcap)      over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindexlbd_partition order by sq3.dateindexlbd) last_inbnd_stmtstat_mktcap
             , first_value(sq3.now_inbnd_stmtstat_price)       over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindexlbd_partition order by sq3.dateindexlbd) last_inbnd_stmtstat_price
             --, first_value(sq3.now_inbnd_stmtstat_netinc_q1_o_mktcap)   over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindexlbd_partition order by sq3.dateindex) last_inbnd_stmtstat_netinc_q1_o_mktcap
@@ -3778,17 +3784,25 @@ load_inbnd_stmtstats <- function (dateindex = NULL, support_dateindex_collection
               , sq2.dateindex
               , sq2.dateindexlbd
               , sq2.company_id  
+              , sq2.ticker
+              , sq2.company
+              , sq2.date_eq0
               , sq2.now_inbnd_stmtid_dateindex
               , sq2.now_inbnd_stmtid_dateindexlbd
+              , sq2.now_inbnd_stmtstat_perend_q1
+              , sq2.now_inbnd_stmtstat_perend_q2
               , sq2.now_inbnd_stmtstat_sales_q1
               , sq2.now_inbnd_stmtstat_netinc_q1
               , sq2.now_inbnd_stmtstat_ncc_q1
               , sq2.now_inbnd_stmtstat_assets_q1
+              , sq2.now_inbnd_stmtstat_assets_q2
               , sq2.now_inbnd_stmtstat_mktcap
               , sq2.now_inbnd_stmtstat_price
            -- , sq2.now_inbnd_stmtstat_netinc_q1_o_mktcap
            -- , sq2.now_inbnd_stmtstat_sales_q1_o_mktcap
            -- , sq2.now_inbnd_stmtstat_netinc_q1_o_sales_q1
+           -- TRICK I LEARNED ON THE INTERNET
+           -- GENERATE A SERIES 1,2,3(sum cummulative) ON MANY RANGES, EACH RANGE OF MANY RECORDS ( therefore 'first_value' is the inbound )
               , sum(case when sq2.now_inbnd_stmtid_dateindex    is null then 0 else 1 end) over (partition by sq2.company_id order by sq2.dateindex)    as now_inbnd_stmtid_dateindex_partition
               , sum(case when sq2.now_inbnd_stmtid_dateindexlbd is null then 0 else 1 end) over (partition by sq2.company_id order by sq2.dateindexlbd) as now_inbnd_stmtid_dateindexlbd_partition
               , sq2.pct_freeprice_ret_01m_ann
@@ -3798,12 +3812,18 @@ load_inbnd_stmtstats <- function (dateindex = NULL, support_dateindex_collection
                 , sq1.dateindex
                 , sq1.dateindexlbd
                 , sq1.company_id
+                , sq1.ticker
+                , sq1.company
+                , sq1.date_eq0
                 , case when sq1.now_eff_date_eq0 != sq1.p01lbd_eff_date_eq0 then sq1.now_dateindex            else null end now_inbnd_stmtid_dateindex 
                 , case when sq1.now_eff_date_eq0 != sq1.p01lbd_eff_date_eq0 then sq1.now_dateindexlbd         else null end now_inbnd_stmtid_dateindexlbd
+                , case when sq1.now_eff_date_eq0 != sq1.p01lbd_eff_date_eq0 then sq1.now_perend_q1            else null end now_inbnd_stmtstat_perend_q1 
+                , case when sq1.now_eff_date_eq0 != sq1.p01lbd_eff_date_eq0 then sq1.now_perend_q2            else null end now_inbnd_stmtstat_perend_q2 
                 , case when sq1.now_eff_date_eq0 != sq1.p01lbd_eff_date_eq0 then sq1.now_sales_q1             else null end now_inbnd_stmtstat_sales_q1
                 , case when sq1.now_eff_date_eq0 != sq1.p01lbd_eff_date_eq0 then sq1.now_netinc_q1            else null end now_inbnd_stmtstat_netinc_q1
                 , case when sq1.now_eff_date_eq0 != sq1.p01lbd_eff_date_eq0 then sq1.now_ncc_q1               else null end now_inbnd_stmtstat_ncc_q1
                 , case when sq1.now_eff_date_eq0 != sq1.p01lbd_eff_date_eq0 then sq1.now_assets_q1            else null end now_inbnd_stmtstat_assets_q1
+                , case when sq1.now_eff_date_eq0 != sq1.p01lbd_eff_date_eq0 then sq1.now_assets_q2            else null end now_inbnd_stmtstat_assets_q2 
                 , case when sq1.now_eff_date_eq0 != sq1.p01lbd_eff_date_eq0 then sq1.now_mktcap               else null end now_inbnd_stmtstat_mktcap 
                 , case when sq1.now_eff_date_eq0 != sq1.p01lbd_eff_date_eq0 then sq1.now_price                else null end now_inbnd_stmtstat_price 
             --  , case when sq1.now_eff_date_eq0 != sq1.p01lbd_eff_date_eq0 then sq1.now_netinc_q1_o_mktcap   else null end now_inbnd_stmtstat_netinc_q1_o_mktcap  
@@ -3813,19 +3833,27 @@ load_inbnd_stmtstats <- function (dateindex = NULL, support_dateindex_collection
               from ( -- sq1
                 select
                     now.dateindex_company_id
+                  , now.ticker
+                  , now.company
           	      , now.dateindex
           	      , now.dateindexlbd
           	      , now.company_id
+                  , now.date_eq0
+                  , now.perend_q1        now_perend_q1
+                  , now.perend_q2        now_perend_q2
           	      , now.dateindex        now_dateindex
           	      , now.dateindexlbd     now_dateindexlbd
                   , now.company_id       now_company_id
                   , now.sales_q1         now_sales_q1
                   , now.netinc_q1        now_netinc_q1  
                   , now.ncc_q1           now_ncc_q1  
-                  , now.assets_q1        now_assets_q1  
+                  , now.assets_q1        now_assets_q1 
+                  , now.assets_q2        now_assets_q2  
                   , now.mktcap           now_mktcap     
                   , now.price            now_price
-                  , case when now.pertyp_q1 = 'W' then 7 * now.perlen_q1 else (365 / 12) * now.perlen_q1 end now_perlen_days_q1
+              --  , case when now.pertyp_q1 = 'W' then 7 * now.perlen_q1 else (365 / 12) * now.perlen_q1 end now_perlen_days_q1
+              -- EASIER THAN ABOVE
+                  , now.perend_q1 - now.perend_q2 now_perlen_days_q1
               --  , case when perend_q1 - perend_q2 > 0 then perend_q1 - perend_q2 else (365 / 12)       end now_perlen_days_q1
                                                             -- per 3 months -- netinc/mktcap is '1% per quarter' -- UNITS of 100,000 ( one hundred thousand  )  -- typically  $1000/100_thousoand (per quarter)
               --  , now.netinc_q1 / nullif(now.mktcap,0)   * case when now.pertyp_q1 = 'W' then 7 * now.perlen_q1 else (365 / 12) * now.perlen_q1 end / (365 / 4) * 100000 now_netinc_q1_o_mktcap    -- I care about the current mktcap ( investor return per dollar )
@@ -3859,7 +3887,7 @@ load_inbnd_stmtstats <- function (dateindex = NULL, support_dateindex_collection
                    then  ( lag((now.mktcap/nullif(now.price,0))) over (partition by now.company_id order by now.dateindexlbd) - (now.mktcap/nullif(now.price,0)) ) /  nullif((now.mktcap/nullif(now.price,0)),0)
                    else 0.0 end * 100.0 * 12  pct_freeprice_ret_01m_ann  -- a PAST return  
                 	 from
-                    ( select   ins.date_eq0, ins.perend_q1, ins.perlen_q1, ins.pertyp_q1, ins.dateindex_company_id, ins.dateindex, ins.dateindexlbd, ins.dateindexp01lbd, ins.company_id, ins.sales_q1, ins.netinc_q1, ins.ncc_q1, ins.assets_q1, ins.mktcap, ins.price, ins.split_date
+                    ( select   ins.dateindex_company_id, ins.dateindex, ins.dateindexlbd, ins.dateindexp01lbd, ins.company_id, ins.ticker, ins.company, ins.perend_q1, ins.perlen_q1, ins.perend_q2, ins.pertyp_q1, ins.sales_q1, ins.netinc_q1, ins.ncc_q1, ins.assets_q1, ins.assets_q2, ins.mktcap, ins.price, ins.split_date, ins.date_eq0 
                                from si_finecon2 ins  where ins.dateindex ", support_where_condition, ") now left outer join si_finecon2 p01lbd on now.dateindexp01lbd  = p01lbd.dateindexlbd and now.company_id = p01lbd.company_id 
               ) sq1                               -- where ins.ticker in ('AAPL','MSFT') -- VERY easy to test
             ) sq2                                 -- where ins.dateindex in (17347, 17317, 17284, 17256, 17225, 17197, 17165, 17135, 17105, 17074, 17044, 17011, 16982) -- first ONE minute AFTER 13 seconds WITH SORT
@@ -4189,7 +4217,7 @@ load_division_aggregated_per_dateindex <- function(dateindex = NULL) {
   return(TRUE)
   
 }
-## TIGHTLY CORRELATED PREREQUISITE:  oad_division_aggregated_now_last_mktcap_per_company_id
+## TIGHTLY CORRELATED PREREQUISITE:  load_division_aggregated_now_last_mktcap_per_company_id
 #
 ## uses now_inbnd_stmtstat last_inbnd_stmtstat
 ## REALISTIC mass updates ( per dateindex )
@@ -5230,17 +5258,19 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
       # since MANY SQLs upsertS are done inside                                      # if NOT an UPDATE on COMPANY_ID then I CAN go on the OUTSIDE
       # load_division_aggregated_now_last_mktcap_per_company_id(dateindex = dir_i) # # head(lwd_dbf_dirs_ordered,1) ( BUT WILL NOT do this now )
       load_division_aggregated_now_last_mktcap_per_company_id(dateindex = dir_i)
+      # INTERNALLY does MANY upserts
       # 
       # uses
       # load_inbnd_stmtstats
       # load_division_aggregated_now_last_mktcap_per_company_id
       # since MANY SQLs upsertS are done inside
       # 
-      # I BELIEVE CURRENTLY BROKEN 
+      # CURRENTLY BROKEN 
       #  ( NOT CREATING ANY GOLD COLUMNS
       #  ( SEEMS TO BE CREATING THE WORDS: ( _SECTOR_ ) ( _INDUSTRY_ ) )
       # 
       load_division_aggregated_per_dateindex(dateindex = dir_i)
+      # INTERNALLY does MANY upserts
     
     }
     
