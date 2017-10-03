@@ -4208,32 +4208,35 @@ load_division_aggregated_per_dateindex <- function(dateindex = NULL) {
         , sum(last_inbnd_stmtstat_mktcap)    sum_last_inbnd_stmtstat_mktcap
         , avg(now_inbnd_stmtstat_price)      avg_now_inbnd_stmtstat_price
         , avg(last_inbnd_stmtstat_price)     avg_last_inbnd_stmtstat_price
-        -- RELATIVE CHANGES
-        , case when now_inbnd_stmtstat_assets_q1 is not null and now_inbnd_stmtstat_assets_q2 is not null then 1 else null end *
-          ( now_inbnd_stmtstat_assets_q1 - now_inbnd_stmtstat_assets_q2 / abs(now_inbnd_stmtstat_assets_q2) ) * 100                   pctchg_now_inbnd_stmtstat_assets_q1_from_q2
-        , case when last_inbnd_stmtstat_assets_q1 is not null and last_inbnd_stmtstat_assets_q2 is not null then 1 else null end *
-          ( last_inbnd_stmtstat_assets_q1 - last_inbnd_stmtstat_assets_q2 / abs(last_inbnd_stmtstat_assets_q2) ) * 100                pctchg_last_inbnd_stmtstat_assets_q1_from_q2
-        -- 
-        -- THESE STILL ARE NOT RIGHT ORIGINAL WEIGHTS MUST INCLUDE BOTH PARTS OF THE DENOMINTOR ( FOR FUTURE INTENTIONS )
-        -- FOR EXAMPLE: AGG_MKTCAP_WRT_MKTCAP_AND_PRICE MUST INCLUDE AGGREGATE_OF_MKTCAP_*AND*_WRT__PRICE_IS_NOT_NULL_AND_MKTCAP_IS_NOT_NULL
-        -- 
-        ,    avg(case when last_inbnd_stmtstat_price is not null and last_inbnd_stmtstat_mktcap is not null then last_inbnd_stmtstat_price * last_inbnd_stmtstat_mktcap else null end    / 
-          nullif(sum<%= {if(SP_OPS_WHAT_I != ''){'_' %S+% SP_OPS_WHAT_SHORT_I}} %><%= {if(DIVISION_I != ''){'_' %S+% DIVISION_I}} %>_last_inbnd_stmtstat_mktcap,0) )    avg_mktcap_wdt_last_inbnd_stmtstat_price
-
-        ,    avg(case when now_inbnd_stmtstat_price is not null and now_inbnd_stmtstat_mktcap is not null then now_inbnd_stmtstat_price * now_inbnd_stmtstat_mktcap else null end        / 
-          nullif(sum<%= {if(SP_OPS_WHAT_I != ''){'_' %S+% SP_OPS_WHAT_SHORT_I}} %><%= {if(DIVISION_I != ''){'_' %S+% DIVISION_I}} %>_now_inbnd_stmtstat_mktcap, 0) )    avg_mktcap_wdt_now_inbnd_stmtstat_price
-
-        ,    avg(case when last_inbnd_stmtstat_price is not null and last_inbnd_stmtstat_assets_q1 is not null then last_inbnd_stmtstat_price * last_inbnd_stmtstat_assets_q1 else null end / 
-          nullif(sum<%= {if(SP_OPS_WHAT_I != ''){'_' %S+% SP_OPS_WHAT_SHORT_I}} %><%= {if(DIVISION_I != ''){'_' %S+% DIVISION_I}} %>_last_inbnd_stmtstat_assets_q1,0) ) avg_assets_q1_wdt_last_inbnd_stmtstat_price
-
-        ,    avg(case when now_inbnd_stmtstat_price is not null and now_inbnd_stmtstat_assets_q1 is not null then now_inbnd_stmtstat_price * now_inbnd_stmtstat_assets_q1 else null end     / 
-          nullif(sum<%= {if(SP_OPS_WHAT_I != ''){'_' %S+% SP_OPS_WHAT_SHORT_I}} %><%= {if(DIVISION_I != ''){'_' %S+% DIVISION_I}} %>_now_inbnd_stmtstat_assets_q1, 0) ) avg_assets_q1_wdt_now_inbnd_stmtstat_price
-
-        ,    avg(case when pct_freeprice_ret_01m_ann is not null and mktcap is not null then pct_freeprice_ret_01m_ann *  mktcap  else null end    / 
-          nullif(sum<%= {if(SP_OPS_WHAT_I != ''){'_' %S+% SP_OPS_WHAT_SHORT_I}} %><%= {if(DIVISION_I != ''){'_' %S+% DIVISION_I}} %>_mktcap,0) )       avg_mktcap_wdt_pct_freeprice_ret_01m_ann  -- FROM *** load_division_aggregated_now_last_mktcap_per_company_id *** FROM
-
-        ,    avg(case when pct_freeprice_ret_01m_ann is not null and assets_q1 is not null then pct_freeprice_ret_01m_ann * assets_q1 else null end / 
-          nullif(sum<%= {if(SP_OPS_WHAT_I != ''){'_' %S+% SP_OPS_WHAT_SHORT_I}} %><%= {if(DIVISION_I != ''){'_' %S+% DIVISION_I}} %>_assets_q1,0) )    avg_assets_q1_wdt_pct_freeprice_ret_01m_ann 
+--       -- OUT OF TIME WED - FIX AGGREGATES [ ]
+--       -- RELATIVE CHANGES
+--       -- must appear in the GROUP BY clause or be used in an aggregate function
+--       , case when now_inbnd_stmtstat_assets_q1 is not null and now_inbnd_stmtstat_assets_q2 is not null then 1 else null end *
+--         ( now_inbnd_stmtstat_assets_q1 - now_inbnd_stmtstat_assets_q2 / abs(now_inbnd_stmtstat_assets_q2) ) * 100                   pctchg_now_inbnd_stmtstat_assets_q1_from_q2
+--       , case when last_inbnd_stmtstat_assets_q1 is not null and last_inbnd_stmtstat_assets_q2 is not null then 1 else null end *
+--         ( last_inbnd_stmtstat_assets_q1 - last_inbnd_stmtstat_assets_q2 / abs(last_inbnd_stmtstat_assets_q2) ) * 100                pctchg_last_inbnd_stmtstat_assets_q1_from_q2
+--       -- 
+--       -- THESE STILL ARE NOT RIGHT ORIGINAL WEIGHTS MUST INCLUDE BOTH PARTS OF THE DENOMINTOR ( FOR FUTURE INTENTIONS )
+--       -- FOR EXAMPLE: AGG_MKTCAP_WRT_MKTCAP_AND_PRICE MUST INCLUDE AGGREGATE_OF_MKTCAP_*AND*_WRT__PRICE_IS_NOT_NULL_AND_MKTCAP_IS_NOT_NULL
+--       -- 
+--       -- OUT OF TIME WED - FIX AGGREGATES [ ]
+--       ,    avg(case when last_inbnd_stmtstat_price is not null and last_inbnd_stmtstat_mktcap is not null then last_inbnd_stmtstat_price * last_inbnd_stmtstat_mktcap else null end    / 
+--         nullif(sum<%= {if(SP_OPS_WHAT_I != ''){'_' %S+% SP_OPS_WHAT_SHORT_I}} %><%= {if(DIVISION_I != ''){'_' %S+% DIVISION_I}} %>_last_inbnd_stmtstat_mktcap,0) )    avg_mktcap_wdt_last_inbnd_stmtstat_price
+-- 
+--       ,    avg(case when now_inbnd_stmtstat_price is not null and now_inbnd_stmtstat_mktcap is not null then now_inbnd_stmtstat_price * now_inbnd_stmtstat_mktcap else null end        / 
+--         nullif(sum<%= {if(SP_OPS_WHAT_I != ''){'_' %S+% SP_OPS_WHAT_SHORT_I}} %><%= {if(DIVISION_I != ''){'_' %S+% DIVISION_I}} %>_now_inbnd_stmtstat_mktcap, 0) )    avg_mktcap_wdt_now_inbnd_stmtstat_price
+-- 
+--       ,    avg(case when last_inbnd_stmtstat_price is not null and last_inbnd_stmtstat_assets_q1 is not null then last_inbnd_stmtstat_price * last_inbnd_stmtstat_assets_q1 else null end / 
+--         nullif(sum<%= {if(SP_OPS_WHAT_I != ''){'_' %S+% SP_OPS_WHAT_SHORT_I}} %><%= {if(DIVISION_I != ''){'_' %S+% DIVISION_I}} %>_last_inbnd_stmtstat_assets_q1,0) ) avg_assets_q1_wdt_last_inbnd_stmtstat_price
+-- 
+--       ,    avg(case when now_inbnd_stmtstat_price is not null and now_inbnd_stmtstat_assets_q1 is not null then now_inbnd_stmtstat_price * now_inbnd_stmtstat_assets_q1 else null end     / 
+--         nullif(sum<%= {if(SP_OPS_WHAT_I != ''){'_' %S+% SP_OPS_WHAT_SHORT_I}} %><%= {if(DIVISION_I != ''){'_' %S+% DIVISION_I}} %>_now_inbnd_stmtstat_assets_q1, 0) ) avg_assets_q1_wdt_now_inbnd_stmtstat_price
+-- 
+--       ,    avg(case when pct_freeprice_ret_01m_ann is not null and mktcap is not null then pct_freeprice_ret_01m_ann *  mktcap  else null end    / 
+--         nullif(sum<%= {if(SP_OPS_WHAT_I != ''){'_' %S+% SP_OPS_WHAT_SHORT_I}} %><%= {if(DIVISION_I != ''){'_' %S+% DIVISION_I}} %>_mktcap,0) )       avg_mktcap_wdt_pct_freeprice_ret_01m_ann  -- FROM *** load_division_aggregated_now_last_mktcap_per_company_id *** FROM
+-- 
+--       ,    avg(case when pct_freeprice_ret_01m_ann is not null and assets_q1 is not null then pct_freeprice_ret_01m_ann * assets_q1 else null end / 
+--         nullif(sum<%= {if(SP_OPS_WHAT_I != ''){'_' %S+% SP_OPS_WHAT_SHORT_I}} %><%= {if(DIVISION_I != ''){'_' %S+% DIVISION_I}} %>_assets_q1,0) )    avg_assets_q1_wdt_pct_freeprice_ret_01m_ann 
 
       from si_finecon2 where dateindex = <%= DATEINDEX %> and
         <%= {if(SP_OPS_WHAT_I != '') { 'sp in ' %S+% SP_OPS_WHAT_I }} %>
@@ -5404,8 +5407,12 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
 #   upload_lwd_sipro_dbfs_to_db(                                            months_only_back = 13, exactly_only_future_returns = TRUE) 
 # }
 
+# loading aggregates (from the beginning)
+# upload_lwd_sipro_dbfs_to_db(exactly_only_aggregates = TRUE, decreasing_sort_order = FALSE)
+
 # maybe for loading or re-testing the (past to now) aggregate calculations
 # upload_lwd_sipro_dbfs_to_db(                                              months_only_back = 5, exactly_only_aggregates = TRUE, decreasing_sort_order = FALSE)
+
 
 # all returns from now through the past to the beginning
 # upload_lwd_sipro_dbfs_to_db(exactly_only_future_returns = TRUE)
