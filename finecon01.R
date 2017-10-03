@@ -3993,6 +3993,11 @@ load_division_aggregated_now_last_mktcap_per_company_id <- function(dateindex = 
           , count(last_inbnd_stmtstat_assets_q1) count<%= {if(SP_OPS_WHAT_I != '') { '_' %S+% SP_OPS_WHAT_SHORT_I }}  %S+% {if(DIVISION_I != '') { '_' %S+% DIVISION_I }}  %>_last_inbnd_stmtstat_assets_q1
           , sum(last_inbnd_stmtstat_assets_q1)     sum<%= {if(SP_OPS_WHAT_I != '') { '_' %S+% SP_OPS_WHAT_SHORT_I }}  %S+% {if(DIVISION_I != '') { '_' %S+% DIVISION_I }}  %>_last_inbnd_stmtstat_assets_q1
           , sum(assets_q1)                         sum<%= {if(SP_OPS_WHAT_I != '') { '_' %S+% SP_OPS_WHAT_SHORT_I }}  %S+% {if(DIVISION_I != '') { '_' %S+% DIVISION_I }}  %>_assets_q1
+          , count(now_inbnd_stmtstat_assets_q2)  count<%= {if(SP_OPS_WHAT_I != '') { '_' %S+% SP_OPS_WHAT_SHORT_I }}  %S+% {if(DIVISION_I != '') { '_' %S+% DIVISION_I }}  %>_now_inbnd_stmtstat_assets_q2
+          , sum(now_inbnd_stmtstat_assets_q2)      sum<%= {if(SP_OPS_WHAT_I != '') { '_' %S+% SP_OPS_WHAT_SHORT_I }}  %S+% {if(DIVISION_I != '') { '_' %S+% DIVISION_I }}  %>_now_inbnd_stmtstat_assets_q2
+          , count(last_inbnd_stmtstat_assets_q2) count<%= {if(SP_OPS_WHAT_I != '') { '_' %S+% SP_OPS_WHAT_SHORT_I }}  %S+% {if(DIVISION_I != '') { '_' %S+% DIVISION_I }}  %>_last_inbnd_stmtstat_assets_q2
+          , sum(last_inbnd_stmtstat_assets_q2)     sum<%= {if(SP_OPS_WHAT_I != '') { '_' %S+% SP_OPS_WHAT_SHORT_I }}  %S+% {if(DIVISION_I != '') { '_' %S+% DIVISION_I }}  %>_last_inbnd_stmtstat_assets_q2
+          , sum(assets_q2)                         sum<%= {if(SP_OPS_WHAT_I != '') { '_' %S+% SP_OPS_WHAT_SHORT_I }}  %S+% {if(DIVISION_I != '') { '_' %S+% DIVISION_I }}  %>_assets_q2
         from si_finecon2 where dateindex = <%=DATEINDEX%> and 
                               <%= {if(SP_OPS_WHAT_I != '') { ' sp in ' %S+% SP_OPS_WHAT_I %S+% '     ' }} %> 
         group by dateindex <%= {if(DIVISION_I != '') { ', ' %S+% DIVISION_I }} %> ) sq1 
@@ -4024,7 +4029,7 @@ load_division_aggregated_now_last_mktcap_per_company_id <- function(dateindex = 
 }
 # call 
 # uses now_inbnd_stmtstat last_inbnd_stmtstat
-# since MANY SQLs upsertS are done inside
+# since MANY SQLs upsertS are done inside ( TESTER: USE THIS ONE)
 # load_division_aggregated_now_last_mktcap_per_company_id(dateindex = 17347)
 # 
 # from_dir = "W:/AAIISIProDBFs"
