@@ -3803,6 +3803,11 @@ load_inbnd_stmtstats <- function (dateindex = NULL, support_dateindex_collection
            -- , sq2.now_inbnd_stmtstat_netinc_q1_o_sales_q1
            -- TRICK I LEARNED ON THE INTERNET
            -- GENERATE A SERIES 1,2,3(sum cummulative) ON MANY RANGES, EACH RANGE OF MANY RECORDS ( therefore 'first_value' is the inbound )
+           -- AT FIRST POSITION 'non-NULL' value in a range, sets the value for the current range
+           -- AT THE NEXT RANGE (same as above) and ITS value increases by 1
+           -- locf: last observation carried forward
+           -- How do I efficiently select the previous non-null value?
+           -- https://stackoverflow.com/questions/18987791/how-do-i-efficiently-select-the-previous-non-null-value
               , sum(case when sq2.now_inbnd_stmtid_dateindex    is null then 0 else 1 end) over (partition by sq2.company_id order by sq2.dateindex)    as now_inbnd_stmtid_dateindex_partition
               , sum(case when sq2.now_inbnd_stmtid_dateindexlbd is null then 0 else 1 end) over (partition by sq2.company_id order by sq2.dateindexlbd) as now_inbnd_stmtid_dateindexlbd_partition
               , sq2.pct_freeprice_ret_01m_ann
