@@ -5256,7 +5256,7 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
       # support_dateindex_collection is the 
       # minimum of 11 months: current + ( 6 month Quarter period reporter with 4 month Q-10 report filing delay ) 
       #                           # current or earlier                               # current or up to 10 earlier
-      print(dir_i);load_inbnd_stmtstats(dir_i, near_month_end_dbf_dirs_ordered[dir_i>= near_month_end_dbf_dirs_ordered][seq_len(min(sum(dir_i >= near_month_end_dbf_dirs_ordered),11))], char_col_numeric_limit = 99999999999999.99) -> si_all_g_df
+      print(dir_i);load_inbnd_stmtstats(dir_i,  sort(as.integer(dir(from_dir)), decreasing = TRUE)[dir_i>=  sort(as.integer(dir(from_dir)), decreasing = TRUE)][seq_len(min(sum(dir_i >=  sort(as.integer(dir(from_dir)), decreasing = TRUE)),11))], char_col_numeric_limit = 99999999999999.99) -> si_all_g_df
       print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
       # 
       # uses now_inbnd_stmtstat last_inbnd_stmtstat
