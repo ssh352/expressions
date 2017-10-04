@@ -552,7 +552,7 @@ lwd_of_month <- function(anyday = NULL, within_back = 5) {
   logical() -> result
   for(anyday_i in anyday) {
     seq(from = as.integer(zoo::as.Date(zoo::as.yearmon(zoo::as.Date(anyday_i) - within_back), frac = 0)),
-        to = as.integer(zoo::as.Date(zoo::as.yearmon(zoo::as.Date(anyday_i)), frac = 1)),
+          to = as.integer(zoo::as.Date(zoo::as.yearmon(zoo::as.Date(anyday_i) - within_back), frac = 1)),
         by = 1) -> all_month_days
     as.integer(zoo::index(to.monthly.lwd(xts::xts(rep(NA_real_,length(all_month_days)),zoo::as.Date(all_month_days))))) -> result_i
     c(result, result_i) -> result
@@ -5465,7 +5465,7 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
 # everything
 # 
 # { 
-#   upload_lwd_sipro_dbfs_to_db(exact_near_month_end_dbf_dirs = c(15184)) 
+#   # upload_lwd_sipro_dbfs_to_db(exact_near_month_end_dbf_dirs = c(15184)) # 
 #   upload_lwd_sipro_dbfs_to_db(decreasing_sort_order = FALSE) # bsq,isq,cfq # first to last(current)
 #   upload_lwd_sipro_dbfs_to_db(exactly_only_future_returns = TRUE)          # last(current) to first
 # }
@@ -6326,7 +6326,10 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
     
   for(disk_dateindexes_i in disk_dateindexes) {
     
-    message(paste0("sipro_adhoc_disk - Beginning disk_dateindexes_i: ", disk_dateindexes_i), call. = FALSE)
+    # browser( expr = { disk_dateindexes_i == 12629   })
+    # browser( expr = { disk_dateindexes_i == 12601   }) # lwd_of_month WRONG EVERYWHERE - but I do not join on it
+    
+    message(paste0("sipro_adhoc_disk - Beginning disk_dateindexes_i: ", disk_dateindexes_i))
   
     si_tbl_dfs <- list()
     
@@ -6400,7 +6403,7 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
         # { RQuantLib::getEndOfMonth("UnitedStates/NYSE", disk_dateindexes_i_dt - 5) } %>%   # TEST!: zoo::as.Date("2010-05-28")
         #     as.integer -> dateindexlbd
 
-        dateindexlbd(disk_dateindexes_i_dt) -> dateindexlbd
+        lbd_of_month(disk_dateindexes_i_dt) -> dateindexlbd
         
         # { RQuantLib::getEndOfMonth("WeekendsOnly"     , disk_dateindexes_i_dt - 5) } %>%
         #     as.integer -> dateindexlwd
@@ -6487,7 +6490,7 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
       si_tbl_df_all <- list(si_tbl_df)
     }
     
-    message(paste0("sipro_adhoc_disk - End disk_dateindexes_i: ", disk_dateindexes_i), call. = FALSE)
+    message(paste0("sipro_adhoc_disk - End disk_dateindexes_i: ", disk_dateindexes_i))
     
   }
 
