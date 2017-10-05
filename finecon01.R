@@ -5185,7 +5185,7 @@ vacuum_reindex_check <- function(start_time, how_often) {
 
                                                                                                 # NO CHECK: I must verify
                                                                                                 # that (1) exists AND (2) lwd
-upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_only_back = NULL, exact_near_month_end_dbf_dirs = NULL, decreasing_sort_order = TRUE, exactly_only_future_returns = FALSE, exactly_only_aggregates = FALSE, vacuum_reindex_every_x_seconds=3600) {
+upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_only_back = NULL, exact_near_month_end_dbf_dirs = NULL, decreasing_sort_order = TRUE, exactly_only_future_returns = FALSE, exactly_only_aggregates = FALSE, exactly_only_aggregates_group_bys_only = FALSE, vacuum_reindex_every_x_seconds=3600) {
 
   # NOTE: to build from scratch
   # start from the earliest date (not default) and go thorugh the current date
@@ -5281,57 +5281,53 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
     message(paste0("**** Beginning disk dbf dir: ",dir_i," ", dir_i," ****"))
     Sys.sleep(2)
     
-    if(!exactly_only_future_returns) {
-    
-      if(!exactly_only_aggregates) {
+    if(!exactly_only_future_returns && !exactly_only_aggregates) {
+  
+      verify_company_basics(dateindex = c(dir_i)) -> si_all_g_df
+      update_from_future_new_company_ids(df = si_all_g_df, ref = dir_i) -> si_all_g_df
+      print(dir_i);upsert(si_all_g_df, keys = c("company_id")) # HERE #
+  
+      vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
       
-        verify_company_basics(dateindex = c(dir_i)) -> si_all_g_df
-        update_from_future_new_company_ids(df = si_all_g_df, ref = dir_i) -> si_all_g_df
-        print(dir_i);upsert(si_all_g_df, keys = c("company_id")) # HERE #
-    
-        vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
-        
-        verify_company_details(dateindex = c(dir_i),  table_f = "si_psd", cnames_e = "^price$|^mktcap$|^split_fact$|^split_date$") -> si_all_g_df
-        print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
-    
-        vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
-        
-        verify_company_details(dateindex = c(dir_i),  table_f = "si_psd", cnames_e = "^prchg_\\d\\dw$") -> si_all_g_df
-        upsert(si_all_g_df, keys = c("company_id"))
-    
-        vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
-        
-        verify_return_dates(dateindex = c(dir_i), months_limit = 38)  -> si_all_g_df
-        print(dir_i);upsert(si_all_g_df, keys = NULL) # ONLY dateindex is the pk
-    
-        vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
-        
-        verify_company_details(dateindex = c(dir_i),  table_f = "si_isq", cnames_e = "^dps_q.$") -> si_all_g_df
-        print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
-    
-        vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
-        
-        verify_company_details(dateindex = c(dir_i),  table_f = "si_date", cnames_e = "^perend_q.$|^perlen_q.$|^pertyp_q.$") -> si_all_g_df
-        print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
-    
-        vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
-        
-        # MAY? have not been reliable?
-        verify_company_details(dateindex = c(dir_i),  table_f = "si_ee"  , cnames_e = "^date_eq0$") -> si_all_g_df
-        upsert(si_all_g_df, keys = c("company_id"))
-        
-        vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
-        
-        verify_company_details(dateindex = c(dir_i),  table_f = "si_mlt", cnames_e = "^bby_1t$") -> si_all_g_df
-        print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
-    
-        vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
-        
-      }
+      verify_company_details(dateindex = c(dir_i),  table_f = "si_psd", cnames_e = "^price$|^mktcap$|^split_fact$|^split_date$") -> si_all_g_df
+      print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
+  
+      vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
       
+      verify_company_details(dateindex = c(dir_i),  table_f = "si_psd", cnames_e = "^prchg_\\d\\dw$") -> si_all_g_df
+      upsert(si_all_g_df, keys = c("company_id"))
+  
+      vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
+      
+      verify_return_dates(dateindex = c(dir_i), months_limit = 38)  -> si_all_g_df
+      print(dir_i);upsert(si_all_g_df, keys = NULL) # ONLY dateindex is the pk
+  
+      vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
+      
+      verify_company_details(dateindex = c(dir_i),  table_f = "si_isq", cnames_e = "^dps_q.$") -> si_all_g_df
+      print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
+  
+      vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
+      
+      verify_company_details(dateindex = c(dir_i),  table_f = "si_date", cnames_e = "^perend_q.$|^perlen_q.$|^pertyp_q.$") -> si_all_g_df
+      print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
+  
+      vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
+      
+      # MAY? have not been reliable?
+      verify_company_details(dateindex = c(dir_i),  table_f = "si_ee"  , cnames_e = "^date_eq0$") -> si_all_g_df
+      upsert(si_all_g_df, keys = c("company_id"))
+      
+      vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
+      
+      verify_company_details(dateindex = c(dir_i),  table_f = "si_mlt", cnames_e = "^bby_1t$") -> si_all_g_df
+      print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
+  
+      vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
+        
     }
     
-    if(!exactly_only_aggregates) {
+    if(exactly_only_future_returns) {
   
       # requires
       #   dateindexf##lwd, price, prchg_##w, perend_q#, dps_q#
@@ -5342,71 +5338,80 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
     
     }
 
-    if(!exactly_only_future_returns) {
+    if(!exactly_only_future_returns && !exactly_only_aggregates) {
       
-      if(!exactly_only_aggregates) {
-    
-        verify_company_details(dateindex = c(dir_i),  table_f = "si_psdc", cnames_e = "^price_m00[1-9]$|^price_m01[0-7]$") -> si_all_g_df
-        print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
-        
-        vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
-        
-        # requires (above)
-        #    price_m001 through price_m017
-        verify_month_often_month_past_returns(dir_i,  months_limit = 17) -> si_all_g_df
-        print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
-        
-        vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
-        
-        verify_company_details(dateindex = c(dir_i),  table_f = "si_isq", cnames_e = "^sales_q.$") -> si_all_g_df
-        print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
-    
-        vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
-        
-        verify_company_details(dateindex = c(dir_i),  table_f = "si_isq", cnames_e = "^netinc_q.$") -> si_all_g_df
-        print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
-        
-        vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
-        
-        verify_company_details(dateindex = c(dir_i),  table_f = "si_cfq", cnames_e = "^ncc_q.$") -> si_all_g_df
-        print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
-        
-        vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
-        
-        verify_company_details(dateindex = c(dir_i),  table_f = "si_bsq", cnames_e = "^assets_q.$") -> si_all_g_df
-        print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
+
+      verify_company_details(dateindex = c(dir_i),  table_f = "si_psdc", cnames_e = "^price_m00[1-9]$|^price_m01[0-7]$") -> si_all_g_df
+      print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
       
-        vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
+      vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
+      
+      # requires (above)
+      #    price_m001 through price_m017
+      verify_month_often_month_past_returns(dir_i,  months_limit = 17) -> si_all_g_df
+      print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
+      
+      vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
+      
+      verify_company_details(dateindex = c(dir_i),  table_f = "si_isq", cnames_e = "^sales_q.$") -> si_all_g_df
+      print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
+  
+      vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
+      
+      verify_company_details(dateindex = c(dir_i),  table_f = "si_isq", cnames_e = "^netinc_q.$") -> si_all_g_df
+      print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
+      
+      vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
+      
+      verify_company_details(dateindex = c(dir_i),  table_f = "si_cfq", cnames_e = "^ncc_q.$") -> si_all_g_df
+      print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
+      
+      vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
+      
+      verify_company_details(dateindex = c(dir_i),  table_f = "si_bsq", cnames_e = "^assets_q.$") -> si_all_g_df
+      print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
+    
+      vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
         
+    }
+      
+    if(exactly_only_aggregates) {
+      
+                                                    # no decision
+      if(!exactly_only_aggregates_group_bys_only || is.null(exactly_only_aggregates_group_bys_only)) {
+        #
+        # support_dateindex_collection is the 
+        # minimum of 11 months: current + ( 6 month Quarter period reporter with 4 month Q-10 report filing delay ) 
+        #                           # current or earlier                               # current or up to 10 earlier
+        print(dir_i);load_inbnd_stmtstats(dir_i,  sort(as.integer(dir(from_dir)), decreasing = TRUE)[dir_i>=  sort(as.integer(dir(from_dir)), decreasing = TRUE)][seq_len(min(sum(dir_i >=  sort(as.integer(dir(from_dir)), decreasing = TRUE)),11))], char_col_numeric_limit = 99999999999999.99) -> si_all_g_df
+        print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
+        # 
+        vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
+        # 
+      }
+                                                   # no decision
+      if(exactly_only_aggregates_group_bys_only || is.null(exactly_only_aggregates_group_bys_only)) {
+              # uses now_inbnd_stmtstat last_inbnd_stmtstat
+        # since MANY SQLs upsertS are done inside                                      # if NOT an UPDATE on COMPANY_ID then I CAN go on the OUTSIDE
+        # load_division_aggregated_now_last_mktcap_per_company_id(dateindex = dir_i) # # head(lwd_dbf_dirs_ordered,1) ( BUT WILL NOT do this now )
+        load_division_aggregated_now_last_mktcap_per_company_id(dateindex = dir_i)
+        # INTERNALLY does MANY upserts
+        vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
+        # 
+        # uses
+        # load_inbnd_stmtstats
+        # load_division_aggregated_now_last_mktcap_per_company_id
+        # since MANY SQLs upsertS are done inside
+        # 
+        # *** WRITES TO ... si_finecon2_aggregates ... ***
+        # 
+        load_division_aggregated_per_dateindex(dateindex = dir_i)
+        # INTERNALLY does MANY upserts
+        #
+        vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
       }
       
-      # support_dateindex_collection is the 
-      # minimum of 11 months: current + ( 6 month Quarter period reporter with 4 month Q-10 report filing delay ) 
-      #                           # current or earlier                               # current or up to 10 earlier
-      print(dir_i);load_inbnd_stmtstats(dir_i,  sort(as.integer(dir(from_dir)), decreasing = TRUE)[dir_i>=  sort(as.integer(dir(from_dir)), decreasing = TRUE)][seq_len(min(sum(dir_i >=  sort(as.integer(dir(from_dir)), decreasing = TRUE)),11))], char_col_numeric_limit = 99999999999999.99) -> si_all_g_df
-      print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
-      # 
-      vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
-      # 
-      # uses now_inbnd_stmtstat last_inbnd_stmtstat
-      # since MANY SQLs upsertS are done inside                                      # if NOT an UPDATE on COMPANY_ID then I CAN go on the OUTSIDE
-      # load_division_aggregated_now_last_mktcap_per_company_id(dateindex = dir_i) # # head(lwd_dbf_dirs_ordered,1) ( BUT WILL NOT do this now )
-      load_division_aggregated_now_last_mktcap_per_company_id(dateindex = dir_i)
-      # INTERNALLY does MANY upserts
-      vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
-      # 
-      # uses
-      # load_inbnd_stmtstats
-      # load_division_aggregated_now_last_mktcap_per_company_id
-      # since MANY SQLs upsertS are done inside
-      # 
-      # *** WRITES TO ... si_finecon2_aggregates ... ***
-      # 
-      load_division_aggregated_per_dateindex(dateindex = dir_i)
-      # INTERNALLY does MANY upserts
-      #
-      vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
-    
+      
     }
     
     Sys.sleep(2)
@@ -5489,8 +5494,11 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
 #   upload_lwd_sipro_dbfs_to_db(                                            months_only_back = 13, exactly_only_future_returns = TRUE) 
 # }
 
-# loading aggregates (from the beginning)
-# upload_lwd_sipro_dbfs_to_db(exactly_only_aggregates = TRUE, decreasing_sort_order = FALSE)
+# loading 'inbnd' and next 'group by' aggregates (from the beginning)
+# upload_lwd_sipro_dbfs_to_db(exactly_only_aggregates = TRUE               , decreasing_sort_order = FALSE)
+
+# loading                  'group by' aggregates (from the beginning)
+# upload_lwd_sipro_dbfs_to_db(exactly_only_aggregates_group_bys_only = TRUE, decreasing_sort_order = FALSE)
 
 # maybe for loading or re-testing the (past to now) aggregate calculations
 # upload_lwd_sipro_dbfs_to_db(                                              months_only_back = 5, exactly_only_aggregates = TRUE, decreasing_sort_order = FALSE)
