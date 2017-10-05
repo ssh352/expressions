@@ -1,4 +1,7 @@
 
+# dateindexlwd IS WRONG everywhere ( patch fixed )
+# DATA needs left to be fixed [ ] ( but I do not join on it anywhere )
+
 
 #LEFT_OFF see LEFT_OFF.txt unnest(array(...
 
@@ -5181,6 +5184,10 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
   # best 12055 tester
   # 12055 and go forward 3 + then go back 3
   
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
   
   ops <- options()
   options(warn=1) # If 'warn' is one, warnings are printed as they occur. ( Because I can not print colors )
@@ -5352,6 +5359,8 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
   #   load_us_bond_instruments() # ALL OF the data
   # }
 
+  Sys.setenv(TZ=oldtz)
+  
   options(ops)
   
   return(invisible())
@@ -6590,6 +6599,20 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
 #                                           , data.frame.out  = TRUE
 #                                         )
 # 
+
+# sipro_adhoc_disk_out <- sipro_adhoc_disk(   fields          = c("company_id"   , "ticker", "company", "sp"  , "employees"          , "mktcap"             , "price"              , "netinc_q1"          , "cgs_q1"             , "sales_q1"           , "cash_q1"            , "ncc_q1"            , "tcf_q1"            , "tci_q1"             , "tco_q1"             , "ere_q1"              , "perend_q1" )
+#                                           , fields_db_types = c("text"         , "text"  , "text"   , "text", "numeric(EXPLODE,2)" , "numeric(EXPLODE,2)" , "numeric(EXPLODE,2)" , "numeric(EXPLODE,2)" , "numeric(EXPLODE,2)" , "numeric(EXPLODE,2)" , "numeric(EXPLODE,2)" , "numeric(EXPLODE,2)", "numeric(EXPLODE,2)", "numeric(EXPLODE,2)" , "numeric(EXPLODE,2)" , "numeric(EXPLODE,2)"  , "integer"   )
+#                                           , tables          = list(c("si_ci"   ,                                                                                                                                                                                                                                                 
+#                                                                      "si_isq"  ,                             
+#                                                                      "si_psd"  ,                                                                                
+#                                                                      "si_cfq"  ,                             
+#                                                                      "si_bsq"  ,                             
+#                                                                      "si_date"), "si_ci" , "si_ci" , "si_ci", "si_ci"              , "si_psd"             , "si_psd"             , "si_isq"             , "si_isq"             , "si_isq"             , "si_bsq"             , "si_cfq"            , "si_cfq"            , "si_cfq"             , "si_cfq"             , "si_cfq"              , "si_date"   ) 
+#                                           , data.frame.out  = TRUE
+#                                         )
+
+
+
 # -- [X] ALREADY IN SIFINECON.01
 # -- BEGIN OUTLIER DETECTION --
 # 
