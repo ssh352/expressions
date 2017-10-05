@@ -4152,7 +4152,7 @@ load_division_aggregated_per_dateindex <- function(dateindex = NULL) {
         <%= {if(DIVISION_I != '') { ',     ' %S+% DIVISION_I %S+% ' ' %S+% DIVISION_I %S+% '_fct' }} %>
         -- NOWS
         ,        sum(case when now_inbnd_stmtstat_ncc_q1 is not null and now_inbnd_stmtstat_mktcap is not null then now_inbnd_stmtstat_ncc_q1 else null end)    / 
-          nullif(sum(case when now_inbnd_stmtstat_ncc_q1 is not null and now_inbnd_stmtstat_mktcap is not null then now_inbnd_stmtstat_mktcap else null end), 0)  * 100.00  rat_now_inbnd_stmtstat_ncc_q1_o_mktcap_x_100
+          nullif(sum(case when now_inbnd_stmtstat_ncc_q1 is not null and now_inbnd_stmtstat_mktcap is not null then now_inbnd_stmtstat_mktcap else null end), 0)  * 10000.00  rat_now_inbnd_stmtstat_ncc_q1_o_mktcap_x_10000  
         ,        sum(case when now_inbnd_stmtstat_sales_q1 is not null and now_inbnd_stmtstat_mktcap is not null then now_inbnd_stmtstat_sales_q1 else null end)    / 
           nullif(sum(case when now_inbnd_stmtstat_sales_q1 is not null and now_inbnd_stmtstat_mktcap is not null then now_inbnd_stmtstat_mktcap   else null end), 0) * 100.00  rat_now_inbnd_stmtstat_sales_q1_o_mktcap_x_100
         ,        sum(case when now_inbnd_stmtstat_netinc_q1 is not null and now_inbnd_stmtstat_mktcap is not null then now_inbnd_stmtstat_netinc_q1 else null end)    / 
@@ -4160,7 +4160,7 @@ load_division_aggregated_per_dateindex <- function(dateindex = NULL) {
         ,        sum(case when now_inbnd_stmtstat_netinc_q1 is not null and now_inbnd_stmtstat_sales_q1 is not null then now_inbnd_stmtstat_netinc_q1  else null end)   /
           nullif(sum(case when now_inbnd_stmtstat_netinc_q1 is not null and now_inbnd_stmtstat_sales_q1 is not null then now_inbnd_stmtstat_sales_q1  else null end), 0) * 100.00  rat_now_inbnd_stmtstat_netinc_q1_o_sales_q1_x_100
         ,        sum(case when now_inbnd_stmtstat_ncc_q1 is not null and now_inbnd_stmtstat_assets_q1 is not null then now_inbnd_stmtstat_ncc_q1    else null end)    / 
-          nullif(sum(case when now_inbnd_stmtstat_ncc_q1 is not null and now_inbnd_stmtstat_assets_q1 is not null then now_inbnd_stmtstat_assets_q1 else null end), 0) * 100.00  rat_now_inbnd_stmtstat_ncc_q1_o_assets_q1_x_10
+          nullif(sum(case when now_inbnd_stmtstat_ncc_q1 is not null and now_inbnd_stmtstat_assets_q1 is not null then now_inbnd_stmtstat_assets_q1 else null end), 0) * 10000.00  rat_now_inbnd_stmtstat_ncc_q1_o_assets_q1_x_10000  
         ,        sum(case when now_inbnd_stmtstat_sales_q1 is not null and now_inbnd_stmtstat_assets_q1 is not null then now_inbnd_stmtstat_sales_q1  else null end)    / 
           nullif(sum(case when now_inbnd_stmtstat_sales_q1 is not null and now_inbnd_stmtstat_assets_q1 is not null then now_inbnd_stmtstat_assets_q1 else null end), 0) * 100.00  rat_now_inbnd_stmtstat_sales_q1_o_assets_q1_x_10
         ,        sum(case when now_inbnd_stmtstat_netinc_q1 is not null and now_inbnd_stmtstat_assets_q1 is not null then now_inbnd_stmtstat_netinc_q1  else null end)    / 
@@ -4169,7 +4169,7 @@ load_division_aggregated_per_dateindex <- function(dateindex = NULL) {
           nullif(sum(case when now_inbnd_stmtstat_ncc_q1 is not null and now_inbnd_stmtstat_sales_q1 is not null then now_inbnd_stmtstat_sales_q1 else null end), 0) * 100.00  rat_now_inbnd_stmtstat_ncc_q1_o_sales_q1_x_100
         -- LASTS
         ,        sum(case when last_inbnd_stmtstat_ncc_q1 is not null and last_inbnd_stmtstat_mktcap is not null then last_inbnd_stmtstat_ncc_q1 else null end)    / 
-          nullif(sum(case when last_inbnd_stmtstat_ncc_q1 is not null and last_inbnd_stmtstat_mktcap is not null then last_inbnd_stmtstat_mktcap else null end), 0)  * 100.00  rat_last_inbnd_stmtstat_ncc_q1_o_mktcap_x_100
+          nullif(sum(case when last_inbnd_stmtstat_ncc_q1 is not null and last_inbnd_stmtstat_mktcap is not null then last_inbnd_stmtstat_mktcap else null end), 0)  * 10000.00  rat_last_inbnd_stmtstat_ncc_q1_o_mktcap_x_10000
         ,        sum(case when last_inbnd_stmtstat_sales_q1 is not null and last_inbnd_stmtstat_mktcap is not null then last_inbnd_stmtstat_sales_q1 else null end)    / 
           nullif(sum(case when last_inbnd_stmtstat_sales_q1 is not null and last_inbnd_stmtstat_mktcap is not null then last_inbnd_stmtstat_mktcap   else null end), 0) * 100.00  rat_last_inbnd_stmtstat_sales_q1_o_mktcap_x_100
         ,        sum(case when last_inbnd_stmtstat_netinc_q1 is not null and last_inbnd_stmtstat_mktcap is not null then last_inbnd_stmtstat_netinc_q1 else null end)    / 
@@ -4177,13 +4177,13 @@ load_division_aggregated_per_dateindex <- function(dateindex = NULL) {
         ,        sum(case when last_inbnd_stmtstat_netinc_q1 is not null and last_inbnd_stmtstat_sales_q1 is not null then last_inbnd_stmtstat_netinc_q1  else null end)   /
           nullif(sum(case when last_inbnd_stmtstat_netinc_q1 is not null and last_inbnd_stmtstat_sales_q1 is not null then last_inbnd_stmtstat_sales_q1  else null end), 0) * 100.00  rat_last_inbnd_stmtstat_netinc_q1_o_sales_q1_x_100
         ,        sum(case when last_inbnd_stmtstat_ncc_q1 is not null and last_inbnd_stmtstat_assets_q1 is not null then last_inbnd_stmtstat_ncc_q1    else null end)    / 
-          nullif(sum(case when last_inbnd_stmtstat_ncc_q1 is not null and last_inbnd_stmtstat_assets_q1 is not null then last_inbnd_stmtstat_assets_q1 else null end), 0) * 100.00  rat_last_inbnd_stmtstat_ncc_q1_o_assets_q1_x_10
+          nullif(sum(case when last_inbnd_stmtstat_ncc_q1 is not null and last_inbnd_stmtstat_assets_q1 is not null then last_inbnd_stmtstat_assets_q1 else null end), 0) * 10000.00  rat_last_inbnd_stmtstat_ncc_q1_o_assets_q1_x_10000
         ,        sum(case when last_inbnd_stmtstat_sales_q1 is not null and last_inbnd_stmtstat_assets_q1 is not null then last_inbnd_stmtstat_sales_q1  else null end)    / 
           nullif(sum(case when last_inbnd_stmtstat_sales_q1 is not null and last_inbnd_stmtstat_assets_q1 is not null then last_inbnd_stmtstat_assets_q1 else null end), 0) * 100.00  rat_last_inbnd_stmtstat_sales_q1_o_assets_q1_x_10
         ,        sum(case when last_inbnd_stmtstat_netinc_q1 is not null and last_inbnd_stmtstat_assets_q1 is not null then last_inbnd_stmtstat_netinc_q1  else null end)    / 
           nullif(sum(case when last_inbnd_stmtstat_netinc_q1 is not null and last_inbnd_stmtstat_assets_q1 is not null then last_inbnd_stmtstat_assets_q1  else null end), 0) * 1000.00  rat_last_inbnd_stmtstat_netinc_q1_o_assets_q1_x_100
         ,        sum(case when last_inbnd_stmtstat_ncc_q1 is not null and last_inbnd_stmtstat_sales_q1 is not null then last_inbnd_stmtstat_ncc_q1  else null end )    / 
-          nullif(sum(case when last_inbnd_stmtstat_ncc_q1 is not null and last_inbnd_stmtstat_sales_q1 is not null then last_inbnd_stmtstat_sales_q1 else null end), 0) * 100.00  rat_last_inbnd_stmtstat_ncc_q1_o_sales_q1_x_100
+          nullif(sum(case when last_inbnd_stmtstat_ncc_q1 is not null and last_inbnd_stmtstat_sales_q1 is not null then last_inbnd_stmtstat_sales_q1 else null end), 0) * 10000.00  rat_last_inbnd_stmtstat_ncc_q1_o_sales_q1_x_10000
         -- ERROR(ENDGE CASE)SANITY CHECKING
         , count(now_inbnd_stmtid_dateindex)::numeric                                                                                                                                     count_now_inbnd_stmtstat_dateindex
         ,        count(case when now_inbnd_stmtid_dateindex is not null and last_inbnd_stmtid_dateindex is not null then now_inbnd_stmtid_dateindex  else null end)::numeric    / 
