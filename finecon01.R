@@ -4213,6 +4213,11 @@ load_division_aggregated_per_dateindex <- function(dateindex = NULL) {
         , sum(assets_q1) sum_assets_q1
         , sum(assets_q2) sum_assets_q2
         , sum(mktcap)    sum_mktcap
+        -- NEW
+        , sum(netinc_q1) / nullif(sum(ncc_q1),0) * 100.00   rat_netinc_q1_o_ncc_x100 
+        , sum(ncc_q1)    / nullif(sum(mktcap),0) * 10000.00    rat_ncc_q1_o_mktcap_x100 -- HERE 
+        , sum(assets_q1) / nullif(sum(mktcap),0)            rat_assets_q1_o_mktcap
+        --
         , sum(now_inbnd_stmtstat_sales_q1)  sum_now_inbnd_stmtstat_sales_q1
         , sum(now_inbnd_stmtstat_netinc_q1) sum_now_inbnd_stmtstat_netinc_q1
         , sum(now_inbnd_stmtstat_ncc_q1)    sum_now_inbnd_stmtstat_ncc_q1
