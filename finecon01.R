@@ -5185,8 +5185,8 @@ vacuum_reindex_check <- function(start_time, how_often) {
 
     if(start_time + how_often < now_at_secs_since_UNIX_birth) {
     
-    db.q(con,"vacuum analyze verbose  fe_data_store.si_finecon2;")
-    db.q(con,"reindex (verbose) table fe_data_store.si_finecon2;")
+    db.q(con,"vacuum analyze verbose  fe_data_store.si_finecon2;", conn.id = 1)
+    db.q(con,"reindex (verbose) table fe_data_store.si_finecon2;", conn.id = 1)
     
     start_time <- now_at_secs_since_UNIX_birth
     
