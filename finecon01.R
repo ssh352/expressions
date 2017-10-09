@@ -5302,7 +5302,8 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
     message(paste0("**** Beginning disk dbf dir: ",dir_i," ", dir_i," ****"))
     Sys.sleep(2)
     
-    if(!exactly_only_future_returns && !exactly_only_aggregates) {
+                                                                     # no decision
+    if((!exactly_only_future_returns && !exactly_only_aggregates) || is.null(exactly_only_aggregates) ) {
   
       verify_company_basics(dateindex = c(dir_i)) -> si_all_g_df
       update_from_future_new_company_ids(df = si_all_g_df, ref = dir_i) -> si_all_g_df
@@ -5358,8 +5359,8 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
       vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
     
     }
-
-    if(!exactly_only_future_returns && !exactly_only_aggregates) {
+                                                                     # no decision
+    if((!exactly_only_future_returns && !exactly_only_aggregates) || is.null(exactly_only_aggregates)  ) {
       
 
       verify_company_details(dateindex = c(dir_i),  table_f = "si_psdc", cnames_e = "^price_m00[1-9]$|^price_m01[0-7]$") -> si_all_g_df
@@ -5395,8 +5396,8 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
       vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
         
     }
-      
-    if(exactly_only_aggregates) {
+                                  # no decision
+    if(exactly_only_aggregates || is.null(exactly_only_aggregates)) {
       
                                                     # no decision
       if(!exactly_only_aggregates_group_bys_only || is.null(exactly_only_aggregates_group_bys_only)) {
@@ -5511,7 +5512,7 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
 # upload_lwd_sipro_dbfs_to_db(                                             months_only_back = 5, exactly_only_future_returns = TRUE) 
 
 # typical *new month*                                 # *new(top) month* 
-# { upload_lwd_sipro_dbfs_to_db(exact_near_month_end_dbf_dirs = c(17409)  # assuming all of the previous months isq,bsq,cfq have been loaded
+# { upload_lwd_sipro_dbfs_to_db(exact_near_month_end_dbf_dirs = c(17409))  # assuming all of the previous months isq,bsq,cfq have been loaded
 #   upload_lwd_sipro_dbfs_to_db(                                            months_only_back = 13, exactly_only_future_returns = TRUE) 
 # }
 
@@ -7282,9 +7283,23 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
 # rm(list=setdiff(ls(all.names=TRUE),c("con","cid"))); debugSource('W:/R-3.4._/finecon01.R'); debugSource('W:/R-3.4._/goodsight01.R');verify_connection();options(upsert_temp_is_temporary=Inf)
 # 
 # the MOST important
-# upload_lwd_sipro_dbfs_to_db(months_only_back = 13)
+# typical *new month*                                 # *new(top) month* 
+# { upload_lwd_sipro_dbfs_to_db(exact_near_month_end_dbf_dirs = c(17438))  # assuming all of the previous months isq,bsq,cfq have been loaded
+#   upload_lwd_sipro_dbfs_to_db(                                            months_only_back = 13, exactly_only_future_returns = TRUE)
+# }
 # 
 # # view last months data
+
+# -- last month ( look for 4 week loaded returns )
+# select * from fe_data_store.si_finecon2 where dateindex = 17409 and ticker in ('MSFT','AAPL')
+# -- current(this) month ( look for general data )
+# select * from fe_data_store.si_finecon2 where dateindex = 17438 and ticker in ('MSFT','AAPL')
+#
+# -- curent(this) mont ( look to see that the aggregates have been ) processed
+# 
+# select * from fe_data_store.si_finecon2_aggregates where dateindex = 17438 
+# 
+
 # set search_path to sipro_data_store,sipro_stage;
 # set ...
 # set ...
