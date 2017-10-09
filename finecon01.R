@@ -5302,8 +5302,8 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
     message(paste0("**** Beginning disk dbf dir: ",dir_i," ", dir_i," ****"))
     Sys.sleep(2)
     
-                                                                     # no decision
-    if((!exactly_only_future_returns && !exactly_only_aggregates) || is.null(exactly_only_aggregates) ) {
+                                                                                                            # no decision
+    if((!exactly_only_future_returns && (!is.null(exactly_only_aggregates) && !exactly_only_aggregates)) || is.null(exactly_only_aggregates) ) {
   
       verify_company_basics(dateindex = c(dir_i)) -> si_all_g_df
       update_from_future_new_company_ids(df = si_all_g_df, ref = dir_i) -> si_all_g_df
@@ -5359,8 +5359,8 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
       vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
     
     }
-                                                                     # no decision
-    if((!exactly_only_future_returns && !exactly_only_aggregates) || is.null(exactly_only_aggregates)  ) {
+                                                                                                            # no decision
+    if((!exactly_only_future_returns && (!is.null(exactly_only_aggregates) && !exactly_only_aggregates)) || is.null(exactly_only_aggregates)  ) {
       
 
       verify_company_details(dateindex = c(dir_i),  table_f = "si_psdc", cnames_e = "^price_m00[1-9]$|^price_m01[0-7]$") -> si_all_g_df
@@ -5396,11 +5396,11 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
       vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
         
     }
-                                  # no decision
-    if(exactly_only_aggregates || is.null(exactly_only_aggregates)) {
+                                                                         # no decision
+    if((!is.null(exactly_only_aggregates) && exactly_only_aggregates) || is.null(exactly_only_aggregates)) {
       
-                                                    # no decision
-      if(!exactly_only_aggregates_group_bys_only || is.null(exactly_only_aggregates_group_bys_only)) {
+                                                                                                          # no decision
+      if((!is.null(exactly_only_aggregates_group_bys_only) && !exactly_only_aggregates_group_bys_only) || is.null(exactly_only_aggregates_group_bys_only)) {
         #
         # support_dateindex_collection is the 
         # minimum of 11 months: current + ( 6 month Quarter period reporter with 4 month Q-10 report filing delay ) 
@@ -5411,8 +5411,8 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
         vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
         # 
       }
-                                                   # no decision
-      if(exactly_only_aggregates_group_bys_only || is.null(exactly_only_aggregates_group_bys_only)) {
+                                                                                                         # no decision
+      if((!is.null(exactly_only_aggregates_group_bys_only) && exactly_only_aggregates_group_bys_only) || is.null(exactly_only_aggregates_group_bys_only)) {
               # uses now_inbnd_stmtstat last_inbnd_stmtstat
         # since MANY SQLs upsertS are done inside                                      # if NOT an UPDATE on COMPANY_ID then I CAN go on the OUTSIDE
         # load_division_aggregated_now_last_mktcap_per_company_id(dateindex = dir_i) # # head(lwd_dbf_dirs_ordered,1) ( BUT WILL NOT do this now )
