@@ -5512,8 +5512,8 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
 # upload_lwd_sipro_dbfs_to_db(                                             months_only_back = 5, exactly_only_future_returns = TRUE) 
 
  # # typical *new month*                                # *new(top) month*  # assuming all of the previous months isq,bsq,cfq have been loaded                                                    
- # { upload_lwd_sipro_dbfs_to_db(exact_near_month_end_dbf_dirs = c(17409), exactly_only_aggregates = NULL, exactly_only_aggregates_group_bys_only = NULL)  
- #   upload_lwd_sipro_dbfs_to_db(                                          months_only_back = 13, exactly_only_future_returns = TRUE) 
+ # { upload_lwd_sipro_dbfs_to_db(exact_near_month_end_dbf_dirs = c(17438), exactly_only_aggregates = NULL, exactly_only_aggregates_group_bys_only = NULL,  decreasing_sort_order = FALSE)  
+ #   upload_lwd_sipro_dbfs_to_db(                                                months_only_back = 14, exactly_only_future_returns = TRUE) 
  # }
 
 
