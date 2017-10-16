@@ -1135,6 +1135,48 @@ verify_finecon_sp_500_partial_idx <- function() {
 }
 # verify_finecon_sp_500_partial_idx() 
 
+verify_finecon_sp_partial_idx <- function() {
+
+  require(RPostgreSQL)
+  require(PivotalR)
+  
+  # uses verify_connection, verify_si_finecon_exists
+  
+  verify_connection()
+  
+  # verify that si_finecon2 exists 
+  if(!dbExistsTable(con, "si_finecon2")) {
+    verify_si_finecon_exists()
+  }
+
+  # to what is in the database
+  db.data.frame("si_finecon2", conn.id = cid, verbose = FALSE) -> ptr_si_finecon2  # class (db.#)
+  col.types(ptr_si_finecon2) -> fc_meta # NOT USED
+      names(ptr_si_finecon2) -> names(fc_meta) 
+      
+  if(all(c("dateindex","sp") %in% names(fc_meta))) {
+  
+    # create index if not exists
+    # NOTE: the ORIGINAL did NOT include 'dateindex' ( I am adding that here ... )
+    #  Note: BEST performance table is sorted by : sort by dateindex, company_id
+    # 
+    #
+
+    db.q("create index if not exists si_finecon2_finecon_sp_partial_idx on 
+                  si_finecon2(dateindex,sp) where sp in ('500','400','600')
+              ;", conn.id = cid)
+    
+    ## SAVE FOR LATER
+    # # save space ( if nothing else )
+    # db.q("create or replace view si_finecon2_sp as select * from  
+    #               si_finecon2 where sp in ('500','400','600')
+    #           ;", conn.id = cid)
+  
+  }
+      
+}
+# verify_finecon_sp_partial_idx() 
+
 
 
 # remove at the beginning 
@@ -1684,6 +1726,7 @@ upsert <-  function(value = NULL, keys = NULL) { # vector of primary key values
     # if I have the columns for this index, then create the index ( if it does not already exist )
     verify_finecon_jamesos_partial_idx()
     verify_finecon_sp_500_partial_idx()
+    verify_finecon_sp_partial_idx()
   }
   
   drop_upsert_temp()
