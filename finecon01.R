@@ -4497,11 +4497,30 @@ create_inbnd_stmtstats_aggregates_db <- function(exact_lwd_dbf_dirs = NULL) {
 # }
 
 # liquifyDF(GT, const_cols_regexpr = "^dateindex.*", fctr_cols_rexpr = ".*_fct$")
-
+#
+# could?! (popularily) be called with mutliple 'interleaving' name_factor and value factors
+# e.g. 
+# division_name_fct
+#  # sector
+# division_value_fct
+#  # energy
+#  # materials
+#  # ... etc ...
+# subdivision_name_fct
+#  # industry
+# subdivision_value_fct
+#  # oil
+#  # ... etc ...
+#  # gold & sliver
+#  # ... etc ...
+# therefore OUTPUT WOULD LOOK like
+# sector_energy_industry_oil
+#
 # cols_fct_NA_replace default is NULL that will print 'na'. 
-# Can be any other choice
-# Popular choices could be "any" "all" "each" "none" 
-# Choice depends on the context.
+#   Can be any other choice
+#   Popular choices could be "any" "all" "each" "none" 
+#   Choice depends on the context.
+# 
 liquifyDF <- function(x, const_cols_regexpr = "^id", fctr_cols_rexpr = "_fct$", cols_fct_NA_replace = NULL) {
 
   # R version 3.4.1 (2017-06-30)
