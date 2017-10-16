@@ -4498,8 +4498,11 @@ create_inbnd_stmtstats_aggregates_db <- function(exact_lwd_dbf_dirs = NULL) {
 
 # liquifyDF(GT, const_cols_regexpr = "^dateindex.*", fctr_cols_rexpr = ".*_fct$")
 
-
-liquifyDF <- function(x, const_cols_regexpr = "^id", fctr_cols_rexpr = "_fct$") {
+# cols_fct_NA_replace default is NULL that will print 'na'. 
+# Can be any other choice
+# Popular choices could be "any" "all" "each" "none" 
+# Choice depends on the context.
+liquifyDF <- function(x, const_cols_regexpr = "^id", fctr_cols_rexpr = "_fct$", cols_fct_NA_replace = NULL) {
 
   # R version 3.4.1 (2017-06-30)
   # LATE AUG 2017
@@ -4522,13 +4525,19 @@ liquifyDF <- function(x, const_cols_regexpr = "^id", fctr_cols_rexpr = "_fct$") 
   
   # typically "id" columns
   const_cols <- tidyselect::vars_select(names(x), tidyselect::matches(const_cols_regexpr))
-  lside_row_1      <- seplyr::select_se(x, const_cols)[1,, drop = FALSE]
-  not_l_side <-  seplyr::deselect(x, const_cols)
-  
                      # garantee no 'id' columns ( and the [rest of] factors )
   FCT_COLS_VECTOR <- setdiff(tidyselect::vars_select(names(x), tidyselect::matches(fctr_cols_rexpr)), const_cols)
   FCT_COLS_NAME   <- stringr::str_c(FCT_COLS_VECTOR, collapse = "__")
   FCT_COLS_SEP    <- stringr::str_c(FCT_COLS_VECTOR, collapse = ", ")
+  
+  if(!is.null(cols_fct_NA_replace)) {
+    for(coli in FCT_COLS_VECTOR) {
+      x[is.na(x[, coli, drop = TRUE]),coli] <- cols_fct_NA_replace
+    }
+  }
+  
+  lside_row_1      <- seplyr::select_se(x, const_cols)[1,, drop = FALSE]
+  not_l_side <-  seplyr::deselect(x, const_cols)
   
   UNITE <- function(x) { 
     wrapr::let(list(FCT_COLS_NAME = FCT_COLS_NAME, FCT_COLS_SEP = FCT_COLS_SEP), 
@@ -4578,6 +4587,31 @@ liquifyDF <- function(x, const_cols_regexpr = "^id", fctr_cols_rexpr = "_fct$") 
 # 1  1      1               8              16              32              64
   # A1__B1____aggr2 A1__B2____aggr2 A2__B1____aggr2 A2__B2____aggr2
 # 1           10008           10016           10032           10064
+# 
+# # <NA> _fct
+# data.frame(
+#    id = c(1, 1, 1, 1),
+#    id_fct = c("10", "10", "10", "10"),
+#    col1_fct = c('A1', NA_character_  , 'A2', 'A2'),
+#    col2_fct = c('B1', 'B2', 'B1', 'B2'),
+#    aggr1 = c(8, 16, 32, 64),
+#    aggr2 = c(10008, 10016, 10032, 10064)
+#  , stringsAsFactors = FALSE
+# )  -> DFSMISSNG
+# 
+# > DFSMISSNG
+#   id id_fct col1_fct col2_fct aggr1 aggr2
+# 1  1     10       A1       B1     8 10008
+# 2  1     10     <NA>       B2    16 10016
+# 3  1     10       A2       B1    32 10032
+# 4  1     10       A2       B2    64 10064
+# 
+# > liquifyDF(x = DFSMISSNG, const_cols_regexpr = "^id", fctr_cols_rexpr = "_fct$", cols_fct_NA_replace = "any")
+#   id id_fct a1__b1____aggr1 any__b2____aggr1 a2__b1____aggr1 a2__b2____aggr1 a1__b1____aggr2
+# 1  1     10               8               16              32              64           10008
+#   any__b2____aggr2 a2__b1____aggr2 a2__b2____aggr2
+# 1            10016           10032           10064
+
 
 # CHANGE TEST USAGE TO 
 # liquifyDF(SFS,"^dateindex.*")
