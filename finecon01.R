@@ -6724,18 +6724,18 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
   db.q(paste0("drop table if exists ", out_db_tablename, ";"), conn.id = cid)
   
   # write to the database
-  sipro_adhoc_disk_ptr <- as.db.data.frame(si_tbl_df_all, out_db_tablename, conn.id = 1)
+  sipro_adhoc_disk_ptr <- as.db.data.frame(si_tbl_df_all, out_db_tablename, conn.id = cid)
   
   # put out to database ( 4 seconds )
   # match old company_ids to company_ids
 
   if("company_id" %in% colnames(si_tbl_df_all)) {
   
-    db.q("drop table if exists si_tbl_df_15184_ids;", conn.id = 1)
+    db.q("drop table if exists si_tbl_df_15184_ids;", conn.id = cid)
     
-    si_tbl_df_15184_ids_db_ptr <- as.db.data.frame(si_tbl_df_15184_ids, "si_tbl_df_15184_ids", conn.id = 1, is.temp = TRUE)
+    si_tbl_df_15184_ids_db_ptr <- as.db.data.frame(si_tbl_df_15184_ids, "si_tbl_df_15184_ids", conn.id = cid, is.temp = TRUE)
 
-    db.q(paste0("create index ", out_db_tablename, "_partial_company_id_lt_15184_idx on ", out_db_tablename, "(dateindex) where dateindex < 15184;"), conn.id = 1)
+    db.q(paste0("create index ", out_db_tablename, "_partial_company_id_lt_15184_idx on ", out_db_tablename, "(dateindex) where dateindex < 15184;"), conn.id = cid)
     
     # update old company_id to that company_id in 15184 ( match by 'ticker' )
     # RAWER # simplified version ( just ticker , no 'street and/or company')
