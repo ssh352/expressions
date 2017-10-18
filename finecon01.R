@@ -5446,6 +5446,12 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
       verify_company_details(dateindex = c(dir_i),  table_f = "si_mlt", cnames_e = "^bby_1t$") -> si_all_g_df
       print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
   
+      verify_company_details(dateindex = c(dir_i),  table_f = "si_cfq", cnames_e = "^tco_q.$|^tcf_q.$|^tci_q.$") -> si_all_g_df
+      print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
+    
+      verify_company_details(dateindex = c(dir_i),  table_f = "si_bsq", cnames_e = "^ca_q.$|^cl_q.$|^liab_q.$") -> si_all_g_df
+      print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
+      
       vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
         
     }
