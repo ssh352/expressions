@@ -387,15 +387,34 @@ verify_si_finecon_exists <- function () {
 
     try( { db.q("create index if not exists si_finecon2_company_id_idx on si_finecon2(company_id);", conn.id = cid) }, silent = TRUE )
     
-    # just SIMPLY
-    # will ERROR OUT ( will not allow to add a second primary key )
-    try( { db.q("alter table if exists si_finecon2 add primary key(dateindex_company_id);", conn.id = cid) }, silent = TRUE ) # only be on
-    # si_finecon2_pkey
-    # singleton
-
-    # try( { db.q("alter table if exists si_finecon2 add      unique(dateindex, company_id);", conn.id = cid) }, silent = TRUE )
-    # si_finecon2_dateindex_company_id_key
-    # can be many
+    # # just SIMPLY
+    # # will ERROR OUT ( will not allow to add a second primary key )
+    # try( { db.q("alter table if exists si_finecon2 add primary key(dateindex_company_id);", conn.id = cid) }, silent = TRUE ) # only be on
+    # # si_finecon2_pkey
+    # # singleton
+    # 
+    # # try( { db.q("alter table if exists si_finecon2 add      unique(dateindex, company_id);", conn.id = cid) }, silent = TRUE )
+    # # si_finecon2_dateindex_company_id_key
+    # # can be many
+    
+    db.q("create unique index if not exists si_finecon2_pkey on si_finecon2(dateindex_company_id);", conn.id = cid)
+    db.q("
+    do $$ begin
+    if not exists(select constraint_name 
+                    from information_schema.table_constraints 
+                      where constraint_schema   = 'fe_data_store' 
+                      and   table_name          = 'si_finecon2' 
+                      and   constraint_type     = 'PRIMARY KEY'
+    ) then
+      -- psql message
+      -- log_min_messages and client_min_messages 
+      raise WARNING USING MESSAGE = 'Creating . . .  ' || 'fe_data_store' || '.' || 'si_finecon2' || ' PRIMARY KEY using INDEX';
+      alter table if exists si_finecon2 add primary key using index si_finecon2_pkey;
+    else
+      raise NOTICE USING MESSAGE = 'Already exists ' || 'fe_data_store' || '.' || 'si_finecon2' || ' PRIMARY KEY';
+    end if;
+    end $$
+    ", conn.id = cid)
     
     # (if unamed ndex?) ... WILL JUST KEEP ADDING MORE ... so I name it
     try( { db.q("create unique index if not exists si_finecon2_dateindex_company_id_key          on si_finecon2(dateindex,    company_id);", conn.id = cid) }, silent = TRUE )
