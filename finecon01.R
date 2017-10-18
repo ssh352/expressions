@@ -233,6 +233,11 @@ verify_connection <- function () {
        !exists("con", envir = .GlobalEnv) || 
        !is_connected_postgresql_con() 
     ) {
+      
+      # Works well with Npgsql(9.6era)       3.0.8 ( as far as connect/timeout_disconnect )
+      # Current version Npgsql(early 10 era) 3.2.x ( will CRASH rstudio on each first attempt in a newly loaded RStudio )
+      # [ ] TODO: LEFT_OFF: FUTURE ... ADJUSTMENT 
+      
       cid <<- db.connect(user = "postgres", dbname = "finance_econ", default.schemas = "fe_data_store,public")
       # increments up by 1 every time
       con <<- PivotalR:::.localVars$db[[length(PivotalR:::.localVars$db)]]$conn
