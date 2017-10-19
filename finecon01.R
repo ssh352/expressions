@@ -4293,7 +4293,7 @@ load_inbnd_stmtstats <- function (dateindex = NULL, nowlast_columns = NULL, supp
                    then  ( lag((now.mktcap/nullif(now.price,0))) over (partition by now.company_id order by now.dateindexlbd) - (now.mktcap/nullif(now.price,0)) ) /  nullif((now.mktcap/nullif(now.price,0)),0)
                    else 0.0 end * 100.0 * 12  pct_freeprice_ret_01m_ann  -- a PAST return  
                 	 from
-                    ( select   ins.dateindex_company_id, ins.dateindex, ins.dateindexlbd, ins.dateindexp01lbd, ins.company_id, ins.perend_q1, ins.perend_q2, ins.date_eq0, ins.split_date, ins.perlen_q1, ins.ticker, ins.company, ins.pertyp_q1, ins.price, ins.mktcap, ins.sales_q1, ins.netinc_q1, ins.ncc_q1, ins.assets_q1, ins.assets_q2, ins.tco_q1, ins.tcf_q1, ins.tci_q1, ins.ca_q1, ins.cl_q1, ins.liab_q1  
+                    ( select   ins.dateindex_company_id, ins.dateindex, ins.dateindexlbd, ins.dateindexp01lbd, ins.company_id, ins.perend_q1, ins.perend_q2, ins.date_eq0, ins.split_date, ins.perlen_q1, ins.ticker, ins.company, ins.pertyp_q1, ins.price, ins.mktcap ",if(length(nowlast_columns)) { ", ins." %s+% str_c(nowlast_columns, collapse = ", ins.")  } else { "" } ,"
                                from si_finecon2 ins  where ins.dateindex ", support_where_condition, ") now left outer join si_finecon2 p01lbd on now.dateindexp01lbd  = p01lbd.dateindexlbd and now.company_id = p01lbd.company_id 
               ) sq1                               -- where ins.ticker in ('AAPL','MSFT') -- VERY easy to test
             ) sq2                                 -- where ins.dateindex in (17347, 17317, 17284, 17256, 17225, 17197, 17165, 17135, 17105, 17074, 17044, 17011, 16982) -- first ONE minute AFTER 13 seconds WITH SORT
@@ -4328,7 +4328,7 @@ load_inbnd_stmtstats <- function (dateindex = NULL, nowlast_columns = NULL, supp
 # NEWER # nowlast_columns # TEST 
 # load_inbnd_stmtstats(
 #     dateindex = 17347 # e.g. last loaded pay period
-#   , nowlast_columns = c("mktcap", "sales_q1", "netinc_q1", "ncc_q1", "assets_q1", "assets_q2", "tco_q1", "tcf_q1", "tci_q1", "ca_q1", "cl_q1", "liab_q1")
+#   , nowlast_columns = c("sales_q1", "netinc_q1", "ncc_q1", "assets_q1", "assets_q2", "tco_q1", "tcf_q1", "tci_q1", "ca_q1", "cl_q1", "liab_q1")
 #   , support_dateindex_collection = c(17347, 17317, 17284, 17256, 17225, 17197, 17165, 17135, 17105, 17074, 17044, 17011, 16982)
 #   , char_col_numeric_limit = 999999.99    # for right NOW pure AAII data ( unratio-ed )
 # )  -> si_all_g_df
