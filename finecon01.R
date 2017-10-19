@@ -3933,6 +3933,12 @@ load_inbnd_stmtstats <- function (dateindex = NULL, support_dateindex_collection
             , sq3.now_inbnd_stmtstat_assets_q2
             , sq3.now_inbnd_stmtstat_mktcap
             , sq3.now_inbnd_stmtstat_price
+            , sq3.now_inbnd_stmtstat_tco_q1
+            , sq3.now_inbnd_stmtstat_tcf_q1
+            , sq3.now_inbnd_stmtstat_tci_q1
+            , sq3.now_inbnd_stmtstat_ca_q1
+            , sq3.now_inbnd_stmtstat_cl_q1
+            , sq3.now_inbnd_stmtstat_liab_q1
             -- SMALL RATIO EXPLOSIONS MAKE THESE USELESS
             --, sq3.now_inbnd_stmtstat_netinc_q1_o_mktcap
             --, sq3.now_inbnd_stmtstat_sales_q1_o_mktcap
@@ -3950,6 +3956,12 @@ load_inbnd_stmtstats <- function (dateindex = NULL, support_dateindex_collection
             , first_value(sq3.now_inbnd_stmtstat_assets_q2)   over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindexlbd_partition order by sq3.dateindexlbd) last_inbnd_stmtstat_assets_q2
             , first_value(sq3.now_inbnd_stmtstat_mktcap)      over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindexlbd_partition order by sq3.dateindexlbd) last_inbnd_stmtstat_mktcap
             , first_value(sq3.now_inbnd_stmtstat_price)       over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindexlbd_partition order by sq3.dateindexlbd) last_inbnd_stmtstat_price
+            , first_value(sq3.now_inbnd_stmtstat_tco_q1)      over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindexlbd_partition order by sq3.dateindexlbd) last_inbnd_stmtstat_tco_q1
+            , first_value(sq3.now_inbnd_stmtstat_tcf_q1)      over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindexlbd_partition order by sq3.dateindexlbd) last_inbnd_stmtstat_tcf_q1
+            , first_value(sq3.now_inbnd_stmtstat_tci_q1)      over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindexlbd_partition order by sq3.dateindexlbd) last_inbnd_stmtstat_tci_q1
+            , first_value(sq3.now_inbnd_stmtstat_ca_q1)       over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindexlbd_partition order by sq3.dateindexlbd) last_inbnd_stmtstat_ca_q1
+            , first_value(sq3.now_inbnd_stmtstat_cl_q1)       over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindexlbd_partition order by sq3.dateindexlbd) last_inbnd_stmtstat_cl_q1
+            , first_value(sq3.now_inbnd_stmtstat_liab_q1)     over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindexlbd_partition order by sq3.dateindexlbd) last_inbnd_stmtstat_liab_q1
             --, first_value(sq3.now_inbnd_stmtstat_netinc_q1_o_mktcap)   over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindexlbd_partition order by sq3.dateindex) last_inbnd_stmtstat_netinc_q1_o_mktcap
             --, first_value(sq3.now_inbnd_stmtstat_sales_q1_o_mktcap)    over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindexlbd_partition order by sq3.dateindex) last_inbnd_stmtstat_sales_q1_o_mktcap
             --, first_value(sq3.now_inbnd_stmtstat_netinc_q1_o_sales_q1) over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindexlbd_partition order by sq3.dateindex) last_inbnd_stmtstat_netinc_q1_o_sales_q1
@@ -3974,6 +3986,12 @@ load_inbnd_stmtstats <- function (dateindex = NULL, support_dateindex_collection
               , sq2.now_inbnd_stmtstat_assets_q2
               , sq2.now_inbnd_stmtstat_mktcap
               , sq2.now_inbnd_stmtstat_price
+              , sq2.now_inbnd_stmtstat_tco_q1
+              , sq2.now_inbnd_stmtstat_tcf_q1
+              , sq2.now_inbnd_stmtstat_tci_q1
+              , sq2.now_inbnd_stmtstat_ca_q1
+              , sq2.now_inbnd_stmtstat_cl_q1
+              , sq2.now_inbnd_stmtstat_liab_q1
            -- , sq2.now_inbnd_stmtstat_netinc_q1_o_mktcap
            -- , sq2.now_inbnd_stmtstat_sales_q1_o_mktcap
            -- , sq2.now_inbnd_stmtstat_netinc_q1_o_sales_q1
@@ -4007,6 +4025,12 @@ load_inbnd_stmtstats <- function (dateindex = NULL, support_dateindex_collection
                 , case when sq1.now_eff_date_eq0 != sq1.p01lbd_eff_date_eq0 then sq1.now_assets_q2            else null end now_inbnd_stmtstat_assets_q2 
                 , case when sq1.now_eff_date_eq0 != sq1.p01lbd_eff_date_eq0 then sq1.now_mktcap               else null end now_inbnd_stmtstat_mktcap 
                 , case when sq1.now_eff_date_eq0 != sq1.p01lbd_eff_date_eq0 then sq1.now_price                else null end now_inbnd_stmtstat_price 
+                , case when sq1.now_eff_date_eq0 != sq1.p01lbd_eff_date_eq0 then sq1.now_tco_q1               else null end now_inbnd_stmtstat_tco_q1
+                , case when sq1.now_eff_date_eq0 != sq1.p01lbd_eff_date_eq0 then sq1.now_tcf_q1               else null end now_inbnd_stmtstat_tcf_q1
+                , case when sq1.now_eff_date_eq0 != sq1.p01lbd_eff_date_eq0 then sq1.now_tci_q1               else null end now_inbnd_stmtstat_tci_q1
+                , case when sq1.now_eff_date_eq0 != sq1.p01lbd_eff_date_eq0 then sq1.now_ca_q1                else null end now_inbnd_stmtstat_ca_q1
+                , case when sq1.now_eff_date_eq0 != sq1.p01lbd_eff_date_eq0 then sq1.now_cl_q1                else null end now_inbnd_stmtstat_cl_q1
+                , case when sq1.now_eff_date_eq0 != sq1.p01lbd_eff_date_eq0 then sq1.now_liab_q1              else null end now_inbnd_stmtstat_liab_q1
             --  , case when sq1.now_eff_date_eq0 != sq1.p01lbd_eff_date_eq0 then sq1.now_netinc_q1_o_mktcap   else null end now_inbnd_stmtstat_netinc_q1_o_mktcap  
             --  , case when sq1.now_eff_date_eq0 != sq1.p01lbd_eff_date_eq0 then sq1.now_sales_q1_o_mktcap    else null end now_inbnd_stmtstat_sales_q1_o_mktcap  
             --  , case when sq1.now_eff_date_eq0 != sq1.p01lbd_eff_date_eq0 then sq1.now_netinc_q1_o_sales_q1 else null end now_inbnd_stmtstat_netinc_q1_o_sales_q1 
@@ -4032,6 +4056,12 @@ load_inbnd_stmtstats <- function (dateindex = NULL, support_dateindex_collection
                   , now.assets_q2        now_assets_q2  
                   , now.mktcap           now_mktcap     
                   , now.price            now_price
+                  , now.tco_q1           now_tco_q1 
+                  , now.tcf_q1           now_tcf_q1 
+                  , now.tci_q1           now_tci_q1 
+                  , now.ca_q1            now_ca_q1  
+                  , now.cl_q1            now_cl_q1  
+                  , now.liab_q1          now_liab_q1 
               --  , case when now.pertyp_q1 = 'W' then 7 * now.perlen_q1 else (365 / 12) * now.perlen_q1 end now_perlen_days_q1
               -- EASIER THAN ABOVE
                   , now.perend_q1 - now.perend_q2 now_perlen_days_q1
@@ -4068,7 +4098,7 @@ load_inbnd_stmtstats <- function (dateindex = NULL, support_dateindex_collection
                    then  ( lag((now.mktcap/nullif(now.price,0))) over (partition by now.company_id order by now.dateindexlbd) - (now.mktcap/nullif(now.price,0)) ) /  nullif((now.mktcap/nullif(now.price,0)),0)
                    else 0.0 end * 100.0 * 12  pct_freeprice_ret_01m_ann  -- a PAST return  
                 	 from
-                    ( select   ins.dateindex_company_id, ins.dateindex, ins.dateindexlbd, ins.dateindexp01lbd, ins.company_id, ins.ticker, ins.company, ins.perend_q1, ins.perlen_q1, ins.perend_q2, ins.pertyp_q1, ins.sales_q1, ins.netinc_q1, ins.ncc_q1, ins.assets_q1, ins.assets_q2, ins.mktcap, ins.price, ins.split_date, ins.date_eq0 
+                    ( select   ins.dateindex_company_id, ins.dateindex, ins.dateindexlbd, ins.dateindexp01lbd, ins.company_id, ins.perend_q1, ins.perend_q2, ins.date_eq0, ins.split_date, ins.perlen_q1, ins.ticker, ins.company, ins.pertyp_q1, ins.price, ins.mktcap, ins.sales_q1, ins.netinc_q1, ins.ncc_q1, ins.assets_q1, ins.assets_q2, ins.tco_q1, ins.tcf_q1, ins.tci_q1, ins.ca_q1, ins.cl_q1, ins.liab_q1  
                                from si_finecon2 ins  where ins.dateindex ", support_where_condition, ") now left outer join si_finecon2 p01lbd on now.dateindexp01lbd  = p01lbd.dateindexlbd and now.company_id = p01lbd.company_id 
               ) sq1                               -- where ins.ticker in ('AAPL','MSFT') -- VERY easy to test
             ) sq2                                 -- where ins.dateindex in (17347, 17317, 17284, 17256, 17225, 17197, 17165, 17135, 17105, 17074, 17044, 17011, 16982) -- first ONE minute AFTER 13 seconds WITH SORT
