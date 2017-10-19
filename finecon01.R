@@ -397,12 +397,28 @@ verify_si_finecon_exists <- function () {
     # # si_finecon2_dateindex_company_id_key
     # # can be many
     
+    # How to add column if not exists on PostgreSQL?
+    # https://stackoverflow.com/questions/12597465/how-to-add-column-if-not-exists-on-postgresql
+    # Add primary key to PostgreSQL table only if it does not exist
+    # https://stackoverflow.com/questions/9906656/add-primary-key-to-postgresql-table-only-if-it-does-not-exist
+    # 42.8. Errors and Messages
+    # https://www.postgresql.org/docs/10/static/plpgsql-errors-and-messages.html
+
+    # SHOULD always BE IN A database
+    current_database    <- db.q("SELECT nspname FROM pg_namespace WHERE oid = pg_my_temp_schema();", conn.id = cid)[[1]]
+    current_search_path <-  strsplit(db.q("show search_path;", conn.id = cid)[[1]],",[ ]*")[[1]]
+    current_schema      <- db.q("select current_schema();", conn.id = cid)[[1]] 
+    # MUST put SOMETHING in there FIRST
+    res <- db.q("SELECT nspname FROM pg_namespace WHERE oid = pg_my_temp_schema();", conn.id = cid) 
+    current_temp_schema <- if(NROW(res) == 1) res[[1]] else ""; rm(res)
+    SQuote <- function(x) { paste0("'", x, "'") }
+    
     db.q("create unique index if not exists si_finecon2_pkey on si_finecon2(dateindex_company_id);", conn.id = cid)
-    db.q("
+    db.q(str_c("
     do $$ begin
     if not exists(select constraint_name 
                     from information_schema.table_constraints 
-                      where constraint_schema   = 'fe_data_store' 
+                      where constraint_schema   = ", SQuote(current_schema), " 
                       and   table_name          = 'si_finecon2' 
                       and   constraint_type     = 'PRIMARY KEY'
     ) then
@@ -414,7 +430,7 @@ verify_si_finecon_exists <- function () {
       raise NOTICE USING MESSAGE = 'Already exists ' || 'fe_data_store' || '.' || 'si_finecon2' || ' PRIMARY KEY';
     end if;
     end $$
-    ", conn.id = cid)
+    "), conn.id = cid)
     
     # (if unamed ndex?) ... WILL JUST KEEP ADDING MORE ... so I name it
     try( { db.q("create unique index if not exists si_finecon2_dateindex_company_id_key          on si_finecon2(dateindex,    company_id);", conn.id = cid) }, silent = TRUE )
@@ -1396,6 +1412,12 @@ upsert <-  function(value = NULL, keys = NULL) { # vector of primary key values
   
   # add a 'dataindex + keys'primary key column to input 'value data.fram ( needed for PivotalR and OTHER things ) 
   # currenly 'really' only tested used with/about company_id
+
+  # NOTICE
+  # str_c(c("dateindex",character()), collapse = "_")
+  # [1] "dateindex"
+  # str_c(c("dateindex",""), collapse = "_")
+  # [1] "dateindex_"
   str_c(c("dateindex",keys), collapse = "_")  -> value_primary_key
   str_c(c("dateindex",keys), collapse = " %s+% \'_\' %s+% ") -> value_primary_key_concat_expr
   # chokes often
@@ -1418,24 +1440,63 @@ upsert <-  function(value = NULL, keys = NULL) { # vector of primary key values
   message("END - drop table if exists upsert_temp")
   # # upsert into the database
   # SEEMS must CREATE A pk THIS WAY
-  db.q("select pg_sleep(1);", conn.id = cid)
-  as.db.data.frame(value, "upsert_temp", is.temp = if(!is.null(getOption("upsert_temp_is_temporary"))) { TRUE } else { FALSE }, conn.id = cid, verbose = FALSE, key = value_primary_key) -> ptr_upsert_temp
+  db.q("select pg_sleep(1);", conn.id = cid) # MANUALLY HANDLED BELOW: # , key = value_primary_key
+  as.db.data.frame(value, "upsert_temp", is.temp = if(!is.null(getOption("upsert_temp_is_temporary"))) { TRUE } else { FALSE }, conn.id = cid, verbose = FALSE) -> ptr_upsert_temp
   db.q("select pg_sleep(1);", conn.id = cid)
   
-  # db.q(str_c("create unique index upsert_temp_unqpkidx on upsert_temp(" %s+% value_primary_key %s+% ");"), conn.id = cid)
-
+  # # db.q(str_c("create unique index upsert_temp_unqpkidx on upsert_temp(" %s+% value_primary_key %s+% ");"), conn.id = cid)
+  # 
+  # # garantee that upsert_Temp values are unique
+  # try( { db.q(str_c("alter table if exists upsert_temp add primary key(" %s+% value_primary_key %s+% ");"), conn.id = cid) }, silent = TRUE )
+  # # upsert_temp_<value_primary_key>_pkey ( singleton )
+  # 
+  # # db.q(str_c("alter table upsert_temp add constraint upsert_temp_unqkey unique(" %s+%  "dateindex, " %s+% str_c(keys,collapse = ", ", sep = "") %s+% ");"), conn.id = cid)
+  # # db.q(str_c("create unique index upsert_temp_unqidx on upsert_temp(" %s+%  "dateindex, " %s+% str_c(keys,collapse = ", ", sep = "") %s+% ");"), conn.id = cid)
+  # 
+  # # try( { db.q(str_c("alter table if exists upsert_temp add unique(" %s+%  "dateindex, " %s+% str_c(keys,collapse = ", ", sep = "") %s+% ");"), conn.id = cid) }, silent = TRUE )
+  # 
+  # # garantee unqueness 
+  # try( { db.q(str_c("create unique index if not exists upsert_temp_keyz_key on upsert_temp(" %s+% str_c(c("dateindex",keys), collapse = ", ") %s+% ");"), conn.id = cid) }, silent = TRUE )
+  # # upsert_temp_keyz_key ( can be many )
+  
+  # SHOULD always BE IN A database
+  current_database    <- db.q("SELECT nspname FROM pg_namespace WHERE oid = pg_my_temp_schema();", conn.id = cid)[[1]]
+  current_search_path <-  strsplit(db.q("show search_path;", conn.id = cid)[[1]],",[ ]*")[[1]]
+  current_schema      <- db.q("select current_schema();", conn.id = cid)[[1]] 
+  # MUST put SOMETHING in there FIRST
+  res <- db.q("SELECT nspname FROM pg_namespace WHERE oid = pg_my_temp_schema();", conn.id = cid) 
+  current_temp_schema <- if(NROW(res) == 1) res[[1]] else ""; rm(res)
+  SQuote <- function(x) { paste0("'", x, "'") }
+  
   # garantee that upsert_Temp values are unique
-  try( { db.q(str_c("alter table if exists upsert_temp add primary key(" %s+% value_primary_key %s+% ");"), conn.id = cid) }, silent = TRUE )
-  # upsert_temp_<value_primary_key>_pkey ( singleton )
+  # 'dateindex' and 'some other column(s)'
+  if( value_primary_key != "dateindex" ) {
   
-  # db.q(str_c("alter table upsert_temp add constraint upsert_temp_unqkey unique(" %s+%  "dateindex, " %s+% str_c(keys,collapse = ", ", sep = "") %s+% ");"), conn.id = cid)
-  # db.q(str_c("create unique index upsert_temp_unqidx on upsert_temp(" %s+%  "dateindex, " %s+% str_c(keys,collapse = ", ", sep = "") %s+% ");"), conn.id = cid)
+    db.q(str_c("create unique index if not exists upsert_temp_pkey on upsert_temp(" %s+% value_primary_key %s+% ");"), conn.id = cid)
+    db.q(str_c("
+    do $$ begin
+    if not exists(select constraint_name 
+                    from information_schema.table_constraints 
+                      where constraint_schema   in  (", SQuote(current_schema),", ", SQuote(current_temp_schema),")
+                      and   table_name          = 'upsert_temp' 
+                      and   constraint_type     = 'PRIMARY KEY'
+    ) then
+      -- psql message
+      -- log_min_messages and client_min_messages 
+      raise WARNING USING MESSAGE = 'Creating . . .  ' || '_schema_' || '.' || 'upsert_temp' || ' PRIMARY KEY using INDEX';
+      alter table if exists upsert_temp add primary key using index upsert_temp_pkey;
+    else
+      raise NOTICE USING MESSAGE = 'Already exists ' || '_schema_' || '.' || 'upsert_temp' || ' PRIMARY KEY';
+    end if;
+    end $$
+    "), conn.id = cid)
   
-  # try( { db.q(str_c("alter table if exists upsert_temp add unique(" %s+%  "dateindex, " %s+% str_c(keys,collapse = ", ", sep = "") %s+% ");"), conn.id = cid) }, silent = TRUE )
-
-  # garantee unqueness 
-  try( { db.q(str_c("create unique index if not exists upsert_temp_keyz_key on upsert_temp(" %s+% str_c(c("dateindex",keys), collapse = ", ") %s+% ");"), conn.id = cid) }, silent = TRUE )
-  # upsert_temp_keyz_key ( can be many )
+  }
+  # since 'dateindex' itself can not be a primary key ( 'dateindex' is not unique )
+  if( value_primary_key == "dateindex" ) {
+    db.q(str_c("create index if not exists upsert_temp_mainidx on upsert_temp(" %s+% value_primary_key %s+% ");"), conn.id = cid)
+  }
+  
   
   bm <- 1
   
@@ -1949,6 +2010,12 @@ upsert2 <-  function(value = NULL, keys = NULL, target_table_name = "si_finecon2
   
   # add a 'dataindex + keys'primary key column to input 'value data.fram ( needed for PivotalR and OTHER things ) 
   # currenly 'really' only tested used with/about company_id
+  
+  # NOTICE
+  # str_c(c("dateindex",character()), collapse = "_")
+  # [1] "dateindex"
+  # str_c(c("dateindex",""), collapse = "_")
+  # [1] "dateindex_"
   str_c(c("dateindex",keys), collapse = "_")  -> value_primary_key
   str_c(c("dateindex",keys), collapse = " %s+% \'_\' %s+% ") -> value_primary_key_concat_expr
   # chokes often
@@ -1970,23 +2037,62 @@ upsert2 <-  function(value = NULL, keys = NULL, target_table_name = "si_finecon2
   db.q("select pg_sleep(1);", conn.id = cid)
   # # upsert into the database
   # SEEMS must CREATE A pk THIS WAY
+  db.q("select pg_sleep(1);", conn.id = cid) # MANUALLY HANDLED BELOW: # , key = value_primary_key
+  as.db.data.frame(value, "upsert_temp", is.temp = if(!is.null(getOption("upsert_temp_is_temporary"))) { TRUE } else { FALSE }, conn.id = cid, verbose = FALSE) -> ptr_upsert_temp
   db.q("select pg_sleep(1);", conn.id = cid)
-  as.db.data.frame(value, "upsert_temp", is.temp = if(!is.null(getOption("upsert_temp_is_temporary"))) { TRUE } else { FALSE }, conn.id = cid, verbose = FALSE, key = value_primary_key) -> ptr_upsert_temp
-  db.q("select pg_sleep(1);", conn.id = cid)
-  # db.q(str_c("create unique index upsert_temp_unqpkidx on upsert_temp(" %s+% value_primary_key %s+% ");"), conn.id = cid)
 
+  #   # db.q(str_c("create unique index upsert_temp_unqpkidx on upsert_temp(" %s+% value_primary_key %s+% ");"), conn.id = cid)
+  # 
+  # # garantee that upsert_Temp values are unique
+  # try( { db.q(str_c("alter table if exists upsert_temp add primary key(" %s+% value_primary_key %s+% ");"), conn.id = cid) }, silent = TRUE )
+  # # upsert_temp_<value_primary_key>_pkey ( singleton )
+  # 
+  # # db.q(str_c("alter table upsert_temp add constraint upsert_temp_unqkey unique(" %s+%  "dateindex, " %s+% str_c(keys,collapse = ", ", sep = "") %s+% ");"), conn.id = cid)
+  # # db.q(str_c("create unique index upsert_temp_unqidx on upsert_temp(" %s+%  "dateindex, " %s+% str_c(keys,collapse = ", ", sep = "") %s+% ");"), conn.id = cid)
+  # 
+  # # try( { db.q(str_c("alter table if exists upsert_temp add unique(" %s+%  "dateindex, " %s+% str_c(keys,collapse = ", ", sep = "") %s+% ");"), conn.id = cid) }, silent = TRUE )
+  # 
+  # # garantee unqueness 
+  # try( { db.q(str_c("create unique index if not exists upsert_temp_keyz_key on upsert_temp(" %s+% str_c(c("dateindex",keys), collapse = ", ") %s+% ");"), conn.id = cid) }, silent = TRUE )
+  # # upsert_temp_keyz_key ( can be many )
+  
+  # SHOULD always BE IN A database
+  current_database    <- db.q("SELECT nspname FROM pg_namespace WHERE oid = pg_my_temp_schema();", conn.id = cid)[[1]]
+  current_search_path <-  strsplit(db.q("show search_path;", conn.id = cid)[[1]],",[ ]*")[[1]]
+  current_schema      <- db.q("select current_schema();", conn.id = cid)[[1]] 
+  # MUST put SOMETHING in there FIRST
+  res <- db.q("SELECT nspname FROM pg_namespace WHERE oid = pg_my_temp_schema();", conn.id = cid) 
+  current_temp_schema <- if(NROW(res) == 1) res[[1]] else ""; rm(res)
+  SQuote <- function(x) { paste0("'", x, "'") }
+  
   # garantee that upsert_Temp values are unique
-  try( { db.q(str_c("alter table if exists upsert_temp add primary key(" %s+% value_primary_key %s+% ");"), conn.id = cid) }, silent = TRUE )
-  # upsert_temp_<value_primary_key>_pkey ( singleton )
+  # 'dateindex' and 'some other column(s)'
+  if( value_primary_key != "dateindex" ) {
   
-  # db.q(str_c("alter table upsert_temp add constraint upsert_temp_unqkey unique(" %s+%  "dateindex, " %s+% str_c(keys,collapse = ", ", sep = "") %s+% ");"), conn.id = cid)
-  # db.q(str_c("create unique index upsert_temp_unqidx on upsert_temp(" %s+%  "dateindex, " %s+% str_c(keys,collapse = ", ", sep = "") %s+% ");"), conn.id = cid)
+    db.q(str_c("create unique index if not exists upsert_temp_pkey on upsert_temp(" %s+% value_primary_key %s+% ");"), conn.id = cid)
+    db.q(str_c("
+    do $$ begin
+    if not exists(select constraint_name 
+                    from information_schema.table_constraints 
+                      where constraint_schema   in  (", SQuote(current_schema),", ", SQuote(current_temp_schema),")
+                      and   table_name          = 'upsert_temp' 
+                      and   constraint_type     = 'PRIMARY KEY'
+    ) then
+      -- psql message
+      -- log_min_messages and client_min_messages 
+      raise WARNING USING MESSAGE = 'Creating . . .  ' || '_schema_' || '.' || 'upsert_temp' || ' PRIMARY KEY using INDEX';
+      alter table if exists upsert_temp add primary key using index upsert_temp_pkey;
+    else
+      raise NOTICE USING MESSAGE = 'Already exists ' || '_schema_' || '.' || 'upsert_temp' || ' PRIMARY KEY';
+    end if;
+    end $$
+    "), conn.id = cid)
   
-  # try( { db.q(str_c("alter table if exists upsert_temp add unique(" %s+%  "dateindex, " %s+% str_c(keys,collapse = ", ", sep = "") %s+% ");"), conn.id = cid) }, silent = TRUE )
-
-  # garantee unqueness 
-  try( { db.q(str_c("create unique index if not exists upsert_temp_keyz_key on upsert_temp(" %s+% str_c(c("dateindex",keys), collapse = ", ") %s+% ");"), conn.id = cid) }, silent = TRUE )
-  # upsert_temp_keyz_key ( can be many )
+  }
+  # since 'dateindex' itself can not be a primary key ( 'dateindex' is not unique )
+  if( value_primary_key == "dateindex" ) {
+    db.q(str_c("create index if not exists upsert_temp_mainidx on upsert_temp(" %s+% value_primary_key %s+% ");"), conn.id = cid)
+  }
   
   bm <- 1
   
