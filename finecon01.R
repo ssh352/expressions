@@ -3868,7 +3868,25 @@ verify_month_often_month_past_returns <- function(dateindex = NULL, months_limit
 } 
 
 
-
+# required columns
+#  
+# dateindex, dateindexlbd, dateindexp01lbd
+# split_date
+# company_id
+# perend_q1, perend_q2
+# date_eq0
+# mktcap
+# price
+# 
+# no longer required, no longer used columns, but still in there 
+# ( some commented out, some in lower queries )
+# 
+# ticker, company
+# pertyp_q1
+# 
+# current calculations
+# nowlast_columns = c("sales_q1", "netinc_q1", "ncc_q1", "assets_q1", "assets_q2", "tco_q1", "tcf_q1", "tci_q1", "ca_q1", "cl_q1", "liab_q1")
+# 
 load_inbnd_stmtstats <- function (dateindex = NULL, nowlast_columns = NULL, support_dateindex_collection = NULL,  char_col_numeric_limit = NULL) {
   
   message(gsub("\"","",capture.output(match.call())))
