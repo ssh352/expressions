@@ -3895,7 +3895,7 @@ load_inbnd_stmtstats <- function (dateindex = NULL, nowlast_columns = NULL, supp
     Sys.setenv(TZ="UTC")
   }
   
-  load_inbnd_stmtstats_inner <- function (dateindex = NULL, support_dateindex_collection = NULL,  char_col_numeric_limit = NULL) {
+  load_inbnd_stmtstats_inner <- function (dateindex = NULL, nowlast_columns = NULL, support_dateindex_collection = NULL,  char_col_numeric_limit = NULL) {
     
     # Then do everything
     if(!is.null(dateindex)) {  
@@ -4121,19 +4121,9 @@ load_inbnd_stmtstats <- function (dateindex = NULL, nowlast_columns = NULL, supp
             , sq3.now_inbnd_stmtid_dateindexlbd
             , sq3.now_inbnd_stmtstat_perend_q1
             , sq3.now_inbnd_stmtstat_perend_q2
-            , sq3.now_inbnd_stmtstat_sales_q1
-            , sq3.now_inbnd_stmtstat_netinc_q1
-            , sq3.now_inbnd_stmtstat_ncc_q1
-            , sq3.now_inbnd_stmtstat_assets_q1
-            , sq3.now_inbnd_stmtstat_assets_q2
-            , sq3.now_inbnd_stmtstat_mktcap
             , sq3.now_inbnd_stmtstat_price
-            , sq3.now_inbnd_stmtstat_tco_q1
-            , sq3.now_inbnd_stmtstat_tcf_q1
-            , sq3.now_inbnd_stmtstat_tci_q1
-            , sq3.now_inbnd_stmtstat_ca_q1
-            , sq3.now_inbnd_stmtstat_cl_q1
-            , sq3.now_inbnd_stmtstat_liab_q1
+            , sq3.now_inbnd_stmtstat_mktcap
+            ", if(length(nowlast_columns)) { str_c(sprintf(", sq3.now_inbnd_stmtstat_%s", nowlast_columns), collapse = "\n            ")} else { "" }, "
             -- SMALL RATIO EXPLOSIONS MAKE THESE USELESS
             --, sq3.now_inbnd_stmtstat_netinc_q1_o_mktcap
             --, sq3.now_inbnd_stmtstat_sales_q1_o_mktcap
@@ -4144,19 +4134,9 @@ load_inbnd_stmtstats <- function (dateindex = NULL, nowlast_columns = NULL, supp
             , first_value(sq3.now_inbnd_stmtid_dateindexlbd)  over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindexlbd_partition order by sq3.dateindexlbd) last_inbnd_stmtid_dateindexlbd
             , first_value(sq3.now_inbnd_stmtstat_perend_q1)   over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindexlbd_partition order by sq3.dateindexlbd) last_inbnd_stmtid_perend_q1
             , first_value(sq3.now_inbnd_stmtstat_perend_q2)   over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindexlbd_partition order by sq3.dateindexlbd) last_inbnd_stmtid_perend_q2
-            , first_value(sq3.now_inbnd_stmtstat_sales_q1)    over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindexlbd_partition order by sq3.dateindexlbd) last_inbnd_stmtstat_sales_q1
-            , first_value(sq3.now_inbnd_stmtstat_netinc_q1)   over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindexlbd_partition order by sq3.dateindexlbd) last_inbnd_stmtstat_netinc_q1
-            , first_value(sq3.now_inbnd_stmtstat_ncc_q1)      over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindexlbd_partition order by sq3.dateindexlbd) last_inbnd_stmtstat_ncc_q1
-            , first_value(sq3.now_inbnd_stmtstat_assets_q1)   over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindexlbd_partition order by sq3.dateindexlbd) last_inbnd_stmtstat_assets_q1
-            , first_value(sq3.now_inbnd_stmtstat_assets_q2)   over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindexlbd_partition order by sq3.dateindexlbd) last_inbnd_stmtstat_assets_q2
-            , first_value(sq3.now_inbnd_stmtstat_mktcap)      over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindexlbd_partition order by sq3.dateindexlbd) last_inbnd_stmtstat_mktcap
             , first_value(sq3.now_inbnd_stmtstat_price)       over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindexlbd_partition order by sq3.dateindexlbd) last_inbnd_stmtstat_price
-            , first_value(sq3.now_inbnd_stmtstat_tco_q1)      over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindexlbd_partition order by sq3.dateindexlbd) last_inbnd_stmtstat_tco_q1
-            , first_value(sq3.now_inbnd_stmtstat_tcf_q1)      over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindexlbd_partition order by sq3.dateindexlbd) last_inbnd_stmtstat_tcf_q1
-            , first_value(sq3.now_inbnd_stmtstat_tci_q1)      over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindexlbd_partition order by sq3.dateindexlbd) last_inbnd_stmtstat_tci_q1
-            , first_value(sq3.now_inbnd_stmtstat_ca_q1)       over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindexlbd_partition order by sq3.dateindexlbd) last_inbnd_stmtstat_ca_q1
-            , first_value(sq3.now_inbnd_stmtstat_cl_q1)       over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindexlbd_partition order by sq3.dateindexlbd) last_inbnd_stmtstat_cl_q1
-            , first_value(sq3.now_inbnd_stmtstat_liab_q1)     over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindexlbd_partition order by sq3.dateindexlbd) last_inbnd_stmtstat_liab_q1
+            , first_value(sq3.now_inbnd_stmtstat_mktcap)      over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindexlbd_partition order by sq3.dateindexlbd) last_inbnd_stmtstat_mktcap
+            ", if(length(nowlast_columns)) { str_c(sprintf(", first_value(sq3.now_inbnd_stmtstat_%s )    over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindexlbd_partition order by sq3.dateindexlbd) last_inbnd_stmtstat_%s", nowlast_columns, nowlast_columns), collapse = paste0("\n            "))  } else { "" }, "
             --, first_value(sq3.now_inbnd_stmtstat_netinc_q1_o_mktcap)   over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindexlbd_partition order by sq3.dateindex) last_inbnd_stmtstat_netinc_q1_o_mktcap
             --, first_value(sq3.now_inbnd_stmtstat_sales_q1_o_mktcap)    over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindexlbd_partition order by sq3.dateindex) last_inbnd_stmtstat_sales_q1_o_mktcap
             --, first_value(sq3.now_inbnd_stmtstat_netinc_q1_o_sales_q1) over (partition by sq3.company_id, sq3.now_inbnd_stmtid_dateindexlbd_partition order by sq3.dateindex) last_inbnd_stmtstat_netinc_q1_o_sales_q1
@@ -4174,19 +4154,9 @@ load_inbnd_stmtstats <- function (dateindex = NULL, nowlast_columns = NULL, supp
               , sq2.now_inbnd_stmtid_dateindexlbd
               , sq2.now_inbnd_stmtstat_perend_q1
               , sq2.now_inbnd_stmtstat_perend_q2
-              , sq2.now_inbnd_stmtstat_sales_q1
-              , sq2.now_inbnd_stmtstat_netinc_q1
-              , sq2.now_inbnd_stmtstat_ncc_q1
-              , sq2.now_inbnd_stmtstat_assets_q1
-              , sq2.now_inbnd_stmtstat_assets_q2
-              , sq2.now_inbnd_stmtstat_mktcap
               , sq2.now_inbnd_stmtstat_price
-              , sq2.now_inbnd_stmtstat_tco_q1
-              , sq2.now_inbnd_stmtstat_tcf_q1
-              , sq2.now_inbnd_stmtstat_tci_q1
-              , sq2.now_inbnd_stmtstat_ca_q1
-              , sq2.now_inbnd_stmtstat_cl_q1
-              , sq2.now_inbnd_stmtstat_liab_q1
+              , sq2.now_inbnd_stmtstat_mktcap
+              ", if(length(nowlast_columns)) { str_c(sprintf(", sq2.now_inbnd_stmtstat_%s", nowlast_columns), collapse = "\n              ")} else { "" } ,"
            -- , sq2.now_inbnd_stmtstat_netinc_q1_o_mktcap
            -- , sq2.now_inbnd_stmtstat_sales_q1_o_mktcap
            -- , sq2.now_inbnd_stmtstat_netinc_q1_o_sales_q1
@@ -4213,19 +4183,9 @@ load_inbnd_stmtstats <- function (dateindex = NULL, nowlast_columns = NULL, supp
                 , case when sq1.now_eff_date_eq0 != sq1.p01lbd_eff_date_eq0 then sq1.now_dateindexlbd         else null end now_inbnd_stmtid_dateindexlbd
                 , case when sq1.now_eff_date_eq0 != sq1.p01lbd_eff_date_eq0 then sq1.now_perend_q1            else null end now_inbnd_stmtstat_perend_q1 
                 , case when sq1.now_eff_date_eq0 != sq1.p01lbd_eff_date_eq0 then sq1.now_perend_q2            else null end now_inbnd_stmtstat_perend_q2 
-                , case when sq1.now_eff_date_eq0 != sq1.p01lbd_eff_date_eq0 then sq1.now_sales_q1             else null end now_inbnd_stmtstat_sales_q1
-                , case when sq1.now_eff_date_eq0 != sq1.p01lbd_eff_date_eq0 then sq1.now_netinc_q1            else null end now_inbnd_stmtstat_netinc_q1
-                , case when sq1.now_eff_date_eq0 != sq1.p01lbd_eff_date_eq0 then sq1.now_ncc_q1               else null end now_inbnd_stmtstat_ncc_q1
-                , case when sq1.now_eff_date_eq0 != sq1.p01lbd_eff_date_eq0 then sq1.now_assets_q1            else null end now_inbnd_stmtstat_assets_q1
-                , case when sq1.now_eff_date_eq0 != sq1.p01lbd_eff_date_eq0 then sq1.now_assets_q2            else null end now_inbnd_stmtstat_assets_q2 
-                , case when sq1.now_eff_date_eq0 != sq1.p01lbd_eff_date_eq0 then sq1.now_mktcap               else null end now_inbnd_stmtstat_mktcap 
                 , case when sq1.now_eff_date_eq0 != sq1.p01lbd_eff_date_eq0 then sq1.now_price                else null end now_inbnd_stmtstat_price 
-                , case when sq1.now_eff_date_eq0 != sq1.p01lbd_eff_date_eq0 then sq1.now_tco_q1               else null end now_inbnd_stmtstat_tco_q1
-                , case when sq1.now_eff_date_eq0 != sq1.p01lbd_eff_date_eq0 then sq1.now_tcf_q1               else null end now_inbnd_stmtstat_tcf_q1
-                , case when sq1.now_eff_date_eq0 != sq1.p01lbd_eff_date_eq0 then sq1.now_tci_q1               else null end now_inbnd_stmtstat_tci_q1
-                , case when sq1.now_eff_date_eq0 != sq1.p01lbd_eff_date_eq0 then sq1.now_ca_q1                else null end now_inbnd_stmtstat_ca_q1
-                , case when sq1.now_eff_date_eq0 != sq1.p01lbd_eff_date_eq0 then sq1.now_cl_q1                else null end now_inbnd_stmtstat_cl_q1
-                , case when sq1.now_eff_date_eq0 != sq1.p01lbd_eff_date_eq0 then sq1.now_liab_q1              else null end now_inbnd_stmtstat_liab_q1
+                , case when sq1.now_eff_date_eq0 != sq1.p01lbd_eff_date_eq0 then sq1.now_mktcap               else null end now_inbnd_stmtstat_mktcap 
+                ", if(length(nowlast_columns)) { str_c(sprintf(", case when sq1.now_eff_date_eq0 != sq1.p01lbd_eff_date_eq0 then sq1.now_%s             else null end now_inbnd_stmtstat_%s", nowlast_columns, nowlast_columns), collapse = paste0("\n                "))  } else { "" }, "
             --  , case when sq1.now_eff_date_eq0 != sq1.p01lbd_eff_date_eq0 then sq1.now_netinc_q1_o_mktcap   else null end now_inbnd_stmtstat_netinc_q1_o_mktcap  
             --  , case when sq1.now_eff_date_eq0 != sq1.p01lbd_eff_date_eq0 then sq1.now_sales_q1_o_mktcap    else null end now_inbnd_stmtstat_sales_q1_o_mktcap  
             --  , case when sq1.now_eff_date_eq0 != sq1.p01lbd_eff_date_eq0 then sq1.now_netinc_q1_o_sales_q1 else null end now_inbnd_stmtstat_netinc_q1_o_sales_q1 
@@ -4244,19 +4204,9 @@ load_inbnd_stmtstats <- function (dateindex = NULL, nowlast_columns = NULL, supp
           	      , now.dateindex        now_dateindex
           	      , now.dateindexlbd     now_dateindexlbd
                   , now.company_id       now_company_id
-                  , now.sales_q1         now_sales_q1
-                  , now.netinc_q1        now_netinc_q1  
-                  , now.ncc_q1           now_ncc_q1  
-                  , now.assets_q1        now_assets_q1 
-                  , now.assets_q2        now_assets_q2  
-                  , now.mktcap           now_mktcap     
                   , now.price            now_price
-                  , now.tco_q1           now_tco_q1 
-                  , now.tcf_q1           now_tcf_q1 
-                  , now.tci_q1           now_tci_q1 
-                  , now.ca_q1            now_ca_q1  
-                  , now.cl_q1            now_cl_q1  
-                  , now.liab_q1          now_liab_q1 
+                  , now.mktcap           now_mktcap
+                  ", if(length(nowlast_columns)) { str_c(sprintf(", now.%s      now_%s", nowlast_columns, nowlast_columns), collapse = paste0("\n          	      "))  } else { "" }, "
               --  , case when now.pertyp_q1 = 'W' then 7 * now.perlen_q1 else (365 / 12) * now.perlen_q1 end now_perlen_days_q1
               -- EASIER THAN ABOVE
                   , now.perend_q1 - now.perend_q2 now_perlen_days_q1
@@ -4293,7 +4243,7 @@ load_inbnd_stmtstats <- function (dateindex = NULL, nowlast_columns = NULL, supp
                    then  ( lag((now.mktcap/nullif(now.price,0))) over (partition by now.company_id order by now.dateindexlbd) - (now.mktcap/nullif(now.price,0)) ) /  nullif((now.mktcap/nullif(now.price,0)),0)
                    else 0.0 end * 100.0 * 12  pct_freeprice_ret_01m_ann  -- a PAST return  
                 	 from
-                    ( select   ins.dateindex_company_id, ins.dateindex, ins.dateindexlbd, ins.dateindexp01lbd, ins.company_id, ins.perend_q1, ins.perend_q2, ins.date_eq0, ins.split_date, ins.perlen_q1, ins.ticker, ins.company, ins.pertyp_q1, ins.price, ins.mktcap ",if(length(nowlast_columns)) { ", ins." %s+% str_c(nowlast_columns, collapse = ", ins.")  } else { "" } ,"
+                    ( select   ins.dateindex_company_id, ins.dateindex, ins.dateindexlbd, ins.dateindexp01lbd, ins.company_id, ins.perend_q1, ins.perend_q2, ins.date_eq0, ins.split_date, ins.perlen_q1, ins.ticker, ins.company, ins.pertyp_q1, ins.price, ins.mktcap ", if(length(nowlast_columns)) { str_c(sprintf(", ins.%s", nowlast_columns), collapse = "")  } else { "" } ,"
                                from si_finecon2 ins  where ins.dateindex ", support_where_condition, ") now left outer join si_finecon2 p01lbd on now.dateindexp01lbd  = p01lbd.dateindexlbd and now.company_id = p01lbd.company_id 
               ) sq1                               -- where ins.ticker in ('AAPL','MSFT') -- VERY easy to test
             ) sq2                                 -- where ins.dateindex in (17347, 17317, 17284, 17256, 17225, 17197, 17165, 17135, 17105, 17074, 17044, 17011, 16982) -- first ONE minute AFTER 13 seconds WITH SORT
@@ -4325,7 +4275,7 @@ load_inbnd_stmtstats <- function (dateindex = NULL, nowlast_columns = NULL, supp
 #   , char_col_numeric_limit = 999999.99    # for right NOW pure AAII data ( unratio-ed )
 # )  -> si_all_g_df
 
-# NEWER # nowlast_columns # TEST 
+## NEWER # nowlast_columns # TEST 
 # load_inbnd_stmtstats(
 #     dateindex = 17347 # e.g. last loaded pay period
 #   , nowlast_columns = c("sales_q1", "netinc_q1", "ncc_q1", "assets_q1", "assets_q2", "tco_q1", "tcf_q1", "tci_q1", "ca_q1", "cl_q1", "liab_q1")
