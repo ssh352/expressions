@@ -6,7 +6,7 @@
 set effective_cache_size to '6144MB';  -- os + 'shared_buffers'
 
 set search_path to fe_data_store;
--- et search_path to sipro_data_store,sipro_stage;
+-- set search_path to sipro_data_store,sipro_stage;
 set time zone 'utc';
 --set work_mem to  '1200MB';
 set work_mem to '2047MB';
@@ -14,7 +14,8 @@ set constraint_exclusion = on;
 -- postgresql 9.6
 set max_parallel_workers_per_gather to 4; -- not 'written in docs'
 
-
+-- by design can not find plr
+-- select r_version();
 
 CREATE TABLE sipro_data_store.si_retdate
 (
@@ -11305,12 +11306,72 @@ order by   fe.col1_fct
 -- 354 ROWS
 
 
--- KEEPISH ( 2 of 2 TO KEEP )
--- A SOLUTION ( MULTPLE FACTOR 'sp500'/'spnot500' )
--- BETTER
-CREATE INDEX si_finecon2_finecon_sp_partial_idx
-  ON fe_data_store.si_finecon2 (dateindex)
-  WHERE sp in ('500','400','600');
+-- select r_version();
+-- 
+-- select * from information_schema.table_constraints;
+-- 
+-- select constraint_name 
+--                 from information_schema.table_constraints 
+--                   where constraint_schema   = 'fe_data_store' 
+--                   and   table_name          = 'si_finecon2' 
+--                   and   constraint_type     = 'PRIMARY KEY';
+-- 
+-- 
+-- ALTER TABLE fe_data_store.si_finecon2 DROP CONSTRAINT si_finecon2_pkey;
+-- 
+-- ALTER TABLE fe_data_store.si_finecon2
+--   ADD CONSTRAINT si_finecon2_pkey PRIMARY KEY(dateindex_company_id);
+-- 
+-- create unique index if not exists si_finecon2_pkey on si_finecon2(dateindex_company_id);
+-- 
+-- alter table if exists si_finecon2 add primary key using index si_finecon2_pkey;
+-- 
+-- 
+--   drop table upsert_temp;
+-- create table upsert_temp(dateindex_company_id text);
+-- alter table upsert_temp drop constraint upsert_temp_pkey;
+-- 
+-- 
+-- select constraint_name 
+--                   from information_schema.table_constraints 
+--                     where table_name          = 'upsert_temp' 
+--                     and   constraint_type     = 'PRIMARY KEY';
+-- 
+-- 
+-- alter table if exists upsert_temp add primary key using index upsert_temp_pkey;
+-- 
+-- 
+-- SELECT nspname FROM pg_namespace WHERE oid = pg_my_temp_schema();
+
+
+
+
+-- new ( ALREADY IN R PROGRAM [ ]  )
+create index if not exists si_finecon2_finecon_sp_partial_idx on 
+                  si_finecon2(dateindex,sp) where sp in ('500','400','600');
+
+explain
+"GroupAggregate  (cost=628923.38..628924.76 rows=19 width=200)"
+"  Group Key: ('spwhat'::text), (CASE WHEN (fei.sp = '500'::text) THEN 'sp500'::text ELSE 'spnot500'::text END), fei.dateindex"
+"  CTE index_weights"
+"    ->  Sort  (cost=605071.94..605073.72 rows=712 width=136)"
+"          Sort Key: (CASE WHEN (fei_1.sp = '500'::text) THEN 'sp500'::text ELSE 'spnot500'::text END), fei_1.dateindex"
+"          ->  HashAggregate  (cost=605016.85..605038.21 rows=712 width=136)"
+"                Group Key: 'spwhat'::text, CASE WHEN (fei_1.sp = '500'::text) THEN 'sp500'::text ELSE 'spnot500'::text END, fei_1.dateindex"
+"                ->  Bitmap Heap Scan on si_finecon2 fei_1  (cost=2837.86..602599.56 rows=193383 width=80)"
+"                      Recheck Cond: (sp = ANY ('{500,400,600}'::text[]))"
+"                      Filter: ((last_inbnd_stmtstat_mktcap IS NOT NULL) AND (last_inbnd_stmtstat_assets_q1 IS NOT NULL))"
+"                      ->  Bitmap Index Scan on si_finecon2_finecon_sp_partial_idx  (cost=0.00..2789.51 rows=271478 width=0)"
+"  ->  Sort  (cost=23849.66..23849.71 rows=19 width=112)"
+"        Sort Key: (CASE WHEN (fei.sp = '500'::text) THEN 'sp500'::text ELSE 'spnot500'::text END), fei.dateindex"
+"        ->  Nested Loop  (cost=23.74..23849.26 rows=19 width=112)"
+"              ->  CTE Scan on index_weights w  (cost=0.00..16.02 rows=4 width=68)"
+"                    Filter: ('spwhat'::text = col1_fct)"
+"              ->  Bitmap Heap Scan on si_finecon2 fei  (cost=23.74..5958.25 rows=5 width=19)"
+"                    Recheck Cond: ((dateindex = w.dateindex) AND (sp = ANY ('{500,400,600}'::text[])))"
+"                    Filter: ((last_inbnd_stmtstat_mktcap IS NOT NULL) AND (last_inbnd_stmtstat_assets_q1 IS NOT NULL) AND (w.col2_fct = CASE WHEN (sp = '500'::text) THEN 'sp500'::text ELSE 'spnot500'::text END))"
+"                    ->  Bitmap Index Scan on si_finecon2_finecon_sp_partial_idx  (cost=0.00..23.73 rows=1525 width=0)"
+"                          Index Cond: (dateindex = w.dateindex)"             
 with index_weights as (
   -- KEEPISH
   -- A SOLUTION ( 'WITH' PART MULTPLE FACTOR 'sp500'/'spnot500' )
@@ -11386,4 +11447,221 @@ order by   fe.col1_fct
          , fe.col2_fct 
          , fe.dateindex;
 -- 354 ROWS
+
+
+
+-- TEMPORARY.sql
+
+-- EXPERIMENT
+set effective_cache_size to '6144MB';  -- os + 'shared_buffers'
+
+set search_path to fe_data_store;
+-- set search_path to sipro_data_store,sipro_stage;
+set time zone 'utc';
+--set work_mem to  '1200MB';
+set work_mem to '2047MB';
+set constraint_exclusion = on;
+-- postgresql 9.6
+set max_parallel_workers_per_gather to 4; -- not 'written in docs'
+
+
+
+-- KEEPISH ( 2 of 2 TO KEEP )
+-- A SOLUTION ( MULTPLE FACTOR 'sp500'/'spnot500' )
+-- BETTER
+--
+--  old ( ALREADY IN THE PROGRAM )
+-- CREATE INDEX si_finecon2_finecon_sp_partial_idx
+--   ON fe_data_store.si_finecon2 (dateindex)
+--   WHERE sp in ('500','400','600');
+with index_weights as (
+  -- KEEPISH
+  -- A SOLUTION ( 'WITH' PART MULTPLE FACTOR 'sp500'/'spnot500' )
+  select
+      fe.dateindex --, company_id
+    , fe.col1_fct
+    , fe.col2_fct
+    , to_timestamp(fe.dateindex*3600*24)::date dateindex_dt
+    , 
+        sum(fe.last_inbnd_stmtstat_mktcap) 
+          filter(where fe.last_inbnd_stmtstat_mktcap is not null and fe.last_inbnd_stmtstat_assets_q1 is not null) 
+                    sum_last_inbnd_stmtstat_mktcap
+    , 
+        sum(fe.last_inbnd_stmtstat_assets_q1) 
+          filter(where fe.last_inbnd_stmtstat_assets_q1 is not null and fe.last_inbnd_stmtstat_assets_q1 is not null) 
+                     sum_last_inbnd_stmtstat_assets_q1
+  from ( -- fe
+         -- explain  -- NO_INDEX+CASE ( over 60+ ... ) INDEX+CASE ( 25 seconds )
+         select
+             fei.dateindex 
+           , 'sp_desc'::text col1_fct
+           , case when fei.sp = '500' then 'sp500' else 'spnot500' end col2_fct
+           , fei.last_inbnd_stmtstat_mktcap, fei.last_inbnd_stmtstat_assets_q1
+         from fe_data_store.si_finecon2 fei 
+         where fei.sp in('500','400','600') 
+           and fei.last_inbnd_stmtstat_mktcap is not null and fei.last_inbnd_stmtstat_assets_q1 is not null -- for safety (filter(): elim, over(): not_elim)
+           -- -- and fei.dateindex = 17438 
+       ) fe -- 261,000 records
+  --where fe.sp in('500','400','600') 
+  --  and fe.last_inbnd_stmtstat_mktcap is not null and fe.last_inbnd_stmtstat_assets_q1 is not null -- for safety (filter(): elim, over(): not_elim)
+  group by   fe.dateindex
+           , fe.col1_fct
+           , fe.col2_fct
+  order by   fe.col1_fct
+           , fe.col2_fct 
+           , fe.dateindex --, company_id
+) -- 354 ROWS
+select
+    fe.dateindex 
+  , to_timestamp(fe.dateindex*3600*24)::date dateindex_dt
+  , fe.col1_fct
+  , fe.col2_fct
+  , sum(fe.last_inbnd_stmtstat_mktcap) 
+      filter(where fe.last_inbnd_stmtstat_mktcap    is not null and fe.last_inbnd_stmtstat_assets_q1 is not null) sum_wrt_assets_q1_of_last_inbnd_stmtstat_mktcap
+  , sum(fe.last_inbnd_stmtstat_assets_q1) 
+      filter(where fe.last_inbnd_stmtstat_assets_q1 is not null and fe.last_inbnd_stmtstat_mktcap    is not null) sum_wrt_mktcap_of_last_inbnd_stmtstat_assets_q1
+  , sum(fe.last_inbnd_stmtstat_mktcap) 
+      filter(where fe.last_inbnd_stmtstat_mktcap    is not null and fe.last_inbnd_stmtstat_assets_q1 is not null) /
+    sum(fe.last_inbnd_stmtstat_assets_q1) 
+      filter(where fe.last_inbnd_stmtstat_assets_q1 is not null and fe.last_inbnd_stmtstat_mktcap    is not null)    * 100 sum_last_mktcap_o_last_inbnd_stmtstat_assets_q1_x100
+  , avg(fe.last_inbnd_stmtstat_mktcap * fe.last_inbnd_stmtstat_assets_q1 / nullif(w.sum_last_inbnd_stmtstat_assets_q1,0)  ) 
+      filter(where fe.last_inbnd_stmtstat_mktcap    is not null and fe.last_inbnd_stmtstat_assets_q1 is not null) avg_last_inbnd_stmtstat_mktcap_wtd_by_assets_q1
+  -- NEW
+  -- ASSETS/ LIAB / OE(ASSETS-LIAB) 
+  , sum(fe.last_inbnd_stmtstat_liab_q1) 
+      filter(where fe.last_inbnd_stmtstat_liab_q1   is not null and fe.last_inbnd_stmtstat_assets_q1 is not null) /
+    sum(fe.last_inbnd_stmtstat_assets_q1) 
+      filter(where fe.last_inbnd_stmtstat_assets_q1 is not null and fe.last_inbnd_stmtstat_liab_q1    is not null)    * 10 sum_last_liab_q1_o_last_assets_q1_x10
+  , sum(fe.last_inbnd_stmtstat_liab_q1) 
+      filter(where fe.last_inbnd_stmtstat_liab_q1   is not null and fe.mktcap is not null) /
+    sum(fe.last_inbnd_stmtstat_mktcap) 
+      filter(where fe.mktcap                        is not null and fe.last_inbnd_stmtstat_liab_q1  is not null)      * 10 sum_last_liab_q1_o_mktcap_x10
+  , sum(fe.last_inbnd_stmtstat_liab_q1) 
+      filter(where fe.last_inbnd_stmtstat_liab_q1   is not null and fe.last_inbnd_stmtstat_assets_q1 is not null) / 
+    (nullif(
+      sum(fe.last_inbnd_stmtstat_assets_q1) 
+        filter(where fe.last_inbnd_stmtstat_assets_q1  is not null and fe.last_inbnd_stmtstat_liab_q1   is not null) -    
+      sum(fe.last_inbnd_stmtstat_liab_q1) 
+        filter(where fe.last_inbnd_stmtstat_liab_q1    is not null and fe.last_inbnd_stmtstat_assets_q1 is not null) 
+    ,0))                                                                                                             * 10 sum_last_liab_q1_o_diff_assets_q1_less_liab_q1_x10
+  -- STAT / ASSETS     STAT / MKTCAP
+  , sum(fe.last_inbnd_stmtstat_netinc_q1) 
+      filter(where fe.last_inbnd_stmtstat_netinc_q1 is not null and fe.last_inbnd_stmtstat_assets_q1 is not null) /
+    sum(fe.last_inbnd_stmtstat_assets_q1) 
+      filter(where fe.last_inbnd_stmtstat_assets_q1 is not null and fe.last_inbnd_stmtstat_netinc_q1    is not null)    * 10000 sum_last_netinc_q1_o_assets_q1_x10000
+  , sum(fe.last_inbnd_stmtstat_netinc_q1) 
+      filter(where fe.last_inbnd_stmtstat_netinc_q1   is not null and fe.mktcap is not null) /
+    sum(fe.last_inbnd_stmtstat_mktcap) 
+      filter(where fe.mktcap                          is not null and fe.last_inbnd_stmtstat_netinc_q1  is not null)    * 1000 sum_last_netinc_q1_o_mktcap_x1000
+  , sum(fe.last_inbnd_stmtstat_ncc_q1) 
+      filter(where fe.last_inbnd_stmtstat_ncc_q1 is not null and fe.last_inbnd_stmtstat_assets_q1 is not null) /
+    sum(fe.last_inbnd_stmtstat_assets_q1) 
+      filter(where fe.last_inbnd_stmtstat_assets_q1 is not null and fe.last_inbnd_stmtstat_ncc_q1    is not null)    * 10000 sum_last_ncc_q1_o_assets_q1_x10000
+  , sum(fe.last_inbnd_stmtstat_ncc_q1) 
+      filter(where fe.last_inbnd_stmtstat_ncc_q1   is not null and fe.mktcap is not null) /
+    sum(fe.last_inbnd_stmtstat_mktcap) 
+      filter(where fe.mktcap                          is not null and fe.last_inbnd_stmtstat_ncc_q1  is not null)    * 10000 sum_last_ncc_q1_o_mktcap_x10000
+  , sum(fe.last_inbnd_stmtstat_tco_q1) 
+      filter(where fe.last_inbnd_stmtstat_tco_q1    is not null and fe.last_inbnd_stmtstat_assets_q1 is not null) /
+    sum(fe.last_inbnd_stmtstat_assets_q1) 
+      filter(where fe.last_inbnd_stmtstat_assets_q1 is not null and fe.last_inbnd_stmtstat_tco_q1    is not null)    * 1000 sum_last_tco_q1_o_assets_q1_x1000
+  , sum(fe.last_inbnd_stmtstat_tco_q1) 
+      filter(where fe.last_inbnd_stmtstat_tco_q1    is not null and fe.mktcap is not null) /
+    sum(fe.last_inbnd_stmtstat_mktcap) 
+      filter(where fe.mktcap                          is not null and fe.last_inbnd_stmtstat_tco_q1  is not null)    * 1000 sum_last_tco_q1_o_mktcap_x1000
+  , sum(fe.last_inbnd_stmtstat_tcf_q1) 
+      filter(where fe.last_inbnd_stmtstat_tcf_q1    is not null and fe.last_inbnd_stmtstat_assets_q1 is not null) /
+    sum(fe.last_inbnd_stmtstat_assets_q1) 
+      filter(where fe.last_inbnd_stmtstat_assets_q1 is not null and fe.last_inbnd_stmtstat_tcf_q1    is not null)    * 1000 sum_last_tcf_q1_o_assets_q1_x1000
+  , sum(fe.last_inbnd_stmtstat_tcf_q1) 
+      filter(where fe.last_inbnd_stmtstat_tcf_q1    is not null and fe.mktcap is not null) /
+    sum(fe.last_inbnd_stmtstat_mktcap) 
+      filter(where fe.mktcap                          is not null and fe.last_inbnd_stmtstat_tcf_q1  is not null)    * 1000 sum_last_tcf_q1_o_mktcap_x1000
+  , sum(fe.last_inbnd_stmtstat_tci_q1) 
+      filter(where fe.last_inbnd_stmtstat_tci_q1    is not null and fe.last_inbnd_stmtstat_assets_q1 is not null) /
+    sum(fe.last_inbnd_stmtstat_assets_q1) 
+      filter(where fe.last_inbnd_stmtstat_assets_q1 is not null and fe.last_inbnd_stmtstat_tci_q1    is not null)    * 1000 sum_last_tci_q1_o_assets_q1_x1000
+  , sum(fe.last_inbnd_stmtstat_tci_q1) 
+      filter(where fe.last_inbnd_stmtstat_tci_q1    is not null and fe.mktcap is not null) /
+    sum(fe.last_inbnd_stmtstat_mktcap) 
+      filter(where fe.mktcap                          is not null and fe.last_inbnd_stmtstat_tci_q1  is not null)    * 1000 sum_last_tci_q1_o_mktcap_x1000
+  , sum(fe.last_inbnd_stmtstat_ca_q1) 
+      filter(where fe.last_inbnd_stmtstat_ca_q1    is not null and fe.last_inbnd_stmtstat_assets_q1 is not null) /
+    sum(fe.last_inbnd_stmtstat_assets_q1) 
+      filter(where fe.last_inbnd_stmtstat_assets_q1 is not null and fe.last_inbnd_stmtstat_ca_q1    is not null)    * 100 sum_last_ca_q1_o_assets_q1_x100
+  , sum(fe.last_inbnd_stmtstat_ca_q1) 
+      filter(where fe.last_inbnd_stmtstat_ca_q1    is not null and fe.mktcap is not null) /
+    sum(fe.last_inbnd_stmtstat_mktcap) 
+      filter(where fe.mktcap                          is not null and fe.last_inbnd_stmtstat_ca_q1  is not null)    * 100 sum_last_ca_q1_o_mktcap_x100
+  , sum(fe.last_inbnd_stmtstat_cl_q1) 
+      filter(where fe.last_inbnd_stmtstat_cl_q1    is not null and fe.last_inbnd_stmtstat_assets_q1 is not null) /
+    sum(fe.last_inbnd_stmtstat_assets_q1) 
+      filter(where fe.last_inbnd_stmtstat_assets_q1 is not null and fe.last_inbnd_stmtstat_cl_q1    is not null)    * 100 sum_last_cl_q1_o_assets_q1_x100
+  , sum(fe.last_inbnd_stmtstat_cl_q1) 
+      filter(where fe.last_inbnd_stmtstat_cl_q1    is not null and fe.mktcap is not null) /
+    sum(fe.last_inbnd_stmtstat_mktcap) 
+      filter(where fe.mktcap                          is not null and fe.last_inbnd_stmtstat_cl_q1  is not null)    * 100 sum_last_cl_q1_o_mktcap_x100
+  -- SUM OF THE CURRENTS CA + CL
+  , (
+      sum(fe.last_inbnd_stmtstat_ca_q1) 
+        filter(where fe.last_inbnd_stmtstat_ca_q1 is not null and fe.last_inbnd_stmtstat_cl_q1 is not null and fe.last_inbnd_stmtstat_assets_q1 is not null) +
+      sum(fe.last_inbnd_stmtstat_cl_q1) 
+        filter(where fe.last_inbnd_stmtstat_ca_q1 is not null and fe.last_inbnd_stmtstat_cl_q1 is not null and fe.last_inbnd_stmtstat_assets_q1 is not null)
+    ) /
+    sum(fe.last_inbnd_stmtstat_assets_q1) 
+      filter(where fe.last_inbnd_stmtstat_ca_q1 is not null and fe.last_inbnd_stmtstat_cl_q1 is not null and fe.last_inbnd_stmtstat_assets_q1 is not null)    * 100 sum_last_ca_cl_q1_o_assets_q1_x100
+  , (
+      sum(fe.last_inbnd_stmtstat_ca_q1) 
+        filter(where fe.last_inbnd_stmtstat_ca_q1 is not null and fe.last_inbnd_stmtstat_cl_q1 is not null and fe.mktcap is not null) +
+      sum(fe.last_inbnd_stmtstat_cl_q1) 
+        filter(where fe.last_inbnd_stmtstat_ca_q1 is not null and fe.last_inbnd_stmtstat_cl_q1 is not null and fe.mktcap is not null)
+    ) /
+    sum(fe.mktcap) 
+      filter(where fe.last_inbnd_stmtstat_ca_q1 is not null and fe.last_inbnd_stmtstat_cl_q1 is not null and fe.mktcap is not null)                           * 100 sum_last_ca_cl_q1_o_mktcap_x100
+  -- ENDNEW
+  from ( -- fe
+         -- explain  -- NO_INDEX+CASE ( over 60+ ... ) INDEX+CASE ( 25 seconds )
+         select
+             fei.dateindex 
+           , 'sp_desc'::text col1_fct 
+           , case when fei.sp = '500' then 'sp500' else 'spnot500' end col2_fct
+           , fei.last_inbnd_stmtstat_mktcap, fei.last_inbnd_stmtstat_assets_q1
+           -- NEW
+           , fei.last_inbnd_stmtstat_liab_q1
+           , fei.mktcap
+           , fei.last_inbnd_stmtstat_netinc_q1
+           , fei.last_inbnd_stmtstat_ncc_q1
+           , fei.last_inbnd_stmtstat_tco_q1
+           , fei.last_inbnd_stmtstat_tcf_q1
+           , fei.last_inbnd_stmtstat_tci_q1
+           , fei.last_inbnd_stmtstat_ca_q1
+           , fei.last_inbnd_stmtstat_cl_q1
+           -- ENDNEW
+         from fe_data_store.si_finecon2 fei 
+         where fei.sp in('500','400','600') 
+           -- and fei.last_inbnd_stmtstat_mktcap is not null and fei.last_inbnd_stmtstat_assets_q1 is not null -- for safety (filter(): elim, over(): not_elim)
+       ) fe -- 261,000 records
+     , index_weights w
+where     fe.dateindex  = w.dateindex 
+      -- -- and fe.dateindex = 17438  
+   -- and fe.company_id = w.company_id
+   -- and sp = '500'
+      and fe.col1_fct = w.col1_fct
+      and fe.col2_fct = w.col2_fct
+group by   fe.dateindex    -- potential expansion to 'grouping sets','cubes' ( if makes sense )
+         , fe.col1_fct
+         , fe.col2_fct
+order by   fe.col1_fct
+         , fe.col2_fct 
+         , fe.dateindex;
+-- 354 ROWS
+
+-- 49-72
+-- 153-159, 
+-- 177 (17438)
+
+
+--17438;"2017-09-29";"sp_desc";"spnot500";2389614.90;3949892.20;60.49823081247635062000;3.98269988709544191286;7.33105647387736765720;12.0036095052974190;27.4680089785478700;43.14984491559432770000;6.96518292545719310000;-7.72414794270400570000;-9.91379829652240190000;16.17865253064460648000;21.34945988480674454000;-0.099622852518275571271000;-0.30006527858821264000;-17.33714119564768152000;-22.79145481745775752000;15.86347029303897433300;26.05576879703526519800;9.08478457082373673300;14.92468534534691195600;24.94753115488521314900;39.26313253250970457400
+-- -- -- and fe/fei.dateindex = 17438 
+--17438;"2017-09-29";"sp_desc";"spnot500";2389614.90;3949892.20;60.49823081247635062000;3.98269988709544191286;7.33105647387736765720;12.0036095052974190;27.4680089785478700;43.14984491559432770000;6.96518292545719310000;-7.72414794270400570000;-9.91379829652240190000;16.17865253064460648000;21.34945988480674454000;-0.099622852518275571271000;-0.30006527858821264000;-17.33714119564768152000;-22.79145481745775752000;15.86347029303897433300;26.05576879703526519800;9.08478457082373673300;14.92468534534691195600;24.94753115488521314900;39.26313253250970457400
 
