@@ -4449,7 +4449,7 @@ load_division_aggregated_per_dateindex <- function(dateindex = NULL) {
   
   # NOTE: COULD/SHOULD LIBERALIZE ... 
   # 
-  # , ‘sp_desc’::text collection_name01_fct
+  # , 'sp_desc'::text collection_name01_fct
   # end sp_desc_fct
   # sp in 
   # , sp_desc_fct
@@ -7584,6 +7584,8 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
 # 
 # Chicago Fed National Financial Conditions Index Nonfinancial Leveral Subindex (NFCINONFINLEVERAGE) 'awesome'
 # 
+# library(OECD) # from xml2 feed (IF ANY GOOD)
+#
 # MULTPL/SP500_EARNINGS_MONTH-S-P-500 'awesome'
 #
 #   Real_Sortino of Gold & Silver sector returns('risk')
@@ -8075,7 +8077,7 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
 # its headquarters in the U.S.
 # the value of its market capitalization trade annually
 # at least a quarter-million of its shares trade in each of the previous six months
-# most of its shares in the public’s hands
+# most of its shares in the public's hands
 # at least half a year since its initial public offering
 # Four straight quarters of positive as-reported earnings.
 # 
