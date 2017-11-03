@@ -1208,7 +1208,7 @@ verify_finecon_sp_partial_idx <- function() {
                   si_finecon2(dateindex,sp) where sp in ('500','400','600')
               ;", conn.id = cid)
     
-    db.q("create index si_finecon2_finecon_sp_500_sector_desc_partial_idx on 
+    db.q("create index if not exists si_finecon2_finecon_sp_500_sector_desc_partial_idx on 
                   fe_data_store.si_finecon2(dateindex,sp,sector_desc) where sp = '500'
               ;", conn.id = cid)
     
