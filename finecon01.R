@@ -405,7 +405,9 @@ verify_si_finecon_exists <- function () {
     # https://www.postgresql.org/docs/10/static/plpgsql-errors-and-messages.html
 
     # SHOULD always BE IN A database
-    current_database    <- db.q("SELECT nspname FROM pg_namespace WHERE oid = pg_my_temp_schema();", conn.id = cid)[[1]]
+    # correct, but not used in this function
+    # current_database <- db.q("select current_database();", conn.id = cid)[[1]]
+    
     current_search_path <-  strsplit(db.q("show search_path;", conn.id = cid)[[1]],",[ ]*")[[1]]
     current_schema      <- db.q("select current_schema();", conn.id = cid)[[1]] 
     # MUST put SOMETHING in there FIRST
