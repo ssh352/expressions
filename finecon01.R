@@ -7724,12 +7724,12 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
 # SET upsert_temp TO make a temporary table
 # rm(list=setdiff(ls(all.names=TRUE),c("con","cid"))); debugSource('W:/R-3.4._/finecon01.R'); debugSource('W:/R-3.4._/goodsight01.R');verify_connection();options(upsert_temp_is_temporary=Inf)
 # 
-# the MOST important
-# typical *new month*                                 # *new(top) month* 
-# { upload_lwd_sipro_dbfs_to_db(exact_near_month_end_dbf_dirs = c(17438))  # assuming all of the previous months isq,bsq,cfq have been loaded
-#   upload_lwd_sipro_dbfs_to_db(                                            months_only_back = 13, exactly_only_future_returns = TRUE)
-# }
+# after the END OF the program #
+#  upload_lwd_sipro_dbfs_to_db
 # 
+# RUN (whatever 'code' it may be)
+# 'typical *new month*' 
+
 # # view last months data
 
 # -- last month ( look for 4 week loaded returns )
