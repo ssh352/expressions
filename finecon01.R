@@ -3893,6 +3893,11 @@ verify_month_often_month_past_returns <- function(dateindex = NULL, months_limit
 # current calculations
 # nowlast_columns = c("sales_q1", "netinc_q1", "ncc_q1", "assets_q1", "assets_q2", "tco_q1", "tcf_q1", "tci_q1", "ca_q1", "cl_q1", "liab_q1")
 # 
+# can not be the basis:        perend_q1, perend_q2, price, mktcap
+# can not be the fundmentals:  netinc_q1,  sales_q1
+#
+# because 'basis' and 'fundamenals' are *hardcoded in* 
+#
 load_inbnd_stmtstats <- function (dateindex = NULL, nowlast_columns = NULL, support_dateindex_collection = NULL,  char_col_numeric_limit = NULL) {
   
   message(gsub("\"","",capture.output(match.call())))
@@ -5846,7 +5851,7 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
         # support_dateindex_collection is the 
         # minimum of 11 months: current + ( 6 month Quarter period reporter with 4 month Q-10 report filing delay ) 
         #                           # current or earlier                               # current or up to 10 earlier
-        print(dir_i);load_inbnd_stmtstats(dir_i, nowlast_columns = c("mktcap", "sales_q1", "netinc_q1", "ncc_q1", "assets_q1", "assets_q2", "tco_q1", "tcf_q1", "tci_q1", "ca_q1", "cl_q1", "liab_q1"), support_dateindex_collection = sort(as.integer(dir(from_dir)), decreasing = TRUE)[dir_i>=  sort(as.integer(dir(from_dir)), decreasing = TRUE)][seq_len(min(sum(dir_i >=  sort(as.integer(dir(from_dir)), decreasing = TRUE)),11))], char_col_numeric_limit = 99999999999999.99) -> si_all_g_df
+        print(dir_i);load_inbnd_stmtstats(dir_i, nowlast_columns = c("sales_q1", "netinc_q1", "ncc_q1", "assets_q1", "assets_q2", "tco_q1", "tcf_q1", "tci_q1", "ca_q1", "cl_q1", "liab_q1"), support_dateindex_collection = sort(as.integer(dir(from_dir)), decreasing = TRUE)[dir_i>=  sort(as.integer(dir(from_dir)), decreasing = TRUE)][seq_len(min(sum(dir_i >=  sort(as.integer(dir(from_dir)), decreasing = TRUE)),11))], char_col_numeric_limit = 99999999999999.99) -> si_all_g_df
         print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
         # 
         vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
