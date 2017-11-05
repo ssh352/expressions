@@ -4314,10 +4314,12 @@ load_inbnd_stmtstats <- function (dateindex = NULL, nowlast_columns = NULL, supp
 
 
 # 
-
 # REASON: SO I CAN DO 'WEIGHTED' MEASURES (SEEMS NOT WORTH THE EFFORT)
 # uses now_inbnd_stmtstat last_inbnd_stmtstat
 # since MANY SQLs upsertS are done inside
+# 
+#  WORKING(but not used): load_division_aggregated_now_last_mktcap_per_company_id
+# 
 load_division_aggregated_now_last_mktcap_per_company_id <- function(dateindex = NULL) {
 
   message(gsub("\"","",capture.output(match.call())))
@@ -4442,8 +4444,9 @@ load_division_aggregated_now_last_mktcap_per_company_id <- function(dateindex = 
 # uses now_inbnd_stmtstat last_inbnd_stmtstat
 # since MANY SQLs upsertS are done inside
 # load_division_aggregated_now_last_mktcap_per_company_id(dateindex = dir_i)
-
-
+#
+# MATH_LOGIC WRONG:    : load_division_aggregated_per_dateindex ( WRONG BECAUSE: ALL columns USED must be NOT NULL everwhere )
+# 
 # uses now_inbnd_stmtstat last_inbnd_stmtstat
 # since MANY SQLs upsertS are done inside
 load_division_aggregated_per_dateindex <- function(dateindex = NULL) {
@@ -4719,11 +4722,9 @@ load_inbnd_stmtstats_division_aggregates <- function(dateindex = NULL) {
   require(PivotalR)
   # R.rsp    rstring
   # stringi  stri_join
+  # Hmisc    llist
   
-  # typically ONE dateindex XOR ALL dateindexes
-  # but for PARTIAL dateindexes NEED TO cusomize the name of "DESC" to make THAT clear e.g. 'odd_year_sp'
-  DATEINDEX <- dateindex
-  if(is.null(DATEINDEX)) DATEINDEX <- ""
+
   
   # ANDRE SAFE FORM concatination operator
   `%S+%` <- function(x,y) {
@@ -4738,6 +4739,12 @@ load_inbnd_stmtstats_division_aggregates <- function(dateindex = NULL) {
   # Safe single quote: direction is down/up ( not left/right )
   SQuote <- function(x) paste0("'",x,"'")
   
+  # typically ONE dateindex XOR ALL dateindexes
+  # but for PARTIAL dateindexes NEED TO cusomize the name of "DESC" to make THAT MEANING/INTERPRETATION clear
+  # e.g. 'odd_year_sp'
+  DATEINDEX <- dateindex
+  if(is.null(DATEINDEX) || !length(DATEINDEX)) DATEINDEX <- ""
+  
   # just 'some' dynamicism
   combo_grid <- Hmisc::llist(
       sp500_general_financialsim = Hmisc::llist(  
@@ -4747,7 +4754,7 @@ load_inbnd_stmtstats_division_aggregates <- function(dateindex = NULL) {
              )
            , WHERE           = "and fei.sp in('500')"
            , WHERE_DATEINDEX = local({ 
-                                 if((length(DATEINDEX) == 1) && DATEINDEX == "") { return("                                ") }
+                                 if((length(DATEINDEX) == 1) && DATEINDEX == "") { return("") }
                                  if((length(DATEINDEX) == 1) && DATEINDEX != "") { return("and fei.dateindex = " %S+% DATEINDEX ) }
                                  if((length(DATEINDEX)  > 1)                   ) { return("and fei.dateindex in (values" %S+% paste0("(" %S+% DATEINDEX %S+% ")", collapse = ", ") %S+% ")") }
                                  return("")
@@ -4759,7 +4766,7 @@ load_inbnd_stmtstats_division_aggregates <- function(dateindex = NULL) {
              )
            , WHERE           = "and fei.sp in('500')"
            , WHERE_DATEINDEX = local({ 
-                                 if((length(DATEINDEX) == 1) && DATEINDEX == "") { return("                                ") }
+                                 if((length(DATEINDEX) == 1) && DATEINDEX == "") { return("") }
                                  if((length(DATEINDEX) == 1) && DATEINDEX != "") { return("and fei.dateindex = " %S+% DATEINDEX ) }
                                  if((length(DATEINDEX)  > 1)                   ) { return("and fei.dateindex in (values" %S+% paste0("(" %S+% DATEINDEX %S+% ")", collapse = ", ") %S+% ")") }
                                  return("")
@@ -6230,9 +6237,10 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
               # uses now_inbnd_stmtstat last_inbnd_stmtstat
         # since MANY SQLs upsertS are done inside                                      # if NOT an UPDATE on COMPANY_ID then I CAN go on the OUTSIDE
         # load_division_aggregated_now_last_mktcap_per_company_id(dateindex = dir_i) # # head(lwd_dbf_dirs_ordered,1) ( BUT WILL NOT do this now )
-        load_division_aggregated_now_last_mktcap_per_company_id(dateindex = dir_i)
+        # WORKING(but not used): load_division_aggregated_now_last_mktcap_per_company_id
+        ## load_division_aggregated_now_last_mktcap_per_company_id(dateindex = dir_i)
         # INTERNALLY does MANY upserts
-        vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
+        # vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
         # 
         # uses
         # load_inbnd_stmtstats
@@ -6241,10 +6249,17 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
         # 
         # *** WRITES TO ... si_finecon2_aggregates ... ***
         # 
-        load_division_aggregated_per_dateindex(dateindex = dir_i)
+        # MATH_LOGIC WRONG:    : load_division_aggregated_per_dateindex ( WRONG BECAUSE: ALL columns USED must be NOT NULL everwhere )
+        ## load_division_aggregated_per_dateindex(dateindex = dir_i)
         # INTERNALLY does MANY upserts
         #
+        # vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
+        
+        # REPLACEMENT of WORKING(but not used): load_division_aggregated_now_last_mktcap_per_company_id
+        # REPLACEMENT of MATH_LOGIC WRONG:    : load_division_aggregated_per_dateindex ( WRONG BECAUSE: ALL columns USED must be NOT NULL everwhere )
+        load_inbnd_stmtstats_division_aggregates(dir_i)
         vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
+        
       }
       
       
