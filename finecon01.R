@@ -5056,7 +5056,9 @@ load_inbnd_stmtstats_division_aggregates <- function(dateindex = NULL) {
     if(!NROW(si_all_df)) stop(paste0("Returned zero records ", dateindex))
     
     # SFS ( I REALLY! regret programming using regular expressions )
-    liquifyDF(si_all_df, const_cols_regexpr = "^dateindex.*", fctr_cols_rexpr = ".*_fct$") -> si_all_df
+    message(paste0("Beginning liquifyDFM"))
+    liquifyDFM(si_all_df, const_cols_regexpr = "^dateindex.*", fctr_cols_rexpr = ".*_fct$") -> si_all_df
+    message(paste0("Ending liquifyDFM"))
     
     # SFS
     print(dateindex);upsert2(value = si_all_df, target_table_name = "si_finecon2_aggregates", upsert_temp_perform_upsert_force = TRUE)
@@ -5415,6 +5417,112 @@ liquifyDF <- function(x, const_cols_regexpr = "^id", fctr_cols_rexpr = "_fct$", 
  # $ unweighted_pct_freeprice_ret_01m_ann    : num  0.593 1.911 0.417 1.104 1.911 ...
  # $ sum_mktcap                              : num  28113704 20998101 7115603 23323812 209
 #
+
+liquifyDFM <- function(x, const_cols_regexpr = "^id", fctr_cols_rexpr = "_fct$", cols_fct_NA_replace = NULL) {
+
+  # R version 3.4.1 (2017-06-30)
+  # LATE AUG 2017
+
+  #X# require(magrittr) # `%>%`
+  
+  # dplyr       select
+  # tidyr       unite
+  # tidyselect  vars_select matches
+  # seplyr      select_se   deselect
+  # R.utils     wrap
+  # stringr     str_c str_replace
+  # wrapr       let
+  # stringi     `%s+%`
+  # data.table  rbindlist
+  
+  # NOT WORK
+  # magrittr::`%>%` -> `%M%` # NOTE: DOES WORK; magrittr::`%>%` -> `%>%`
+  magrittr::`%>%` -> `%>%`
+  stringi::`%s+%` -> `%s+%`
+  
+  if(NROW(x) == 0) { message("liquifyDFM found zero rows"); return(data.frame()) }
+  
+  # typically "id" columns
+  const_cols <- tidyselect::vars_select(names(x), tidyselect::matches(const_cols_regexpr))
+
+  # multi-case
+  stringr::str_c(const_cols, collapse = " %s+% \'_\' %s+% ") -> splitter_key_concat_expr
+  with(x,{ eval(parse(text=splitter_key_concat_expr)) } )    -> x_splitter
+  
+  # non-unique const_cols_regexpr - multiple(M)
+  # since I can not 'tidyr', I have to split, then tidyr each piece
+  # then at the end, recombine
+  si_tbl_df_all <- list()
+  for(split_i in split(x, x_splitter)) {
+  
+    x <- split_i
+    # other code left in here (instead of 'before the loop') 
+    # because a possible 'future' expansion
+    # would allow (at the end of the program) a list of 
+    # date.frames with 'not-exact' columns to be 'merged'
+    
+                         # garantee no 'id' columns ( and the [rest of] factors )
+    FCT_COLS_VECTOR <- setdiff(tidyselect::vars_select(names(x), tidyselect::matches(fctr_cols_rexpr)), const_cols)
+    FCT_COLS_NAME   <- stringr::str_c(FCT_COLS_VECTOR, collapse = "__")
+    FCT_COLS_SEP    <- stringr::str_c(FCT_COLS_VECTOR, collapse = ", ")
+    
+    if(!is.null(cols_fct_NA_replace)) {
+      for(coli in FCT_COLS_VECTOR) {
+        x[is.na(x[, coli, drop = TRUE]),coli] <- cols_fct_NA_replace
+      }
+    }
+    
+    lside_row_1      <- seplyr::select_se(x, const_cols)[1,, drop = FALSE]
+    not_l_side <-  seplyr::deselect(x, const_cols)
+    
+    UNITE <- function(x) { 
+      wrapr::let(list(FCT_COLS_NAME = FCT_COLS_NAME, FCT_COLS_SEP = FCT_COLS_SEP), 
+          tidyr::unite(x, FCT_COLS_NAME, FCT_COLS_SEP, sep = "__")
+        , subsMethod = "stringsubs", strict = FALSE) 
+      }
+    
+    # make ONE column to represent all factors
+    not_l_side %>% UNITE %>% 
+      # change row.names to FCT_COLS_NAME, drop column 1
+      `row.names<-`(.[[1]]) %>% dplyr::select(-1) %>% 
+        # to one dimension : one BIG wide ROW
+        as.matrix %>% R.utils::wrap(sep = "____") -> not_l_side
+    
+    cbind(lside_row_1,as.data.frame(t(not_l_side))) -> res
+    
+    colnames(res) <- tolower(colnames(res))
+    colnames(res) <- stringr::str_replace_all(colnames(res),"[ ]","_")
+    colnames(res) <- stringr::str_replace_all(colnames(res),"&"  ,"and")
+    
+    si_tbl_df <- res
+    si_tbl_df_all <- c(si_tbl_df_all,list(si_tbl_df))
+    
+  }
+  
+  si_tbl_df_all <- data.frame(data.table::rbindlist(si_tbl_df_all))
+  return(si_tbl_df_all)
+  
+}
+# 
+# data.frame(
+# id = c(1, 1, 1, 1, 2, 2, 2, 2),
+# id_fct = c("1", "1", "1", "1", "1", "1", "1", "1"),
+# col1_fct = c('A1', 'A1', 'A2', 'A2','A1', 'A1', 'A2', 'A2'),
+# col2_fct = c('B1', 'B2', 'B1', 'B2','B1', 'B2', 'B1', 'B2'),
+# aggr1 = c(8, 16, 32, 64, 208, 216, 232, 264),
+# aggr2 = c(10008, 10016, 10032, 10064, 20008, 20016, 20032, 20064)
+# , stringsAsFactors = FALSE
+# 
+# )  -> DFSM
+# > liquifyDFM(DFSM)
+#   id id_fct a1__b1____aggr1 a1__b2____aggr1 a2__b1____aggr1 a2__b2____aggr1 a1__b1____aggr2 a1__b2____aggr2
+# 1  1      1               8              16              32              64           10008           10016
+# 2  2      1             208             216             232             264           20008           20016
+#   a2__b1____aggr2 a2__b2____aggr2
+# 1           10032           10064
+# 2           20032           20064
+
+
 
 # COPY FROM TEMPORARY
             
