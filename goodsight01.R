@@ -26,7 +26,7 @@ na.locfl <- function(x, n = NULL) {
     Sys.setenv(TZ="UTC")
   }
   
-  require(xts) # Attaching package: ‘zoo’
+  require(xts) # Attaching package: 'zoo'
   # IF NOT Error in try.xts(element1) : could not find function "try.xts"
   # uses zoo:::rollapply.zoo, DescTools::DoCall
 
@@ -188,7 +188,7 @@ PCTCHG.xts <- function(x, whiches, to_future = NULL) {
     Sys.setenv(TZ="UTC")
   }
   
-  require(xts) # # Attaching package: ‘zoo’
+  require(xts) # # Attaching package: 'zoo'
   # IF NOT Error in try.xts(element1) : could not find function "try.xts"
   
   ## VERY BASIC attemped CLASS conversion ##
@@ -289,7 +289,7 @@ collofdays2daily.xts <- function(x) {
     Sys.setenv(TZ="UTC")
   }
 
-  require(xts) # # Attaching package: ‘zoo’
+  require(xts) # # Attaching package: 'zoo'
   # IF NOT Error in try.xts(element1) : could not find function "try.xts"
   
   x_orig <- x
@@ -467,7 +467,7 @@ delay_since_last_obs.xts <-function(x) {
   # ONLY works on a single column xts
   # uses   delay_since_last_obs.default
   
-  require(xts) # # Attaching package: ‘zoo’
+  require(xts) # # Attaching package: 'zoo'
   # IF NOT Error in try.xts(element1) : could not find function "try.xts"
   
   x_orig <- x
@@ -555,7 +555,7 @@ delay_since_last_day.xts <-function(x) {
     Sys.setenv(TZ="UTC")
   }
   
-  require(xts) # # Attaching package: ‘zoo’
+  require(xts) # # Attaching package: 'zoo'
   # IF NOT Error in try.xts(element1) : could not find function "try.xts"
   
   x_orig <- x
@@ -684,7 +684,7 @@ is.na_fctr.xts <- function(x) {
   
   # uses ojUtils::ifelseC
   
-  require(xts) # # Attaching package: ‘zoo’
+  require(xts) # # Attaching package: 'zoo'
   # IF NOT Error in try.xts(element1) : could not find function "try.xts"
   
   x_orig <- x
@@ -763,7 +763,7 @@ rm.days.xts <- function(x, rm_what = NULL) {
 
   # uses stringr::stringr::str_detect, RQuantLib::isHoliday
 
-  require(xts) # # Attaching package: ‘zoo’
+  require(xts) # # Attaching package: 'zoo'
   # IF NOT Error in try.xts(element1) : could not find function "try.xts"
   
   x_orig <- x
@@ -810,7 +810,7 @@ rm.days.xts <- function(x, rm_what = NULL) {
       
         # "UnitedStates/GovernmentBond"
         # 2007 Federal Holidays
-        # Monday, January 1   New Year’s Day
+        # Monday, January 1   New Year's Day
         # Monday, January 15  Birthday of Martin Luther King, Jr.
         # https://archive.opm.gov/Operating_Status_Schedules/fedhol/2007.asp
         
@@ -821,7 +821,7 @@ rm.days.xts <- function(x, rm_what = NULL) {
         # 15 Jan 2007 Monday  Martin Luther King Day
         # http://nyseholidays.blogspot.com/2012/11/nyse-holidays-from-2000-2010.html
 
-        # NYSE Holidays: Market Closings for 2017 – Stock Market Holidays Schedule
+        # NYSE Holidays: Market Closings for 2017 - Stock Market Holidays Schedule
         # Thursday, February 23, 2017
         # https://mrtopstep.com/nyse-holidays-market-closings-2017-stock-market-holidays-schedule/
         
@@ -925,13 +925,13 @@ all.nearby.FRED.holidays.xts <- function(x = NULL, d = NULL) {
   
   # "UnitedStates/GovernmentBond"
   # 2007 Federal Holidays
-  # Monday, January 1   New Year’s Day
+  # Monday, January 1   New Year's Day
   # Monday, January 15  Birthday of Martin Luther King, Jr.
   # https://archive.opm.gov/Operating_Status_Schedules/fedhol/2007.asp
   
   # uses  RQuantLib::isHoliday, rlist::list.zip, lubridate::`%m+%`
 
-  require(xts) # # Attaching package: ‘zoo’
+  require(xts) # # Attaching package: 'zoo'
   # IF NOT Error in try.xts(element1) : could not find function "try.xts"
   
   `%M+%` <- lubridate::`%m+%`
@@ -1046,7 +1046,7 @@ reindex.xts <- function(x,  x_index_new ) {
     Sys.setenv(TZ="UTC")
   }
 
-  require(xts) # # Attaching package: ‘zoo’
+  require(xts) # # Attaching package: 'zoo'
   # IF NOT Error in try.xts(element1) : could not find function "try.xts"
   
   x_orig <- x
@@ -1137,7 +1137,7 @@ pushback.FRED.1st.days.xts <- function(x) {
 
   `%M+%` <- lubridate::`%m+%`
   
-  require(xts) # # Attaching package: ‘zoo’
+  require(xts) # # Attaching package: 'zoo'
   # IF NOT Error in try.xts(element1) : could not find function "try.xts"
   
   x_orig <- x
@@ -1262,7 +1262,7 @@ year.less.then.or.equal.xts <- function(x, n = NULL ) {
     # uses lubridate::year
   # uses ojUtils::ifelseC
 
-  require(xts) # # Attaching package: ‘zoo’
+  require(xts) # # Attaching package: 'zoo'
   # IF NOT Error in try.xts(element1) : could not find function "try.xts"
   
   x_orig <- x
@@ -1385,7 +1385,7 @@ expand.xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o
   
     check_uses_packages_available("3.4.1",c("zoo","xts","rlist","stringr","DescTools","plyr","DataCombine"), matched_call)
     
-    require(xts) # # Attaching package: ‘zoo’
+    require(xts) # # Attaching package: 'zoo'
     # IF NOT Error in try.xts(element1) : could not find function "try.xts"
     
     if(is.null(     x))  stop("run-time user must provide input data")
@@ -1450,7 +1450,7 @@ expand.xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o
     
     }
       
-    require(xts) # # Attaching package: ‘zoo’
+    require(xts) # # Attaching package: 'zoo'
     # IF NOT Error in try.xts(element1) : could not find function "try.xts"
     
     x_orig <- x
@@ -1635,10 +1635,6 @@ expand.xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o
 # 1947-01-09         8
 # 1947-01-10         9
 
-
-
-
-
 # seq ... as long as the characters order correctly ... should work
 # 
 # ONLY the index is important: so ONLY passing NO coredate:  xts(,index(IBM)
@@ -1655,7 +1651,6 @@ expand.xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o
 # findInterval
 # datavis::weighted.quantile
 
-
 #  What are the ways of treatng missing values in XGboost? #21
 #  Internally, XGBoost will automatically learn what is the best direction to go when a value is missing. 
 #  For continuous features, a missing(default) direction is learnt for missing value data to go into, so when the data of the speficific value is missing, then it goes to the default direction
@@ -1668,4 +1663,417 @@ expand.xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o
 
 # debugSource('W:/R-3.4._/goodsight01.R')
 # rm(list=setdiff(ls(all.names=TRUE),c()))
+
+
+get_large_nationals_yearly_gdp_weights_by_month <- function() {
+
+  # R version 3.4.2 (2017-09-28)
+  # NOV 2017
+  
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+
+  # Loading required package: RJSONIO
+  # requires package WDI ( otherwise WDI::WDI produces the error: "object 'WDI_data' not found" )
+  require(WDI)
+  
+  # uses package tidyr function spread           # tidyr::spread
+  # uses package DataCombine function MoveFront  # DataCombine::MoveFront
+  # uses package tidyr function fill_            # tidyr::fill_
+  
+  # countries of interest
+  # largest/most-affectioning countries that I would actually care about
+  #
+  # since 1960(NY.GDP.MKTP.CD)
+  large_nationals <- 
+  c(
+     "united_states"
+   , "china"
+   , "japan"
+   , "germany"            # since 1970(NY.GDP.MKTP.CD)
+   , "united_kingdom"
+   , "india"
+   , "france"
+   , "brazil"
+   , "italy"
+   , "canada"
+   , "russian_federation" # since 1989(NY.GDP.MKTP.CD)
+   , "korea_rep"
+   , "australia"
+   , "spain"
+  )
+  
+  # weightings 
+  # GDP (current US$)
+  # World Bank national accounts data, and OECD National Accounts data files.
+  # GDP (current US$) ... scale it ...
+  # https://data.worldbank.org/indicator/NY.GDP.MKTP.CD
+  # Download XLS (  API_NY.GDP.MKTP.CD_DS2_en_excel_v2.xls )
+
+  gross_domestic_product <- WDI(country = "all", start="1900", end = "2100", indicator = "NY.GDP.MKTP.CD")
+  
+  # clean
+  gross_domestic_product<- data.frame(lapply(gross_domestic_product, function(x) { 
+    if(is.character(x)) {
+      # prevent 'drop to factor ... all 1s'
+      # so I can do tidyr and PostgreSQL
+      x <- tolower(x)
+      x <- gsub("(,|[.])","", x)
+      x <- gsub("(&|'| |-)","_", x)
+    }
+    return(x)
+  }), stringsAsFactors = FALSE)
+
+  # rename columns
+  names(gross_domestic_product) <- tolower(names(gross_domestic_product))
+  # rename NY.GDP.MKTP.CD" ... -> ... "measure"
+  names(gross_domestic_product)[3] <- "measure"
+
+  # add a 'real' date
+  gross_domestic_product[["dateindex_dt"]] <- zoo::as.Date(paste0(gross_domestic_product[["year"]], "-12-31"))
+  # change column name 
+  names(gross_domestic_product)[match("year",names(gross_domestic_product))] <- "dateindex" 
+  # add an 'integer' date
+  gross_domestic_product[["dateindex"]] <- as.integer(zoo::as.Date(gross_domestic_product[["dateindex_dt"]]))
+
+  # position columns
+  gross_domestic_product <- DataCombine::MoveFront(gross_domestic_product, c("dateindex", "dateindex_dt"))
+  # sort rows
+  gross_domestic_product <- dplyr::arrange_(gross_domestic_product, "dateindex")
+
+  # reduce to my data of interest
+  gross_domestic_product <- gross_domestic_product[which(gross_domestic_product$country %in% 
+    large_nationals
+      )
+  ,, drop = FALSE]
+  
+  # drop column ( because will produce a 'unque column value, and 'spread' will not work correctly )
+  gross_domestic_product <- gross_domestic_product[ , !names(gross_domestic_product) %in% "iso2c",drop = FALSE]
+
+  # reshape long to wide
+  gross_domestic_product_spreaded_country_measure <- tidyr::spread(gross_domestic_product, key = "country", value = "measure")
+
+  # rename columns to "<country>_gdp"
+  names(gross_domestic_product_spreaded_country_measure) <- gsub("(^.{1,8}$|^.{9}(?<!dateindex).*)", "\\1_gdp", names(gross_domestic_product_spreaded_country_measure ), perl = TRUE )
+
+  # combine dates: observation dates + end of month dates ( since Jan 2003 )
+  gross_domestic_product_spreaded_country_measure_only_dateindex_dt_plus_eom_dates <-
+  data.frame(dateindex_dt = unique(sort(c(gross_domestic_product_spreaded_country_measure$dateindex_dt, zoo::as.Date(zoo::as.yearmon(seq(as.Date("2003-01-01"), Sys.Date(), by = "month")), frac = 1)))))
+
+  # put end of month dates into the data.frame
+  gross_domestic_product_spreaded_country_measure_plus_eom_dates <- 
+  merge(gross_domestic_product_spreaded_country_measure, gross_domestic_product_spreaded_country_measure_only_dateindex_dt_plus_eom_dates, all = TRUE)
+  # calculate (for mostly new dateindex_dts) 'dateindex'
+  gross_domestic_product_spreaded_country_measure_plus_eom_dates[["dateindex"]] <- as.integer(zoo::as.Date(gross_domestic_product_spreaded_country_measure_plus_eom_dates[["dateindex_dt"]]))
+  
+  # garantee column order
+  gross_domestic_product_spreaded_country_measure_plus_eom_dates <- DataCombine::MoveFront(gross_domestic_product_spreaded_country_measure_plus_eom_dates, c("dateindex","dateindex_dt"))
+
+  # last observation carried forward
+  gross_domestic_product_spreaded_country_measure_plus_eom_dates_w_locf <-
+  tidyr::fill_(gross_domestic_product_spreaded_country_measure_plus_eom_dates, colnames(gross_domestic_product_spreaded_country_measure_plus_eom_dates))
+
+  # (from 2003 onward) keep dates that are 'end of month dates' 
+  # many rows are removed
+  gross_domestic_product_spreaded_country_measure_eom <- 
+  gross_domestic_product_spreaded_country_measure_plus_eom_dates_w_locf[
+    gross_domestic_product_spreaded_country_measure_plus_eom_dates_w_locf$dateindex_dt %in% zoo::as.Date(zoo::as.yearmon(seq(as.Date("2003-01-01"), Sys.Date(), by = "month")), frac = 1)
+  ,, drop = FALSE]
+  
+  # because many rows are removed, re-number
+  row.names(gross_domestic_product_spreaded_country_measure_eom) <- seq_along(row.names(gross_domestic_product_spreaded_country_measure_eom))
+  
+  # prepare 
+  gross_domestic_product_spreaded_country_measure_weighted_eom <- gross_domestic_product_spreaded_country_measure_eom
+  # rename columns from "<country>_gdp" to "<country>_gdp_wtd"
+  names(gross_domestic_product_spreaded_country_measure_weighted_eom) <- gsub("(^.{1,8}$|^.{9}(?<!dateindex).*)", "\\1_wdt", names(gross_domestic_product_spreaded_country_measure_weighted_eom), perl = TRUE )
+
+  # Weighted percentage contribution by row in R
+  # https://stackoverflow.com/questions/36086376/weighted-percentage-contribution-by-row-in-r
+  gross_domestic_product_spreaded_country_measure_weighted_eom[,grep("(^.{1,8}$|^.{9}(?<!dateindex).*)", names(gross_domestic_product_spreaded_country_measure_weighted_eom), perl = TRUE, value = TRUE)] <-
+  sweep(
+                as.matrix(gross_domestic_product_spreaded_country_measure_weighted_eom[,grep("(^.{1,8}$|^.{9}(?<!dateindex).*)", names(gross_domestic_product_spreaded_country_measure_weighted_eom), perl = TRUE, value = TRUE)]) 
+    , 1
+    , rowSums(  as.matrix(gross_domestic_product_spreaded_country_measure_weighted_eom[,grep("(^.{1,8}$|^.{9}(?<!dateindex).*)", names(gross_domestic_product_spreaded_country_measure_weighted_eom), perl = TRUE, value = TRUE)])  )
+    , FUN="/"
+  )
+    
+  on.exit({Sys.setenv(TZ=oldtz)})
+
+  return(gross_domestic_product_spreaded_country_measure_weighted_eom)
+  
+}
+# NOV 12 2017
+# res <- get_large_nationals_yearly_gdp_weights_by_month()
+# head(res[, colnames(res) %in% c("dateindex","dateindex_dt","china_gdp_wdt","united_states_gdp_wdt")])
+# tail(res[, colnames(res) %in% c("dateindex","dateindex_dt","china_gdp_wdt","united_states_gdp_wdt")])
+
+# >  head(res[, colnames(res) %in% c("dateindex","dateindex_dt","china_gdp_wdt","united_states_gdp_wdt")])
+#   dateindex dateindex_dt china_gdp_wdt united_states_gdp_wdt
+# 1     12083   2003-01-31    0.05447564             0.4066555
+# 2     12111   2003-02-28    0.05447564             0.4066555
+# 3     12142   2003-03-31    0.05447564             0.4066555
+# 4     12172   2003-04-30    0.05447564             0.4066555
+# 5     12203   2003-05-31    0.05447564             0.4066555
+# 6     12233   2003-06-30    0.05447564             0.4066555
+# > tail(res[, colnames(res) %in% c("dateindex","dateindex_dt","china_gdp_wdt","united_states_gdp_wdt")])
+#     dateindex dateindex_dt china_gdp_wdt united_states_gdp_wdt
+# 174     17347   2017-06-30     0.2005963             0.3326051
+# 175     17378   2017-07-31     0.2005963             0.3326051
+# 176     17409   2017-08-31     0.2005963             0.3326051
+# 177     17439   2017-09-30     0.2005963             0.3326051
+# 178     17470   2017-10-31     0.2005963             0.3326051
+# 179     17500   2017-11-30     0.2005963             0.3326051
+
+
+get_large_nationals_last_know_bond_ratings_by_month <- function() {
+
+  # R version 3.4.2 (2017-09-28)
+  # NOV 2017
+  
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+
+  # uses package htmltab function htmltab        # htmltab::htmltab
+  # uses package tidyr function spread           # tidyr::spread
+  # uses package DataCombine function MoveFront  # DataCombine::MoveFront
+  # uses package tidyr function fill_            # tidyr::fill_
+  # uses package plyr function join_all          # plyr::join_all
+  
+  # https://tradingeconomics.com/countries
+  # 
+  large_nationals <-
+  c(
+     "united-states"
+   , "china"
+   , "japan"
+   , "germany"        # "germany" # since 1970(NY.GDP.MKTP.CD)
+   , "united-kingdom"
+   , "india"
+   , "france"
+   , "brazil"
+   , "italy"
+   , "canada"
+   , "russia"       # "russian_federation" # since 1989(NY.GDP.MKTP.CD)
+   , "south-korea"  # "korea_rep"
+   , "australia"
+   , "spain"
+  )
+  
+  ## testing
+  # large_nationals <-
+  # c(
+  #    "united-states"
+  #  , "china"
+  # )
+  
+  all_countries <- list()
+  for(large_nationals_i in large_nationals) {
+  
+    message(paste0("Beginning: ", large_nationals_i))
+    # NOTE: may? timeout (curl 10 seconds )
+    # 
+    this_country_historical_ratings <- try( 
+        htmltab::htmltab(doc = paste0("https://tradingeconomics.com/", large_nationals_i, "/rating"), which = 1)
+      , silent = TRUE
+    )
+    # try once more
+    if(inherits(this_country_historical_ratings, 'try-error')) { 
+      this_country_historical_ratings <- try( 
+        htmltab::htmltab(doc = paste0("https://tradingeconomics.com/", large_nationals_i, "/rating"), which = 1)
+      , silent = TRUE
+      )
+      if(inherits(this_country_historical_ratings, 'try-error')) { stop(paste0("counld not browse: ", paste0("https://tradingeconomics.com/", large_nationals_i, "/rating"))) }
+    }
+
+    # remove repeats ( united-kingdom )
+    this_country_historical_ratings <- this_country_historical_ratings[!duplicated(this_country_historical_ratings),, drop = FALSE]
+    
+    # I do not track this one
+    this_country_historical_ratings <- this_country_historical_ratings[this_country_historical_ratings$Agency != "DBRS",,drop = FALSE]
+    
+    # store dates (save for later)
+    this_country_historical_ratings_only_dateindex_dts <- as.Date(this_country_historical_ratings[["Date"]], "%b %d %Y")
+
+    # drop column "Date"
+    this_country_historical_ratings <- this_country_historical_ratings[ , !names(this_country_historical_ratings) %in% "Date",drop = FALSE]
+    
+    # clean ( Rstudio 'unknown reason' parsing error: work around )
+    this_country_historical_ratings <- data.frame(lapply(this_country_historical_ratings, function(x) { 
+      x[x == "N/A"] <- NA_character_
+      # not-ascii (latin1) A (A is 'nothing')
+      # if ... RStudio parser chokes ... detect
+      x[is.na(lapply(x,utf8ToInt))] <- NA_character_ 
+      # really only 'terating' ( because MY table does not have a ZERO )
+      x[x == "0"]   <- "1"
+      # prevent 'drop to factor ... all 1s'
+      # so I can do tidyr and PostgreSQL
+      x <- tolower(x)
+      x <- gsub("(&|'| )","_", x)
+      return(x)
+    }), stringsAsFactors = FALSE)
+
+    # rename columns
+    names(this_country_historical_ratings) <- tolower(names(this_country_historical_ratings))
+    # add a 'real' date                             # from 'saved'
+    this_country_historical_ratings[["dateindex_dt"]] <- this_country_historical_ratings_only_dateindex_dts 
+    # add an integer date
+    this_country_historical_ratings[["dateindex"]] <- as.integer(zoo::as.Date(this_country_historical_ratings[["dateindex_dt"]]))
+    
+    # garantee column order
+    this_country_historical_ratings <- DataCombine::MoveFront(this_country_historical_ratings, c("dateindex", "dateindex_dt"))
+    # sort
+    this_country_historical_ratings <- dplyr::arrange_(this_country_historical_ratings, "dateindex")
+    
+    # begin reshapes
+    #
+    
+    # drop column not involved in the reshape(some extra safety)
+    this_country_historical_ratings_spreaded_agency_rating <- this_country_historical_ratings
+    this_country_historical_ratings_spreaded_agency_rating <- this_country_historical_ratings_spreaded_agency_rating[,!names(this_country_historical_ratings_spreaded_agency_rating) %in% "outlook", drop = FALSE]
+
+    # if two(2)+ decisions in one day ( italy 1996-05-01 ) ( I do not kwow what it left with ), so eliminate both
+    this_country_historical_ratings_spreaded_agency_rating <- this_country_historical_ratings_spreaded_agency_rating[ !duplicated(this_country_historical_ratings_spreaded_agency_rating[, c("dateindex","dateindex_dt", "agency"), drop = FALSE]), , drop = FALSE]
+
+    # reshape long to wide: agency-rating
+    this_country_historical_ratings_spreaded_agency_rating <- tidyr::spread(this_country_historical_ratings_spreaded_agency_rating, key = "agency", value = "rating")
+    
+    ### # reshape long to wide: agency-rating
+    ### this_country_historical_ratings_spreaded_agency_rating <- tidyr::spread(this_country_historical_ratings, key = "agency", value = "rating")
+    
+    # rename columns
+    names(this_country_historical_ratings_spreaded_agency_rating) <- gsub("(^fitch$|^moody_s$|^s_p$|^te$)", "\\1_rating", names(this_country_historical_ratings_spreaded_agency_rating) )
+    
+    ### # drop column
+    ### this_country_historical_ratings_spreaded_agency_rating_less_outlook <- this_country_historical_ratings_spreaded_agency_rating[ , !names(this_country_historical_ratings_spreaded_agency_rating) %in% "outlook",drop = FALSE]
+    
+    # drop column not involved in the reshape(some extra safety)
+    this_country_historical_ratings_spreaded_agency_outlook <- this_country_historical_ratings
+    this_country_historical_ratings_spreaded_agency_outlook <- this_country_historical_ratings_spreaded_agency_outlook[,!names(this_country_historical_ratings_spreaded_agency_outlook) %in% "rating", drop = FALSE]
+
+    # if two(2)+ decisions in one day ( italy 1996-05-01 ) ( I do not kwow what it left with ), so eliminate both
+    this_country_historical_ratings_spreaded_agency_outlook <- this_country_historical_ratings_spreaded_agency_outlook[ !duplicated(this_country_historical_ratings_spreaded_agency_outlook[, c("dateindex","dateindex_dt", "agency"), drop = FALSE]), , drop = FALSE]
+
+    # reshape long to wide: agency-rating
+    this_country_historical_ratings_spreaded_agency_outlook <- tidyr::spread(this_country_historical_ratings_spreaded_agency_outlook, key = "agency", value = "outlook")
+    
+    ### # reshape long to wide: agency-outlook
+    ### this_country_historical_ratings_spreaded_agency_outlook <- tidyr::spread(this_country_historical_ratings, key = "agency", value = "outlook")
+    
+    # rename columns
+    names(this_country_historical_ratings_spreaded_agency_outlook) <- gsub("(^fitch$|^moody_s$|^s_p$|^te$)", "\\1_outlook", names(this_country_historical_ratings_spreaded_agency_outlook) )
+    
+    ### # drop column
+    ### this_country_historical_ratings_spreaded_agency_outlook_less_rating <- this_country_historical_ratings_spreaded_agency_outlook[ , !names(this_country_historical_ratings_spreaded_agency_outlook) %in% "rating",drop = FALSE] 
+    
+    #
+    # end reshapes
+    
+    # bring together:  agency-rating and agency-outlook
+    this_country_historical_ratings_spreaded <- 
+    merge( this_country_historical_ratings_spreaded_agency_rating, 
+           this_country_historical_ratings_spreaded_agency_outlook
+      , by = c("dateindex", "dateindex_dt")
+      , all = TRUE 
+    )
+    
+    # combine dates: observation dates + end of month dates
+    this_country_historical_ratings_spreaded_only_dateindex_dt_plus_eom_dates <-
+    data.frame(dateindex_dt = unique(sort(c(this_country_historical_ratings_spreaded$dateindex_dt, zoo::as.Date(zoo::as.yearmon(seq(as.Date("2003-01-01"), Sys.Date(), by = "month")), frac = 1)))))
+    
+    # put end of month dates into the data.frame
+    this_country_historical_ratings_spreaded_plus_eom_dates <- 
+    merge(this_country_historical_ratings_spreaded, this_country_historical_ratings_spreaded_only_dateindex_dt_plus_eom_dates, all = TRUE)
+    
+    # calculate (for mostly new dateindex_dts) 'dateindex'
+    this_country_historical_ratings_spreaded_plus_eom_dates[["dateindex"]] <- as.integer(zoo::as.Date(this_country_historical_ratings_spreaded_plus_eom_dates[["dateindex_dt"]]))
+      
+    # garantee column order
+    this_country_historical_ratings_spreaded_plus_eom_dates <- DataCombine::MoveFront(this_country_historical_ratings_spreaded_plus_eom_dates, c("dateindex","dateindex_dt"))
+    
+    # last observation carried forward
+    this_country_historical_ratings_spreaded_plus_eom_dates_w_locf <-
+    tidyr::fill_(this_country_historical_ratings_spreaded_plus_eom_dates, colnames(this_country_historical_ratings_spreaded_plus_eom_dates))
+    
+    # (from 2003 onward) keep dates that are 'end of month dates' 
+    this_country_historical_ratings_spreaded_eom <- 
+    this_country_historical_ratings_spreaded_plus_eom_dates_w_locf[
+      this_country_historical_ratings_spreaded_plus_eom_dates_w_locf$dateindex_dt %in% zoo::as.Date(zoo::as.yearmon(seq(as.Date("2003-01-01"), Sys.Date(), by = "month")), frac = 1)
+      , 
+      , drop = FALSE
+    ]
+    
+    # because many rows are removed, re-number
+    row.names(this_country_historical_ratings_spreaded_eom) <- seq_along(row.names(this_country_historical_ratings_spreaded_eom))
+
+    # rename columns to "<country>__item"
+    names(this_country_historical_ratings_spreaded_eom) <- gsub("(^.{1,8}$|^.{9}(?<!dateindex).*)", paste0(gsub("-","_", large_nationals_i), "__\\1"), names(this_country_historical_ratings_spreaded_eom), perl = TRUE )
+    
+    # add df to list of data.frames
+         all_countries[[gsub("-","_", large_nationals_i)]] <- this_country_historical_ratings_spreaded_eom
+    attr(all_countries[[gsub("-","_", large_nationals_i)]],"label") <- gsub("-","_", large_nationals_i)
+    
+    message(paste0("Ending: ", large_nationals_i))
+    Sys.sleep(1.0)
+  }
+  
+  # browser()
+  
+  # combine all data.frames
+  ### all_countries <- do.call(merge, c(list(), all_countries, by = c("dateindex", "dateindex_dt"), all = TRUE))
+  
+  all_countries <- plyr::join_all(all_countries, by = c("dateindex", "dateindex_dt"), type = "full")
+  
+  on.exit({Sys.setenv(TZ=oldtz)})
+
+  return(all_countries)
+  
+}
+# ret <- get_large_nationals_last_know_bond_ratings_by_month()
+# str(ret, list.len = 999)
+# ret[1:4, grep("dateindex|dateindex_dt|^italy.*", names(ret), perl = TRUE, value = TRUE)[1:7] , drop = FALSE]
+# colnames(ret)
+# 
+# >  ret[1:4, grep("dateindex|dateindex_dt|^italy.*", names(ret), perl = TRUE, value = TRUE)[1:7] , drop = FALSE]
+#   dateindex dateindex_dt italy__fitch_rating italy__moody_s_rating italy__s_p_rating italy__te_rating italy__fitch_outlook
+# 1     12083   2003-01-31                  aa                   aa2                aa             <NA>               stable
+# 2     12111   2003-02-28                  aa                   aa2                aa             <NA>               stable
+# 3     12142   2003-03-31                  aa                   aa2                aa             <NA>               stable
+# 4     12172   2003-04-30                  aa                   aa2                aa             <NA>               stable
+# > colnames(ret)
+#   [1] "dateindex"                       "dateindex_dt"                    "united_states__fitch_rating"     "united_states__moody_s_rating"  
+#   [5] "united_states__s_p_rating"       "united_states__te_rating"        "united_states__fitch_outlook"    "united_states__moody_s_outlook" 
+#   [9] "united_states__s_p_outlook"      "united_states__te_outlook"       "china__fitch_rating"             "china__moody_s_rating"          
+#  [13] "china__s_p_rating"               "china__te_rating"                "china__fitch_outlook"            "china__moody_s_outlook"         
+#  [17] "china__s_p_outlook"              "china__te_outlook"               "japan__fitch_rating"             "japan__moody_s_rating"          
+#  [21] "japan__s_p_rating"               "japan__te_rating"                "japan__fitch_outlook"            "japan__moody_s_outlook"         
+#  [25] "japan__s_p_outlook"              "japan__te_outlook"               "germany__fitch_rating"           "germany__moody_s_rating"        
+#  [29] "germany__s_p_rating"             "germany__te_rating"              "germany__fitch_outlook"          "germany__moody_s_outlook"       
+#  [33] "germany__s_p_outlook"            "germany__te_outlook"             "united_kingdom__fitch_rating"    "united_kingdom__moody_s_rating" 
+#  [37] "united_kingdom__s_p_rating"      "united_kingdom__te_rating"       "united_kingdom__fitch_outlook"   "united_kingdom__moody_s_outlook"
+#  [41] "united_kingdom__s_p_outlook"     "united_kingdom__te_outlook"      "india__fitch_rating"             "india__moody_s_rating"          
+#  [45] "india__s_p_rating"               "india__te_rating"                "india__fitch_outlook"            "india__moody_s_outlook"         
+#  [49] "india__s_p_outlook"              "india__te_outlook"               "france__fitch_rating"            "france__moody_s_rating"         
+#  [53] "france__s_p_rating"              "france__te_rating"               "france__fitch_outlook"           "france__moody_s_outlook"        
+#  [57] "france__s_p_outlook"             "france__te_outlook"              "brazil__fitch_rating"            "brazil__moody_s_rating"         
+#  [61] "brazil__s_p_rating"              "brazil__te_rating"               "brazil__fitch_outlook"           "brazil__moody_s_outlook"        
+#  [65] "brazil__s_p_outlook"             "brazil__te_outlook"              "italy__fitch_rating"             "italy__moody_s_rating"          
+#  [69] "italy__s_p_rating"               "italy__te_rating"                "italy__fitch_outlook"            "italy__moody_s_outlook"         
+#  [73] "italy__s_p_outlook"              "italy__te_outlook"               "canada__fitch_rating"            "canada__moody_s_rating"         
+#  [77] "canada__s_p_rating"              "canada__te_rating"               "canada__fitch_outlook"           "canada__moody_s_outlook"        
+#  [81] "canada__s_p_outlook"             "canada__te_outlook"              "russia__fitch_rating"            "russia__moody_s_rating"         
+#  [85] "russia__s_p_rating"              "russia__te_rating"               "russia__fitch_outlook"           "russia__moody_s_outlook"        
+#  [89] "russia__s_p_outlook"             "russia__te_outlook"              "south_korea__fitch_rating"       "south_korea__moody_s_rating"    
+#  [93] "south_korea__s_p_rating"         "south_korea__te_rating"          "south_korea__fitch_outlook"      "south_korea__moody_s_outlook"   
+#  [97] "south_korea__s_p_outlook"        "south_korea__te_outlook"         "australia__fitch_rating"         "australia__moody_s_rating"      
+# [101] "australia__s_p_rating"           "australia__te_rating"            "australia__fitch_outlook"        "australia__moody_s_outlook"     
+# [105] "australia__s_p_outlook"          "australia__te_outlook"           "spain__fitch_rating"             "spain__moody_s_rating"          
+# [109] "spain__s_p_rating"               "spain__te_rating"                "spain__fitch_outlook"            "spain__moody_s_outlook"         
+# [113] "spain__s_p_outlook"              "spain__te_outlook"              
+# > 
+
 
