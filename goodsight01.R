@@ -1849,6 +1849,15 @@ get_large_nationals_yearly_gdp_weights_by_month <- function(keep_eom_date_since 
 #  $ spain_gdp_wdt             : num  0.0261 0.0261 0.0261 0.0261 0.0261 ...
 #  $ united_kingdom_gdp_wdt    : num  0.0651 0.0651 0.0651 0.0651 0.0651 ...
 #  $ united_states_gdp_wdt     : num  0.407 0.407 0.407 0.407 0.407 ...
+# 
+# rebalance on 
+# "germany"            # since 1970(NY.GDP.MKTP.CD)
+# "russian_federation" # since 1989(NY.GDP.MKTP.CD)
+# res2 <- get_large_nationals_yearly_gdp_weights_by_month(keep_eom_date_since = "1980-01-01")
+# 
+# res2[, colnames(res2) %in% c("dateindex","dateindex_dt","china_gdp_wdt","united_states_gdp_wdt","germany_gdp_wdt","russian_federation_gdp_wdt")]
+# 119      7273   1989-11-30    0.02114433      0.09449547                         NA             0.3555688
+# 120      7304   1989-12-31    0.02162678      0.08666914                0.031497986             0.3518379
 
 
 
@@ -1974,6 +1983,10 @@ get_large_nationals_last_know_bond_ratings_by_month <- function(keep_eom_date_si
     ### # reshape long to wide: agency-rating
     ### this_country_historical_ratings_spreaded_agency_rating <- tidyr::spread(this_country_historical_ratings, key = "agency", value = "rating")
     
+    # in long form, it was always was a 'shared' character column
+    # in wide form(result of tidyr::spread), it will have its own(alone) data type
+    this_country_historical_ratings_spreaded_agency_rating[["te"]] <- as.numeric(this_country_historical_ratings_spreaded_agency_rating[["te"]])
+
     # rename columns
     names(this_country_historical_ratings_spreaded_agency_rating) <- gsub("(^fitch$|^moody_s$|^s_p$|^te$)", "\\1_rating", names(this_country_historical_ratings_spreaded_agency_rating) )
     
@@ -2075,18 +2088,18 @@ get_large_nationals_last_know_bond_ratings_by_month <- function(keep_eom_date_si
   return(all_countries)
   
 }
-# ret <- get_large_nationals_last_know_bond_ratings_by_month()
-# str(ret, list.len = 999)
-# ret[1:4, grep("dateindex|dateindex_dt|^italy.*", names(ret), perl = TRUE, value = TRUE)[1:7] , drop = FALSE]
-# colnames(ret)
+# res <- get_large_nationals_last_know_bond_ratings_by_month()
+# str(res, list.len = 999)
+# res[1:4, grep("dateindex|dateindex_dt|^italy.*", names(ret), perl = TRUE, value = TRUE)[1:7] , drop = FALSE]
+# colnames(res)
 # 
-# >  ret[1:4, grep("dateindex|dateindex_dt|^italy.*", names(ret), perl = TRUE, value = TRUE)[1:7] , drop = FALSE]
+# >  res[1:4, grep("dateindex|dateindex_dt|^italy.*", names(res), perl = TRUE, value = TRUE)[1:7] , drop = FALSE]
 #   dateindex dateindex_dt italy__fitch_rating italy__moody_s_rating italy__s_p_rating italy__te_rating italy__fitch_outlook
 # 1     12083   2003-01-31                  aa                   aa2                aa             <NA>               stable
 # 2     12111   2003-02-28                  aa                   aa2                aa             <NA>               stable
 # 3     12142   2003-03-31                  aa                   aa2                aa             <NA>               stable
 # 4     12172   2003-04-30                  aa                   aa2                aa             <NA>               stable
-# > colnames(ret)
+# > colnames(res)
 #   [1] "dateindex"                       "dateindex_dt"                    "united_states__fitch_rating"     "united_states__moody_s_rating"  
 #   [5] "united_states__s_p_rating"       "united_states__te_rating"        "united_states__fitch_outlook"    "united_states__moody_s_outlook" 
 #   [9] "united_states__s_p_outlook"      "united_states__te_outlook"       "china__fitch_rating"             "china__moody_s_rating"          
@@ -2116,20 +2129,12 @@ get_large_nationals_last_know_bond_ratings_by_month <- function(keep_eom_date_si
 # [105] "australia__s_p_outlook"          "australia__te_outlook"           "spain__fitch_rating"             "spain__moody_s_rating"          
 # [109] "spain__s_p_rating"               "spain__te_rating"                "spain__fitch_outlook"            "spain__moody_s_outlook"         
 # [113] "spain__s_p_outlook"              "spain__te_outlook"              
-# > 
- # debugging of italy on May 01, 1996 
- # ret2 <- get_large_nationals_last_know_bond_ratings_by_month(keep_eom_date_since = "1990-01-01")
- # ret2[, grep("dateindex|dateindex_dt|^italy.*", names(ret2), perl = TRUE, value = TRUE)[c(1:2, 3:6)] , drop = FALSE]
- # ret2[, grep("dateindex|dateindex_dt|^italy.*", names(ret2), perl = TRUE, value = TRUE)[c(1:2,7:10)] , drop = FALSE]
-# 
-# rebalance on 
-# "germany"            # since 1970(NY.GDP.MKTP.CD)
-# "russian_federation" # since 1989(NY.GDP.MKTP.CD)
-# res3 <- get_large_nationals_yearly_gdp_weights_by_month(keep_eom_date_since = "1980-01-01")
-# 
-# res3[, colnames(res3) %in% c("dateindex","dateindex_dt","china_gdp_wdt","united_states_gdp_wdt","germany_gdp_wdt","russian_federation_gdp_wdt")]
-# 119      7273   1989-11-30    0.02114433      0.09449547                         NA             0.3555688
-# 120      7304   1989-12-31    0.02162678      0.08666914                0.031497986             0.3518379
+#  
+# debugging of italy on May 01, 1996 
+# res2 <- get_large_nationals_last_know_bond_ratings_by_month(keep_eom_date_since = "1990-01-01")
+# res2[, grep("dateindex|dateindex_dt|^italy.*", names(res2), perl = TRUE, value = TRUE)[c(1:2, 3:6)] , drop = FALSE]
+# res2[, grep("dateindex|dateindex_dt|^italy.*", names(res2), perl = TRUE, value = TRUE)[c(1:2,7:10)] , drop = FALSE]
+
 
 # goodsight01.R
 
@@ -2252,4 +2257,48 @@ credit_rating_descs <- function() {
   # 23         2          d              //           dd                                    in_default
   # 24         1          d              /            d                                    in_default
 
+                                                                        # default in internal funcions "2003-01-01"
+get_large_nationals_last_know_bond_ratings_by_month_numeric <- function(keep_eom_date_since = NULL) {
+
+  # R version 3.4.2 (2017-09-28)
+  # NOV 2017
+  
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+
+  require(DBI)
+  require(RSQLite)
+  
+  # uses function get_large_nationals_yearly_gdp_weights_by_month
+  # uses function get_large_nationals_last_know_bond_ratings_by_month
+  # uses function credit_rating_descs
+  
+  if(!is.null(keep_eom_date_since)) {
+    country_gdp_by_month        <- get_large_nationals_yearly_gdp_weights_by_month(keep_eom_date_since = keep_eom_date_since)
+    country_bond_rats_by_month  <- get_large_nationals_last_know_bond_ratings_by_month(keep_eom_date_since = keep_eom_date_since)
+  } else {
+    # default in funcions "2003-01-01"
+    country_gdp_by_month       <- get_large_nationals_yearly_gdp_weights_by_month()
+    country_bond_rats_by_month <- get_large_nationals_last_know_bond_ratings_by_month()
+  }
+  
+  # talk to db
+  conn_sqll_mm <- dbConnect(SQLite(), dbname = ":memory:")
+  
+  # upload to db
+  dbWriteTable(conn_sqll_mm, "country_gdp_by_month", country_gdp_by_month)
+  dbWriteTable(conn_sqll_mm, "country_bond_rats_by_month", country_bond_rats_by_month)
+  dbWriteTable(conn_sqll_mm, "credit_rating_descs", credit_rating_descs())
+  
+  # SQL/DML queries are here
+  
+  on.exit({Sys.setenv(TZ=oldtz); dbDisconnect(conn_sqll_mm)})
+
+  return(bond_ratings_by_month_numeric)
+
+}
+# get_large_nationals_last_know_bond_ratings_by_month_numeric()
+# INCOMPLETE/AND/NOT TESTED
 
