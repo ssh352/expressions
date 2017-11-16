@@ -2262,16 +2262,13 @@ get_large_nationals_last_know_bond_ratings_by_month_numeric <- function(keep_eom
   # R version 3.4.2 (2017-09-28)
   # NOV 2017
   
-  # uses function get_large_nationals_yearly_gdp_weights_by_month
   # uses function get_large_nationals_last_know_bond_ratings_by_month
   # uses function credit_rating_descs
   
   if(!is.null(keep_eom_date_since)) {
-    country_gdp_by_month        <- get_large_nationals_yearly_gdp_weights_by_month(keep_eom_date_since = keep_eom_date_since)
     country_bond_rats_by_month  <- get_large_nationals_last_know_bond_ratings_by_month(keep_eom_date_since = keep_eom_date_since)
   } else {
     # default in funcions "2003-01-01"
-    country_gdp_by_month       <- get_large_nationals_yearly_gdp_weights_by_month()
     country_bond_rats_by_month <- get_large_nationals_last_know_bond_ratings_by_month()
   }
   credit_ratings <- credit_rating_descs()
@@ -2290,7 +2287,7 @@ get_large_nationals_last_know_bond_ratings_by_month_numeric <- function(keep_eom
   s_p_rating         <- credit_ratings[seq_along(unique(credit_ratings[["s_p_rating"]])),"te_rating"]
   names(s_p_rating)  <-                          unique(credit_ratings[["s_p_rating"]])
   
-  # preparee
+  # prepare
   country_bond_rats_by_month_numeric  <- country_bond_rats_by_month
   
   
