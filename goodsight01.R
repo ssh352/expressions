@@ -2136,7 +2136,6 @@ get_large_nationals_last_know_bond_ratings_by_month <- function(keep_eom_date_si
 # res2[, grep("dateindex|dateindex_dt|^italy.*", names(res2), perl = TRUE, value = TRUE)[c(1:2,7:10)] , drop = FALSE]
 
 
-# goodsight01.R
 
 credit_rating_descs <- function() {
   
@@ -2231,31 +2230,31 @@ credit_rating_descs <- function() {
 #  $ fitch_rating           : chr  "aaa" "aa+" "aa" "aa-" ...
 #  $ credit_rating_long_desc: chr  "prime" "high_grade" "high_grade" "high_grade" ...
 # > res
-  #    te_rating s_p_rating moody_s_rating fitch_rating                       credit_rating_long_desc
-  # 1        100        aaa            aaa          aaa                                         prime
-  # 2         95        aa+            aa1          aa+                                    high_grade
-  # 3         90         aa            aa2           aa                                    high_grade
-  # 4         85        aa-            aa3          aa-                                    high_grade
-  # 5         80         a+             a1           a+                            upper_medium_grade
-  # 6         75          a             a2            a                            upper_medium_grade
-  # 7         70         a-             a3           a-                            upper_medium_grade
-  # 8         65       bbb+           baa1         bbb+                            lower_medium_grade
-  # 9         60        bbb           baa2          bbb                            lower_medium_grade
-  # 10        55       bbb-           baa3         bbb-                            lower_medium_grade
-  # 11        50        bb+            ba1          bb+             non-investment_grade__speculative
-  # 12        45         bb            ba2           bb             non-investment_grade__speculative
-  # 13        40        bb-            ba3          bb-             non-investment_grade__speculative
-  # 14        35         b+             b1           b+                            highly_speculative
-  # 15        30          b             b2            b                            highly_speculative
-  # 16        25         b-             b3           b-                            highly_speculative
-  # 17        20       ccc+           caa1          ccc                             substantial_risks
-  # 18        15        ccc           caa2          ccc                         extremely_speculative
-  # 19        10       ccc-           caa3          ccc in_default_with_little__prospect_for_recovery
-  # 20         7         cc             ca          ccc in_default_with_little__prospect_for_recovery
-  # 21         5          c              c          ccc in_default_with_little__prospect_for_recovery
-  # 22         3          d                        ddd                                    in_default
-  # 23         2          d              //           dd                                    in_default
-  # 24         1          d              /            d                                    in_default
+#    te_rating s_p_rating moody_s_rating fitch_rating                       credit_rating_long_desc
+# 1        100        aaa            aaa          aaa                                         prime
+# 2         95        aa+            aa1          aa+                                    high_grade
+# 3         90         aa            aa2           aa                                    high_grade
+# 4         85        aa-            aa3          aa-                                    high_grade
+# 5         80         a+             a1           a+                            upper_medium_grade
+# 6         75          a             a2            a                            upper_medium_grade
+# 7         70         a-             a3           a-                            upper_medium_grade
+# 8         65       bbb+           baa1         bbb+                            lower_medium_grade
+# 9         60        bbb           baa2          bbb                            lower_medium_grade
+# 10        55       bbb-           baa3         bbb-                            lower_medium_grade
+# 11        50        bb+            ba1          bb+             non-investment_grade__speculative
+# 12        45         bb            ba2           bb             non-investment_grade__speculative
+# 13        40        bb-            ba3          bb-             non-investment_grade__speculative
+# 14        35         b+             b1           b+                            highly_speculative
+# 15        30          b             b2            b                            highly_speculative
+# 16        25         b-             b3           b-                            highly_speculative
+# 17        20       ccc+           caa1          ccc                             substantial_risks
+# 18        15        ccc           caa2          ccc                         extremely_speculative
+# 19        10       ccc-           caa3          ccc in_default_with_little__prospect_for_recovery
+# 20         7         cc             ca          ccc in_default_with_little__prospect_for_recovery
+# 21         5          c              c          ccc in_default_with_little__prospect_for_recovery
+# 22         3          d                        ddd                                    in_default
+# 23         2          d              //           dd                                    in_default
+# 24         1          d              /            d                                    in_default
 
                                                                         # default in internal funcions "2003-01-01"
 get_large_nationals_last_know_bond_ratings_by_month_numeric <- function(keep_eom_date_since = NULL) {
@@ -2301,4 +2300,7 @@ get_large_nationals_last_know_bond_ratings_by_month_numeric <- function(keep_eom
 }
 # get_large_nationals_last_know_bond_ratings_by_month_numeric()
 # INCOMPLETE/AND/NOT TESTED
+
+# goodsight01.R
+
 
