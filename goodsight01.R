@@ -1828,7 +1828,7 @@ get_large_nationals_yearly_gdp_weights_by_month <- function() {
 # 179     17500   2017-11-30     0.2005963             0.3326051
 
 
-get_large_nationals_last_know_bond_ratings_by_month <- function() {
+get_large_nationals_last_know_bond_ratings_by_month <- function(keep_eom_date_since = "2003-01-01") {
 
   # R version 3.4.2 (2017-09-28)
   # NOV 2017
@@ -1845,7 +1845,7 @@ get_large_nationals_last_know_bond_ratings_by_month <- function() {
   # uses package plyr function join_all          # plyr::join_all
   
   # https://tradingeconomics.com/countries
-  # 
+  #                   # name in WDI and start-of-record comments
   large_nationals <-
   c(
      "united-states"
@@ -1890,7 +1890,7 @@ get_large_nationals_last_know_bond_ratings_by_month <- function() {
       if(inherits(this_country_historical_ratings, 'try-error')) { stop(paste0("counld not browse: ", paste0("https://tradingeconomics.com/", large_nationals_i, "/rating"))) }
     }
 
-    # remove repeats ( united-kingdom )
+    # remove web-site error repeats ( united-kingdom: Sep 21, 2000 )
     this_country_historical_ratings <- this_country_historical_ratings[!duplicated(this_country_historical_ratings),, drop = FALSE]
     
     # I do not track this one
@@ -1902,7 +1902,7 @@ get_large_nationals_last_know_bond_ratings_by_month <- function() {
     # drop column "Date"
     this_country_historical_ratings <- this_country_historical_ratings[ , !names(this_country_historical_ratings) %in% "Date",drop = FALSE]
     
-    # clean ( Rstudio 'unknown reason' parsing error: work around )
+    # clean ( Rstudio 'unknown reason' parsing error: work around: x[is.na(lapply(x,utf8ToInt))] )
     this_country_historical_ratings <- data.frame(lapply(this_country_historical_ratings, function(x) { 
       x[x == "N/A"] <- NA_character_
       # not-ascii (latin1) A (A is 'nothing')
@@ -1926,17 +1926,22 @@ get_large_nationals_last_know_bond_ratings_by_month <- function() {
     
     # garantee column order
     this_country_historical_ratings <- DataCombine::MoveFront(this_country_historical_ratings, c("dateindex", "dateindex_dt"))
-    # sort
-    this_country_historical_ratings <- dplyr::arrange_(this_country_historical_ratings, "dateindex")
+    ### 'not sort now' because will interfere with the 'order-sensitive' duplicated record removal from below
+    ### # sort
+    ### this_country_historical_ratings <- dplyr::arrange_(this_country_historical_ratings, "dateindex")
     
     # begin reshapes
     #
+    
+    # begin agency-rating reshape
     
     # drop column not involved in the reshape(some extra safety)
     this_country_historical_ratings_spreaded_agency_rating <- this_country_historical_ratings
     this_country_historical_ratings_spreaded_agency_rating <- this_country_historical_ratings_spreaded_agency_rating[,!names(this_country_historical_ratings_spreaded_agency_rating) %in% "outlook", drop = FALSE]
 
-    # if two(2)+ decisions in one day ( italy 1996-05-01 ) ( I do not kwow what it left with ), so eliminate both
+    # top of the HTML page is the lastest date ( and latest decision )
+    # if two(2)+ decisions in one day ( italy 1996-05-01 ), so eliminate the earliest date
+    # # remove rating agency business repeats (change mind from earlier decision on the SAME day: italy May 01, 1996 )
     this_country_historical_ratings_spreaded_agency_rating <- this_country_historical_ratings_spreaded_agency_rating[ !duplicated(this_country_historical_ratings_spreaded_agency_rating[, c("dateindex","dateindex_dt", "agency"), drop = FALSE]), , drop = FALSE]
 
     # reshape long to wide: agency-rating
@@ -1951,11 +1956,19 @@ get_large_nationals_last_know_bond_ratings_by_month <- function() {
     ### # drop column
     ### this_country_historical_ratings_spreaded_agency_rating_less_outlook <- this_country_historical_ratings_spreaded_agency_rating[ , !names(this_country_historical_ratings_spreaded_agency_rating) %in% "outlook",drop = FALSE]
     
+    # after order-sensitive 'duplicatated' was done
+    this_country_historical_ratings_spreaded_agency_rating <- dplyr::arrange_(this_country_historical_ratings_spreaded_agency_rating, "dateindex")
+
+    # end agency-rating reshape
+    # begin agency-outlook reshape
+    
     # drop column not involved in the reshape(some extra safety)
     this_country_historical_ratings_spreaded_agency_outlook <- this_country_historical_ratings
     this_country_historical_ratings_spreaded_agency_outlook <- this_country_historical_ratings_spreaded_agency_outlook[,!names(this_country_historical_ratings_spreaded_agency_outlook) %in% "rating", drop = FALSE]
 
-    # if two(2)+ decisions in one day ( italy 1996-05-01 ) ( I do not kwow what it left with ), so eliminate both
+    # top of the HTML page is the lastest date ( and latest decision )
+    # if two(2)+ decisions in one day ( italy 1996-05-01 ), so eliminate the earliest date
+    # # remove rating agency business repeats (change mind from earlier decision on the SAME day: italy May 01, 1996 )
     this_country_historical_ratings_spreaded_agency_outlook <- this_country_historical_ratings_spreaded_agency_outlook[ !duplicated(this_country_historical_ratings_spreaded_agency_outlook[, c("dateindex","dateindex_dt", "agency"), drop = FALSE]), , drop = FALSE]
 
     # reshape long to wide: agency-rating
@@ -1970,6 +1983,11 @@ get_large_nationals_last_know_bond_ratings_by_month <- function() {
     ### # drop column
     ### this_country_historical_ratings_spreaded_agency_outlook_less_rating <- this_country_historical_ratings_spreaded_agency_outlook[ , !names(this_country_historical_ratings_spreaded_agency_outlook) %in% "rating",drop = FALSE] 
     
+    # after order-sensitive 'duplicatated' was done
+    this_country_historical_ratings_spreaded_agency_outlook <- dplyr::arrange_(this_country_historical_ratings_spreaded_agency_outlook, "dateindex")
+    
+    # end agency-outlook reshape
+   
     #
     # end reshapes
     
@@ -1983,7 +2001,7 @@ get_large_nationals_last_know_bond_ratings_by_month <- function() {
     
     # combine dates: observation dates + end of month dates
     this_country_historical_ratings_spreaded_only_dateindex_dt_plus_eom_dates <-
-    data.frame(dateindex_dt = unique(sort(c(this_country_historical_ratings_spreaded$dateindex_dt, zoo::as.Date(zoo::as.yearmon(seq(as.Date("2003-01-01"), Sys.Date(), by = "month")), frac = 1)))))
+    data.frame(dateindex_dt = unique(sort(c(this_country_historical_ratings_spreaded$dateindex_dt, zoo::as.Date(zoo::as.yearmon(seq(as.Date(keep_eom_date_since), Sys.Date(), by = "month")), frac = 1)))))
     
     # put end of month dates into the data.frame
     this_country_historical_ratings_spreaded_plus_eom_dates <- 
@@ -2002,7 +2020,7 @@ get_large_nationals_last_know_bond_ratings_by_month <- function() {
     # (from 2003 onward) keep dates that are 'end of month dates' 
     this_country_historical_ratings_spreaded_eom <- 
     this_country_historical_ratings_spreaded_plus_eom_dates_w_locf[
-      this_country_historical_ratings_spreaded_plus_eom_dates_w_locf$dateindex_dt %in% zoo::as.Date(zoo::as.yearmon(seq(as.Date("2003-01-01"), Sys.Date(), by = "month")), frac = 1)
+      this_country_historical_ratings_spreaded_plus_eom_dates_w_locf$dateindex_dt %in% zoo::as.Date(zoo::as.yearmon(seq(as.Date(keep_eom_date_since), Sys.Date(), by = "month")), frac = 1)
       , 
       , drop = FALSE
     ]
@@ -2075,5 +2093,8 @@ get_large_nationals_last_know_bond_ratings_by_month <- function() {
 # [109] "spain__s_p_rating"               "spain__te_rating"                "spain__fitch_outlook"            "spain__moody_s_outlook"         
 # [113] "spain__s_p_outlook"              "spain__te_outlook"              
 # > 
-
+ # debugging of italy on May 01, 1996 
+ # ret2 <- get_large_nationals_last_know_bond_ratings_by_month(keep_eom_date_since = "1990-01-01")
+ # ret2[, grep("dateindex|dateindex_dt|^italy.*", names(ret2), perl = TRUE, value = TRUE)[c(1:2, 3:6)] , drop = FALSE]
+ # ret2[, grep("dateindex|dateindex_dt|^italy.*", names(ret2), perl = TRUE, value = TRUE)[c(1:2,7:10)] , drop = FALSE]
 
