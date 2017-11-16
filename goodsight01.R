@@ -1665,7 +1665,7 @@ expand.xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o
 # rm(list=setdiff(ls(all.names=TRUE),c()))
 
 
-get_large_nationals_yearly_gdp_weights_by_month <- function() {
+get_large_nationals_yearly_gdp_weights_by_month <- function(keep_eom_date_since = "1990-01-01") {
 
   # R version 3.4.2 (2017-09-28)
   # NOV 2017
@@ -1749,7 +1749,7 @@ get_large_nationals_yearly_gdp_weights_by_month <- function() {
       )
   ,, drop = FALSE]
   
-  # drop column ( because will produce a 'unque column value, and 'spread' will not work correctly )
+  # drop column ( because will produce a 'unique column value, and 'spread' will not work correctly )
   gross_domestic_product <- gross_domestic_product[ , !names(gross_domestic_product) %in% "iso2c",drop = FALSE]
 
   # reshape long to wide
@@ -1760,7 +1760,7 @@ get_large_nationals_yearly_gdp_weights_by_month <- function() {
 
   # combine dates: observation dates + end of month dates ( since Jan 2003 )
   gross_domestic_product_spreaded_country_measure_only_dateindex_dt_plus_eom_dates <-
-  data.frame(dateindex_dt = unique(sort(c(gross_domestic_product_spreaded_country_measure$dateindex_dt, zoo::as.Date(zoo::as.yearmon(seq(as.Date("2003-01-01"), Sys.Date(), by = "month")), frac = 1)))))
+  data.frame(dateindex_dt = unique(sort(c(gross_domestic_product_spreaded_country_measure$dateindex_dt, zoo::as.Date(zoo::as.yearmon(seq(as.Date(keep_eom_date_since), Sys.Date(), by = "month")), frac = 1)))))
 
   # put end of month dates into the data.frame
   gross_domestic_product_spreaded_country_measure_plus_eom_dates <- 
@@ -1779,7 +1779,7 @@ get_large_nationals_yearly_gdp_weights_by_month <- function() {
   # many rows are removed
   gross_domestic_product_spreaded_country_measure_eom <- 
   gross_domestic_product_spreaded_country_measure_plus_eom_dates_w_locf[
-    gross_domestic_product_spreaded_country_measure_plus_eom_dates_w_locf$dateindex_dt %in% zoo::as.Date(zoo::as.yearmon(seq(as.Date("2003-01-01"), Sys.Date(), by = "month")), frac = 1)
+    gross_domestic_product_spreaded_country_measure_plus_eom_dates_w_locf$dateindex_dt %in% zoo::as.Date(zoo::as.yearmon(seq(as.Date(keep_eom_date_since), Sys.Date(), by = "month")), frac = 1)
   ,, drop = FALSE]
   
   # because many rows are removed, re-number
@@ -1792,16 +1792,20 @@ get_large_nationals_yearly_gdp_weights_by_month <- function() {
 
   # Weighted percentage contribution by row in R
   # https://stackoverflow.com/questions/36086376/weighted-percentage-contribution-by-row-in-r
+  # rebalance
+  # na.rm = TRUE
+  # "germany"            # since 1970(NY.GDP.MKTP.CD)
+  # "russian_federation" # since 1989(NY.GDP.MKTP.CD)
   gross_domestic_product_spreaded_country_measure_weighted_eom[,grep("(^.{1,8}$|^.{9}(?<!dateindex).*)", names(gross_domestic_product_spreaded_country_measure_weighted_eom), perl = TRUE, value = TRUE)] <-
   sweep(
                 as.matrix(gross_domestic_product_spreaded_country_measure_weighted_eom[,grep("(^.{1,8}$|^.{9}(?<!dateindex).*)", names(gross_domestic_product_spreaded_country_measure_weighted_eom), perl = TRUE, value = TRUE)]) 
     , 1
-    , rowSums(  as.matrix(gross_domestic_product_spreaded_country_measure_weighted_eom[,grep("(^.{1,8}$|^.{9}(?<!dateindex).*)", names(gross_domestic_product_spreaded_country_measure_weighted_eom), perl = TRUE, value = TRUE)])  )
+    , rowSums(  as.matrix(gross_domestic_product_spreaded_country_measure_weighted_eom[,grep("(^.{1,8}$|^.{9}(?<!dateindex).*)", names(gross_domestic_product_spreaded_country_measure_weighted_eom), perl = TRUE, value = TRUE)]), na.rm = TRUE  )
     , FUN="/"
   )
-    
+  
   on.exit({Sys.setenv(TZ=oldtz)})
-
+  
   return(gross_domestic_product_spreaded_country_measure_weighted_eom)
   
 }
@@ -1826,6 +1830,26 @@ get_large_nationals_yearly_gdp_weights_by_month <- function() {
 # 177     17439   2017-09-30     0.2005963             0.3326051
 # 178     17470   2017-10-31     0.2005963             0.3326051
 # 179     17500   2017-11-30     0.2005963             0.3326051
+# 
+# > str(res)
+# 'data.frame':	179 obs. of  16 variables:
+#  $ dateindex                 : int  12083 12111 12142 12172 12203 12233 12264 12295 12325 12356 ...
+#  $ dateindex_dt              : Date, format: "2003-01-31" "2003-02-28" "2003-03-31" "2003-04-30" ...
+#  $ australia_gdp_wdt         : num  0.0146 0.0146 0.0146 0.0146 0.0146 ...
+#  $ brazil_gdp_wdt            : num  0.0188 0.0188 0.0188 0.0188 0.0188 ...
+#  $ canada_gdp_wdt            : num  0.0281 0.0281 0.0281 0.0281 0.0281 ...
+#  $ china_gdp_wdt             : num  0.0545 0.0545 0.0545 0.0545 0.0545 ...
+#  $ france_gdp_wdt            : num  0.0556 0.0556 0.0556 0.0556 0.0556 ...
+#  $ germany_gdp_wdt           : num  0.077 0.077 0.077 0.077 0.077 ...
+#  $ india_gdp_wdt             : num  0.0188 0.0188 0.0188 0.0188 0.0188 ...
+#  $ italy_gdp_wdt             : num  0.0469 0.0469 0.0469 0.0469 0.0469 ...
+#  $ japan_gdp_wdt             : num  0.152 0.152 0.152 0.152 0.152 ...
+#  $ korea_rep_gdp_wdt         : num  0.0226 0.0226 0.0226 0.0226 0.0226 ...
+#  $ russian_federation_gdp_wdt: num  0.0128 0.0128 0.0128 0.0128 0.0128 ...
+#  $ spain_gdp_wdt             : num  0.0261 0.0261 0.0261 0.0261 0.0261 ...
+#  $ united_kingdom_gdp_wdt    : num  0.0651 0.0651 0.0651 0.0651 0.0651 ...
+#  $ united_states_gdp_wdt     : num  0.407 0.407 0.407 0.407 0.407 ...
+
 
 
 get_large_nationals_last_know_bond_ratings_by_month <- function(keep_eom_date_since = "2003-01-01") {
@@ -2097,4 +2121,16 @@ get_large_nationals_last_know_bond_ratings_by_month <- function(keep_eom_date_si
  # ret2 <- get_large_nationals_last_know_bond_ratings_by_month(keep_eom_date_since = "1990-01-01")
  # ret2[, grep("dateindex|dateindex_dt|^italy.*", names(ret2), perl = TRUE, value = TRUE)[c(1:2, 3:6)] , drop = FALSE]
  # ret2[, grep("dateindex|dateindex_dt|^italy.*", names(ret2), perl = TRUE, value = TRUE)[c(1:2,7:10)] , drop = FALSE]
+# 
+# rebalance on 
+# "germany"            # since 1970(NY.GDP.MKTP.CD)
+# "russian_federation" # since 1989(NY.GDP.MKTP.CD)
+# res3 <- get_large_nationals_yearly_gdp_weights_by_month(keep_eom_date_since = "1980-01-01")
+# 
+# res3[, colnames(res3) %in% c("dateindex","dateindex_dt","china_gdp_wdt","united_states_gdp_wdt","germany_gdp_wdt","russian_federation_gdp_wdt")]
+# 119      7273   1989-11-30    0.02114433      0.09449547                         NA             0.3555688
+# 120      7304   1989-12-31    0.02162678      0.08666914                0.031497986             0.3518379
+
+# goodsight01.R
+
 
