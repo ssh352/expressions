@@ -2320,6 +2320,49 @@ get_large_nationals_last_know_bond_ratings_by_month_numeric <- function(keep_eom
 #  $ italy__s_p_rating    : num  90 90 90 90 90 90 90 90 90 90 ...
 #  $ italy__te_rating     : num  NA NA NA NA NA NA NA NA NA NA ...
 
+                                                                        # default in internal funcions "2003-01-01"
+get_one_large_nationals_bond_bond_ratings_wtd_by_month  <- function(keep_eom_date_since = NULL) {
+
+  # R version 3.4.2 (2017-09-28)
+  # NOV 2017
+  
+  # uses function get_large_nationals_yearly_gdp_weights_by_month
+  # uses function get_large_nationals_last_know_bond_ratings_by_month_numeric
+  
+  if(!is.null(keep_eom_date_since)) {
+    country_gdp_by_month       <- get_large_nationals_yearly_gdp_weights_by_month(keep_eom_date_since = keep_eom_date_since)
+    large_nationals_last_know_bond_ratings_by_month_numeric <- get_large_nationals_last_know_bond_ratings_by_month_numeric(keep_eom_date_since = keep_eom_date_since)
+  } else {
+    # default in funcions "2003-01-01"
+    country_gdp_by_month       <- get_large_nationals_yearly_gdp_weights_by_month()
+    large_nationals_last_know_bond_ratings_by_month_numeric <- get_large_nationals_last_know_bond_ratings_by_month_numeric()
+  }
+
+  
+  for(country_col_i in setdiff(gsub("^(.*)(__)(.*)$", "\\1", names(large_nationals_last_know_bond_ratings_by_month_numeric), perl = TRUE), c("dateindex","dateindex_dt"))) {
+  
+    # I am not doing __te_rating
+  
+    for(rating_i in c("s_p_rating", "moody_s_rating", "fitch_rating")) {
+  
+    # average rating amoung the two or three rating agencies
+ 
+    large_nationals_bond_bond_ratings_wtd_by_month <- NULL
+ 
+    }
+  
+  }
+
+  return(large_nationals_bond_bond_ratings_wtd_by_month)
+
+}
+# res <- get_one_large_nationals_bond_bond_ratings_wtd_by_month()
+# NOTE DEVELOPED YET/TESTED YET
+
+
+
+
+
 # goodsight01.R
 
 
