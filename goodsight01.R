@@ -2262,14 +2262,6 @@ get_large_nationals_last_know_bond_ratings_by_month_numeric <- function(keep_eom
   # R version 3.4.2 (2017-09-28)
   # NOV 2017
   
-  oldtz <- Sys.getenv('TZ')
-  if(oldtz=='') {
-    Sys.setenv(TZ="UTC")
-  }
-
-  require(DBI)
-  require(RSQLite)
-  
   # uses function get_large_nationals_yearly_gdp_weights_by_month
   # uses function get_large_nationals_last_know_bond_ratings_by_month
   # uses function credit_rating_descs
@@ -2282,24 +2274,54 @@ get_large_nationals_last_know_bond_ratings_by_month_numeric <- function(keep_eom
     country_gdp_by_month       <- get_large_nationals_yearly_gdp_weights_by_month()
     country_bond_rats_by_month <- get_large_nationals_last_know_bond_ratings_by_month()
   }
+  credit_ratings <- credit_rating_descs()
   
-  # talk to db
-  conn_sqll_mm <- dbConnect(SQLite(), dbname = ":memory:")
+  # note: FOR RIGHT NOW, I AM NOT DOING "outlook"
   
-  # upload to db
-  dbWriteTable(conn_sqll_mm, "country_gdp_by_month", country_gdp_by_month)
-  dbWriteTable(conn_sqll_mm, "country_bond_rats_by_month", country_bond_rats_by_month)
-  dbWriteTable(conn_sqll_mm, "credit_rating_descs", credit_rating_descs())
+  # trick on unique: end trailing repeated items are reduced to just 'one ' item
+  # e.g. c("/", "/", "/") -> unique -> c("\")
   
-  # SQL/DML queries are here
+  moody_s_rating        <- credit_ratings[seq_along(unique(credit_ratings[["moody_s_rating"]])),"te_rating"]
+  names(moody_s_rating) <-                          unique(credit_ratings[["moody_s_rating"]])
   
-  on.exit({Sys.setenv(TZ=oldtz); dbDisconnect(conn_sqll_mm)})
+  fitch_rating        <- credit_ratings[seq_along(unique(credit_ratings[["fitch_rating"]])),"te_rating"]
+  names(fitch_rating) <-                          unique(credit_ratings[["fitch_rating"]])
+  
+  s_p_rating         <- credit_ratings[seq_along(unique(credit_ratings[["s_p_rating"]])),"te_rating"]
+  names(s_p_rating)  <-                          unique(credit_ratings[["s_p_rating"]])
+  
+  # preparee
+  country_bond_rats_by_month_numeric  <- country_bond_rats_by_month
+  
+  
+  for(country_col_i in setdiff(gsub("^(.*)(__)(.*)$", "\\1", names(country_bond_rats_by_month), perl = TRUE), c("dateindex","dateindex_dt"))) {
+  
+    for(rating_i in c("s_p_rating", "moody_s_rating", "fitch_rating")) {
+  
+      # assign
+      # country_bond_rats_by_month_numeric[["italy__moody_s_rating"]] <- moody_s_rating[match(country_bond_rats_by_month_numeric[["italy__moody_s_rating"]], names(moody_s_rating))]
+      # country_bond_rats_by_month_numeric[[paste0("italy", "__", "moody_s_rating")]] <- get(paste0("moody_s_rating"))[match(country_bond_rats_by_month_numeric[[paste0("italy", "__", "moody_s_rating")]], names(get(paste0("moody_s_rating"))))]
+      # 
+      # country_col_i <- "italy"
+      # rating_i      <- "moody_s_rating"
+      country_bond_rats_by_month_numeric[[paste0(country_col_i, "__", rating_i)]] <- get(paste0(rating_i))[match(country_bond_rats_by_month_numeric[[paste0(country_col_i, "__", rating_i)]], names(get(paste0(rating_i))))]
+      
+    }
+  
+  }
 
-  return(bond_ratings_by_month_numeric)
+  return(country_bond_rats_by_month_numeric)
 
 }
-# get_large_nationals_last_know_bond_ratings_by_month_numeric()
-# INCOMPLETE/AND/NOT TESTED
+# res <- get_large_nationals_last_know_bond_ratings_by_month_numeric()
+# > str(res[, c("dateindex","dateindex_dt", grep("^italy.*rating$",names(res), perl = TRUE, value = TRUE))], list.len = 999L)
+# 'data.frame':	179 obs. of  6 variables:
+#  $ dateindex            : int  12083 12111 12142 12172 12203 12233 12264 12295 12325 12356 ...
+#  $ dateindex_dt         : Date, format: "2003-01-31" "2003-02-28" "2003-03-31" "2003-04-30" ...
+#  $ italy__fitch_rating  : num  90 90 90 90 90 90 90 90 90 90 ...
+#  $ italy__moody_s_rating: num  90 90 90 90 90 90 90 90 90 90 ...
+#  $ italy__s_p_rating    : num  90 90 90 90 90 90 90 90 90 90 ...
+#  $ italy__te_rating     : num  NA NA NA NA NA NA NA NA NA NA ...
 
 # goodsight01.R
 
