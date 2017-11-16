@@ -1932,7 +1932,7 @@ get_large_nationals_last_know_bond_ratings_by_month <- function(keep_eom_date_si
       # not-ascii (latin1) A (A is 'nothing')
       # if ... RStudio parser chokes ... detect
       x[is.na(lapply(x,utf8ToInt))] <- NA_character_ 
-      # really only 'terating' ( because MY table does not have a ZERO )
+      # really only 'terating' ( because MY 'agency ratings description table' does not have a ZERO )
       x[x == "0"]   <- "1"
       # prevent 'drop to factor ... all 1s'
       # so I can do tidyr and PostgreSQL
@@ -2132,5 +2132,124 @@ get_large_nationals_last_know_bond_ratings_by_month <- function(keep_eom_date_si
 # 120      7304   1989-12-31    0.02162678      0.08666914                0.031497986             0.3518379
 
 # goodsight01.R
+
+credit_rating_descs <- function() {
+  
+  # uses package htmltab function htmltab        # htmltab::htmltab
+  # uses package tidyr   function fill           # tidyr::fill
+  
+  # NOTE: may? timeout (curl 10 seconds )
+  #                         # SAME on EVERY PAGE
+  credit_rating_descs <- try( 
+      htmltab::htmltab(doc = "https://tradingeconomics.com/israel/rating", which = 3)
+    , silent = TRUE
+  )
+  # try once more
+  if(inherits(credit_rating_descs, 'try-error')) { 
+    Sys.sleep(1.0)
+    credit_rating_descs <- try( 
+      htmltab::htmltab(doc = "https://tradingeconomics.com/israel/rating", which = 3)
+    , silent = TRUE
+    )
+    if(inherits(credit_rating_descs, 'try-error')) { stop(paste0("counld not browse: ","https://tradingeconomics.com/israel/rating")) }
+  }
+
+  # clean
+  credit_rating_descs<- data.frame(lapply(credit_rating_descs, function(x) { 
+    if(is.character(x)) {
+      # prevent 'drop to factor ... all 1s'
+      # so I can do tidyr and PostgreSQL
+      x <- tolower(x)
+      x <- gsub("(,|[.])","", x)
+      x <- gsub("(&|'| )","_", x)
+    }
+    return(x)
+  }), stringsAsFactors = FALSE)
+  
+  # names(credit_rating_descs)    <- tolower(names(credit_rating_descs))
+  # names(credit_rating_descs)[5] <- "credit_rating_long_desc"
+  
+  # But for now, I will just hard code
+  names(credit_rating_descs) <- c("te_rating", "s_p_rating", "moody_s_rating", "fitch_rating", "credit_rating_long_desc")
+  
+  # last observation carried forward
+  credit_rating_descs <- tidyr::fill(credit_rating_descs, te_rating, s_p_rating, moody_s_rating, fitch_rating, credit_rating_long_desc)
+
+  # logical fix at 'very low ratings'
+  credit_rating_descs[20:24,"te_rating"] <- c("7","5","3","2","1")
+  
+  # gives a math rating
+  credit_rating_descs[["te_rating"]]     <- as.numeric(credit_rating_descs[["te_rating"]])
+
+  # CORRECT htmltab::htmltab, definitely an error on row.names (problem: starts at "2", fix: starts at "1")
+  # re-number
+  row.names(credit_rating_descs) <- seq_along(row.names(credit_rating_descs))
+  
+  # SAVE (just in case this 'table of values' changes, then I can refer back)
+  # print(credit_rating_descs)
+  
+  #    te_rating s_p_rating moody_s_rating fitch_rating                       credit_rating_long_desc
+  # 1        100        aaa            aaa          aaa                                         prime
+  # 2         95        aa+            aa1          aa+                                    high_grade
+  # 3         90         aa            aa2           aa                                    high_grade
+  # 4         85        aa-            aa3          aa-                                    high_grade
+  # 5         80         a+             a1           a+                            upper_medium_grade
+  # 6         75          a             a2            a                            upper_medium_grade
+  # 7         70         a-             a3           a-                            upper_medium_grade
+  # 8         65       bbb+           baa1         bbb+                            lower_medium_grade
+  # 9         60        bbb           baa2          bbb                            lower_medium_grade
+  # 10        55       bbb-           baa3         bbb-                            lower_medium_grade
+  # 11        50        bb+            ba1          bb+             non-investment_grade__speculative
+  # 12        45         bb            ba2           bb             non-investment_grade__speculative
+  # 13        40        bb-            ba3          bb-             non-investment_grade__speculative
+  # 14        35         b+             b1           b+                            highly_speculative
+  # 15        30          b             b2            b                            highly_speculative
+  # 16        25         b-             b3           b-                            highly_speculative
+  # 17        20       ccc+           caa1          ccc                             substantial_risks
+  # 18        15        ccc           caa2          ccc                         extremely_speculative
+  # 19        10       ccc-           caa3          ccc in_default_with_little__prospect_for_recovery
+  # 20         7         cc             ca          ccc in_default_with_little__prospect_for_recovery
+  # 21         5          c              c          ccc in_default_with_little__prospect_for_recovery
+  # 22         3          d                        ddd                                    in_default
+  # 23         2          d              //           dd                                    in_default
+  # 24         1          d              /            d                                    in_default
+  
+  return(credit_rating_descs)
+  
+}
+# res <- credit_rating_descs()
+# > str(res)
+# 'data.frame':	24 obs. of  5 variables:
+#  $ te_rating              : num  100 95 90 85 80 75 70 65 60 55 ...
+#  $ s_p_rating             : chr  "aaa" "aa+" "aa" "aa-" ...
+#  $ moody_s_rating         : chr  "aaa" "aa1" "aa2" "aa3" ...
+#  $ fitch_rating           : chr  "aaa" "aa+" "aa" "aa-" ...
+#  $ credit_rating_long_desc: chr  "prime" "high_grade" "high_grade" "high_grade" ...
+# > res
+  #    te_rating s_p_rating moody_s_rating fitch_rating                       credit_rating_long_desc
+  # 1        100        aaa            aaa          aaa                                         prime
+  # 2         95        aa+            aa1          aa+                                    high_grade
+  # 3         90         aa            aa2           aa                                    high_grade
+  # 4         85        aa-            aa3          aa-                                    high_grade
+  # 5         80         a+             a1           a+                            upper_medium_grade
+  # 6         75          a             a2            a                            upper_medium_grade
+  # 7         70         a-             a3           a-                            upper_medium_grade
+  # 8         65       bbb+           baa1         bbb+                            lower_medium_grade
+  # 9         60        bbb           baa2          bbb                            lower_medium_grade
+  # 10        55       bbb-           baa3         bbb-                            lower_medium_grade
+  # 11        50        bb+            ba1          bb+             non-investment_grade__speculative
+  # 12        45         bb            ba2           bb             non-investment_grade__speculative
+  # 13        40        bb-            ba3          bb-             non-investment_grade__speculative
+  # 14        35         b+             b1           b+                            highly_speculative
+  # 15        30          b             b2            b                            highly_speculative
+  # 16        25         b-             b3           b-                            highly_speculative
+  # 17        20       ccc+           caa1          ccc                             substantial_risks
+  # 18        15        ccc           caa2          ccc                         extremely_speculative
+  # 19        10       ccc-           caa3          ccc in_default_with_little__prospect_for_recovery
+  # 20         7         cc             ca          ccc in_default_with_little__prospect_for_recovery
+  # 21         5          c              c          ccc in_default_with_little__prospect_for_recovery
+  # 22         3          d                        ddd                                    in_default
+  # 23         2          d              //           dd                                    in_default
+  # 24         1          d              /            d                                    in_default
 
 
