@@ -2407,7 +2407,7 @@ get_one_large_nationals_bond_bond_ratings_wtd_by_month  <- function(keep_eom_dat
 
   
   # final_result ( uses 'countries_sorted' )
-  large_nationals_last_know_bond_ratings_by_month_numeric_plus_gdp_weights[["all_ratings_mean_gdp_wdt"]] <- 
+  large_nationals_last_know_bond_ratings_by_month_numeric_plus_gdp_weights[["all_ratings_mean_gdp_wtd"]] <- 
   rowSums( as.matrix(large_nationals_last_know_bond_ratings_by_month_numeric_plus_gdp_weights[, paste0(countries_sorted, "__rating_mean"),drop = FALSE]) * as.matrix(large_nationals_last_know_bond_ratings_by_month_numeric_plus_gdp_weights[, paste0(countries_sorted, "__gdp_wdt"),drop = FALSE]), na.rm = TRUE)
 
   
