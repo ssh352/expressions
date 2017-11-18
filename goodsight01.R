@@ -1667,6 +1667,8 @@ expand.xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o
 
 get_large_nationals_yearly_gdp_weights_by_month <- function(keep_eom_date_since = "2003-01-01") {
 
+  message("Begin function: get_large_nationals_yearly_gdp_weights_by_month")
+  
   # R version 3.4.2 (2017-09-28)
   # NOV 2017
   
@@ -1806,6 +1808,8 @@ get_large_nationals_yearly_gdp_weights_by_month <- function(keep_eom_date_since 
   
   on.exit({Sys.setenv(TZ=oldtz)})
   
+  message("End function: get_large_nationals_yearly_gdp_weights_by_month")
+  
   return(gross_domestic_product_spreaded_country_measure_weighted_eom)
   
 }
@@ -1867,6 +1871,8 @@ get_large_nationals_yearly_gdp_weights_by_month <- function(keep_eom_date_since 
 
 get_large_nationals_last_know_bond_ratings_by_month <- function(keep_eom_date_since = "2003-01-01") {
 
+    message("Begin function: get_large_nationals_last_know_bond_ratings_by_month")
+  
   # R version 3.4.2 (2017-09-28)
   # NOV 2017
   
@@ -2089,6 +2095,8 @@ get_large_nationals_last_know_bond_ratings_by_month <- function(keep_eom_date_si
   
   on.exit({Sys.setenv(TZ=oldtz)})
 
+  message("End function: get_large_nationals_last_know_bond_ratings_by_month")
+  
   return(all_countries)
   
 }
@@ -2142,6 +2150,11 @@ get_large_nationals_last_know_bond_ratings_by_month <- function(keep_eom_date_si
 
 
 credit_rating_descs <- function() {
+  
+  message("Begin function: credit_rating_descs")
+  
+  # R version 3.4.2 (2017-09-28)
+  # NOV 2017
   
   # uses package htmltab function htmltab        # htmltab::htmltab
   # uses package tidyr   function fill           # tidyr::fill
@@ -2222,6 +2235,8 @@ credit_rating_descs <- function() {
   # 23         2          d              //           dd                                    in_default
   # 24         1          d              /            d                                    in_default
   
+  message("End function: credit_rating_descs")
+  
   return(credit_rating_descs)
   
 }
@@ -2263,11 +2278,18 @@ credit_rating_descs <- function() {
                                                                         # default in internal funcions "2003-01-01"
 get_large_nationals_last_know_bond_ratings_by_month_numeric <- function(keep_eom_date_since = NULL) {
 
+  message("Begin function: get_large_nationals_last_know_bond_ratings_by_month_numeric")
+  
   # R version 3.4.2 (2017-09-28)
   # NOV 2017
   
   # uses function get_large_nationals_last_know_bond_ratings_by_month
   # uses function credit_rating_descs
+  
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
   
   if(!is.null(keep_eom_date_since)) {
     country_bond_rats_by_month  <- get_large_nationals_last_know_bond_ratings_by_month(keep_eom_date_since = keep_eom_date_since)
@@ -2311,6 +2333,10 @@ get_large_nationals_last_know_bond_ratings_by_month_numeric <- function(keep_eom
   
   }
 
+  on.exit({Sys.setenv(TZ=oldtz)})
+  
+  message("End function: get_large_nationals_last_know_bond_ratings_by_month_numeric")
+  
   return(country_bond_rats_by_month_numeric)
 
 }
@@ -2335,7 +2361,11 @@ get_one_large_nationals_bond_bond_ratings_wtd_by_month  <- function(keep_eom_dat
   
   # uses function get_large_nationals_yearly_gdp_weights_by_month
   # uses function get_large_nationals_last_know_bond_ratings_by_month_numeric
-  # ?? uses package matrixStats function rowWeightedMeans                          # matrixStats::rowWeightedMeans ??
+
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
   
   # limit to month ends of interest
   if(!is.null(keep_eom_date_since)) {
@@ -2366,21 +2396,6 @@ get_one_large_nationals_bond_bond_ratings_wtd_by_month  <- function(keep_eom_dat
   }
   
 
-  # LEFT_OFF
-  # sweep
-  # apply
-  # rowr::rowApply
-  # matrixStats::rowWeightedMeans
-  # 
-  # as.matrix(large_nationals_last_know_bond_ratings_by_month_numeric[, paste0(countries, "__", "rating_mean"), drop = FALSE]
-
-# SHOULD_KEEP ( COME BACK )
-# setdiff # garantee columns ( both 'measures' and 'measure weights'
-# large_nationals_last_know_bond_ratings_by_month_numeric_plus_gdp_weights
-
-  # KEEP
-  # redundant: reu
-  
   # join
   large_nationals_last_know_bond_ratings_by_month_numeric_plus_gdp_weights <- 
   merge(large_nationals_last_know_bond_ratings_by_month_numeric, large_nationals_yearly_gdp_weights_by_month, all = TRUE)
@@ -2394,17 +2409,19 @@ get_one_large_nationals_bond_bond_ratings_wtd_by_month  <- function(keep_eom_dat
     
   }
   
-  # ( COME BACK ?)
+  # ( FUTURE: COME_BACK ?)
   # setdiff # garantee columns ( both 'measures' and 'measure weights' )
-  # large_nationals_last_know_bond_ratings_by_month_numeric_plus_gdp_weights[,  col_vector_column not_foun] <- NA_real_
+  # large_nationals_last_know_bond_ratings_by_month_numeric_plus_gdp_weights[,  col_vector_column not_found] <- NA_real_
   # 
   # REST OVERSIMPLIFIED (because I did NOT garantee columns) ... ( but good-enough for right now )
-  
-  # SHOULD_KEEP ( COME BACK )
-  # setdiff # garantee columns ( both 'measures' and 'measure weights'
-  # item[,col_vector_not_fount] <- NA_real_
-  # large_nationals_last_know_bond_ratings_by_month_numeric_plus_gdp_weights
+  # 
 
+  # possibles
+  #
+  # sweep
+  # apply
+  # rowr::rowApply
+  # matrixStats::rowWeightedMeans
   
   # final_result ( uses 'countries_sorted' )
   large_nationals_last_know_bond_ratings_by_month_numeric_plus_gdp_weights[["all_ratings_mean_gdp_wtd"]] <- 
@@ -2413,15 +2430,110 @@ get_one_large_nationals_bond_bond_ratings_wtd_by_month  <- function(keep_eom_dat
   
          large_nationals_bond_bond_ratings_wtd_by_month <- large_nationals_last_know_bond_ratings_by_month_numeric_plus_gdp_weights
 
+  on.exit({Sys.setenv(TZ=oldtz)})
+         
   message("End function: get_one_large_nationals_bond_bond_ratings_wtd_by_month")
          
   return(large_nationals_bond_bond_ratings_wtd_by_month)
 
 }
 # res <- get_one_large_nationals_bond_bond_ratings_wtd_by_month()
-# NOTE DEVELOPED YET/TESTED YET
-
-
+# > str(res, list.len = 999)
+# 'data.frame':	179 obs. of  143 variables:
+#  $ dateindex                          : int  12083 12111 12142 12172 12203 12233 12264 12295 12325 12356 ...
+#  $ dateindex_dt                       : Date, format: "2003-01-31" "2003-02-28" "2003-03-31" "2003-04-30" ...
+#  $ united_states__fitch_rating        : num  100 100 100 100 100 100 100 100 100 100 ...
+#  $ united_states__moody_s_rating      : num  100 100 100 100 100 100 100 100 100 100 ...
+#  $ united_states__s_p_rating          : num  NA NA NA NA NA NA NA NA NA NA ...
+#  $ united_states__te_rating           : num  NA NA NA NA NA NA NA NA NA NA ...
+#  $ united_states__fitch_outlook       : chr  "stable" "stable" "stable" "stable" ...
+#  $ united_states__moody_s_outlook     : chr  "stable" "stable" "stable" "stable" ...
+#  $ united_states__s_p_outlook         : chr  NA NA NA NA ...
+#  $ united_states__te_outlook          : chr  NA NA NA NA ...
+# ...
+#  $ united_states__rating_mean         : num  100 100 100 100 100 100 100 100 100 100 ...
+#  $ china__rating_mean                 : num  66.7 66.7 66.7 66.7 66.7 ...
+#  $ japan__rating_mean                 : num  90 90 90 90 90 90 90 90 90 90 ...
+#  $ germany__rating_mean               : num  100 100 100 100 100 100 100 100 100 100 ...
+#  $ united_kingdom__rating_mean        : num  100 100 100 100 100 100 100 100 100 100 ...
+#  $ india__rating_mean                 : num  45 46.7 46.7 46.7 46.7 ...
+#  $ france__rating_mean                : num  100 100 100 100 100 100 100 100 100 100 ...
+#  $ brazil__rating_mean                : num  31.7 31.7 31.7 31.7 31.7 ...
+#  $ italy__rating_mean                 : num  90 90 90 90 90 90 90 90 90 90 ...
+#  $ canada__rating_mean                : num  98.3 98.3 98.3 98.3 98.3 ...
+#  $ russian_federation__rating_mean    : num  43.3 43.3 43.3 43.3 46.7 ...
+#  $ korea_rep__rating_mean             : num  71.7 71.7 71.7 71.7 71.7 ...
+#  $ australia__rating_mean             : num  95 98.3 98.3 98.3 98.3 ...
+#  $ spain__rating_mean                 : num  96.7 96.7 96.7 96.7 96.7 ...
+#  $ australia__gdp_wdt                 : num  0.0146 0.0146 0.0146 0.0146 0.0146 ...
+#  $ brazil__gdp_wdt                    : num  0.0188 0.0188 0.0188 0.0188 0.0188 ...
+#  $ canada__gdp_wdt                    : num  0.0281 0.0281 0.0281 0.0281 0.0281 ...
+#  $ china__gdp_wdt                     : num  0.0545 0.0545 0.0545 0.0545 0.0545 ...
+#  $ france__gdp_wdt                    : num  0.0556 0.0556 0.0556 0.0556 0.0556 ...
+#  $ germany__gdp_wdt                   : num  0.077 0.077 0.077 0.077 0.077 ...
+#  $ india__gdp_wdt                     : num  0.0188 0.0188 0.0188 0.0188 0.0188 ...
+#  $ italy__gdp_wdt                     : num  0.0469 0.0469 0.0469 0.0469 0.0469 ...
+#  $ japan__gdp_wdt                     : num  0.152 0.152 0.152 0.152 0.152 ...
+#  $ korea_rep__gdp_wdt                 : num  0.0226 0.0226 0.0226 0.0226 0.0226 ...
+#  $ russian_federation__gdp_wdt        : num  0.0128 0.0128 0.0128 0.0128 0.0128 ...
+#  $ spain__gdp_wdt                     : num  0.0261 0.0261 0.0261 0.0261 0.0261 ...
+#  $ united_kingdom__gdp_wdt            : num  0.0651 0.0651 0.0651 0.0651 0.0651 ...
+#  $ united_states__gdp_wdt             : num  0.407 0.407 0.407 0.407 0.407 ...
+#  $ all_ratings_mean_gdp_wtd           : num  92.3 92.4 92.4 92.4 92.4 ...
+# > 
+# PROB NOT HELPFUL ( GOES UP BEFORE A RECESSION )
+# res[,c("dateindex", "dateindex_dt","all_ratings_mean_gdp_wtd")]
+# 
+# 49      13544   2007-01-31                 92.17384
+# 50      13572   2007-02-28                 92.17384
+# 51      13603   2007-03-31                 92.17384
+# 52      13633   2007-04-30                 92.37025
+# 53      13664   2007-05-31                 92.46629
+# 54      13694   2007-06-30                 92.46629
+# 55      13725   2007-07-31                 92.62947
+# 56      13756   2007-08-31                 92.67748
+# 57      13786   2007-09-30                 92.67748
+# 58      13817   2007-10-31                 92.67748
+# 59      13847   2007-11-30                 92.79680
+# 60      13878   2007-12-31                 92.06020
+# 61      13909   2008-01-31                 92.06020
+# 62      13938   2008-02-29                 92.06020
+# 63      13969   2008-03-31                 92.06020
+# 64      13999   2008-04-30                 92.11469
+# 65      14030   2008-05-31                 92.16918
+# 66      14060   2008-06-30                 92.16918
+# 67      14091   2008-07-31                 92.35841
+# 68      14122   2008-08-31                 92.35841
+# 69      14152   2008-09-30                 92.35841
+# 70      14183   2008-10-31                 92.35841
+# 71      14213   2008-11-30                 92.35841
+# 72      14244   2008-12-31                 91.75374
+# 
+# 103     15186   2011-07-31                 90.37297
+# 104     15217   2011-08-31                 89.65630
+# 105     15247   2011-09-30                 89.58260
+# 106     15278   2011-10-31                 89.03956
+# 107     15308   2011-11-30                 89.15580
+# 108     15339   2011-12-31                 88.64830
+# 109     15370   2012-01-31                 88.08578
+# 110     15399   2012-02-29                 87.83104
+# 111     15430   2012-03-31                 87.83104
+# 112     15460   2012-04-30                 87.73762
+# 113     15491   2012-05-31                 87.35105
+# 114     15521   2012-06-30                 87.07079
+# 115     15552   2012-07-31                 86.92788
+# 116     15583   2012-08-31                 86.96562
+# 
+# 150     16616   2015-06-30                 86.18115
+# 151     16647   2015-07-31                 86.18115
+# 152     16678   2015-08-31                 86.10958
+# 153     16708   2015-09-30                 85.85483
+# 154     16739   2015-10-31                 85.82336
+# 155     16769   2015-11-30                 85.82336
+# 156     16800   2015-12-31                 86.72017 # credit rating jump ( but eoy gdp refresh )
+# 157     16831   2016-01-31                 86.72017
+# 158     16860   2016-02-29                 86.55538
+# 159     16891   2016-03-31                 86.55538
 
 
 
