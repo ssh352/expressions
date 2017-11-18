@@ -2328,6 +2328,8 @@ get_large_nationals_last_know_bond_ratings_by_month_numeric <- function(keep_eom
                                                                         # default in internal funcions "2003-01-01"
 get_one_large_nationals_bond_bond_ratings_wtd_by_month  <- function(keep_eom_date_since = NULL) {
 
+  message("Begin function: get_one_large_nationals_bond_bond_ratings_wtd_by_month")
+
   # R version 3.4.2 (2017-09-28)
   # NOV 2017
   
@@ -2335,6 +2337,7 @@ get_one_large_nationals_bond_bond_ratings_wtd_by_month  <- function(keep_eom_dat
   # uses function get_large_nationals_last_know_bond_ratings_by_month_numeric
   # ?? uses package matrixStats function rowWeightedMeans                          # matrixStats::rowWeightedMeans ??
   
+  # limit to month ends of interest
   if(!is.null(keep_eom_date_since)) {
     large_nationals_yearly_gdp_weights_by_month       <- get_large_nationals_yearly_gdp_weights_by_month(keep_eom_date_since = keep_eom_date_since)
     large_nationals_last_know_bond_ratings_by_month_numeric <- get_large_nationals_last_know_bond_ratings_by_month_numeric(keep_eom_date_since = keep_eom_date_since)
@@ -2343,6 +2346,15 @@ get_one_large_nationals_bond_bond_ratings_wtd_by_month  <- function(keep_eom_dat
     large_nationals_yearly_gdp_weights_by_month       <- get_large_nationals_yearly_gdp_weights_by_month()
     large_nationals_last_know_bond_ratings_by_month_numeric <- get_large_nationals_last_know_bond_ratings_by_month_numeric()
   }
+  
+  # adjustments
+  names(large_nationals_last_know_bond_ratings_by_month_numeric) <- 
+    gsub("(^south_korea__)", "korea_rep__" ,     names(large_nationals_last_know_bond_ratings_by_month_numeric))
+    
+  names(large_nationals_last_know_bond_ratings_by_month_numeric) <-
+    gsub("(^russia__)", "russian_federation__" , names(large_nationals_last_know_bond_ratings_by_month_numeric))
+  
+  countries_sorted <- sort(setdiff(gsub("^(.*)(__)(.*)$", "\\1", names(large_nationals_last_know_bond_ratings_by_month_numeric), perl = TRUE), c("dateindex","dateindex_dt")))
 
   for(country_col_i in setdiff(gsub("^(.*)(__)(.*)$", "\\1", names(large_nationals_last_know_bond_ratings_by_month_numeric), perl = TRUE), c("dateindex","dateindex_dt"))) {
   
@@ -2353,8 +2365,7 @@ get_one_large_nationals_bond_bond_ratings_wtd_by_month  <- function(keep_eom_dat
       rowMeans(large_nationals_last_know_bond_ratings_by_month_numeric[,c(paste0(country_col_i, "__", "fitch_rating"),paste0(country_col_i, "__", "moody_s_rating"),paste0(country_col_i, "__", "s_p_rating")),drop = FALSE], na.rm = TRUE)
   }
   
-  countries_sorted <- sort(setdiff(gsub("^(.*)(__)(.*)$", "\\1", names(large_nationals_last_know_bond_ratings_by_month_numeric), perl = TRUE), c("dateindex","dateindex_dt")))
-  
+
   # LEFT_OFF
   # sweep
   # apply
@@ -2363,8 +2374,47 @@ get_one_large_nationals_bond_bond_ratings_wtd_by_month  <- function(keep_eom_dat
   # 
   # as.matrix(large_nationals_last_know_bond_ratings_by_month_numeric[, paste0(countries, "__", "rating_mean"), drop = FALSE]
 
-  large_nationals_bond_bond_ratings_wtd_by_month <- NULL
+# SHOULD_KEEP ( COME BACK )
+# setdiff # garantee columns ( both 'measures' and 'measure weights'
+# large_nationals_last_know_bond_ratings_by_month_numeric_plus_gdp_weights
 
+  # KEEP
+  # redundant: reu
+  
+  # join
+  large_nationals_last_know_bond_ratings_by_month_numeric_plus_gdp_weights <- 
+  merge(large_nationals_last_know_bond_ratings_by_month_numeric, large_nationals_yearly_gdp_weights_by_month, all = TRUE)
+
+  # limit to month-ends of interest ( most likely redundant: already done above in arg in inbound functions )
+  if(!is.null(keep_eom_date_since)){
+    large_nationals_last_know_bond_ratings_by_month_numeric_plus_gdp_weights <- 
+      large_nationals_last_know_bond_ratings_by_month_numeric_plus_gdp_weights[
+        large_nationals_last_know_bond_ratings_by_month_numeric_plus_gdp_weights$dateindex_dt %in% zoo::as.Date(zoo::as.yearmon(seq(as.Date(keep_eom_date_since), Sys.Date(), by = "month")), frac = 1)
+      ,, drop = FALSE]
+    
+  }
+  
+  # ( COME BACK ?)
+  # setdiff # garantee columns ( both 'measures' and 'measure weights' )
+  # large_nationals_last_know_bond_ratings_by_month_numeric_plus_gdp_weights[,  col_vector_column not_foun] <- NA_real_
+  # 
+  # REST OVERSIMPLIFIED (because I did NOT garantee columns) ... ( but good-enough for right now )
+  
+  # SHOULD_KEEP ( COME BACK )
+  # setdiff # garantee columns ( both 'measures' and 'measure weights'
+  # item[,col_vector_not_fount] <- NA_real_
+  # large_nationals_last_know_bond_ratings_by_month_numeric_plus_gdp_weights
+
+  
+  # final_result ( uses 'countries_sorted' )
+  large_nationals_last_know_bond_ratings_by_month_numeric_plus_gdp_weights[["all_ratings_mean_gdp_wdt"]] <- 
+  rowSums( as.matrix(large_nationals_last_know_bond_ratings_by_month_numeric_plus_gdp_weights[, paste0(countries_sorted, "__rating_mean"),drop = FALSE]) * as.matrix(large_nationals_last_know_bond_ratings_by_month_numeric_plus_gdp_weights[, paste0(countries_sorted, "__gdp_wdt"),drop = FALSE]), na.rm = TRUE)
+
+  
+         large_nationals_bond_bond_ratings_wtd_by_month <- large_nationals_last_know_bond_ratings_by_month_numeric_plus_gdp_weights
+
+  message("End function: get_one_large_nationals_bond_bond_ratings_wtd_by_month")
+         
   return(large_nationals_bond_bond_ratings_wtd_by_month)
 
 }
