@@ -1665,6 +1665,47 @@ expand.xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o
 # rm(list=setdiff(ls(all.names=TRUE),c()))
 
 
+
+# perform function maxx over previous observation and currenct observation ( in THAT order )
+#
+# expects(inherits) an 'xts' or 'zoo' object
+# n # the number of function maxx to 'perform over' #
+# n = 2 means previous observation and currenct observation ( in THAT order )
+# note: earliest(first) value is ALWAYS the result of "function max to 'perform over' #'
+#
+maxx <- function(x, n = 2) {
+
+  orig_zoo_class <- class(x)[1]
+  orig_zoo_index <- index(x)
+  
+  zoo::rollapply(as.zoo(x), n, function(x) { 
+    max(x, na.rm = TRUE)
+    print(x)
+  }, partial = TRUE, align = "right") -> res
+
+  res <- eval(parse(text=paste0("as.", orig_zoo_class, "(res)"))) 
+  index(res) <- orig_zoo_index
+  return(res)
+}
+# data(sample_matrix)
+# sample.xts <- as.xts(sample_matrix
+# sample.xts[1:4,c("Low","Close")]
+#                 Low    Close
+# 2007-01-02 49.95041 50.11778
+# 2007-01-03 50.23050 50.39767
+# 2007-01-04 50.26414 50.33236
+# 2007-01-05 50.22103 50.33459
+# 
+# > maxx(sample.xts[1:4,c("Low","Close")])
+#                 Low    Close
+# 2007-01-02 49.95041 50.11778
+# 2007-01-03 50.23050 50.39767
+# 2007-01-04 50.26414 50.39767
+# 2007-01-05 50.26414 50.33459
+
+
+
+
 get_large_nationals_yearly_gdp_weights_by_month <- function(keep_eom_date_since = "2003-01-01") {
 
   message("Begin function: get_large_nationals_yearly_gdp_weights_by_month")
