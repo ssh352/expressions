@@ -8085,6 +8085,7 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
 # financial stress index and components data provided by the xFederal Reserve Bank of Clevelandx ('risk/fear') SEE MY OTHER NOTES
 # 
 # Chicago Fed National Financial Conditions Index Nonfinancial Leveral Subindex (NFCINONFINLEVERAGE) 'awesome'
+# Leading Index for the United States (USSLIND)
 # 
 # library(OECD) # from xml2 feed (IF ANY GOOD)
 #
