@@ -1670,10 +1670,10 @@ expand.xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o
 #
 # expects(inherits) an 'xts' or 'zoo' object
 # n # the number of function maxx to 'perform over' #
-# n = 2 means previous observation and currenct observation ( in THAT order )
+# n = 2 means previous observation and current observation ( in THAT order )
 # note: earliest(first) value is ALWAYS the result of "function max to 'perform over' #'
 #
-maxx <- function(x, n = 2) {
+Maxx <- function(x, n = 2) {
 
   orig_zoo_class <- class(x)[1]
   orig_zoo_index <- index(x)
@@ -1688,7 +1688,7 @@ maxx <- function(x, n = 2) {
   return(res)
 }
 # data(sample_matrix)
-# sample.xts <- as.xts(sample_matrix
+# sample.xts <- as.xts(sample_matrix)
 # sample.xts[1:4,c("Low","Close")]
 #                 Low    Close
 # 2007-01-02 49.95041 50.11778
@@ -1696,7 +1696,7 @@ maxx <- function(x, n = 2) {
 # 2007-01-04 50.26414 50.33236
 # 2007-01-05 50.22103 50.33459
 # 
-# > maxx(sample.xts[1:4,c("Low","Close")])
+# > Maxx(sample.xts[1:4,c("Low","Close")])
 #                 Low    Close
 # 2007-01-02 49.95041 50.11778
 # 2007-01-03 50.23050 50.39767
