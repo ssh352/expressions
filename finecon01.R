@@ -8086,6 +8086,19 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
 # 
 # Chicago Fed National Financial Conditions Index Nonfinancial Leveral Subindex (NFCINONFINLEVERAGE) 'awesome'
 # Leading Index for the United States (USSLIND)
+# Chicago Fed National Activity Index (CFNAI)
+##
+# ABSOLUTE RETURN OF STOCKS OVER BONDS ( COMETITION PRESSURE )
+# NOTE: I MAY WANT A SHORT 'YIELD RANGE: E.G. 3 MONTHS)
+#   (Wilshire 5000 Total Market Index (WILL5000IND) - lag.xts(Wilshire 5000 Total Market Index (WILL5000IND),220) - 
+#   (BofA Merrill Lynch US Corporate BBB Effective Yield (BAMLC0A4CBBBEY))
+# NOTE MAY WANT TO SUBTRACT OFF INSTEAD  ( AGG - lag.xts(AGG,220) )
+# SEE https://fredblog.stlouisfed.org/2016/07/the-equity-premium/
+# 
+# # when unemployement is 'increasing' with inflation TOO HIGH
+# # WHAT 'tower' the fed does to 'slam' before(into) a recession((lateprevyear?)2000,(late2007)2008)
+# FRBData::GetInterestRates("FF")
+# FRBData::GetInterestRates("DWPC")
 # 
 # library(OECD) # from xml2 feed (IF ANY GOOD)
 #
