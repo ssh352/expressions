@@ -2578,6 +2578,189 @@ get_one_large_nationals_bond_bond_ratings_wtd_by_month  <- function(keep_eom_dat
 
 
 
+# given 
+# two dataframes from two different sources that are close to each other ( but not exactly the same )
+#
+# generate 
+# replacement data.frame(s)
+# (replacement data.frame(s) are meant to be uses with the R package 'unjoin' and 
+# function ( unjoin::unjoin )
+# 
+# NOTE: also, TODO [ ] add a metadata fix ( e.g. column name: table/start_column/end_column  ) (EASY)
+# 
+# NOTE: I did combinations of '1 variable' and 'all variables'
+# I did not (yet!) do combinations ( e.g. combn ) of other variable subsets ( NOT SURE where THIS value GOES )
+# (QUITE DIFFICULT)
+#
+bridge_dfs <- function( dbfs, adjs = list() ) {
+
+  
+  `%like%` <- function(x, pattern) {
+  
+      if (is.factor(x)) {
+          as.integer(x) %in% grep(pattern, levels(x))
+      }
+      else {
+          grepl(pattern, x)
+      }
+  }
+  
+  # one-off (practical/realistic) data adjustments
+  for(adjs_i in adjs) { 
+    
+    temp <-  dbfs[[adjs_i[1]]]
+    # replace column element values
+    temp[[adjs_i[2]]] <- blockmodeling::recode(temp[[adjs_i[2]]], adjs_i[3], adjs_i[4]) 
+    dbfs[[adjs_i[1]]] <- temp
+    rm("temp")
+    
+  }
+    
+  # NEED one-off (practical/realistic) meta-data adjustements
+  # TODO[ ]
+  
+  # all values in all columns
+  dbfs[[paste0(names(dbfs), collapse = "__")]] <- plyr::join_all(dbfs, type = "full")
+  
+  dbfs_new <- list()
+  
+  dbfs_index <- 0L
+  for(dbfs_i in dbfs) {
+    
+    dbfs_index  <- dbfs_index + 1L
+    # specific data.frame name
+    dbfs_i_name <- names(dbfs)[dbfs_index] 
+    
+    # LEFT_OFF ( NOTHING SPECIAL: JUST 'MORE' 'single column values
+    # browser( expr = { dbfs_i_name == "house__zoo"  } )
+    
+    # > combn(colnames(dbfs_i), 1, simplify = FALSE)
+    # [[1]]
+    # [1] "animal"
+    
+    # [[2]]
+    # [1] "color"
+    
+    # LEFT_OFF: need to handle the multiple case
+    # > combn(colnames(dbfs_i), 2, simplify = FALSE)
+    # [[1]]
+    # [1] "animal" "color" 
+    
+    # single column ONLY 
+    for(columns_i_name in colnames(dbfs_i)){
+      
+      # in the original data.frames constuct columns of non-unique record identifiers
+      #
+      # column values vector
+      temp <- dbfs[[dbfs_i_name]][[columns_i_name]]
+      # new column
+      dbfs[[dbfs_i_name]][[paste0(dbfs_i_name, "__", columns_i_name, "__id")]] <- seq_along(temp)
+      rm("temp")
+      dbfs[[dbfs_i_name]] <- DataCombine::MoveFront(dbfs[[dbfs_i_name]], paste0(dbfs_i_name, "__", columns_i_name, "__id") )
+      
+      # construct new data.frames of unique values
+      # 
+      # unique column values
+      unique_temp <- sort(unique(dbfs[[dbfs_i_name]][[columns_i_name]]))
+      temp <- data.frame(id = seq_along(unique_temp), value = unique_temp, stringsAsFactors = FALSE)
+      rm("unique_temp")
+      # column names
+      names(temp) <- paste0(paste0(dbfs_i_name, "__", columns_i_name), c("__unique__id", "__unique__value"))
+      temp <- list(temp)
+      # the data.frame name itself
+      names(temp)[1] <- paste0(dbfs_i_name, "__", columns_i_name, "__unique")
+      dbfs_new    <- c(dbfs_new, temp) 
+      rm("temp")
+      
+      # from the data.frames of unique values
+      # assign those unique ids into the original data.frames
+      # 
+      dbfs[[dbfs_i_name]][[paste0(dbfs_i_name, "__", columns_i_name, "__unique__id")]] <-
+      as.integer(
+        blockmodeling::recode(
+            dbfs[[dbfs_i_name]][[columns_i_name]]
+          , dbfs_new[[paste0(dbfs_i_name, "__", columns_i_name, "__unique")]][[paste0(dbfs_i_name, "__", columns_i_name, "__unique__value")]]
+          , dbfs_new[[paste0(dbfs_i_name, "__", columns_i_name, "__unique")]][[paste0(dbfs_i_name, "__", columns_i_name, "__unique__id")]]
+        )
+      )
+      dbfs[[dbfs_i_name]] <- DataCombine::MoveFront(dbfs[[dbfs_i_name]], paste0(dbfs_i_name, "__", columns_i_name, "__unique__id") )
+      
+    }
+  }
+  
+  ## # all single data.frame results
+  ## dbfs_new[[paste(names(dbfs), collapse = "__")]] <- plyr::join_all(dbfs, type = "full")
+  
+  ## 
+  ## # begin multiple data.frame results
+  ## temp <- dbfs_new[[paste(names(dbfs), collapse = "__")]][,!colnames(get(dbfs_i)) %like% "__id$", drop = FALSE]
+  
+  return(list(dbfs=dbfs,dbfs_new=dbfs_new))
+}
+# call-ish
+# bridge_dfs( Hmisc_llist_of_dfs, list( c(table, col,  from_value, to_value ), c(table, col,  from_value, to_value ) )
+
+# # BEGIN TEST
+# house  <- data.frame(animal = c("cat2", "dog","cat2"), color = c("fire", "blue", "blue"), stringsAsFactors = FALSE)
+# 
+# zoo    <- data.frame(animal = c("monkey","cat","cat"), color = c("yellow", "red", "red"), stringsAsFactors = FALSE)
+# 
+# res <- bridge_dfs( 
+#      dbfs = list(house = house, zoo = zoo) # pass a named list
+#    , adjs = list( 
+#        c("house", "animal",  "cat2", "cat" ) # table/column/start_value/replaced_value
+#      , c("house", "color" ,  "fire", "red" )
+#    ) 
+# ) 
+#
+# > str(res$dbfs, vec.len = 999)
+# List of 3
+#  $ house     :'data.frame':	3 obs. of  6 variables:
+#   ..$ house__color__unique__id : int [1:3] 2 1 1
+#   ..$ house__color__id         : int [1:3] 1 2 3
+#   ..$ house__animal__unique__id: int [1:3] 1 2 1
+#   ..$ house__animal__id        : int [1:3] 1 2 3
+#   ..$ animal                   : chr [1:3] "cat" "dog" "cat"
+#   ..$ color                    : chr [1:3] "red" "blue" "blue"
+#  $ zoo       :'data.frame':	3 obs. of  6 variables:
+#   ..$ zoo__color__unique__id : int [1:3] 2 1 1
+#   ..$ zoo__color__id         : int [1:3] 1 2 3
+#   ..$ zoo__animal__unique__id: int [1:3] 2 1 1
+#   ..$ zoo__animal__id        : int [1:3] 1 2 3
+#   ..$ animal                 : chr [1:3] "monkey" "cat" "cat"
+#   ..$ color                  : chr [1:3] "yellow" "red" "red"
+#  $ house__zoo:'data.frame':	5 obs. of  6 variables:
+#   ..$ house__zoo__color__unique__id : int [1:5] 2 2 1 1 3
+#   ..$ house__zoo__color__id         : int [1:5] 1 2 3 4 5
+#   ..$ house__zoo__animal__unique__id: int [1:5] 1 1 2 1 3
+#   ..$ house__zoo__animal__id        : int [1:5] 1 2 3 4 5
+#   ..$ animal                        : chr [1:5] "cat" "cat" "dog" "cat" "monkey"
+#   ..$ color                         : chr [1:5] "red" "red" "blue" "blue" "yellow"
+#   
+# > str(res$dbfs_new, vec.len = 999)
+# List of 6
+#  $ house__animal__unique     :'data.frame':	2 obs. of  2 variables:
+#   ..$ house__animal__unique__id   : int [1:2] 1 2
+#   ..$ house__animal__unique__value: chr [1:2] "cat" "dog"
+#  $ house__color__unique      :'data.frame':	2 obs. of  2 variables:
+#   ..$ house__color__unique__id   : int [1:2] 1 2
+#   ..$ house__color__unique__value: chr [1:2] "blue" "red"
+#  $ zoo__animal__unique       :'data.frame':	2 obs. of  2 variables:
+#   ..$ zoo__animal__unique__id   : int [1:2] 1 2
+#   ..$ zoo__animal__unique__value: chr [1:2] "cat" "monkey"
+#  $ zoo__color__unique        :'data.frame':	2 obs. of  2 variables:
+#   ..$ zoo__color__unique__id   : int [1:2] 1 2
+#   ..$ zoo__color__unique__value: chr [1:2] "red" "yellow"
+#  $ house__zoo__animal__unique:'data.frame':	3 obs. of  2 variables:
+#   ..$ house__zoo__animal__unique__id   : int [1:3] 1 2 3
+#   ..$ house__zoo__animal__unique__value: chr [1:3] "cat" "dog" "monkey"
+#  $ house__zoo__color__unique :'data.frame':	3 obs. of  2 variables:
+#   ..$ house__zoo__color__unique__id   : int [1:3] 1 2 3
+#   ..$ house__zoo__color__unique__value: chr [1:3] "blue" "red" "yellow"
+# 
+# # END TEST
+
+
 # goodsight01.R
 
 
