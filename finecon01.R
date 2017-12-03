@@ -6653,6 +6653,230 @@ get_quandl_sipro_earnings_per_avg_share_x10_4q_eom_xts <- function() {
 # 2017-07-31             106.7288
 # 2017-08-31             108.3204
 # 2017-09-30             108.8544
+
+
+
+get_sipro_sp500_mktcap_o_netinc <- function() {
+
+  ops <- options()
+  
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  message("Begin function get_sipro_sp500_mktcap_o_netinc.")
+
+  verify_connection()
+  
+  sipro_sp500_mktcap_o_netinc <- dbGetQuery(con, "
+
+  select 
+      co.* 
+    , t4q.mktcap_o_netinc_d10_x10_4q 
+    , t3q.mktcap_o_netinc_d13_x10_3q 
+    , t2q.mktcap_o_netinc_d20_x10_2q
+    , t1q.mktcap_o_netinc_d40_x10_1q
+  from (
+    select 
+        to_timestamp(fe.dateindex*3600*24)::date dateindex_dt_co
+      , (date_trunc('month', to_timestamp((fe.dateindex -5)*3600*24)::date) + interval '1 month' - interval '1 day')::date  dateindexeom_dt_co
+      , count(1) count_elig_mktcap_o_netinc
+  from fe_data_store.si_finecon2 fe
+  where sp = '500'
+    and fe.netinc_q1 is not null
+    and fe.netinc_q2 is not null
+    and fe.netinc_q3 is not null
+    and fe.netinc_q4 is not null
+    and mktcap is not null
+    group by dateindex
+    order by dateindex asc
+  ) co left join (
+  select 
+      to_timestamp(fe.dateindex*3600*24)::date dateindex_dt_4q
+    , sum( mktcap ) / ( ( sum( netinc_q1 ) + sum( netinc_q2 ) + sum( netinc_q3 ) + sum( netinc_q4 ) ) * 10 * 4/4 ) * 10 mktcap_o_netinc_d10_x10_4q                                   
+  from fe_data_store.si_finecon2 fe
+  where sp = '500'
+    and fe.netinc_q1 is not null
+    and fe.netinc_q2 is not null
+    and fe.netinc_q3 is not null
+    and fe.netinc_q4 is not null
+    and mktcap is not null
+  group by dateindex
+  order by dateindex asc
+  ) t4q on co.dateindex_dt_co = t4q.dateindex_dt_4q left join (
+  select 
+      to_timestamp(fe.dateindex*3600*24)::date dateindex_dt_3q
+    , sum( mktcap ) / ( ( sum( netinc_q1 ) + sum( netinc_q2 ) + sum( netinc_q3 ) ) * 10 * 4/3 ) * 10 mktcap_o_netinc_d13_x10_3q 
+  from fe_data_store.si_finecon2 fe
+  where sp = '500'
+    and fe.netinc_q1 is not null
+    and fe.netinc_q2 is not null
+    and fe.netinc_q3 is not null
+    and fe.netinc_q4 is not null
+    and mktcap is not null
+  group by dateindex
+  order by dateindex asc
+  ) t3q on co.dateindex_dt_co = t3q.dateindex_dt_3q left join (
+  select 
+      to_timestamp(fe.dateindex*3600*24)::date dateindex_dt_2q
+    , sum( mktcap ) / ( ( sum( netinc_q1 ) + sum( netinc_q2 ) ) * 10 * 4/2 ) * 10 mktcap_o_netinc_d20_x10_2q                                      
+  from fe_data_store.si_finecon2 fe
+  where sp = '500'
+    and fe.netinc_q1 is not null
+    and fe.netinc_q2 is not null
+    and fe.netinc_q3 is not null
+    and fe.netinc_q4 is not null
+    and mktcap is not null
+  group by dateindex
+  order by dateindex asc
+  ) t2q on co.dateindex_dt_co = t2q.dateindex_dt_2q left join (
+  select 
+      to_timestamp(fe.dateindex*3600*24)::date dateindex_dt_1q                                                                                              
+    , sum( mktcap ) / ( (sum( netinc_q1 ) ) * 10 * 4/1 ) * 10 mktcap_o_netinc_d40_x10_1q                                    
+  from fe_data_store.si_finecon2 fe
+  where sp = '500'
+    and fe.netinc_q1 is not null
+    and fe.netinc_q2 is not null
+    and fe.netinc_q3 is not null
+    and fe.netinc_q4 is not null
+    and mktcap is not null
+  group by dateindex
+  order by dateindex asc
+  ) t1q on co.dateindex_dt_co = t1q.dateindex_dt_1q 
+  order by co.dateindex_dt_co
+  ;
+
+  ")
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  message("End   function get_sipro_sp500_mktcap_o_netinc.")
+  
+  return(sipro_sp500_mktcap_o_netinc)
+  
+}
+# ret <- get_sipro_sp500_mktcap_o_netinc()  
+# > str(ret)
+# 'data.frame':   180 obs. of  7 variables:
+#  $ dateindex_dt_co           : Date, format: "2003-01-03" "2003-01-31" "2003-02-28" "2003-04-04" ...
+#  $ dateindexeom_dt_co        : Date, format: "2002-12-31" "2003-01-31" "2003-02-28" "2003-03-31" ...
+#  $ count_elig_mktcap_o_netinc: num  500 500 500 500 500 500 500 500 499 500 ...
+#  $ mktcap_o_netinc_d10_x10_4q: num  51.9 59 84.2 96.4 42.1 ...
+#  $ mktcap_o_netinc_d13_x10_3q: num  55.9 42.3 46.8 57.6 44.3 ...
+#  $ mktcap_o_netinc_d20_x10_2q: num  31.1 35 54.5 91.7 55.8 ...
+#  $ mktcap_o_netinc_d40_x10_1q: num  27.5 73.9 -107.1 -96.3 40.9 ...
+# 
+# head(ret)
+#   dateindex_dt_co dateindexeom_dt_co count_elig_mktcap_o_netinc mktcap_o_netinc_d10_x10_4q mktcap_o_netinc_d13_x10_3q mktcap_o_netinc_d20_x10_2q mktcap_o_netinc_d40_x10_1q
+# 1      2003-01-03         2002-12-31                        500                   51.92891                   55.94932                   31.12595                   27.51973
+# 2      2003-01-31         2003-01-31                        500                   58.97908                   42.29868                   35.04699                   73.94877
+# 3      2003-02-28         2003-02-28                        500                   84.22045                   46.82052                   54.47747                 -107.14481
+# 4      2003-04-04         2003-03-31                        500                   96.39047                   57.56253                   91.70215                  -96.34343
+# 5      2003-05-02         2003-04-30                        500                   42.08016                   44.29880                   55.75220                   40.94808
+# 6      2003-05-30         2003-05-31                        500                   39.58077                   42.18927                   45.40297                   26.77870
+# 
+# tail(ret,12)
+#     dateindex_dt_co dateindexeom_dt_co count_elig_mktcap_o_netinc mktcap_o_netinc_d10_x10_4q mktcap_o_netinc_d13_x10_3q mktcap_o_netinc_d20_x10_2q mktcap_o_netinc_d40_x10_1q
+# 169      2016-12-30         2016-12-31                        498                   23.19898                   22.25984                   21.31846                   20.24031
+# 170      2017-01-31         2017-01-31                        480                   23.21119                   21.42901                   20.52533                   19.84582
+# 171      2017-02-28         2017-02-28                        494                   23.50901                   22.81407                   22.48544                   23.78601
+# 172      2017-03-31         2017-03-31                        494                   23.40708                   22.69386                   22.28070                   23.45204
+# 173      2017-04-28         2017-04-30                        484                   23.06293                   22.72173                   22.36103                   22.20616
+# 174      2017-05-31         2017-05-31                        497                   22.93497                   22.56506                   23.15824                   22.37460
+# 175      2017-06-30         2017-06-30                        496                   22.90273                   22.60466                   23.04697                   22.33506
+# 176      2017-07-31         2017-07-31                        492                   23.08794                   22.96250                   23.13829                   22.46090
+# 177      2017-08-31         2017-08-31                        497                   22.65730                   23.28441                   22.66709                   22.46323
+# 178      2017-09-29         2017-09-30                        498                   23.03229                   23.57541                   22.99147                   22.85666
+# 179      2017-10-31         2017-10-31                        493                   23.11135                   23.81306                   22.89608                   22.26932
+# 180      2017-11-30         2017-11-30                        499                   24.04328                   23.36232                   22.97016                   23.06993
+# # SOMEWAY/HOW # I REMEMBER THIS BEING MORE EXTREME
+
+
+
+get_sipro_sp500_mktcap_o_netinc_eom_xts <- function() {
+
+  ops <- options()
+  
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  require(xts)
+  # uses get_sipro_sp500_mktcap_o_netinc
+  
+  message("Begin function get_sipro_sp500_mktcap_o_netinc_eom_xts.")
+
+  sipro_sp500_mktcap_o_netinc <- get_sipro_sp500_mktcap_o_netinc()
+  
+  temp <- as.matrix(sipro_sp500_mktcap_o_netinc[ ,!colnames(sipro_sp500_mktcap_o_netinc) %in% c("dateindex_dt_co", "dateindexeom_dt_co"), drop = FALSE])
+  rownames(temp) <- as.character(sipro_sp500_mktcap_o_netinc[["dateindexeom_dt_co"]])
+  # S3 dispatch as.xts.matrix ... will return with a non-Date index
+  temp2 <- as.xts(temp)
+  rm(temp)
+  index(temp2) <- zoo::as.Date(index(temp2))
+  sipro_sp500_mktcap_o_netinc_eom_xts <- temp2
+  rm(temp2)
+ 
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  message("End   function get_sipro_sp500_mktcap_o_netinc_eom_xts.")
+
+  return(sipro_sp500_mktcap_o_netinc_eom_xts)
+
+}
+# NOTE: NOT used in the code flow into get_quandl_sipro_mktcap_o_netinc_per_avg_share_x10_4q_eom_xts
+# ret <- get_sipro_sp500_mktcap_o_netinc_eom_xts()
+# str(ret)
+# An 'xts' object on 2002-12-31/2017-11-30 containing:
+#   Data: num [1:180, 1:5] 500 500 500 500 500 500 500 500 499 500 ...
+#  - attr(*, "dimnames")=List of 2
+#   ..$ : NULL
+#   ..$ : chr [1:5] "count_elig_mktcap_o_netinc" "mktcap_o_netinc_d10_x10_4q" "mktcap_o_netinc_d13_x10_3q" "mktcap_o_netinc_d20_x10_2q" ...
+#   Indexed by objects of class: [Date] TZ: UTC
+#   xts Attributes:
+#  NULL
+# 
+# head(ret)
+#            count_elig_mktcap_o_netinc mktcap_o_netinc_d10_x10_4q mktcap_o_netinc_d13_x10_3q mktcap_o_netinc_d20_x10_2q mktcap_o_netinc_d40_x10_1q
+# 2002-12-31                        500                   51.92891                   55.94932                   31.12595                   27.51973
+# 2003-01-31                        500                   58.97908                   42.29868                   35.04699                   73.94877
+# 2003-02-28                        500                   84.22045                   46.82052                   54.47747                 -107.14481
+# 2003-03-31                        500                   96.39047                   57.56253                   91.70215                  -96.34343
+# 2003-04-30                        500                   42.08016                   44.29880                   55.75220                   40.94808
+# 2003-05-31                        500                   39.58077                   42.18927                   45.40297                   26.77870
+# 
+# tail(ret,12)
+#            count_elig_mktcap_o_netinc mktcap_o_netinc_d10_x10_4q mktcap_o_netinc_d13_x10_3q mktcap_o_netinc_d20_x10_2q mktcap_o_netinc_d40_x10_1q
+# 2016-12-31                        498                   23.19898                   22.25984                   21.31846                   20.24031
+# 2017-01-31                        480                   23.21119                   21.42901                   20.52533                   19.84582
+# 2017-02-28                        494                   23.50901                   22.81407                   22.48544                   23.78601
+# 2017-03-31                        494                   23.40708                   22.69386                   22.28070                   23.45204
+# 2017-04-30                        484                   23.06293                   22.72173                   22.36103                   22.20616
+# 2017-05-31                        497                   22.93497                   22.56506                   23.15824                   22.37460
+# 2017-06-30                        496                   22.90273                   22.60466                   23.04697                   22.33506
+# 2017-07-31                        492                   23.08794                   22.96250                   23.13829                   22.46090
+# 2017-08-31                        497                   22.65730                   23.28441                   22.66709                   22.46323
+# 2017-09-30                        498                   23.03229                   23.57541                   22.99147                   22.85666
+# 2017-10-31                        493                   23.11135                   23.81306                   22.89608                   22.26932
+# 2017-11-30                        499                   24.04328                   23.36232                   22.97016                   23.06993
+
+
                                     
                                            # NO CHECK: I must verify
                                                                                                 # that (1) exists AND (2) lwd
