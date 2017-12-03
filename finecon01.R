@@ -6281,6 +6281,105 @@ get_sipro_sp500_earnings <- function() {
 # 6         2003-05-31        500   575.0124                      7.799762
 
 
+# NOTE: NOT used in the code flow into get_quandl_sipro_earnings_per_avg_share_x10_4q_eom_xts
+get_sipro_sp500_earnings_eom_xts <- function() {
+
+  ops <- options()
+  
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  require(xts)
+  # uses get_sipro_sp500_earnings
+  
+  message("Begin function get_sipro_sp500_earnings_eom_xts.")
+
+  sipro_sp500_earnings <- get_sipro_sp500_earnings()
+  
+  temp <- as.matrix(sipro_sp500_earnings[ ,!colnames(sipro_sp500_earnings) %in% c("dateindex_dt_co", "dateindexeom_dt_co"), drop = FALSE])
+  rownames(temp) <- as.character(sipro_sp500_earnings[["dateindexeom_dt_co"]])
+  # S3 dispatch as.xts.matrix ... will return with a non-Date index
+  temp2 <- as.xts(temp)
+  rm(temp)
+  index(temp2) <- zoo::as.Date(index(temp2))
+  sipro_sp500_earnings_eom_xts <- temp2
+  rm(temp2)
+ 
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  message("End   function get_sipro_sp500_earnings_eom_xts.")
+
+  return(sipro_sp500_earnings_eom_xts)
+
+}
+# NOTE: NOT used in the code flow into get_quandl_sipro_earnings_per_avg_share_x10_4q_eom_xts
+# ret <- get_sipro_sp500_earnings_eom_xts()
+# > str(ret) 
+# An ‘xts’ object on 2002-12-31/2017-11-30 containing:
+#   Data: num [1:180, 1:11] 500 500 500 500 500 500 500 500 499 500 ...
+#  - attr(*, "dimnames")=List of 2
+#   ..$ : NULL
+#   ..$ : chr [1:11] "count_elig" "avg_shares" "earnings_x10_4q" "earnings_per_avg_share_x10_4q" ...
+#   Indexed by objects of class: [Date] TZ: UTC
+#   xts Attributes:  
+#  NULL
+# > head(ret)
+#            count_elig avg_shares earnings_x10_4q earnings_per_avg_share_x10_4q
+# 2002-12-31        500   562.5667        3.270284                      5.813149
+# 2003-01-31        500   562.0457        2.668336                      4.747543
+# 2003-02-28        500   573.6316        1.837212                      3.202773
+# 2003-03-31        500   572.9894        1.679476                      2.931077
+# 2003-04-30        500   573.5246        4.069826                      7.096166
+# 2003-05-31        500   575.0124        4.484960                      7.799762
+#            earnings_per_avg_share_x10_bal_4q earnings_x13_3q earnings_per_avg_share_x13_3q earnings_x20_2q
+# 2002-12-31                         19.683304        3.035288                      5.395428        5.455972
+# 2003-01-31                         16.075163        3.720589                      6.619727        4.490428
+# 2003-02-28                         10.844580        3.304765                      5.761129        2.840272
+# 2003-03-31                          9.924617        2.812341                      4.908191        1.765340
+# 2003-04-30                         24.027595        3.865995                      6.740765        3.071788
+# 2003-05-31                         26.409969        4.207661                      7.317514        3.909836
+#            earnings_per_avg_share_x20_2q earnings_x40_1q earnings_per_avg_share_x40_1q
+# 2002-12-31                      9.698357        6.170928                     10.969239
+# 2003-01-31                      7.989435        2.128176                      3.786482
+# 2003-02-28                      4.951387       -1.444128                     -2.517518
+# 2003-03-31                      3.080930       -1.680296                     -2.932508
+# 2003-04-30                      5.355983        4.182344                      7.292353
+# 2003-05-31                      6.799568        6.629080                     11.528586
+# > tail(ret)
+#            count_elig avg_shares earnings_x10_4q earnings_per_avg_share_x10_4q
+# 2017-06-30        496   617.6454        19.41229                      31.42951
+# 2017-07-31        492   617.3417        19.53819                      31.64890
+# 2017-08-31        497   612.9782        19.79365                      32.29096
+# 2017-09-30        498   608.1154        19.72096                      32.42963
+# 2017-10-31        493   610.6857        20.09662                      32.90829
+# 2017-11-30        499   607.1524        19.76131                      32.54752
+#            earnings_per_avg_share_x10_bal_4q earnings_x13_3q earnings_per_avg_share_x13_3q earnings_x20_2q
+# 2017-06-30                          106.4202        19.66827                      31.84396        19.29080
+# 2017-07-31                          107.1631        19.64492                      31.82180        19.49567
+# 2017-08-31                          109.3371        19.26056                      31.42128        19.78510
+# 2017-09-30                          109.8066        19.26663                      31.68253        19.75596
+# 2017-10-31                          111.4274        19.50442                      31.93856        20.28557
+# 2017-11-30                          110.2058        20.33730                      33.49621        20.68452
+#            earnings_per_avg_share_x20_2q earnings_x40_1q earnings_per_avg_share_x40_1q
+# 2017-06-30                      31.23281        19.90568                      32.22833
+# 2017-07-31                      31.58003        20.08363                      32.53244
+# 2017-08-31                      32.27700        19.96466                      32.56994
+# 2017-09-30                      32.48720        19.87249                      32.67881
+# 2017-10-31                      33.21769        20.85650                      34.15260
+# 2017-11-30                      34.06808        20.59506                      33.92075
+
+
+
+
 
 # NOT! INFLATION ADJUSTED!
 get_sipro_earnings_per_avg_share_x10_4q_eom_xts <- function() {
