@@ -6167,8 +6167,8 @@ get_sipro_sp500_earnings <- function() {
     select 
         to_timestamp(fe.dateindex*3600*24)::date dateindex_dt_co
       , (date_trunc('month', to_timestamp((fe.dateindex -5)*3600*24)::date) + interval '1 month' - interval '1 day')::date  dateindexeom_dt_co
-      , count(1) count_elig
-      , sum( mktcap / price ) / count(1) avg_shares 
+      , count(1) count_elig_earnings
+      , sum( mktcap / price ) / count(1) avg_shares_earnings
   from fe_data_store.si_finecon2 fe
   where sp = '500'
     and fe.netinc_q1 is not null
