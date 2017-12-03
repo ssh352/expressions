@@ -6127,7 +6127,435 @@ vacuum_reindex_check <- function(start_time, how_often) {
 
 
 
-                                                                                                # NO CHECK: I must verify
+get_sipro_sp500_earnings <- function() {
+
+  ops <- options()
+  
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  message("Begin function get_sipro_sp500_earnings.")
+
+  verify_connection()
+  
+  sipro_sp500_earnings <- dbGetQuery(con, "
+
+  -- NOV 29 2017 -- 101.00
+  -- res <- Quandl('MULTPL/SP500_EARNINGS_MONTH') 
+  -- '2017-03-31'
+  -- NEED eom + INFLATION_ADJ CPI-U
+  select 
+      co.* 
+    , t4q.earnings_x10_4q
+    , t4q.earnings_per_avg_share_x10_4q
+    , t4q.earnings_per_avg_share_x10_bal_4q 
+    , t3q.earnings_x13_3q
+    , t3q.earnings_per_avg_share_x13_3q
+    , t2q.earnings_x20_2q
+    , t2q.earnings_per_avg_share_x20_2q
+    , t1q.earnings_x40_1q
+    , t1q.earnings_per_avg_share_x40_1q 
+  from (
+    select 
+        to_timestamp(fe.dateindex*3600*24)::date dateindex_dt_co
+      , (date_trunc('month', to_timestamp((fe.dateindex -5)*3600*24)::date) + interval '1 month' - interval '1 day')::date  dateindexeom_dt_co
+      , count(1) count_elig
+      , sum( mktcap / price ) / count(1) avg_shares 
+  from fe_data_store.si_finecon2 fe
+  where sp = '500'
+    and fe.netinc_q1 is not null
+    and fe.netinc_q2 is not null
+    and fe.netinc_q3 is not null
+    and fe.netinc_q4 is not null
+    and mktcap is not null
+    and price   is not null
+    group by dateindex
+    order by dateindex asc
+  ) co left join (
+  select 
+      to_timestamp(fe.dateindex*3600*24)::date dateindex_dt_4q
+    , count(1) count_4q
+    , sum( netinc_q1 + netinc_q2 + netinc_q3 + netinc_q4 ) / count(1) / 100 * 4/4 earnings_x10_4q
+    , sum( mktcap / price ) / count(1) avg_shares                                                                                                        
+    , sum( netinc_q1 + netinc_q2 + netinc_q3 + netinc_q4 ) / sum( mktcap / price ) * 10 * 4/4 earnings_per_avg_share_x10_4q                                    
+    , sum( netinc_q1 + netinc_q2 + netinc_q3 + netinc_q4 ) / sum( mktcap / price ) / 29.8287359691438460 * 101.00 * 10 * 4/4 earnings_per_avg_share_x10_bal_4q 
+  from fe_data_store.si_finecon2 fe
+  where sp = '500'
+    and fe.netinc_q1 is not null
+    and fe.netinc_q2 is not null
+    and fe.netinc_q3 is not null
+    and fe.netinc_q4 is not null
+    and mktcap is not null
+    and price  is not null
+  group by dateindex
+  order by dateindex asc
+  ) t4q on co.dateindex_dt_co = t4q.dateindex_dt_4q left join (
+  select 
+      to_timestamp(fe.dateindex*3600*24)::date dateindex_dt_3q
+    , sum( netinc_q1 + netinc_q2 + netinc_q3  ) / count(1) / 100 * 4/3 earnings_x13_3q                                                                                               
+    , sum( netinc_q1 + netinc_q2 + netinc_q3  ) / sum( mktcap / price ) * 10 * 4/3 earnings_per_avg_share_x13_3q                                    
+  from fe_data_store.si_finecon2 fe
+  where sp = '500'
+    and fe.netinc_q1 is not null
+    and fe.netinc_q2 is not null
+    and fe.netinc_q3 is not null
+    and fe.netinc_q4 is not null
+    and mktcap is not null
+    and price  is not null
+  group by dateindex
+  order by dateindex asc
+  ) t3q on co.dateindex_dt_co = t3q.dateindex_dt_3q left join (
+  select 
+      to_timestamp(fe.dateindex*3600*24)::date dateindex_dt_2q
+    , sum( netinc_q1 + netinc_q2 ) / count(1) / 100 * 4/2 earnings_x20_2q                                                                                               
+    , sum( netinc_q1 + netinc_q2 ) / sum( mktcap / price ) * 10 * 4/2 earnings_per_avg_share_x20_2q                                    
+  from fe_data_store.si_finecon2 fe
+  where sp = '500'
+    and fe.netinc_q1 is not null
+    and fe.netinc_q2 is not null
+    and fe.netinc_q3 is not null
+    and fe.netinc_q4 is not null
+    and mktcap is not null
+    and price  is not null
+  group by dateindex
+  order by dateindex asc
+  ) t2q on co.dateindex_dt_co = t2q.dateindex_dt_2q left join (
+  select 
+      to_timestamp(fe.dateindex*3600*24)::date dateindex_dt_1q
+    , sum( netinc_q1 ) / count(1) / 100 * 4/1 earnings_x40_1q                                                                                               
+    , sum( netinc_q1 ) / sum( mktcap / price ) * 10 * 4/1 earnings_per_avg_share_x40_1q                                    
+  from fe_data_store.si_finecon2 fe
+  where sp = '500'
+    and fe.netinc_q1 is not null
+    and fe.netinc_q2 is not null
+    and fe.netinc_q3 is not null
+    and fe.netinc_q4 is not null
+    and mktcap is not null
+    and price  is not null
+  group by dateindex
+  order by dateindex asc
+  ) t1q on co.dateindex_dt_co = t1q.dateindex_dt_1q 
+  order by co.dateindex_dt_co
+  ;
+  ")
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  message("End   function get_sipro_sp500_earnings.")
+  
+  return(sipro_sp500_earnings)
+  
+}
+# ret <- get_sipro_sp500_earnings()  
+# > str(ret)
+# 'data.frame':	179 obs. of  13 variables:
+#  $ dateindex_dt_co                  : Date, format: "2003-01-03" "2003-01-31" "2003-02-28" "2003-04-04" ...
+#  $ dateindexeom_dt_co               : Date, format: "2002-12-31" "2003-01-31" "2003-02-28" "2003-03-31" ...
+#  $ count_elig                       : num  500 500 500 500 500 500 500 500 499 500 ...
+#  $ avg_shares                       : num  563 562 574 573 574 ...
+#  $ earnings_x10_4q                  : num  3.27 2.67 1.84 1.68 4.07 ...
+#  $ earnings_per_avg_share_x10_4q    : num  5.81 4.75 3.2 2.93 7.1 ...
+#  $ earnings_per_avg_share_x10_bal_4q: num  19.68 16.08 10.84 9.92 24.03 ...
+#  $ earnings_x13_3q                  : num  3.04 3.72 3.3 2.81 3.87 ...
+#  $ earnings_per_avg_share_x13_3q    : num  5.4 6.62 5.76 4.91 6.74 ...
+#  $ earnings_x20_2q                  : num  5.46 4.49 2.84 1.77 3.07 ...
+#  $ earnings_per_avg_share_x20_2q    : num  9.7 7.99 4.95 3.08 5.36 ...
+#  $ earnings_x40_1q                  : num  6.17 2.13 -1.44 -1.68 4.18 ...
+#  $ earnings_per_avg_share_x40_1q    : num  10.97 3.79 -2.52 -2.93 7.29 ...
+# > head(ret[,c("dateindexeom_dt_co", "count_elig","avg_shares", "earnings_per_avg_share_x10_4q"),drop= FALSE])
+#   dateindexeom_dt_co count_elig avg_shares earnings_per_avg_share_x10_4q
+# 1         2002-12-31        500   562.5667                      5.813149
+# 2         2003-01-31        500   562.0457                      4.747543
+# 3         2003-02-28        500   573.6316                      3.202773
+# 4         2003-03-31        500   572.9894                      2.931077
+# 5         2003-04-30        500   573.5246                      7.096166
+# 6         2003-05-31        500   575.0124                      7.799762
+
+
+
+# NOT! INFLATION ADJUSTED!
+get_sipro_earnings_per_avg_share_x10_4q_eom_xts <- function() {
+  
+  ops <- options()
+  
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  message("Begin function get_sipro_earnings_per_avg_share_x10_4q_eom_xts.")
+  
+  # uses get_sp500_earnings
+  require(xts)
+
+  sp500_earnings <-  get_sipro_sp500_earnings()
+ 
+  temp <- as.matrix(sp500_earnings[, "earnings_per_avg_share_x10_4q", drop = FALSE]) # 2002-12-31
+  rownames(temp) <- as.character(sp500_earnings[["dateindexeom_dt_co"]])
+  # S3 dispatch as.xts.matrix ... will return with a non-Date index
+  temp2 <- as.xts(temp)
+  rm(temp)
+  index(temp2) <- zoo::as.Date(index(temp2))
+  colnames(temp2)[1] <- "earnings_avg_per_share"
+  sipro_earnings_per_avg_share_x10_4q_eom_xts <- temp2
+  rm(temp2)
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  message("End   function get_sipro_earnings_per_avg_share_x10_4q_eom_xts.")
+  
+  return(sipro_earnings_per_avg_share_x10_4q_eom_xts)
+  
+}
+# NOT! INFLATION ADJUSTED!
+# res <- get_sipro_earnings_per_avg_share_x10_4q_eom_xts()
+# > str(res)
+# An ‘xts’ object on 2002-12-31/2017-10-31 containing:
+#   Data: num [1:179, 1] 5.81 4.75 3.2 2.93 7.1 ...
+#  - attr(*, "dimnames")=List of 2
+#   ..$ : NULL
+#   ..$ : chr "earnings_avg_per_share"
+#   Indexed by objects of class: [Date] TZ: UTC
+#   xts Attributes:  
+#  NULL
+# > head(res)
+#            earnings_avg_per_share
+# 2002-12-31               5.813149
+# 2003-01-31               4.747543
+# 2003-02-28               3.202773
+# 2003-03-31               2.931077
+# 2003-04-30               7.096166
+# 2003-05-31               7.799762
+
+
+
+# INFLATION ADJUSTED
+get_quandl_earnings_per_avg_share_x10_4q_eom_xts <- function() {
+  
+  ops <- options()
+  
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  message("Begin function get_quandl_earnings_per_avg_share_x10_4q_eom_xts.")
+  
+  require(Quandl)
+  # Quandl.api_key(api_key= "YOURKEYHERE")
+  temp <- Quandl("MULTPL/SP500_EARNINGS_MONTH", type = "xts")   # 1871-01-31
+  index(temp) <- zoo::as.Date(index(temp), frac= 1) # checked date 'are end month anyways'
+  colnames(temp)[1] <- "sp500_earnings_month"
+  quandl_earnings_per_avg_share_x10_4q_eom_xts <- temp
+  rm(temp)
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  message("End   function get_quandl_earnings_per_avg_share_x10_4q_eom_xts.")
+  
+  return(quandl_earnings_per_avg_share_x10_4q_eom_xts)
+  
+}
+# INFLATION ADJUSTED
+# Quandl.api_key(api_key= "YOURKEYHERE")
+# ret <- get_quandl_earnings_per_avg_share_x10_4q_eom_xts()
+# > str(ret)
+# An ‘xts’ object on 1871-01-31/2017-03-31 containing:
+#   Data: num [1:1755, 1] 7.88 7.65 7.54 7.82 8 8.13 8.13 8.26 8.06 7.94 ...
+#  - attr(*, "dimnames")=List of 2
+#   ..$ : NULL
+#   ..$ : chr "sp500_earnings_month"
+#   Indexed by objects of class: [Date] TZ: UTC
+#   xts Attributes:  
+#  NULL
+# > head(ret)
+#            sp500_earnings_month
+# 1871-01-31                 7.88
+# 1871-02-28                 7.65
+# 1871-03-31                 7.54
+# 1871-04-30                 7.82
+# 1871-05-31                 8.00
+# 1871-06-30                 8.13
+
+
+
+get_fred_inflation_cpiu_eom_xts <- function() {
+  
+  ops <- options()
+  
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  message("Begin function get_fred_inflation_cpiu_eom_xts.")
+  
+  require(quantmod) # attaches zoo ... uses zoo::as.Date
+  require(lubridate)
+  require(magrittr)
+  # uses Hmisc::trunc.POSIXt
+  
+  CPIAUCNS <- getSymbols("CPIAUCNS", src = "FRED", auto.assign = FALSE)  # 1912-12-31
+  temp <- CPIAUCNS
+  index(temp) <- (zoo::as.Date(index(temp)) - 5L) %m+% months(1) %>% Hmisc::trunc.POSIXt(., units='months') %m+% days(-1) %>%  zoo::as.Date(.)
+  colnames(temp)[1] <- tolower(colnames(temp)[1])
+  fred_inflation_cpiu_eom_xts <- temp
+  rm(temp)
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  message("End   function get_fred_inflation_cpiu_eom_xts.")
+  
+  return(fred_inflation_cpiu_eom_xts)
+  
+}
+# ret <- get_fred_inflation_cpiu_eom_xts()
+# > str(ret)
+# An ‘xts’ object on 1912-12-31/2017-09-30 containing:
+#   Data: num [1:1258, 1] 9.8 9.8 9.8 9.8 9.7 9.8 9.9 9.9 10 10 ...
+#  - attr(*, "dimnames")=List of 2
+#   ..$ : NULL
+#   ..$ : chr "cpiaucns"
+#   Indexed by objects of class: [Date] TZ: UTC
+#   xts Attributes:  
+# List of 2
+#  $ src    : chr "FRED"
+#  $ updated: POSIXct[1:1], format: "2017-12-02 23:48:56"
+# > head(ret)
+#            cpiaucns
+# 1912-12-31      9.8
+# 1913-01-31      9.8
+# 1913-02-28      9.8
+# 1913-03-31      9.8
+# 1913-04-30      9.7
+# 1913-05-31      9.8
+
+
+
+get_quandl_sipro_earnings_per_avg_share_x10_4q_eom_xts <- function() {
+ 
+  ops <- options()
+  
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  message("Begin function get_quandl_sipro_earnings_per_avg_share_x10_4q_eom_xts.")
+  
+  # stitch them together ( the best I can ) 
+  require(xts) # uses rbind.xts
+  
+  # NOT! INFLATION ADJUSTED!
+  # uses get_sipro_earnings_per_avg_share_x10_4q_eom_xts
+  
+  # INFLATION ADJUSTED
+  # uses get_quandl_earnings_per_avg_share_x10_4q_eom_xts
+  
+  # uses get_fred_inflation_cpiu_xts
+  
+  # historical dates
+  quandl_eom_xts <- get_quandl_earnings_per_avg_share_x10_4q_eom_xts()
+  # last 5 or 6 months
+  sipro_eom_xts <- get_sipro_earnings_per_avg_share_x10_4q_eom_xts()
+  # adjustment needed on behalf of (sipro_earnings_per_avg_share_x10_4q_eom_xts)
+  inflation_eom_xts <- get_fred_inflation_cpiu_eom_xts()
+  
+  # fix sipro
+  # 1. re-proportion comparted to quandl so last = 101 at the time point
+  # 2. make inflation adjusted
+  sipro_rel_quandl_eom_xts <- 
+    sipro_eom_xts *
+    # value = 101 at date: point relative to quandl_eom_xts at its last available date ( typically adjust so last = 101 at the time point )
+    ( coredata(last(quandl_eom_xts))[1] / coredata(sipro_eom_xts[index(last(quandl_eom_xts))])[1] ) * 
+    # inflation adj: vector relative to CPIAUCNS at every(MANY) date(S) - because of inflation - older earnings are worth MORE today
+    ( coredata(inflation_eom_xts[index(last(quandl_eom_xts))])[1] / inflation_eom_xts  ) 
+
+  # actual stitch
+  sipro_with_quandl_eom_xts <- 
+    rbind.xts(
+      # longer term history from Quandl
+        quandl_eom_xts[paste0("/", index(last(quandl_eom_xts)))]
+      # recent 5/6-month history from SIPro
+      , sipro_rel_quandl_eom_xts[paste0(index(last(quandl_eom_xts)) + 1, "/")]
+    )
+    
+  quandl_sipro_earnings_per_avg_share_x10_4q_eom_xts <- sipro_with_quandl_eom_xts
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  message("End   function get_quandl_sipro_earnings_per_avg_share_x10_4q_eom_xts.")
+  
+  return(quandl_sipro_earnings_per_avg_share_x10_4q_eom_xts)
+  
+}
+# ret <- get_quandl_sipro_earnings_per_avg_share_x10_4q_eom_xts()
+# > str(ret)
+# An ‘xts’ object on 1871-01-31/2017-09-30 containing:
+#   Data: num [1:1761, 1] 7.88 7.65 7.54 7.82 8 8.13 8.13 8.26 8.06 7.94 ...
+#  - attr(*, "dimnames")=List of 2
+#   ..$ : NULL
+#   ..$ : chr "sp500_earnings_month"
+#   Indexed by objects of class: [Date] TZ: UTC
+#   xts Attributes:  
+#  NULL
+# > head(ret)
+#            sp500_earnings_month
+# 1871-01-31                 7.88
+# 1871-02-28                 7.65
+# 1871-03-31                 7.54
+# 1871-04-30                 7.82
+# 1871-05-31                 8.00
+# 1871-06-30                 8.13
+# > tail(ret,8)
+#            sp500_earnings_month
+# 2017-02-28              99.1500
+# 2017-03-31             101.0000
+# 2017-04-30             100.8334
+# 2017-05-31             104.9540
+# 2017-06-30             106.3063
+# 2017-07-31             106.7288
+# 2017-08-31             108.3204
+# 2017-09-30             108.8544
+                                    
+                                           # NO CHECK: I must verify
                                                                                                 # that (1) exists AND (2) lwd
 upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_only_back = NULL, exact_near_month_end_dbf_dirs = NULL, decreasing_sort_order = TRUE, exactly_only_future_returns = FALSE, exactly_only_aggregates = FALSE, exactly_only_aggregates_group_bys_only = FALSE, vacuum_reindex_every_x_seconds=3600) {
 
