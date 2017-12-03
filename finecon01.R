@@ -8589,16 +8589,16 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
 
 #### MONTHLY METHOD BEGINS ####
 
-# -------------------------------------------------------------------
-# ---- begin VERY EARLY MORNING MON APR 03 2017, SUN MAY 29 2017 ----
+# ---------------------------------------------------------
+# ---- last updated VERY EARLY MORNING SUN DEC 03 2017 ----
 # 
 # Andre_Mikulec@Hotmail.com
 # 
 # <short_usual>+<code>+<code>WITH RULES(JUST IN TOP OF FILE)
 #   Andre_R_AAII_SIPro_rcom_AppActivate_RDCOMClient_SIPro_40_Install.txt
 # 
-# C:\PG-9.6._
-# C:\PG-9.6._\PG-9.6._.bat
+# C:\PG-10._
+# C:\PG-10._\PG-10._.bat
 # 
 # <windows - all programs>
 # P
@@ -8639,20 +8639,18 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
 # W:\R-3.4._\R-3.4._.bat
 # > shell("rstudio", wait = FALSE)                           # WHITE
 # W:\R-3.4._                                             (FILES in HERE) : finecon01.R  finecon01_more_SQL.sql
-# > debugSource('W:/R-3.4._/finecon01.R')
-# 
+# SET upsert_temp TO make a temporary table
+# rm(list=setdiff(ls(all.names=TRUE),c("con","cid"))); debugSource('W:/R-3.4._/finecon01.R'); debugSource('W:/R-3.4._/goodsight01.R');verify_connection();options(upsert_temp_is_temporary=Inf)# 
+#
+# # install ..
+# # stockinvestorinstall_<lastbusinessday>.exe
+
 # > getAAIISIProDate() # Reads: C:/Program Files (x86)/Stock Investor/Professional
-# [1] "17225"
+# [1] "17500"
 # 
-# > zoo::as.Date(as.integer("17225")) # reads directly from # C:/Program Files (x86)/Stock Investor/Professional/Setup.dbf
-# [1] "2017-02-28"                                          # MUST BE THE 'last weekday of the lastmonth' (CAN! (and has_been! Christmas))
+# > zoo::as.Date(as.integer("17500")) # reads directly from # C:/Program Files (x86)/Stock Investor/Professional/Setup.dbf
+# [1] "2017-11-30"                                          # MUST BE THE 'last weekday of the lastmonth' (CAN! (and has_been! Christmas))
 # 
-# Fri Mar 31
-# stockinvestorinstall_20170331.exe
-# --6465
-# 
-# > getAAIISIProDate() # Reads: C:/Program Files (x86)/Stock Investor/Professional
-# [1] "17256" - new
 # 
 # # will create the folder  ##### ( DO NOT FORGET TO DO ) #####
 # copyAAIISIProDBFs(
@@ -8665,101 +8663,53 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
 # rm(list=setdiff(ls(all.names=TRUE),c("con","cid"))); debugSource('W:/R-3.4._/finecon01.R'); debugSource('W:/R-3.4._/goodsight01.R');verify_connection();options(upsert_temp_is_temporary=Inf)
 # 
 # after the END OF the program #
-#  upload_lwd_sipro_dbfs_to_db
+#   upload_lwd_sipro_dbfs_to_db
 # 
-# RUN (whatever 'code' it may be)
-# 'typical *new month*' 
-
-# # view last months data
-
-# -- last month ( look for 4 week loaded returns )
-# select * from fe_data_store.si_finecon2 where dateindex = 17409 and ticker in ('MSFT','AAPL')
-# -- current(this) month ( look for general data )
-# select * from fe_data_store.si_finecon2 where dateindex = 17438 and ticker in ('MSFT','AAPL')
-#
-# -- curent(this) mont ( look to see that the aggregates have been ) processed
-# 
-# select * from fe_data_store.si_finecon2_aggregates where dateindex = 17438 
-# 
-
-# set search_path to sipro_data_store,sipro_stage;
-# set ...
-# set ...
-# select max(dateindex) from fe_data_store.si_finecon2;
-# select count(*) from fe_data_store.si_finecon2 where dateindex = 17225;
-# select * from fe_data_store.si_finecon2 where dateindex = 17225;
-# 
-# W:\R-3.3._
-# W:\R-3.3._\R-3.3._.bat
-# > shell("rstudio", wait = FALSE)
-# RStudio
-# > debugSource('W:/R-3.3._/finecon01.R')
-# RAN MON MORN APR 03
-# > upload_lwd_sipro_dbfs_to_db(months_only_back = 13)
-#  ( can take a while: 30 minutes+ ??? )
-# DONE
+# RUN (whatever 'code' it may be)' 
+# RUN ( SEARCH BELOW )
+# # typical *new month*
+# { upload_lwd_sipro_dbfs_to_db ...
+#   ...
+# }
 # 
 # # relook ( updated future date columns )
 # # view last months data
 # set search_path to sipro_data_store,sipro_stage;
-# set ...
-# set ...
 # 
-# -- begin drill 1
 # select max(dateindex) from fe_data_store.si_finecon2;
 # 
-# select count(*) from fe_data_store.si_finecon2 where dateindex = 17225;
-# select * from fe_data_store.si_finecon2 where dateindex = 17225;
-# look at column prchg_04w_ann
-# # select * from fe_data_store.si_finecon2 where dateindex = ____;
+# # view last months data
 #
-# look at 4 colulmns ( should be filled )
-# prchg_042_ann, pct_div_ret_ov_pr_04w_q1_ann,pradchg_04w_ann,price_04w
-# # new month-data
-# select max(dateindex) from fe_data_store.si_finecon2;
-
-# -- end drill 1
+# # 'just loaded month' ( check aggregates loaded )
+# select * from fe_data_store.si_finecon2_aggregates where dateindex = 17500
 # 
-# -- begin drill 2
-# select max(dateindex) from fe_data_store.si_finecon2;
-# -- 17284
+# # the previous month ( check future prices loaded )
+# look at column prchg_04w_ann ( of previous month now should be filled )
+# select prchg_f04w_ann, pradchg_f04w_ann from fe_data_store.si_finecon2 where dateindex = 17470;
 # 
-# select count(*) from fe_data_store.si_finecon2 where dateindex = 17284;
+## the 3 months ago ( check future prices laoded )
+# look at column prchg_13w_ann ( of previous month now should be filled )
+# select prchg_f04w_ann, pradchg_f04w_ann, prchg_f13w_ann, pradchg_f13w_ann from fe_data_store.si_finecon2 where dateindex = 17409;
+#
+# -- last month ( look for 4 week loaded returns )
+# select * from fe_data_store.si_finecon2 where dateindex = 17470 and ticker in ('MSFT','AAPL')
+# -- current(this) month ( look for general data )
+# select * from fe_data_store.si_finecon2 where dateindex = 17500 and ticker in ('MSFT','AAPL')
+#
+# select count(*) from fe_data_store.si_finecon2 where dateindex = 17500;
+#
+# # MAY NOT? BE DOING ANYMORE?
+# # since I now have bonds ( make sure they are loaded )
+# # # select * from fe_data_store.instruments where dateindex >= ( select ( max(dateindex) - 366) from fe_data_store.instruments );
 # 
-#                                                                -- early OCT 2016 --
-# select distinct dateindex from fe_data_store.si_finecon2 where dateindex > 17074 and dateindexf01lwd is null;
-# --NO RECORDS RETURNED
-# 
-# select distinct dateindex from fe_data_store.si_finecon2;
-# --17284 -- latest loaded ( no future data exists )
-# 
-# -- THIS COULD TAKE much MEMORY
-# select * from fe_data_store.si_finecon2 where dateindex = 17284;
-# -- 11.8 query + 30 seconds load + 11.3 MB postgresql 
-# 
-# select * from fe_data_store.si_finecon2 where dateindex = 17256;
-# 
-# -- current(last) month: just  loaded ( no future data in the database)
-# select * from fe_data_store.si_finecon2 where dateindex = 17284;  -- e.g. pricebck_04w IS NULL
-# -- previous month ( EXACTLY ONE month of  future data in the database)
-# select * from fe_data_store.si_finecon2 where dateindex = 17256;  -- e.g. pricebck_04w IS FILLED
-# 
-# look at column prchg_04w_ann ( of previsous month now should be filled )
-# select * from fe_data_store.si_finecon2 where dateindex in (17256,17284) where ticker = 'AAPL';
-
-# since I now have bonds ( make sure they are loaded )
-# select * from fe_data_store.instruments where dateindex >= ( select ( max(dateindex) - 366) from fe_data_store.instruments );
-
-# -- end drill 2
-# 
-# C:\PG-9.6._>"C:\PG-9.6._\bin\pg_ctl" -D "C:\PG-9.6._\data" stop -m fast"
+# C:\PG-10._>"C:\PG-10._\bin\pg_ctl" -D "C:\PG-10._\data" stop -m fast"
 #   any wierd AVG interference? ... then re-cycle PostgreSQL ... make sure
 # 
-# ---- end VERY EARLY MORNING MON APR 03 2017, SUN MAY 29 2017 ----
-# -------------------------------------------------------------
+# ---- end VERY EARLY MORNING VERY EARLY MORNING SUN DEC 03 2017 ----
+# -------------------------------------------------------------------
 
 #### MONTHLY METHOD ENDS ####
-
+#### MONTHLY METHOD ENDS ####
 
 
 #### QUERIES BEGIN ####
