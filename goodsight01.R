@@ -2761,6 +2761,411 @@ bridge_dfs <- function( dbfs, adjs = list() ) {
 # # END TEST
 
 
+
+get_av_agg_eom_xts <- function() {
+
+  ops <- options()
+  
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  require(quantmod)
+
+  message("Begin function get_av_agg_eom_xts.")
+
+  # setDefaults(getSymbols.av, api.key="YOURAPIKEY")
+    
+  AGG <- getSymbols("AGG", src = "av", output.size = "full", auto.assign = FALSE)
+  temp <- AGG[,"AGG.Close"]
+  colnames(temp)[1] <- "agg"
+  temp <- to.monthly(temp, OHLC = FALSE, indexAt = "lastof") 
+  av_agg_eom_xts <- temp
+ 
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  message("End   function get_av_agg_eom_xts.")
+
+  return(av_agg_eom_xts)
+
+}
+# ret <- get_av_agg_eom_xts()
+# > str(ret)
+# An 'xts' object on 2003-09-30/2017-12-31 containing:
+#   Data: num [1:172, 1] 103 102 102 102 103 ...
+#  - attr(*, "dimnames")=List of 2
+#   ..$ : NULL
+#   ..$ : chr "agg"
+#   Indexed by objects of class: [Date] TZ: UTC
+#   xts Attributes:
+# List of 2
+#  $ src    : chr "alphavantage"
+#  $ updated: Date[1:1], format: "2017-12-01"
+# > head(ret)
+#                           agg
+# 2003-09-30 102.70000000000000
+# 2003-10-31 101.73999999999999
+# 2003-11-30 101.72000000000000
+# 2003-12-31 102.15000000000001
+# 2004-01-31 102.59999999999999
+# 2004-02-29 103.48999999999999
+# > tail(ret)
+#                           agg
+# 2017-07-31 109.65000000000001
+# 2017-08-31 110.45000000000000
+# 2017-09-30 109.59000000000000
+# 2017-10-31 109.47000000000000
+# 2017-11-30 109.08000000000000
+# 2017-12-31 109.16000000000000
+
+
+
+get_fred_wilshire5000_eom_xts <- function() {
+
+  # The total market indexes are total market returns, which do include reinvested dividends. 
+  # https://fred.stlouisfed.org/series/WILL5000IND
+
+  # ORIG FROM ( INSPIRED BY )
+  # The equity premium
+  # https://fredblog.stlouisfed.org/2016/07/the-equity-premium/
+  
+  ops <- options()
+  
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  require(quantmod)
+
+  message("Begin function get_fred_wilshire5000_eom_xts.")
+
+  WILL5000IND <- getSymbols("WILL5000IND", src = "FRED", from = "1950-01-01", auto.assign = FALSE) # SINCE DEC 1970
+  temp <- WILL5000IND
+  colnames(temp)[1] <- tolower(colnames(temp)[1])
+  temp <- to.monthly(temp, OHLC = FALSE, indexAt = "lastof") 
+  fred_wilshire5000_eom_xts <- temp
+ 
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  message("End   function get_fred_wilshire5000_eom_xts.")
+
+  return(fred_wilshire5000_eom_xts)
+
+}
+# > ret <- get_fred_wilshire5000_eom_xts()
+# Begin function get_fred_wilshire5000_eom_xts.
+# End   function get_fred_wilshire5000_eom_xts.
+# > str(ret)
+# An 'xts' object on 1970-12-31/2017-11-30 containing:
+#   Data: num [1:564, 1] 1 1.05 1.07 1.12 1.16 1.12 1.13 1.09 1.13 1.12 ...
+#  - attr(*, "dimnames")=List of 2
+#   ..$ : NULL
+#   ..$ : chr "will5000ind"
+#   Indexed by objects of class: [Date] TZ: UTC
+#   xts Attributes:
+# List of 3
+#  $ src      : chr "FRED"
+#  $ updated  : POSIXct[1:1], format: "2017-12-03 22:20:50"
+#  $ na.action:Class 'omit'  atomic [1:2550] 2 3 4 5 6 7 8 9 10 11 ...
+#   .. ..- attr(*, "index")= num [1:2550] 31536000 31795200 31881600 31968000 32054400 ...
+# > head(ret)
+#                   will5000ind
+# 1970-12-31 1.0000000000000000
+# 1971-01-31 1.0500000000000000
+# 1971-02-28 1.0700000000000001
+# 1971-03-31 1.1200000000000001
+# 1971-04-30 1.1599999999999999
+# 1971-05-31 1.1200000000000001
+# > tail(ret)
+#                   will5000ind
+# 2017-06-30 111.14000000000000
+# 2017-07-31 113.23000000000000
+# 2017-08-31 113.50000000000000
+# 2017-09-30 116.23999999999999
+# 2017-10-31 118.73999999999999
+# 2017-11-30 122.34999999999999
+
+
+
+# competiton from bonds ( any reason )
+get_willshire_less_agg_equity_premium_eom_xts <- function() {
+
+  # ORIG FROM ( INSPIRED BY )
+  # The equity premium
+  # https://fredblog.stlouisfed.org/2016/07/the-equity-premium/
+  
+  ops <- options()
+  
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  require(xts) # lag.xts
+  # uses get_av_agg_eom_xts
+  # uses get_fred_wilshire5000_eom_xts
+
+  message("Begin function get_willshire_less_agg_equity_premium_eom_xts.")
+
+  fred_wilshire5000_eom_xts <- get_fred_wilshire5000_eom_xts()  # will5000ind
+  av_agg_eom_xts            <- get_av_agg_eom_xts()             # agg
+  
+  tempw01_ann <- ( fred_wilshire5000_eom_xts - lag.xts(fred_wilshire5000_eom_xts, 1) ) / abs(lag.xts(fred_wilshire5000_eom_xts, 1)) * 12.0/ 1.0 * 100.00
+  tempw02_ann <- ( fred_wilshire5000_eom_xts - lag.xts(fred_wilshire5000_eom_xts, 2) ) / abs(lag.xts(fred_wilshire5000_eom_xts, 2)) * 12.0/ 2.0 * 100.00
+  tempw03_ann <- ( fred_wilshire5000_eom_xts - lag.xts(fred_wilshire5000_eom_xts, 3) ) / abs(lag.xts(fred_wilshire5000_eom_xts, 3)) * 12.0/ 3.0 * 100.00
+  tempw06_ann <- ( fred_wilshire5000_eom_xts - lag.xts(fred_wilshire5000_eom_xts, 6) ) / abs(lag.xts(fred_wilshire5000_eom_xts, 6)) * 12.0/ 6.0 * 100.00
+  tempw09_ann <- ( fred_wilshire5000_eom_xts - lag.xts(fred_wilshire5000_eom_xts, 9) ) / abs(lag.xts(fred_wilshire5000_eom_xts, 9)) * 12.0/ 9.0 * 100.00
+  tempw12_ann <- ( fred_wilshire5000_eom_xts - lag.xts(fred_wilshire5000_eom_xts,12) ) / abs(lag.xts(fred_wilshire5000_eom_xts,12)) * 12.0/12.0 * 100.00
+  
+  tempa01_ann <- ( av_agg_eom_xts - lag.xts(av_agg_eom_xts, 1) ) / abs(lag.xts(av_agg_eom_xts, 1)) * 12.0/ 1.0 * 100.00
+  tempa02_ann <- ( av_agg_eom_xts - lag.xts(av_agg_eom_xts, 2) ) / abs(lag.xts(av_agg_eom_xts, 2)) * 12.0/ 2.0 * 100.00
+  tempa03_ann <- ( av_agg_eom_xts - lag.xts(av_agg_eom_xts, 3) ) / abs(lag.xts(av_agg_eom_xts, 3)) * 12.0/ 3.0 * 100.00
+  tempa06_ann <- ( av_agg_eom_xts - lag.xts(av_agg_eom_xts, 6) ) / abs(lag.xts(av_agg_eom_xts, 6)) * 12.0/ 6.0 * 100.00
+  tempa09_ann <- ( av_agg_eom_xts - lag.xts(av_agg_eom_xts, 9) ) / abs(lag.xts(av_agg_eom_xts, 9)) * 12.0/ 9.0 * 100.00
+  tempa12_ann <- ( av_agg_eom_xts - lag.xts(av_agg_eom_xts,12) ) / abs(lag.xts(av_agg_eom_xts,12)) * 12.0/12.0 * 100.00
+  
+  temp <- merge.xts( 
+      tempw01_ann - tempa01_ann
+    , tempw02_ann - tempa02_ann
+    , tempw03_ann - tempa03_ann
+    , tempw06_ann - tempa06_ann
+    , tempw09_ann - tempa09_ann
+    , tempw12_ann - tempa12_ann
+    )
+    
+  # equity premium past(p) XY months
+  colnames(temp) <- c(
+      "equity_prem_p01m_ann"
+    , "equity_prem_p02m_ann"
+    , "equity_prem_p03m_ann"
+    , "equity_prem_p06m_ann"
+    , "equity_prem_p09m_ann"
+    , "equity_prem_p12m_ann"
+    )
+  
+  willshire_less_agg_equity_premium_eom_xts <- temp
+ 
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  message("End   function get_willshire_less_agg_equity_premium_eom_xts.")
+
+  return(willshire_less_agg_equity_premium_eom_xts)
+
+}
+# ret <- get_willshire_less_agg_equity_premium_eom_xts()
+# 
+# > str(ret)
+# An 'xts' object on 2003-09-30/2017-11-30 containing:
+#   Data: num [1:171, 1:6] NA 84.3 17.1 48.9 21.4 ...
+#  - attr(*, "dimnames")=List of 2
+#   ..$ : NULL
+#   ..$ : chr [1:6] "equity_prem_p01m_ann" "equity_prem_p02m_ann" "equity_prem_p03m_ann" "equity_prem_p06m_ann" ...
+#   Indexed by objects of class: [Date] TZ: UTC
+#   xts Attributes:
+# List of 3
+#  $ src      : chr "FRED"
+#  $ updated  : POSIXct[1:1], format: "2017-12-03 22:56:15"
+#  $ na.action:Class 'omit'  atomic [1:2550] 2 3 4 5 6 7 8 9 10 11 ...
+#   .. ..- attr(*, "index")= num [1:2550] 31536000 31795200 31881600 31968000 32054400 ...
+#   
+# > head(ret)
+#            equity_prem_p01m_ann equity_prem_p02m_ann equity_prem_p03m_ann equity_prem_p06m_ann equity_prem_p09m_ann equity_prem_p12m_ann
+# 2003-09-30                   NA                   NA                   NA                   NA                   NA                   NA
+# 2003-10-31  84.2987450884582472                   NA                   NA                   NA                   NA                   NA
+# 2003-11-30  17.1130481177452651   51.218714679298330                   NA                   NA                   NA                   NA
+# 2003-12-31  48.9323460982841851   33.402967470490964   51.837654936685105                   NA                   NA                   NA
+# 2004-01-31  21.3658774060835412   35.737669848211752   29.913895463481893                   NA                   NA                   NA
+# 2004-02-29   7.0787195864594263   14.393577095692896   26.552312397718790                   NA                   NA                   NA
+# 
+# > tail(ret,12)
+#            equity_prem_p01m_ann equity_prem_p02m_ann equity_prem_p03m_ann equity_prem_p06m_ann equity_prem_p09m_ann equity_prem_p12m_ann
+# 2016-12-31  26.6785409468942873  57.6792731404528567  33.6783351827045294  26.1460287693127249   19.396159765021100   13.318836650160643
+# 2017-01-31  18.8136356428537788  22.9679704390198687  45.2262122134306637  21.9183884075927082   20.889474629676457   23.013005909026440
+# 2017-02-28  39.3219182540622683  29.4595654796353159  28.9949591503358377  27.6768256380941722   22.925214476958740   27.842211472730174
+# 2017-03-31   3.6451575000364063  21.5007272661133726  20.8718471149072045  27.8160222562867538   25.085154797845274   20.451617949694253
+# 2017-04-30   4.1550662765484354   3.9138422275604001  15.8714419300207119  31.4319368317205345   20.390660635441670   20.302472508527266
+# 2017-05-31   6.4993794573965795   5.3709383229494136   4.8115608664173877  17.2213815271180231   20.390816491020793   18.739148244610355
+# 2017-06-30  13.1888542311096923   9.9032154931740166   8.0595718966889791  14.7901341485866489   21.684611732823850   21.310832179009061
+# 2017-07-31  21.0320263311760236  17.2104969234017631  13.7536575930667055  15.1754316734198973   26.251964207042814   19.198544152585530
+# 2017-08-31  -5.8936974764027141   7.5904728289958010   9.5384269155111507   7.2908943998708722   15.050994584742723   18.079013826104507
+# 2017-09-30  38.3127573821949312  16.2781539891988558  18.0630168838048810  13.3311258156569021   16.414348216283905   21.408621110395330
+# 2017-10-31  27.1226602162964525  33.0241164000693956  20.1214408937029035  17.3090251816943663   17.400646991173964   25.602864419556575
+# 2017-11-30  40.7582161337507785  34.3304224021625757  36.1509483630243054  23.3301906712948259   17.476032800731414   21.390696660109594
+# # RUN OF DEC 03 2017
+# 
+# # NOTE ( COMPARE TO : https://fredblog.stlouisfed.org/2016/07/the-equity-premium/ )
+# > ret["2015/2016"]
+#            equity_prem_p01m_ann equity_prem_p02m_ann  equity_prem_p03m_ann  equity_prem_p06m_ann equity_prem_p09m_ann equity_prem_p12m_ann
+# 2015-01-31 -57.8567990386709852 -26.5413755239343239 -10.00440168939763552   2.36547709549237428   4.7117603788284619  9.16153232475986812
+# 2015-02-28  80.9510484434047441  10.7300704238034079   8.71338104452690487   9.73305556262234539  12.4025926472196097 11.60080700164916578
+# 2015-03-31 -16.0413364223876371  32.0817231842582302   1.67299727594256975   9.63858492076925444   6.8873007003371125  8.97285222382645031
+# 2015-04-30  12.7317894346522991  -1.6856762308536708  25.71338484011894110   7.86921663226877488  10.4996198198680872 10.37817303103409117
+# 2015-05-31  22.9442895041154316  17.8614514804051545   6.48643536279191135   7.64750195124236498   8.7199525365108208 11.01401183025542885
+# 2015-06-30  -5.8351614088464032   8.3721959168704920   9.77643481888302368   5.78341837326514607   9.7580635615037554  7.65834232933381820
+# 2015-07-31  12.8787999014850953   3.3899506898527330   9.89069658083005265  17.89533395413536354   8.6317661014064146 10.48931055871820917
+# 2015-08-31 -65.0168926112570915 -26.6672150485021575 -19.41494740991376489  -6.56855480413585280  -1.6528766363349345  1.28620653590337541
+# 2015-09-30 -39.9122732887513152 -51.4746255944353308 -30.61577828607414276 -10.39381546390428390  -6.4922151594906214 -0.81858260693828655
+# 2015-10-31  97.5538675664195125  27.5177036318603960  -4.52374192632552763   2.65303848993806746  10.3205817674240912  5.27267701174492665
+# 2015-11-30  12.5220911169222102  55.2543234061736328  22.62363796858394593   0.93675803498879295   2.7643022479017980  4.26097393923528145
+# 2015-12-31 -14.7936781509440838  -1.2157605464390775  31.21469154050884498  -0.56101723134450809   2.8614859967278492  2.58603347487096480
+# 2016-01-31 -80.3710951539452623 -46.8832888920785535 -27.20417039769123235 -15.70184777722573344  -7.3059356769249355  0.58320974925696012
+# 2016-02-29  -8.6838292139228823 -44.5624714987857189 -34.14983390501353000  -6.57852760019924787 -10.6642215107928848 -6.43335006049919222
+# 2016-03-31  76.7226046806774065  33.9722008189255504  -5.74072679030750876  12.96160095076648489  -2.2784390328552746  0.78021287695523278
+# 2016-04-30   6.9802621241255371  42.1188042050102069  25.15038203007103235  -2.08518886573276063  -2.9015228586525401  0.30080769424144049
+# 2016-05-31  23.7554380275571226  15.4373916150372459  36.56297429717124459  -0.23375839192358372   7.5077058091240403  0.36053082165282424
+# 2016-06-30 -17.0894900474790532   3.3844703901941298   4.63371364852351331  -0.57262641312829121  10.4429189971645826 -0.57596447261033212
+# 2016-07-31  42.8418795950987388  12.9123135442783017  16.84830066734769360  21.88920409132333589   4.2146086172883397  1.95594080488325339
+# 2016-08-31   7.8570491502432116  25.4183825253064484  11.30420175019935236  24.79036997898009531   3.6706420255988430  8.75726049007443486
+# 2016-09-30   2.7046561691669169   5.2790878833225845  17.86235340081689671  11.49162654482293711   5.8101264682378408 12.75750751442655684
+# 2016-10-31 -12.3467649887635815  -4.8402151737854195  -0.64562094891989563   7.95333890913508768  14.1247381985226195  2.94107946015766242
+# 2016-11-30  87.6113938593773725  36.9149049238328786  25.50064217026994484  18.76072948617356673  25.6365221739902545  9.41805354289089891
+# 2016-12-31  26.6785409468942873  57.6792731404528567  33.67833518270452942  26.14602876931272490  19.3961597650210997 13.31883665016064278
+# 
+# # NOTE ( COMPARE TO : https://fredblog.stlouisfed.org/2016/07/the-equity-premium/ )
+# > ret["2008"]
+#             equity_prem_p01m_ann  equity_prem_p02m_ann  equity_prem_p03m_ann equity_prem_p06m_ann equity_prem_p09m_ann equity_prem_p12m_ann
+# 2008-01-31 -100.4084757860892410  -48.6917771027152924  -54.6455473379572823 -18.1290358804996004 -11.9348124531106556  -6.5234632388542320
+# 2008-02-29  -29.4604818257940551  -63.7613354597350650  -41.4488737069382793 -23.5321257863188578 -21.0263145424547808  -6.1178404308165248
+# 2008-03-31   -5.3763956078764616  -17.3016022132415763  -44.0371738788008074 -30.1890311778175118 -20.7166451008663444  -8.1610724363520895
+# 2008-04-30   60.6034518011223398   27.4062629061172025    7.9312314352738440 -23.5444044537395101  -9.4549529582493079  -7.0068930832134777
+# 2008-05-31   43.9766081871344028   52.9049227779607349   33.2638018198465346  -5.2700577607560612  -5.2620972313619889  -8.1502654498142277
+# 2008-06-30  -90.7206833410654525  -24.4444444444444891    2.6613781552689755 -20.3256155892188062 -18.9023128301533347 -14.6012865540315815
+# 2008-07-31  -10.3460860362331726  -50.1171051856782412  -19.5321637426900274  -5.9928972375873855 -21.2342760855632910 -11.6547029001954190
+# 2008-08-31   14.5530118965071686    2.0239350227442059  -29.1061139121883166   1.1064432331824068 -12.8556773573571093 -11.0114988118394130
+# 2008-09-30  -85.7510701120621377  -36.4201866686210209  -27.4593912854091933 -12.2094792246333093 -21.4593764465962415 -19.8388758012597606
+# 2008-10-31 -178.8215938497030209 -122.8364557314771304  -78.5410258192981416 -45.8479532163742647 -28.4299931934493983 -31.6890774959226533
+# 2008-11-30 -127.2174882365168003 -144.1639174259655363 -115.7239776818370842 -67.7406820831996725 -37.2502831568011175 -35.2114417389134857
+# 2008-12-31  -49.1979829006260303  -89.9532729102799635 -114.1582891367277171 -66.6426789205679881 -42.8168226380555765 -40.2288045640858485
+
+# NOTE: really(from 'stock for the long run': the 10 month return may MATTER most)
+
+
+
+get_fred_good_corp_bond_yearly_yield_eom_xts <- function() {
+
+  # BofA Merrill Lynch US Corporate BBB Effective Yield
+  # https://fred.stlouisfed.org/series/BAMLC0A4CBBBEY
+  # ORIG FROM ( INSPIRED BY )
+  # The equity premium
+  # https://fredblog.stlouisfed.org/2016/07/the-equity-premium/
+  
+  ops <- options()
+  
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  require(quantmod)
+
+  message("Begin function get_fred_good_corp_bond_yearly_yield_eom_xts.")
+
+  BAMLC0A4CBBBEY <- getSymbols("BAMLC0A4CBBBEY", src = "FRED", from = "1950-01-01", auto.assign = FALSE) # SINCE DEC 1996
+  temp <- BAMLC0A4CBBBEY
+  colnames(temp)[1] <- tolower(colnames(temp)[1])
+  temp <- to.monthly(temp, OHLC = FALSE, indexAt = "lastof") 
+  fred_good_corp_bond_yearly_yield_eom_xts <- temp
+ 
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  message("End   function get_fred_good_corp_bond_yearly_yield_eom_xts.")
+
+  return(fred_good_corp_bond_yearly_yield_eom_xts)
+
+}
+# ret <- get_fred_good_corp_bond_yearly_yield_eom_xts()
+
+
+
+# competiton from bonds ( any reason )
+get_fred_zimmermann_equity_premium_eom_xts <- function() {
+
+  # ORIG FROM ( INSPIRED BY )
+  # The equity premium
+  # https://fredblog.stlouisfed.org/2016/07/the-equity-premium/
+  
+  ops <- options()
+  
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  require(xts) # lag.xts
+  # uses fred_wilshire5000_eom_xts
+  # uses get_fred_good_corp_bond_yearly_yield_eom_xts
+
+  message("Begin function get_fred_zimmermann_equity_premium_eom_xts.")
+
+  fred_wilshire5000_eom_xts                <- get_fred_wilshire5000_eom_xts()
+  fred_good_corp_bond_yearly_yield_eom_xts <- get_fred_good_corp_bond_yearly_yield_eom_xts()
+ 
+  tempw12_ann <- ( fred_wilshire5000_eom_xts - lag.xts(fred_wilshire5000_eom_xts,12) ) / abs(lag.xts(fred_wilshire5000_eom_xts,12)) * 12.0/12.0 * 100.00
+ 
+  temp <- tempw12_ann - fred_good_corp_bond_yearly_yield_eom_xts
+  colnames(temp)[1] <- "zimmermann_equity_premium"
+  fred_zimmermann_equity_premium_eom_xts <- temp
+  rm(temp)
+ 
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  message("End   function get_fred_zimmermann_equity_premium_eom_xts.")
+
+  return(fred_zimmermann_equity_premium_eom_xts)
+
+}
+# ret <- get_fred_zimmermann_equity_premium_eom_xts()
+# dygraphs::dygraph(ret)
+# compare TO https://fredblog.stlouisfed.org/2016/07/the-equity-premium/
+
+
+# LEFT_OFF: eom_xts FUNCIONS ( NEXT WEEK )
+# CLEVELAND FED STRESS INDEX
+# UNEMPLOYMENT
+# INFLATION
+# NOTE: HAVE: QUANDLE/SIPRO NETINCOME
+# NOTE: HAVE SIPRO NETINCOME
+# QUANDLE PRICE_EARNINGS ( related to ZIMMERMAN )
+# DUMB MASS PANIC [OTHER] PATNIC BUTTONS ( GDP? )
+
+
 # goodsight01.R
 
 
