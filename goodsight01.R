@@ -2976,6 +2976,9 @@ get_willshire_less_agg_equity_premium_eom_xts <- function() {
 
 }
 # ret <- get_willshire_less_agg_equity_premium_eom_xts()
+# 3-MONTH IS TOO VOLITILE TO BE TRUSTED
+# I DID NOT SEE ANY DIFFERENCE BETWEEN 6,9.12-MONTH
+# dygraphs::dygraph(ret[,c("equity_prem_p03m_ann","equity_prem_p06m_ann","equity_prem_p09m_ann","equity_prem_p12m_ann")])
 # 
 # > str(ret)
 # An 'xts' object on 2003-09-30/2017-11-30 containing:
@@ -3107,6 +3110,8 @@ get_fred_good_corp_bond_yearly_yield_eom_xts <- function() {
 
 
 
+
+
 # competiton from bonds ( any reason )
 get_fred_zimmermann_equity_premium_eom_xts <- function() {
 
@@ -3156,14 +3161,252 @@ get_fred_zimmermann_equity_premium_eom_xts <- function() {
 # compare TO https://fredblog.stlouisfed.org/2016/07/the-equity-premium/
 
 
-# LEFT_OFF: eom_xts FUNCIONS ( NEXT WEEK )
-# CLEVELAND FED STRESS INDEX
-# UNEMPLOYMENT
-# INFLATION
-# NOTE: HAVE: QUANDLE/SIPRO NETINCOME
-# NOTE: HAVE SIPRO NETINCOME
-# QUANDLE PRICE_EARNINGS ( related to ZIMMERMAN )
-# DUMB MASS PANIC [OTHER] PATNIC BUTTONS ( GDP? )
+
+
+get_fred_chicago_fed_nat_fin_cond_idx_nonfin_lev_subidx_eom_xts <- function() {
+
+  # The Chicago Fed’s National Financial Conditions Index (NFCI) provides a 
+  # comprehensive weekly update on U.S. financial conditions in 
+  #   money markets, debt and equity markets, and the traditional and “shadow” banking systems.
+  # 
+  # THIS IS IT: ACTUALLY SLOPE AND TREND/DIP MATTER
+  # "Positive values of the NFCI indicate financial conditions that are tighter than average, 
+  # while negative values indicate financial conditions that are looser than average."
+  # The three subindexes of the NFCI (risk, credit and leverage)
+  # https://fred.stlouisfed.org/series/NFCINONFINLEVERAGE
+  # 
+  # NFCI is a weighted average of a large number of variables (105 measures of financial activity)
+  # http://www.chicagofed.org/webpages/publications/nfci/index.cfm
+  
+  # (USEFUL IN ALL RECESSIONS: SLOPE IS MOST USEFUL)
+  # Chicago Fed National Financial Conditions Credit Subindex (NFCICREDIT)
+  # "Positive values of the NFCI indicate financial conditions that are tighter than average, 
+  # while negative values indicate financial conditions that are looser than average."
+  # https://fred.stlouisfed.org/series/NFCICREDIT
+  
+  # (EXCEPT FOR 2001 RECESSION: VERY GOOD)
+  # Chicago Fed National Financial Conditions Leverage Subindex (NFCILEVERAGE)
+  # "Positive values of the NFCI indicate financial conditions that are tighter than average, 
+  # while negative values indicate financial conditions that are looser than average."
+  # https://fred.stlouisfed.org/series/NFCILEVERAGE
+  
+  # (ONLY USEFUL IN 2008 RECESSION)
+  # Chicago Fed National Financial Conditions Risk Subindex (NFCIRISK)
+  # Positive values of the NFCI indicate financial conditions that are tighter than average, 
+  # while negative values indicate financial conditions that are looser than average."
+  # https://fred.stlouisfed.org/series/NFCIRISK
+  
+  ops <- options()
+  
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  require(quantmod)
+
+  message("Begin function get_fred_chicago_fed_nat_fin_cond_idx_nonfin_lev_subidx_eom_xts.")
+
+  NFCINONFINLEVERAGE <- getSymbols("NFCINONFINLEVERAGE", src = "FRED", from = "1950-01-01", auto.assign = FALSE) # SINCE JAN 1971
+  temp <- NFCINONFINLEVERAGE
+  colnames(temp)[1] <- tolower(colnames(temp)[1])
+  temp <- to.monthly(temp, OHLC = FALSE, indexAt = "lastof") 
+  fred_chicago_fed_nat_fin_cond_idx_nonfin_lev_subidx_eom_xts <- temp
+ 
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  message("End   function get_fred_chicago_fed_nat_fin_cond_idx_nonfin_lev_subidx_eom_xts.")
+
+  return(fred_chicago_fed_nat_fin_cond_idx_nonfin_lev_subidx_eom_xts)
+
+}
+# ret <- get_fred_chicago_fed_nat_fin_cond_idx_nonfin_lev_subidx_eom_xts()
+# dygraphs::dygraph(ret)
+
+
+
+
+get_fred_civil_unemp_rate_eom_xts <- function() {
+
+  # number of unemployed as a percentage of the labor force
+  # Seasonally Adjusted
+  # https://fred.stlouisfed.org/series/UNRATE
+
+  ops <- options()
+  
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  require(quantmod)
+
+  message("Begin function get_fred_civil_unemp_rate_eom_xts.")
+
+  UNRATE <- getSymbols("UNRATE", src = "FRED", from = "1940-01-01", auto.assign = FALSE) # SINCE JAN 1948
+  index(UNRATE) <- index(UNRATE) - 5L
+  temp <- UNRATE
+  colnames(temp)[1] <- tolower(colnames(temp)[1])
+  temp <- to.monthly(temp, OHLC = FALSE, indexAt = "lastof") 
+  fred_civil_unemp_rate_eom_xts <- temp
+ 
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  message("End   function get_fred_civil_unemp_rate_eom_xts.")
+
+  return(fred_civil_unemp_rate_eom_xts)
+
+}
+# ret <- get_fred_civil_unemp_rate_eom_xts()
+# dygraphs::dygraph(ret)
+
+
+
+# see the PRESSURE the FED is applying
+get_frbdata_federal_funds_eff_rate_eom_xts <- function() {
+
+  # FF:Federal funds effective rate
+  # ? FRBData::GetInterestRates
+
+  ops <- options()
+  
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  require(xts)
+  # uses FRBData function GetInterestRates
+
+  message("Begin function get_frbdata_federal_funds_eff_rate_eom_xts.")
+
+  FF <-FRBData::GetInterestRates("FF") # SINCE JUL 1954
+  temp <- FF
+  colnames(temp)[1] <- "ff"
+  temp <- to.monthly(temp, OHLC = FALSE, indexAt = "lastof") 
+  frbdata_federal_funds_eff_rate_eom_xts <- temp
+ 
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  message("End   function get_frbdata_federal_funds_eff_rate_eom_xts.")
+
+  return(frbdata_federal_funds_eff_rate_eom_xts)
+
+}
+# see the PRESSURE the FED is applying
+# ret <- get_frbdata_federal_funds_eff_rate_eom_xts()
+# dygraphs::dygraph(ret)
+
+
+
+# see the PRESSURE the FED is applying
+get_frbdata_discount_window_primary_credit_rate_eom_xts <- function() {
+
+  # DWPC:Discount window primary credit.The rate charged for primary credit under amendment to the Board's Regulation A
+  # ? FRBData::GetInterestRates
+
+  ops <- options()
+  
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  require(xts)
+  # uses FRBData function GetInterestRates
+
+  message("Begin function get_frbdata_discount_window_primary_credit_rate_eom_xts.")
+
+  DWPC <-FRBData::GetInterestRates("DWPC") # SINCE JAN 2003
+  temp <- DWPC
+  colnames(temp)[1] <- "dwpc"
+  temp <- to.monthly(temp, OHLC = FALSE, indexAt = "lastof") 
+  frbdata_discount_window_primary_credit_rate_eom_xts <- temp
+ 
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  message("End   function get_frbdata_discount_window_primary_credit_rate_eom_xts.")
+
+  return(frbdata_discount_window_primary_credit_rate_eom_xts)
+
+}
+# see the PRESSURE the FED is applying
+# ret <- get_frbdata_discount_window_primary_credit_rate_eom_xts()
+# dygraphs::dygraph(ret)
+
+
+
+# related to 'equity premium'
+get_quandl_sp500_pe_ratio_month_4q_eom_xts <- function() {
+  
+  # S&P 500 PE Ratio by Month
+  # https://www.quandl.com/data/MULTPL/SP500_PE_RATIO_MONTH-S-P-500-PE-Ratio-by-Month
+
+  ops <- options()
+  
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  message("Begin function get_quandl_sp500_pe_ratio_month_4q_eom_xts.")
+  
+  require(Quandl)
+  # Quandl.api_key(api_key= "YOURKEYHERE")
+  temp <- Quandl("MULTPL/SP500_PE_RATIO_MONTH", type = "xts")   # 
+  index(temp) <- zoo::as.Date(index(temp), frac= 1) # checked date 'are end month anyways'
+  colnames(temp)[1] <- "sp500_pe_ratio_month_4q"
+  quandl_sp500_pe_ratio_month_4q_eom_xts <- temp
+  rm(temp)
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  message("End   function get_quandl_sp500_pe_ratio_month_4q_eom_xts.")
+  
+  return(quandl_sp500_pe_ratio_month_4q_eom_xts)
+  
+}
+# related to equity premium
+# SEE THE PRESSURE/RELIEF: easingr
+# Cleveland Fed 
+#
+# see the preductions
+# Phildelphia Fed
 
 
 # goodsight01.R
