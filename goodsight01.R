@@ -3411,4 +3411,77 @@ get_quandl_sp500_pe_ratio_month_4q_eom_xts <- function() {
 
 # goodsight01.R
 
+# SEE THE PRESSURE/RELIEF
+get_clev_easing_balances <- function() {
+  
+  # balance sheet with its components broadly divided into these categories
+  # https://www.clevelandfed.org/our-research/indicators-and-data/credit-easing.aspx
+  # INSPIRED FROM
+  # https://github.com/cran/easingr
+  
+  ops <- options()
+  
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  message("Begin function get_clev_easing_balances.")
+  
+  library(xts)
+  
+  tmpf <- tempfile(fileext = ".xls")
+  # weekly data ( every Friday ) since JAN 03 2017
+  download.file(url = "https://www.clevelandfed.org/~/media/files/charting/crediteasingbalancesheet.xls"
+      , destfile = tmpf
+      , mode = "wb"
+  )
+  spreadsheet <- readxl::read_excel(tmpf, sheet = 1L, skip = 1) 
+  spreadsheet <- as.data.frame(spreadsheet, stringsAsFactors = FALSE)
+  
+  # names
+  temp <- spreadsheet 
+  temp <- temp[,!colnames(temp) %in% c("X__1","X__2","X__3","X__4")]
+  colnames(temp) <- gsub("( |-|[.])","_",colnames(temp))
+  colnames(temp) <- tolower(colnames(temp))
+  
+  # convert
+  row.names(temp) <- as.character(zoo::as.Date(temp[[1]]))
+  temp <- temp[,-1, drop = FALSE]
+  temp2 <- as.xts(as.matrix(temp))
+  rm(temp)
+  
+  # just month end data ( last weekly of the month matters )
+  temp2 <- to.monthly(temp2, OHLC = FALSE, indexAt = "lastof")
+  spreadsheet <- temp2
+  rm(temp2)
+  
+  clev_easing_balances <- spreadsheet[, "lending_to_financial_institutions"] +
+                          spreadsheet[, "liquidity_to_key_credit_markets"] +
+                          spreadsheet[, "traditional_security_holdings"] + 
+                          spreadsheet[, "federal_agency_debt_and_mortgage_backed_securities_purchases"] +
+                          spreadsheet[, "long_term_treasury_purchases"]
+                          
+  colnames(clev_easing_balances)[1] <- "clev_easing_balances"
+  # flat since NOV 2014, but WITHOUT "clev_easing_balances" ACTUALLY INCREASING!+ since the BEGINNING of 2017          
+
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  message("End   function get_clev_easing_balances.")
+  
+  return(clev_easing_balances)
+  
+}
+# PRESSURE or LACK_OF - Federal Gov credit easing (money printing)
+# ret <- get_clev_easing_balances()
+# dygraphs::dygraph(ret)
+
+
 
