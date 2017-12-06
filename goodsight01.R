@@ -3409,7 +3409,6 @@ get_quandl_sp500_pe_ratio_month_4q_eom_xts <- function() {
 # Phildelphia Fed
 
 
-# goodsight01.R
 
 # SEE THE PRESSURE/RELIEF
 get_clev_easing_balances <- function() {
@@ -3482,6 +3481,7 @@ get_clev_easing_balances <- function() {
 # PRESSURE or LACK_OF - Federal Gov credit easing (money printing)
 # ret <- get_clev_easing_balances()
 # dygraphs::dygraph(ret)
+
 
 
 get_phil_survey_of_prof_forecasters <- function(file_data_loc = NULL) {
@@ -3576,4 +3576,5 @@ get_phil_survey_of_prof_forecasters <- function(file_data_loc = NULL) {
 # dygraphs::dygraph(ret)
 
 
+# goodsight01.R
 
