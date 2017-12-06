@@ -3484,4 +3484,96 @@ get_clev_easing_balances <- function() {
 # dygraphs::dygraph(ret)
 
 
+get_phil_survey_of_prof_forecasters <- function(file_data_loc = NULL) {
+  
+ # Individual Forecasts for the Survey of Professional Forecasters
+ # https://www.philadelphiafed.org/research-and-data/real-time-center/survey-of-professional-forecasters/historical-data/individual-forecasts
+  
+ # doc - read the output
+ # https://www.philadelphiafed.org/-/media/research-and-data/real-time-center/survey-of-professional-forecasters/spf-documentation.pdf?la=en
+  
+  ops <- options()
+  
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  message("Begin function get_phil_survey_of_prof_forecasters.")
+  
+  # if not a semi-rwo stored file ... then go get them
+  if(is.null(file_data_loc)) {
+  
+    base_url <- "https://www.philadelphiafed.org/-/media/research-and-data/real-time-center/survey-of-professional-forecasters/historical-data/"
+    
+    list_of_files <- list()
+    for(file_name_i in c("micro1.xlsx", "micro2.xlsx", "micro3.xlsx", "micro4.xlsx", "micro5.xlsx")) {
+      
+      message(paste0("  Begin file ", file_name_i))
+      
+      tmpf <- tempfile(fileext = ".xlsx")
+      download.file(destfile = tmpf, url = paste0(base_url, file_name_i, "?la=en"),  mode = "wb")
+      
+      list_of_sheets <- list()
+      for(excel_sheet_name_i in readxl::excel_sheets(tmpf)) {
+      
+        message(paste0("    Begin sheet ", excel_sheet_name_i))
+        
+        spreadsheet_i <- suppressWarnings(readxl::read_excel(tmpf, sheet = excel_sheet_name_i, col_types = "numeric"))
+        spreadsheet_i <- as.data.frame(spreadsheet_i, stringsAsFactors = FALSE)
+  
+        # names
+        colnames(spreadsheet_i) <- tolower(colnames(spreadsheet_i))
+        colnames(spreadsheet_i)[!colnames(spreadsheet_i) %in% c("year","quarter","id","industry")] <-
+          paste0(tolower(excel_sheet_name_i), "__", colnames(spreadsheet_i)[!colnames(spreadsheet_i) %in% c("year","quarter","id","industry")])
+        
+        message(paste0("    End   sheet ", excel_sheet_name_i))
+        
+        list_of_sheets[[tolower(excel_sheet_name_i)]] <- spreadsheet_i
+        
+      }
+      
+      message(paste0("  End   file ", file_name_i))
+      
+      # sheet together
+      all_sheets_in_one <- plyr::join_all(list_of_sheets, by =c("year","quarter","id","industry"), type = "full")
+      list_of_files[[file_name_i]] <- all_sheets_in_one
+      
+    }
+    # files ( of sheets ) together
+    all_files_in_one <- plyr::join_all(list_of_files, by =c("year","quarter","id","industry"), type = "full")
+    save(all_files_in_one, file = "phil_survey_of_prof_forecasters__all_files_in_one.RData", envir = environment())
+    
+  } else {
+   
+    load(file = file_data_loc, envir = environment())
+     
+  }
+  
+  # LEFT_OFF ( better off RETURN the future prediction )
+  # date                           # now           # next_quarter (#3)
+  # > zoo::as.Date(zoo::as.yearmon(1968 + 1/4 + ( (3 - 2) * (1/4) )- 0.00001), frac = 1)
+  # [1] "1968-06-30"
+  # next quarter ( better OFF leave expression by the USER of WHAT columns to return )
+  # grep(".*3$" colnames(all_files_in_one), value = TRUE)
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  message("End   function get_phil_survey_of_prof_forecasters.")
+  
+  return(phil_survey_of_prof_forecasters)
+
+}
+# ret <- get_phil_survey_of_prof_forecasters(file_data_loc = "phil_survey_of_prof_forecasters__all_files_in_one.RData")
+# ret <- get_phil_survey_of_prof_forecasters()
+# dygraphs::dygraph(ret)
+
+
 
