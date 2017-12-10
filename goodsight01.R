@@ -3597,10 +3597,16 @@ get_phil_survey_of_prof_forecasters_eom_xts <- function(file_data_loc = NULL, su
   # note: many faster and/or R-ish_/ply-ish better-ish ways do/may exist to do this.
   # but the method below is just simple, flexible, comprehendable ( and thus possibly better-ly extensible )
   
-  list_of_xtss <- list()
+  # within the same  'survey_i'  I rbind.xts
+  # amoung different 'survey_i'  I merge.xts
   
-                          # entered by user    # entered by user
-  for(survey_name_i in grep(surveys_of_interest_regex, colnames(all_files_in_one), value = TRUE, perl = TRUE)) {
+  list_of_xtss <- list()
+  grand_list_of_xtss <- list()
+  
+  survey_i_rbinded_xtss <- xts()
+  
+                                # entered by user           # entered by user
+  for(survey_name_i in sort(grep(surveys_of_interest_regex, colnames(all_files_in_one), value = TRUE, perl = TRUE))) {
     
     message(paste0("  Begin survey ", survey_name_i))
     
@@ -3641,6 +3647,7 @@ get_phil_survey_of_prof_forecasters_eom_xts <- function(file_data_loc = NULL, su
     rm(dates)
     survey <- DataCombine::MoveFront(survey, "date")
 
+
     # column subset on the future date
     survey_summary_by_date_result <- plyr::dlply(survey, "date", function(x) { 
       
@@ -3668,7 +3675,9 @@ get_phil_survey_of_prof_forecasters_eom_xts <- function(file_data_loc = NULL, su
     } )
     rm(survey)
     
-    # because plyr::dlply does not return the 'list item names'
+    # instead of plyr::dlply returned 'list item names'
+    #   attr(*, "split_type")
+    #   attr(*, "split_labels")
     survey_summary_by_date_result <- 
       rlist::list.zip(result = survey_summary_by_date_result, result_date = names(survey_summary_by_date_result))
     for(survey_summary_by_date_result_i in survey_summary_by_date_result) {
@@ -3690,12 +3699,19 @@ get_phil_survey_of_prof_forecasters_eom_xts <- function(file_data_loc = NULL, su
       
     }
     
+    # per survey_i
+    survey_i_rbinded_xtss <- do.call(rbind.xts, list_of_xtss)
+    
+    grand_list_of_xtss <- c(list(survey_i_rbinded_xtss), grand_list_of_xtss)
+    # ready for next loop
+    list_of_xtss <- list()
+    
     message(paste0("  End   survey ", survey_name_i))
     
   }
   
   # bring all xtss together
-  many_xtss_in_one <- do.call(merge.xts, list_of_xtss)
+  many_xtss_in_one <- do.call(merge.xts, grand_list_of_xtss)
   phil_survey_of_prof_forecasters_eom_xts <- many_xtss_in_one
   
   Sys.setenv(TZ=oldtz)
