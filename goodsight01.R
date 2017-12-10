@@ -3411,7 +3411,7 @@ get_quandl_sp500_pe_ratio_month_4q_eom_xts <- function() {
 
 
 # SEE THE PRESSURE/RELIEF
-get_clev_easing_balances <- function() {
+get_clev_easing_balances_eom_xts <- function() {
   
   # balance sheet with its components broadly divided into these categories
   # https://www.clevelandfed.org/our-research/indicators-and-data/credit-easing.aspx
@@ -3431,9 +3431,9 @@ get_clev_easing_balances <- function() {
     Sys.setenv(TZ="UTC")
   }
   
-  message("Begin function get_clev_easing_balances.")
+  message("Begin function get_clev_easing_balances_eom_xts.")
   
-  library(xts)
+  require(xts)
   
   tmpf <- tempfile(fileext = ".xls")
   # weekly data ( every Friday ) since JAN 03 2017
@@ -3461,30 +3461,30 @@ get_clev_easing_balances <- function() {
   spreadsheet <- temp2
   rm(temp2)
   
-  clev_easing_balances <- spreadsheet[, "lending_to_financial_institutions"] +
+  clev_easing_balances_eom_xts <- spreadsheet[, "lending_to_financial_institutions"] +
                           spreadsheet[, "liquidity_to_key_credit_markets"] +
                           spreadsheet[, "traditional_security_holdings"] + 
                           spreadsheet[, "federal_agency_debt_and_mortgage_backed_securities_purchases"] +
                           spreadsheet[, "long_term_treasury_purchases"]
                           
-  colnames(clev_easing_balances)[1] <- "clev_easing_balances"
+  colnames(clev_easing_balances_eom_xts)[1] <- "clev_easing_balances"
   # flat since NOV 2014, but WITHOUT "clev_easing_balances" ACTUALLY INCREASING!+ since the BEGINNING of 2017          
 
   Sys.setenv(TZ=oldtz)
   options(ops)
   
-  message("End   function get_clev_easing_balances.")
+  message("End   function get_clev_easing_balances_eom_xts.")
   
-  return(clev_easing_balances)
+  return(clev_easing_balances_eom_xts)
   
 }
 # PRESSURE or LACK_OF - Federal Gov credit easing (money printing)
-# ret <- get_clev_easing_balances()
+# ret <- get_clev_easing_balances_eom_xts()
 # dygraphs::dygraph(ret)
 
 
-
-get_phil_survey_of_prof_forecasters <- function(file_data_loc = NULL) {
+                                       # common place override ( by user )
+get_phil_survey_of_prof_forecasters_eom_xts <- function(file_data_loc = NULL) {
   
  # Individual Forecasts for the Survey of Professional Forecasters
  # https://www.philadelphiafed.org/research-and-data/real-time-center/survey-of-professional-forecasters/historical-data/individual-forecasts
@@ -3505,9 +3505,20 @@ get_phil_survey_of_prof_forecasters <- function(file_data_loc = NULL) {
     Sys.setenv(TZ="UTC")
   }
   
-  message("Begin function get_phil_survey_of_prof_forecasters.")
+  message("Begin function get_phil_survey_of_prof_forecasters_eom_xts.")
   
-  # if not a semi-rwo stored file ... then go get them
+  require(xts)
+  
+  # uses readxl function read_excel
+  # uses plyr function join_all
+  # uses DataCombine function MoveFront
+  # uses hydroTSM function smry
+  # uses rlist list.zip
+
+  # to save common place (see below)
+  save_file_loc <- "phil_survey_of_prof_forecasters__all_files_in_one.RData"
+  
+  # if not a disk stored file ... then go get them
   if(is.null(file_data_loc)) {
   
     base_url <- "https://www.philadelphiafed.org/-/media/research-and-data/real-time-center/survey-of-professional-forecasters/historical-data/"
@@ -3518,11 +3529,18 @@ get_phil_survey_of_prof_forecasters <- function(file_data_loc = NULL) {
       message(paste0("  Begin file ", file_name_i))
       
       tmpf <- tempfile(fileext = ".xlsx")
-      download.file(destfile = tmpf, url = paste0(base_url, file_name_i, "?la=en"),  mode = "wb")
+      url_file <-  paste0(base_url, file_name_i, "?la=en")
+      
+      # getting data
+      message(paste0("  Starting Downloading url/file ", url_file))
+      download.file(destfile = tmpf, url = url_file,  mode = "wb")
+      message(paste0("  Finished Downloading url/file ", url_file))
       
       list_of_sheets <- list()
       for(excel_sheet_name_i in readxl::excel_sheets(tmpf)) {
       
+        # unfortuately performs a disk i/o upon EACH sheet access
+        # currently AUTHOR not motivated/not_worth_the_time, to find a 'faster (entire workbook at/a/time ) way
         message(paste0("    Begin sheet ", excel_sheet_name_i))
         
         spreadsheet_i <- suppressWarnings(readxl::read_excel(tmpf, sheet = excel_sheet_name_i, col_types = "numeric"))
@@ -3547,32 +3565,155 @@ get_phil_survey_of_prof_forecasters <- function(file_data_loc = NULL) {
       
     }
     # files ( of sheets ) together
+    # "year","quarter", "id"(forecaster) are the 'unique record indicator'
+    # "industry" is the description of the forcaster
+    # by LUCK c("year","quarter","id","industry") STILL produce a 'unique record'
+    #  so I will lazily simply add 'industry' to the join
     all_files_in_one <- plyr::join_all(list_of_files, by =c("year","quarter","id","industry"), type = "full")
-    save(all_files_in_one, file = "phil_survey_of_prof_forecasters__all_files_in_one.RData", envir = environment())
     
-  } else {
-   
-    load(file = file_data_loc, envir = environment())
+    # common place
+    message(paste0("  Begin saving file ", save_file_loc))
+    save(all_files_in_one, file = save_file_loc, envir = environment())
+    message(paste0("  End   saving file ", save_file_loc))
+    
+  } else { # !is.null(file_data_loc)
+    
+    # common place override
+    if(!is.null(file_data_loc) || (file_data_loc == "DISK")) {
+      if(file_data_loc == "DISK") {
+        message(paste0("  Begin loading file ", save_file_loc))
+        load(file = save_file_loc, envir = environment())
+        message(paste0("  End    loading file ", save_file_loc))
+      }else {
+        # common place override
+        load(file = file_data_loc, envir = environment())
+      }
+    }
      
   }
   
-  # LEFT_OFF ( better off RETURN the future prediction )
-  # date                           # now           # next_quarter (#3)
-  # > zoo::as.Date(zoo::as.yearmon(1968 + 1/4 + ( (3 - 2) * (1/4) )- 0.00001), frac = 1)
-  # [1] "1968-06-30"
-  # next quarter ( better OFF leave expression by the USER of WHAT columns to return )
-  # grep(".*3$" colnames(all_files_in_one), value = TRUE)
+  # note: many faster and/or R-ish_/ply-ish better-ish ways do/may exist to do this.
+  # but the method below is just simple, flexible, comprehendable ( and thus possibly better-ly extensible )
+  
+  list_of_xtss <- list()
+  
+                          # entered by user    # entered by user
+  for(survey_name_i in grep("^(unemp__|cpi__).*(3|4|5|6)$", colnames(all_files_in_one), value = TRUE, perl = TRUE)) {
+    
+    message(paste0("Begin survey ", survey_name_i))
+    
+                                              # entered by user
+    # character position in the survey_i string where the 'forecast time end characters are located.'
+    forecast_end_represent_id_loc <- regexpr("(3|4|5|6)$", survey_name_i, perl = TRUE)
+    
+    # number  "1" represents the "forecast" for the quarter prior
+    # number  "2" represents the forecast for the current quarter
+    # numbers "3" through "6" represent the forecasts for the  four quarters after the current quarter. 
+    # letters "a" and "b" (and somtimes "c") represent annual average forecasts for 
+    #   the current year (the year in which the survey is conducted) 
+    #     and 
+    #   the following year.
+    #     (and
+    #   the following year following year)
+    # 
+    # determinte the forcast_end_represent_id
+    forecast_end_represent_id <- substr(survey_name_i, start = attr(forecast_end_represent_id_loc, "capture.start")[1], stop = attr(forecast_end_represent_id_loc, "capture.start")[1] + attr(forecast_end_represent_id_loc, "capture.length")[1])
+    
+    # just cols of interest
+    survey <- all_files_in_one[ ,c("year", "quarter", "id", "industry", survey_name_i), drop = FALSE]
+    
+    # add future dates
+    # currently not yet defined for c("a","b","c") # COME_BACK
+    if(!any(forecast_end_represent_id %in% c("a","b","c"))) {
+      forecast_end_represent_id     <- as.numeric(forecast_end_represent_id)
+      # ( RETURN the data of the future prediction )
+      #                              # now             # next_quarter (#3)
+      # zoo::as.Date(zoo::as.yearmon(1968 + (1/4) + ( (3 - 2) * (1/4) )- 0.00001), frac = 1)
+      dates <- as.character(zoo::as.Date(zoo::as.yearmon(survey[["year"]] + survey[["quarter"]]/4 + ( (forecast_end_represent_id - 2) * (survey[["quarter"]]/4) )- 0.00001), frac = 1))
+      message("Message max(dates)", paste0(max(dates)))
+    } else {
+      stop("future is not defined for 'a','b', or 'c'") 
+    }
+    survey <- cbind(date = dates, survey , stringsAsFactors = FALSE) 
+    rm(dates)
+    survey <- DataCombine::MoveFront(survey, "date")
+
+    # column subset on the future date
+    survey_summary_by_date_result <- plyr::dlply(survey, "date", function(x) { 
+      
+      # returns a df
+      summary <- hydroTSM::smry(x[survey_name_i], na.rm = TRUE)
+      # remove 0/0 math
+      summary[is.nan(as.vector(unlist(summary))),] <- NA_real_
+      
+      # return a 'named vector
+      temp <- summary[[survey_name_i]]
+      names(temp) <- row.names(summary)
+      # "Min."     "1st Qu."  "Median"   "Mean"     "3rd Qu."  "Max."     "IQR"      "sd"      
+      # "cv" "Skewness" "Kurtosis" "NA's"     "n"
+      
+      # rename
+      names(temp) <- tolower(names(temp))
+      names(temp) <- gsub("([.]|'| )","_",names(temp))
+      names(temp) <- gsub("(\\d)","d\\1", names(temp))
+      
+      x <- temp
+      attr(x, "label") <- survey_name_i
+      
+      return(x)
+      
+    } )
+    rm(survey)
+    
+    # because plyr::dlply does not return the 'list item names'
+    survey_summary_by_date_result <- 
+      rlist::list.zip(result = survey_summary_by_date_result, result_date = names(survey_summary_by_date_result))
+    for(survey_summary_by_date_result_i in survey_summary_by_date_result) {
+      
+      message(paste0("  Begin survey result ", attr(survey_summary_by_date_result_i[["result"]],"label", exact = TRUE)))
+      # create each small xts
+      temp <- t(as.matrix(survey_summary_by_date_result_i[["result"]]))
+      colnames(temp) <- paste0(attr(survey_summary_by_date_result_i[["result"]],"label", exact = TRUE), "__", colnames(temp)) 
+      rownames(temp) <- survey_summary_by_date_result_i[["result_date"]]
+      # S3 dispatch as.xts.matrix
+      temp <- as.xts(temp)
+      # because a non-Date index had been created
+      index(temp) <- zoo::as.Date(index(temp))
+    
+      # combine with the grand list
+      list_of_xtss <- c(list(temp), list_of_xtss)
+      
+      message(paste0("  End   survey result ", attr(survey_summary_by_date_result_i[["result"]],"label", exact = TRUE)))
+      
+    }
+    
+    message(paste0("End   survey ", survey_name_i))
+    
+  }
+  
+  # bring all xtss together
+  many_xtss_in_one <- do.call(merge.xts, list_of_xtss)
+  phil_survey_of_prof_forecasters_eom_xts <- many_xtss_in_one
   
   Sys.setenv(TZ=oldtz)
   options(ops)
   
-  message("End   function get_phil_survey_of_prof_forecasters.")
+  message("End   function get_phil_survey_of_prof_forecasters_eom_xts.")
   
-  return(phil_survey_of_prof_forecasters)
+  return(phil_survey_of_prof_forecasters_eom_xts)
 
 }
-# ret <- get_phil_survey_of_prof_forecasters(file_data_loc = "phil_survey_of_prof_forecasters__all_files_in_one.RData")
-# ret <- get_phil_survey_of_prof_forecasters()
+# ONLY do 'every so often'. Perhaps, once/month or once/quarter?
+# From the internet gets the the data, then saves it to the current working directory
+# ret <- get_phil_survey_of_prof_forecasters_eom_xts()
+# 
+# From the local directory, get the saved data
+# ret <- get_phil_survey_of_prof_forecasters_eom_xts(file_data_loc = "DISK")
+# 
+# From a user custom location, get the data
+# ret <- get_phil_survey_of_prof_forecasters_eom_xts(file_data_loc = "phil_survey_of_prof_forecasters__all_files_in_one.RData")
+
+
 # dygraphs::dygraph(ret)
 
 
