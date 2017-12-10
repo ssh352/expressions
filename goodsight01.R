@@ -3734,7 +3734,14 @@ get_phil_survey_of_prof_forecasters_eom_xts <- function(file_data_loc = NULL, su
 #
 # just two future quarters of unemployment
 # ret <- get_phil_survey_of_prof_forecasters_eom_xts(file_data_loc = "DISK", surveys_of_interest_regex = "^(unemp__).*(3|4)$", future_dates_regex = "(3|4)$")
-
+#
+# # GOOD EXAMPLE ( notece: EXACTLY when BEFORE/AFTER going in/out OF MAJOR recessions )
+# ret <- get_phil_survey_of_prof_forecasters_eom_xts(file_data_loc = "DISK", surveys_of_interest_regex = "^(unemp__).*(3|4)$", future_dates_regex = "(3|4)$")
+# quantmod::getSymbols("UNRATE", src = "FRED", from = "1940-01-01")
+# # to make eom
+# zoo::index(UNRATE) <- zoo::index(UNRATE) - 1
+# dygraphs::dygraph(merge.xts(UNRATE,ret[,"unemp__unemp3__median"]))
+# 
 
 # dygraphs::dygraph(ret)
 
