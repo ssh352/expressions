@@ -3483,8 +3483,10 @@ get_clev_easing_balances_eom_xts <- function() {
 # dygraphs::dygraph(ret)
 
 
+# NOTE: I HAVE NOT DONE/DO NOT KNOW HOW TO DO PR*obabilities99
+# 
                                        # common place override ( by user )
-get_phil_survey_of_prof_forecasters_eom_xts <- function(file_data_loc = NULL) {
+get_phil_survey_of_prof_forecasters_eom_xts <- function(file_data_loc = NULL, surveys_of_interest_regex = "^(unemp__|cpi__).*(3|4|5|6)$", future_dates_regex = "(3|4|5|6)$") {
   
  # Individual Forecasts for the Survey of Professional Forecasters
  # https://www.philadelphiafed.org/research-and-data/real-time-center/survey-of-professional-forecasters/historical-data/individual-forecasts
@@ -3598,13 +3600,13 @@ get_phil_survey_of_prof_forecasters_eom_xts <- function(file_data_loc = NULL) {
   list_of_xtss <- list()
   
                           # entered by user    # entered by user
-  for(survey_name_i in grep("^(unemp__|cpi__).*(3|4|5|6)$", colnames(all_files_in_one), value = TRUE, perl = TRUE)) {
+  for(survey_name_i in grep(surveys_of_interest_regex, colnames(all_files_in_one), value = TRUE, perl = TRUE)) {
     
-    message(paste0("Begin survey ", survey_name_i))
+    message(paste0("  Begin survey ", survey_name_i))
     
                                               # entered by user
     # character position in the survey_i string where the 'forecast time end characters are located.'
-    forecast_end_represent_id_loc <- regexpr("(3|4|5|6)$", survey_name_i, perl = TRUE)
+    forecast_end_represent_id_loc <- regexpr(future_dates_regex, survey_name_i, perl = TRUE)
     
     # number  "1" represents the "forecast" for the quarter prior
     # number  "2" represents the forecast for the current quarter
@@ -3618,6 +3620,7 @@ get_phil_survey_of_prof_forecasters_eom_xts <- function(file_data_loc = NULL) {
     # 
     # determinte the forcast_end_represent_id
     forecast_end_represent_id <- substr(survey_name_i, start = attr(forecast_end_represent_id_loc, "capture.start")[1], stop = attr(forecast_end_represent_id_loc, "capture.start")[1] + attr(forecast_end_represent_id_loc, "capture.length")[1])
+    message(paste0("  forecast_end_represent_id ", forecast_end_represent_id))
     
     # just cols of interest
     survey <- all_files_in_one[ ,c("year", "quarter", "id", "industry", survey_name_i), drop = FALSE]
@@ -3629,8 +3632,8 @@ get_phil_survey_of_prof_forecasters_eom_xts <- function(file_data_loc = NULL) {
       # ( RETURN the data of the future prediction )
       #                              # now             # next_quarter (#3)
       # zoo::as.Date(zoo::as.yearmon(1968 + (1/4) + ( (3 - 2) * (1/4) )- 0.00001), frac = 1)
-      dates <- as.character(zoo::as.Date(zoo::as.yearmon(survey[["year"]] + survey[["quarter"]]/4 + ( (forecast_end_represent_id - 2) * (survey[["quarter"]]/4) )- 0.00001), frac = 1))
-      message("Message max(dates)", paste0(max(dates)))
+      dates <- as.character(zoo::as.Date(zoo::as.yearmon(survey[["year"]] + survey[["quarter"]]/4 + ( (forecast_end_represent_id - 2) * (1/4) )- 0.00001), frac = 1))
+      message("  Message max(dates) ", paste0(max(dates)))
     } else {
       stop("future is not defined for 'a','b', or 'c'") 
     }
@@ -3670,7 +3673,7 @@ get_phil_survey_of_prof_forecasters_eom_xts <- function(file_data_loc = NULL) {
       rlist::list.zip(result = survey_summary_by_date_result, result_date = names(survey_summary_by_date_result))
     for(survey_summary_by_date_result_i in survey_summary_by_date_result) {
       
-      message(paste0("  Begin survey result ", attr(survey_summary_by_date_result_i[["result"]],"label", exact = TRUE)))
+      message(paste0("    Begin survey result ", survey_summary_by_date_result_i[["result_date"]]))
       # create each small xts
       temp <- t(as.matrix(survey_summary_by_date_result_i[["result"]]))
       colnames(temp) <- paste0(attr(survey_summary_by_date_result_i[["result"]],"label", exact = TRUE), "__", colnames(temp)) 
@@ -3683,11 +3686,11 @@ get_phil_survey_of_prof_forecasters_eom_xts <- function(file_data_loc = NULL) {
       # combine with the grand list
       list_of_xtss <- c(list(temp), list_of_xtss)
       
-      message(paste0("  End   survey result ", attr(survey_summary_by_date_result_i[["result"]],"label", exact = TRUE)))
+      message(paste0("    End   survey result ", survey_summary_by_date_result_i[["result_date"]]))
       
     }
     
-    message(paste0("End   survey ", survey_name_i))
+    message(paste0("  End   survey ", survey_name_i))
     
   }
   
@@ -3712,6 +3715,9 @@ get_phil_survey_of_prof_forecasters_eom_xts <- function(file_data_loc = NULL) {
 # 
 # From a user custom location, get the data
 # ret <- get_phil_survey_of_prof_forecasters_eom_xts(file_data_loc = "phil_survey_of_prof_forecasters__all_files_in_one.RData")
+#
+# just two future quarters of unemployment
+# ret <- get_phil_survey_of_prof_forecasters_eom_xts(file_data_loc = "DISK", surveys_of_interest_regex = "^(unemp__).*(3|4)$", future_dates_regex = "(3|4)$")
 
 
 # dygraphs::dygraph(ret)
