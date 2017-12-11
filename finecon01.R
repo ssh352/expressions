@@ -1,4 +1,6 @@
 
+
+
 # dateindexlwd IS WRONG everywhere ( patch fixed )
 # DATA needs left to be fixed [ ] ( but I do not join on it anywhere )
 
@@ -4961,6 +4963,19 @@ load_inbnd_stmtstats_division_aggregates <- function(dateindex = NULL) {
             filter(where fe.last_inbnd_stmtstat_tci_q1    is not null and fe.mktcap is not null) /
           sum(fe.last_inbnd_stmtstat_mktcap) 
             filter(where fe.mktcap                          is not null and fe.last_inbnd_stmtstat_tci_q1  is not null)    * 1000 sum_last_tci_q1_o_mktcap_x1000
+
+        -- ere_q1 --
+        , sum(fe.last_inbnd_stmtstat_ere_q1) 
+            filter(where fe.last_inbnd_stmtstat_ere_q1    is not null and fe.last_inbnd_stmtstat_assets_q1 is not null) /
+          sum(fe.last_inbnd_stmtstat_assets_q1) 
+            filter(where fe.last_inbnd_stmtstat_assets_q1 is not null and fe.last_inbnd_stmtstat_ere_q1    is not null)    * 1000 sum_last_ere_q1_o_assets_q1_x1000
+        -- ere_q1 --
+        , sum(fe.last_inbnd_stmtstat_ere_q1) 
+            filter(where fe.last_inbnd_stmtstat_ere_q1    is not null and fe.mktcap is not null) /
+          sum(fe.last_inbnd_stmtstat_mktcap) 
+            filter(where fe.mktcap                          is not null and fe.last_inbnd_stmtstat_ere_q1  is not null)    * 1000 sum_last_ere_q1_o_mktcap_x1000
+
+
         , sum(fe.last_inbnd_stmtstat_ca_q1) 
             filter(where fe.last_inbnd_stmtstat_ca_q1    is not null and fe.last_inbnd_stmtstat_assets_q1 is not null) /
           sum(fe.last_inbnd_stmtstat_assets_q1) 
@@ -5026,6 +5041,8 @@ load_inbnd_stmtstats_division_aggregates <- function(dateindex = NULL) {
                  , fei.last_inbnd_stmtstat_tco_q1
                  , fei.last_inbnd_stmtstat_tcf_q1
                  , fei.last_inbnd_stmtstat_tci_q1
+                 -- ere_q1 --
+                 , fei.last_inbnd_stmtstat_ere_q1
                  , fei.last_inbnd_stmtstat_ca_q1
                  , fei.last_inbnd_stmtstat_cl_q1
                  , fei.pradchg_f04w_ann, fei.pradchg_f13w_ann, fei.pradchg_f26w_ann, fei.pradchg_f52w_ann
@@ -6503,6 +6520,9 @@ get_quandl_earnings_per_avg_share_x10_4q_eom_xts <- function() {
 
 get_fred_inflation_cpiu_eom_xts <- function() {
   
+  # Consumer Price Index for All Urban Consumers: All Items
+  # https://fred.stlouisfed.org/series/CPIAUCSL
+  
   ops <- options()
   
   options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
@@ -6538,6 +6558,8 @@ get_fred_inflation_cpiu_eom_xts <- function() {
   return(fred_inflation_cpiu_eom_xts)
   
 }
+# NOTE: THIS IS A cummulative VALUE ( NOT A 'percent change')
+# (I HAVE TO CALCULATE %change% MYSELF)
 # ret <- get_fred_inflation_cpiu_eom_xts()
 # > str(ret)
 # An ‘xts’ object on 1912-12-31/2017-09-30 containing:
@@ -6797,7 +6819,7 @@ get_sipro_sp500_mktcap_o_netinc <- function() {
 # 178      2017-09-29         2017-09-30                        498                   23.03229                   23.57541                   22.99147                   22.85666
 # 179      2017-10-31         2017-10-31                        493                   23.11135                   23.81306                   22.89608                   22.26932
 # 180      2017-11-30         2017-11-30                        499                   24.04328                   23.36232                   22.97016                   23.06993
-# # SOMEWAY/HOW # I REMEMBER THIS BEING MORE EXTREME
+# # SOMEWAY/HOW # I REMEMBER THIS BEING MORE EXTREME ( RUN OF SUN DEC 03 2017 )
 
 
 
@@ -6875,6 +6897,140 @@ get_sipro_sp500_mktcap_o_netinc_eom_xts <- function() {
 # 2017-09-30                        498                   23.03229                   23.57541                   22.99147                   22.85666
 # 2017-10-31                        493                   23.11135                   23.81306                   22.89608                   22.26932
 # 2017-11-30                        499                   24.04328                   23.36232                   22.97016                   23.06993
+
+
+
+#############################################
+### BEGIN METHOD TO ADD A *COMMON* COLUMN ###
+
+# no aggregation
+upload_mini_dbfs_no_future_look_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_only_back = NULL, exact_near_month_end_dbf_dirs = NULL, decreasing_sort_order = TRUE, vacuum_reindex_every_x_seconds=3600) {
+
+  
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  start_at_secs_since_UNIX_birth <- as.numeric(Sys.time())/(3600*24)
+  
+  
+  ops <- options()
+  options(warn=1) # If 'warn' is one, warnings are printed as they occur. ( Because I can not print colors )
+  
+  if(is.null(exact_near_month_end_dbf_dirs)){
+    as.integer(dir(from_dir))         ->     all_dbf_dirs
+    ## They are not all 'near month end'
+    # is_lwd_of_month(all_dbf_dirs)     -> lwd_all_dbf_dirs_tf 
+    #
+    # all_dbf_dirs[lwd_all_dbf_dirs_tf] ->     lwd_dbf_dirs
+    all_dbf_dirs                        ->     near_month_end_dbf_dirs
+  } else {
+                      exact_near_month_end_dbf_dirs -> near_month_end_dbf_dirs
+  }
+  
+  # latest to earliest 
+  # NOTE: any *new* month, I have to iterate back (months_only_back = 13) 13 months to calculate any *new* future returns
+  # 
+  # index of lwd months
+  seq_along(near_month_end_dbf_dirs) -> near_month_end_dbf_dirs_idx
+  if(is.null(months_only_back)) { 
+    if(is.null(decreasing_sort_order)) {
+      # everything - do not bother to order them
+      near_month_end_dbf_dirs -> near_month_end_dbf_dirs_ordered                             # no order at all
+    } else {
+      # everything - ordered                     # from args: default TRUE
+      sort(near_month_end_dbf_dirs, decreasing = decreasing_sort_order)[near_month_end_dbf_dirs_idx]  -> near_month_end_dbf_dirs_ordered
+    }
+    
+  } else { # months_only_back - ! is.null 
+    
+    if(is.null(decreasing_sort_order)) {
+      # not ordered - just the *new(head)* month and the other exact entered 12 months redone (months_only_back = 13) 
+      head(near_month_end_dbf_dirs, months_only_back) -> near_month_end_dbf_dirs_ordered     # no order at all
+    } else {
+      #    ordered - just the *new(head)* month and the             previous 12 months redone (months_only_back = 13)
+      sort(near_month_end_dbf_dirs, decreasing = decreasing_sort_order)[head(near_month_end_dbf_dirs_idx, months_only_back)]  -> near_month_end_dbf_dirs_ordered
+    }
+  }
+  
+  # # load_us_bond_instruments
+  # for_bonds_is_null_months_only_back_check_NOT_done <- TRUE
+  
+  ## # load_inbnd_stmtstats
+  ## # for_inbnd_stmtstats_is_null_months_only_back_check_NOT_done <- TRUE
+  
+  for(dir_i in near_month_end_dbf_dirs_ordered) {
+    
+    Sys.sleep(2)
+    message(paste0("**** Beginning disk dbf dir: ",dir_i," ", dir_i," ****"))
+    message(paste0("**** Beginning disk dbf dir: ",dir_i," ", dir_i," ****"))
+    message(paste0("**** Beginning disk dbf dir: ",dir_i," ", dir_i," ****"))
+    message(paste0("**** Beginning disk dbf dir: ",dir_i," ", dir_i," ****"))
+    Sys.sleep(2)
+    
+    # ere_q
+    #   si_cfq
+    # 
+
+    # columns CAN be named implicitely be regular expression
+    verify_company_details(dateindex = c(dir_i),  table_f = "si_cfq", cnames_e = "^ere_q.$") -> si_all_g_df
+    print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
+    
+    # if WANT to include AS an 'inbound' statistics(generally a good) idea ( ADD to this LINE )
+    # DYNAMIC SQL
+    # columns MUST be named explicitly
+    print(dir_i);load_inbnd_stmtstats(dir_i, nowlast_columns = c("sales_q1", "netinc_q1", "ncc_q1", "assets_q1", "assets_q2", "tco_q1", "tcf_q1", "tci_q1", "ere_q1", "ca_q1", "cl_q1", "liab_q1"), support_dateindex_collection = sort(as.integer(dir(from_dir)), decreasing = TRUE)[dir_i>=  sort(as.integer(dir(from_dir)), decreasing = TRUE)][seq_len(min(sum(dir_i >=  sort(as.integer(dir(from_dir)), decreasing = TRUE)),11))], char_col_numeric_limit = 99999999999999.99) -> si_all_g_df
+    print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
+
+    # IF INVOLVED IN THIS QUERY
+    # STATIC SQL
+    # ( and MODIFY this *STATIC* QUERY [x] NOW (add ere_q1 [x])AND permanently AND RUN )
+    load_inbnd_stmtstats_division_aggregates(dir_i)
+    
+    vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
+    
+    Sys.sleep(2)
+    message(paste0("**** Ending disk dbf dir: ",dir_i," ", dir_i," ****"))
+    message(paste0("**** Ending disk dbf dir: ",dir_i," ", dir_i," ****"))
+    message(paste0("**** Ending disk dbf dir: ",dir_i," ", dir_i," ****"))
+    message(paste0("**** Ending disk dbf dir: ",dir_i," ", dir_i," ****"))
+    Sys.sleep(2)
+    
+  }
+  
+
+  Sys.setenv(TZ=oldtz)
+  
+  options(ops)
+  
+  return(invisible())
+  
+}
+# upload_mini_dbfs_no_future_look_to_db(decreasing_sort_order = FALSE)
+# looking for ere_q1
+# select dateindex, ere_q1, ere_qi from fe_data_store.si_finecon2 where dateindex = 12055
+
+# looking for *whatever* ere_q1 derivatives ( assuming fe_data_store.si_finecon2 has data )
+# -- get from pgadmin
+# select 
+#   dateindex,
+#   sp_desc__sp500__sector_fin_desc__sectfinfinancial____sum_last_ere_q1_o_assets_q1_x1000,
+#   sp_desc__sp500__sector_fin_desc__sectfinnotfinancial____sum_last_ere_q1_o_assets_q1_x1000,
+#   sp_desc__sp500__sector_fin_desc__sectfinfinancial____sum_last_ere_q1_o_mktcap_x1000,
+#   sp_desc__sp500__sector_fin_desc__sectfinnotfinancial____sum_last_ere_q1_o_mktcap_x1000,
+#   sp_desc__sp500____sum_last_ere_q1_o_assets_q1_x1000,
+#   sp_desc__sp500____sum_last_ere_q1_o_mktcap_x1000
+# from fe_data_store.si_finecon2_aggregates where dateindex in (values (12055),(12083),(12111)) -- 12055 -- earliest empty
+# order by dateindex;
+
+# AFTER ( TODO PERMANENT - ADD ITEM TO LINE IN *ONE PLACE ONLY* [x] )
+# verify_company_details(dateindex = c(dir_i),  table_f = "si_cfq", cnames_e = "^tco_q.$|^tcf_q.$|^tci_q.$|^ere_q.$") -> si_all_g_df
+
+# AFTER ( TODO PERMANENT - MODIFY LINE [X]: ADD ', "ere_q1"' [X] )
+# print(dir_i);load_inbnd_stmtstats(dir_i, nowlast_columns = c("sales_q1", "netinc_q1", "ncc_q1", "assets_q1", "assets_q2", "tco_q1", "tcf_q1", "tci_q1", "ere_q1", "ca_q1", "cl_q1", "liab_q1"), support_dateindex_collection = sort(as.integer(dir(from_dir)), decreasing = TRUE)[dir_i>=  sort(as.integer(dir(from_dir)), decreasing = TRUE)][seq_len(min(sum(dir_i >=  sort(as.integer(dir(from_dir)), decreasing = TRUE)),11))], char_col_numeric_limit = 99999999999999.99) -> si_all_g_df
+
+### END METHOD TO ADD A *COMMON* COLUMN ###
+###########################################
 
 
                                     
@@ -7019,7 +7175,7 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
       verify_company_details(dateindex = c(dir_i),  table_f = "si_mlt", cnames_e = "^bby_1t$") -> si_all_g_df
       print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
   
-      verify_company_details(dateindex = c(dir_i),  table_f = "si_cfq", cnames_e = "^tco_q.$|^tcf_q.$|^tci_q.$") -> si_all_g_df
+      verify_company_details(dateindex = c(dir_i),  table_f = "si_cfq", cnames_e = "^tco_q.$|^tcf_q.$|^tci_q.$|^ere_q.$") -> si_all_g_df
       print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
     
       verify_company_details(dateindex = c(dir_i),  table_f = "si_bsq", cnames_e = "^ca_q.$|^cl_q.$|^liab_q.$") -> si_all_g_df
@@ -7085,7 +7241,7 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
         # support_dateindex_collection is the 
         # minimum of 11 months: current + ( 6 month Quarter period reporter with 4 month Q-10 report filing delay ) 
         #                           # current or earlier                               # current or up to 10 earlier
-        print(dir_i);load_inbnd_stmtstats(dir_i, nowlast_columns = c("sales_q1", "netinc_q1", "ncc_q1", "assets_q1", "assets_q2", "tco_q1", "tcf_q1", "tci_q1", "ca_q1", "cl_q1", "liab_q1"), support_dateindex_collection = sort(as.integer(dir(from_dir)), decreasing = TRUE)[dir_i>=  sort(as.integer(dir(from_dir)), decreasing = TRUE)][seq_len(min(sum(dir_i >=  sort(as.integer(dir(from_dir)), decreasing = TRUE)),11))], char_col_numeric_limit = 99999999999999.99) -> si_all_g_df
+        print(dir_i);load_inbnd_stmtstats(dir_i, nowlast_columns = c("sales_q1", "netinc_q1", "ncc_q1", "assets_q1", "assets_q2", "tco_q1", "tcf_q1", "tci_q1", "ere_q1", "ca_q1", "cl_q1", "liab_q1"), support_dateindex_collection = sort(as.integer(dir(from_dir)), decreasing = TRUE)[dir_i>=  sort(as.integer(dir(from_dir)), decreasing = TRUE)][seq_len(min(sum(dir_i >=  sort(as.integer(dir(from_dir)), decreasing = TRUE)),11))], char_col_numeric_limit = 99999999999999.99) -> si_all_g_df
         print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
         # 
         vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
