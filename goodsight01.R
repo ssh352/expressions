@@ -3410,6 +3410,121 @@ get_quandl_sp500_pe_ratio_month_4q_eom_xts <- function() {
 
 
 
+get_aaii_sentiment_survey_eom_xts <- function() {
+
+  # http://www.aaii.com/sentimentsurvey
+  # download file
+  # works in FF
+  # http://www.aaii.com/files/surveys/sentiment.xls
+
+  ops <- options()
+  
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  options(warn=1)
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  message("Begin function get_aaii_sentiment_survey_eom_xts.")
+  
+  require(xts)
+  # uses TTR function  SMA
+  # uses plyr function ddply
+  
+  tmpf <- tempfile(fileext = ".xls")
+  # weekly data ( every Friday ) since JAN 03 2017
+  download.file(url = "http://www.aaii.com/files/surveys/sentiment.xls"
+      , destfile = tmpf
+      , mode = "wb"
+  )
+  spreadsheet <- suppressWarnings(readxl::read_excel(tmpf, sheet = "SENTIMENT", skip = 5, col_names = FALSE))
+  # Reported Date: POSIXct
+  # % - automatically removed
+  
+  # end
+  # Observations over life of survey summary statistics 
+  #  read_excel converted to 'NA' ( not useful(all statistics): will be removed )		
+  spreadsheet <- spreadsheet[!is.na(spreadsheet[[1]]), , drop = FALSE]
+  
+  
+  spreadsheet <- as.data.frame(spreadsheet, stringsAsFactors = FALSE)
+  
+  # names
+  spreadsheet_col_names <- readxl::read_excel(tmpf, sheet = "SENTIMENT", skip = 1, n_max = 3, col_names = FALSE) 
+  colnames(spreadsheet) <- plyr::laply( spreadsheet_col_names, .fun = function(x) {
+  
+    # aaii specific 
+    temp <- gsub("- ","less ", x)
+    temp <- gsub("\\+S","add S", temp)
+    
+    temp <- gsub("( |&|\\+|-|[.])","_", temp)
+    # gsub would have replaced empty row with NA
+    temp <- temp[!is.na(temp)] 
+    temp <- paste0(temp, collapse = "_")
+    temp <- tolower(temp)
+    return(temp)
+  
+  })
+  rm(spreadsheet_col_names)
+  
+  # future xts index
+  dates <- zoo::as.Date(spreadsheet[[1]])
+  spreadsheet <- spreadsheet[,-1, drop = FALSE]
+  
+  # convert
+  row.names(spreadsheet) <- as.character(dates)
+  spreadsheet <- as.xts(as.matrix(spreadsheet))
+  index(spreadsheet) <- zoo::as.Date(index(spreadsheet))
+
+  # just month end data ( last weekly of the month matters )
+  # smooth all columns
+  
+  temp <- as.zoo(spreadsheet)
+  # MORE user friendly than PACKAGE TTR function SMA
+  # note: TTR::SMA/runMean/runSum
+  #   runSum only supports univariate
+  #   Series contains non-leading NAs
+  #   not enough non-NA values
+  # mean(x, na.rm = FALSE) # default # required # if NA in data # then return NA
+  #                                  # required(partial = TRUE) # to prevent the 'length'(x) from shortening 
+  spreadsheet <- rollapply(temp, width = 4, partial = TRUE, align = "right", FUN = function(x, n) { 
+    # if not enough data 'length'
+    if(n <= length(x)) { mean(x, na.rm = FALSE) } else { NA_real_ }
+  }, n = 4)
+  spreadsheet <- as.xts(spreadsheet, dates)
+  rm(temp)
+  # Warning in to.period(x, "months", indexAt = indexAt, name = name, ...) :
+  # missing values removed from data
+  spreadsheet <- suppressWarnings(to.monthly(spreadsheet, OHLC = FALSE, indexAt = "lastof"))
+    
+  
+  aaii_sentiment_survey_eom_xts <- spreadsheet
+                          
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  message("End   function get_aaii_sentiment_survey_eom_xts.")
+  
+  return(aaii_sentiment_survey_eom_xts)
+
+}
+# even AFTER SMOOTHING: gives an IDEA how volitile and clueless the individual is.
+# ignorance(suprise) of the general population
+# ret <- get_aaii_sentiment_survey_eom_xts()
+# dygraphs::dygraph(ret[,"bull_bear_spread"])
+# generally ACCOMPLISHES THE SAME THING: zimmerman e.q. 'WILL5000INDFC - AGG'
+# SO just use ZIMMERMAN
+
+
+
+
+
 # SEE THE PRESSURE/RELIEF
 get_clev_easing_balances_eom_xts <- function() {
   
@@ -3454,6 +3569,7 @@ get_clev_easing_balances_eom_xts <- function() {
   row.names(temp) <- as.character(zoo::as.Date(temp[[1]]))
   temp <- temp[,-1, drop = FALSE]
   temp2 <- as.xts(as.matrix(temp))
+  index(temp2) <- zoo::as.Date(index(temp2))
   rm(temp)
   
   # just month end data ( last weekly of the month matters )
