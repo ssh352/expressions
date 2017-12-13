@@ -1,6 +1,4 @@
 
-
-
 # dateindexlwd IS WRONG everywhere ( patch fixed )
 # DATA needs left to be fixed [ ] ( but I do not join on it anywhere )
 
@@ -282,6 +280,11 @@ verify_connection <- function () {
       # A good rule of thumb is to keep: work_mem*max_connections*2 < 1/4 of memory
       # NOTE: WATCH OUT FOR 'R language: parallel'each process GETS 'work_mem' limit
       db.q(str_c("set work_mem to '2047MB';"), nrows =  -1, conn.id = cid)
+      
+      # maximum amount of memory to be used by maintenance operations, such as VACUUM, CREATE INDEX, and ALTER TABLE ADD FOREIGN KEY
+      # https://wiki.postgresql.org/wiki/Tuning_Your_PostgreSQL_Server
+      db.q(str_c("set maintenance_work_mem to '2047MB';"), nrows =  -1, conn.id = cid)
+
       db.q(str_c("set constraint_exclusion = on;"), nrows =  -1, conn.id = cid)
       # postgresql 9.6
       db.q(str_c("set max_parallel_workers_per_gather to 4;"), nrows =  -1, conn.id = cid)
@@ -6106,8 +6109,8 @@ upload_us_gov_bonds_to_db <- function(months_only_back = NULL) {
 # upload_us_gov_bonds_to_db(months_only_back = 13) # recent data
 
 
-
-vacuum_reindex_check <- function(start_time, how_often) {
+vacuum_reindex_check <- function(start_time = NULL, how_often = NULL) {
+                              # 'last check/do time
 
   oldtz <- Sys.getenv('TZ')
   if(oldtz=='') {
@@ -6116,30 +6119,80 @@ vacuum_reindex_check <- function(start_time, how_often) {
 
   verify_connection()
   
-  message("checking how often to vacuum/reindex")
+  message("Begin checking_how_often_to/doing vacuum/reindex.")
 
-  if(!is.null(how_often)) {
+  # before 'A' run
+  now_at_secs_since_UNIX_birth <- as.numeric(Sys.time())
+
+  if(!is.null(how_often)) { # run EVERY-SO-OFTEN
   
-     now_at_secs_since_UNIX_birth <- as.numeric(Sys.time())/(3600*24)
-
+    if(is.null(start_time)) start_time <- now_at_secs_since_UNIX_birth
+  
     if(start_time + how_often < now_at_secs_since_UNIX_birth) {
     
+      message(paste0("  During checking how_often_to/doing vacuum/reindex: BEGIN doing vacuum/reindex NOW on START_TIME/HOW_OFTEN/NOW: ", start_time, "/", how_often, "/", now_at_secs_since_UNIX_birth))
+    
       # VACUUM cannot be executed from a function or multi-command string
+      # db.q("select 1;" , conn.id = cid)
       db.q("vacuum analyze verbose fe_data_store.si_finecon2;" , conn.id = cid)
       db.q("reindex (verbose) table fe_data_store.si_finecon2;", conn.id = cid)
     
-    start_time <- now_at_secs_since_UNIX_birth
+      message(paste0("  During checking how_often_to/doing vacuum/reindex: END  doing vacuum/reindex NOW on START_TIME/HOW_OFTEN/NOW: ", start_time, "/", how_often, "/", now_at_secs_since_UNIX_birth))
     
-    } 
+    } else { 
+    
+      message("  During checking how_often_to/doing vacuum/reindex: no vacuum/reindex needed.")
+      message(paste0("    Time passed only: ", now_at_secs_since_UNIX_birth - start_time, " seconds."))
+    
+    }
+    
+  } else { # is.null(how_often) # run NOW
+  
+    message("  During checking how_often_to/doing vacuum/reindex: BEGIN doing vacuum/reindex NOW on demand.")
+    
+    # db.q("select 2;" , conn.id = cid)
+    db.q("vacuum analyze verbose fe_data_store.si_finecon2;" , conn.id = cid)
+    db.q("reindex (verbose) table fe_data_store.si_finecon2;", conn.id = cid)
+    
+    message("  During checking how_often_to/doing vacuum/reindex: END doing vacuum/reindex NOW on demand.")
+    
     
   }
   
+  # after the RUN/CHECK
+  now_at_secs_since_UNIX_birth <- as.numeric(Sys.time()) 
+  start_time <- now_at_secs_since_UNIX_birth
+
   Sys.setenv(TZ=oldtz)
   
-  return(start_time)
+  message("End  checking_how_often_to/doing vacuum/reindex.")
+  
+  return(start_time) # 'last check/do time
   
 }
-# start_at_secs_since_UNIX_birth <- as.integer(Sys.time())/(3600L*24L)
+# local({
+#   # vacuum_reindex_every_x_seconds=1200
+#   vacuum_reindex_every_x_seconds=2
+#   # just NOW
+#   print("vacuum_reindex_check() -> start_at_secs_since_UNIX_birth")
+#   vacuum_reindex_check() -> start_at_secs_since_UNIX_birth
+#   # BAD 'DIRECT' FORM: # ALWAYS WILL BE SKIPPED # start_time <- NOW # Time passed only: 0 seconds.
+#   # HAS 'some' 'DEEP NESTED PROGRAMMATIC' USEFULNESS
+#   print("vacuum_reindex_check(how_often = vacuum_reindex_every_x_seconds) -> start_at_secs_since_UNIX_birth")
+#   vacuum_reindex_check(how_often = vacuum_reindex_every_x_seconds) -> start_at_secs_since_UNIX_birth
+#   start_at_secs_since_UNIX_birth <- as.numeric(Sys.time()) 
+#   print("vacuum_reindex_check(start_at_secs_since_UNIX_birth) ->  start_at_secs_since_UNIX_birth")
+#   vacuum_reindex_check(start_at_secs_since_UNIX_birth) ->  start_at_secs_since_UNIX_birth
+#   print("Sys.sleep(1.0);vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth")
+#   Sys.sleep(1.0)
+#   vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
+#   print("Sys.sleep(3.0);vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth")
+#   Sys.sleep(3.0)
+#   vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
+# })
+
+#
+# start_at_secs_since_UNIX_birth <- as.numeric(Sys.time())
 # vacuum_reindex_check(start_at_secs_since_UNIX_birth, how_often = 3600) ->  start_at_secs_since_UNIX_birth
 
 
@@ -6904,14 +6957,14 @@ get_sipro_sp500_mktcap_o_netinc_eom_xts <- function() {
 ### BEGIN METHOD TO ADD A *COMMON* COLUMN ###
 
 # no aggregation
-upload_mini_dbfs_no_future_look_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_only_back = NULL, exact_near_month_end_dbf_dirs = NULL, decreasing_sort_order = TRUE, vacuum_reindex_every_x_seconds=3600) {
+upload_mini_dbfs_no_future_look_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_only_back = NULL, exact_near_month_end_dbf_dirs = NULL, decreasing_sort_order = TRUE, vacuum_reindex_every_x_seconds=1200) {
 
   
   oldtz <- Sys.getenv('TZ')
   if(oldtz=='') {
     Sys.setenv(TZ="UTC")
   }
-  start_at_secs_since_UNIX_birth <- as.numeric(Sys.time())/(3600*24)
+  start_at_secs_since_UNIX_birth <- as.numeric(Sys.time())
   
   
   ops <- options()
@@ -6968,6 +7021,8 @@ upload_mini_dbfs_no_future_look_to_db <- function(from_dir = "W:/AAIISIProDBFs",
     message(paste0("**** Beginning disk dbf dir: ",dir_i," ", dir_i," ****"))
     Sys.sleep(2)
     
+    vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
+
     # ere_q
     #   si_cfq
     # 
@@ -7006,6 +7061,10 @@ upload_mini_dbfs_no_future_look_to_db <- function(from_dir = "W:/AAIISIProDBFs",
   return(invisible())
   
 }
+# 
+# NOTE: CAN BE RAN ( RECOMMENDED )
+# vacuum_reindex_check(); { upload_mini_dbfs_no_future_look_to_db(. . . }; vacuum_reindex_check()
+# 
 # upload_mini_dbfs_no_future_look_to_db(decreasing_sort_order = FALSE)
 # looking for ere_q1
 # select dateindex, ere_q1, ere_qi from fe_data_store.si_finecon2 where dateindex = 12055
@@ -7036,7 +7095,7 @@ upload_mini_dbfs_no_future_look_to_db <- function(from_dir = "W:/AAIISIProDBFs",
                                     
                                            # NO CHECK: I must verify
                                                                                                 # that (1) exists AND (2) lwd
-upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_only_back = NULL, exact_near_month_end_dbf_dirs = NULL, decreasing_sort_order = TRUE, exactly_only_future_returns = FALSE, exactly_only_aggregates = FALSE, exactly_only_aggregates_group_bys_only = FALSE, vacuum_reindex_every_x_seconds=3600) {
+upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_only_back = NULL, exact_near_month_end_dbf_dirs = NULL, decreasing_sort_order = TRUE, exactly_only_future_returns = FALSE, exactly_only_aggregates = FALSE, exactly_only_aggregates_group_bys_only = FALSE, vacuum_reindex_every_x_seconds=1200) {
 
   # NOTE: to build from scratch
   # start from the earliest date (not default) and go thorugh the current date
@@ -7075,7 +7134,7 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
   if(oldtz=='') {
     Sys.setenv(TZ="UTC")
   }
-  start_at_secs_since_UNIX_birth <- as.numeric(Sys.time())/(3600*24)
+  start_at_secs_since_UNIX_birth <- as.numeric(Sys.time())
   
   
   ops <- options()
@@ -7135,42 +7194,30 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
                                                                                                             # no decision
     if((!exactly_only_future_returns && (!is.null(exactly_only_aggregates) && !exactly_only_aggregates)) || is.null(exactly_only_aggregates) ) {
   
+      vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
+      
       verify_company_basics(dateindex = c(dir_i)) -> si_all_g_df
       update_from_future_new_company_ids(df = si_all_g_df, ref = dir_i) -> si_all_g_df
       print(dir_i);upsert(si_all_g_df, keys = c("company_id")) # HERE #
   
-      vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
-      
       verify_company_details(dateindex = c(dir_i),  table_f = "si_psd", cnames_e = "^price$|^mktcap$|^split_fact$|^split_date$") -> si_all_g_df
       print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
   
-      vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
-      
       verify_company_details(dateindex = c(dir_i),  table_f = "si_psd", cnames_e = "^prchg_\\d\\dw$") -> si_all_g_df
       upsert(si_all_g_df, keys = c("company_id"))
   
-      vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
-      
       verify_return_dates(dateindex = c(dir_i), months_limit = 38)  -> si_all_g_df
       print(dir_i);upsert(si_all_g_df, keys = NULL) # ONLY dateindex is the pk
   
-      vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
-      
       verify_company_details(dateindex = c(dir_i),  table_f = "si_isq", cnames_e = "^dps_q.$") -> si_all_g_df
       print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
   
-      vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
-      
       verify_company_details(dateindex = c(dir_i),  table_f = "si_date", cnames_e = "^perend_q.$|^perlen_q.$|^pertyp_q.$") -> si_all_g_df
       print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
   
-      vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
-      
       # MAY? have not been reliable?
       verify_company_details(dateindex = c(dir_i),  table_f = "si_ee"  , cnames_e = "^date_eq0$") -> si_all_g_df
       upsert(si_all_g_df, keys = c("company_id"))
-      
-      vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
       
       verify_company_details(dateindex = c(dir_i),  table_f = "si_mlt", cnames_e = "^bby_1t$") -> si_all_g_df
       print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
@@ -7187,6 +7234,8 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
     
     if(exactly_only_future_returns) {
   
+      vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
+      
       # requires
       #   dateindexf##lwd, price, prchg_##w, perend_q#, dps_q#
       verify_week_often_week_returns(dir_i) -> si_all_g_df
@@ -7197,34 +7246,25 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
     }
                                                                                                             # no decision
     if((!exactly_only_future_returns && (!is.null(exactly_only_aggregates) && !exactly_only_aggregates)) || is.null(exactly_only_aggregates)  ) {
-      
+  
+      vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
 
       verify_company_details(dateindex = c(dir_i),  table_f = "si_psdc", cnames_e = "^price_m00[1-9]$|^price_m01[0-7]$") -> si_all_g_df
       print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
-      
-      vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
       
       # requires (above)
       #    price_m001 through price_m017
       verify_month_often_month_past_returns(dir_i,  months_limit = 17) -> si_all_g_df
       print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
       
-      vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
-      
       verify_company_details(dateindex = c(dir_i),  table_f = "si_isq", cnames_e = "^sales_q.$") -> si_all_g_df
       print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
   
-      vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
-      
       verify_company_details(dateindex = c(dir_i),  table_f = "si_isq", cnames_e = "^netinc_q.$") -> si_all_g_df
       print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
       
-      vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
-      
       verify_company_details(dateindex = c(dir_i),  table_f = "si_cfq", cnames_e = "^ncc_q.$") -> si_all_g_df
       print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
-      
-      vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
       
       verify_company_details(dateindex = c(dir_i),  table_f = "si_bsq", cnames_e = "^assets_q.$") -> si_all_g_df
       print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
@@ -7235,9 +7275,14 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
                                                                          # no decision
     if((!is.null(exactly_only_aggregates) && exactly_only_aggregates) || is.null(exactly_only_aggregates)) {
       
+      vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
+
                                                                                                           # no decision
       if((!is.null(exactly_only_aggregates_group_bys_only) && !exactly_only_aggregates_group_bys_only) || is.null(exactly_only_aggregates_group_bys_only)) {
-        #
+
+        vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
+
+                #
         # support_dateindex_collection is the 
         # minimum of 11 months: current + ( 6 month Quarter period reporter with 4 month Q-10 report filing delay ) 
         #                           # current or earlier                               # current or up to 10 earlier
@@ -7249,7 +7294,10 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
       }
                                                                                                          # no decision
       if((!is.null(exactly_only_aggregates_group_bys_only) && exactly_only_aggregates_group_bys_only) || is.null(exactly_only_aggregates_group_bys_only)) {
-              # uses now_inbnd_stmtstat last_inbnd_stmtstat
+
+        vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
+
+                      # uses now_inbnd_stmtstat last_inbnd_stmtstat
         # since MANY SQLs upsertS are done inside                                      # if NOT an UPDATE on COMPANY_ID then I CAN go on the OUTSIDE
         # load_division_aggregated_now_last_mktcap_per_company_id(dateindex = dir_i) # # head(lwd_dbf_dirs_ordered,1) ( BUT WILL NOT do this now )
         # WORKING(but not used): load_division_aggregated_now_last_mktcap_per_company_id
@@ -7277,6 +7325,7 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
         
       }
       
+      vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
       
     }
     
@@ -7328,6 +7377,9 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
 # --explain
 # --select distinct dateindex from si_finecon2 order by dateindex desc;
 
+# NOTE: ** ANY BELOW CAN BE RUN **
+# vacuum_reindex_check(); { upload_lwd_sipro_dbfs_to_db(. . . }; vacuum_reindex_check()
+
 # 
 # upload_lwd_sipro_dbfs_to_db(from_dir = "W:/AAIISIProDBFs", months_only_back = NULL, exact_near_month_end_dbf_dirs = NULL, decreasing_sort_order = TRUE)
 #
@@ -7337,7 +7389,7 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
 
 #
 # exactly what I want 
-#                     eactly in this order ( processed left to right in for-loop)
+#                     exactly in this order ( processed left to right in for-loop)
 # upload_lwd_sipro_dbfs_to_db(                      exact_near_month_end_dbf_dirs = any # of elements, decreasing_sort_order = NULL )
 # 
 # tester
@@ -7352,6 +7404,9 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
 #   upload_lwd_sipro_dbfs_to_db(exact_near_month_end_dbf_dirs = c(17284, 17317,17347,17378,17409),       decreasing_sort_order = NULL) 
 # }
 
+# NOTE: CAN BE RAN ( RECOMMENDED )
+# vacuum_reindex_check(); { upload_lwd_sipro_dbfs_to_db(. . . }; vacuum_reindex_check()
+# 
 # tester                                                                  # assuming all of the previous months isq,bsq,cfq have been loaded
 # upload_lwd_sipro_dbfs_to_db(                                             months_only_back = 5, exactly_only_future_returns = TRUE) 
 
