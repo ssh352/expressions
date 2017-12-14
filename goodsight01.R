@@ -508,7 +508,6 @@ get_delay_since_last_obs_xts <-function(x) {
 
 # single column xts only
 # add a record for each day
-
 get_delay_since_last_day_xts <-function(x) { 
 
   ops <- options()
@@ -564,7 +563,6 @@ get_delay_since_last_day_xts <-function(x) {
   return(delay_since_last_day_xts)
 
 } 
-
 # get_delay_since_last_day_xts(xts::xts(c(101,NA,NA,NA,102,NA,NA),zoo::as.Date(seq(10,70,10))))
 #            [,1]
 # 1970-01-11    0
@@ -630,16 +628,9 @@ get_delay_since_last_day_xts <-function(x) {
 # 1970-03-12   20
 
 
-# renamed is.na.xt -> is.nasig.xts 
-# to PREVENT ACCIDENTAL REPLACE dispatch the REAL is.na.xts
-  # is the xts observation na? 1 - true  2 - false(regular observation)
-#' Title
-#'
-#' @return
-#' @export
-#'
-#' @examples
-is.na_fctr.xts <- function(x) {
+
+# single column xts only
+is_na_xts <- function(x) {
   
   ops <- options()
   
@@ -683,10 +674,13 @@ is.na_fctr.xts <- function(x) {
     xts::reclass(x_result, x_orig) 
   } -> x_result
   
+  colnames(x_result) <- colnames(x_orig)
+  na_xts <- x_result 
+  
   Sys.setenv(TZ=oldtz)
   options(ops)
    
-  return(x_result)
+  return(na_xts)
 
 } 
 # xts(c(11,NA,NA,14,NA),zoo::as.Date(1:5))
@@ -697,7 +691,7 @@ is.na_fctr.xts <- function(x) {
 # 1970-01-05   14
 # 1970-01-06   NA
 # 
-# is.na_fctr.xts(xts(c(11,NA,NA,14,NA),zoo::as.Date(1:5)))
+# is_na_xts(xts(c(11,NA,NA,14,NA),zoo::as.Date(1:5)))
 #            [,1]
 # 1970-01-02    2
 # 1970-01-03    1
