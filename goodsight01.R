@@ -128,14 +128,7 @@ na.locfl <- function(x, n = NULL) {
 
 
 
-# SHOULD 'RENAME TO 'Uses'
-#' Title
-#'
-#' @return
-#' @export
-#'
-#' @examples
-check_uses_packages_available <- function(programmed_in_R_version, explicit_package_function_calls, matched_call = NULL) {
+uses <- function(programmed_in_R_version, explicit_package_function_calls, matched_call = NULL) {
 
   running_in_R_version <- paste(R.Version()$major,R.Version()$minor, sep = ".")
   # programmed_in_R_version # "3.4.0"
@@ -158,15 +151,24 @@ check_uses_packages_available <- function(programmed_in_R_version, explicit_pack
   return(TRUE)
 
 }
+# f <- function() {
+#   matched_call <- capture.output(str(match.call()))
+#   uses("3.4.1",c("zoo","xts","rlist","stringr","DescTools","plyr","DataCombine"), matched_call)
+# }
+# f()
+# Warning message:
+# In uses("3.4.1", c("zoo", "xts", "rlist", "stringr", "DescTools",  :
+#   Running R is 3.4.3 but Programmed in R is 3.4.1
+# f <- function() {
+#   matched_call <- capture.output(str(match.call()))
+#   uses("3.4.3",c("zoo","xts","rlist","stringr","DescTools","plyr","DataCombine"), matched_call)
+# }
+# f()
+# [1] TRUE
+
 
 # pecent change from the past through NOW 
 # ( if to_future == TRUE, then from NOW to the FUTURE )
-#' Title
-#'
-#' @return
-#' @export
-#'
-#' @examples
 PCTCHG.xts <- function(x, whiches, to_future = NULL) { 
   
   ops <- options()
@@ -1378,7 +1380,7 @@ expand.xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o
     # xts:::na.locf.xts(dispatch), xts:::merge.xts(dispatch), plyr::join_all,  DataCombine::VarDrop, stringr::str_replace_all
     # xts::is.xts, xts::as.xts, rlist::list.flatten(X?X),  rlist::list.ungroup, stringr::str_replace_all, plyr::mutate, stringr::str_detect
   
-    check_uses_packages_available("3.4.1",c("zoo","xts","rlist","stringr","DescTools","plyr","DataCombine"), matched_call)
+    uses("3.4.3",c("zoo","xts","rlist","stringr","DescTools","plyr","DataCombine"), matched_call)
     
     require(xts) # # Attaching package: 'zoo'
     # IF NOT Error in try.xts(element1) : could not find function "try.xts"
