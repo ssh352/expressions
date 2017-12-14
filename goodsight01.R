@@ -261,9 +261,10 @@ get_pctchg_xts <- function(x, which, to_future = NULL) {
 # 2007-01-04   NA
 # 2007-01-05   NA
 
+# [ ] NEED get_sma_xts
 
 
-collofdays2daily.xts <- function(x) {
+get_collofdays2daily_xts <- function(x) {
   
   ops <- options()
   
@@ -289,14 +290,14 @@ collofdays2daily.xts <- function(x) {
   x_try.xts_success <- FALSE
   x_try.xts <- try(xts::try.xts(x_orig), silent = T)
   #
-  x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("collofdays2daily.xts could not make an xts") } else { x_try.xts_success <- TRUE; x_try.xts }
+  x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("get_collofdays2daily_xts could not make an xts") } else { x_try.xts_success <- TRUE; x_try.xts }
   # EXPECTED TO CHANGE THE NUMBER OF ROWS  SO CAN NOT DO 'reclass'
   
   # note: index(first/last(x, '1 day')) expected to return ONE single element
   # reduce a a 'set of first/last '1 day' to ret ONE single element 
   # also will covert a non-Date index to a Date index
   # 
-  #  zoo::as.Date garantees that a non-Date will become a Date
+  # zoo::as.Date garantees that a non-Date will become a Date
   # saved NOW because FUTURE xts::to.daily WILL trim off dates
   earliest_idx_x <- zoo::as.Date(zoo:::head.zoo(index(x),1))
   latest_idx_x   <- zoo::as.Date(zoo:::tail.zoo(index(x),1))
@@ -310,12 +311,15 @@ collofdays2daily.xts <- function(x) {
   x_days <- xts(,seq(earliest_idx_x, latest_idx_x, by = 1))
   
   # dispach on xts:::merge.xts
-  ret <- merge(x_days, x)
+  merged <- merge(x_days, x)
+  
+  colnames(merged) <- colnames(x_orig)
+  get_collofdays2daily <- merged
   
   Sys.setenv(TZ=oldtz)
   options(ops)
   
-  return(ret)
+  return(get_collofdays2daily)
   
 }
 # x <- xts(c(11,13,15),zoo::as.Date(c(1,3,5))) 
@@ -324,21 +328,27 @@ collofdays2daily.xts <- function(x) {
 # 1970-01-02   11
 # 1970-01-04   13
 # 1970-01-06   15
-# xc <- collofdays2daily.xts(x)
+# xc <- get_collofdays2daily_xts(x)
 # xc
-#              x
+#          [,1]
 # 1970-01-02 11
 # 1970-01-03 NA
 # 1970-01-04 13
 # 1970-01-05 NA
 # 1970-01-06 15
 
-# # as.POSIXct(c(1,10000,200000,400000), origin = "1970-01-01")
-# # [1] "1970-01-01 00:00:01 UTC" "1970-01-01 02:46:40 UTC" "1970-01-03 07:33:20 UTC" "1970-01-05 15:06:40 UTC"
+# as.POSIXct(c(1,10000,200000,400000), origin = "1970-01-01")
+# [1] "1970-01-01 00:00:01 UTC" "1970-01-01 02:46:40 UTC" "1970-01-03 07:33:20 UTC" "1970-01-05 15:06:40 UTC"
 # xp <- xts(11:14, as.POSIXct(c(1,10000,200000,400000), origin = "1970-01-01"))
-# xpc <- collofdays2daily.xts(xp)
+# xp
+#                     [,1]
+# 1970-01-01 00:00:01   11
+# 1970-01-01 02:46:40   12
+# 1970-01-03 07:33:20   13
+# 1970-01-05 15:06:40   14
+# xpc <- get_collofdays2daily_xts(xp)
 # xpc
-#             x
+#          [,1]
 # 1970-01-01 12
 # 1970-01-02 NA
 # 1970-01-03 13
@@ -563,7 +573,7 @@ delay_since_last_day.xts <-function(x) {
   # uses xts:::merge.xts
   
   # more dates - create temporary rows
-  x_nonsparse <- collofdays2daily.xts(x)
+  x_nonsparse <- get_collofdays2daily_xts(x)
   
   # find delays(0 - no delay over NA, 1 - one delay 'at' NA)
   x_nonsparse_delays <- delay_since_last_obs.xts(x_nonsparse)
