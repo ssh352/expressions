@@ -2,8 +2,9 @@
 
 # goodsight01.R
 
+# single column xts only (currently)
+# multi  column xts (untried)
 # last observation carried forard limited
-
 na.locfl <- function(x, n = NULL) {
 
   ops <- options()
@@ -161,7 +162,8 @@ uses <- function(programmed_in_R_version, explicit_package_function_calls, match
 # [1] TRUE
 
 
-# pecent change from the past through NOW 
+# single column xts only
+# percent change from the past through NOW 
 # ( if to_future == TRUE, then from NOW to the FUTURE )
 # only ONE lag is allowed: so "which" must be a vector of size: 1.
 get_pctchg_xts <- function(x, which, to_future = NULL) { 
@@ -264,6 +266,8 @@ get_pctchg_xts <- function(x, which, to_future = NULL) {
 # [ ] NEED get_sma_xts
 
 
+
+# single column xts only
 get_collofdays2daily_xts <- function(x) {
   
   ops <- options()
@@ -357,24 +361,7 @@ get_collofdays2daily_xts <- function(x) {
 
 
 
-# # time since 'end of data'
-# TMsinceEOD
-# 
-# # time since report
-# TMsinceREP
-# 
-# # irregular: time(in future) window(horizon) to prediction
-# TMinfutTOPRED
-#' Title
-#'
-#' @return
-#' @export
-#'
-#' @examples
-delay_since_last_obs <- function(x) UseMethod("delay_since_last_obs")
-
-
-delay_since_last_obs.default <- function(x) {
+get_delay_since_last_obs <- function(x) {
 
   ops <- options()
   
@@ -436,19 +423,13 @@ delay_since_last_obs.default <- function(x) {
  
 }
  
-# delay_since_last_obs.default(c(101,NA,NA,NA,102,NA,NA))
+# get_delay_since_last_obs(c(101,NA,NA,NA,102,NA,NA))
 # [1] 0 1 2 3 0 1 2
 
 
 
-
-#' Title
-#'
-#' @return
-#' @export
-#'
-#' @examples
-delay_since_last_obs.xts <-function(x) { 
+# single column xts only
+get_delay_since_last_obs_xts <-function(x) { 
 
   ops <- options()
   
@@ -465,7 +446,7 @@ delay_since_last_obs.xts <-function(x) {
   }
   
   # ONLY works on a single column xts
-  # uses   delay_since_last_obs.default
+  # uses   get_delay_since_last_obs
   
   require(xts) # # Attaching package: 'zoo'
   # IF NOT Error in try.xts(element1) : could not find function "try.xts"
@@ -477,12 +458,12 @@ delay_since_last_obs.xts <-function(x) {
   x_try.xts_success <- FALSE
   x_try.xts <- try(xts::try.xts(x_orig), silent = T)
   #
-  x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("delay_since_last_obs.xts could not make an xts") } else { x_try.xts_success <- TRUE; x_try.xts }
+  x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("get_delay_since_last_obs_xts could not make an xts") } else { x_try.xts_success <- TRUE; x_try.xts }
 
   x_core  <- as.vector(coredata(x))
   x_index <- index(x)
   
-  x_core_new <- delay_since_last_obs.default(x_core)
+  x_core_new <- get_delay_since_last_obs(x_core)
   
   x_result <- xts(x_core_new,x_index)
   
@@ -491,10 +472,14 @@ delay_since_last_obs.xts <-function(x) {
     xts::reclass(x_result, x_orig) 
   } -> x_result
   
+  colnames(x_result) <- colnames(x_orig)
+  
+  delay_since_last_obs_xts <- x_result
+  
   Sys.setenv(TZ=oldtz)
   options(ops)
   
-  return(x_result)
+  return(delay_since_last_obs_xts)
 
 } 
 
@@ -509,18 +494,7 @@ delay_since_last_obs.xts <-function(x) {
 # 1970-03-02   NA
 # 1970-03-12   NA
 # 
-# delay_since_last_obs.xts(xts::xts(c(101,NA,NA,NA,102,NA,NA),zoo::as.Date(seq(10,70,10))))
-#            [,1]
-# 1970-01-11    0
-# 1970-01-21    1
-# 1970-01-31    2
-# 1970-02-10    3
-# 1970-02-20    0
-# 1970-03-02    1
-# 1970-03-12    2
-# 
-# # S3 dispatch TEST
-# delay_since_last_obs(xts::xts(c(101,NA,NA,NA,102,NA,NA),zoo::as.Date(seq(10,70,10))))
+# get_delay_since_last_obs_xts(xts::xts(c(101,NA,NA,NA,102,NA,NA),zoo::as.Date(seq(10,70,10))))
 #            [,1]
 # 1970-01-11    0
 # 1970-01-21    1
@@ -532,14 +506,10 @@ delay_since_last_obs.xts <-function(x) {
 
 
 
-# ADD A a record for each day is this what I want?
-#' Title
-#'
-#' @return
-#' @export
-#'
-#' @examples
-delay_since_last_day.xts <-function(x) { 
+# single column xts only
+# add a record for each day
+
+get_delay_since_last_day_xts <-function(x) { 
 
   ops <- options()
   
@@ -565,18 +535,18 @@ delay_since_last_day.xts <-function(x) {
   x_try.xts_success <- FALSE
   x_try.xts <- try(xts::try.xts(x_orig), silent = T)
   #
-  x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("delay_since_last_day.xts could not make an xts") } else { x_try.xts_success <- TRUE; x_try.xts }
+  x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("get_delay_since_last_day_xts could not make an xts") } else { x_try.xts_success <- TRUE; x_try.xts }
 
   # ONLY works on a single column xts
 
-  # uses   delay_since_last_obs.default
+  # uses get_delay_since_last_obs
   # uses xts:::merge.xts
   
   # more dates - create temporary rows
   x_nonsparse <- get_collofdays2daily_xts(x)
   
   # find delays(0 - no delay over NA, 1 - one delay 'at' NA)
-  x_nonsparse_delays <- delay_since_last_obs.xts(x_nonsparse)
+  x_nonsparse_delays <- get_delay_since_last_obs_xts(x_nonsparse)
   
   x_result <- x_nonsparse_delays
   
@@ -585,14 +555,17 @@ delay_since_last_day.xts <-function(x) {
     xts::reclass(x_result, x_orig) 
   } -> x_result
   
+  colnames(x_result) <- colnames(x_orig)
+  delay_since_last_day_xts <- x_result
+  
   Sys.setenv(TZ=oldtz)
   options(ops)
   
-  return(x_result)
+  return(delay_since_last_day_xts)
 
 } 
 
-# > delay_since_last_day.xts(xts::xts(c(101,NA,NA,NA,102,NA,NA),zoo::as.Date(seq(10,70,10))))
+# get_delay_since_last_day_xts(xts::xts(c(101,NA,NA,NA,102,NA,NA),zoo::as.Date(seq(10,70,10))))
 #            [,1]
 # 1970-01-11    0
 # 1970-01-12    1
@@ -1272,7 +1245,7 @@ year.less.then.or.equal.xts <- function(x, n = NULL ) {
   x_try.xts_success <- FALSE
   x_try.xts <- try(xts::try.xts(x_orig), silent = T)
   #
-  x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("delay_since_last_obs.xts could not make an xts") } else { x_try.xts_success <- TRUE; x_try.xts }
+  x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("year.less.then.or.equal.xts could not make an xts") } else { x_try.xts_success <- TRUE; x_try.xts }
 
   # only the index is important
   
@@ -1622,7 +1595,7 @@ expand.xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o
 
 # WEEKENDS WILL SHOW DELAYS 
 # WILL INCREASE the number of days
-# head(expand.xts(GDP, fnct = "delay_since_last_day.xts", alt_name = "DELAY"),10) 
+# head(expand.xts(GDP, fnct = "get_delay_since_last_day_xts", alt_name = "DELAY"),10) 
 #            GDP.DELAY
 # 1947-01-01         0
 # 1947-01-02         1
