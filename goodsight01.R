@@ -948,6 +948,8 @@ are_nearby_fred_holidays_xts <- function(x = NULL, d = NULL) {
 
 
 # many columns are allowed
+# columns are not RENAMED
+# 
 # swap out an XTS object index USING my OWN custom INDEX
 # 
 # x 
@@ -1009,8 +1011,7 @@ do_reindex_xts <- function(x,  x_index_new ) {
   
   return(do_reindex)
 }
-
-# library(quantmod)
+# require(quantmod)
 # getSymbols("GDP", src = "FRED") 
 # x <- getSymbols("UNRATE", src = "FRED",  auto.assign = FALSE)["1948-01-01/1948-03-01"]
 #            UNRATE
@@ -1023,23 +1024,25 @@ do_reindex_xts <- function(x,  x_index_new ) {
 # 1970-01-01 3.3999999999999999
 # 1970-01-02 3.7999999999999998
 # 1970-01-03 4.0000000000000000
+#
+# do_reindex_xts(merge(x,x), 0:2)
+#                        UNRATE           UNRATE.1
+# 1970-01-01 3.3999999999999999 3.3999999999999999
+# 1970-01-02 3.7999999999999998 3.7999999999999998
+# 1970-01-03 4.0000000000000000 4.0000000000000000
 
 
 
+# many columns are allowed
+# columns are not renamed
+#
 # meant REALY only for St.Louis FRED
 # adjust dates that start on the 1st( sometimes 4th, 3rd, or 2nd) to be the 31st
 # be aware of landings on weekend and long holiday weekends and after a Tuesday or Thursday holiday
 
 # slow: 170 observations per second
 # 
-
-#' Title
-#'
-#' @return
-#' @export
-#'
-#' @examples
-pushback.FRED.1st.days.xts <- function(x) {
+pushback_fred_1st_days_xts <- function(x) {
 
   ops <- options()
   
@@ -1055,15 +1058,17 @@ pushback.FRED.1st.days.xts <- function(x) {
     Sys.setenv(TZ="UTC")
   }
   
+  # many columns are allowed
+  
+  require(xts)
   # uses package lubridate function `%m+%`
+  # uses package lubridate function day
+  # uses package lubridate function days
   # uses package xts function apply.daily
   # uses function are_nearby_fred_holidays_xts  
   # uses function do_reindex_xts
 
   `%M+%` <- lubridate::`%m+%`
-  
-  require(xts) # # Attaching package: 'zoo'
-  # IF NOT Error in try.xts(element1) : could not find function "try.xts"
   
   x_orig <- x
   c_orig <- class(x)[1] # original class
@@ -1072,7 +1077,7 @@ pushback.FRED.1st.days.xts <- function(x) {
   x_try.xts_success <- FALSE
   x_try.xts <- try(xts::try.xts(x_orig), silent = T)
   #
-  x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("pushback.FRED.1st.days.xts could not make an xts") } else { x_try.xts_success <- TRUE; x_try.xts }
+  x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("pushback_fred_1st_days_xts could not make an xts") } else { x_try.xts_success <- TRUE; x_try.xts }
 
   # If Mutiple POSIXct per day then I just need ONE of them 
   x_s        <- xts::split.xts( x, f = "days" )
@@ -1083,8 +1088,8 @@ pushback.FRED.1st.days.xts <- function(x) {
   # if the 4th is Today and the last 3 days were holidays then shift the index 4 # then done  
   apply.daily(x, function(xx) { 
     # only one daily observation in this case so '&&' is O.K.
-    if(day(index(xx)) == 4 && are_nearby_fred_holidays_xts(xx, c(-1,-2,-3))) {
-      index(xx) %M+% days(-4)
+    if(lubridate::day(index(xx)) == 4 && are_nearby_fred_holidays_xts(xx, c(-1,-2,-3))) {
+      index(xx) %M+% lubridate::days(-4)
     } else {
       index(xx)
     }
@@ -1094,8 +1099,8 @@ pushback.FRED.1st.days.xts <- function(x) {
   # if the 3rd is Today and the last 2 days were holidays then shift the index 3 # then done  
   apply.daily(x, function(xx) { 
     # only one daily observation in this case so '&&' is O.K.
-    if(day(index(xx)) == 3 && are_nearby_fred_holidays_xts(xx, c(-1,-2))) {
-      index(xx) %M+% days(-3)
+    if(lubridate::day(index(xx)) == 3 && are_nearby_fred_holidays_xts(xx, c(-1,-2))) {
+      index(xx) %M+% lubridate::days(-3)
     } else {
       index(xx)
     }
@@ -1106,8 +1111,8 @@ pushback.FRED.1st.days.xts <- function(x) {
   # if the 2nd is Today and the last 1 day was a holiday then shift the index 2 # then done  
   apply.daily(x, function(xx) { 
     # only one daily observation in this case so '&&' is O.K.
-    if(day(index(xx)) == 2 && are_nearby_fred_holidays_xts(xx, c(-1))) {
-      index(xx) %M+% days(-2)
+    if(lubridate::day(index(xx)) == 2 && are_nearby_fred_holidays_xts(xx, c(-1))) {
+      index(xx) %M+% lubridate::days(-2)
     } else {
       index(xx)
     }
@@ -1117,8 +1122,8 @@ pushback.FRED.1st.days.xts <- function(x) {
   # if the 1st is Today then shift the index 1  # then done
   apply.daily(x, function(xx) { 
     # only one daily observation in this case so '&&' is O.K.
-    if(day(index(xx)) ==  1) {
-      index(xx) %M+% days(-1)
+    if(lubridate::day(index(xx)) ==  1) {
+      index(xx) %M+% lubridate::days(-1)
     } else {
       index(xx)
     }
@@ -1131,24 +1136,24 @@ pushback.FRED.1st.days.xts <- function(x) {
     xts::reclass(x_result, x_orig) 
   } -> x_result
   
+  # columns are not renamed
+  
+  fred_1st_days_xts <- x_result
+  
   Sys.setenv(TZ=oldtz)
   options(ops)
   
-  return(x_result)
+  return(fred_1st_days_xts)
 
 }
+# require(quantmod)
+# x <- getSymbols("UNRATE", src = "FRED",  auto.assign = FALSE)["1948-01-01/1948-03-01"]
+#            UNRATE
+# 1948-01-01    3.4
+# 1948-02-01    3.8
+# 1948-03-01    4.0
 
-# # getSymbols("GDP", src = "FRED") # ABOVE
-# # head(GDP)
-#              GDP
-# 1947-01-01 243.1
-# 1947-04-01 246.3
-# 1947-07-01 250.1
-# 1947-10-01 260.3
-# 1948-01-01 266.2
-# 1948-04-01 272.9
-# 
-# # head(pushback.FRED.1st.days.xts(GDP))
+# pushback_fred_1st_days_xts(x)
 # 
 #              GDP
 # 1946-12-31 243.1
@@ -1157,19 +1162,24 @@ pushback.FRED.1st.days.xts <- function(x) {
 # 1947-09-30 260.3
 # 1947-12-31 266.2
 # 1948-03-31 272.9
+# 
+# pushback_fred_1st_days_xts(merge(x,x))
+#                        UNRATE           UNRATE.1
+# 1947-12-31 3.3999999999999999 3.3999999999999999
+# 1948-01-31 3.7999999999999998 3.7999999999999998
+# 1948-02-29 4.0000000000000000 4.0000000000000000
 
 
-# meant to pass just the index
-# 1 - yes # 2 - new
 
-#' Title
-#'
-#' @return
-#' @export
-#'
-#' @examples
-year.less.then.or.equal.xts <- function(x, n = NULL ) {
-
+# many columns are allowed
+# 
+# n
+#   meant to pass just the index year numeric YYYY
+# value
+#   1 - yes # 2 - no
+# 
+is_year_less_than_or_equal_xts <- function(x, n = NULL) {
+  
   ops <- options()
   
   options(warn = 1)
@@ -1184,11 +1194,11 @@ year.less.then.or.equal.xts <- function(x, n = NULL ) {
     Sys.setenv(TZ="UTC")
   }
 
-    # uses lubridate::year
-  # uses ojUtils::ifelseC
-
-  require(xts) # # Attaching package: 'zoo'
-  # IF NOT Error in try.xts(element1) : could not find function "try.xts"
+  # multiple columns are allowed
+  
+  require(xts) 
+  # uses package lubridate function year
+  # uses package ojUtils   function ifelseC
   
   x_orig <- x
   c_orig <- class(x)[1] # original class
@@ -1197,7 +1207,7 @@ year.less.then.or.equal.xts <- function(x, n = NULL ) {
   x_try.xts_success <- FALSE
   x_try.xts <- try(xts::try.xts(x_orig), silent = T)
   #
-  x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("year.less.then.or.equal.xts could not make an xts") } else { x_try.xts_success <- TRUE; x_try.xts }
+  x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("is_year_less_than_or_equal_xts could not make an xts") } else { x_try.xts_success <- TRUE; x_try.xts }
 
   # only the index is important
   
@@ -1206,7 +1216,7 @@ year.less.then.or.equal.xts <- function(x, n = NULL ) {
   coredata_new <- ojUtils::ifelseC(lubridate::year(index(x)) <= n, rep(1,x_index_len), rep(2,x_index_len))
   
   # coredata(x)  <- coredata_new
-  # safer methoda if no corredata is passed
+  # safer method if no corredata is passed
   x <- xts(coredata_new, index(x))
   x_result <- x
   
@@ -1215,41 +1225,43 @@ year.less.then.or.equal.xts <- function(x, n = NULL ) {
     xts::reclass(x_result, x_orig) 
   } -> x_result
   
+  colnames(x_result) <- "year_less_than_or_equal_xts"
+  year_less_than_or_equal_xts <- x_result
+  
   Sys.setenv(TZ=oldtz)
   options(ops)
    
-  return(x_result)
+  return(year_less_than_or_equal_xts)
 
 }
+# require(quantmod)
+# x2 <- getSymbols("UNRATE", src = "FRED",  auto.assign = FALSE)["1948-01-01/1949-03-01"]
+#            year_less_than_or_equal_xts
+# 1948-01-01                           1
+# 1948-02-01                           1
+# 1948-03-01                           1
+# 1948-04-01                           1
+# 1948-05-01                           1
+# 1948-06-01                           1
+# 1948-07-01                           1
+# 1948-08-01                           1
+# 1948-09-01                           1
+# 1948-10-01                           1
+# 1948-11-01                           1
+# 1948-12-01                           1
+# 1949-01-01                           2
+# 1949-02-01                           2
+# 1949-03-01                           2
 
-# >  year.less.then.or.equal.xts(head(GDP,12), 1948 )
-#            [,1]
-# 1947-01-01    1
-# 1947-04-01    1
-# 1947-07-01    1
-# 1947-10-01    1
-# 1948-01-01    1
-# 1948-04-01    1
-# 1948-07-01    1
-# 1948-10-01    1
-# 1949-01-01    2
-# 1949-04-01    2
-# 1949-07-01    2
-# 1949-10-01    2
 
 
-# morning: expand.xts
 
-## [ ] SKIPPED FOR NOW # WILL COME BACK LATER ##
-# o_args is av named vector of arguments ( but user should really should use a Curry )
-# IF o_args IS OF A MIXED DATA.TAPE us a list INSTEAD ( of a vector ) =list(indexAt= 'lastof', OHLC = FALSE)
 
-#' Title
-#'
-#' @return
-#' @export
-#'
-#' @examples
+# o_args is a named vector of arguments ( but user should really should use a Curry )
+# 
+#   IF o_args IS OF A MIXED DATA.TAPE,  use a list INSTEAD ( of a vector ) 
+#    e.g. = list(indexAt= 'lastof', OHLC = FALSE)
+# 
 expand.xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o_args = NULL, prefix = NULL) {
   
   # BASED ON 
@@ -1260,10 +1272,10 @@ expand.xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o
   #   Zachary Deane-Mayer  
   #   ( CARET GUY: AND: Author of library(caretEnsemble)
   #     http://www.r-bloggers.com/time-series-cross-validation-5/
-  #       http://moderntoolmaking.blogspot.com/2013/01/time-series-cross-validation-5.html?utm_source=feedburner&utm_medium=feed&utm_campaign=Feed%3A+ModernToolMaking+%28Modern+Tool+Making%29
+  #     http://moderntoolmaking.blogspot.com/2013/01/time-series-cross-validation-5.html?utm_source=feedburner&utm_medium=feed&utm_campaign=Feed%3A+ModernToolMaking+%28Modern+Tool+Making%29
   #     GIST OF THIS ON GITHUB
   #     https://gist.github.com/zachmayer/4630129#file-1-load-data-r
-  #     ALSO THE AUTHOR OF (cv.ts)(github)
+  #     ALSO THE AUTHOR OF R package  cv.ts) on github
   
   # not used
   fnct_text_items <- as.character(substitute(fnct))
@@ -1326,7 +1338,6 @@ expand.xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o
   
     fnct_pass_type_determined <- FALSE
     
-  
     isFunctionSyntax <- function(x) { 
        stringr::str_detect(x,"^[a-zA-Z][a-zA-Z0-9]*(::|:::)[a-zA-Z]([a-zA-Z0-9])*$") || stringr::str_detect(x,"^[a-zA-Z][a-zA-Z0-9]*$")
     }
@@ -1335,7 +1346,6 @@ expand.xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o
     # pass by   function(x,n){  }
     if(is.function(fnct) && !fnct_pass_type_determined) { 
       
-
       # because :: and ::: themselves are functions that return function content 
       # exists("NS::FUNCT", mode = "function")
       # then return FALSE
@@ -1375,8 +1385,7 @@ expand.xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o
     
     }
       
-    require(xts) # # Attaching package: 'zoo'
-    # IF NOT Error in try.xts(element1) : could not find function "try.xts"
+    require(xts) 
     
     x_orig <- x
     c_orig <- class(x)[1] # original class
