@@ -2,6 +2,9 @@
 
 # goodsight01.R
 
+# in general, unless an exception is noted otherwise,
+#   input x meant to be an xt object with index class of Date
+
 # single column xts only (currently)
 # multi  column xts (untried)
 # last observation carried forard limited
@@ -21,9 +24,11 @@ na.locfl <- function(x, n = NULL) {
     Sys.setenv(TZ="UTC")
   }
   
-  require(xts) # Attaching package: 'zoo'
-  # IF NOT Error in try.xts(element1) : could not find function "try.xts"
-  # uses zoo:::rollapply.zoo, DescTools::DoCall
+  if(NCOL(x) > 1) stop("In na.locfl, only ONE column is allowed.")
+  
+  require(xts)
+  # uses package zoo function rollapply.zoo, 
+  # uses package DescTools function DoCall
 
   x_orig <- x
   c_orig <- class(x)[1] # original class
@@ -91,28 +96,35 @@ na.locfl <- function(x, n = NULL) {
       x_result # THE BEST THAT I CAN DO
     }
   } -> x_result
-
+  
+  colnames(x_result) <- "locfl"
+  locfl <- x_result
+  
   Sys.setenv(TZ=oldtz)
   options(ops)
   
-  return(x_result)
+  return(locfl)
   
   # ORIG FROM
   # https://github.com/AndreMikulec/expressions/blob/8a910454ea590a30878e97b18d5e9dbe45a9d4fb/main-foresight3-999.R#L2287
 
 }
-
-# # vector input
-# # na.locfl( c(101,NA,NA,NA,102,NA,NA), n = 2)
+# vector input
+# na.locfl( c(101,NA,NA,NA,102,NA,NA), n = 2)
 # [1] 101 101 101  NA 102 102 102
-
-# # xts input
-# > myxts <- xts::xts(c(101,NA,NA,NA,102,NA,NA),zoo::as.Date(seq(10, 10*7, length.out = 7)))
-# > colnames(myxts)[1] <- "MYXTS"
-# > na.locfl( c(101,NA,NA,NA,102,NA,NA), n = 2)
-# [1] 101 101 101  NA 102 102 102
-# > na.locfl( myxts, n = 2)
-#            MYXTS
+#
+# xts(c(101,NA,NA,NA,102,NA,NA),zoo::as.Date(seq(10, 10*7, length.out = 7)))
+#            [,1]
+# 1970-01-11  101
+# 1970-01-21   NA
+# 1970-01-31   NA
+# 1970-02-10   NA
+# 1970-02-20  102
+# 1970-03-02   NA
+# 1970-03-12   NA
+#
+# na.locfl( xts(c(101,NA,NA,NA,102,NA,NA),zoo::as.Date(seq(10, 10*7, length.out = 7))), n = 2 )
+#            locfl
 # 1970-01-11   101
 # 1970-01-21   101
 # 1970-01-31   101
@@ -184,8 +196,7 @@ get_pctchg_xts <- function(x, which, to_future = NULL) {
   
   if(NCOL(x) > 1) stop("In get_pctchg_xts, only ONE column is allowed.")
   
-  require(xts) # # Attaching package: 'zoo'
-  # IF NOT Error in try.xts(element1) : could not find function "try.xts"
+  require(xts) 
   
   ## VERY BASIC attemped CLASS conversion ##
   x_orig <- x
@@ -216,10 +227,11 @@ get_pctchg_xts <- function(x, which, to_future = NULL) {
     xts::reclass(x_result, x_orig) 
   } -> x_result
   
+  colnames(x_result) <- "pctchg"
+  pctchg_xts <- x_result 
+  
   Sys.setenv(TZ=oldtz)
   options(ops)
-  
-  pctchg_xts <- x_result
   
   return(pctchg_xts)
 } 
@@ -235,29 +247,29 @@ get_pctchg_xts <- function(x, which, to_future = NULL) {
 # 2007-01-05 50.373468054328498
 # 
 # get_pctchg_xts(head(sample_xts[,"Open"],4), which = 1)
-#                             Open
+#                           pctchg
 # 2007-01-02                    NA
 # 2007-01-03  0.381125334611203126 # res
 # 2007-01-04  0.379170077320410137
 # 2007-01-05 -0.094181386571521211
-# >
-# > ( 50.230496197795397 - 50.039781911546299 ) / abs(50.039781911546299) * 100
+# 
+# #( 50.230496197795397 - 50.039781911546299 ) / abs(50.039781911546299) * 100
 # [1] 0.38112533461120313
 # 
 # get_pctchg_xts(head(sample_xts[,"Open"],4), which = 1, to_future = TRUE )
-#                             Open
+#                           pctchg
 # 2007-01-02 -0.381125334611203126
 # 2007-01-03 -0.379170077320410137 # res
 # 2007-01-04  0.094181386571521211
 # 2007-01-05                    NA
-# >
-# > ( 50.420955209067003 -50.230496197795397) / abs( 50.230496197795397 ) * 100
+# 
+# ( 50.420955209067003 -50.230496197795397) / abs( 50.230496197795397 ) * 100
 # [1] 0.37917007732041014
 # 
 # # NOT(which <= NROW(x))
 # get_pctchg_xts(head(sample_xts[,"Open"],4), which = 5, to_future = TRUE )
 # 
-#            Open
+#          pctchg
 # 2007-01-02   NA
 # 2007-01-03   NA
 # 2007-01-04   NA
@@ -284,8 +296,9 @@ get_collofdays2daily_xts <- function(x) {
     Sys.setenv(TZ="UTC")
   }
 
-  require(xts) # # Attaching package: 'zoo'
-  # IF NOT Error in try.xts(element1) : could not find function "try.xts"
+  if(NCOL(x) > 1) stop("In get_collofdays2daily_xts, only ONE column is allowed.")
+  
+  require(xts) 
   
   x_orig <- x
   c_orig <- class(x)[1] # original class
@@ -317,7 +330,7 @@ get_collofdays2daily_xts <- function(x) {
   # dispach on xts:::merge.xts
   merged <- merge(x_days, x)
   
-  colnames(merged) <- colnames(x_orig)
+  colnames(merged) <- "collofdays2daily"
   get_collofdays2daily <- merged
   
   Sys.setenv(TZ=oldtz)
@@ -326,20 +339,19 @@ get_collofdays2daily_xts <- function(x) {
   return(get_collofdays2daily)
   
 }
-# x <- xts(c(11,13,15),zoo::as.Date(c(1,3,5))) 
-# x
+# xts(c(11,13,15),zoo::as.Date(c(1,3,5))) 
 #            [,1]
 # 1970-01-02   11
 # 1970-01-04   13
 # 1970-01-06   15
-# xc <- get_collofdays2daily_xts(x)
-# xc
-#          [,1]
-# 1970-01-02 11
-# 1970-01-03 NA
-# 1970-01-04 13
-# 1970-01-05 NA
-# 1970-01-06 15
+# 
+# get_collofdays2daily_xts(xts(c(11,13,15),zoo::as.Date(c(1,3,5))))
+#            collofdays2daily
+# 1970-01-02               11
+# 1970-01-03               NA
+# 1970-01-04               13
+# 1970-01-05               NA
+# 1970-01-06               15
 
 # as.POSIXct(c(1,10000,200000,400000), origin = "1970-01-01")
 # [1] "1970-01-01 00:00:01 UTC" "1970-01-01 02:46:40 UTC" "1970-01-03 07:33:20 UTC" "1970-01-05 15:06:40 UTC"
@@ -422,7 +434,6 @@ get_delay_since_last_obs <- function(x) {
   return(new_vec)
  
 }
- 
 # get_delay_since_last_obs(c(101,NA,NA,NA,102,NA,NA))
 # [1] 0 1 2 3 0 1 2
 
@@ -445,11 +456,10 @@ get_delay_since_last_obs_xts <-function(x) {
     Sys.setenv(TZ="UTC")
   }
   
-  # ONLY works on a single column xts
-  # uses   get_delay_since_last_obs
+  if(NCOL(x) > 1) stop("In get_delay_since_last_obs_xts, only ONE column is allowed.")
   
-  require(xts) # # Attaching package: 'zoo'
-  # IF NOT Error in try.xts(element1) : could not find function "try.xts"
+  require(xts) 
+  # uses function get_delay_since_last_obs
   
   x_orig <- x
   c_orig <- class(x)[1] # original class
@@ -472,8 +482,7 @@ get_delay_since_last_obs_xts <-function(x) {
     xts::reclass(x_result, x_orig) 
   } -> x_result
   
-  colnames(x_result) <- colnames(x_orig)
-  
+  colnames(x_result) <- "delay_since_last_obs"
   delay_since_last_obs_xts <- x_result
   
   Sys.setenv(TZ=oldtz)
@@ -482,27 +491,17 @@ get_delay_since_last_obs_xts <-function(x) {
   return(delay_since_last_obs_xts)
 
 } 
-
-# # payload NA-gaps matter ( NOT index time gaps ) 
-# xts::xts(c(101,NA,NA,NA,102,NA,NA),zoo::as.Date(seq(10,70,10)))
-#            [,1]
-# 1970-01-11  101
-# 1970-01-21   NA
-# 1970-01-31   NA
-# 1970-02-10   NA
-# 1970-02-20  102
-# 1970-03-02   NA
-# 1970-03-12   NA
+# payload NA-gaps matter ( NOT index time gaps ) 
 # 
 # get_delay_since_last_obs_xts(xts::xts(c(101,NA,NA,NA,102,NA,NA),zoo::as.Date(seq(10,70,10))))
-#            [,1]
-# 1970-01-11    0
-# 1970-01-21    1
-# 1970-01-31    2
-# 1970-02-10    3
-# 1970-02-20    0
-# 1970-03-02    1
-# 1970-03-12    2
+#            delay_since_last_obs
+# 1970-01-11                    0
+# 1970-01-21                    1
+# 1970-01-31                    2
+# 1970-02-10                    3
+# 1970-02-20                    0
+# 1970-03-02                    1
+# 1970-03-12                    2
 
 
 
@@ -524,8 +523,11 @@ get_delay_since_last_day_xts <-function(x) {
     Sys.setenv(TZ="UTC")
   }
   
-  require(xts) # # Attaching package: 'zoo'
-  # IF NOT Error in try.xts(element1) : could not find function "try.xts"
+  if(NCOL(x) > 1) stop("In get_delay_since_last_day_xts, only ONE column is allowed.")
+  
+  require(xts) 
+  # uses function get_delay_since_last_obs
+  # uses package xts merge.xts
   
   x_orig <- x
   c_orig <- class(x)[1] # original class
@@ -536,11 +538,6 @@ get_delay_since_last_day_xts <-function(x) {
   #
   x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("get_delay_since_last_day_xts could not make an xts") } else { x_try.xts_success <- TRUE; x_try.xts }
 
-  # ONLY works on a single column xts
-
-  # uses get_delay_since_last_obs
-  # uses xts:::merge.xts
-  
   # more dates - create temporary rows
   x_nonsparse <- get_collofdays2daily_xts(x)
   
@@ -554,7 +551,7 @@ get_delay_since_last_day_xts <-function(x) {
     xts::reclass(x_result, x_orig) 
   } -> x_result
   
-  colnames(x_result) <- colnames(x_orig)
+  colnames(x_result) <- "delay_since_last_day"
   delay_since_last_day_xts <- x_result
   
   Sys.setenv(TZ=oldtz)
@@ -564,68 +561,68 @@ get_delay_since_last_day_xts <-function(x) {
 
 } 
 # get_delay_since_last_day_xts(xts::xts(c(101,NA,NA,NA,102,NA,NA),zoo::as.Date(seq(10,70,10))))
-#            [,1]
-# 1970-01-11    0
-# 1970-01-12    1
-# 1970-01-13    2
-# 1970-01-14    3
-# 1970-01-15    4
-# 1970-01-16    5
-# 1970-01-17    6
-# 1970-01-18    7
-# 1970-01-19    8
-# 1970-01-20    9
-# 1970-01-21   10
-# 1970-01-22   11
-# 1970-01-23   12
-# 1970-01-24   13
-# 1970-01-25   14
-# 1970-01-26   15
-# 1970-01-27   16
-# 1970-01-28   17
-# 1970-01-29   18
-# 1970-01-30   19
-# 1970-01-31   20
-# 1970-02-01   21
-# 1970-02-02   22
-# 1970-02-03   23
-# 1970-02-04   24
-# 1970-02-05   25
-# 1970-02-06   26
-# 1970-02-07   27
-# 1970-02-08   28
-# 1970-02-09   29
-# 1970-02-10   30
-# 1970-02-11   31
-# 1970-02-12   32
-# 1970-02-13   33
-# 1970-02-14   34
-# 1970-02-15   35
-# 1970-02-16   36
-# 1970-02-17   37
-# 1970-02-18   38
-# 1970-02-19   39
-# 1970-02-20    0
-# 1970-02-21    1
-# 1970-02-22    2
-# 1970-02-23    3
-# 1970-02-24    4
-# 1970-02-25    5
-# 1970-02-26    6
-# 1970-02-27    7
-# 1970-02-28    8
-# 1970-03-01    9
-# 1970-03-02   10
-# 1970-03-03   11
-# 1970-03-04   12
-# 1970-03-05   13
-# 1970-03-06   14
-# 1970-03-07   15
-# 1970-03-08   16
-# 1970-03-09   17
-# 1970-03-10   18
-# 1970-03-11   19
-# 1970-03-12   20
+#            delay_since_last_day
+# 1970-01-11                    0
+# 1970-01-12                    1
+# 1970-01-13                    2
+# 1970-01-14                    3
+# 1970-01-15                    4
+# 1970-01-16                    5
+# 1970-01-17                    6
+# 1970-01-18                    7
+# 1970-01-19                    8
+# 1970-01-20                    9
+# 1970-01-21                   10
+# 1970-01-22                   11
+# 1970-01-23                   12
+# 1970-01-24                   13
+# 1970-01-25                   14
+# 1970-01-26                   15
+# 1970-01-27                   16
+# 1970-01-28                   17
+# 1970-01-29                   18
+# 1970-01-30                   19
+# 1970-01-31                   20
+# 1970-02-01                   21
+# 1970-02-02                   22
+# 1970-02-03                   23
+# 1970-02-04                   24
+# 1970-02-05                   25
+# 1970-02-06                   26
+# 1970-02-07                   27
+# 1970-02-08                   28
+# 1970-02-09                   29
+# 1970-02-10                   30
+# 1970-02-11                   31
+# 1970-02-12                   32
+# 1970-02-13                   33
+# 1970-02-14                   34
+# 1970-02-15                   35
+# 1970-02-16                   36
+# 1970-02-17                   37
+# 1970-02-18                   38
+# 1970-02-19                   39
+# 1970-02-20                    0
+# 1970-02-21                    1
+# 1970-02-22                    2
+# 1970-02-23                    3
+# 1970-02-24                    4
+# 1970-02-25                    5
+# 1970-02-26                    6
+# 1970-02-27                    7
+# 1970-02-28                    8
+# 1970-03-01                    9
+# 1970-03-02                   10
+# 1970-03-03                   11
+# 1970-03-04                   12
+# 1970-03-05                   13
+# 1970-03-06                   14
+# 1970-03-07                   15
+# 1970-03-08                   16
+# 1970-03-09                   17
+# 1970-03-10                   18
+# 1970-03-11                   19
+# 1970-03-12                   20
 
 
 
@@ -646,10 +643,10 @@ is_na_xts <- function(x) {
     Sys.setenv(TZ="UTC")
   }
   
-  # uses ojUtils::ifelseC
+  if(NCOL(x) > 1) stop("In is_na_xts, only ONE column is allowed.")
   
-  require(xts) # # Attaching package: 'zoo'
-  # IF NOT Error in try.xts(element1) : could not find function "try.xts"
+  require(xts) 
+  # uses ojUtils::ifelseC
   
   x_orig <- x
   c_orig <- class(x)[1] # original class
@@ -674,7 +671,7 @@ is_na_xts <- function(x) {
     xts::reclass(x_result, x_orig) 
   } -> x_result
   
-  colnames(x_result) <- colnames(x_orig)
+  colnames(x_result) <- "na"
   na_xts <- x_result 
   
   Sys.setenv(TZ=oldtz)
@@ -683,16 +680,8 @@ is_na_xts <- function(x) {
   return(na_xts)
 
 } 
-# xts(c(11,NA,NA,14,NA),zoo::as.Date(1:5))
-#            [,1]
-# 1970-01-02   11
-# 1970-01-03   NA
-# 1970-01-04   NA
-# 1970-01-05   14
-# 1970-01-06   NA
-# 
 # is_na_xts(xts(c(11,NA,NA,14,NA),zoo::as.Date(1:5)))
-#            [,1]
+#              na
 # 1970-01-02    2
 # 1970-01-03    1
 # 1970-01-04    1
@@ -700,15 +689,9 @@ is_na_xts <- function(x) {
 # 1970-01-06    1
 
 
-
+# single column xts only
 # typical entry rm_what = c("Saturday", "Sunday", "BIZHOLIDAYS" )
-#' Title
-#'
-#' @return
-#' @export
-#'
-#' @examples
-rm.days.xts <- function(x, rm_what = NULL) {
+rm_days_xts <- function(x, rm_what = NULL) {
 
   ops <- options()
   
@@ -724,14 +707,15 @@ rm.days.xts <- function(x, rm_what = NULL) {
     Sys.setenv(TZ="UTC")
   }
   
+  if(NCOL(x) > 1) stop("In rm_days_xts, only ONE column is allowed.")
+  
   # JUN 2017
   # .indexwday
   # http://joshuaulrich.github.io/xts/xts_faq.html
 
-  # uses stringr::stringr::str_detect, RQuantLib::isHoliday
-
-  require(xts) # # Attaching package: 'zoo'
-  # IF NOT Error in try.xts(element1) : could not find function "try.xts"
+  require(xts) 
+  # uses package RQuantLib function isHoliday
+  # uses package stringr   function str_detect
   
   x_orig <- x
   c_orig <- class(x)[1] # original class
@@ -740,7 +724,7 @@ rm.days.xts <- function(x, rm_what = NULL) {
   x_try.xts_success <- FALSE
   x_try.xts <- try(xts::try.xts(x_orig), silent = T)
   #
-  x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("rm.days.xts could not make an xts") } else { x_try.xts_success <- TRUE; x_try.xts }
+  x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("rm_days_xts could not make an xts") } else { x_try.xts_success <- TRUE; x_try.xts }
 
   if( !is.null(rm_what)     && 
      ( length(rm_what) > 0) && 
@@ -749,10 +733,10 @@ rm.days.xts <- function(x, rm_what = NULL) {
 
     # 0 - Sunday ... 6 - Saturday  
     
-    # Browse[2]> .indexwday(xts(,zoo::as.Date("2017-06-18"))) # Sunday
+    # .indexwday(xts(,zoo::as.Date("2017-06-18"))) # Sunday
     # [1] 0
     # 
-    # > weekdays(index(xts(,zoo::as.Date("2017-06-18")))) # format(zoo::as.Date("2017-06-18"), "%A")
+    # weekdays(index(xts(,zoo::as.Date("2017-06-18")))) # format(zoo::as.Date("2017-06-18"), "%A")
     # [1] "Sunday"
 
     weekdays_index <- c(Sunday = 0,  Monday = 1, Tuesday = 2, Wednesday = 3, Thursday = 4, Friday = 5, Saturday = 6)
@@ -806,76 +790,71 @@ rm.days.xts <- function(x, rm_what = NULL) {
     xts::reclass(x_result, x_orig) 
   } -> x_result
   
+  colnames(x_result) <- "days"
+  days_xts <- x_result
+  
   Sys.setenv(TZ=oldtz)
   options(ops)
   
-  return(x_result)
+  return(days_xts)
 }
 # weekends removed
-# 
-# RQuantLib::isHoliday("UnitedStates/NYSE" considers 'weekends' to be holidays
-  # Holiday 2nd removed
-  # Holiday 16th removed
+# about 
 
-# > rm.days.xts(xts(1:31,zoo::as.Date("2017-01-01") + 0:30), rm_what = c("Saturday", "Sunday", "BIZHOLIDAYS"))
-#            [,1]
-# 2017-01-03    3
-# 2017-01-04    4
-# 2017-01-05    5
-# 2017-01-06    6
-# 2017-01-09    9
-# 2017-01-10   10
-# 2017-01-11   11
-# 2017-01-12   12
-# 2017-01-13   13
-# 2017-01-17   17
-# 2017-01-18   18
-# 2017-01-19   19
-# 2017-01-20   20
-# 2017-01-23   23
-# 2017-01-24   24
-# 2017-01-25   25
-# 2017-01-26   26
-# 2017-01-27   27
-# 2017-01-30   30
-# 2017-01-31   31
+# RQuantLib::isHoliday(. . ."UnitedStates/NYSE". . .) considers 'weekends' to be holidays
+  # weekends     removed
+  # Holiday 1st  removed - New Year's Day
+  # Holiday 2nd  removed - Day Of Mourning - Gerald Ford ( SUPRISING )
+  # Holiday 15th removed - Martin Luther King Day
+# require(xts)
+# x <- xts(1:17, zoo::as.Date("2007-01-01") -1 + 1:17)
+# df <- data.frame( index(x), RQuantLib::isHoliday("UnitedStates/NYSE", index(x)), weekdays(index(x)))
+# colnames(df) <- c("index", "is_nyse_holiday", "weekday")
+# df
+#         index is_nyse_holiday   weekday
+# 1  2007-01-01            TRUE    Monday
+# 2  2007-01-02            TRUE   Tuesday
+# 3  2007-01-03           FALSE Wednesday
+# 4  2007-01-04           FALSE  Thursday
+# 5  2007-01-05           FALSE    Friday
+# 6  2007-01-06            TRUE  Saturday
+# 7  2007-01-07            TRUE    Sunday
+# 8  2007-01-08           FALSE    Monday
+# 9  2007-01-09           FALSE   Tuesday
+# 10 2007-01-10           FALSE Wednesday
+# 11 2007-01-11           FALSE  Thursday
+# 12 2007-01-12           FALSE    Friday
+# 13 2007-01-13            TRUE  Saturday
+# 14 2007-01-14            TRUE    Sunday
+# 15 2007-01-15            TRUE    Monday
+# 16 2007-01-16           FALSE   Tuesday
+# 17 2007-01-17           FALSE Wednesday             
 
-# weekends removed
-# BIZHOLIDAYS removed 2017-01-02   2017-01-16   2017-02-20
+# rm_days_xts(xts(1:17,zoo::as.Date("2007-01-01") -1 + 1:17), rm_what = c("Saturday", "Sunday", "BIZHOLIDAYS"))
+#            days
+# 2007-01-03    3
+# 2007-01-04    4
+# 2007-01-05    5
+# 2007-01-08    8
+# 2007-01-09    9
+# 2007-01-10   10
+# 2007-01-11   11
+# 2007-01-12   12
+# 2007-01-16   16
+# 2007-01-17   17
 
-# Browse[2]> data.frame( index(x), !RQuantLib::isHoliday("UnitedStates/NYSE", index(x)) )
-#      index.x. X.RQuantLib..isHoliday..UnitedStates.NYSE...index.x..
-# 1  2017-01-02                                                 FALSE
-# 2  2017-01-03                                                  TRUE
-# 3  2017-01-04                                                  TRUE
-# 4  2017-01-05                                                  TRUE
-# 5  2017-01-06                                                  TRUE
-# 6  2017-01-09                                                  TRUE
-# 7  2017-01-10                                                  TRUE
-# 8  2017-01-11                                                  TRUE
-# 9  2017-01-12                                                  TRUE
-# 10 2017-01-13                                                  TRUE
-# 11 2017-01-16                                                 FALSE
-# 12 2017-01-17                                                  TRUE
-# # ... etc ...
+
 
 # utility function ( input to OTHERS )
 # 
 # xts object: x, 
-# d numeric vector of past days: -1 yesterday, c(-1,-2) yesterday AND the 'day before yesterday' etc ( both must be true )
+# d: numeric vector of past days: -1 yesterday, c(-1,-2) yesterday AND the 'day before yesterday' etc ( both must be true )
 # 
 # e.g. if TRUE and d = c(-1,-2), then 
 #      BOTH yesterday and the 'day before yesterday' NON-working days of the U.S. Federal Government.
 #
-
-#' Title
-#'
-#' @return
-#' @export
-#'
-#' @examples
-all.nearby.FRED.holidays.xts <- function(x = NULL, d = NULL) {
-
+are_nearby_fred_holidays_xts <- function(x = NULL, d = NULL) {
+ 
   ops <- options()
   
   options(warn = 1)
@@ -890,16 +869,19 @@ all.nearby.FRED.holidays.xts <- function(x = NULL, d = NULL) {
     Sys.setenv(TZ="UTC")
   }
   
+  if(NCOL(x) > 1) stop("In are_nearby_fred_holidays_xts, only ONE column is allowed.")
+  
   # "UnitedStates/GovernmentBond"
   # 2007 Federal Holidays
   # Monday, January 1   New Year's Day
   # Monday, January 15  Birthday of Martin Luther King, Jr.
   # https://archive.opm.gov/Operating_Status_Schedules/fedhol/2007.asp
   
-  # uses  RQuantLib::isHoliday, rlist::list.zip, lubridate::`%m+%`
-
-  require(xts) # # Attaching package: 'zoo'
-  # IF NOT Error in try.xts(element1) : could not find function "try.xts"
+  require(xts) 
+  # uses package RQuantLib function isHoliday, 
+  # uses package rlist     function list.zip
+  # uses package lubridate function `%m+%`
+  # uses package lubridate function days
   
   `%M+%` <- lubridate::`%m+%`
   
@@ -910,10 +892,10 @@ all.nearby.FRED.holidays.xts <- function(x = NULL, d = NULL) {
   x_try.xts_success <- FALSE
   x_try.xts <- try(xts::try.xts(x_orig), silent = T)
   #
-  x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("all.nearby.FRED.holidays.xts could not make an xts") } else { x_try.xts_success <- TRUE; x_try.xts }
+  x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("xxx could not make an xts") } else { x_try.xts_success <- TRUE; x_try.xts }
 
   # for ONE single day returns multiple days
-  FUN  <- function(x,d) { index(x) %M+% days(c(d)) }
+  FUN  <- function(x,d) { index(x) %M+% lubridate::days(c(d)) }
   PARALLEL_LISTS <- Vectorize(FUN, vectorize.args = "d", SIMPLIFY = FALSE)(x, d)
   TOGETHER_LISTS <- do.call(rlist::list.zip, PARALLEL_LISTS)
   
@@ -933,89 +915,67 @@ all.nearby.FRED.holidays.xts <- function(x = NULL, d = NULL) {
     xts::reclass(x_result, x_orig) 
   } -> x_result
   
-  return(x_result)
+  colnames(x_result) <- "nearby_fred_holidays"
+  nearby_fred_holidays_xts <- x_result
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  return(nearby_fred_holidays_xts)
   
 }
 # library(xts)
-# data("sample_matrix")
+# data(sample_matrix)
 # sample_xts <- as.xts(sample_matrix)
 #
-# ojUtils::ifelseC(all.nearby.FRED.holidays.xts (sample_xts,c(-1,-2)) , rep(TRUE,length(index(sample_xts))), rep(FALSE,length(index(sample_xts))))
-# WORKS
-# [169] FALSE FALSE FALSE  TRUE FALSE FALSE FALSE FALSE FALSE FALSE  TRUE FALSE
-
-# 2017
-
-# xe <- xts(1:31,zoo::as.Date("2017-01-01") + 0:30)
-
-# xe
-#            [,1]
-# 2017-01-01    1
-# 2017-01-02    2
-# 2017-01-03    3
-# 2017-01-04    4
-# 2017-01-05    5
-# 2017-01-06    6
-# 2017-01-07    7
-# 2017-01-08    8
-# 2017-01-09    9
-# 2017-01-10   10
-# 2017-01-11   11
-# 2017-01-12   12
-# 2017-01-13   13
-# 2017-01-14   14
-# 2017-01-15   15
-# 2017-01-16   16
-# 2017-01-17   17
-# 2017-01-18   18
-# 2017-01-19   19
-# 2017-01-20   20
-# 2017-01-21   21
-# 2017-01-22   22
-# 2017-01-23   23
-# 2017-01-24   24
-# 2017-01-25   25
-# 2017-01-26   26
-# 2017-01-27   27
-# 2017-01-28   28
-# 2017-01-29   29
-# 2017-01-30   30
-# 2017-01-31   31
-
-# > ojUtils::ifelseC(all.nearby.FRED.holidays.xts(xe,c(-1,-2)), rep(TRUE,length(index(xe))), rep(FALSE,length(index(xe))))
-# [1] FALSE  TRUE  TRUE FALSE FALSE FALSE FALSE FALSE  TRUE FALSE FALSE FALSE FALSE FALSE FALSE  TRUE  TRUE FALSE FALSE FALSE FALSE
-#[22] FALSE  TRUE FALSE FALSE FALSE FALSE FALSE FALSE  TRUE FALSE
+# are_nearby_fred_holidays_xts(sample_xts[2:16,"Open"], d = c(-1,-2))
+#            nearby_fred_holidays
+# 2007-01-03                FALSE
+# 2007-01-04                FALSE
+# 2007-01-05                FALSE
+# 2007-01-06                FALSE
+# 2007-01-07                FALSE
+# 2007-01-08                 TRUE
+# 2007-01-09                FALSE
+# 2007-01-10                FALSE
+# 2007-01-11                FALSE
+# 2007-01-12                FALSE
+# 2007-01-13                FALSE
+# 2007-01-14                FALSE
+# 2007-01-15                 TRUE
+# 2007-01-16                 TRUE
+# 2007-01-17                FALSE
 
 
-
-
-
-
-# SWAP OUT an XTS object index WITH my OWN custom INDEX
+# many columns are allowed
+# swap out an XTS object index USING my OWN custom INDEX
 # 
 # x 
 #   xts object
+# 
 # x_index_new
-#  anyting one dimensional with a length/NROW(x_index_new) == NROW(x) == length(index(x))
-#' Title
-#'
-#' @return
-#' @export
-#'
-#' @examples
-reindex.xts <- function(x,  x_index_new ) {
+#  anything one dimensional with a length/NROW(x_index_new) == NROW(x) == length(index(x))
+# 
+do_reindex_xts <- function(x,  x_index_new ) {
 
-  require(xts)
-
+  ops <- options()
+  
+  options(warn = 1)
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  
   #correct for TZ 
   oldtz <- Sys.getenv('TZ')
   if(oldtz=='') {
     Sys.setenv(TZ="UTC")
   }
 
-  require(xts) # # Attaching package: 'zoo'
-  # IF NOT Error in try.xts(element1) : could not find function "try.xts"
+  # many columns are allowed
   
+  require(xts) 
+
   x_orig <- x
   c_orig <- class(x)[1] # original class
   
@@ -1023,7 +983,7 @@ reindex.xts <- function(x,  x_index_new ) {
   x_try.xts_success <- FALSE
   x_try.xts <- try(xts::try.xts(x_orig), silent = T)
   #
-  x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("reindex.xts could not make an xts") } else { x_try.xts_success <- TRUE; x_try.xts }
+  x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("do_reindex_xts could not make an xts") } else { x_try.xts_success <- TRUE; x_try.xts }
 
   x_tclass <- tclass(x)
   x_tzone  <- tzone(x)
@@ -1042,30 +1002,27 @@ reindex.xts <- function(x,  x_index_new ) {
     xts::reclass(x_result, x_orig) 
   } -> x_result
   
-  Sys.setenv(TZ=oldtz)
+  do_reindex <- x_result
   
-  return(x_result)
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  return(do_reindex)
 }
 
-# # library(quantmod)
-# # getSymbols("GDP", src = "FRED") # ABOVE
-# # head(GDP)
-#              GDP
-# 1947-01-01 243.1
-# 1947-04-01 246.3
-# 1947-07-01 250.1
-# 1947-10-01 260.3
-# 1948-01-01 266.2
-# 1948-04-01 272.9
+# library(quantmod)
+# getSymbols("GDP", src = "FRED") 
+# x <- getSymbols("UNRATE", src = "FRED",  auto.assign = FALSE)["1948-01-01/1948-03-01"]
+#            UNRATE
+# 1948-01-01    3.4
+# 1948-02-01    3.8
+# 1948-03-01    4.0
 # 
-# reindex.xts(head(GDP), 0:5)
-#              GDP
-# 1970-01-01 243.1 # new index starting with the 'birth' of UNIX 0 ... 5
-# 1970-01-02 246.3
-# 1970-01-03 250.1
-# 1970-01-04 260.3
-# 1970-01-05 266.2
-# 1970-01-06 272.9
+# do_reindex_xts(x, 0:2)
+#                        UNRATE
+# 1970-01-01 3.3999999999999999
+# 1970-01-02 3.7999999999999998
+# 1970-01-03 4.0000000000000000
 
 
 
@@ -1098,9 +1055,10 @@ pushback.FRED.1st.days.xts <- function(x) {
     Sys.setenv(TZ="UTC")
   }
   
-  # uses lubridate::`%m+%`
-  # uses xts::apply.daily xts::index
-  # uses all.nearby.FRED.holidays.xts  reindex.xts
+  # uses package lubridate function `%m+%`
+  # uses package xts function apply.daily
+  # uses function are_nearby_fred_holidays_xts  
+  # uses function do_reindex_xts
 
   `%M+%` <- lubridate::`%m+%`
   
@@ -1125,36 +1083,36 @@ pushback.FRED.1st.days.xts <- function(x) {
   # if the 4th is Today and the last 3 days were holidays then shift the index 4 # then done  
   apply.daily(x, function(xx) { 
     # only one daily observation in this case so '&&' is O.K.
-    if(day(index(xx)) == 4 && all.nearby.FRED.holidays.xts(xx, c(-1,-2,-3))) {
+    if(day(index(xx)) == 4 && are_nearby_fred_holidays_xts(xx, c(-1,-2,-3))) {
       index(xx) %M+% days(-4)
     } else {
       index(xx)
     }
   }) -> x_4th
-  x <- reindex.xts(x, x_4th)
+  x <- do_reindex_xts(x, x_4th)
 
   # if the 3rd is Today and the last 2 days were holidays then shift the index 3 # then done  
   apply.daily(x, function(xx) { 
     # only one daily observation in this case so '&&' is O.K.
-    if(day(index(xx)) == 3 && all.nearby.FRED.holidays.xts(xx, c(-1,-2))) {
+    if(day(index(xx)) == 3 && are_nearby_fred_holidays_xts(xx, c(-1,-2))) {
       index(xx) %M+% days(-3)
     } else {
       index(xx)
     }
   }) -> x_3rd
-  x <- reindex.xts(x, x_3rd)
+  x <- do_reindex_xts(x, x_3rd)
 
   # Tuesday and Thursday(Thanksgiving) holidays
   # if the 2nd is Today and the last 1 day was a holiday then shift the index 2 # then done  
   apply.daily(x, function(xx) { 
     # only one daily observation in this case so '&&' is O.K.
-    if(day(index(xx)) == 2 && all.nearby.FRED.holidays.xts(xx, c(-1))) {
+    if(day(index(xx)) == 2 && are_nearby_fred_holidays_xts(xx, c(-1))) {
       index(xx) %M+% days(-2)
     } else {
       index(xx)
     }
   }) -> x_2nd
-  x <- reindex.xts(x, x_2nd)
+  x <- do_reindex_xts(x, x_2nd)
 
   # if the 1st is Today then shift the index 1  # then done
   apply.daily(x, function(xx) { 
@@ -1165,7 +1123,7 @@ pushback.FRED.1st.days.xts <- function(x) {
       index(xx)
     }
   }) -> x_1st
-  x <- reindex.xts(x, x_1st)
+  x <- do_reindex_xts(x, x_1st)
   x_result <- x
 
   # Should have always made it here
