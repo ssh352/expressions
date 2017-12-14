@@ -4,12 +4,6 @@
 
 # last observation carried forard limited
 
-#' Title
-#'
-#' @return
-#' @export
-#'
-#' @examples
 na.locfl <- function(x, n = NULL) {
 
   ops <- options()
@@ -169,8 +163,9 @@ uses <- function(programmed_in_R_version, explicit_package_function_calls, match
 
 # pecent change from the past through NOW 
 # ( if to_future == TRUE, then from NOW to the FUTURE )
-PCTCHG.xts <- function(x, whiches, to_future = NULL) { 
-  
+# only ONE lag is allowed: so "which" must be a vector of size: 1.
+get_pctchg_xts <- function(x, which, to_future = NULL) { 
+
   ops <- options()
   
   options(warn = 1)
@@ -185,6 +180,8 @@ PCTCHG.xts <- function(x, whiches, to_future = NULL) {
     Sys.setenv(TZ="UTC")
   }
   
+  if(NCOL(x) > 1) stop("In get_pctchg_xts, only ONE column is allowed.")
+  
   require(xts) # # Attaching package: 'zoo'
   # IF NOT Error in try.xts(element1) : could not find function "try.xts"
   
@@ -194,7 +191,7 @@ PCTCHG.xts <- function(x, whiches, to_future = NULL) {
   
   x_try.xts_success <- FALSE
   x_try.xts <- try(xts::try.xts(x_orig), silent = T)
-  x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("PCTCHG.xts: can not make an xts object") } else { x_try.xts_success <- TRUE; x_try.xts }
+  x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("get_pctchg_xts can not make an xts object") } else { x_try.xts_success <- TRUE; x_try.xts }
 
    # normal backwards
   if(is.null(to_future) || to_future == FALSE) { to_future = FALSE;   lag_direction <- 1 }
@@ -202,11 +199,11 @@ PCTCHG.xts <- function(x, whiches, to_future = NULL) {
   if(to_future == TRUE) lag_direction <- -1
   
   # xts::lag.xts rules
-  if( whiches <= NROW(x) ) {
+  if( which <= NROW(x) ) {
     # from past
-    if(!to_future) x_result <- ( x - xts::lag.xts(x, whiches * lag_direction) )/ abs(xts::lag.xts(x, whiches * lag_direction)) * 100 * lag_direction
+    if(!to_future) x_result <- ( x - xts::lag.xts(x, which * lag_direction) )/ abs(xts::lag.xts(x, which * lag_direction)) * 100 * lag_direction
     # to future
-    if( to_future) x_result <- ( xts::lag.xts(x, whiches * lag_direction) - x )/ abs(                                       x) * 100 * lag_direction
+    if( to_future) x_result <- ( xts::lag.xts(x, which * lag_direction) - x )/ abs(                                    x) * 100 * lag_direction
   } else {
     x[,] <- NA_real_
     x_result <- x
@@ -220,20 +217,22 @@ PCTCHG.xts <- function(x, whiches, to_future = NULL) {
   Sys.setenv(TZ=oldtz)
   options(ops)
   
-  return(x_result)
+  pctchg_xts <- x_result
+  
+  return(pctchg_xts)
 } 
 
-# > library(xts)
-# > data(sample_matrix)
-# > sample_xts <- as.xts(sample_matrix)
-# > head(sample_xts[,"Open"],4) # x
+# require(xts)
+# data(sample_matrix)
+# sample_xts <- as.xts(sample_matrix)
+# head(sample_xts[,"Open"],4) # x
 #                          Open
 # 2007-01-02 50.039781911546299
 # 2007-01-03 50.230496197795397
 # 2007-01-04 50.420955209067003
 # 2007-01-05 50.373468054328498
-# >
-# > PCTCHG.xts(head(sample_xts[,"Open"],4), whiches = 1,                 )
+# 
+# get_pctchg_xts(head(sample_xts[,"Open"],4), which = 1)
 #                             Open
 # 2007-01-02                    NA
 # 2007-01-03  0.381125334611203126 # res
@@ -242,8 +241,8 @@ PCTCHG.xts <- function(x, whiches, to_future = NULL) {
 # >
 # > ( 50.230496197795397 - 50.039781911546299 ) / abs(50.039781911546299) * 100
 # [1] 0.38112533461120313
-# >
-# > PCTCHG.xts(head(sample_xts[,"Open"],4), whiches = 1, to_future = TRUE )
+# 
+# get_pctchg_xts(head(sample_xts[,"Open"],4), which = 1, to_future = TRUE )
 #                             Open
 # 2007-01-02 -0.381125334611203126
 # 2007-01-03 -0.379170077320410137 # res
@@ -253,9 +252,9 @@ PCTCHG.xts <- function(x, whiches, to_future = NULL) {
 # > ( 50.420955209067003 -50.230496197795397) / abs( 50.230496197795397 ) * 100
 # [1] 0.37917007732041014
 # 
-# # NOT(whiches <= NROW(x))
-# > PCTCHG.xts(head(sample_xts[,"Open"],4), whiches = 5, to_future = TRUE )
-# >
+# # NOT(which <= NROW(x))
+# get_pctchg_xts(head(sample_xts[,"Open"],4), which = 5, to_future = TRUE )
+# 
 #            Open
 # 2007-01-02   NA
 # 2007-01-03   NA
@@ -264,12 +263,6 @@ PCTCHG.xts <- function(x, whiches, to_future = NULL) {
 
 
 
-#' Title
-#'
-#' @return
-#' @export
-#'
-#' @examples
 collofdays2daily.xts <- function(x) {
   
   ops <- options()
@@ -1599,10 +1592,10 @@ expand.xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o
 # 
 # PCTCHG(lag.xts)
 # 
-# head(expand.xts(IBM, fnct = "PCTCHG.xts", whiches = 1),6)
+# head(expand.xts(IBM, fnct = "get_pctchg_xts", whiches = 1),6)
 #
-# head(expand.xts(IBM, fnct = "PCTCHG.xts", whiches = 1:2, alt_name = "pastPCTCHG", o_args = c(to_future = FALSE)),6)
-# tail(expand.xts(IBM, fnct = "PCTCHG.xts", whiches = 1:2, alt_name = "futPCTCHG" , o_args = c(to_future = TRUE )),6)
+# head(expand.xts(IBM, fnct = "get_pctchg_xts", whiches = 1:2, alt_name = "pastPCTCHG", o_args = c(to_future = FALSE)),6)
+# tail(expand.xts(IBM, fnct = "get_pctchg_xts", whiches = 1:2, alt_name = "futPCTCHG" , o_args = c(to_future = TRUE )),6)
 #
 # # xts::merge.xts # dispach
 # head(merge(IBM, expand.xts(IBM, fnct = "TTR::SMA", whiches = 2:3)))
