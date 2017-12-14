@@ -107,29 +107,24 @@ na.locfl <- function(x, n = NULL) {
 
 }
 
+# # vector input
 # # na.locfl( c(101,NA,NA,NA,102,NA,NA), n = 2)
 # [1] 101 101 101  NA 102 102 102
 
-# # input
-# # xts::xts(c(101,NA,NA,NA,102,NA,NA),zoo::as.Date(seq(10, 10*7, length.out = 7)))
-#            [,1]
-# 1970-01-11  101
-# 1970-01-21   NA
-# 1970-01-31   NA
-# 1970-02-10   NA
-# 1970-02-20  102
-# 1970-03-02   NA
-# 1970-03-12   NA
-
-# # na.locfl( xts::xts(c(101,NA,NA,NA,102,NA,NA),zoo::as.Date(seq(10, 10*7, length.out = 7))), 2 )
-#            [,1]
-# 1970-01-11  101
-# 1970-01-21  101
-# 1970-01-31  101
-# 1970-02-10   NA
-# 1970-02-20  102
-# 1970-03-02  102
-
+# # xts input
+# > myxts <- xts::xts(c(101,NA,NA,NA,102,NA,NA),zoo::as.Date(seq(10, 10*7, length.out = 7)))
+# > colnames(myxts)[1] <- "MYXTS"
+# > na.locfl( c(101,NA,NA,NA,102,NA,NA), n = 2)
+# [1] 101 101 101  NA 102 102 102
+# > na.locfl( myxts, n = 2)
+#            MYXTS
+# 1970-01-11   101
+# 1970-01-21   101
+# 1970-01-31   101
+# 1970-02-10    NA
+# 1970-02-20   102
+# 1970-03-02   102
+# 1970-03-12   102
 
 
 
