@@ -8,7 +8,7 @@
 # single column xts only (currently)
 # multi  column xts (untried)
 # last observation carried forard limited
-na.locfl <- function(x, n = NULL) {
+get_na_locfl <- function(x, n = NULL) {
 
   ops <- options()
   
@@ -24,7 +24,7 @@ na.locfl <- function(x, n = NULL) {
     Sys.setenv(TZ="UTC")
   }
   
-  if(NCOL(x) > 1) stop("In na.locfl, only ONE column is allowed.")
+  if(NCOL(x) > 1) stop("In get_na_locfl, only ONE column is allowed.")
   
   require(xts)
   # uses package zoo function rollapply.zoo, 
@@ -42,7 +42,7 @@ na.locfl <- function(x, n = NULL) {
     x_try_zoo <- try(zoo::as.zoo(x), silent = T)
     if(any(class(x_try_zoo) %in% "try-error"  )) {
       # x_orig # ASSUMING I CAN *STILL* DO SOMETHING WITH THIS
-      stop("na.locfl: can not make a zoo object")
+      stop("get_na_locfl: can not make a zoo object")
     } else {
       x_try_zoo_success <- TRUE
       x_try_zoo
@@ -97,7 +97,7 @@ na.locfl <- function(x, n = NULL) {
     }
   } -> x_result
   
-  colnames(x_result) <- "locfl"
+  colnames(x_result) <- "na_locfl"
   locfl <- x_result
   
   Sys.setenv(TZ=oldtz)
@@ -110,7 +110,7 @@ na.locfl <- function(x, n = NULL) {
 
 }
 # vector input
-# na.locfl( c(101,NA,NA,NA,102,NA,NA), n = 2)
+# get_na_locfl( c(101,NA,NA,NA,102,NA,NA), n = 2)
 # [1] 101 101 101  NA 102 102 102
 #
 # xts(c(101,NA,NA,NA,102,NA,NA),zoo::as.Date(seq(10, 10*7, length.out = 7)))
@@ -123,8 +123,8 @@ na.locfl <- function(x, n = NULL) {
 # 1970-03-02   NA
 # 1970-03-12   NA
 #
-# na.locfl( xts(c(101,NA,NA,NA,102,NA,NA),zoo::as.Date(seq(10, 10*7, length.out = 7))), n = 2 )
-#            locfl
+# get_na_locfl( xts(c(101,NA,NA,NA,102,NA,NA),zoo::as.Date(seq(10, 10*7, length.out = 7))), n = 2)
+#         na_locfl
 # 1970-01-11   101
 # 1970-01-21   101
 # 1970-01-31   101
@@ -1316,7 +1316,8 @@ expand.xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o
   }
   
   expand.xts_inner <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o_args = NULL, prefix = NULL) {
-    # uses zoo::is.zoo, zoo::as.zoo, zoo::na.locf, DescTools::DoCall, 
+
+        # uses zoo::is.zoo, zoo::as.zoo, zoo::na.locf, DescTools::DoCall, 
     # xts:::na.locf.xts(dispatch), xts:::merge.xts(dispatch), plyr::join_all,  DataCombine::VarDrop, stringr::str_replace_all
     # xts::is.xts, xts::as.xts, rlist::list.flatten(X?X),  rlist::list.ungroup, stringr::str_replace_all, plyr::mutate, stringr::str_detect
   
@@ -1395,7 +1396,6 @@ expand.xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o
     x_try.xts <- try(xts::try.xts(x_orig), silent = T)
     #
     x         <- if(any("try-error" %in% class(x_try.xts))) { x_orig } else { x_try.xts_success <- TRUE; x_try.xts }
-    
     
     x -> INPUT  
   
@@ -1496,9 +1496,8 @@ expand.xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o
   return(expand.xts_inner(x = x, fnct =  fnct, whiches = whiches, alt_name = alt_name, o_args = o_args, prefix = prefix))
 
 }
-  
-# # testing
-# library(quantmod); getSymbols("IBM")
+# require(quantmod); 
+# x3 <- getSymbols("IBM", from = "1970-01-01", to = , auto.assign = FALSE)
 # 
 # SMA
 #
