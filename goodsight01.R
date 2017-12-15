@@ -547,6 +547,7 @@ get_sma_xts <- function(x, n) {
   x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("get_sma_xts can not make an xts object") } else { x_try.xts_success <- TRUE; x_try.xts }
 
   zoo::rollapply(as.zoo(x), width = n, partial = TRUE, align = "right", FUN = function(x, n) { 
+    # if not too short
     if(n <= length(x)) { mean(x, na.rm = FALSE) } else { NA_real_ }
   }, n = n) -> x_result
 
@@ -624,7 +625,7 @@ get_smtsortino_xts <- function(x, n) {
   tsortino <- function(x, rf = 0.0, na.rm = FALSE) {  (mean(x, na.rm = na.rm) - rf )/sd( local({x[x > 0] <- 0; x } ), na.rm = na.rm) }
   
   zoo::rollapply(as.zoo(x), width = n, partial = TRUE, align = "right", FUN = function(x, n) { 
-    # too short
+    # if not too short
     if(n <= length(x)) { tsortino(x, rf = 0.0, na.rm = FALSE) } else { NA_real_ }
   }, n = n) -> x_result
 
@@ -662,17 +663,87 @@ get_smtsortino_xts <- function(x, n) {
 # 2007-01-06  0.073562112260411788
 # 2007-01-07 -2.231893800843009146
 
-
-
+# LEFT_OFF
+# [ ] WORK in PROGRESS
 # single column xts only
 #
-# m = number of ranks ( pessimistic )
-# n - number of obs
-# simple moving ranks
-get_smrank_xts <- function(x, n, m) {
+# n       = number of obs
+# n_ranks = number of ranks ( pessimistic )
+# simple moving passimistic ranks
+get_smrank_xts <- function(x, n, n_ranks) { 
 
+  ops <- options()
+  
+  options(warn = 1)
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(min.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  if(NCOL(x) > 1) stop("In get_smrank_xts, only ONE column is allowed.")
+  
+  require(xts) 
+  
+  ## VERY BASIC attemped CLASS conversion ##
+  x_orig <- x
+  c_orig <- class(x)[1] # original class
+  
+  x_try.xts_success <- FALSE
+  x_try.xts <- try(xts::try.xts(x_orig), silent = T)
+  x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("get_smsortino_xts can not make an xts object") } else { x_try.xts_success <- TRUE; x_try.xts }
 
-}
+  zoo::rollapply(as.zoo(x), width = n, partial = TRUE, align = "right", FUN = function(x, n, n_ranks) { 
+    # if not too short
+    if(n <= length(x)) {                                           # if any NA, then the entire is NA
+      findInterval(x, tail(head(quantile(x, seq(0, 1, 1/n_ranks) , na.rm = FALSE ),-1),-1)) + 1
+    } else { NA_real_ } 
+  }, n = n, n_ranks = n_ranks) -> x_result
+
+  # would/should always be/been true else I may/have/never ever made it his far
+  if(x_try.xts_success) { 
+    xts::reclass(x_result, x_orig) 
+  } -> x_result
+  
+  colnames(x_result) <- "smrank"
+  # if I did not do this earlier / failsafe / Really should have every only been xts/Date
+  if(any(class(x_result) %in% c("xts","zoo"))) index(x_result) <- zoo::as.Date(index(x_result))
+  
+  smrank_xts <- x_result 
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  # if n = 4
+  # NEEDS to return smrank_lag0, smrank_lag1, smrank_lag2, smrank_lag3 
+  
+  return(smrank_xts)
+} 
+# get_smtsortino_xts(get_pctchg_xts(head(sample_xts[,"Open"],11), n = 1), 3)
+#                       smtsortino
+# 2007-01-02                    NA
+# 2007-01-03                    NA
+# 2007-01-04                    NA
+# 2007-01-05  4.083408896943601540
+# 2007-01-06  0.073562112260411788
+# 2007-01-07 -2.231893800843009146
+# 2007-01-08 -7.029534326268571220
+# 2007-01-09 -2.217163448868932907
+# 2007-01-10 -2.522576361771222242
+# 2007-01-11 -1.729327001953728127
+# 2007-01-12  1.728401658544285180
+
+# LEFT_OFF
+# [ ] WORK in PROGRESS
+# n = 4 trailing observations
+# n_ranks == 2 # high(1)/low(2) # above/below the median
+# get_smrank_xts(get_smtsortino_xts(get_pctchg_xts(head(sample_xts[,"Open"],11), n = 1), 3), n = 4, n_ranks )
+
 
 
 
