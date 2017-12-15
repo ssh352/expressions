@@ -291,7 +291,7 @@ get_pctchg_xts <- function(x, n, to_future = NULL) {
 #
 # n - number of obs
 # smoother over previous obs
-get_recent_max <- function(x, n) { 
+get_recent_max_xts <- function(x, n) { 
 
   ops <- options()
   
@@ -320,7 +320,6 @@ get_recent_max <- function(x, n) {
   x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("get_pctchg_xts can not make an xts object") } else { x_try.xts_success <- TRUE; x_try.xts }
 
   zoo::rollapply(as.zoo(x), width = n, partial = TRUE, align = "right", FUN = function(x, n) { 
-    # if(n <= length(x)) { max(x, na.rm = FALSE) } else { NA_real_ }
     max(x, na.rm = TRUE)
   }, n = n) -> x_result
 
@@ -352,7 +351,7 @@ get_recent_max <- function(x, n) {
 # 2007-01-04 50.420955209067003
 # 2007-01-05 50.373468054328498
 # 
-# get_recent_max(head(sample_xts[,"Open"],4), 2)
+# get_recent_max_xts(head(sample_xts[,"Open"],4), 2)
 #                    recent_max
 # 2007-01-02 50.039781911546299
 # 2007-01-03 50.230496197795397
@@ -368,7 +367,7 @@ get_recent_max <- function(x, n) {
 #
 # n - number of obs
 # smoother over previous obs
-get_recent_min <- function(x, n) { 
+get_recent_min_xts <- function(x, n) { 
 
   ops <- options()
   
@@ -397,7 +396,6 @@ get_recent_min <- function(x, n) {
   x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("get_pctchg_xts can not make an xts object") } else { x_try.xts_success <- TRUE; x_try.xts }
 
   zoo::rollapply(as.zoo(x), width = n, partial = TRUE, align = "right", FUN = function(x, n) { 
-    # if(n <= length(x)) { min(x, na.rm = FALSE) } else { NA_real_ }
     min(x, na.rm = TRUE)
   }, n = n) -> x_result
 
@@ -429,7 +427,7 @@ get_recent_min <- function(x, n) {
 # 2007-01-04 50.420955209067003
 # 2007-01-05 50.373468054328498
 # 
-# get_recent_min(head(sample_xts[,"Open"],4), 2)
+# get_recent_min_xts(head(sample_xts[,"Open"],4), 2)
 #                    recent_min
 # 2007-01-02 50.039781911546299
 # 2007-01-03 50.039781911546299
@@ -443,9 +441,65 @@ get_recent_min <- function(x, n) {
 # adjust as if held using a full year of time
 # n multiple ( e.g monthly = 12, daily = 260 )
 # 
-get_annualized_xts <- function(x, n) {
+get_annualized_xts <- function(x, n) { 
 
-}
+  ops <- options()
+  
+  options(warn = 1)
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(min.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  if(NCOL(x) > 1) stop("In get_annualized_xts, only ONE column is allowed.")
+  
+  require(xts) 
+  
+  ## VERY BASIC attemped CLASS conversion ##
+  x_orig <- x
+  c_orig <- class(x)[1] # original class
+  
+  x_try.xts_success <- FALSE
+  x_try.xts <- try(xts::try.xts(x_orig), silent = T)
+  x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("get_pctchg_xts can not make an xts object") } else { x_try.xts_success <- TRUE; x_try.xts }
+
+  x_result <- x * n
+
+  # would/should always be/been true else I may/have/never ever made it his far
+  if(x_try.xts_success) { 
+    xts::reclass(x_result, x_orig) 
+  } -> x_result
+  
+  colnames(x_result) <- "annualized"
+  # if I did not do this earlier / failsafe / Really should have every only been xts/Date
+  if(any(class(x_result) %in% c("xts","zoo"))) index(x_result) <- zoo::as.Date(index(x_result))
+
+  annualized_xts <- x_result 
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  return(annualized_xts)
+} 
+# head(sample_xts[,"Open"],4)
+#                          Open
+# 2007-01-02 50.039781911546299
+# 2007-01-03 50.230496197795397
+# 2007-01-04 50.420955209067003
+# 2007-01-05 50.373468054328498
+# 
+# get_annualized_xts(head(sample_xts[,"Open"],4), 2)
+#                    annualized
+# 2007-01-02 100.07956382309260
+# 2007-01-03 100.46099239559079
+# 2007-01-04 100.84191041813401
+# 2007-01-05 100.74693610865700
 
 
 
