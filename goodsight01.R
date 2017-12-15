@@ -278,19 +278,63 @@ get_pctchg_xts <- function(x, which, to_future = NULL) {
 # 2007-01-04   NA
 # 2007-01-05   NA
 
-# [ ] NEED get_sma_xts
-
 
 
 # single column xts only
 #
 # n - number of obs
 # smoother over previous obs
-get_recent_max <- function(x, n) {
+get_recent_max <- function(x, n) { 
 
+  ops <- options()
+  
+  options(warn = 1)
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  if(NCOL(x) > 1) stop("In get_recent_max, only ONE column is allowed.")
+  
+  require(xts) 
+  
+  ## VERY BASIC attemped CLASS conversion ##
+  x_orig <- x
+  c_orig <- class(x)[1] # original class
+  
+  x_try.xts_success <- FALSE
+  x_try.xts <- try(xts::try.xts(x_orig), silent = T)
+  x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("get_pctchg_xts can not make an xts object") } else { x_try.xts_success <- TRUE; x_try.xts }
 
+  zoo::rollapply(as.zoo(x), width = n, partial = TRUE, align = "right", FUN = function(x, n) { 
+    if(n <= length(x)) { max(x, na.rm = FALSE) } else { NA_real_ }
+  }, n = n) -> x_result
 
-}
+  # would/should always be/been true else I may/have/never ever made it his far
+  if(x_try.xts_success) { 
+    xts::reclass(x_result, x_orig) 
+  } -> x_result
+  
+  colnames(x_result) <- "recent_max"
+  pctchg_xts <- x_result 
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  return(pctchg_xts)
+} 
+
+# require(xts)
+# data(sample_matrix)
+# sample_xts <- as.xts(sample_matrix)
+# get_recent_max(head(sample_xts[,"Open"],4), 2)
+
 
 
 
