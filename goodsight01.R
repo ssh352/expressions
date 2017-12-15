@@ -98,7 +98,11 @@ get_na_locfl <- function(x, n = NULL) {
     }
   } -> x_result
   
-  colnames(x_result) <- "na_locfl"
+  if(!is.null(dim(x_result))) colnames(x_result) <- "na_locfl"
+  
+  # if I did not do this earlier / failsafe / Really should have every only been xts/Date
+  if(any(class(x_result) %in% c("xts","zoo"))) index(x_result) <- zoo::as.Date(index(x_result))
+
   locfl <- x_result
   
   Sys.setenv(TZ=oldtz)
@@ -180,8 +184,8 @@ get_na_locfl <- function(x, n = NULL) {
 # single column xts only
 # percent change from the past through NOW 
 # ( if to_future == TRUE, then from NOW to the FUTURE )
-# only ONE lag is allowed: so "which" must be a vector of size: 1.
-get_pctchg_xts <- function(x, which, to_future = NULL) { 
+# only ONE lag is allowed: so "n" must be a vector of size: 1.
+get_pctchg_xts <- function(x, n, to_future = NULL) { 
 
   ops <- options()
   
@@ -215,11 +219,11 @@ get_pctchg_xts <- function(x, which, to_future = NULL) {
   if(to_future == TRUE) lag_direction <- -1
   
   # xts::lag.xts rules
-  if( which <= NROW(x) ) {
+  if( n <= NROW(x) ) {
     # from past
-    if(!to_future) x_result <- ( x - xts::lag.xts(x, which * lag_direction) )/ abs(xts::lag.xts(x, which * lag_direction)) * 100 * lag_direction
+    if(!to_future) x_result <- ( x - xts::lag.xts(x, n * lag_direction) )/ abs(xts::lag.xts(x, n * lag_direction)) * 100 * lag_direction
     # to future
-    if( to_future) x_result <- ( xts::lag.xts(x, which * lag_direction) - x )/ abs(                                    x) * 100 * lag_direction
+    if( to_future) x_result <- ( xts::lag.xts(x, n * lag_direction) - x )/ abs(                                    x) * 100 * lag_direction
   } else {
     x[,] <- NA_real_
     x_result <- x
@@ -231,6 +235,9 @@ get_pctchg_xts <- function(x, which, to_future = NULL) {
   } -> x_result
   
   colnames(x_result) <- "pctchg"
+  # if I did not do this earlier / failsafe / Really should have every only been xts/Date
+  if(any(class(x_result) %in% c("xts","zoo"))) index(x_result) <- zoo::as.Date(index(x_result))
+  
   pctchg_xts <- x_result 
   
   Sys.setenv(TZ=oldtz)
@@ -249,7 +256,7 @@ get_pctchg_xts <- function(x, which, to_future = NULL) {
 # 2007-01-04 50.420955209067003
 # 2007-01-05 50.373468054328498
 # 
-# get_pctchg_xts(head(sample_xts[,"Open"],4), which = 1)
+# get_pctchg_xts(head(sample_xts[,"Open"],4), n = 1)
 #                           pctchg
 # 2007-01-02                    NA
 # 2007-01-03  0.381125334611203126 # res
@@ -259,7 +266,7 @@ get_pctchg_xts <- function(x, which, to_future = NULL) {
 # #( 50.230496197795397 - 50.039781911546299 ) / abs(50.039781911546299) * 100
 # [1] 0.38112533461120313
 # 
-# get_pctchg_xts(head(sample_xts[,"Open"],4), which = 1, to_future = TRUE )
+# get_pctchg_xts(head(sample_xts[,"Open"],4), n = 1, to_future = TRUE )
 #                           pctchg
 # 2007-01-02 -0.381125334611203126
 # 2007-01-03 -0.379170077320410137 # res
@@ -270,7 +277,7 @@ get_pctchg_xts <- function(x, which, to_future = NULL) {
 # [1] 0.37917007732041014
 # 
 # # NOT(which <= NROW(x))
-# get_pctchg_xts(head(sample_xts[,"Open"],4), which = 5, to_future = TRUE )
+# get_pctchg_xts(head(sample_xts[,"Open"],4), n = 5, to_future = TRUE )
 # 
 #          pctchg
 # 2007-01-02   NA
@@ -313,7 +320,8 @@ get_recent_max <- function(x, n) {
   x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("get_pctchg_xts can not make an xts object") } else { x_try.xts_success <- TRUE; x_try.xts }
 
   zoo::rollapply(as.zoo(x), width = n, partial = TRUE, align = "right", FUN = function(x, n) { 
-    if(n <= length(x)) { max(x, na.rm = FALSE) } else { NA_real_ }
+    # if(n <= length(x)) { max(x, na.rm = FALSE) } else { NA_real_ }
+    max(x, na.rm = TRUE)
   }, n = n) -> x_result
 
   # would/should always be/been true else I may/have/never ever made it his far
@@ -322,6 +330,9 @@ get_recent_max <- function(x, n) {
   } -> x_result
   
   colnames(x_result) <- "recent_max"
+  # if I did not do this earlier / failsafe / Really should have every only been xts/Date
+  if(any(class(x_result) %in% c("xts","zoo"))) index(x_result) <- zoo::as.Date(index(x_result))
+  
   pctchg_xts <- x_result 
   
   Sys.setenv(TZ=oldtz)
@@ -333,20 +344,98 @@ get_recent_max <- function(x, n) {
 # require(xts)
 # data(sample_matrix)
 # sample_xts <- as.xts(sample_matrix)
+# 
+# head(sample_xts[,"Open"],4)
+#                          Open
+# 2007-01-02 50.039781911546299
+# 2007-01-03 50.230496197795397
+# 2007-01-04 50.420955209067003
+# 2007-01-05 50.373468054328498
+# 
 # get_recent_max(head(sample_xts[,"Open"],4), 2)
-
-
+#                    recent_max
+# 2007-01-02 50.039781911546299
+# 2007-01-03 50.230496197795397
+# 2007-01-04 50.420955209067003
+# 2007-01-05 50.420955209067003
 
 
 # single column xts only
 #
 # n - number of obs
 # smoother over previous obs
-get_recent_min <- function(x, n) {
+# single column xts only
+#
+# n - number of obs
+# smoother over previous obs
+get_recent_min <- function(x, n) { 
 
+  ops <- options()
+  
+  options(warn = 1)
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(min.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  if(NCOL(x) > 1) stop("In get_recent_min, only ONE column is allowed.")
+  
+  require(xts) 
+  
+  ## VERY BASIC attemped CLASS conversion ##
+  x_orig <- x
+  c_orig <- class(x)[1] # original class
+  
+  x_try.xts_success <- FALSE
+  x_try.xts <- try(xts::try.xts(x_orig), silent = T)
+  x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("get_pctchg_xts can not make an xts object") } else { x_try.xts_success <- TRUE; x_try.xts }
 
+  zoo::rollapply(as.zoo(x), width = n, partial = TRUE, align = "right", FUN = function(x, n) { 
+    # if(n <= length(x)) { min(x, na.rm = FALSE) } else { NA_real_ }
+    min(x, na.rm = TRUE)
+  }, n = n) -> x_result
 
-}
+  # would/should always be/been true else I may/have/never ever made it his far
+  if(x_try.xts_success) { 
+    xts::reclass(x_result, x_orig) 
+  } -> x_result
+  
+  colnames(x_result) <- "recent_min"
+  # if I did not do this earlier / failsafe / Really should have every only been xts/Date
+  if(any(class(x_result) %in% c("xts","zoo"))) index(x_result) <- zoo::as.Date(index(x_result))
+  
+  pctchg_xts <- x_result 
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  return(pctchg_xts)
+} 
+
+# require(xts)
+# data(sample_matrix)
+# sample_xts <- as.xts(sample_matrix)
+# 
+# head(sample_xts[,"Open"],4)
+#                          Open
+# 2007-01-02 50.039781911546299
+# 2007-01-03 50.230496197795397
+# 2007-01-04 50.420955209067003
+# 2007-01-05 50.373468054328498
+# 
+# get_recent_min(head(sample_xts[,"Open"],4), 2)
+#                    recent_min
+# 2007-01-02 50.039781911546299
+# 2007-01-03 50.039781911546299
+# 2007-01-04 50.230496197795397
+# 2007-01-05 50.373468054328498
+
 
 
 # single column xts only
@@ -443,6 +532,9 @@ get_collofdays2daily_xts <- function(x) {
   merged <- merge(x_days, x)
   
   colnames(merged) <- "collofdays2daily"
+  # if I did not do this earlier / failsafe / Really should have every only been xts/Date
+  if(class(merged) %in% c("xts","zoo")) index(merged) <- zoo::as.Date(index(merged))
+  
   get_collofdays2daily <- merged
   
   Sys.setenv(TZ=oldtz)
@@ -529,18 +621,6 @@ get_delay_since_last_obs <- function(x) {
     }) -> discard
   }
   
-  # # 100% opposite of the above ( no  delays found ): REDUNDANT: I CAN REMOVE THIS CODE
-  # 
-  # sc <- StreamMetabolism::contiguous.zoo(data.frame(vec))
-  # 
-  # if(NROW(snc)>0) {
-  #   rowr::rowApply(sc, fun = function(x) { 
-  #     with( x, { new_vec[starts:ends] <- rep(0,lengths)
-  #                assign("new_vec", new_vec , envir= parent.frame(8))  
-  #              } ) -> discard ; NULL
-  #   }) -> discard
-  # }
-   
   Sys.setenv(TZ=oldtz)
   options(ops)
   
@@ -597,6 +677,9 @@ get_delay_since_last_obs_xts <-function(x) {
   } -> x_result
   
   colnames(x_result) <- "delay_since_last_obs"
+  # if I did not do this earlier / failsafe / Really should have every only been xts/Date
+  if(any(class(x_result) %in% c("xts","zoo"))) index(x_result) <- zoo::as.Date(index(x_result))
+  
   delay_since_last_obs_xts <- x_result
   
   Sys.setenv(TZ=oldtz)
@@ -667,6 +750,9 @@ get_delay_since_last_day_xts <-function(x) {
   } -> x_result
   
   colnames(x_result) <- "delay_since_last_day"
+  # if I did not do this earlier / failsafe / Really should have every only been xts/Date
+  if(any(class(x_result) %in% c("xts","zoo"))) index(x_result) <- zoo::as.Date(index(x_result))
+  
   delay_since_last_day_xts <- x_result
   
   Sys.setenv(TZ=oldtz)
@@ -789,6 +875,9 @@ is_na_xts <- function(x) {
   } -> x_result
   
   colnames(x_result) <- "na"
+  # if I did not do this earlier / failsafe / Really should have every only been xts/Date
+  if(any(class(x_result) %in% c("xts","zoo"))) index(x_result) <- zoo::as.Date(index(x_result))
+  
   na_xts <- x_result 
   
   Sys.setenv(TZ=oldtz)
@@ -910,6 +999,9 @@ rm_days_xts <- function(x, rm_what = NULL) {
   } -> x_result
   
   colnames(x_result) <- "days"
+  # if I did not do this earlier / failsafe / Really should have every only been xts/Date
+  if(any(class(x_result) %in% c("xts","zoo"))) index(x_result) <- zoo::as.Date(index(x_result))
+  
   days_xts <- x_result
   
   Sys.setenv(TZ=oldtz)
@@ -1036,6 +1128,9 @@ are_nearby_fred_holidays_xts <- function(x = NULL, d = NULL) {
   } -> x_result
   
   colnames(x_result) <- "nearby_fred_holidays"
+  # if I did not do this earlier / failsafe / Really should have every only been xts/Date
+  if(any(class(x_result) %in% c("xts","zoo"))) index(x_result) <- zoo::as.Date(index(x_result))
+  
   nearby_fred_holidays_xts <- x_result
   
   Sys.setenv(TZ=oldtz)
@@ -1257,6 +1352,8 @@ pushback_fred_1st_days_xts <- function(x) {
   } -> x_result
   
   # columns are not renamed
+  # if I did not do this earlier / failsafe / Really should have every only been xts/Date
+  if(any(class(x_result) %in% c("xts","zoo"))) index(x_result) <- zoo::as.Date(index(x_result))
   
   fred_1st_days_xts <- x_result
   
@@ -1274,14 +1371,11 @@ pushback_fred_1st_days_xts <- function(x) {
 # 1948-03-01    4.0
 
 # pushback_fred_1st_days_xts(x)
-# 
-#              GDP
-# 1946-12-31 243.1
-# 1947-03-31 246.3
-# 1947-06-30 250.1
-# 1947-09-30 260.3
-# 1947-12-31 266.2
-# 1948-03-31 272.9
+#                        UNRATE
+# 1947-12-31 3.3999999999999999
+# 1948-01-31 3.7999999999999998
+# 1948-02-29 4.0000000000000000
+
 # 
 # pushback_fred_1st_days_xts(merge(x,x))
 #                        UNRATE           UNRATE.1
@@ -1347,6 +1441,9 @@ is_year_less_than_or_equal_xts <- function(x, n = NULL) {
   } -> x_result
   
   colnames(x_result) <- "year_less_than_or_equal_xts"
+  # if I did not do this earlier / failsafe / Really should have every only been xts/Date
+  if(any(class(x_result) %in% c("xts","zoo"))) index(x_result) <- zoo::as.Date(index(x_result))
+  
   year_less_than_or_equal_xts <- x_result
   
   Sys.setenv(TZ=oldtz)
@@ -1357,6 +1454,8 @@ is_year_less_than_or_equal_xts <- function(x, n = NULL) {
 }
 # require(quantmod)
 # x2 <- getSymbols("UNRATE", src = "FRED",  auto.assign = FALSE)["1948-01-01/1949-03-01"]
+# 
+# is_year_less_than_or_equal_xts(x2, 1948)
 #            year_less_than_or_equal_xts
 # 1948-01-01                           1
 # 1948-02-01                           1
@@ -1373,8 +1472,6 @@ is_year_less_than_or_equal_xts <- function(x, n = NULL) {
 # 1949-01-01                           2
 # 1949-02-01                           2
 # 1949-03-01                           2
-
-
 
 
 
@@ -1566,6 +1663,9 @@ expand_xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o
       xts::reclass(x_result, x_orig) 
     } -> x_result
     
+    # if I did not do this earlier / failsafe / Really should have every only been xts/Date
+    if(any(class(x_result) %in% c("xts","zoo"))) index(x_result) <- zoo::as.Date(index(x_result))
+    
     xts_inner <- x_result
     
     Sys.setenv(TZ=oldtz)
@@ -1734,43 +1834,5 @@ expand_xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o
 # 1970-01-09                        1
 # 1970-01-12                        1
 
-
-
-# perform function maxx over previous observation and currenct observation ( in THAT order )
-#
-# expects(inherits) an 'xts' or 'zoo' object
-# n # the number of function maxx to 'perform over' #
-# n = 2 means previous observation and current observation ( in THAT order )
-# note: earliest(first) value is ALWAYS the result of "function max to 'perform over' #'
-#
-Maxx <- function(x, n = 2) {
-
-  orig_zoo_class <- class(x)[1]
-  orig_zoo_index <- index(x)
-  
-  zoo::rollapply(as.zoo(x), n, function(x) { 
-    max(x, na.rm = TRUE)
-    print(x)
-  }, partial = TRUE, align = "right") -> res
-
-  res <- eval(parse(text=paste0("as.", orig_zoo_class, "(res)"))) 
-  index(res) <- orig_zoo_index
-  return(res)
-}
-# data(sample_matrix)
-# sample.xts <- as.xts(sample_matrix)
-# sample.xts[1:4,c("Low","Close")]
-#                 Low    Close
-# 2007-01-02 49.95041 50.11778
-# 2007-01-03 50.23050 50.39767
-# 2007-01-04 50.26414 50.33236
-# 2007-01-05 50.22103 50.33459
-# 
-# > Maxx(sample.xts[1:4,c("Low","Close")])
-#                 Low    Close
-# 2007-01-02 49.95041 50.11778
-# 2007-01-03 50.23050 50.39767
-# 2007-01-04 50.26414 50.39767
-# 2007-01-05 50.26414 50.33459
 
 # goodsight01.R
