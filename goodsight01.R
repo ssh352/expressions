@@ -1339,7 +1339,7 @@ is_year_less_than_or_equal_xts <- function(x, n = NULL) {
 #   IF o_args IS OF A MIXED DATA.TAPE,  use a list INSTEAD ( of a vector ) 
 #    e.g. = list(indexAt= 'lastof', OHLC = FALSE)
 # 
-expand_xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o_args = NULL, prefix = NULL) {
+expand_xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o_args = NULL, prefix = NULL, fixed_sep = NULL) {
   
   # BASED ON 
   #   Found by RSEEK
@@ -1352,29 +1352,9 @@ expand_xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o
   #     http://moderntoolmaking.blogspot.com/2013/01/time-series-cross-validation-5.html?utm_source=feedburner&utm_medium=feed&utm_campaign=Feed%3A+ModernToolMaking+%28Modern+Tool+Making%29
   #     GIST OF THIS ON GITHUB
   #     https://gist.github.com/zachmayer/4630129#file-1-load-data-r
-  #     ALSO THE AUTHOR OF R package  cv.ts) on github
+  #     ALSO THE AUTHOR OF R CRAN package caretEnsemble and R github package cv.ts 
   
-  # not used
-  fnct_text_items <- as.character(substitute(fnct))
-  
-  # used
-  fnct_text       <- as.character(deparse(substitute(fnct)))
-  
-  # fnct_text <- as.character(substitute(fnct))
-  # 
-  # if((length(fnct_text) == 3) && eval(parse(text=deparse(fnct_text[1]))) %in% c("::",":::")) {
-  #   fnct_text <- paste0( eval(parse(text=deparse(fnct_text[2]))), eval(parse(text=deparse(fnct_text[1]))), eval(parse(text=deparse(fnct_text[3]))), collapse = "")
-  # }
-  # 
-  # # not encountered case
-  # if((length(fnct_text) == 2) && eval(parse(text=deparse(fnct_text[1]))) %in% c("::",":::")) {
-  #   fnct_text <- paste0( eval(parse(text=deparse(fnct_text[2]))),                                          eval(parse(text=deparse(fnct_text[3]))), collapse = "")
-  # }
-  # 
-  # # not encountered case
-  # if((length(fnct_text)  > 0)                                                              ) {
-  #   fnct_text <- paste0(sapply(fnct_text, function(xx) { eval(parse(text=deparse(xx))) }), collapse = "")
-  # }
+  fnct_text   <- as.character(deparse(substitute(fnct)))
   
   matched_call <- capture.output(str(match.call()))
   
@@ -1392,7 +1372,7 @@ expand_xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o
     Sys.setenv(TZ="UTC")
   }
   
-  expand_xts_inner <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o_args = NULL, prefix = NULL) {
+  expand_xts_inner <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o_args = NULL, prefix = NULL, fixed_sep = NULL) {
 
     require(xts) 
     # uses package zoo       functions is.zoo, as.zoo, na.locf
@@ -1406,6 +1386,7 @@ expand_xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o
     if(is.null(     x))  stop("run-time user must provide input data")
     if(is.null(   fnct)) stop("run-time user must provide a function 'fnct'")
     if(is.null(prefix))  prefix  <- FALSE # do  I of name fnct/alt_name do a preprend(TRUE) or append(FALSE)(default) 
+    if(is.null(fixed_sep)) fixed_sep = "." # between the root and the pre/post(append) fix of the new column(s) names
     
     has_whiches <- TRUE     # patch # if does not have a non-null wiches argument, then give it one so it can LASTER do ONE loop
     if(is.null(whiches)) { has_whiches <- FALSE ; whiches = -Inf }  
@@ -1488,15 +1469,15 @@ expand_xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o
       
       if(has_whiches) {
         if(prefix) { 
-          paste(            stringr::str_replace_all(fnct,"[.]|::","_"), x, names(out), sep='.') -> names(out)
+          paste(            stringr::str_replace_all(fnct,"[.]|::","_"), x, names(out), sep= fixed_sep) -> names(out)
         } else { 
-          paste(names(out), stringr::str_replace_all(fnct,"[.]|::","_"), x            , sep='.') -> names(out)
+          paste(names(out), stringr::str_replace_all(fnct,"[.]|::","_"), x            , sep= fixed_sep) -> names(out)
         }   
       } else { # no whiches argument e.g. na.locf
         if(prefix) { 
-          paste(            stringr::str_replace_all(fnct,"[.]|::","_"),    names(out), sep='.') -> names(out)
+          paste(            stringr::str_replace_all(fnct,"[.]|::","_"),    names(out), sep= fixed_sep) -> names(out)
         } else { 
-          paste(names(out), stringr::str_replace_all(fnct,"[.]|::","_")               , sep='.') -> names(out)
+          paste(names(out), stringr::str_replace_all(fnct,"[.]|::","_")               , sep= fixed_sep) -> names(out)
         }   
       } 
       # edge case: a column name is null: possible! allowed!: typical case send: xts(,index(<something>))
@@ -1550,7 +1531,7 @@ expand_xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o
     
   }
   
-  expand_xts_ <- expand_xts_inner(x = x, fnct =  fnct, whiches = whiches, alt_name = alt_name, o_args = o_args, prefix = prefix)
+  expand_xts_ <- expand_xts_inner(x = x, fnct =  fnct, whiches = whiches, alt_name = alt_name, o_args = o_args, prefix = prefix, fixed_sep = fixed_sep)
     
   Sys.setenv(TZ=oldtz)
   options(ops)
@@ -1570,8 +1551,9 @@ expand_xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o
 # 1970-01-09 18.475000000000001 18.524999999999999 18.424999 18.450001000000000     585600 5.3833140000000004
 # 1970-01-12 18.450001000000000 18.487499000000000 18.387501 18.387501000000000     379200 5.3650779999999996
 
-# prefix = TRUE
-# expand.xts(x3[,c("IBM.Open","IBM.Close")], fnct = "TTR::SMA", whiches = 2:3, prefix = TRUE) # NOT default
+# changed prefix = TRUE
+#
+# expand_xts(x3[,c("IBM.Open","IBM.Close")], fnct = "TTR::SMA", whiches = 2:3, prefix = TRUE) # NOT default
 #            TTR_SMA.2.IBM.Open TTR_SMA.2.IBM.Close TTR_SMA.3.IBM.Open TTR_SMA.3.IBM.Close
 # 1970-01-02                 NA                  NA                 NA                  NA
 # 1970-01-05 18.262499500000001  18.324999500000001                 NA                  NA
@@ -1581,7 +1563,9 @@ expand_xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o
 # 1970-01-09 18.456250000000001  18.462500500000001 18.445833000000000  18.454166999999998
 # 1970-01-12 18.462500500000001  18.418751000000000 18.454166999999998  18.437500666666665
 
-# expand.xts(x3[,c("IBM.Open","IBM.Close")], fnct = "TTR::SMA", whiches = 2:3, prefix = FALSE)  # default
+# changed    prefix = FALSE  ( default )
+#
+# expand_xts(x3[,c("IBM.Open","IBM.Close")], fnct = "TTR::SMA", whiches = 2:3, prefix = FALSE)  # default
 #            IBM.Open.TTR_SMA.2 IBM.Close.TTR_SMA.2 IBM.Open.TTR_SMA.3 IBM.Close.TTR_SMA.3
 # 1970-01-02                 NA                  NA                 NA                  NA
 # 1970-01-05 18.262499500000001  18.324999500000001                 NA                  NA
@@ -1591,7 +1575,19 @@ expand_xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o
 # 1970-01-09 18.456250000000001  18.462500500000001 18.445833000000000  18.454166999999998
 # 1970-01-12 18.462500500000001  18.418751000000000 18.454166999999998  18.437500666666665
 
-# expand.xts(x3[,c("IBM.Open","IBM.Close")], fnct = "TTR::SMA", whiches = 2:3)
+# changed   fixed_sep = "_"
+# 
+# expand_xts(x3[,c("IBM.Open","IBM.Close")], fnct = "TTR::SMA", whiches = 2:3, fixed_sep = "_")
+#            IBM.Open_TTR_SMA_2 IBM.Close_TTR_SMA_2 IBM.Open_TTR_SMA_3 IBM.Close_TTR_SMA_3
+# 1970-01-02                 NA                  NA                 NA                  NA
+# 1970-01-05 18.262499500000001  18.324999500000001                 NA                  NA
+# 1970-01-06 18.356249500000001  18.418749500000001 18.312499666666668  18.358332666666666
+# 1970-01-07 18.418749500000001  18.431249500000000 18.379166000000001  18.424999666666665
+# 1970-01-08 18.431249500000000  18.456250000000001 18.424999666666665  18.445833000000000
+# 1970-01-09 18.456250000000001  18.462500500000001 18.445833000000000  18.454166999999998
+# 1970-01-12 18.462500500000001  18.418751000000000 18.454166999999998  18.437500666666665
+
+# expand_xts(x3[,c("IBM.Open","IBM.Close")], fnct = "TTR::SMA", whiches = 2:3)
 #            IBM.Open.TTR_SMA.2 IBM.Close.TTR_SMA.2 IBM.Open.TTR_SMA.3 IBM.Close.TTR_SMA.3
 # 1970-01-02                 NA                  NA                 NA                  NA
 # 1970-01-05 18.262499500000001  18.324999500000001                 NA                  NA
@@ -1601,7 +1597,9 @@ expand_xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o
 # 1970-01-09 18.456250000000001  18.462500500000001 18.445833000000000  18.454166999999998
 # 1970-01-12 18.462500500000001  18.418751000000000 18.454166999999998  18.437500666666665
 
-# expand.xts(x3[,c("IBM.Open","IBM.Close")], fnct = TTR::SMA, whiches = 2:3)
+# changed to hard-coded function call   fnct = TTR::SMA
+#
+# expand_xts(x3[,c("IBM.Open","IBM.Close")], fnct = TTR::SMA, whiches = 2:3)
 #            IBM.Open.TTR_SMA.2 IBM.Close.TTR_SMA.2 IBM.Open.TTR_SMA.3 IBM.Close.TTR_SMA.3
 # 1970-01-02                 NA                  NA                 NA                  NA
 # 1970-01-05 18.262499500000001  18.324999500000001                 NA                  NA
@@ -1611,7 +1609,9 @@ expand_xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o
 # 1970-01-09 18.456250000000001  18.462500500000001 18.445833000000000  18.454166999999998
 # 1970-01-12 18.462500500000001  18.418751000000000 18.454166999999998  18.437500666666665
 
-# expand.xts(x3[,c("IBM.Open","IBM.Close")], fnct = "function(x,n){ TTR::SMA(x,n) }", whiches = 2:3)
+# changed to function sent as a string   fnct = "function(x,n){ TTR::SMA(x,n) }"
+#
+# expand_xts(x3[,c("IBM.Open","IBM.Close")], fnct = "function(x,n){ TTR::SMA(x,n) }", whiches = 2:3)
 
 #               IBM.Open.anon.2   IBM.Close.anon.2    IBM.Open.anon.3   IBM.Close.anon.3
 # 1970-01-02                 NA                 NA                 NA                 NA
@@ -1622,7 +1622,9 @@ expand_xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o
 # 1970-01-09 18.456250000000001 18.462500500000001 18.445833000000000 18.454166999999998
 # 1970-01-12 18.462500500000001 18.418751000000000 18.454166999999998 18.437500666666665
 
-# expand.xts(x3[,c("IBM.Open","IBM.Close")], fnct = function(x,n){ TTR::SMA(x,n) }, whiches = 2:3)
+# change to function sent as a closure   fnct = function(x,n){ TTR::SMA(x,n) }
+#
+# expand_xts(x3[,c("IBM.Open","IBM.Close")], fnct = function(x,n){ TTR::SMA(x,n) }, whiches = 2:3)
 #               IBM.Open.anon.2   IBM.Close.anon.2    IBM.Open.anon.3   IBM.Close.anon.3
 # 1970-01-02                 NA                 NA                 NA                 NA
 # 1970-01-05 18.262499500000001 18.324999500000001                 NA                 NA
@@ -1632,8 +1634,10 @@ expand_xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o
 # 1970-01-09 18.456250000000001 18.462500500000001 18.445833000000000 18.454166999999998
 # 1970-01-12 18.462500500000001 18.418751000000000 18.454166999999998 18.437500666666665
 
+# check that a specific function works
+#
 # x3a <- { t <- x3; t[2:3,1] <- NA_real_; t}
-# expand.xts(x3a[,c("IBM.Open","IBM.Close")], fnct = "na.locf", whiches = 2:3)
+# expand_xts(x3a[,c("IBM.Open","IBM.Close")], fnct = "na.locf", whiches = 2:3)
 #               IBM.Open.anon.2   IBM.Close.anon.2    IBM.Open.anon.3   IBM.Close.anon.3
 # 1970-01-02 18.225000000000001 18.237499000000000 18.225000000000001 18.237499000000000
 # 1970-01-05 18.225000000000001 18.412500000000001 18.225000000000001 18.412500000000001
@@ -1643,7 +1647,9 @@ expand_xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o
 # 1970-01-09 18.475000000000001 18.450001000000000 18.475000000000001 18.450001000000000
 # 1970-01-12 18.450001000000000 18.387501000000000 18.450001000000000 18.387501000000000
 
-# expand.xts(x3a[,c("IBM.Open","IBM.Close")], fnct = "na.locf", whiches = 2:3, alt_name = "NALOCF")
+# give the ouput columns and alternate pre/post(append) name
+#
+# expand_xts(x3a[,c("IBM.Open","IBM.Close")], fnct = "na.locf", whiches = 2:3, alt_name = "NALOCF")
 #             IBM.Open.NALOCF.2 IBM.Close.NALOCF.2  IBM.Open.NALOCF.3 IBM.Close.NALOCF.3
 # 1970-01-02 18.225000000000001 18.237499000000000 18.225000000000001 18.237499000000000
 # 1970-01-05 18.225000000000001 18.412500000000001 18.225000000000001 18.412500000000001
@@ -1653,7 +1659,9 @@ expand_xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o
 # 1970-01-09 18.475000000000001 18.450001000000000 18.475000000000001 18.450001000000000
 # 1970-01-12 18.450001000000000 18.387501000000000 18.450001000000000 18.387501000000000
 
-# expand.xts(x3[,c("IBM.Open","IBM.Close")], fnct = "get_pctchg_xts", whiches = 2:3, alt_name = "futPCTCHG" , o_args = c(to_future = TRUE ))
+# send extra arguements to a function
+#
+# expand_xts(x3[,c("IBM.Open","IBM.Close")], fnct = "get_pctchg_xts", whiches = 2:3, alt_name = "futPCTCHG" , o_args = c(to_future = TRUE ))
 #             IBM.Open.futPCTCHG.2 IBM.Close.futPCTCHG.2 IBM.Open.futPCTCHG.3 IBM.Close.futPCTCHG.3
 # 1970-01-02 -1.028806584362139898 -1.028101495714955238 -1.09738820301782303  -1.09664707863726441
 # 1970-01-05 -0.683060146615308561 -0.135777325186686088 -0.75137162575801408  -0.33944331296673452
@@ -1663,11 +1671,15 @@ expand_xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o
 # 1970-01-09                    NA                    NA                   NA                    NA
 # 1970-01-12                    NA                    NA                   NA                    NA
 
-# expand.xts(x3[,c("IBM.Open","IBM.Close")], fnct = "to.monthly", alt_name = "MONTHLY", o_args = list(indexAt= 'lastof', OHLC = FALSE))
+# check that i specific function works
+#
+# expand_xts(x3[,c("IBM.Open","IBM.Close")], fnct = "to.monthly", alt_name = "MONTHLY", o_args = list(indexAt= 'lastof', OHLC = FALSE))
 #            IBM.Open.MONTHLY IBM.Close.MONTHLY
 # 1970-01-31        18.450001         18.387501
 
-# expand.xts(xts(,index(x3)), fnct = "is_year_less_than_or_equal_xts", whiches =  seq(lubridate::year(min(index(x3))), lubridate::year(max(index(x3))),by = 1), alt_name = "y_lth_or_eq_to_fact")
+# check that a specific function works
+#
+# expand_xts(xts(,index(x3)), fnct = "is_year_less_than_or_equal_xts", whiches =  seq(lubridate::year(min(index(x3))), lubridate::year(max(index(x3))),by = 1), alt_name = "y_lth_or_eq_to_fact")
 # 
 #            y_lth_or_eq_to_fact.1970
 # 1970-01-02                        1
