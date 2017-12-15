@@ -136,44 +136,45 @@ get_na_locfl <- function(x, n = NULL) {
 # 1970-03-12   102
 
 
-
-uses <- function(programmed_in_R_version, explicit_package_function_calls, matched_call = NULL) {
-
-  running_in_R_version <- paste(R.Version()$major,R.Version()$minor, sep = ".")
-  # programmed_in_R_version # "3.4.0"
-
-  if(running_in_R_version  != programmed_in_R_version) {
-    warning(paste0("Running R is ", running_in_R_version, " but Programmed in R is ", programmed_in_R_version ) )
-  }
-
-  # EVERY ONE that I explicitly CALL
-  # 
-  uses_packages <- explicit_package_function_calls
-  packages_not_found <- uses_packages[!uses_packages %in% installed.packages()]
-  
-  if(length(packages_not_found)) warning(paste0("Missing package(s) not found in .libPaths: ",paste0(.libPaths(), collapse = ", ")))
-  for(packages_not_found_i in seq_along(packages_not_found)) { 
-    warning(paste0("Package ", packages_not_found[packages_not_found_i]," is not found.")) 
-    if(length(packages_not_found) == packages_not_found_i) stop(paste0("STOPPED in", matched_call))
-  }
-  
-  return(TRUE)
-
-}
-# f <- function() {
-#   matched_call <- capture.output(str(match.call()))
-#   uses("3.4.1",c("zoo","xts","rlist","stringr","DescTools","plyr","DataCombine"), matched_call)
+# PROB WILL NOT USE
+# 
+# uses <- function(programmed_in_R_version, explicit_package_function_calls, matched_call = NULL) {
+# 
+#   running_in_R_version <- paste(R.Version()$major,R.Version()$minor, sep = ".")
+#   # programmed_in_R_version # "3.4.0"
+# 
+#   if(running_in_R_version  != programmed_in_R_version) {
+#     warning(paste0("Running R is ", running_in_R_version, " but Programmed in R is ", programmed_in_R_version ) )
+#   }
+# 
+#   # EVERY ONE that I explicitly CALL
+#   # 
+#   uses_packages <- explicit_package_function_calls
+#   packages_not_found <- uses_packages[!uses_packages %in% installed.packages()]
+#   
+#   if(length(packages_not_found)) warning(paste0("Missing package(s) not found in .libPaths: ",paste0(.libPaths(), collapse = ", ")))
+#   for(packages_not_found_i in seq_along(packages_not_found)) { 
+#     warning(paste0("Package ", packages_not_found[packages_not_found_i]," is not found.")) 
+#     if(length(packages_not_found) == packages_not_found_i) stop(paste0("STOPPED in", matched_call))
+#   }
+#   
+#   return(TRUE)
+# 
 # }
-# f()
-# Warning message:
-# In uses("3.4.1", c("zoo", "xts", "rlist", "stringr", "DescTools",  :
-#   Running R is 3.4.3 but Programmed in R is 3.4.1
-# f <- function() {
-#   matched_call <- capture.output(str(match.call()))
-#   uses("3.4.3",c("zoo","xts","rlist","stringr","DescTools","plyr","DataCombine"), matched_call)
-# }
-# f()
-# [1] TRUE
+# # f <- function() {
+# #   matched_call <- capture.output(str(match.call()))
+# #   uses("3.4.1",c("zoo","xts","rlist","stringr","DescTools","plyr","DataCombine"), matched_call)
+# # }
+# # f()
+# # Warning message:
+# # In uses("3.4.1", c("zoo", "xts", "rlist", "stringr", "DescTools",  :
+# #   Running R is 3.4.3 but Programmed in R is 3.4.1
+# # f <- function() {
+# #   matched_call <- capture.output(str(match.call()))
+# #   uses("3.4.3",c("zoo","xts","rlist","stringr","DescTools","plyr","DataCombine"), matched_call)
+# # }
+# # f()
+# # [1] TRUE
 
 
 # single column xts only
@@ -278,6 +279,71 @@ get_pctchg_xts <- function(x, which, to_future = NULL) {
 # 2007-01-05   NA
 
 # [ ] NEED get_sma_xts
+
+
+
+# single column xts only
+#
+# n - number of obs
+# smoother over previous obs
+get_recent_max <- function(x, n) {
+
+
+
+}
+
+
+
+# single column xts only
+#
+# n - number of obs
+# smoother over previous obs
+get_recent_min <- function(x, n) {
+
+
+
+}
+
+
+# single column xts only
+#
+# adjust as if held using a full year of time
+# n multiple ( e.g monthly = 12, daily = 260 )
+# 
+get_annualized_xts <- function(x, n) {
+
+}
+
+
+
+# single column xts only
+#
+# simple moving average
+# n - number of obs
+get_sma_xts <- function(x, n) {
+
+
+}
+
+# single column xts only
+#
+# simple moving sortino
+# n - number of obs
+get_smsortino_xts <- function(x, n) {
+
+
+
+}
+
+# single column xts only
+#
+# m = number of ranks ( pessimistic )
+# n - number of obs
+# simple moving ranks
+get_smrank_xts <- function(x, n, m) {
+
+
+}
 
 
 
@@ -1329,9 +1395,13 @@ expand_xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o
   expand_xts_inner <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o_args = NULL, prefix = NULL) {
 
     require(xts) 
-    # uses zoo::is.zoo, zoo::as.zoo, zoo::na.locf, DescTools::DoCall, 
-    # uses xts:::na.locf.xts(dispatch), xts:::merge.xts(dispatch), plyr::join_all,  DataCombine::VarDrop, stringr::str_replace_all
-    # uses xts::is.xts, xts::as.xts, rlist::list.flatten(X?X),  rlist::list.ungroup, stringr::str_replace_all, plyr::mutate, stringr::str_detect
+    # uses package zoo       functions is.zoo, as.zoo, na.locf
+    # uses package xts       functions is.xts, as.xts
+    # uses package xts       fuctiions na.locf.xts(S3dispatch), merge.xts(S3dispatch)
+    # uses package DescTools function  DoCall
+    # uses package plyr      functions join_all, mutate
+    # uses package stringr   functions str_replace_all, str_detect
+    # uses package rlist     function  list.flatten, list.ungroup 
 
     if(is.null(     x))  stop("run-time user must provide input data")
     if(is.null(   fnct)) stop("run-time user must provide a function 'fnct'")
