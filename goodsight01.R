@@ -617,10 +617,15 @@ get_smtsortino_xts <- function(x, n) {
   x_try.xts <- try(xts::try.xts(x_orig), silent = T)
   x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("get_smsortino_xts can not make an xts object") } else { x_try.xts_success <- TRUE; x_try.xts }
 
-  
+  # (true)sortino ratio
+  # Sortino Ratio: Are you calculating it wrong?
+  # https://www.rcmalternatives.com/2013/09/sortino-ratio-are-you-calculating-it-wrong/
+                                   # any NA, then entire thing returns NA
+  tsortino <- function(x, rf = 0.0, na.rm = FALSE) {  (mean(x, na.rm = na.rm) - rf )/sd( local({x[x > 0] <- 0; x } ), na.rm = na.rm) }
   
   zoo::rollapply(as.zoo(x), width = n, partial = TRUE, align = "right", FUN = function(x, n) { 
-    if(n <= length(x)) { mean(x, na.rm = FALSE) } else { NA_real_ }
+    # too short
+    if(n <= length(x)) { tsortino(x, rf = 0.0, na.rm = FALSE) } else { NA_real_ }
   }, n = n) -> x_result
 
   # would/should always be/been true else I may/have/never ever made it his far
@@ -639,18 +644,24 @@ get_smtsortino_xts <- function(x, n) {
   
   return(smtsortino_xts)
 } 
-# head(sample_xts[,"Open"],6)
-#                          Open
-# 2007-01-02 50.039781911546299
-# 2007-01-03 50.230496197795397
-# 2007-01-04 50.420955209067003
-# 2007-01-05 50.373468054328498
-# 2007-01-06 50.244325519679499
-# 2007-01-07 50.132112297206703
+# get_pctchg_xts(head(sample_xts[,"Open"],6), n = 1)
+#                           pctchg
+# 2007-01-02                    NA
+# 2007-01-03  0.381125334611203126
+# 2007-01-04  0.379170077320410137
+# 2007-01-05 -0.094181386571521211
+# 2007-01-06 -0.256370148090095062
+# 2007-01-07 -0.223335115582047300
+# 
+# get_smtsortino_xts(get_pctchg_xts(head(sample_xts[,"Open"],6), n = 1), 3)
+#                       smtsortino
+# 2007-01-02                    NA
+# 2007-01-03                    NA
+# 2007-01-04                    NA
+# 2007-01-05  4.083408896943601540
+# 2007-01-06  0.073562112260411788
+# 2007-01-07 -2.231893800843009146
 
-
-# get_smtsortino_xts(head(sample_xts[,"Open"],6), 3)
-# NOT WORKING ( NOT FINISHED )
 
 
 # single column xts only
