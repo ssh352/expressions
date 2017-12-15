@@ -7,6 +7,7 @@
 
 # single column xts only (currently)
 # multi  column xts (untried)
+
 # last observation carried forard limited
 get_na_locfl <- function(x, n = NULL) {
 
@@ -24,7 +25,7 @@ get_na_locfl <- function(x, n = NULL) {
     Sys.setenv(TZ="UTC")
   }
   
-  if(NCOL(x) > 1) stop("In get_na_locfl, only ONE column is allowed.")
+  if(NCOL(x) > 1) stop("In get_na_locfl_xts, only ONE column is allowed.")
   
   require(xts)
   # uses package zoo function rollapply.zoo, 
@@ -113,6 +114,7 @@ get_na_locfl <- function(x, n = NULL) {
 # get_na_locfl( c(101,NA,NA,NA,102,NA,NA), n = 2)
 # [1] 101 101 101  NA 102 102 102
 #
+# require(xts)
 # xts(c(101,NA,NA,NA,102,NA,NA),zoo::as.Date(seq(10, 10*7, length.out = 7)))
 #            [,1]
 # 1970-01-11  101
@@ -339,6 +341,7 @@ get_collofdays2daily_xts <- function(x) {
   return(get_collofdays2daily)
   
 }
+# require(xts)
 # xts(c(11,13,15),zoo::as.Date(c(1,3,5))) 
 #            [,1]
 # 1970-01-02   11
@@ -355,15 +358,15 @@ get_collofdays2daily_xts <- function(x) {
 
 # as.POSIXct(c(1,10000,200000,400000), origin = "1970-01-01")
 # [1] "1970-01-01 00:00:01 UTC" "1970-01-01 02:46:40 UTC" "1970-01-03 07:33:20 UTC" "1970-01-05 15:06:40 UTC"
-# xp <- xts(11:14, as.POSIXct(c(1,10000,200000,400000), origin = "1970-01-01"))
-# xp
+# xts(11:14, as.POSIXct(c(1,10000,200000,400000), origin = "1970-01-01"))
+# 
 #                     [,1]
 # 1970-01-01 00:00:01   11
 # 1970-01-01 02:46:40   12
 # 1970-01-03 07:33:20   13
 # 1970-01-05 15:06:40   14
-# xpc <- get_collofdays2daily_xts(xp)
-# xpc
+# 
+# get_collofdays2daily_xts(xp)
 #          [,1]
 # 1970-01-01 12
 # 1970-01-02 NA
@@ -440,6 +443,7 @@ get_delay_since_last_obs <- function(x) {
 
 
 # single column xts only
+
 get_delay_since_last_obs_xts <-function(x) { 
 
   ops <- options()
@@ -507,6 +511,7 @@ get_delay_since_last_obs_xts <-function(x) {
 
 # single column xts only
 # add a record for each day
+
 get_delay_since_last_day_xts <-function(x) { 
 
   ops <- options()
@@ -560,7 +565,8 @@ get_delay_since_last_day_xts <-function(x) {
   return(delay_since_last_day_xts)
 
 } 
-# get_delay_since_last_day_xts(xts::xts(c(101,NA,NA,NA,102,NA,NA),zoo::as.Date(seq(10,70,10))))
+# require(xts)
+# get_delay_since_last_day_xts(xts(c(101,NA,NA,NA,102,NA,NA),zoo::as.Date(seq(10,70,10))))
 #            delay_since_last_day
 # 1970-01-11                    0
 # 1970-01-12                    1
@@ -627,6 +633,7 @@ get_delay_since_last_day_xts <-function(x) {
 
 
 # single column xts only
+
 is_na_xts <- function(x) {
   
   ops <- options()
@@ -680,6 +687,7 @@ is_na_xts <- function(x) {
   return(na_xts)
 
 } 
+# require(xts)
 # is_na_xts(xts(c(11,NA,NA,14,NA),zoo::as.Date(1:5)))
 #              na
 # 1970-01-02    2
@@ -690,6 +698,7 @@ is_na_xts <- function(x) {
 
 
 # single column xts only
+#
 # typical entry rm_what = c("Saturday", "Sunday", "BIZHOLIDAYS" )
 rm_days_xts <- function(x, rm_what = NULL) {
 
@@ -800,8 +809,9 @@ rm_days_xts <- function(x, rm_what = NULL) {
 }
 # weekends removed
 # about 
-
+# 
 # RQuantLib::isHoliday(. . ."UnitedStates/NYSE". . .) considers 'weekends' to be holidays
+  # JAN 01 2007 - JAN 17 2007
   # weekends     removed
   # Holiday 1st  removed - New Year's Day
   # Holiday 2nd  removed - Day Of Mourning - Gerald Ford ( SUPRISING )
@@ -829,7 +839,7 @@ rm_days_xts <- function(x, rm_what = NULL) {
 # 15 2007-01-15            TRUE    Monday
 # 16 2007-01-16           FALSE   Tuesday
 # 17 2007-01-17           FALSE Wednesday             
-
+# 
 # rm_days_xts(xts(1:17,zoo::as.Date("2007-01-01") -1 + 1:17), rm_what = c("Saturday", "Sunday", "BIZHOLIDAYS"))
 #            days
 # 2007-01-03    3
@@ -924,7 +934,7 @@ are_nearby_fred_holidays_xts <- function(x = NULL, d = NULL) {
   return(nearby_fred_holidays_xts)
   
 }
-# library(xts)
+# require(xts)
 # data(sample_matrix)
 # sample_xts <- as.xts(sample_matrix)
 #
@@ -1175,6 +1185,7 @@ pushback_fred_1st_days_xts <- function(x) {
 # 
 # n
 #   meant to pass just the index year numeric YYYY
+# 
 # value
 #   1 - yes # 2 - no
 # 
@@ -1497,105 +1508,124 @@ expand.xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o
 
 }
 # require(quantmod); 
-# x3 <- getSymbols("IBM", from = "1970-01-01", to = , auto.assign = FALSE)
+# x3 <- getSymbols("IBM", from = "1970-01-01", to = "1970-01-13", auto.assign = FALSE)
 # 
-# SMA
-#
-# head(expand.xts(IBM, fnct = "TTR::SMA", whiches = 2:3                ),2) # default
+#                      IBM.Open           IBM.High   IBM.Low          IBM.Close IBM.Volume       IBM.Adjusted
+# 1970-01-02 18.225000000000001 18.287500000000001 18.200001 18.237499000000000     315200 5.3213109999999997
+# 1970-01-05 18.299999000000000 18.412500000000001 18.299999 18.412500000000001     424000 5.3723760000000000
+# 1970-01-06 18.412500000000001 18.450001000000000 18.312500 18.424999000000000     488000 5.3760190000000003
+# 1970-01-07 18.424999000000000 18.437500000000000 18.312500 18.437500000000000     457600 5.3796629999999999
+# 1970-01-08 18.437500000000000 18.475000000000001 18.375000 18.475000000000001     707200 5.3906080000000003
+# 1970-01-09 18.475000000000001 18.524999999999999 18.424999 18.450001000000000     585600 5.3833140000000004
+# 1970-01-12 18.450001000000000 18.487499000000000 18.387501 18.387501000000000     379200 5.3650779999999996
 
-# # expected pass method
-# head(expand.xts(IBM, fnct =                "TTR::SMA"       , whiches = 2:3                ),2) # default
-# #
-# head(expand.xts(IBM, fnct =                 TTR::SMA        , whiches = 2:3                ),2) # default
-# #
-# head(expand.xts(IBM, fnct = "function(x,n){ TTR::SMA(x,n) }", whiches = 2:3                ),2) # default
-# #
-# head(expand.xts(IBM, fnct =  function(x,n){ TTR::SMA(x,n) } , whiches = 2:3                ),2) # default
+# prefix = TRUE
+# expand.xts(x3[,c("IBM.Open","IBM.Close")], fnct = "TTR::SMA", whiches = 2:3, prefix = TRUE) # NOT default
+#            TTR_SMA.2.IBM.Open TTR_SMA.2.IBM.Close TTR_SMA.3.IBM.Open TTR_SMA.3.IBM.Close
+# 1970-01-02                 NA                  NA                 NA                  NA
+# 1970-01-05 18.262499500000001  18.324999500000001                 NA                  NA
+# 1970-01-06 18.356249500000001  18.418749500000001 18.312499666666668  18.358332666666666
+# 1970-01-07 18.418749500000001  18.431249500000000 18.379166000000001  18.424999666666665
+# 1970-01-08 18.431249500000000  18.456250000000001 18.424999666666665  18.445833000000000
+# 1970-01-09 18.456250000000001  18.462500500000001 18.445833000000000  18.454166999999998
+# 1970-01-12 18.462500500000001  18.418751000000000 18.454166999999998  18.437500666666665
 
+# expand.xts(x3[,c("IBM.Open","IBM.Close")], fnct = "TTR::SMA", whiches = 2:3, prefix = FALSE)  # default
+#            IBM.Open.TTR_SMA.2 IBM.Close.TTR_SMA.2 IBM.Open.TTR_SMA.3 IBM.Close.TTR_SMA.3
+# 1970-01-02                 NA                  NA                 NA                  NA
+# 1970-01-05 18.262499500000001  18.324999500000001                 NA                  NA
+# 1970-01-06 18.356249500000001  18.418749500000001 18.312499666666668  18.358332666666666
+# 1970-01-07 18.418749500000001  18.431249500000000 18.379166000000001  18.424999666666665
+# 1970-01-08 18.431249500000000  18.456250000000001 18.424999666666665  18.445833000000000
+# 1970-01-09 18.456250000000001  18.462500500000001 18.445833000000000  18.454166999999998
+# 1970-01-12 18.462500500000001  18.418751000000000 18.454166999999998  18.437500666666665
 
-# head(expand.xts(IBM, fnct = "TTR::SMA", whiches = 2:3, prefix = FALSE),2) # default
-# head(expand.xts(IBM, fnct = "TTR::SMA", whiches = 2:3, prefix = TRUE ),2) 
+# expand.xts(x3[,c("IBM.Open","IBM.Close")], fnct = "TTR::SMA", whiches = 2:3)
+#            IBM.Open.TTR_SMA.2 IBM.Close.TTR_SMA.2 IBM.Open.TTR_SMA.3 IBM.Close.TTR_SMA.3
+# 1970-01-02                 NA                  NA                 NA                  NA
+# 1970-01-05 18.262499500000001  18.324999500000001                 NA                  NA
+# 1970-01-06 18.356249500000001  18.418749500000001 18.312499666666668  18.358332666666666
+# 1970-01-07 18.418749500000001  18.431249500000000 18.379166000000001  18.424999666666665
+# 1970-01-08 18.431249500000000  18.456250000000001 18.424999666666665  18.445833000000000
+# 1970-01-09 18.456250000000001  18.462500500000001 18.445833000000000  18.454166999999998
+# 1970-01-12 18.462500500000001  18.418751000000000 18.454166999999998  18.437500666666665
+
+# expand.xts(x3[,c("IBM.Open","IBM.Close")], fnct = TTR::SMA, whiches = 2:3)
+#            IBM.Open.TTR_SMA.2 IBM.Close.TTR_SMA.2 IBM.Open.TTR_SMA.3 IBM.Close.TTR_SMA.3
+# 1970-01-02                 NA                  NA                 NA                  NA
+# 1970-01-05 18.262499500000001  18.324999500000001                 NA                  NA
+# 1970-01-06 18.356249500000001  18.418749500000001 18.312499666666668  18.358332666666666
+# 1970-01-07 18.418749500000001  18.431249500000000 18.379166000000001  18.424999666666665
+# 1970-01-08 18.431249500000000  18.456250000000001 18.424999666666665  18.445833000000000
+# 1970-01-09 18.456250000000001  18.462500500000001 18.445833000000000  18.454166999999998
+# 1970-01-12 18.462500500000001  18.418751000000000 18.454166999999998  18.437500666666665
+
+# expand.xts(x3[,c("IBM.Open","IBM.Close")], fnct = "function(x,n){ TTR::SMA(x,n) }", whiches = 2:3)
+
+#               IBM.Open.anon.2   IBM.Close.anon.2    IBM.Open.anon.3   IBM.Close.anon.3
+# 1970-01-02                 NA                 NA                 NA                 NA
+# 1970-01-05 18.262499500000001 18.324999500000001                 NA                 NA
+# 1970-01-06 18.356249500000001 18.418749500000001 18.312499666666668 18.358332666666666
+# 1970-01-07 18.418749500000001 18.431249500000000 18.379166000000001 18.424999666666665
+# 1970-01-08 18.431249500000000 18.456250000000001 18.424999666666665 18.445833000000000
+# 1970-01-09 18.456250000000001 18.462500500000001 18.445833000000000 18.454166999999998
+# 1970-01-12 18.462500500000001 18.418751000000000 18.454166999999998 18.437500666666665
+
+# expand.xts(x3[,c("IBM.Open","IBM.Close")], fnct = function(x,n){ TTR::SMA(x,n) }, whiches = 2:3)
+#               IBM.Open.anon.2   IBM.Close.anon.2    IBM.Open.anon.3   IBM.Close.anon.3
+# 1970-01-02                 NA                 NA                 NA                 NA
+# 1970-01-05 18.262499500000001 18.324999500000001                 NA                 NA
+# 1970-01-06 18.356249500000001 18.418749500000001 18.312499666666668 18.358332666666666
+# 1970-01-07 18.418749500000001 18.431249500000000 18.379166000000001 18.424999666666665
+# 1970-01-08 18.431249500000000 18.456250000000001 18.424999666666665 18.445833000000000
+# 1970-01-09 18.456250000000001 18.462500500000001 18.445833000000000 18.454166999999998
+# 1970-01-12 18.462500500000001 18.418751000000000 18.454166999999998 18.437500666666665
+
+# x3a <- { t <- x3; t[2:3,1] <- NA_real_; t}
+# expand.xts(x3a[,c("IBM.Open","IBM.Close")], fnct = "na.locf", whiches = 2:3)
+#               IBM.Open.anon.2   IBM.Close.anon.2    IBM.Open.anon.3   IBM.Close.anon.3
+# 1970-01-02 18.225000000000001 18.237499000000000 18.225000000000001 18.237499000000000
+# 1970-01-05 18.225000000000001 18.412500000000001 18.225000000000001 18.412500000000001
+# 1970-01-06 18.225000000000001 18.424999000000000 18.225000000000001 18.424999000000000
+# 1970-01-07 18.424999000000000 18.437500000000000 18.424999000000000 18.437500000000000
+# 1970-01-08 18.437500000000000 18.475000000000001 18.437500000000000 18.475000000000001
+# 1970-01-09 18.475000000000001 18.450001000000000 18.475000000000001 18.450001000000000
+# 1970-01-12 18.450001000000000 18.387501000000000 18.450001000000000 18.387501000000000
+
+# expand.xts(x3a[,c("IBM.Open","IBM.Close")], fnct = "na.locf", whiches = 2:3, alt_name = "NALOCF")
+#             IBM.Open.NALOCF.2 IBM.Close.NALOCF.2  IBM.Open.NALOCF.3 IBM.Close.NALOCF.3
+# 1970-01-02 18.225000000000001 18.237499000000000 18.225000000000001 18.237499000000000
+# 1970-01-05 18.225000000000001 18.412500000000001 18.225000000000001 18.412500000000001
+# 1970-01-06 18.225000000000001 18.424999000000000 18.225000000000001 18.424999000000000
+# 1970-01-07 18.424999000000000 18.437500000000000 18.424999000000000 18.437500000000000
+# 1970-01-08 18.437500000000000 18.475000000000001 18.437500000000000 18.475000000000001
+# 1970-01-09 18.475000000000001 18.450001000000000 18.475000000000001 18.450001000000000
+# 1970-01-12 18.450001000000000 18.387501000000000 18.450001000000000 18.387501000000000
+
+# expand.xts(x3[,c("IBM.Open","IBM.Close")], fnct = "get_pctchg_xts", whiches = 2:3, alt_name = "futPCTCHG" , o_args = c(to_future = TRUE ))
+#             IBM.Open.futPCTCHG.2 IBM.Close.futPCTCHG.2 IBM.Open.futPCTCHG.3 IBM.Close.futPCTCHG.3
+# 1970-01-02 -1.028806584362139898 -1.028101495714955238 -1.09738820301782303  -1.09664707863726441
+# 1970-01-05 -0.683060146615308561 -0.135777325186686088 -0.75137162575801408  -0.33944331296673452
+# 1970-01-06 -0.135777325186686088 -0.271375862761250308 -0.33944331296673452  -0.13569607249368446
+# 1970-01-07 -0.271375862761250308 -0.067802033898306802 -0.13569607249368446   0.27118101694915081
+# 1970-01-08 -0.067802033898306802  0.473607577807854341                   NA                    NA
+# 1970-01-09                    NA                    NA                   NA                    NA
+# 1970-01-12                    NA                    NA                   NA                    NA
+
+# expand.xts(x3[,c("IBM.Open","IBM.Close")], fnct = "to.monthly", alt_name = "MONTHLY", o_args = list(indexAt= 'lastof', OHLC = FALSE))
+#            IBM.Open.MONTHLY IBM.Close.MONTHLY
+# 1970-01-31        18.450001         18.387501
+
+# expand.xts(xts(,index(x3)), fnct = "is_year_less_than_or_equal_xts", whiches =  seq(lubridate::year(min(index(x3))), lubridate::year(max(index(x3))),by = 1), alt_name = "y_lth_or_eq_to_fact")
 # 
-#
-# # if xts # should dispatch on xts:::na.locf.xts
-# head(expand.xts(IBM, fnct = "na.locf"),2)
-#
-# na.locf
-# 
-# IBM2 <- IBM
-# IBM2[2:3,1] <- NA_real_
-# head(IBM2)
-# head(expand.xts(IBM2, fnct = "na.locf"),6)
-# 
-# head(expand.xts(IBM,  fnct = "na.locf", alt_name = "NALOCF"),2)
-#
-# lag.xts
-#
-# head(merge(IBM, expand.xts(IBM, fnct = "lag.xts", whiches = 1:2)))
-# 
-# PCTCHG(lag.xts)
-# 
-# head(expand.xts(IBM, fnct = "get_pctchg_xts", whiches = 1),6)
-#
-# head(expand.xts(IBM, fnct = "get_pctchg_xts", whiches = 1:2, alt_name = "pastPCTCHG", o_args = c(to_future = FALSE)),6)
-# tail(expand.xts(IBM, fnct = "get_pctchg_xts", whiches = 1:2, alt_name = "futPCTCHG" , o_args = c(to_future = TRUE )),6)
-#
-# # xts::merge.xts # dispach
-# head(merge(IBM, expand.xts(IBM, fnct = "TTR::SMA", whiches = 2:3)))
-# 
-
-# REDUCED index size 
-# head(expand.xts(IBM,  fnct = "to.monthly", o_args = list(indexAt= 'lastof', OHLC = FALSE)),6)
-
-
-# # testing 
-# library(quantmod); 
-
-# getSymbols("GDP", src = "FRED")
-
-# WEEKENDS WILL SHOW DELAYS 
-# WILL INCREASE the number of days
-# head(expand.xts(GDP, fnct = "get_delay_since_last_day_xts", alt_name = "DELAY"),10) 
-#            GDP.DELAY
-# 1947-01-01         0
-# 1947-01-02         1
-# 1947-01-03         2
-# 1947-01-04         3
-# 1947-01-05         4
-# 1947-01-06         5
-# 1947-01-07         6
-# 1947-01-08         7
-# 1947-01-09         8
-# 1947-01-10         9
-
-# seq ... as long as the characters order correctly ... should work
-# 
-# ONLY the index is important: so ONLY passing NO coredate:  xts(,index(IBM)
-#
-# head(expand.xts(xts(,index(IBM)), fnct = "year.less.then.or.equal.xts", whiches =  seq(lubridate::year(min(index(IBM))), lubridate::year(max(index(IBM))),by = 1), alt_name = "y_lth_or_eq_to_fact"),1)
-# tail(expand.xts(xts(,index(IBM)), fnct = "year.less.then.or.equal.xts", whiches =  seq(lubridate::year(min(index(IBM))), lubridate::year(max(index(IBM))),by = 1), alt_name = "y_lth_or_eq_to_fact"),1)
-
-
-# TO DO
-# Reproducible Finance with R: Sector Correlations - Jonathan Regenstein
-# merged_xts$rolling_cor <- rollapply
-# https://www.rstudio.com/rviews/2017/01/18/reproducible-finance-with-r-sector-correlations/
-# cut(mtcars$mpg(quantile(mtcars$mpg
-# findInterval
-# datavis::weighted.quantile
-
-#  What are the ways of treatng missing values in XGboost? #21
-#  Internally, XGBoost will automatically learn what is the best direction to go when a value is missing. 
-#  For continuous features, a missing(default) direction is learnt for missing value data to go into, so when the data of the speficific value is missing, then it goes to the default direction
-#  3.4 Sparsity-aware Split Finding
-#  https://arxiv.org/pdf/1603.02754.pdf
-#  10 JUN 2016
-#  XGBoost: A Scalable Tree Boosting System
-#  29 APR 2016
-# https://github.com/dmlc/xgboost/issues/21
-
-# debugSource('W:/R-3.4._/goodsight01.R')
-# rm(list=setdiff(ls(all.names=TRUE),c()))
+#            y_lth_or_eq_to_fact.1970
+# 1970-01-02                        1
+# 1970-01-05                        1
+# 1970-01-06                        1
+# 1970-01-07                        1
+# 1970-01-08                        1
+# 1970-01-09                        1
+# 1970-01-12                        1
 
 
 
