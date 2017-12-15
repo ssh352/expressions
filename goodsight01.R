@@ -1,5 +1,8 @@
 
 
+# [x] DONE
+# [ ] LEFT_OFF: test_that
+
 # goodsight01.R
 # expand_xts
 
@@ -663,8 +666,8 @@ get_smtsortino_xts <- function(x, n) {
 # 2007-01-06  0.073562112260411788
 # 2007-01-07 -2.231893800843009146
 
-# LEFT_OFF
-# [ ] WORK in PROGRESS
+
+
 # single column xts only
 #
 # n       = number of obs
@@ -698,12 +701,20 @@ get_smrank_xts <- function(x, n, n_ranks) {
   x_try.xts <- try(xts::try.xts(x_orig), silent = T)
   x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("get_smsortino_xts can not make an xts object") } else { x_try.xts_success <- TRUE; x_try.xts }
 
-  zoo::rollapply(as.zoo(x), width = n, partial = TRUE, align = "right", FUN = function(x, n, n_ranks) { 
+  env <- environment()
+  
+  zoo::rollapply(as.zoo(x), width = n, partial = TRUE, align = "right", FUN = function(x, n, n_ranks, e) { 
     # if not too short
-    if(n <= length(x)) {                                           # if any NA, then the entire is NA
-      findInterval(x, tail(head(quantile(x, seq(0, 1, 1/n_ranks) , na.rm = FALSE ),-1),-1)) + 1
-    } else { NA_real_ } 
-  }, n = n, n_ranks = n_ranks) -> x_result
+    if(n <= length(x)) {  
+      # if zero NAs found
+      if(!any(is.na(x))) { 
+        # tail(_, 1): I only care about the value furthest value to the right
+        # tested: pessimistic 
+        # higher x values produce lower(better) 'sports' rank numbers: keep for now.  I may later change my mind.
+                                                                                       # if any NA, then then 'error'
+        tail(findInterval(-1 * x, tail(head(   quantile(-1 * x, seq(0, 1, 1/n_ranks) , na.rm = FALSE ),-1),-1)) + 1, 1)
+      } else { NA_real_ } } else { NA_real_ } 
+  }, n = n, n_ranks = n_ranks, e = env) -> x_result
 
   # would/should always be/been true else I may/have/never ever made it his far
   if(x_try.xts_success) { 
@@ -737,13 +748,22 @@ get_smrank_xts <- function(x, n, n_ranks) {
 # 2007-01-10 -2.522576361771222242
 # 2007-01-11 -1.729327001953728127
 # 2007-01-12  1.728401658544285180
-
-# LEFT_OFF
-# [ ] WORK in PROGRESS
-# n = 4 trailing observations
-# n_ranks == 2 # high(1)/low(2) # above/below the median
-# get_smrank_xts(get_smtsortino_xts(get_pctchg_xts(head(sample_xts[,"Open"],11), n = 1), 3), n = 4, n_ranks )
-
+#
+# amoung the trailing 4, position(a 'higher' value = 1, a 'lower' value = 2)
+# get_smrank_xts(get_smtsortino_xts(get_pctchg_xts(head(sample_xts[,"Open"],11), n = 1), 3), n = 4, n_ranks = 2)
+# 
+#            smrank
+# 2007-01-02     NA
+# 2007-01-03     NA
+# 2007-01-04     NA
+# 2007-01-05     NA
+# 2007-01-06     NA
+# 2007-01-07     NA
+# 2007-01-08      2
+# 2007-01-09      1
+# 2007-01-10      2
+# 2007-01-11      1
+# 2007-01-12      1
 
 
 
