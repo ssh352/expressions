@@ -1,9 +1,20 @@
 
 
 # goodsight01.R
+# expand_xts
 
 # in general, unless an exception is noted otherwise,
 #   input x meant to be an xt object with index class of Date
+
+# example data
+# 
+# require(quantmod)
+# data(sample_matrix)
+# sample_xts <- as.xts(sample_matrix) 
+# unrate <- getSymbols("UNRATE", src = "FRED",  auto.assign = FALSE)["1948-01-01/1948-03-01"]
+# unrate_40s <- getSymbols("UNRATE", src = "FRED",  auto.assign = FALSE)["1948-01-01/1949-03-01"]
+# ibm <- getSymbols("IBM", from = "1970-01-01", to = "1970-01-13", auto.assign = FALSE)
+# ibm_missing_data <- local({ t <- ibm; t[2:3,1] <- NA_real_; t})
 
 # single column xts only (currently)
 # multi  column xts (untried)
@@ -507,20 +518,140 @@ get_annualized_xts <- function(x, n) {
 #
 # simple moving average
 # n - number of obs
-get_sma_xts <- function(x, n) {
+get_sma_xts <- function(x, n) { 
+
+  ops <- options()
+  
+  options(warn = 1)
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(min.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  if(NCOL(x) > 1) stop("In get_sma_xts, only ONE column is allowed.")
+  
+  require(xts) 
+  
+  ## VERY BASIC attemped CLASS conversion ##
+  x_orig <- x
+  c_orig <- class(x)[1] # original class
+  
+  x_try.xts_success <- FALSE
+  x_try.xts <- try(xts::try.xts(x_orig), silent = T)
+  x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("get_sma_xts can not make an xts object") } else { x_try.xts_success <- TRUE; x_try.xts }
+
+  zoo::rollapply(as.zoo(x), width = n, partial = TRUE, align = "right", FUN = function(x, n) { 
+    if(n <= length(x)) { mean(x, na.rm = FALSE) } else { NA_real_ }
+  }, n = n) -> x_result
+
+  # would/should always be/been true else I may/have/never ever made it his far
+  if(x_try.xts_success) { 
+    xts::reclass(x_result, x_orig) 
+  } -> x_result
+  
+  colnames(x_result) <- "sma"
+  # if I did not do this earlier / failsafe / Really should have every only been xts/Date
+  if(any(class(x_result) %in% c("xts","zoo"))) index(x_result) <- zoo::as.Date(index(x_result))
+  
+  sma_xts <- x_result 
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  return(sma_xts)
+} 
+# head(sample_xts[,"Open"],4)
+#                          Open
+# 2007-01-02 50.039781911546299
+# 2007-01-03 50.230496197795397
+# 2007-01-04 50.420955209067003
+# 2007-01-05 50.373468054328498
+# 
+# get_sma_xts(head(sample_xts[,"Open"],4), 2)
+#                           sma
+# 2007-01-02                 NA
+# 2007-01-03 50.135139054670844
+# 2007-01-04 50.325725703431203
+# 2007-01-05 50.397211631697751
 
 
-}
 
 # single column xts only
 #
-# simple moving sortino
+# simple moving (true)sortino
+# Sortino Ratio: Are you calculating it wrong?
+# https://www.rcmalternatives.com/2013/09/sortino-ratio-are-you-calculating-it-wrong/
+# 
 # n - number of obs
-get_smsortino_xts <- function(x, n) {
+get_smtsortino_xts <- function(x, n) { 
+
+  ops <- options()
+  
+  options(warn = 1)
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(min.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  if(NCOL(x) > 1) stop("In get_smtsortino_xts, only ONE column is allowed.")
+  
+  require(xts) 
+  
+  ## VERY BASIC attemped CLASS conversion ##
+  x_orig <- x
+  c_orig <- class(x)[1] # original class
+  
+  x_try.xts_success <- FALSE
+  x_try.xts <- try(xts::try.xts(x_orig), silent = T)
+  x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("get_smsortino_xts can not make an xts object") } else { x_try.xts_success <- TRUE; x_try.xts }
+
+  
+  
+  zoo::rollapply(as.zoo(x), width = n, partial = TRUE, align = "right", FUN = function(x, n) { 
+    if(n <= length(x)) { mean(x, na.rm = FALSE) } else { NA_real_ }
+  }, n = n) -> x_result
+
+  # would/should always be/been true else I may/have/never ever made it his far
+  if(x_try.xts_success) { 
+    xts::reclass(x_result, x_orig) 
+  } -> x_result
+  
+  colnames(x_result) <- "smtsortino"
+  # if I did not do this earlier / failsafe / Really should have every only been xts/Date
+  if(any(class(x_result) %in% c("xts","zoo"))) index(x_result) <- zoo::as.Date(index(x_result))
+  
+  smtsortino_xts <- x_result 
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  return(smtsortino_xts)
+} 
+# head(sample_xts[,"Open"],6)
+#                          Open
+# 2007-01-02 50.039781911546299
+# 2007-01-03 50.230496197795397
+# 2007-01-04 50.420955209067003
+# 2007-01-05 50.373468054328498
+# 2007-01-06 50.244325519679499
+# 2007-01-07 50.132112297206703
 
 
+# get_smtsortino_xts(head(sample_xts[,"Open"],6), 3)
+# NOT WORKING ( NOT FINISHED )
 
-}
 
 # single column xts only
 #
@@ -1067,7 +1198,7 @@ rm_days_xts <- function(x, rm_what = NULL) {
 # about 
 # 
 # RQuantLib::isHoliday(. . ."UnitedStates/NYSE". . .) considers 'weekends' to be holidays
-  # JAN 01 2007 - JAN 17 2007
+  # JAN 01 2007 to JAN 17 2007
   # weekends     removed
   # Holiday 1st  removed - New Year's Day
   # Holiday 2nd  removed - Day Of Mourning - Gerald Ford ( SUPRISING )
@@ -1281,20 +1412,19 @@ do_reindex_xts <- function(x,  x_index_new ) {
   return(do_reindex)
 }
 # require(quantmod)
-# getSymbols("GDP", src = "FRED") 
-# x <- getSymbols("UNRATE", src = "FRED",  auto.assign = FALSE)["1948-01-01/1948-03-01"]
+# unrate <- getSymbols("UNRATE", src = "FRED",  auto.assign = FALSE)["1948-01-01/1948-03-01"]
 #            UNRATE
 # 1948-01-01    3.4
 # 1948-02-01    3.8
 # 1948-03-01    4.0
 # 
-# do_reindex_xts(x, 0:2)
+# do_reindex_xts(unrate, 0:2)
 #                        UNRATE
 # 1970-01-01 3.3999999999999999
 # 1970-01-02 3.7999999999999998
 # 1970-01-03 4.0000000000000000
 #
-# do_reindex_xts(merge(x,x), 0:2)
+# do_reindex_xts(merge(unrate,unrate), 0:2)
 #                        UNRATE           UNRATE.1
 # 1970-01-01 3.3999999999999999 3.3999999999999999
 # 1970-01-02 3.7999999999999998 3.7999999999999998
@@ -1418,20 +1548,20 @@ pushback_fred_1st_days_xts <- function(x) {
 
 }
 # require(quantmod)
-# x <- getSymbols("UNRATE", src = "FRED",  auto.assign = FALSE)["1948-01-01/1948-03-01"]
+# unrate <- getSymbols("UNRATE", src = "FRED",  auto.assign = FALSE)["1948-01-01/1948-03-01"]
 #            UNRATE
 # 1948-01-01    3.4
 # 1948-02-01    3.8
 # 1948-03-01    4.0
 
-# pushback_fred_1st_days_xts(x)
+# pushback_fred_1st_days_xts(unrate)
 #                        UNRATE
 # 1947-12-31 3.3999999999999999
 # 1948-01-31 3.7999999999999998
 # 1948-02-29 4.0000000000000000
 
 # 
-# pushback_fred_1st_days_xts(merge(x,x))
+# pushback_fred_1st_days_xts(merge(unrate,unrate))
 #                        UNRATE           UNRATE.1
 # 1947-12-31 3.3999999999999999 3.3999999999999999
 # 1948-01-31 3.7999999999999998 3.7999999999999998
@@ -1507,9 +1637,9 @@ is_year_less_than_or_equal_xts <- function(x, n = NULL) {
 
 }
 # require(quantmod)
-# x2 <- getSymbols("UNRATE", src = "FRED",  auto.assign = FALSE)["1948-01-01/1949-03-01"]
+# unrate_40s <- getSymbols("UNRATE", src = "FRED",  auto.assign = FALSE)["1948-01-01/1949-03-01"]
 # 
-# is_year_less_than_or_equal_xts(x2, 1948)
+# is_year_less_than_or_equal_xts(unrate_40s, 1948)
 #            year_less_than_or_equal_xts
 # 1948-01-01                           1
 # 1948-02-01                           1
@@ -1536,18 +1666,18 @@ is_year_less_than_or_equal_xts <- function(x, n = NULL) {
 # 
 expand_xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o_args = NULL, prefix = NULL, fixed_sep = NULL) {
   
-  # BASED ON 
+  # concept BASED ON 
   #   Found by RSEEK
   #   Time series cross-validation 5
   #   January 24, 2013
   #   By Zachary Mayer ( OTHERS BY THIS AUTHOR: http://www.r-bloggers.com/author/zachary-mayer/ )
   #   Zachary Deane-Mayer  
-  #   ( CARET GUY: AND: Author of library(caretEnsemble)
+  #   CARET GUY
   #     http://www.r-bloggers.com/time-series-cross-validation-5/
   #     http://moderntoolmaking.blogspot.com/2013/01/time-series-cross-validation-5.html?utm_source=feedburner&utm_medium=feed&utm_campaign=Feed%3A+ModernToolMaking+%28Modern+Tool+Making%29
   #     GIST OF THIS ON GITHUB
   #     https://gist.github.com/zachmayer/4630129#file-1-load-data-r
-  #     ALSO THE AUTHOR OF R CRAN package caretEnsemble and R github package cv.ts 
+  #   AUTHOR OF R CRAN package caretEnsemble and R github package cv.ts 
   
   fnct_text   <- as.character(deparse(substitute(fnct)))
   
@@ -1737,8 +1867,8 @@ expand_xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o
   return(expand_xts_)
 
 }
-# require(quantmod); 
-# x3 <- getSymbols("IBM", from = "1970-01-01", to = "1970-01-13", auto.assign = FALSE)
+# require(quantmod) 
+# ibm <- getSymbols("IBM", from = "1970-01-01", to = "1970-01-13", auto.assign = FALSE)
 # 
 #                      IBM.Open           IBM.High   IBM.Low          IBM.Close IBM.Volume       IBM.Adjusted
 # 1970-01-02 18.225000000000001 18.287500000000001 18.200001 18.237499000000000     315200 5.3213109999999997
@@ -1751,7 +1881,7 @@ expand_xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o
 
 # changed prefix = TRUE
 #
-# expand_xts(x3[,c("IBM.Open","IBM.Close")], fnct = "TTR::SMA", whiches = 2:3, prefix = TRUE) # NOT default
+# expand_xts(ibm[,c("IBM.Open","IBM.Close")], fnct = "TTR::SMA", whiches = 2:3, prefix = TRUE) # NOT default
 #            TTR_SMA.2.IBM.Open TTR_SMA.2.IBM.Close TTR_SMA.3.IBM.Open TTR_SMA.3.IBM.Close
 # 1970-01-02                 NA                  NA                 NA                  NA
 # 1970-01-05 18.262499500000001  18.324999500000001                 NA                  NA
@@ -1763,7 +1893,7 @@ expand_xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o
 
 # changed    prefix = FALSE  ( default )
 #
-# expand_xts(x3[,c("IBM.Open","IBM.Close")], fnct = "TTR::SMA", whiches = 2:3, prefix = FALSE)  # default
+# expand_xts(ibm[,c("IBM.Open","IBM.Close")], fnct = "TTR::SMA", whiches = 2:3, prefix = FALSE)  # default
 #            IBM.Open.TTR_SMA.2 IBM.Close.TTR_SMA.2 IBM.Open.TTR_SMA.3 IBM.Close.TTR_SMA.3
 # 1970-01-02                 NA                  NA                 NA                  NA
 # 1970-01-05 18.262499500000001  18.324999500000001                 NA                  NA
@@ -1775,7 +1905,7 @@ expand_xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o
 
 # changed   fixed_sep = "_"
 # 
-# expand_xts(x3[,c("IBM.Open","IBM.Close")], fnct = "TTR::SMA", whiches = 2:3, fixed_sep = "_")
+# expand_xts(ibm[,c("IBM.Open","IBM.Close")], fnct = "TTR::SMA", whiches = 2:3, fixed_sep = "_")
 #            IBM.Open_TTR_SMA_2 IBM.Close_TTR_SMA_2 IBM.Open_TTR_SMA_3 IBM.Close_TTR_SMA_3
 # 1970-01-02                 NA                  NA                 NA                  NA
 # 1970-01-05 18.262499500000001  18.324999500000001                 NA                  NA
@@ -1785,7 +1915,7 @@ expand_xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o
 # 1970-01-09 18.456250000000001  18.462500500000001 18.445833000000000  18.454166999999998
 # 1970-01-12 18.462500500000001  18.418751000000000 18.454166999999998  18.437500666666665
 
-# expand_xts(x3[,c("IBM.Open","IBM.Close")], fnct = "TTR::SMA", whiches = 2:3)
+# expand_xts(ibm[,c("IBM.Open","IBM.Close")], fnct = "TTR::SMA", whiches = 2:3)
 #            IBM.Open.TTR_SMA.2 IBM.Close.TTR_SMA.2 IBM.Open.TTR_SMA.3 IBM.Close.TTR_SMA.3
 # 1970-01-02                 NA                  NA                 NA                  NA
 # 1970-01-05 18.262499500000001  18.324999500000001                 NA                  NA
@@ -1797,7 +1927,7 @@ expand_xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o
 
 # changed to hard-coded function call   fnct = TTR::SMA
 #
-# expand_xts(x3[,c("IBM.Open","IBM.Close")], fnct = TTR::SMA, whiches = 2:3)
+# expand_xts(ibm[,c("IBM.Open","IBM.Close")], fnct = TTR::SMA, whiches = 2:3)
 #            IBM.Open.TTR_SMA.2 IBM.Close.TTR_SMA.2 IBM.Open.TTR_SMA.3 IBM.Close.TTR_SMA.3
 # 1970-01-02                 NA                  NA                 NA                  NA
 # 1970-01-05 18.262499500000001  18.324999500000001                 NA                  NA
@@ -1809,7 +1939,7 @@ expand_xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o
 
 # changed to function sent as a string   fnct = "function(x,n){ TTR::SMA(x,n) }"
 #
-# expand_xts(x3[,c("IBM.Open","IBM.Close")], fnct = "function(x,n){ TTR::SMA(x,n) }", whiches = 2:3)
+# expand_xts(ibm[,c("IBM.Open","IBM.Close")], fnct = "function(x,n){ TTR::SMA(x,n) }", whiches = 2:3)
 
 #               IBM.Open.anon.2   IBM.Close.anon.2    IBM.Open.anon.3   IBM.Close.anon.3
 # 1970-01-02                 NA                 NA                 NA                 NA
@@ -1822,7 +1952,7 @@ expand_xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o
 
 # change to function sent as a closure   fnct = function(x,n){ TTR::SMA(x,n) }
 #
-# expand_xts(x3[,c("IBM.Open","IBM.Close")], fnct = function(x,n){ TTR::SMA(x,n) }, whiches = 2:3)
+# expand_xts(ibm[,c("IBM.Open","IBM.Close")], fnct = function(x,n){ TTR::SMA(x,n) }, whiches = 2:3)
 #               IBM.Open.anon.2   IBM.Close.anon.2    IBM.Open.anon.3   IBM.Close.anon.3
 # 1970-01-02                 NA                 NA                 NA                 NA
 # 1970-01-05 18.262499500000001 18.324999500000001                 NA                 NA
@@ -1834,8 +1964,8 @@ expand_xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o
 
 # check that a specific function works
 #
-# x3a <- { t <- x3; t[2:3,1] <- NA_real_; t}
-# expand_xts(x3a[,c("IBM.Open","IBM.Close")], fnct = "na.locf", whiches = 2:3)
+# ibm_missing_data <- local({ t <- ibm; t[2:3,1] <- NA_real_; t})
+# expand_xts(ibm_missing_data[,c("IBM.Open","IBM.Close")], fnct = "na.locf", whiches = 2:3)
 #               IBM.Open.anon.2   IBM.Close.anon.2    IBM.Open.anon.3   IBM.Close.anon.3
 # 1970-01-02 18.225000000000001 18.237499000000000 18.225000000000001 18.237499000000000
 # 1970-01-05 18.225000000000001 18.412500000000001 18.225000000000001 18.412500000000001
@@ -1847,7 +1977,7 @@ expand_xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o
 
 # give the ouput columns and alternate pre/post(append) name
 #
-# expand_xts(x3a[,c("IBM.Open","IBM.Close")], fnct = "na.locf", whiches = 2:3, alt_name = "NALOCF")
+# expand_xts(ibm[,c("IBM.Open","IBM.Close")], fnct = "na.locf", whiches = 2:3, alt_name = "NALOCF")
 #             IBM.Open.NALOCF.2 IBM.Close.NALOCF.2  IBM.Open.NALOCF.3 IBM.Close.NALOCF.3
 # 1970-01-02 18.225000000000001 18.237499000000000 18.225000000000001 18.237499000000000
 # 1970-01-05 18.225000000000001 18.412500000000001 18.225000000000001 18.412500000000001
@@ -1859,7 +1989,7 @@ expand_xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o
 
 # send extra arguements to a function
 #
-# expand_xts(x3[,c("IBM.Open","IBM.Close")], fnct = "get_pctchg_xts", whiches = 2:3, alt_name = "futPCTCHG" , o_args = c(to_future = TRUE ))
+# expand_xts(ibm[,c("IBM.Open","IBM.Close")], fnct = "get_pctchg_xts", whiches = 2:3, alt_name = "futPCTCHG" , o_args = c(to_future = TRUE ))
 #             IBM.Open.futPCTCHG.2 IBM.Close.futPCTCHG.2 IBM.Open.futPCTCHG.3 IBM.Close.futPCTCHG.3
 # 1970-01-02 -1.028806584362139898 -1.028101495714955238 -1.09738820301782303  -1.09664707863726441
 # 1970-01-05 -0.683060146615308561 -0.135777325186686088 -0.75137162575801408  -0.33944331296673452
@@ -1869,15 +1999,15 @@ expand_xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o
 # 1970-01-09                    NA                    NA                   NA                    NA
 # 1970-01-12                    NA                    NA                   NA                    NA
 
-# check that i specific function works
+# check that a specific function works
 #
-# expand_xts(x3[,c("IBM.Open","IBM.Close")], fnct = "to.monthly", alt_name = "MONTHLY", o_args = list(indexAt= 'lastof', OHLC = FALSE))
+# expand_xts(ibm[,c("IBM.Open","IBM.Close")], fnct = "to.monthly", alt_name = "MONTHLY", o_args = list(indexAt= 'lastof', OHLC = FALSE))
 #            IBM.Open.MONTHLY IBM.Close.MONTHLY
 # 1970-01-31        18.450001         18.387501
 
 # check that a specific function works
 #
-# expand_xts(xts(,index(x3)), fnct = "is_year_less_than_or_equal_xts", whiches =  seq(lubridate::year(min(index(x3))), lubridate::year(max(index(x3))),by = 1), alt_name = "y_lth_or_eq_to_fact")
+# expand_xts(xts(,index(ibm)), fnct = "is_year_less_than_or_equal_xts", whiches =  seq(lubridate::year(min(index(ibm))), lubridate::year(max(index(ibm))),by = 1), alt_name = "y_lth_or_eq_to_fact")
 # 
 #            y_lth_or_eq_to_fact.1970
 # 1970-01-02                        1
@@ -1888,5 +2018,6 @@ expand_xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o
 # 1970-01-09                        1
 # 1970-01-12                        1
 
-
 # goodsight01.R
+# expand_xts
+
