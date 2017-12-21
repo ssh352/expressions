@@ -10,12 +10,19 @@ set search_path to fe_data_store;
 set time zone 'utc';
 --set work_mem to  '1200MB';
 set work_mem to '2047MB';
+-- maximum amount of memory to be used by maintenance operations, such as VACUUM, CREATE INDEX, and ALTER TABLE ADD FOREIGN KEY
+-- https://wiki.postgresql.org/wiki/Tuning_Your_PostgreSQL_Server
+set maintenance_work_mem to '2047MB';
 set constraint_exclusion = on;
 -- postgresql 9.6
 set max_parallel_workers_per_gather to 4; -- not 'written in docs'
 
 -- by design can not find plr
 -- select r_version();
+
+select current_database();
+
+SELECT nspname FROM pg_namespace WHERE oid = pg_my_temp_schema();
 
 CREATE TABLE sipro_data_store.si_retdate
 (
@@ -12451,6 +12458,1378 @@ order by   fe.col1_fct
 ;
 
 
+---------------------------------------------
+-------- r code run implemenatation result --
 
+-- EXPERIMENT
+set effective_cache_size to '6144MB';  -- os + 'shared_buffers'
+
+set search_path to fe_data_store;
+-- set search_path to sipro_data_store,sipro_stage;
+set time zone 'utc';
+--set work_mem to  '1200MB';
+set work_mem to '2047MB';
+set constraint_exclusion = on;
+-- postgresql 9.6
+set max_parallel_workers_per_gather to 4; -- not 'written in docs'
+
+
+select count(1) from fe_data_store.si_finecon2 fei where fei.dateindex in (values(12055), (12083));
+
+select count(1) from fe_data_store.si_finecon2 fei where fei.dateindex in (values(12055), (12083))
+
+explain
+select count(1) from fe_data_store.si_finecon2 fei where fei.dateindex in (values(12055), (12083))
+
+
+      -- global flexible: just add/subtract expression: xyz.dateindex = XYZ 
+      --
+      -- A SOLUTION ( 'WITH' PART MULTPLE FACTOR-ABLE: 'sp500'/'spnot500' )
+      -- BREAKDOWN of Financial/NotFinancial 
+      -- create index si_finecon2_finecon_sp_500_sector_desc_partial_idx on
+      --   fe_data_store.si_finecon2(dateindex, sp, sector_desc) where sp = '500';
+      --
+
+      with index_weights as (
+        select
+            fe.dateindex 
+          , fe.col1_fct, fe.col2_fct, fe.col3_fct, fe.col4_fct
+          , to_timestamp(fe.dateindex*3600*24)::date dateindex_dt
+          , 
+              sum(fe.mktcap) 
+                filter(where fe.mktcap is not null and fe.pradchg_f52w_ann is not null) 
+                           sum_wrt_pradchg_f52w_ann_mktcap
+          , 
+              sum(fe.mktcap) 
+                filter(where fe.mktcap is not null and fe.pradchg_f26w_ann is not null) 
+                           sum_wrt_pradchg_f26w_ann_mktcap
+          , 
+              sum(fe.mktcap) 
+                filter(where fe.mktcap is not null and fe.pradchg_f13w_ann is not null) 
+                           sum_wrt_pradchg_f13w_ann_mktcap
+          , 
+              sum(fe.mktcap) 
+                filter(where fe.mktcap is not null and fe.pradchg_f04w_ann is not null) 
+                           sum_wrt_pradchg_f04w_ann_mktcap
+          , 
+              sum(fe.last_inbnd_stmtstat_assets_q1) 
+                filter(where fe.last_inbnd_stmtstat_assets_q1 is not null and fe.last_inbnd_stmtstat_mktcap is not null) 
+                           sum_wrt_last_mktcap_last_inbnd_stmtstat_assets_q1
+          , 
+              sum(fe.last_inbnd_stmtstat_assets_q1) 
+                filter(where fe.last_inbnd_stmtstat_assets_q1 is not null and fe.mktcap is not null) 
+                           sum_wrt_mktcap_last_inbnd_stmtstat_assets_q1
+          , 
+              sum(fe.last_inbnd_stmtstat_liab_q1) 
+                filter(where fe.last_inbnd_stmtstat_liab_q1 is not null and fe.last_inbnd_stmtstat_mktcap is not null) 
+                           sum_wrt_last_mktcap_last_inbnd_stmtstat_liab_q1
+          , 
+              sum(fe.last_inbnd_stmtstat_liab_q1) 
+                filter(where fe.last_inbnd_stmtstat_liab_q1 is not null and fe.mktcap is not null) 
+                           sum_wrt_mktcap_last_inbnd_stmtstat_liab_q1
+        from ( -- fe
+               -- explain  -- NO_INDEX+CASE ( over 60+ ... ) INDEX+CASE ( 25 seconds )
+               select
+                   fei.dateindex 
+              -- , 'sp_desc'::text col1_fct
+              -- , case when fei.sp = '500' then 'sp500' else 'spnot500' end col2_fct
+              -- , case when fei.sp = '500' then 'sp500' else '_error_'    end col2_fct
+              -- , 'sector_fin_desc'::text col3_fct
+              -- , case when fei.sector_desc = 'Financial' then 'sectfinfinancial' else 'sectfinnotfinancial' end col4_fct
+                 , 'sp_desc'::text col1_fct, case when fei.sp = '500' then 'sp500' else '_error_' end col2_fct
+, 'sector_fin_desc'::text col3_fct, case when fei.sector_desc = 'Financial' then 'sectfinfinancial' else 'sectfinnotfinancial' end col4_fct
+
+                 , fei.last_inbnd_stmtstat_mktcap, fei.last_inbnd_stmtstat_assets_q1, fei.last_inbnd_stmtstat_liab_q1, fei.mktcap
+                 , fei.pradchg_f04w_ann, fei.pradchg_f13w_ann, fei.pradchg_f26w_ann, fei.pradchg_f52w_ann
+                 , fei.price
+               from fe_data_store.si_finecon2 fei 
+                 where 1 = 1
+              -- and fei.sp in('500','400','600') 
+              -- and fei.sp in('500')
+                 and fei.sp in('500')
+              -- and fei.dateindex = 17438 
+                 and fei.dateindex = 17409
+             ) fe -- 261,000 records ( if 'sp500' and 'spnot500' )
+        group by   fe.dateindex
+                 , fe.col1_fct, fe.col2_fct, fe.col3_fct, fe.col4_fct
+        order by   fe.dateindex
+                 , fe.col1_fct, fe.col2_fct, fe.col3_fct, fe.col4_fct
+      ) -- 354 ROWS ( if 'sp500' and 'spnot500' )
+      select
+        -- DISPLAY ORDER IS HERE
+          fe.dateindex 
+        , to_timestamp(fe.dateindex*3600*24)::date dateindex_dt
+        , fe.col1_fct, fe.col2_fct, fe.col3_fct, fe.col4_fct
+        -- THE RESPONSE VALUE
+        , sum(fe.mktcap) filter(where fe.mktcap is not null) / nullif(count(fe.mktcap) filter(where fe.mktcap is not null),0) / 1000.0 sum_mktcap_o_count_d1000
+        -- CANDIDATE RESPONSE VARIABLES
+        , avg(fe.pradchg_f52w_ann * fe.mktcap / nullif(w.sum_wrt_pradchg_f52w_ann_mktcap,0)  ) 
+            filter(where fe.pradchg_f52w_ann    is not null and fe.mktcap is not null)         * 1000 avg_pradchg_f52w_ann_wtd_by_mktcap_x1000
+        , avg(fe.pradchg_f26w_ann * fe.mktcap / nullif(w.sum_wrt_pradchg_f26w_ann_mktcap,0)  ) 
+            filter(where fe.pradchg_f26w_ann    is not null and fe.mktcap is not null)         * 1000 avg_pradchg_f26w_ann_wtd_by_mktcap_x1000
+        , avg(fe.pradchg_f13w_ann * fe.mktcap / nullif(w.sum_wrt_pradchg_f13w_ann_mktcap,0)  ) 
+            filter(where fe.pradchg_f13w_ann    is not null and fe.mktcap is not null)         * 1000 avg_pradchg_f13w_ann_wtd_by_mktcap_x1000
+        , avg(fe.pradchg_f04w_ann * fe.mktcap / nullif(w.sum_wrt_pradchg_f04w_ann_mktcap,0)  ) 
+            filter(where fe.pradchg_f04w_ann    is not null and fe.mktcap is not null)         * 1000 avg_pradchg_f04w_ann_wtd_by_mktcap_x1000
+        -- BEGIN NON-RESPONSE VARIABLES
+        , sum(fe.last_inbnd_stmtstat_mktcap) 
+            filter(where fe.last_inbnd_stmtstat_mktcap    is not null and fe.last_inbnd_stmtstat_assets_q1 is not null) sum_wrt_assets_q1_of_last_inbnd_stmtstat_mktcap
+        , sum(fe.last_inbnd_stmtstat_assets_q1) 
+            filter(where fe.last_inbnd_stmtstat_assets_q1 is not null and fe.last_inbnd_stmtstat_mktcap    is not null) sum_wrt_mktcap_of_last_inbnd_stmtstat_assets_q1
+        , sum(fe.last_inbnd_stmtstat_mktcap) 
+            filter(where fe.last_inbnd_stmtstat_mktcap    is not null and fe.last_inbnd_stmtstat_assets_q1 is not null) /
+          sum(fe.last_inbnd_stmtstat_assets_q1) 
+            filter(where fe.last_inbnd_stmtstat_assets_q1 is not null and fe.last_inbnd_stmtstat_mktcap    is not null)    * 100 sum_last_mktcap_o_last_inbnd_stmtstat_assets_q1_x100
+        , avg(fe.last_inbnd_stmtstat_mktcap * fe.last_inbnd_stmtstat_assets_q1 / nullif(w.sum_wrt_last_mktcap_last_inbnd_stmtstat_assets_q1,0)  ) 
+            filter(where fe.last_inbnd_stmtstat_mktcap    is not null and fe.last_inbnd_stmtstat_assets_q1 is not null) * 10 avg_last_mktcap_wtd_by_assets_q1_x10
+        , avg(fe.mktcap * fe.last_inbnd_stmtstat_assets_q1 / nullif(w.sum_wrt_mktcap_last_inbnd_stmtstat_assets_q1,0)  ) 
+            filter(where fe.mktcap    is not null and fe.last_inbnd_stmtstat_assets_q1 is not null)                     * 10 avg_mktcap_wtd_by_assets_q1_x10
+        , avg(fe.last_inbnd_stmtstat_mktcap * fe.last_inbnd_stmtstat_liab_q1 / nullif(w.sum_wrt_last_mktcap_last_inbnd_stmtstat_liab_q1,0)  ) 
+            filter(where fe.last_inbnd_stmtstat_mktcap    is not null and fe.last_inbnd_stmtstat_liab_q1 is not null) * 10 avg_last_mktcap_wtd_by_liab_q1_x10
+        , avg(fe.mktcap * fe.last_inbnd_stmtstat_liab_q1 / nullif(w.sum_wrt_mktcap_last_inbnd_stmtstat_liab_q1,0)  ) 
+            filter(where fe.mktcap    is not null and fe.last_inbnd_stmtstat_liab_q1 is not null)                     * 10 avg_mktcap_wtd_by_liab_q1_x10
+        -- ASSETS/ LIAB / OE(ASSETS-LIAB) 
+        , sum(fe.last_inbnd_stmtstat_liab_q1) 
+            filter(where fe.last_inbnd_stmtstat_liab_q1   is not null and fe.last_inbnd_stmtstat_assets_q1 is not null) /
+          sum(fe.last_inbnd_stmtstat_assets_q1) 
+            filter(where fe.last_inbnd_stmtstat_assets_q1 is not null and fe.last_inbnd_stmtstat_liab_q1    is not null)    * 100 sum_last_liab_q1_o_last_assets_q1_x100
+        , sum(fe.last_inbnd_stmtstat_liab_q1) 
+            filter(where fe.last_inbnd_stmtstat_liab_q1   is not null and fe.mktcap is not null) /
+          sum(fe.last_inbnd_stmtstat_mktcap) 
+            filter(where fe.mktcap                        is not null and fe.last_inbnd_stmtstat_liab_q1  is not null)      * 100 sum_last_liab_q1_o_mktcap_x100
+        , sum(fe.last_inbnd_stmtstat_liab_q1) 
+            filter(where fe.last_inbnd_stmtstat_liab_q1   is not null and fe.last_inbnd_stmtstat_assets_q1 is not null) / 
+          (nullif(
+            sum(fe.last_inbnd_stmtstat_assets_q1) 
+              filter(where fe.last_inbnd_stmtstat_assets_q1  is not null and fe.last_inbnd_stmtstat_liab_q1   is not null) -    
+            sum(fe.last_inbnd_stmtstat_liab_q1) 
+              filter(where fe.last_inbnd_stmtstat_liab_q1    is not null and fe.last_inbnd_stmtstat_assets_q1 is not null) 
+          ,0))                                                                                                             * 10 sum_last_liab_q1_o_diff_assets_q1_less_liab_q1_x10
+        -- STAT / ASSETS     STAT / MKTCAP
+        , sum(fe.last_inbnd_stmtstat_netinc_q1) 
+            filter(where fe.last_inbnd_stmtstat_netinc_q1 is not null and fe.last_inbnd_stmtstat_assets_q1 is not null) /
+          sum(fe.last_inbnd_stmtstat_assets_q1) 
+            filter(where fe.last_inbnd_stmtstat_assets_q1 is not null and fe.last_inbnd_stmtstat_netinc_q1    is not null)    * 10000 sum_last_netinc_q1_o_assets_q1_x10000
+        , sum(fe.last_inbnd_stmtstat_netinc_q1) 
+            filter(where fe.last_inbnd_stmtstat_netinc_q1   is not null and fe.mktcap is not null) /
+          sum(fe.last_inbnd_stmtstat_mktcap) 
+            filter(where fe.mktcap                          is not null and fe.last_inbnd_stmtstat_netinc_q1  is not null)    * 1000 sum_last_netinc_q1_o_mktcap_x1000
+        , sum(fe.last_inbnd_stmtstat_ncc_q1) 
+            filter(where fe.last_inbnd_stmtstat_ncc_q1 is not null and fe.last_inbnd_stmtstat_assets_q1 is not null) /
+          sum(fe.last_inbnd_stmtstat_assets_q1) 
+            filter(where fe.last_inbnd_stmtstat_assets_q1 is not null and fe.last_inbnd_stmtstat_ncc_q1    is not null)    * 10000 sum_last_ncc_q1_o_assets_q1_x10000
+        , sum(fe.last_inbnd_stmtstat_ncc_q1) 
+            filter(where fe.last_inbnd_stmtstat_ncc_q1   is not null and fe.mktcap is not null) /
+          sum(fe.last_inbnd_stmtstat_mktcap) 
+            filter(where fe.mktcap                          is not null and fe.last_inbnd_stmtstat_ncc_q1  is not null)    * 10000 sum_last_ncc_q1_o_mktcap_x10000
+        , sum(fe.last_inbnd_stmtstat_tco_q1) 
+            filter(where fe.last_inbnd_stmtstat_tco_q1    is not null and fe.last_inbnd_stmtstat_assets_q1 is not null) /
+          sum(fe.last_inbnd_stmtstat_assets_q1) 
+            filter(where fe.last_inbnd_stmtstat_assets_q1 is not null and fe.last_inbnd_stmtstat_tco_q1    is not null)    * 1000 sum_last_tco_q1_o_assets_q1_x1000
+        , sum(fe.last_inbnd_stmtstat_tco_q1) 
+            filter(where fe.last_inbnd_stmtstat_tco_q1    is not null and fe.mktcap is not null) /
+          sum(fe.last_inbnd_stmtstat_mktcap) 
+            filter(where fe.mktcap                          is not null and fe.last_inbnd_stmtstat_tco_q1  is not null)    * 1000 sum_last_tco_q1_o_mktcap_x1000
+        , sum(fe.last_inbnd_stmtstat_tcf_q1) 
+            filter(where fe.last_inbnd_stmtstat_tcf_q1    is not null and fe.last_inbnd_stmtstat_assets_q1 is not null) /
+          sum(fe.last_inbnd_stmtstat_assets_q1) 
+            filter(where fe.last_inbnd_stmtstat_assets_q1 is not null and fe.last_inbnd_stmtstat_tcf_q1    is not null)    * 1000 sum_last_tcf_q1_o_assets_q1_x1000
+        , sum(fe.last_inbnd_stmtstat_tcf_q1) 
+            filter(where fe.last_inbnd_stmtstat_tcf_q1    is not null and fe.mktcap is not null) /
+          sum(fe.last_inbnd_stmtstat_mktcap) 
+            filter(where fe.mktcap                          is not null and fe.last_inbnd_stmtstat_tcf_q1  is not null)    * 1000 sum_last_tcf_q1_o_mktcap_x1000
+        , sum(fe.last_inbnd_stmtstat_tci_q1) 
+            filter(where fe.last_inbnd_stmtstat_tci_q1    is not null and fe.last_inbnd_stmtstat_assets_q1 is not null) /
+          sum(fe.last_inbnd_stmtstat_assets_q1) 
+            filter(where fe.last_inbnd_stmtstat_assets_q1 is not null and fe.last_inbnd_stmtstat_tci_q1    is not null)    * 1000 sum_last_tci_q1_o_assets_q1_x1000
+        , sum(fe.last_inbnd_stmtstat_tci_q1) 
+            filter(where fe.last_inbnd_stmtstat_tci_q1    is not null and fe.mktcap is not null) /
+          sum(fe.last_inbnd_stmtstat_mktcap) 
+            filter(where fe.mktcap                          is not null and fe.last_inbnd_stmtstat_tci_q1  is not null)    * 1000 sum_last_tci_q1_o_mktcap_x1000
+        , sum(fe.last_inbnd_stmtstat_ca_q1) 
+            filter(where fe.last_inbnd_stmtstat_ca_q1    is not null and fe.last_inbnd_stmtstat_assets_q1 is not null) /
+          sum(fe.last_inbnd_stmtstat_assets_q1) 
+            filter(where fe.last_inbnd_stmtstat_assets_q1 is not null and fe.last_inbnd_stmtstat_ca_q1    is not null)    * 100 sum_last_ca_q1_o_assets_q1_x100
+        , sum(fe.last_inbnd_stmtstat_ca_q1) 
+            filter(where fe.last_inbnd_stmtstat_ca_q1    is not null and fe.mktcap is not null) /
+          sum(fe.last_inbnd_stmtstat_mktcap) 
+            filter(where fe.mktcap                          is not null and fe.last_inbnd_stmtstat_ca_q1  is not null)    * 100 sum_last_ca_q1_o_mktcap_x100
+        , sum(fe.last_inbnd_stmtstat_cl_q1) 
+            filter(where fe.last_inbnd_stmtstat_cl_q1    is not null and fe.last_inbnd_stmtstat_assets_q1 is not null) /
+          sum(fe.last_inbnd_stmtstat_assets_q1) 
+            filter(where fe.last_inbnd_stmtstat_assets_q1 is not null and fe.last_inbnd_stmtstat_cl_q1    is not null)    * 100 sum_last_cl_q1_o_assets_q1_x100
+        , sum(fe.last_inbnd_stmtstat_cl_q1) 
+            filter(where fe.last_inbnd_stmtstat_cl_q1    is not null and fe.mktcap is not null) /
+          sum(fe.last_inbnd_stmtstat_mktcap) 
+            filter(where fe.mktcap                          is not null and fe.last_inbnd_stmtstat_cl_q1  is not null)    * 100 sum_last_cl_q1_o_mktcap_x100
+        -- SUM OF THE CURRENTS CA + CL
+        , (
+            sum(fe.last_inbnd_stmtstat_ca_q1) 
+              filter(where fe.last_inbnd_stmtstat_ca_q1 is not null and fe.last_inbnd_stmtstat_cl_q1 is not null and fe.last_inbnd_stmtstat_assets_q1 is not null) +
+            sum(fe.last_inbnd_stmtstat_cl_q1) 
+              filter(where fe.last_inbnd_stmtstat_ca_q1 is not null and fe.last_inbnd_stmtstat_cl_q1 is not null and fe.last_inbnd_stmtstat_assets_q1 is not null)
+          ) /
+          sum(fe.last_inbnd_stmtstat_assets_q1) 
+            filter(where fe.last_inbnd_stmtstat_ca_q1 is not null and fe.last_inbnd_stmtstat_cl_q1 is not null and fe.last_inbnd_stmtstat_assets_q1 is not null)    * 100 sum_last_ca_cl_q1_o_assets_q1_x100
+        , (
+            sum(fe.last_inbnd_stmtstat_ca_q1) 
+              filter(where fe.last_inbnd_stmtstat_ca_q1 is not null and fe.last_inbnd_stmtstat_cl_q1 is not null and fe.mktcap is not null) +
+            sum(fe.last_inbnd_stmtstat_cl_q1) 
+              filter(where fe.last_inbnd_stmtstat_ca_q1 is not null and fe.last_inbnd_stmtstat_cl_q1 is not null and fe.mktcap is not null)
+          ) /
+          sum(fe.mktcap) 
+            filter(where fe.last_inbnd_stmtstat_ca_q1 is not null and fe.last_inbnd_stmtstat_cl_q1 is not null and fe.mktcap is not null)                           * 100 sum_last_ca_cl_q1_o_mktcap_x100
+        from ( -- fe
+               -- explain  -- NO_INDEX+CASE ( over 60+ ... ) INDEX+CASE ( 25 seconds )
+               select
+                   fei.dateindex 
+              -- , 'sp_desc'::text col1_fct 
+              -- , case when fei.sp = '500' then 'sp500' else 'spnot500' end col2_fct
+              -- , case when fei.sp = '500' then 'sp500' else '_error_'  end col2_fct
+              -- , 'sector_fin_desc'::text col3_fct
+              -- , case when fei.sector_desc = 'Financial' then 'sectfinfinancial' else 'sectfinnotfinancial' end col4_fct
+                 , 'sp_desc'::text col1_fct, case when fei.sp = '500' then 'sp500' else '_error_' end col2_fct
+, 'sector_fin_desc'::text col3_fct, case when fei.sector_desc = 'Financial' then 'sectfinfinancial' else 'sectfinnotfinancial' end col4_fct
+
+                 , fei.last_inbnd_stmtstat_mktcap, fei.last_inbnd_stmtstat_assets_q1
+                 , fei.last_inbnd_stmtstat_liab_q1
+                 , fei.mktcap
+                 , fei.last_inbnd_stmtstat_netinc_q1
+                 , fei.last_inbnd_stmtstat_ncc_q1
+                 , fei.last_inbnd_stmtstat_tco_q1
+                 , fei.last_inbnd_stmtstat_tcf_q1
+                 , fei.last_inbnd_stmtstat_tci_q1
+                 , fei.last_inbnd_stmtstat_ca_q1
+                 , fei.last_inbnd_stmtstat_cl_q1
+                 , fei.pradchg_f04w_ann, fei.pradchg_f13w_ann, fei.pradchg_f26w_ann, fei.pradchg_f52w_ann
+                 , fei.price
+               from fe_data_store.si_finecon2 fei 
+                 where 1 = 1
+              -- and fei.sp in('500','400','600') -- 261,000 records
+              -- and fei.sp in('500')
+                 and fei.sp in('500')
+              -- and fei.dateindex = 17438
+                 and fei.dateindex = 17409
+             ) fe 
+           , index_weights w
+      where     fe.dateindex = w.dateindex
+              and fe.col1_fct = w.col1_fct  and fe.col2_fct = w.col2_fct  and fe.col3_fct = w.col3_fct  and fe.col4_fct = w.col4_fct
+      group by  fe.dateindex    -- potential expansion to 'grouping sets','cubes' ( if makes sense )
+                , fe.col1_fct, fe.col2_fct, fe.col3_fct, fe.col4_fct
+      order by  fe.dateindex
+                , fe.col1_fct, fe.col2_fct, fe.col3_fct, fe.col4_fct
+      ;
+
+
+      -- global flexible: just add/subtract expression: xyz.dateindex = XYZ 
+      --
+      -- A SOLUTION ( 'WITH' PART MULTPLE FACTOR-ABLE: 'sp500'/'spnot500' )
+      -- BREAKDOWN of Financial/NotFinancial 
+      -- create index si_finecon2_finecon_sp_500_sector_desc_partial_idx on
+      --   fe_data_store.si_finecon2(dateindex, sp, sector_desc) where sp = '500';
+      --
+
+      with index_weights as (
+        select
+            fe.dateindex 
+          , fe.col1_fct, fe.col2_fct
+          , to_timestamp(fe.dateindex*3600*24)::date dateindex_dt
+          , 
+              sum(fe.mktcap) 
+                filter(where fe.mktcap is not null and fe.pradchg_f52w_ann is not null) 
+                           sum_wrt_pradchg_f52w_ann_mktcap
+          , 
+              sum(fe.mktcap) 
+                filter(where fe.mktcap is not null and fe.pradchg_f26w_ann is not null) 
+                           sum_wrt_pradchg_f26w_ann_mktcap
+          , 
+              sum(fe.mktcap) 
+                filter(where fe.mktcap is not null and fe.pradchg_f13w_ann is not null) 
+                           sum_wrt_pradchg_f13w_ann_mktcap
+          , 
+              sum(fe.mktcap) 
+                filter(where fe.mktcap is not null and fe.pradchg_f04w_ann is not null) 
+                           sum_wrt_pradchg_f04w_ann_mktcap
+          , 
+              sum(fe.last_inbnd_stmtstat_assets_q1) 
+                filter(where fe.last_inbnd_stmtstat_assets_q1 is not null and fe.last_inbnd_stmtstat_mktcap is not null) 
+                           sum_wrt_last_mktcap_last_inbnd_stmtstat_assets_q1
+          , 
+              sum(fe.last_inbnd_stmtstat_assets_q1) 
+                filter(where fe.last_inbnd_stmtstat_assets_q1 is not null and fe.mktcap is not null) 
+                           sum_wrt_mktcap_last_inbnd_stmtstat_assets_q1
+          , 
+              sum(fe.last_inbnd_stmtstat_liab_q1) 
+                filter(where fe.last_inbnd_stmtstat_liab_q1 is not null and fe.last_inbnd_stmtstat_mktcap is not null) 
+                           sum_wrt_last_mktcap_last_inbnd_stmtstat_liab_q1
+          , 
+              sum(fe.last_inbnd_stmtstat_liab_q1) 
+                filter(where fe.last_inbnd_stmtstat_liab_q1 is not null and fe.mktcap is not null) 
+                           sum_wrt_mktcap_last_inbnd_stmtstat_liab_q1
+        from ( -- fe
+               -- explain  -- NO_INDEX+CASE ( over 60+ ... ) INDEX+CASE ( 25 seconds )
+               select
+                   fei.dateindex 
+              -- , 'sp_desc'::text col1_fct
+              -- , case when fei.sp = '500' then 'sp500' else 'spnot500' end col2_fct
+              -- , case when fei.sp = '500' then 'sp500' else '_error_'    end col2_fct
+              -- , 'sector_fin_desc'::text col3_fct
+              -- , case when fei.sector_desc = 'Financial' then 'sectfinfinancial' else 'sectfinnotfinancial' end col4_fct
+                 , 'sp_desc'::text col1_fct, case when fei.sp = '500' then 'sp500' else '_error_' end col2_fct
+
+                 , fei.last_inbnd_stmtstat_mktcap, fei.last_inbnd_stmtstat_assets_q1, fei.last_inbnd_stmtstat_liab_q1, fei.mktcap
+                 , fei.pradchg_f04w_ann, fei.pradchg_f13w_ann, fei.pradchg_f26w_ann, fei.pradchg_f52w_ann
+                 , fei.price
+               from fe_data_store.si_finecon2 fei 
+                 where 1 = 1
+              -- and fei.sp in('500','400','600') 
+              -- and fei.sp in('500')
+                 and fei.sp in('500')
+              -- and fei.dateindex = 17438 
+                 and fei.dateindex = 17409
+             ) fe -- 261,000 records ( if 'sp500' and 'spnot500' )
+        group by   fe.dateindex
+                 , fe.col1_fct, fe.col2_fct
+        order by   fe.dateindex
+                 , fe.col1_fct, fe.col2_fct
+      ) -- 354 ROWS ( if 'sp500' and 'spnot500' )
+      select
+        -- DISPLAY ORDER IS HERE
+          fe.dateindex 
+     -- NOT SENT TO LIQUIFY (ONLY MEANT FOR SINGLE QUERY INTERACTIVE DEBUGGING)
+     -- , to_timestamp(fe.dateindex*3600*24)::date dateindex_dt
+        , fe.col1_fct, fe.col2_fct
+        -- THE RESPONSE VALUE
+        , sum(fe.mktcap) filter(where fe.mktcap is not null) / nullif(count(fe.mktcap) filter(where fe.mktcap is not null),0) / 1000.0 sum_mktcap_o_count_d1000
+        -- CANDIDATE RESPONSE VARIABLES
+        , avg(fe.pradchg_f52w_ann * fe.mktcap / nullif(w.sum_wrt_pradchg_f52w_ann_mktcap,0)  ) 
+            filter(where fe.pradchg_f52w_ann    is not null and fe.mktcap is not null)         * 1000 avg_pradchg_f52w_ann_wtd_by_mktcap_x1000
+        , avg(fe.pradchg_f26w_ann * fe.mktcap / nullif(w.sum_wrt_pradchg_f26w_ann_mktcap,0)  ) 
+            filter(where fe.pradchg_f26w_ann    is not null and fe.mktcap is not null)         * 1000 avg_pradchg_f26w_ann_wtd_by_mktcap_x1000
+        , avg(fe.pradchg_f13w_ann * fe.mktcap / nullif(w.sum_wrt_pradchg_f13w_ann_mktcap,0)  ) 
+            filter(where fe.pradchg_f13w_ann    is not null and fe.mktcap is not null)         * 1000 avg_pradchg_f13w_ann_wtd_by_mktcap_x1000
+        , avg(fe.pradchg_f04w_ann * fe.mktcap / nullif(w.sum_wrt_pradchg_f04w_ann_mktcap,0)  ) 
+            filter(where fe.pradchg_f04w_ann    is not null and fe.mktcap is not null)         * 1000 avg_pradchg_f04w_ann_wtd_by_mktcap_x1000
+        -- BEGIN NON-RESPONSE VARIABLES
+        , sum(fe.last_inbnd_stmtstat_mktcap) 
+            filter(where fe.last_inbnd_stmtstat_mktcap    is not null and fe.last_inbnd_stmtstat_assets_q1 is not null) sum_wrt_assets_q1_of_last_inbnd_stmtstat_mktcap
+        , sum(fe.last_inbnd_stmtstat_assets_q1) 
+            filter(where fe.last_inbnd_stmtstat_assets_q1 is not null and fe.last_inbnd_stmtstat_mktcap    is not null) sum_wrt_mktcap_of_last_inbnd_stmtstat_assets_q1
+        , sum(fe.last_inbnd_stmtstat_mktcap) 
+            filter(where fe.last_inbnd_stmtstat_mktcap    is not null and fe.last_inbnd_stmtstat_assets_q1 is not null) /
+          sum(fe.last_inbnd_stmtstat_assets_q1) 
+            filter(where fe.last_inbnd_stmtstat_assets_q1 is not null and fe.last_inbnd_stmtstat_mktcap    is not null)    * 100 sum_last_mktcap_o_last_inbnd_stmtstat_assets_q1_x100
+        , avg(fe.last_inbnd_stmtstat_mktcap * fe.last_inbnd_stmtstat_assets_q1 / nullif(w.sum_wrt_last_mktcap_last_inbnd_stmtstat_assets_q1,0)  ) 
+            filter(where fe.last_inbnd_stmtstat_mktcap    is not null and fe.last_inbnd_stmtstat_assets_q1 is not null) * 10 avg_last_mktcap_wtd_by_assets_q1_x10
+        , avg(fe.mktcap * fe.last_inbnd_stmtstat_assets_q1 / nullif(w.sum_wrt_mktcap_last_inbnd_stmtstat_assets_q1,0)  ) 
+            filter(where fe.mktcap    is not null and fe.last_inbnd_stmtstat_assets_q1 is not null)                     * 10 avg_mktcap_wtd_by_assets_q1_x10
+        , avg(fe.last_inbnd_stmtstat_mktcap * fe.last_inbnd_stmtstat_liab_q1 / nullif(w.sum_wrt_last_mktcap_last_inbnd_stmtstat_liab_q1,0)  ) 
+            filter(where fe.last_inbnd_stmtstat_mktcap    is not null and fe.last_inbnd_stmtstat_liab_q1 is not null) * 10 avg_last_mktcap_wtd_by_liab_q1_x10
+        , avg(fe.mktcap * fe.last_inbnd_stmtstat_liab_q1 / nullif(w.sum_wrt_mktcap_last_inbnd_stmtstat_liab_q1,0)  ) 
+            filter(where fe.mktcap    is not null and fe.last_inbnd_stmtstat_liab_q1 is not null)                     * 10 avg_mktcap_wtd_by_liab_q1_x10
+        -- ASSETS/ LIAB / OE(ASSETS-LIAB) 
+        , sum(fe.last_inbnd_stmtstat_liab_q1) 
+            filter(where fe.last_inbnd_stmtstat_liab_q1   is not null and fe.last_inbnd_stmtstat_assets_q1 is not null) /
+          sum(fe.last_inbnd_stmtstat_assets_q1) 
+            filter(where fe.last_inbnd_stmtstat_assets_q1 is not null and fe.last_inbnd_stmtstat_liab_q1    is not null)    * 100 sum_last_liab_q1_o_last_assets_q1_x100
+        , sum(fe.last_inbnd_stmtstat_liab_q1) 
+            filter(where fe.last_inbnd_stmtstat_liab_q1   is not null and fe.mktcap is not null) /
+          sum(fe.last_inbnd_stmtstat_mktcap) 
+            filter(where fe.mktcap                        is not null and fe.last_inbnd_stmtstat_liab_q1  is not null)      * 100 sum_last_liab_q1_o_mktcap_x100
+        , sum(fe.last_inbnd_stmtstat_liab_q1) 
+            filter(where fe.last_inbnd_stmtstat_liab_q1   is not null and fe.last_inbnd_stmtstat_assets_q1 is not null) / 
+          (nullif(
+            sum(fe.last_inbnd_stmtstat_assets_q1) 
+              filter(where fe.last_inbnd_stmtstat_assets_q1  is not null and fe.last_inbnd_stmtstat_liab_q1   is not null) -    
+            sum(fe.last_inbnd_stmtstat_liab_q1) 
+              filter(where fe.last_inbnd_stmtstat_liab_q1    is not null and fe.last_inbnd_stmtstat_assets_q1 is not null) 
+          ,0))                                                                                                             * 10 sum_last_liab_q1_o_diff_assets_q1_less_liab_q1_x10
+        -- STAT / ASSETS     STAT / MKTCAP
+        , sum(fe.last_inbnd_stmtstat_netinc_q1) 
+            filter(where fe.last_inbnd_stmtstat_netinc_q1 is not null and fe.last_inbnd_stmtstat_assets_q1 is not null) /
+          sum(fe.last_inbnd_stmtstat_assets_q1) 
+            filter(where fe.last_inbnd_stmtstat_assets_q1 is not null and fe.last_inbnd_stmtstat_netinc_q1    is not null)    * 10000 sum_last_netinc_q1_o_assets_q1_x10000
+        , sum(fe.last_inbnd_stmtstat_netinc_q1) 
+            filter(where fe.last_inbnd_stmtstat_netinc_q1   is not null and fe.mktcap is not null) /
+          sum(fe.last_inbnd_stmtstat_mktcap) 
+            filter(where fe.mktcap                          is not null and fe.last_inbnd_stmtstat_netinc_q1  is not null)    * 1000 sum_last_netinc_q1_o_mktcap_x1000
+        , sum(fe.last_inbnd_stmtstat_ncc_q1) 
+            filter(where fe.last_inbnd_stmtstat_ncc_q1 is not null and fe.last_inbnd_stmtstat_assets_q1 is not null) /
+          sum(fe.last_inbnd_stmtstat_assets_q1) 
+            filter(where fe.last_inbnd_stmtstat_assets_q1 is not null and fe.last_inbnd_stmtstat_ncc_q1    is not null)    * 10000 sum_last_ncc_q1_o_assets_q1_x10000
+        , sum(fe.last_inbnd_stmtstat_ncc_q1) 
+            filter(where fe.last_inbnd_stmtstat_ncc_q1   is not null and fe.mktcap is not null) /
+          sum(fe.last_inbnd_stmtstat_mktcap) 
+            filter(where fe.mktcap                          is not null and fe.last_inbnd_stmtstat_ncc_q1  is not null)    * 10000 sum_last_ncc_q1_o_mktcap_x10000
+        , sum(fe.last_inbnd_stmtstat_tco_q1) 
+            filter(where fe.last_inbnd_stmtstat_tco_q1    is not null and fe.last_inbnd_stmtstat_assets_q1 is not null) /
+          sum(fe.last_inbnd_stmtstat_assets_q1) 
+            filter(where fe.last_inbnd_stmtstat_assets_q1 is not null and fe.last_inbnd_stmtstat_tco_q1    is not null)    * 1000 sum_last_tco_q1_o_assets_q1_x1000
+        , sum(fe.last_inbnd_stmtstat_tco_q1) 
+            filter(where fe.last_inbnd_stmtstat_tco_q1    is not null and fe.mktcap is not null) /
+          sum(fe.last_inbnd_stmtstat_mktcap) 
+            filter(where fe.mktcap                          is not null and fe.last_inbnd_stmtstat_tco_q1  is not null)    * 1000 sum_last_tco_q1_o_mktcap_x1000
+        , sum(fe.last_inbnd_stmtstat_tcf_q1) 
+            filter(where fe.last_inbnd_stmtstat_tcf_q1    is not null and fe.last_inbnd_stmtstat_assets_q1 is not null) /
+          sum(fe.last_inbnd_stmtstat_assets_q1) 
+            filter(where fe.last_inbnd_stmtstat_assets_q1 is not null and fe.last_inbnd_stmtstat_tcf_q1    is not null)    * 1000 sum_last_tcf_q1_o_assets_q1_x1000
+        , sum(fe.last_inbnd_stmtstat_tcf_q1) 
+            filter(where fe.last_inbnd_stmtstat_tcf_q1    is not null and fe.mktcap is not null) /
+          sum(fe.last_inbnd_stmtstat_mktcap) 
+            filter(where fe.mktcap                          is not null and fe.last_inbnd_stmtstat_tcf_q1  is not null)    * 1000 sum_last_tcf_q1_o_mktcap_x1000
+        , sum(fe.last_inbnd_stmtstat_tci_q1) 
+            filter(where fe.last_inbnd_stmtstat_tci_q1    is not null and fe.last_inbnd_stmtstat_assets_q1 is not null) /
+          sum(fe.last_inbnd_stmtstat_assets_q1) 
+            filter(where fe.last_inbnd_stmtstat_assets_q1 is not null and fe.last_inbnd_stmtstat_tci_q1    is not null)    * 1000 sum_last_tci_q1_o_assets_q1_x1000
+        , sum(fe.last_inbnd_stmtstat_tci_q1) 
+            filter(where fe.last_inbnd_stmtstat_tci_q1    is not null and fe.mktcap is not null) /
+          sum(fe.last_inbnd_stmtstat_mktcap) 
+            filter(where fe.mktcap                          is not null and fe.last_inbnd_stmtstat_tci_q1  is not null)    * 1000 sum_last_tci_q1_o_mktcap_x1000
+        , sum(fe.last_inbnd_stmtstat_ca_q1) 
+            filter(where fe.last_inbnd_stmtstat_ca_q1    is not null and fe.last_inbnd_stmtstat_assets_q1 is not null) /
+          sum(fe.last_inbnd_stmtstat_assets_q1) 
+            filter(where fe.last_inbnd_stmtstat_assets_q1 is not null and fe.last_inbnd_stmtstat_ca_q1    is not null)    * 100 sum_last_ca_q1_o_assets_q1_x100
+        , sum(fe.last_inbnd_stmtstat_ca_q1) 
+            filter(where fe.last_inbnd_stmtstat_ca_q1    is not null and fe.mktcap is not null) /
+          sum(fe.last_inbnd_stmtstat_mktcap) 
+            filter(where fe.mktcap                          is not null and fe.last_inbnd_stmtstat_ca_q1  is not null)    * 100 sum_last_ca_q1_o_mktcap_x100
+        , sum(fe.last_inbnd_stmtstat_cl_q1) 
+            filter(where fe.last_inbnd_stmtstat_cl_q1    is not null and fe.last_inbnd_stmtstat_assets_q1 is not null) /
+          sum(fe.last_inbnd_stmtstat_assets_q1) 
+            filter(where fe.last_inbnd_stmtstat_assets_q1 is not null and fe.last_inbnd_stmtstat_cl_q1    is not null)    * 100 sum_last_cl_q1_o_assets_q1_x100
+        , sum(fe.last_inbnd_stmtstat_cl_q1) 
+            filter(where fe.last_inbnd_stmtstat_cl_q1    is not null and fe.mktcap is not null) /
+          sum(fe.last_inbnd_stmtstat_mktcap) 
+            filter(where fe.mktcap                          is not null and fe.last_inbnd_stmtstat_cl_q1  is not null)    * 100 sum_last_cl_q1_o_mktcap_x100
+        -- SUM OF THE CURRENTS CA + CL
+        , (
+            sum(fe.last_inbnd_stmtstat_ca_q1) 
+              filter(where fe.last_inbnd_stmtstat_ca_q1 is not null and fe.last_inbnd_stmtstat_cl_q1 is not null and fe.last_inbnd_stmtstat_assets_q1 is not null) +
+            sum(fe.last_inbnd_stmtstat_cl_q1) 
+              filter(where fe.last_inbnd_stmtstat_ca_q1 is not null and fe.last_inbnd_stmtstat_cl_q1 is not null and fe.last_inbnd_stmtstat_assets_q1 is not null)
+          ) /
+          sum(fe.last_inbnd_stmtstat_assets_q1) 
+            filter(where fe.last_inbnd_stmtstat_ca_q1 is not null and fe.last_inbnd_stmtstat_cl_q1 is not null and fe.last_inbnd_stmtstat_assets_q1 is not null)    * 100 sum_last_ca_cl_q1_o_assets_q1_x100
+        , (
+            sum(fe.last_inbnd_stmtstat_ca_q1) 
+              filter(where fe.last_inbnd_stmtstat_ca_q1 is not null and fe.last_inbnd_stmtstat_cl_q1 is not null and fe.mktcap is not null) +
+            sum(fe.last_inbnd_stmtstat_cl_q1) 
+              filter(where fe.last_inbnd_stmtstat_ca_q1 is not null and fe.last_inbnd_stmtstat_cl_q1 is not null and fe.mktcap is not null)
+          ) /
+          sum(fe.mktcap) 
+            filter(where fe.last_inbnd_stmtstat_ca_q1 is not null and fe.last_inbnd_stmtstat_cl_q1 is not null and fe.mktcap is not null)                           * 100 sum_last_ca_cl_q1_o_mktcap_x100
+        from ( -- fe
+               -- explain  -- NO_INDEX+CASE ( over 60+ ... ) INDEX+CASE ( 25 seconds )
+               select
+                   fei.dateindex 
+              -- , 'sp_desc'::text col1_fct 
+              -- , case when fei.sp = '500' then 'sp500' else 'spnot500' end col2_fct
+              -- , case when fei.sp = '500' then 'sp500' else '_error_'  end col2_fct
+              -- , 'sector_fin_desc'::text col3_fct
+              -- , case when fei.sector_desc = 'Financial' then 'sectfinfinancial' else 'sectfinnotfinancial' end col4_fct
+                 , 'sp_desc'::text col1_fct, case when fei.sp = '500' then 'sp500' else '_error_' end col2_fct
+
+                 , fei.last_inbnd_stmtstat_mktcap, fei.last_inbnd_stmtstat_assets_q1
+                 , fei.last_inbnd_stmtstat_liab_q1
+                 , fei.mktcap
+                 , fei.last_inbnd_stmtstat_netinc_q1
+                 , fei.last_inbnd_stmtstat_ncc_q1
+                 , fei.last_inbnd_stmtstat_tco_q1
+                 , fei.last_inbnd_stmtstat_tcf_q1
+                 , fei.last_inbnd_stmtstat_tci_q1
+                 , fei.last_inbnd_stmtstat_ca_q1
+                 , fei.last_inbnd_stmtstat_cl_q1
+                 , fei.pradchg_f04w_ann, fei.pradchg_f13w_ann, fei.pradchg_f26w_ann, fei.pradchg_f52w_ann
+                 , fei.price
+               from fe_data_store.si_finecon2 fei 
+                 where 1 = 1
+              -- and fei.sp in('500','400','600') -- 261,000 records
+              -- and fei.sp in('500')
+                 and fei.sp in('500')
+              -- and fei.dateindex = 17438
+                 and fei.dateindex = 17409
+             ) fe 
+           , index_weights w
+      where     fe.dateindex = w.dateindex
+              and fe.col1_fct = w.col1_fct  and fe.col2_fct = w.col2_fct
+      group by  fe.dateindex    -- potential expansion to 'grouping sets','cubes' ( if makes sense )
+                , fe.col1_fct, fe.col2_fct
+      order by  fe.dateindex
+                , fe.col1_fct, fe.col2_fct
+      ;
+
+
+
+      -- global flexible: just add/subtract expression: xyz.dateindex = XYZ 
+      --
+      -- A SOLUTION ( 'WITH' PART MULTPLE FACTOR-ABLE: 'sp500'/'spnot500' )
+      -- BREAKDOWN of Financial/NotFinancial 
+      -- create index si_finecon2_finecon_sp_500_sector_desc_partial_idx on
+      --   fe_data_store.si_finecon2(dateindex, sp, sector_desc) where sp = '500';
+      --
+
+      with index_weights as (
+        select
+            fe.dateindex 
+          , fe.col1_fct, fe.col2_fct, fe.col3_fct, fe.col4_fct
+          , to_timestamp(fe.dateindex*3600*24)::date dateindex_dt
+          , 
+              sum(fe.mktcap) 
+                filter(where fe.mktcap is not null and fe.pradchg_f52w_ann is not null) 
+                           sum_wrt_pradchg_f52w_ann_mktcap
+          , 
+              sum(fe.mktcap) 
+                filter(where fe.mktcap is not null and fe.pradchg_f26w_ann is not null) 
+                           sum_wrt_pradchg_f26w_ann_mktcap
+          , 
+              sum(fe.mktcap) 
+                filter(where fe.mktcap is not null and fe.pradchg_f13w_ann is not null) 
+                           sum_wrt_pradchg_f13w_ann_mktcap
+          , 
+              sum(fe.mktcap) 
+                filter(where fe.mktcap is not null and fe.pradchg_f04w_ann is not null) 
+                           sum_wrt_pradchg_f04w_ann_mktcap
+          , 
+              sum(fe.last_inbnd_stmtstat_assets_q1) 
+                filter(where fe.last_inbnd_stmtstat_assets_q1 is not null and fe.last_inbnd_stmtstat_mktcap is not null) 
+                           sum_wrt_last_mktcap_last_inbnd_stmtstat_assets_q1
+          , 
+              sum(fe.last_inbnd_stmtstat_assets_q1) 
+                filter(where fe.last_inbnd_stmtstat_assets_q1 is not null and fe.mktcap is not null) 
+                           sum_wrt_mktcap_last_inbnd_stmtstat_assets_q1
+          , 
+              sum(fe.last_inbnd_stmtstat_liab_q1) 
+                filter(where fe.last_inbnd_stmtstat_liab_q1 is not null and fe.last_inbnd_stmtstat_mktcap is not null) 
+                           sum_wrt_last_mktcap_last_inbnd_stmtstat_liab_q1
+          , 
+              sum(fe.last_inbnd_stmtstat_liab_q1) 
+                filter(where fe.last_inbnd_stmtstat_liab_q1 is not null and fe.mktcap is not null) 
+                           sum_wrt_mktcap_last_inbnd_stmtstat_liab_q1
+        from ( -- fe
+               -- explain  -- NO_INDEX+CASE ( over 60+ ... ) INDEX+CASE ( 25 seconds )
+               select
+                   fei.dateindex 
+              -- , 'sp_desc'::text col1_fct
+              -- , case when fei.sp = '500' then 'sp500' else 'spnot500' end col2_fct
+              -- , case when fei.sp = '500' then 'sp500' else '_error_'    end col2_fct
+              -- , 'sector_fin_desc'::text col3_fct
+              -- , case when fei.sector_desc = 'Financial' then 'sectfinfinancial' else 'sectfinnotfinancial' end col4_fct
+                 , 'sp_desc'::text col1_fct, case when fei.sp = '500' then 'sp500' else '_error_' end col2_fct
+, 'sector_fin_desc'::text col3_fct, case when fei.sector_desc = 'Financial' then 'sectfinfinancial' else 'sectfinnotfinancial' end col4_fct
+
+                 , fei.last_inbnd_stmtstat_mktcap, fei.last_inbnd_stmtstat_assets_q1, fei.last_inbnd_stmtstat_liab_q1, fei.mktcap
+                 , fei.pradchg_f04w_ann, fei.pradchg_f13w_ann, fei.pradchg_f26w_ann, fei.pradchg_f52w_ann
+                 , fei.price
+               from fe_data_store.si_finecon2 fei 
+                 where 1 = 1
+              -- and fei.sp in('500','400','600') 
+              -- and fei.sp in('500')
+                 and fei.sp in('500')
+              -- and fei.dateindex = 17438 
+                 
+             ) fe -- 261,000 records ( if 'sp500' and 'spnot500' )
+        group by   fe.dateindex
+                 , fe.col1_fct, fe.col2_fct, fe.col3_fct, fe.col4_fct
+        order by   fe.dateindex
+                 , fe.col1_fct, fe.col2_fct, fe.col3_fct, fe.col4_fct
+      ) -- 354 ROWS ( if 'sp500' and 'spnot500' )
+      select
+        -- DISPLAY ORDER IS HERE
+          fe.dateindex 
+     -- NOT SENT TO LIQUIFY (ONLY MEANT FOR SINGLE QUERY INTERACTIVE DEBUGGING)
+     -- , to_timestamp(fe.dateindex*3600*24)::date dateindex_dt
+        , fe.col1_fct, fe.col2_fct, fe.col3_fct, fe.col4_fct
+        -- THE RESPONSE VALUE
+        , sum(fe.mktcap) filter(where fe.mktcap is not null) / nullif(count(fe.mktcap) filter(where fe.mktcap is not null),0) / 1000.0 sum_mktcap_o_count_d1000
+        -- CANDIDATE RESPONSE VARIABLES
+        , avg(fe.pradchg_f52w_ann * fe.mktcap / nullif(w.sum_wrt_pradchg_f52w_ann_mktcap,0)  ) 
+            filter(where fe.pradchg_f52w_ann    is not null and fe.mktcap is not null)         * 1000 avg_pradchg_f52w_ann_wtd_by_mktcap_x1000
+        , avg(fe.pradchg_f26w_ann * fe.mktcap / nullif(w.sum_wrt_pradchg_f26w_ann_mktcap,0)  ) 
+            filter(where fe.pradchg_f26w_ann    is not null and fe.mktcap is not null)         * 1000 avg_pradchg_f26w_ann_wtd_by_mktcap_x1000
+        , avg(fe.pradchg_f13w_ann * fe.mktcap / nullif(w.sum_wrt_pradchg_f13w_ann_mktcap,0)  ) 
+            filter(where fe.pradchg_f13w_ann    is not null and fe.mktcap is not null)         * 1000 avg_pradchg_f13w_ann_wtd_by_mktcap_x1000
+        , avg(fe.pradchg_f04w_ann * fe.mktcap / nullif(w.sum_wrt_pradchg_f04w_ann_mktcap,0)  ) 
+            filter(where fe.pradchg_f04w_ann    is not null and fe.mktcap is not null)         * 1000 avg_pradchg_f04w_ann_wtd_by_mktcap_x1000
+        -- BEGIN NON-RESPONSE VARIABLES
+        , sum(fe.last_inbnd_stmtstat_mktcap) 
+            filter(where fe.last_inbnd_stmtstat_mktcap    is not null and fe.last_inbnd_stmtstat_assets_q1 is not null) sum_wrt_assets_q1_of_last_inbnd_stmtstat_mktcap
+        , sum(fe.last_inbnd_stmtstat_assets_q1) 
+            filter(where fe.last_inbnd_stmtstat_assets_q1 is not null and fe.last_inbnd_stmtstat_mktcap    is not null) sum_wrt_mktcap_of_last_inbnd_stmtstat_assets_q1
+        , sum(fe.last_inbnd_stmtstat_mktcap) 
+            filter(where fe.last_inbnd_stmtstat_mktcap    is not null and fe.last_inbnd_stmtstat_assets_q1 is not null) /
+          sum(fe.last_inbnd_stmtstat_assets_q1) 
+            filter(where fe.last_inbnd_stmtstat_assets_q1 is not null and fe.last_inbnd_stmtstat_mktcap    is not null)    * 100 sum_last_mktcap_o_last_inbnd_stmtstat_assets_q1_x100
+        , avg(fe.last_inbnd_stmtstat_mktcap * fe.last_inbnd_stmtstat_assets_q1 / nullif(w.sum_wrt_last_mktcap_last_inbnd_stmtstat_assets_q1,0)  ) 
+            filter(where fe.last_inbnd_stmtstat_mktcap    is not null and fe.last_inbnd_stmtstat_assets_q1 is not null) * 10 avg_last_mktcap_wtd_by_assets_q1_x10
+        , avg(fe.mktcap * fe.last_inbnd_stmtstat_assets_q1 / nullif(w.sum_wrt_mktcap_last_inbnd_stmtstat_assets_q1,0)  ) 
+            filter(where fe.mktcap    is not null and fe.last_inbnd_stmtstat_assets_q1 is not null)                     * 10 avg_mktcap_wtd_by_assets_q1_x10
+        , avg(fe.last_inbnd_stmtstat_mktcap * fe.last_inbnd_stmtstat_liab_q1 / nullif(w.sum_wrt_last_mktcap_last_inbnd_stmtstat_liab_q1,0)  ) 
+            filter(where fe.last_inbnd_stmtstat_mktcap    is not null and fe.last_inbnd_stmtstat_liab_q1 is not null) * 10 avg_last_mktcap_wtd_by_liab_q1_x10
+        , avg(fe.mktcap * fe.last_inbnd_stmtstat_liab_q1 / nullif(w.sum_wrt_mktcap_last_inbnd_stmtstat_liab_q1,0)  ) 
+            filter(where fe.mktcap    is not null and fe.last_inbnd_stmtstat_liab_q1 is not null)                     * 10 avg_mktcap_wtd_by_liab_q1_x10
+        -- ASSETS/ LIAB / OE(ASSETS-LIAB) 
+        , sum(fe.last_inbnd_stmtstat_liab_q1) 
+            filter(where fe.last_inbnd_stmtstat_liab_q1   is not null and fe.last_inbnd_stmtstat_assets_q1 is not null) /
+          sum(fe.last_inbnd_stmtstat_assets_q1) 
+            filter(where fe.last_inbnd_stmtstat_assets_q1 is not null and fe.last_inbnd_stmtstat_liab_q1    is not null)    * 100 sum_last_liab_q1_o_last_assets_q1_x100
+        , sum(fe.last_inbnd_stmtstat_liab_q1) 
+            filter(where fe.last_inbnd_stmtstat_liab_q1   is not null and fe.mktcap is not null) /
+          sum(fe.last_inbnd_stmtstat_mktcap) 
+            filter(where fe.mktcap                        is not null and fe.last_inbnd_stmtstat_liab_q1  is not null)      * 100 sum_last_liab_q1_o_mktcap_x100
+        , sum(fe.last_inbnd_stmtstat_liab_q1) 
+            filter(where fe.last_inbnd_stmtstat_liab_q1   is not null and fe.last_inbnd_stmtstat_assets_q1 is not null) / 
+          (nullif(
+            sum(fe.last_inbnd_stmtstat_assets_q1) 
+              filter(where fe.last_inbnd_stmtstat_assets_q1  is not null and fe.last_inbnd_stmtstat_liab_q1   is not null) -    
+            sum(fe.last_inbnd_stmtstat_liab_q1) 
+              filter(where fe.last_inbnd_stmtstat_liab_q1    is not null and fe.last_inbnd_stmtstat_assets_q1 is not null) 
+          ,0))                                                                                                             * 10 sum_last_liab_q1_o_diff_assets_q1_less_liab_q1_x10
+        -- STAT / ASSETS     STAT / MKTCAP
+        , sum(fe.last_inbnd_stmtstat_netinc_q1) 
+            filter(where fe.last_inbnd_stmtstat_netinc_q1 is not null and fe.last_inbnd_stmtstat_assets_q1 is not null) /
+          sum(fe.last_inbnd_stmtstat_assets_q1) 
+            filter(where fe.last_inbnd_stmtstat_assets_q1 is not null and fe.last_inbnd_stmtstat_netinc_q1    is not null)    * 10000 sum_last_netinc_q1_o_assets_q1_x10000
+        , sum(fe.last_inbnd_stmtstat_netinc_q1) 
+            filter(where fe.last_inbnd_stmtstat_netinc_q1   is not null and fe.mktcap is not null) /
+          sum(fe.last_inbnd_stmtstat_mktcap) 
+            filter(where fe.mktcap                          is not null and fe.last_inbnd_stmtstat_netinc_q1  is not null)    * 1000 sum_last_netinc_q1_o_mktcap_x1000
+        , sum(fe.last_inbnd_stmtstat_ncc_q1) 
+            filter(where fe.last_inbnd_stmtstat_ncc_q1 is not null and fe.last_inbnd_stmtstat_assets_q1 is not null) /
+          sum(fe.last_inbnd_stmtstat_assets_q1) 
+            filter(where fe.last_inbnd_stmtstat_assets_q1 is not null and fe.last_inbnd_stmtstat_ncc_q1    is not null)    * 10000 sum_last_ncc_q1_o_assets_q1_x10000
+        , sum(fe.last_inbnd_stmtstat_ncc_q1) 
+            filter(where fe.last_inbnd_stmtstat_ncc_q1   is not null and fe.mktcap is not null) /
+          sum(fe.last_inbnd_stmtstat_mktcap) 
+            filter(where fe.mktcap                          is not null and fe.last_inbnd_stmtstat_ncc_q1  is not null)    * 10000 sum_last_ncc_q1_o_mktcap_x10000
+        , sum(fe.last_inbnd_stmtstat_tco_q1) 
+            filter(where fe.last_inbnd_stmtstat_tco_q1    is not null and fe.last_inbnd_stmtstat_assets_q1 is not null) /
+          sum(fe.last_inbnd_stmtstat_assets_q1) 
+            filter(where fe.last_inbnd_stmtstat_assets_q1 is not null and fe.last_inbnd_stmtstat_tco_q1    is not null)    * 1000 sum_last_tco_q1_o_assets_q1_x1000
+        , sum(fe.last_inbnd_stmtstat_tco_q1) 
+            filter(where fe.last_inbnd_stmtstat_tco_q1    is not null and fe.mktcap is not null) /
+          sum(fe.last_inbnd_stmtstat_mktcap) 
+            filter(where fe.mktcap                          is not null and fe.last_inbnd_stmtstat_tco_q1  is not null)    * 1000 sum_last_tco_q1_o_mktcap_x1000
+        , sum(fe.last_inbnd_stmtstat_tcf_q1) 
+            filter(where fe.last_inbnd_stmtstat_tcf_q1    is not null and fe.last_inbnd_stmtstat_assets_q1 is not null) /
+          sum(fe.last_inbnd_stmtstat_assets_q1) 
+            filter(where fe.last_inbnd_stmtstat_assets_q1 is not null and fe.last_inbnd_stmtstat_tcf_q1    is not null)    * 1000 sum_last_tcf_q1_o_assets_q1_x1000
+        , sum(fe.last_inbnd_stmtstat_tcf_q1) 
+            filter(where fe.last_inbnd_stmtstat_tcf_q1    is not null and fe.mktcap is not null) /
+          sum(fe.last_inbnd_stmtstat_mktcap) 
+            filter(where fe.mktcap                          is not null and fe.last_inbnd_stmtstat_tcf_q1  is not null)    * 1000 sum_last_tcf_q1_o_mktcap_x1000
+        , sum(fe.last_inbnd_stmtstat_tci_q1) 
+            filter(where fe.last_inbnd_stmtstat_tci_q1    is not null and fe.last_inbnd_stmtstat_assets_q1 is not null) /
+          sum(fe.last_inbnd_stmtstat_assets_q1) 
+            filter(where fe.last_inbnd_stmtstat_assets_q1 is not null and fe.last_inbnd_stmtstat_tci_q1    is not null)    * 1000 sum_last_tci_q1_o_assets_q1_x1000
+        , sum(fe.last_inbnd_stmtstat_tci_q1) 
+            filter(where fe.last_inbnd_stmtstat_tci_q1    is not null and fe.mktcap is not null) /
+          sum(fe.last_inbnd_stmtstat_mktcap) 
+            filter(where fe.mktcap                          is not null and fe.last_inbnd_stmtstat_tci_q1  is not null)    * 1000 sum_last_tci_q1_o_mktcap_x1000
+        , sum(fe.last_inbnd_stmtstat_ca_q1) 
+            filter(where fe.last_inbnd_stmtstat_ca_q1    is not null and fe.last_inbnd_stmtstat_assets_q1 is not null) /
+          sum(fe.last_inbnd_stmtstat_assets_q1) 
+            filter(where fe.last_inbnd_stmtstat_assets_q1 is not null and fe.last_inbnd_stmtstat_ca_q1    is not null)    * 100 sum_last_ca_q1_o_assets_q1_x100
+        , sum(fe.last_inbnd_stmtstat_ca_q1) 
+            filter(where fe.last_inbnd_stmtstat_ca_q1    is not null and fe.mktcap is not null) /
+          sum(fe.last_inbnd_stmtstat_mktcap) 
+            filter(where fe.mktcap                          is not null and fe.last_inbnd_stmtstat_ca_q1  is not null)    * 100 sum_last_ca_q1_o_mktcap_x100
+        , sum(fe.last_inbnd_stmtstat_cl_q1) 
+            filter(where fe.last_inbnd_stmtstat_cl_q1    is not null and fe.last_inbnd_stmtstat_assets_q1 is not null) /
+          sum(fe.last_inbnd_stmtstat_assets_q1) 
+            filter(where fe.last_inbnd_stmtstat_assets_q1 is not null and fe.last_inbnd_stmtstat_cl_q1    is not null)    * 100 sum_last_cl_q1_o_assets_q1_x100
+        , sum(fe.last_inbnd_stmtstat_cl_q1) 
+            filter(where fe.last_inbnd_stmtstat_cl_q1    is not null and fe.mktcap is not null) /
+          sum(fe.last_inbnd_stmtstat_mktcap) 
+            filter(where fe.mktcap                          is not null and fe.last_inbnd_stmtstat_cl_q1  is not null)    * 100 sum_last_cl_q1_o_mktcap_x100
+        -- SUM OF THE CURRENTS CA + CL
+        , (
+            sum(fe.last_inbnd_stmtstat_ca_q1) 
+              filter(where fe.last_inbnd_stmtstat_ca_q1 is not null and fe.last_inbnd_stmtstat_cl_q1 is not null and fe.last_inbnd_stmtstat_assets_q1 is not null) +
+            sum(fe.last_inbnd_stmtstat_cl_q1) 
+              filter(where fe.last_inbnd_stmtstat_ca_q1 is not null and fe.last_inbnd_stmtstat_cl_q1 is not null and fe.last_inbnd_stmtstat_assets_q1 is not null)
+          ) /
+          sum(fe.last_inbnd_stmtstat_assets_q1) 
+            filter(where fe.last_inbnd_stmtstat_ca_q1 is not null and fe.last_inbnd_stmtstat_cl_q1 is not null and fe.last_inbnd_stmtstat_assets_q1 is not null)    * 100 sum_last_ca_cl_q1_o_assets_q1_x100
+        , (
+            sum(fe.last_inbnd_stmtstat_ca_q1) 
+              filter(where fe.last_inbnd_stmtstat_ca_q1 is not null and fe.last_inbnd_stmtstat_cl_q1 is not null and fe.mktcap is not null) +
+            sum(fe.last_inbnd_stmtstat_cl_q1) 
+              filter(where fe.last_inbnd_stmtstat_ca_q1 is not null and fe.last_inbnd_stmtstat_cl_q1 is not null and fe.mktcap is not null)
+          ) /
+          sum(fe.mktcap) 
+            filter(where fe.last_inbnd_stmtstat_ca_q1 is not null and fe.last_inbnd_stmtstat_cl_q1 is not null and fe.mktcap is not null)                           * 100 sum_last_ca_cl_q1_o_mktcap_x100
+        from ( -- fe
+               -- explain  -- NO_INDEX+CASE ( over 60+ ... ) INDEX+CASE ( 25 seconds )
+               select
+                   fei.dateindex 
+              -- , 'sp_desc'::text col1_fct 
+              -- , case when fei.sp = '500' then 'sp500' else 'spnot500' end col2_fct
+              -- , case when fei.sp = '500' then 'sp500' else '_error_'  end col2_fct
+              -- , 'sector_fin_desc'::text col3_fct
+              -- , case when fei.sector_desc = 'Financial' then 'sectfinfinancial' else 'sectfinnotfinancial' end col4_fct
+                 , 'sp_desc'::text col1_fct, case when fei.sp = '500' then 'sp500' else '_error_' end col2_fct
+, 'sector_fin_desc'::text col3_fct, case when fei.sector_desc = 'Financial' then 'sectfinfinancial' else 'sectfinnotfinancial' end col4_fct
+
+                 , fei.last_inbnd_stmtstat_mktcap, fei.last_inbnd_stmtstat_assets_q1
+                 , fei.last_inbnd_stmtstat_liab_q1
+                 , fei.mktcap
+                 , fei.last_inbnd_stmtstat_netinc_q1
+                 , fei.last_inbnd_stmtstat_ncc_q1
+                 , fei.last_inbnd_stmtstat_tco_q1
+                 , fei.last_inbnd_stmtstat_tcf_q1
+                 , fei.last_inbnd_stmtstat_tci_q1
+                 , fei.last_inbnd_stmtstat_ca_q1
+                 , fei.last_inbnd_stmtstat_cl_q1
+                 , fei.pradchg_f04w_ann, fei.pradchg_f13w_ann, fei.pradchg_f26w_ann, fei.pradchg_f52w_ann
+                 , fei.price
+               from fe_data_store.si_finecon2 fei 
+                 where 1 = 1
+              -- and fei.sp in('500','400','600') -- 261,000 records
+              -- and fei.sp in('500')
+                 and fei.sp in('500')
+              -- and fei.dateindex = 17438
+                 
+             ) fe 
+           , index_weights w
+      where     fe.dateindex = w.dateindex
+              and fe.col1_fct = w.col1_fct  and fe.col2_fct = w.col2_fct  and fe.col3_fct = w.col3_fct  and fe.col4_fct = w.col4_fct
+      group by  fe.dateindex    -- potential expansion to 'grouping sets','cubes' ( if makes sense )
+                , fe.col1_fct, fe.col2_fct, fe.col3_fct, fe.col4_fct
+      order by  fe.dateindex
+                , fe.col1_fct, fe.col2_fct, fe.col3_fct, fe.col4_fct
+      ;
+
+
+-- [ USEFUL: KEEP ]
+-- NOV 29 2017 -- 101.00
+-- res <- Quandl('MULTPL/SP500_EARNINGS_MONTH') 
+-- '2017-03-31'
+-- NEED eom + INFLATION_ADJ CPI-U
+select 
+    co.* 
+  , t4q.earnings_x10_4q
+  , t4q.earnings_per_avg_share_x10_4q
+  , t4q.earnings_per_avg_share_x10_bal_4q 
+  , t3q.earnings_x13_3q
+  , t3q.earnings_per_avg_share_x13_3q
+  , t2q.earnings_x20_2q
+  , t2q.earnings_per_avg_share_x20_2q
+  , t1q.earnings_x40_1q
+  , t1q.earnings_per_avg_share_x40_1q 
+from (
+  select 
+      to_timestamp(fe.dateindex*3600*24)::date dateindex_dt_co
+    , (date_trunc('month', to_timestamp((fe.dateindex -5)*3600*24)::date) + interval '1 month' - interval '1 day')::date  dateindexeom_dt_co
+    , count(1) count_elig
+    , sum( mktcap / price ) / count(1) avg_shares 
+from fe_data_store.si_finecon2 fe
+where sp = '500'
+  and fe.netinc_q1 is not null
+  and fe.netinc_q2 is not null
+  and fe.netinc_q3 is not null
+  and fe.netinc_q4 is not null
+  and mktcap is not null
+  and price   is not null
+  group by dateindex
+  order by dateindex asc
+) co left join (
+select 
+    to_timestamp(fe.dateindex*3600*24)::date dateindex_dt_4q
+  , count(1) count_4q
+  , sum( netinc_q1 + netinc_q2 + netinc_q3 + netinc_q4 ) / count(1) / 100 * 4/4 earnings_x10_4q
+  , sum( mktcap / price ) / count(1) avg_shares                                                                                                        
+  , sum( netinc_q1 + netinc_q2 + netinc_q3 + netinc_q4 ) / sum( mktcap / price ) * 10 * 4/4 earnings_per_avg_share_x10_4q                                    
+  , sum( netinc_q1 + netinc_q2 + netinc_q3 + netinc_q4 ) / sum( mktcap / price ) / 29.8287359691438460 * 101.00 * 10 * 4/4 earnings_per_avg_share_x10_bal_4q 
+from fe_data_store.si_finecon2 fe
+where sp = '500'
+  and fe.netinc_q1 is not null
+  and fe.netinc_q2 is not null
+  and fe.netinc_q3 is not null
+  and fe.netinc_q4 is not null
+  and mktcap is not null
+  and price  is not null
+group by dateindex
+order by dateindex asc
+) t4q on co.dateindex_dt_co = t4q.dateindex_dt_4q left join (
+select 
+    to_timestamp(fe.dateindex*3600*24)::date dateindex_dt_3q
+  , sum( netinc_q1 + netinc_q2 + netinc_q3  ) / count(1) / 100 * 4/3 earnings_x13_3q                                                                                               
+  , sum( netinc_q1 + netinc_q2 + netinc_q3  ) / sum( mktcap / price ) * 10 * 4/3 earnings_per_avg_share_x13_3q                                    
+from fe_data_store.si_finecon2 fe
+where sp = '500'
+  and fe.netinc_q1 is not null
+  and fe.netinc_q2 is not null
+  and fe.netinc_q3 is not null
+  and fe.netinc_q4 is not null
+  and mktcap is not null
+  and price  is not null
+group by dateindex
+order by dateindex asc
+) t3q on co.dateindex_dt_co = t3q.dateindex_dt_3q left join (
+select 
+    to_timestamp(fe.dateindex*3600*24)::date dateindex_dt_2q
+  , sum( netinc_q1 + netinc_q2 ) / count(1) / 100 * 4/2 earnings_x20_2q                                                                                               
+  , sum( netinc_q1 + netinc_q2 ) / sum( mktcap / price ) * 10 * 4/2 earnings_per_avg_share_x20_2q                                    
+from fe_data_store.si_finecon2 fe
+where sp = '500'
+  and fe.netinc_q1 is not null
+  and fe.netinc_q2 is not null
+  and fe.netinc_q3 is not null
+  and fe.netinc_q4 is not null
+  and mktcap is not null
+  and price  is not null
+group by dateindex
+order by dateindex asc
+) t2q on co.dateindex_dt_co = t2q.dateindex_dt_2q left join (
+select 
+    to_timestamp(fe.dateindex*3600*24)::date dateindex_dt_1q
+  , sum( netinc_q1 ) / count(1) / 100 * 4/1 earnings_x40_1q                                                                                               
+  , sum( netinc_q1 ) / sum( mktcap / price ) * 10 * 4/1 earnings_per_avg_share_x40_1q                                    
+from fe_data_store.si_finecon2 fe
+where sp = '500'
+  and fe.netinc_q1 is not null
+  and fe.netinc_q2 is not null
+  and fe.netinc_q3 is not null
+  and fe.netinc_q4 is not null
+  and mktcap is not null
+  and price  is not null
+group by dateindex
+order by dateindex asc
+) t1q on co.dateindex_dt_co = t1q.dateindex_dt_1q 
+order by co.dateindex_dt_co
+;
+
+
+
+-- [ USEFUL: KEEP ]
+-- quandle equivalent ?? -- ???
+select 
+    co.* 
+  , t4q.mktcap_o_netinc_d10_x10_4q 
+  , t3q.mktcap_o_netinc_d13_x10_3q 
+  , t2q.mktcap_o_netinc_d20_x10_2q
+  , t1q.mktcap_o_netinc_d40_x10_1q
+from (
+  select 
+      to_timestamp(fe.dateindex*3600*24)::date dateindex_dt_co
+    , (date_trunc('month', to_timestamp((fe.dateindex -5)*3600*24)::date) + interval '1 month' - interval '1 day')::date  dateindexeom_dt_co
+    , count(1) count_elig_mktcap_o_netinc
+from fe_data_store.si_finecon2 fe
+where sp = '500'
+  and fe.netinc_q1 is not null
+  and fe.netinc_q2 is not null
+  and fe.netinc_q3 is not null
+  and fe.netinc_q4 is not null
+  and mktcap is not null
+  group by dateindex
+  order by dateindex asc
+) co left join (
+select 
+    to_timestamp(fe.dateindex*3600*24)::date dateindex_dt_4q
+  , sum( mktcap ) / ( ( sum( netinc_q1 ) + sum( netinc_q2 ) + sum( netinc_q3 ) + sum( netinc_q4 ) ) * 10 * 4/4 ) * 10 mktcap_o_netinc_d10_x10_4q                                   
+from fe_data_store.si_finecon2 fe
+where sp = '500'
+  and fe.netinc_q1 is not null
+  and fe.netinc_q2 is not null
+  and fe.netinc_q3 is not null
+  and fe.netinc_q4 is not null
+  and mktcap is not null
+group by dateindex
+order by dateindex asc
+) t4q on co.dateindex_dt_co = t4q.dateindex_dt_4q left join (
+select 
+    to_timestamp(fe.dateindex*3600*24)::date dateindex_dt_3q
+  , sum( mktcap ) / ( ( sum( netinc_q1 ) + sum( netinc_q2 ) + sum( netinc_q3 ) ) * 10 * 4/3 ) * 10 mktcap_o_netinc_d13_x10_3q 
+from fe_data_store.si_finecon2 fe
+where sp = '500'
+  and fe.netinc_q1 is not null
+  and fe.netinc_q2 is not null
+  and fe.netinc_q3 is not null
+  and fe.netinc_q4 is not null
+  and mktcap is not null
+group by dateindex
+order by dateindex asc
+) t3q on co.dateindex_dt_co = t3q.dateindex_dt_3q left join (
+select 
+    to_timestamp(fe.dateindex*3600*24)::date dateindex_dt_2q
+  , sum( mktcap ) / ( ( sum( netinc_q1 ) + sum( netinc_q2 ) ) * 10 * 4/2 ) * 10 mktcap_o_netinc_d20_x10_2q                                      
+from fe_data_store.si_finecon2 fe
+where sp = '500'
+  and fe.netinc_q1 is not null
+  and fe.netinc_q2 is not null
+  and fe.netinc_q3 is not null
+  and fe.netinc_q4 is not null
+  and mktcap is not null
+group by dateindex
+order by dateindex asc
+) t2q on co.dateindex_dt_co = t2q.dateindex_dt_2q left join (
+select 
+    to_timestamp(fe.dateindex*3600*24)::date dateindex_dt_1q                                                                                              
+  , sum( mktcap ) / ( (sum( netinc_q1 ) ) * 10 * 4/1 ) * 10 mktcap_o_netinc_d40_x10_1q                                    
+from fe_data_store.si_finecon2 fe
+where sp = '500'
+  and fe.netinc_q1 is not null
+  and fe.netinc_q2 is not null
+  and fe.netinc_q3 is not null
+  and fe.netinc_q4 is not null
+  and mktcap is not null
+group by dateindex
+order by dateindex asc
+) t1q on co.dateindex_dt_co = t1q.dateindex_dt_1q 
+order by co.dateindex_dt_co
+;
+
+
+
+
+
+
+-- not useful(not interpretable)
+select 
+    co.* 
+
+  , t4q.mktcap_o_ncc_q_4q_ann  
+  , t4q.mktcap_o_tco_q_4q_ann 
+  , t4q.mktcap_o_tcf_q_4q_ann 
+  , t4q.mktcap_o_tci_q_4q_ann 
+  , t4q.mktcap_o_ere_q_4q_ann 
+
+  , t3q.mktcap_o_ncc_q_3q_ann  
+  , t3q.mktcap_o_tco_q_3q_ann 
+  , t3q.mktcap_o_tcf_q_3q_ann 
+  , t3q.mktcap_o_tci_q_3q_ann 
+  , t3q.mktcap_o_ere_q_3q_ann 
+
+  , t2q.mktcap_o_ncc_q_2q_ann  
+  , t2q.mktcap_o_tco_q_2q_ann 
+  , t2q.mktcap_o_tcf_q_2q_ann 
+  , t2q.mktcap_o_tci_q_2q_ann 
+  , t2q.mktcap_o_ere_q_2q_ann
+
+  , t1q.mktcap_o_ncc_q_1q_ann  
+  , t1q.mktcap_o_tco_q_1q_ann 
+  , t1q.mktcap_o_tcf_q_1q_ann 
+  , t1q.mktcap_o_tci_q_1q_ann 
+  , t1q.mktcap_o_ere_q_1q_ann
+
+  ----
+
+  , t4q.mktcap_o_ncc_q_4q_ann  
+  , t3q.mktcap_o_ncc_q_3q_ann  
+  , t2q.mktcap_o_ncc_q_2q_ann 
+  , t1q.mktcap_o_ncc_q_1q_ann 
+
+  , t4q.mktcap_o_tco_q_4q_ann  
+  , t3q.mktcap_o_tco_q_3q_ann  
+  , t2q.mktcap_o_tco_q_2q_ann 
+  , t1q.mktcap_o_tco_q_1q_ann 
+
+  , t4q.mktcap_o_tcf_q_4q_ann  
+  , t3q.mktcap_o_tcf_q_3q_ann  
+  , t2q.mktcap_o_tcf_q_2q_ann 
+  , t1q.mktcap_o_tcf_q_1q_ann 
+
+  , t4q.mktcap_o_tci_q_4q_ann  
+  , t3q.mktcap_o_tci_q_3q_ann  
+  , t2q.mktcap_o_tci_q_2q_ann 
+  , t1q.mktcap_o_tci_q_1q_ann 
+
+  , t4q.mktcap_o_ere_q_4q_ann  
+  , t3q.mktcap_o_ere_q_3q_ann  
+  , t2q.mktcap_o_ere_q_2q_ann 
+  , t1q.mktcap_o_ere_q_1q_ann 
+
+from (
+  select 
+      to_timestamp(fe.dateindex*3600*24)::date dateindex_dt_co
+    , (date_trunc('month', to_timestamp((fe.dateindex -5)*3600*24)::date) + interval '1 month' - interval '1 day')::date  dateindexeom_dt_co
+    , count(1) count_elig_mktcap_o_statz
+from fe_data_store.si_finecon2 fe
+where sp = '500'
+  and fe.ncc_q1 is not null
+  and fe.tco_q1 is not null
+  and fe.tcf_q1 is not null
+  and fe.tci_q1 is not null
+  and fe.ere_q1 is not null
+  and fe.ncc_q2 is not null
+  and fe.tco_q2 is not null
+  and fe.tcf_q2 is not null
+  and fe.tci_q2 is not null
+  and fe.ere_q2 is not null
+  and fe.ncc_q3 is not null
+  and fe.tco_q3 is not null
+  and fe.tcf_q3 is not null
+  and fe.tci_q3 is not null
+  and fe.ere_q3 is not null
+  and fe.ncc_q4 is not null
+  and fe.tco_q4 is not null
+  and fe.tcf_q4 is not null
+  and fe.tci_q4 is not null
+  and fe.ere_q4 is not null
+  and mktcap is not null
+  group by dateindex
+  order by dateindex asc
+) co left join (
+select 
+    to_timestamp(fe.dateindex*3600*24)::date dateindex_dt_4q
+  , sum( mktcap ) / ( ( sum( ncc_q1 ) + sum( ncc_q2 ) + sum( ncc_q3 ) + sum( ncc_q4 ) ) * 10 * 4/4 ) * 10 mktcap_o_ncc_q_4q_ann  
+  , sum( mktcap ) / ( ( sum( tco_q1 ) + sum( tco_q2 ) + sum( tco_q3 ) + sum( tco_q4 ) ) * 10 * 4/4 ) * 10 mktcap_o_tco_q_4q_ann 
+  , sum( mktcap ) / ( ( sum( tcf_q1 ) + sum( tcf_q2 ) + sum( tcf_q3 ) + sum( tcf_q4 ) ) * 10 * 4/4 ) * 10 mktcap_o_tcf_q_4q_ann 
+  , sum( mktcap ) / ( ( sum( tci_q1 ) + sum( tci_q2 ) + sum( tci_q3 ) + sum( tci_q4 ) ) * 10 * 4/4 ) * 10 mktcap_o_tci_q_4q_ann 
+  , sum( mktcap ) / ( ( sum( ere_q1 ) + sum( ere_q2 ) + sum( ere_q3 ) + sum( ere_q4 ) ) * 10 * 4/4 ) * 10 mktcap_o_ere_q_4q_ann 
+from fe_data_store.si_finecon2 fe
+where sp = '500'
+  and fe.ncc_q1 is not null
+  and fe.tco_q1 is not null
+  and fe.tcf_q1 is not null
+  and fe.tci_q1 is not null
+  and fe.ere_q1 is not null
+  and fe.ncc_q2 is not null
+  and fe.tco_q2 is not null
+  and fe.tcf_q2 is not null
+  and fe.tci_q2 is not null
+  and fe.ere_q2 is not null
+  and fe.ncc_q3 is not null
+  and fe.tco_q3 is not null
+  and fe.tcf_q3 is not null
+  and fe.tci_q3 is not null
+  and fe.ere_q3 is not null
+  and fe.ncc_q4 is not null
+  and fe.tco_q4 is not null
+  and fe.tcf_q4 is not null
+  and fe.tci_q4 is not null
+  and fe.ere_q4 is not null
+  and mktcap is not null
+group by dateindex
+order by dateindex asc
+) t4q on co.dateindex_dt_co = t4q.dateindex_dt_4q left join (
+select 
+    to_timestamp(fe.dateindex*3600*24)::date dateindex_dt_3q
+  , sum( mktcap ) / ( ( sum( ncc_q1 ) + sum( ncc_q2 ) + sum( ncc_q3 ) ) * 10 * 4/3 ) * 10 mktcap_o_ncc_q_3q_ann
+  , sum( mktcap ) / ( ( sum( tco_q1 ) + sum( tco_q2 ) + sum( tco_q3 ) ) * 10 * 4/3 ) * 10 mktcap_o_tco_q_3q_ann
+  , sum( mktcap ) / ( ( sum( tcf_q1 ) + sum( tcf_q2 ) + sum( tcf_q3 ) ) * 10 * 4/3 ) * 10 mktcap_o_tcf_q_3q_ann
+  , sum( mktcap ) / ( ( sum( tci_q1 ) + sum( tci_q2 ) + sum( tci_q3 ) ) * 10 * 4/3 ) * 10 mktcap_o_tci_q_3q_ann
+  , sum( mktcap ) / ( ( sum( ere_q1 ) + sum( ere_q2 ) + sum( ere_q3 ) ) * 10 * 4/3 ) * 10 mktcap_o_ere_q_3q_ann
+from fe_data_store.si_finecon2 fe
+where sp = '500'
+  and fe.ncc_q1 is not null
+  and fe.tco_q1 is not null
+  and fe.tcf_q1 is not null
+  and fe.tci_q1 is not null
+  and fe.ere_q1 is not null
+  and fe.ncc_q2 is not null
+  and fe.tco_q2 is not null
+  and fe.tcf_q2 is not null
+  and fe.tci_q2 is not null
+  and fe.ere_q2 is not null
+  and fe.ncc_q3 is not null
+  and fe.tco_q3 is not null
+  and fe.tcf_q3 is not null
+  and fe.tci_q3 is not null
+  and fe.ere_q3 is not null
+  and fe.ncc_q4 is not null
+  and fe.tco_q4 is not null
+  and fe.tcf_q4 is not null
+  and fe.tci_q4 is not null
+  and fe.ere_q4 is not null
+  and mktcap is not null
+group by dateindex
+order by dateindex asc
+) t3q on co.dateindex_dt_co = t3q.dateindex_dt_3q left join (
+select 
+    to_timestamp(fe.dateindex*3600*24)::date dateindex_dt_2q
+  , sum( mktcap ) / ( ( sum( ncc_q1 ) + sum( ncc_q2 ) ) * 10 * 4/2 ) * 10 mktcap_o_ncc_q_2q_ann 
+  , sum( mktcap ) / ( ( sum( tco_q1 ) + sum( tco_q2 ) ) * 10 * 4/2 ) * 10 mktcap_o_tco_q_2q_ann
+  , sum( mktcap ) / ( ( sum( tcf_q1 ) + sum( tcf_q2 ) ) * 10 * 4/2 ) * 10 mktcap_o_tcf_q_2q_ann
+  , sum( mktcap ) / ( ( sum( tci_q1 ) + sum( tci_q2 ) ) * 10 * 4/2 ) * 10 mktcap_o_tci_q_2q_ann
+  , sum( mktcap ) / ( ( sum( ere_q1 ) + sum( ere_q2 ) ) * 10 * 4/2 ) * 10 mktcap_o_ere_q_2q_ann
+from fe_data_store.si_finecon2 fe
+where sp = '500'
+  and fe.ncc_q1 is not null
+  and fe.tco_q1 is not null
+  and fe.tcf_q1 is not null
+  and fe.tci_q1 is not null
+  and fe.ere_q1 is not null
+  and fe.ncc_q2 is not null
+  and fe.tco_q2 is not null
+  and fe.tcf_q2 is not null
+  and fe.tci_q2 is not null
+  and fe.ere_q2 is not null
+  and fe.ncc_q3 is not null
+  and fe.tco_q3 is not null
+  and fe.tcf_q3 is not null
+  and fe.tci_q3 is not null
+  and fe.ere_q3 is not null
+  and fe.ncc_q4 is not null
+  and fe.tco_q4 is not null
+  and fe.tcf_q4 is not null
+  and fe.tci_q4 is not null
+  and fe.ere_q4 is not null
+  and mktcap is not null
+group by dateindex
+order by dateindex asc
+) t2q on co.dateindex_dt_co = t2q.dateindex_dt_2q left join (
+select 
+    to_timestamp(fe.dateindex*3600*24)::date dateindex_dt_1q                                                                                              
+  , sum( mktcap ) / ( ( sum( ncc_q1 ) ) * 10 * 4/1 ) * 10 mktcap_o_ncc_q_1q_ann  
+  , sum( mktcap ) / ( ( sum( tco_q1 ) ) * 10 * 4/1 ) * 10 mktcap_o_tco_q_1q_ann
+  , sum( mktcap ) / ( ( sum( tcf_q1 ) ) * 10 * 4/1 ) * 10 mktcap_o_tcf_q_1q_ann
+  , sum( mktcap ) / ( ( sum( tci_q1 ) ) * 10 * 4/1 ) * 10 mktcap_o_tci_q_1q_ann
+  , sum( mktcap ) / ( ( sum( ere_q1 ) ) * 10 * 4/1 ) * 10 mktcap_o_ere_q_1q_ann
+  from fe_data_store.si_finecon2 fe
+where sp = '500'
+  and fe.ncc_q1 is not null
+  and fe.tco_q1 is not null
+  and fe.tcf_q1 is not null
+  and fe.tci_q1 is not null
+  and fe.ere_q1 is not null
+  and fe.ncc_q2 is not null
+  and fe.tco_q2 is not null
+  and fe.tcf_q2 is not null
+  and fe.tci_q2 is not null
+  and fe.ere_q2 is not null
+  and fe.ncc_q3 is not null
+  and fe.tco_q3 is not null
+  and fe.tcf_q3 is not null
+  and fe.tci_q3 is not null
+  and fe.ere_q3 is not null
+  and fe.ncc_q4 is not null
+  and fe.tco_q4 is not null
+  and fe.tcf_q4 is not null
+  and fe.tci_q4 is not null
+  and fe.ere_q4 is not null
+  and mktcap is not null
+group by dateindex
+order by dateindex asc
+) t1q on co.dateindex_dt_co = t1q.dateindex_dt_1q 
+order by co.dateindex_dt_co
+;
+
+
+
+-- cash_flow per ave share ( not useful )
+select 
+    co.* 
+  , t4q.cashflow_x10_4q
+  , t4q.cashflow_per_avg_share_x10_4q
+  , t3q.cashflow_x13_3q
+  , t3q.cashflow_per_avg_share_x13_3q
+  , t2q.cashflow_x20_2q
+  , t2q.cashflow_per_avg_share_x20_2q
+  , t1q.cashflow_x40_1q
+  , t1q.cashflow_per_avg_share_x40_1q 
+from (
+  select 
+      to_timestamp(fe.dateindex*3600*24)::date dateindex_dt_co
+    , (date_trunc('month', to_timestamp((fe.dateindex -5)*3600*24)::date) + interval '1 month' - interval '1 day')::date  dateindexeom_dt_co
+    , count(1) count_elig
+    , sum( mktcap / price ) / count(1) avg_shares 
+from fe_data_store.si_finecon2 fe
+where sp = '500'
+  and fe.ncc_q1 is not null
+  and fe.ncc_q2 is not null
+  and fe.ncc_q3 is not null
+  and fe.ncc_q4 is not null
+  and mktcap is not null
+  and price   is not null
+  group by dateindex
+  order by dateindex asc
+) co left join (
+select 
+    to_timestamp(fe.dateindex*3600*24)::date dateindex_dt_4q
+  , count(1) count_4q
+  , sum( ncc_q1 + ncc_q2 + ncc_q3 + ncc_q4 ) / count(1) / 100 * 4/4 cashflow_x10_4q
+  , sum( mktcap / price ) / count(1) avg_shares                                                                                                        
+  , sum( ncc_q1 + ncc_q2 + ncc_q3 + ncc_q4 ) / sum( mktcap / price ) * 10 * 4/4 cashflow_per_avg_share_x10_4q                                     
+from fe_data_store.si_finecon2 fe
+where sp = '500'
+  and fe.ncc_q1 is not null
+  and fe.ncc_q2 is not null
+  and fe.ncc_q3 is not null
+  and fe.ncc_q4 is not null
+  and mktcap is not null
+  and price  is not null
+group by dateindex
+order by dateindex asc
+) t4q on co.dateindex_dt_co = t4q.dateindex_dt_4q left join (
+select 
+    to_timestamp(fe.dateindex*3600*24)::date dateindex_dt_3q
+  , sum( ncc_q1 + ncc_q2 + ncc_q3  ) / count(1) / 100 * 4/3 cashflow_x13_3q                                                                                               
+  , sum( ncc_q1 + ncc_q2 + ncc_q3  ) / sum( mktcap / price ) * 10 * 4/3 cashflow_per_avg_share_x13_3q                                    
+from fe_data_store.si_finecon2 fe
+where sp = '500'
+  and fe.ncc_q1 is not null
+  and fe.ncc_q2 is not null
+  and fe.ncc_q3 is not null
+  and fe.ncc_q4 is not null
+  and mktcap is not null
+  and price  is not null
+group by dateindex
+order by dateindex asc
+) t3q on co.dateindex_dt_co = t3q.dateindex_dt_3q left join (
+select 
+    to_timestamp(fe.dateindex*3600*24)::date dateindex_dt_2q
+  , sum( ncc_q1 + ncc_q2 ) / count(1) / 100 * 4/2 cashflow_x20_2q                                                                                               
+  , sum( ncc_q1 + ncc_q2 ) / sum( mktcap / price ) * 10 * 4/2 cashflow_per_avg_share_x20_2q                                    
+from fe_data_store.si_finecon2 fe
+where sp = '500'
+  and fe.ncc_q1 is not null
+  and fe.ncc_q2 is not null
+  and fe.ncc_q3 is not null
+  and fe.ncc_q4 is not null
+  and mktcap is not null
+  and price  is not null
+group by dateindex
+order by dateindex asc
+) t2q on co.dateindex_dt_co = t2q.dateindex_dt_2q left join (
+select 
+    to_timestamp(fe.dateindex*3600*24)::date dateindex_dt_1q
+  , sum( ncc_q1 ) / count(1) / 100 * 4/1 cashflow_x40_1q                                                                                               
+  , sum( ncc_q1 ) / sum( mktcap / price ) * 10 * 4/1 cashflow_per_avg_share_x40_1q                                    
+from fe_data_store.si_finecon2 fe
+where sp = '500'
+  and fe.ncc_q1 is not null
+  and fe.ncc_q2 is not null
+  and fe.ncc_q3 is not null
+  and fe.ncc_q4 is not null
+  and mktcap is not null
+  and price  is not null
+group by dateindex
+order by dateindex asc
+) t1q on co.dateindex_dt_co = t1q.dateindex_dt_1q 
+order by co.dateindex_dt_co
+;
+
+
+
+-- may be 'barely' useful
+-- exchange rate effects per ave share 
+select 
+    co.* 
+  , t4q.exchrateeffects_x10_4q
+  , t4q.exchrateeffects_per_avg_share_x10_4q
+  , t3q.exchrateeffects_x13_3q
+  , t3q.exchrateeffects_per_avg_share_x13_3q
+  , t2q.exchrateeffects_x20_2q
+  , t2q.exchrateeffects_per_avg_share_x20_2q
+  , t1q.exchrateeffects_x40_1q
+  , t1q.exchrateeffects_per_avg_share_x40_1q 
+from (
+  select 
+      to_timestamp(fe.dateindex*3600*24)::date dateindex_dt_co
+    , (date_trunc('month', to_timestamp((fe.dateindex -5)*3600*24)::date) + interval '1 month' - interval '1 day')::date  dateindexeom_dt_co
+    , count(1) count_elig
+    , sum( mktcap / price ) / count(1) avg_shares 
+from fe_data_store.si_finecon2 fe
+where sp = '500'
+  and fe.ere_q1 is not null
+  and fe.ere_q2 is not null
+  and fe.ere_q3 is not null
+  and fe.ere_q4 is not null
+  and mktcap is not null
+  and price   is not null
+  group by dateindex
+  order by dateindex asc
+) co left join (
+select 
+    to_timestamp(fe.dateindex*3600*24)::date dateindex_dt_4q
+  , count(1) count_4q
+  , sum( ere_q1 + ere_q2 + ere_q3 + ere_q4 ) / count(1) / 100 * 4/4 exchrateeffects_x10_4q
+  , sum( mktcap / price ) / count(1) avg_shares                                                                                                        
+  , sum( ere_q1 + ere_q2 + ere_q3 + ere_q4 ) / sum( mktcap / price ) * 10 * 4/4 exchrateeffects_per_avg_share_x10_4q                                     
+from fe_data_store.si_finecon2 fe
+where sp = '500'
+  and fe.ere_q1 is not null
+  and fe.ere_q2 is not null
+  and fe.ere_q3 is not null
+  and fe.ere_q4 is not null
+  and mktcap is not null
+  and price  is not null
+group by dateindex
+order by dateindex asc
+) t4q on co.dateindex_dt_co = t4q.dateindex_dt_4q left join (
+select 
+    to_timestamp(fe.dateindex*3600*24)::date dateindex_dt_3q
+  , sum( ere_q1 + ere_q2 + ere_q3  ) / count(1) / 100 * 4/3 exchrateeffects_x13_3q                                                                                               
+  , sum( ere_q1 + ere_q2 + ere_q3  ) / sum( mktcap / price ) * 10 * 4/3 exchrateeffects_per_avg_share_x13_3q                                    
+from fe_data_store.si_finecon2 fe
+where sp = '500'
+  and fe.ere_q1 is not null
+  and fe.ere_q2 is not null
+  and fe.ere_q3 is not null
+  and fe.ere_q4 is not null
+  and mktcap is not null
+  and price  is not null
+group by dateindex
+order by dateindex asc
+) t3q on co.dateindex_dt_co = t3q.dateindex_dt_3q left join (
+select 
+    to_timestamp(fe.dateindex*3600*24)::date dateindex_dt_2q
+  , sum( ere_q1 + ere_q2 ) / count(1) / 100 * 4/2 exchrateeffects_x20_2q                                                                                               
+  , sum( ere_q1 + ere_q2 ) / sum( mktcap / price ) * 10 * 4/2 exchrateeffects_per_avg_share_x20_2q                                    
+from fe_data_store.si_finecon2 fe
+where sp = '500'
+  and fe.ere_q1 is not null
+  and fe.ere_q2 is not null
+  and fe.ere_q3 is not null
+  and fe.ere_q4 is not null
+  and mktcap is not null
+  and price  is not null
+group by dateindex
+order by dateindex asc
+) t2q on co.dateindex_dt_co = t2q.dateindex_dt_2q left join (
+select 
+    to_timestamp(fe.dateindex*3600*24)::date dateindex_dt_1q
+  , sum( ere_q1 ) / count(1) / 100 * 4/1 exchrateeffects_x40_1q                                                                                               
+  , sum( ere_q1 ) / sum( mktcap / price ) * 10 * 4/1 exchrateeffects_per_avg_share_x40_1q                                    
+from fe_data_store.si_finecon2 fe
+where sp = '500'
+  and fe.ere_q1 is not null
+  and fe.ere_q2 is not null
+  and fe.ere_q3 is not null
+  and fe.ere_q4 is not null
+  and mktcap is not null
+  and price  is not null
+group by dateindex
+order by dateindex asc
+) t1q on co.dateindex_dt_co = t1q.dateindex_dt_1q 
+order by co.dateindex_dt_co
+;
+
+
+-- KEEPISH ( BUT NOT USEFUL TO INVEST IN )
+-- p03/f03 - very little better in top 1% with very high volitility ( i also did 06 12 - .... same conclusion )
+-- at 1% ntiles are VERY NOISY
+-- buyback yield and future returns in the s&p 500
+-- play swap (03->06->09->12)
+--
+-- RUN OF DEC 21, 2017
+-- 24.3288997514375727828629;  158.09250591005598519147611024763575849612115188;  0.85510875427705929837636728513938755179137951;  1
+-- 
+explain
+select 
+    avg       (sq2.f03_prchchg_ann) over (partition by sq2.ntile_100_p03_bby_ann)        avg_f03_prchchg_ann
+  , stddev_pop(sq2.f03_prchchg_ann) over (partition by sq2.ntile_100_p03_bby_ann) stddev_pop_f03_prchchg_ann
+  , (avg      (sq2.f03_prchchg_ann) over (partition by sq2.ntile_100_p03_bby_ann)  - 0) / nullif(stddev_pop(case when sq2.f03_prchchg_ann > 0 then 0 else sq2.f03_prchchg_ann end) over (partition by sq2.ntile_100_p03_bby_ann),0) tsortino_f03_prchchg_ann
+  , sq2.* from 
+  (
+  select 
+      ntile(100) over (order by sq1.p03_bby_ann desc) ntile_100_p03_bby_ann
+    , sq1.* from 
+    (
+    select now.dateindex, now.ticker, now.company
+      , (( p03.mktcap  / nullif(p03.price,0) ) - ( now.mktcap  / nullif(now.price,0) )) / nullif( now.mktcap  / nullif(now.price,0),0) * 4.0 * 100.0 p03_bby_ann
+      , ((                      f03.price    ) - (                      now.price    )) / nullif(                         now.price,0) * 4.0 * 100.0 f03_prchchg_ann
+    from    fe_data_store.si_finecon2 p03
+          , fe_data_store.si_finecon2 now
+          , fe_data_store.si_finecon2 f03
+    where (now.dateindexeom = p03.dateindexf03eom and now.company_id = p03.company_id) and
+          (now.dateindexeom = f03.dateindexp03eom and now.company_id = f03.company_id) and
+          (now.split_date is null or now.split_date + 93 < now.dateindexeom) and -- did not recent split/combine
+          now.sp = '500' and
+          now.dateindex > 15000 -- and -- = -- now.dateindex = 17409 and -- > 15000 -- 2011+ ( over ~ last 7 years )
+    ) sq1
+  ) sq2
+order by sq2.p03_bby_ann desc 
 
 
