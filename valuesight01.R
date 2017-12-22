@@ -1454,7 +1454,16 @@ get_fred_zimmermann_equity_premium_eom_xts <- function() {
 # ret <- get_fred_zimmermann_equity_premium_eom_xts()
 # dygraphs::dygraph(ret)
 # compare TO https://fredblog.stlouisfed.org/2016/07/the-equity-premium/
-
+#
+# zimmermann_equity_premium_sma_4              <-  get_sma_xts(fred_zimmermann_equity_premium,4)
+# colnames(zimmermann_equity_premium_sma_4)[1] <- "zimmermann_equity_premium_sma_4"
+# # dygraphs::dygraph(zimmermann_equity_premium_sma_4)
+# zimmermann_equity_premium_sma_4_pctchg_2 <- get_pctchg_xts(zimmermann_equity_premium_sma_4,2)
+# colnames(zimmermann_equity_premium_sma_4_pctchg_2)[1] <- "zimmermann_equity_premium_sma_4_pctchg_2"
+# # dygraphs::dygraph(zimmermann_equity_premium_sma_4_pctchg_2)
+# zimmermann_equity_premium_sma_4_pctchg_2_smrank_10_10 <- get_smrank_xts(zimmermann_equity_premium_sma_4_pctchg_2,10,10)
+# colnames(zimmermann_equity_premium_sma_4_pctchg_2_smrank_10_10)[1] <- "zimmermann_equity_premium_sma_4_pctchg_2_smrank_10_10"
+# dygraphs::dygraph(zimmermann_equity_premium_sma_4_pctchg_2_smrank_10_10)
 
 
 
