@@ -438,11 +438,11 @@ bookmark_here <- 1
 #   #   http://www.multpl.com/s-p-500-real-earnings-growth/table/by-quarter
 #   #   
 #   #   S&P 500 PE Ratio by Month ( MATH) ( SandP.500.PE.Ratio )
-#   #   Price to earnings ratio, based on trailing twelve month âas reportedâ
+#   #   Price to earnings ratio, based on trailing twelve month __AS_REPORTED__
 #   #   http://www.multpl.com/table?f=m
 #   
 #   #   S&P 500 Book Value Per Share by Quarter ( "SandP.500.BV.Per.Share" )
-#   #   S&P 500 book value per share â non-inflation adjusted current dollars. 
+#   #   S&P 500 book value per share ___ non-inflation adjusted current dollars. 
 #   #   http://www.multpl.com/s-p-500-book-value/table/by-quarter
 #   
 #   # web site and owner
@@ -474,7 +474,7 @@ bookmark_here <- 1
 #   
 #   require(XML)     # NEED readHTMLTable
 #   # Hadley Wickham # web scraping 
-#   require(rvest)   # imports XML  masked from âpackage:XMLâ: xml
+#   require(rvest)   # imports XML  masked from __PACKAGE_XML_xml__
 #   # IF uncommented : require(XML), USE: XML::xml to access XML::xml
 #   require(xts)     # as.xts STUFF
 #   
@@ -702,11 +702,11 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     #  2. incomplete data exists of current month 
     # THEREFORE
     # this IS       the end of the PREVIOUS MONTH
-    # finDate.TestTrain.Global.Latest    <- "2017-05-31"  # 2014-12-31(perfect) 
+    # finDate.TestTrain.Global.Latest    <- "2017-11-30"  # 2014-12-31(perfect) 
                                                           # march 21, 2015 run: "2015-01-31": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
                                                           # march 21, 2015 run: "2015-02-28": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
                                                           # march 21, 2015 run: "2015-03-31": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
-    finDate.TestTrain.Global.Latest      <- "2017-05-31"  # april  6, 2015 run: "2015-03-31": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
+    finDate.TestTrain.Global.Latest      <- "2017-11-30"  # april  6, 2015 run: "2015-03-31": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
     
     # training and TRUE tests
     list(Test2001 = list(Train=list(initDate = initData.TestTrain.Global.Earliest,finDate ="1998-12-31"),
@@ -1714,7 +1714,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     # by Jill Mislinski
     # http://www.advisorperspectives.com/dshort/updates/ISM-Manufacturing
     # 
-    # "The June PMIï¿½ registered 53.2 percent, an increase of 1.9 percentage points 
+    # "The June _PMI_ registered 53.2 percent, an increase of 1.9 percentage points 
     # from the May reading of 51.3 percent.
     # 
     # Today the Institute for Supply Management published its 
@@ -3080,7 +3080,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     
     # 
     # DON'T FORGET THAT in R Studio
-    # setwd(""W:/New_Economics/rcsnsight1.340"") # getwd()
+    # setwd("W:/New_Economics/rcsnsight1.340") # getwd()
     # 
     # CHECK THAT THE LOADED .R FILE IN THE TAB (hover over) 
     # HAS THE SAME PATH AS THE 'setwd'
