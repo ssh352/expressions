@@ -3430,7 +3430,11 @@ verify_return_dates <- function(dateindex = NULL, months_limit = NULL, within_ba
     require(stringr)
     require(lubridate)
     # uses zoo::as.Date.integer, zoo::as.Date.yearmon, zoo::as.yearmon
-    # uses Hmisc::Hmisc::trunc.POSIXt
+    # uses Hmisc::truncPOSIXt
+    #   minor README correction spelling - trunPOSIXt to truncPOSIXt ( with 'c' ) #86
+    #   https://github.com/harrelfe/Hmisc/issues/86
+    #   Hmisc::trunc.POSIXt -> Hmisc::truncPOSIXt
+    
     
     if(is.null(months_limit)) stop("must supply a number of months: e.g. months_limit = 38")
 
@@ -3488,7 +3492,7 @@ verify_return_dates <- function(dateindex = NULL, months_limit = NULL, within_ba
     # this month
     (now_date - within_back) %m+% months(1) %>%
       # 1st day of next month # last day of this month
-      Hmisc::trunc.POSIXt(., units='months') %m+% days(-1) %>% 
+      Hmisc::truncPOSIXt(., units='months') %m+% days(-1) %>% 
         zoo::as.Date(.)  %>%
           # add in lwd ( Sat or Sun falls back to Fri)
           lapply(.,function(x) {  
@@ -3508,7 +3512,7 @@ verify_return_dates <- function(dateindex = NULL, months_limit = NULL, within_ba
     # previous Nth(months_limit) month back
     (now_date - within_back) %m+% months(-months_limit) %>%
       # 1st day of previous Nth month
-      Hmisc::trunc.POSIXt(., units='months')  %>%
+      Hmisc::truncPOSIXt(., units='months')  %>%
         # N(months_limit) or so months
         seq(., by = 'month', length.out = months_limit) %m+% 
           # last day of month
@@ -3532,7 +3536,7 @@ verify_return_dates <- function(dateindex = NULL, months_limit = NULL, within_ba
     # next month
     (now_date - within_back) %m+% months(1) %>%
       # 1st day of next month
-      Hmisc::trunc.POSIXt(., units='months') %>%
+      Hmisc::truncPOSIXt(., units='months') %>%
         # N(months_limit) or so months
         seq(., by = 'month', length.out = months_limit) %m+% 
           # last day of month
@@ -6594,11 +6598,11 @@ get_fred_inflation_cpiu_eom_xts <- function() {
   require(quantmod) # attaches zoo ... uses zoo::as.Date
   require(lubridate)
   require(magrittr)
-  # uses Hmisc::trunc.POSIXt
+  # uses Hmisc::truncPOSIXt
   
   CPIAUCNS <- getSymbols("CPIAUCNS", src = "FRED", auto.assign = FALSE)  # 1912-12-31
   temp <- CPIAUCNS
-  index(temp) <- (zoo::as.Date(index(temp)) - 5L) %m+% months(1) %>% Hmisc::trunc.POSIXt(., units='months') %m+% days(-1) %>%  zoo::as.Date(.)
+  index(temp) <- (zoo::as.Date(index(temp)) - 5L) %m+% months(1) %>% Hmisc::truncPOSIXt(., units='months') %m+% days(-1) %>%  zoo::as.Date(.)
   colnames(temp)[1] <- tolower(colnames(temp)[1])
   fred_inflation_cpiu_eom_xts <- temp
   rm(temp)
@@ -9926,4 +9930,4 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
 # quantmod::getSymbols("^GSPC", from = "1940-01-01")
 # rm(list=setdiff(ls(all.names=TRUE),c("con","cid","GSPC"))); debugSource('W:/R-3.4._/finecon01.R'); debugSource('W:/R-3.4._/goodsight01.R');verify_connection();options(upsert_temp_is_temporary=Inf)
 
- 
+
