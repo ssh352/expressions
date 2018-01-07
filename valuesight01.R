@@ -1198,6 +1198,50 @@ get_fred_wilshire5000_eom_xts <- function() {
 
 
 
+get_fred_wilshire5000_1mo_pctchg_ann_eom_xts <- function() {
+
+  # The total market indexes are total market returns, which do include reinvested dividends. 
+  # https://fred.stlouisfed.org/series/WILL5000IND
+
+  # ORIG FROM ( INSPIRED BY )
+  # The equity premium
+  # https://fredblog.stlouisfed.org/2016/07/the-equity-premium/
+
+  ops <- options()
+  
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  # uses function get_fred_wilshire5000_eom_xts
+
+  message("Begin function get_fred_wilshire5000_1mo_pctchg_ann_eom_xts.")
+
+  temp <- get_fred_wilshire5000_eom_xts()
+  temp <- (temp - lag.xts(temp)) /abs(lag.xts(temp)) * 100 * 12
+  colnames(temp) <- "WILL5000IND_1MO_PCTCHG_ANN"
+  fred_wilshire5000_1mo_pctchg_ann_eom_xts <- temp
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  message("End   function get_fred_wilshire5000_1mo_pctchg_ann_eom_xts.")
+
+  return(fred_wilshire5000_1mo_pctchg_ann_eom_xts)
+
+}
+# wilshire5000_1mo_pctchg_ann <- get_fred_wilshire5000_1mo_pctchg_ann_eom_xts()
+# dygraphs::dygraph(wilshire5000_1mo_pctchg_ann)
+
+
+
 # competiton from bonds ( any reason )
 get_willshire_less_agg_equity_premium_eom_xts <- function() {
 
