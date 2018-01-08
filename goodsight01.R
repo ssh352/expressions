@@ -3078,6 +3078,76 @@ rm(list=setdiff(ls(all.names=TRUE),c("sample_xts","unrate","unrate_40s", "ibm", 
   
 }
 
+
+
+# OLD goodsight01.R summary
+# -------------------------
+# 
+#                                                                                                       Practical.Xts
+# (LEAVE HERE FOR NOW)
+# ANDRE SUMMARY                                                                                         ALL PIPEABLE %>%
+# -------------                                                                                         all designed and tested on 'single column xts object
+#                                                                                                       except expandXts that is WHERE all rivers flow
+# # has example: inbound: xts, outboud: xts
+# na.locfl(x, n = NULL)                                                                                 naLoCfLimited.xts
+# 
+# # percent change from the past through NOW 
+# # ( if to_future == TRUE, then from NOW to the FUTURE )
+# 
+# # NOTE: internally coredata of xts can be NUMERIC or INTEGER ( type of NUMERIC )
+# #                  coredata of xts can be CHARACTER ( BUT some/most xts package FUNCTION choke on CHARACTER )
+# 
+# #           but 'inbound and outbound'calls directly: xts::lag.xts
+# #   examples BELOW after CALCULATE all inbound XTS
+# PCTCHG(x, whiches, to_future = NULL)                                                                   pctChg.xts
+# 
+# # examples printed AFTER the function
+# # all IBM with na.locf, lag.xts, PCTCHG, to.monthly
+# # inbound: graceful handle ( 'zoo or xts' ) or 'something else'
+# # outbound: detects if the original 'if had an index'
+# #           if it was     a Date ... as.ORIGINAL no tzone
+# #           if it was not a Date ... as.ORIGINAL no tzone
+# #           if     zoo/xts dispatch on merge
+# #           if not zoo/xts             plyr::join_all
+# calculate(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o_args = NULL, prefix = NULL)        expandXts.xts
+# # example at the end: inbound/outbound: vector of reals
+# delay_since_last_obs.default(x)             GET RID OF THIS ONE [ ]
+# # example at end: inbound xts outbound xts
+# collofdays2daily.xts(x)                                                                                addCollofDaystoDaily.xts                                                             
+# # NO EXAMPLE: inbound xts, outbound: xts  
+# delay_since_last_obs.xts(x)                                                                            whatRangeDelaySinceLastObsOfData.vector  (INTERNAL)                                                      
+#   delay_since_last_obs.default
+# # example at end: inbound xts outbound xts
+# # head(calculate(GDP, fnct = "delay_since_last_day.xts", alt_name = "DELAY"),6)
+# delay_since_last_day.xts(x)                                                                            addRangeDelaySinceLastDayofData.xts ?May? MAKE not ADD data?
+#   collofdays2daily.xts                                                                                 whatRangeDelaySinceLastDayofData <- function(x) { # NO ADD
+#   delay_since_last_obs.xts                                                                                addRangeDelaySinceLastDayofData.xts %>% removeDays.xts }
+# # example at end: inbound xts outbound xts
+# is.xts.na(x)                                                                                           isXtsNA.xts is_na ( MAY ALSO NEED a (XnaLoCf.xtsX) XfillNA.xtsX : "na" -Inf -INTEGER)
+# # typical entry rm_what = c("Saturday", "Sunday", "BIZHOLIDAYS" )
+# # inbound xts outbound xts
+# # example at end: 
+# rm.days.xts(x, rm_what = NULL)                                                                         removeDays.xts ( ADD SPECIFICS removeNonNYSEDays.xts )
+# # inbound: 'zoo or xts'(index) # outbound: vector of bools
+# # example inbound xts(POSIXct) 
+# all.nearby.FRED.holidays(x = NULL, d = NULL) # [ ] FIX name should be 'all.nearby.FRED.not.holidays'   areAllBehindDaysHolidays.xts (INTERNAL) 
+# # inbound xts
+# #  2nd arg: expect xts ( does not properly identifiy ZOO ) 
+# #  2nd arg: if not xts ( assume a vector )
+# # outbound xts ( with a new index from x_index_new )
+# # example BELOW
+# reindex.xts(x, x_index_new)                                                                             reIndex.xts                 
+# pushback.FRED.1st.days.xts(x) BROKEN BECAUSE reindex.xts IS BROKEN                                      pushbackFirstDayOfMonth.xts
+#   reindex.xts(x, x_index_new)
+#   all.nearby.FRED.holidays
+# # inbound xts # outbound xts
+# # examples follow
+# year.less.then.or.equal(x, n = NULL ) #                                                                  isLessThanOrEqualToYear.xts
+# 
+#                                                                                                          ( NEED removeNAVariables.xts(x, regex ) is_na ( look for similar columns )
+#
+
+
 # rm(list=setdiff(ls(all.names=TRUE),c("con","cid", "sample_xts","unrate","unrate_40s", "ibm", "ibm_missing_data"))); debugSource('W:/R-3.4._/finecon01.R');debugSource('W:/R-3.4._/goodsight01.R');debugSource('W:/R-3.4._/valuesight01.R');verify_connection();options(upsert_temp_is_temporary=Inf);Quandl::Quandl.api_key(api_key= "36igkU9Tthi6cGozFTgh");setDefaults(getSymbols.av, api.key="WN6SS6MSDDVU79RZ")
 # tests()
 
