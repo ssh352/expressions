@@ -2206,8 +2206,52 @@ get_phil_survey_of_prof_forecasters_eom_xts <- function(file_data_loc = NULL, su
 # zoo::index(UNRATE) <- zoo::index(UNRATE) - 1
 # dygraphs::dygraph(merge.xts(UNRATE,ret[,"unemp__unemp3__median"]))
 # 
-
 # dygraphs::dygraph(ret)
+
+# 2009:Q3 survey+: annual-average rates on three-month Treasury bills (TBILL) rate
+# https://www.philadelphiafed.org/-/media/research-and-data/real-time-center/survey-of-professional-forecasters/spf-documentation.pdf?la=en
+# 
+# daily 
+# 3-Month Treasury Bill: Secondary Market Rate (DTB3)
+# https://fred.stlouisfed.org/series/DTB3
+# 
+# tbill__tbill3__median # since 1981
+# tbill <- get_phil_survey_of_prof_forecasters_eom_xts(file_data_loc = "DISK", surveys_of_interest_regex = "^(tbill__).*(3|4)$", future_dates_regex = "(3|4)$")
+# DTB3 <- quantmod::getSymbols("DTB3", src = "FRED", from = "1940-01-01", auto.assign = FALSE)
+# DTB3 <-to.monthly(DTB3, OHLC = FALSE, indexAt = "lastof")
+# dygraphs::dygraph(merge.xts(DTB3,tbill[,"tbill__tbill3__median"]))
+# 2007-2008 reality > predictions ... times O.K.                      switch!
+# 2015-2016 reality < predictions ... times O.K. (opposite) "BUT *no* switch!
+
+# 2009:Q3 survey+: annual-average rates on 10-year Treasury bonds (TBOND)
+# https://www.philadelphiafed.org/-/media/research-and-data/real-time-center/survey-of-professional-forecasters/spf-documentation.pdf?la=en
+#
+# daily
+# 10-Year Treasury Constant Maturity Rate (DGS10)
+# https://fred.stlouisfed.org/series/DGS10/
+# 
+# tbond__tbond3__median # since 2010
+# tbond <- get_phil_survey_of_prof_forecasters_eom_xts(file_data_loc = "DISK", surveys_of_interest_regex = "^(tbond__).*(3|4)$", future_dates_regex = "(3|4)$")
+# DGS10 <- quantmod::getSymbols("DGS10", src = "FRED", from = "1940-01-01", auto.assign = FALSE)
+# DGS10 <-to.monthly(DGS10, OHLC = FALSE, indexAt = "lastof")
+# dygraphs::dygraph(merge.xts(DGS10,tbond[,"tbond__tbond3__median"]))
+# 2007-2008 reality > predictions ... times O.K.                      switch!?
+# 2015-2016 reality < predictions ... times O.K. (opposite) "BUT *no* switch!? ( BUT TBILL is "better" )
+
+# 2010:Q1 survey+: rate on Moody’s Baa corporate bond yields (BAABOND). 
+# https://www.philadelphiafed.org/-/media/research-and-data/real-time-center/survey-of-professional-forecasters/spf-documentation.pdf?la=en
+# 
+# baabond__baabond3__median # since 2010
+# daily
+# Moody's Seasoned Baa Corporate Bond Yield (DBAA)
+# https://fred.stlouisfed.org/series/DBAA
+# 
+# baabond <- get_phil_survey_of_prof_forecasters_eom_xts(file_data_loc = "DISK", surveys_of_interest_regex = "^(baabond__).*(3|4)$", future_dates_regex = "(3|4)$")
+# DBAA  <- quantmod::getSymbols("DBAA", src = "FRED", from = "1940-01-01", auto.assign = FALSE)
+# DBAA  <- to.monthly(DBAA, OHLC = FALSE, indexAt = "lastof")
+# dygraphs::dygraph(merge.xts(DBAA, baabond[,"baabond__baabond3__median"]))
+# 2015-2016<2016 stress builds UP TO AND INCLUDING dec 31 2015 ... then release in a downhill slope
+
 
 
 # valuesight01.R
