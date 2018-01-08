@@ -1,4 +1,6 @@
 
+# finecon01.R   
+
 # dateindexlwd IS WRONG everywhere ( patch fixed )
 # DATA needs left to be fixed [ ] ( but I do not join on it anywhere )
 
@@ -9089,6 +9091,146 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
 # Ratio of Stock_Return/Bond_Return
 # Prevent output preduction 'program made'SMOOTHING
 #   PREDICT on ONE only ONE item loop predict(1); rbind(1) end loop
+# 
+# [ ] AFTER 2017 WINTER VACATION 
+# WHAT REALL MATTERS
+# 1.PHILDELPHIA FED SURVEY OF FORCASTERS(forecasters) 
+#   UNEMPLOYMENT RATE vs TRUE UNEMPLOYMENT RATE - above(1)/below(2) TRUE & long term trend AND SLOPE
+#     unemp_unemp3_median
+#   also notice: 12 month loss in net_income and slightly( even just one percent loss in jobs (1% up unempoy rate) before a recession
+#   also notice: impossiblity/unlikeliness of going higher/lower
+# 2. CHICAGO(fed gov) FED STRESS INDEX ( will curve flat then go just a little down before MAJOR recession ) nfcinonfinleverage
+#    # ALSO NOTICE: ret and dwpc plotted
+#    # ALSO NOTICE: clev_easing_balances
+#    Note: 'seems to cover 'some' bond competition' + stress/relax that the FED places down to keep_down_inflation/secure_markets
+#    Note: OTHER STRESSORS consider: EARNINGS/PRICE ratio wrt LONG TERM POSITIONS ( sp500_pe_ratio_month_4q )
+# 3. WILLSHIRE50000IND vs AGG( 3,6,9,12 mo returns ) equity_prem_p03/6/9/12m_ann (competition) # SIMILAR: zimmermann_equity_premium
+#    Note: seems somewhat reflected in near same AAII: bull_bear_spread (investors)
+#    [ ] AFTER VACATION
+# 4. MISSING: NEED TO FIND/ADD " ave corporation liabilites "
+#   Interest expense  Q1 INT_Q1
+#   Total liabilities Q1 LIAB_Q1
+#   (VERY INTERESTING ... ESP 2015-EARLY_2016) ( I tweeted Jeff Cox )
+#   https://fred.stlouisfed.org/series/B471RC1Q027SBEA
+#   HUMOR READ
+#   https://www.cnbc.com/2017/12/15/surge-in-investor-cash-to-stocks-triggers-more-melt-up-fears.html
+# ...
+# OTHER
+# finecon01
+# [x] fe - add common column ere_q1(-8) exhcange rate effects
+# [x] document on how to do it
+# [FULLDONE] ere_q1 ( HALF/DONE ) - FROZEN
+#   further to fix
+#   x new columxn [X] x( or -5 and round up ) x
+#   fe_data_store.si_finecon2_aggregates
+#     (dateindex integer, need eom (MAY BE 'in the time before' dateindex)
+#   new column [ ] dateindexp12alb -- absolute last day (same as dateindex)
+#    on ( [ ] queries [ ] index defs [ ] testing ) in ('a','b') to become in (values ('a'), ('b'))
+#   [ ] insert on confict update [ ] ... begin update, insert end
+#     [ ] convert big_table to PARTITION table
+# [x] make dynamic
+#   finance_econ=# vacuum analyze verbose fe_data_store.si_finecon2;reindex (verbose) table fe_data_store.si_finecon2;
+# NEAR FUTURE
+#   [ ] test RPostgreSQL old package -> RPostgres new package
+# SOMETIME FUTURE
+#   [ ] check garantee ... IN( VALUES (), (), () )
+#   [ ] (upsert -> insert/select) partitions MAJOR)
+# ...
+# [ ] DONE - BUT [ ] SAT FIX
+# [ ] INSTALL [ ]  fincon01.R-ize ( monthly install )
+# http://www.aaii.com/stock-investor-pro/archives
+#   update: C:\Users\AnonymousUser\Downloads\stockinvestorinstall_20170929.exe
+# eom dbs -> db in R upload_lwd_dbs_to_db 
+# > zoo::as.Date(17438)
+# [1] "2017-09-29"
+# -- last month ( look for 4 week loaded returns )
+# select * from fe_data_store.si_finecon2 where dateindex = 17409 and ticker in ('MSFT','AAPL')
+# -- current(this) month ( look for general data )
+# select * from fe_data_store.si_finecon2 where dateindex = 17438 and ticker in ('MSFT','AAPL')
+# -- curent(this) mont ( look to see that the aggregates have been ) processed
+# -- FIX [ ]- MISSING *_last*_ ( prbably also *_now_* ) AND _*sum*_derivatives)
+# select * from fe_data_store.si_finecon2_aggregates where dateindex = 17438 
+# -- FIX -[ ] - DID NOT RETURN ANY RECORDS
+# 
+# [NA] TEST ... SET 'bigint' arg IF NECESSARY
+#   NEW R package RPostgres ( seems !?! case finecon01.R not use dbplyr )
+# ...
+# **NEW**
+# (corps can not get 'debt' funding)
+# Fall before each recession (but NOT RECESSIONS 'BEFORE 2000') AND 'late 2015-earl 2016 slowdown'
+#   Nonfinancial Corporate Business; Corporate Equities; Liability, Level
+#   https://fred.stlouisfed.org/series/MVEONWMVBSNNCB
+#     !!! [ ] TOBE INVESTIGATED - bumpy area - Q1-2010 ... Q4-2012 !!!
+#        Updated: Dec 7, 2017
+# ...
+# **NEW**
+# YALE- U.S. Crash Confidence Index - [DONE-USELESS]  SUNDAY - TO BE INVESTIGATED ... LOOK AT THE 'OFTEN HUMPS'
+# **ALSO NEW*
+# survey of professional forecasters 4 unemp BEFORE RECESSION ** ** ** **
+# ...
+# Shrinkage vs. Growth
+# --------------------
+# BUYBACKS - TO INVESTIGATE ... RUN THE QUERY [x]  -- see TEMPORARY.SQL? ... no rank correlation ... wasted money!
+# May 4th, 2016
+# http://investorfieldguide.com/shrinkage-vs-growth/
+# AS OF DEC 17 2017
+# Shrinkage vs. Growth
+# http://investorfieldguide.com/blog/page/9/
+# ...
+# Chicago Fed National Financial Conditions Index Nonfinancial Leveral Subindex (NFCINONFINLEVERAGE)
+# https://fred.stlouisfed.org/series/NFCINONFINLEVERAGE
+# Leading Index for the United States (USSLIND)
+# http://research.stlouisfed.org/fred2/series/USSLIND
+# Chicago Fed National Activity Index (CFNAI)
+# https://fred.stlouisfed.org/series/CFNAI
+# #
+# # ABSOLUTE RETURN OF STOCKS OVER BONDS ( COMETITION PRESSURE )
+# # NOTE: I MAY WANT A SHORT 'YIELD RANGE: E.G. 3 MONTHS)
+# # WILL5000IND - since DEC 1970
+# #   (Wilshire 5000 Total Market Index (WILL5000IND) - lag.xts(Wilshire 5000 Total Market Index (WILL5000IND),220) - 
+# #   (BofA Merrill Lynch US Corporate BBB Effective Yield (BAMLC0A4CBBBEY))
+# # NOTE MAY WANT TO SUBTRACT OFF INSTEAD  ( AGG - lag.xts(AGG,220) )
+# # SEE https://fredblog.stlouisfed.org/2016/07/the-equity-premium/
+# # 
+# # # when unemployement is 'increasing' with inflation TOO HIGH
+# # # WHAT 'tower' the fed does to 'slam' before(into) a recession((lateprevyear?)2000,(late2007)2008)
+# # FRBData::GetInterestRates("FF")
+# # FRBData::GetInterestRates("DWPC")
+# # 
+# by 3-month (4 quarters rolling) PERCENT_RANK comparison ( abs(change in idex value) )
+# by 12-month (4 years rolling) percent rank comparison    ( abs(change in index value) )
+# AGG-^GSPC ( abs(change in index value ) )               [X] HAVE ENOUGH
+# AGG-^GSPC ( abs(change RoR(net_income DB,MUPL)/dollar ) [X] HAVE EQOUGH
+# UNEMP ( abs(change in index value ) ) [X]
+# New York 'Conference Board' predictions (FIND IT) - FOUND IT - NOTHING TO SCRAPE
+# .getEconomicCalendarBriefing (htmltab) ... maybe...convert into an XTS object
+# blscrapeR: An API Wrapper for the Bureau of Labor Statistics (BLS)
+# [x] !!! - tradingeconomics.com
+# R LEFT_OFF ... factores/values to numbers
+# [ ] OTHER2 ( at file top )
+#   + Bank for International Settlements
+# C:\Users\AnonymousUser\Desktop\WORKING.txt
+# ...
+# [ ] KEEP THIS - MATCH WITH NEW FRED NET_INCOME (if any can find: see FRED NEWS)
+# https://news.research.stlouisfed.org/2017/11/fred-adds-quarterly-financial-report-data/
+# ...
+# panic button ?!? - MAYBE ABLE TO FORCE A 'FALSE RECESSION' ?
+# ------------------------------------------------------------
+# ...
+# ( NOT THE MOST POPULAR ONE - BUT THE *ONE* THAT WORKS )
+# mid 2015 - early 2016
+# Exports of Goods and Services, Balance of Payments Basis (BOPTEXP)
+# Millions of Dollars, Monthly, Seasonally Adjusted
+# https://fred.stlouisfed.org/series/BOPTEXP
+# ...
+# Exports of goods and services from the United States from 1990 to 2015, as a percentage of GDP
+# https://www.statista.com/statistics/258779/us-exports-as-a-percentage-of-gdp/
+# ...
+# Shares of gross domestic product: Exports of goods and services (B020RE1Q156NBEA)
+# https://fred.stlouisfed.org/series/B020RE1Q156NBEA
+# ...
+# DEC 2017
+
 
 # 
 # ANDRE NEW PLAN - PROCESSING and OUTBOUND
