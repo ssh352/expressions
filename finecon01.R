@@ -9166,7 +9166,7 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
 # **NEW**
 # YALE- U.S. Crash Confidence Index - [DONE-USELESS]  SUNDAY - TO BE INVESTIGATED ... LOOK AT THE 'OFTEN HUMPS'
 # **ALSO NEW*
-# survey of professional forecasters 4 unemp BEFORE RECESSION ** ** ** **
+# survey of professional forecasters 4 unemp BEFORE RECESSION (GOOD - PESSIMISTIC/OPTIMISTIC)
 # ...
 # Shrinkage vs. Growth
 # --------------------
