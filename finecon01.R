@@ -5018,6 +5018,34 @@ load_inbnd_stmtstats_division_aggregates <- function(dateindex = NULL) {
           ) /
           sum(fe.mktcap) 
             filter(where fe.last_inbnd_stmtstat_ca_q1 is not null and fe.last_inbnd_stmtstat_cl_q1 is not null and fe.mktcap is not null)                           * 100 sum_last_ca_cl_q1_o_mktcap_x100
+
+         -- others --
+         , sum(fe.last_inbnd_stmtstat_ce_q1) 
+            filter(where fe.last_inbnd_stmtstat_ce_q1    is not null and fe.last_inbnd_stmtstat_assets_q1 is not null) /
+          sum(fe.last_inbnd_stmtstat_assets_q1) 
+            filter(where fe.last_inbnd_stmtstat_assets_q1 is not null and fe.last_inbnd_stmtstat_ce_q1    is not null)    * 1000 sum_last_ce_q1_o_assets_q1_x1000
+        , sum(fe.last_inbnd_stmtstat_ce_q1) 
+            filter(where fe.last_inbnd_stmtstat_ce_q1    is not null and fe.mktcap is not null) /
+          sum(fe.last_inbnd_stmtstat_mktcap) 
+            filter(where fe.mktcap                          is not null and fe.last_inbnd_stmtstat_ce_q1  is not null)    * 1000 sum_last_ce_q1_o_mktcap_x1000
+        , sum(fe.last_inbnd_stmtstat_int_q1) 
+            filter(where fe.last_inbnd_stmtstat_int_q1    is not null and fe.last_inbnd_stmtstat_assets_q1 is not null) /
+          sum(fe.last_inbnd_stmtstat_assets_q1) 
+            filter(where fe.last_inbnd_stmtstat_assets_q1 is not null and fe.last_inbnd_stmtstat_int_q1    is not null)    * 1000 sum_last_int_q1_o_assets_q1_x1000
+        , sum(fe.last_inbnd_stmtstat_int_q1) 
+            filter(where fe.last_inbnd_stmtstat_int_q1    is not null and fe.mktcap is not null) /
+          sum(fe.last_inbnd_stmtstat_mktcap) 
+            filter(where fe.mktcap                          is not null and fe.last_inbnd_stmtstat_int_q1  is not null)    * 1000 sum_last_int_q1_o_mktcap_x1000
+         , sum(fe.last_inbnd_stmtstat_intno_q1) 
+            filter(where fe.last_inbnd_stmtstat_intno_q1    is not null and fe.last_inbnd_stmtstat_assets_q1 is not null) /
+          sum(fe.last_inbnd_stmtstat_assets_q1) 
+            filter(where fe.last_inbnd_stmtstat_assets_q1 is not null and fe.last_inbnd_stmtstat_intno_q1    is not null)    * 1000 sum_last_intno_q1_o_assets_q1_x1000
+        , sum(fe.last_inbnd_stmtstat_intno_q1) 
+            filter(where fe.last_inbnd_stmtstat_intno_q1    is not null and fe.mktcap is not null) /
+          sum(fe.last_inbnd_stmtstat_mktcap) 
+            filter(where fe.mktcap                          is not null and fe.last_inbnd_stmtstat_intno_q1  is not null)    * 1000 sum_last_intno_q1_o_mktcap_x1000
+        --
+
         from ( -- fe
                -- explain  -- NO_INDEX+CASE ( over 60+ ... ) INDEX+CASE ( 25 seconds )
                select
@@ -5054,6 +5082,11 @@ load_inbnd_stmtstats_division_aggregates <- function(dateindex = NULL) {
                  , fei.last_inbnd_stmtstat_ere_q1
                  , fei.last_inbnd_stmtstat_ca_q1
                  , fei.last_inbnd_stmtstat_cl_q1
+                 -- others --
+                 , fei.last_inbnd_stmtstat_ce_q1
+                 , fei.last_inbnd_stmtstat_int_q1
+                 , fei.last_inbnd_stmtstat_intno_q1
+                 --
                  , fei.pradchg_f04w_ann, fei.pradchg_f13w_ann, fei.pradchg_f26w_ann, fei.pradchg_f52w_ann
                  , fei.price
                from fe_data_store.si_finecon2 fei 
@@ -6123,6 +6156,8 @@ vacuum_reindex_check <- function(start_time = NULL, how_often = NULL) {
     Sys.setenv(TZ="UTC")
   }
 
+  require(PivotalR) # db.disconnect
+  
   verify_connection()
   
   message("Begin checking_how_often_to/doing vacuum/reindex.")
@@ -6138,11 +6173,21 @@ vacuum_reindex_check <- function(start_time = NULL, how_often = NULL) {
     
       message(paste0("  During checking how_often_to/doing vacuum/reindex: BEGIN doing vacuum/reindex NOW on START_TIME/HOW_OFTEN/NOW: ", start_time, "/", how_often, "/", now_at_secs_since_UNIX_birth))
     
+      # because connection gets hosed
+      db.disconnect(conn.id = cid, verbose = TRUE, force = TRUE)
+      rm("cid","con", envir = .GlobalEnv)
+      verify_connection()
+      
       # VACUUM cannot be executed from a function or multi-command string
       # db.q("select 1;" , conn.id = cid)
       db.q("vacuum analyze verbose fe_data_store.si_finecon2;" , conn.id = cid)
       db.q("reindex (verbose) table fe_data_store.si_finecon2;", conn.id = cid)
     
+      # because connection gets hosed
+      db.disconnect(conn.id = cid, verbose = TRUE, force = TRUE)
+      rm("cid","con", envir = .GlobalEnv)
+      verify_connection()
+      
       message(paste0("  During checking how_often_to/doing vacuum/reindex: END  doing vacuum/reindex NOW on START_TIME/HOW_OFTEN/NOW: ", start_time, "/", how_often, "/", now_at_secs_since_UNIX_birth))
     
     } else { 
@@ -7071,7 +7116,14 @@ upload_mini_dbfs_no_future_look_to_db <- function(from_dir = "W:/AAIISIProDBFs",
 # NOTE: CAN BE RAN ( RECOMMENDED )
 # vacuum_reindex_check(); { upload_mini_dbfs_no_future_look_to_db(. . . }; vacuum_reindex_check()
 # 
+# *** ** IMPORTANT ** IMPORTANT ** better run OUTSIDE OF R-STUDIO ( MUCH MUCH MUCH FASTER ) ***
+# DBI con 'bloated' problem
 # upload_mini_dbfs_no_future_look_to_db(decreasing_sort_order = FALSE)
+# 
+# e.g. restart from a HUNG
+# upload_mini_dbfs_no_future_look_to_db(decreasing_sort_order = FALSE, exact_near_month_end_dbf_dirs = sort(as.integer(dir("W:\\AAIISIProDBFs")))[ 13756 <= sort(as.integer(dir("W:\\AAIISIProDBFs")))])
+
+
 # looking for ere_q1
 # select dateindex, ere_q1, ere_qi from fe_data_store.si_finecon2 where dateindex = 12055
 
@@ -7215,7 +7267,7 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
       verify_return_dates(dateindex = c(dir_i), months_limit = 38)  -> si_all_g_df
       print(dir_i);upsert(si_all_g_df, keys = NULL) # ONLY dateindex is the pk
   
-      verify_company_details(dateindex = c(dir_i),  table_f = "si_isq", cnames_e = "^dps_q.$") -> si_all_g_df
+      verify_company_details(dateindex = c(dir_i),  table_f = "si_isq", cnames_e = "^dps_q.$|^int_q.$|^intno_q.$") -> si_all_g_df
       print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
   
       verify_company_details(dateindex = c(dir_i),  table_f = "si_date", cnames_e = "^perend_q.$|^perlen_q.$|^pertyp_q.$") -> si_all_g_df
@@ -7228,7 +7280,7 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
       verify_company_details(dateindex = c(dir_i),  table_f = "si_mlt", cnames_e = "^bby_1t$") -> si_all_g_df
       print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
   
-      verify_company_details(dateindex = c(dir_i),  table_f = "si_cfq", cnames_e = "^tco_q.$|^tcf_q.$|^tci_q.$|^ere_q.$") -> si_all_g_df
+      verify_company_details(dateindex = c(dir_i),  table_f = "si_cfq", cnames_e = "^tco_q.$|^tcf_q.$|^tci_q.$|^ere_q.$|^ce_q.$") -> si_all_g_df
       print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
     
       verify_company_details(dateindex = c(dir_i),  table_f = "si_bsq", cnames_e = "^ca_q.$|^cl_q.$|^liab_q.$") -> si_all_g_df
@@ -7292,7 +7344,7 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
         # support_dateindex_collection is the 
         # minimum of 11 months: current + ( 6 month Quarter period reporter with 4 month Q-10 report filing delay ) 
         #                           # current or earlier                               # current or up to 10 earlier
-        print(dir_i);load_inbnd_stmtstats(dir_i, nowlast_columns = c("sales_q1", "netinc_q1", "ncc_q1", "assets_q1", "assets_q2", "tco_q1", "tcf_q1", "tci_q1", "ere_q1", "ca_q1", "cl_q1", "liab_q1"), support_dateindex_collection = sort(as.integer(dir(from_dir)), decreasing = TRUE)[dir_i>=  sort(as.integer(dir(from_dir)), decreasing = TRUE)][seq_len(min(sum(dir_i >=  sort(as.integer(dir(from_dir)), decreasing = TRUE)),11))], char_col_numeric_limit = 99999999999999.99) -> si_all_g_df
+        print(dir_i);load_inbnd_stmtstats(dir_i, nowlast_columns = c("sales_q1", "netinc_q1", "ncc_q1", "assets_q1", "assets_q2", "tco_q1", "tcf_q1", "tci_q1", "ere_q1", "ca_q1", "cl_q1", "liab_q1", "ce_q1", "int_q1", "intno_q1"), support_dateindex_collection = sort(as.integer(dir(from_dir)), decreasing = TRUE)[dir_i>=  sort(as.integer(dir(from_dir)), decreasing = TRUE)][seq_len(min(sum(dir_i >=  sort(as.integer(dir(from_dir)), decreasing = TRUE)),11))], char_col_numeric_limit = 99999999999999.99) -> si_all_g_df
         print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
         # 
         vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
