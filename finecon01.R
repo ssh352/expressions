@@ -175,6 +175,8 @@ insert_df <- function(df = NULL, val = NULL, nm = NULL, pos = 0 ) {
 
 is_connected_postgresql_con <- function() {  
 
+  require(RPostgreSQL)
+  
   tryCatch({  res <- postgresqlExecStatement(get("con", envir = .GlobalEnv), "select 1; ")
                  postgresqlFetch(res)
                  TRUE 
@@ -238,6 +240,7 @@ verify_connection <- function () {
       
       # Works well with Npgsql(9.6era)       3.0.8 ( as far as connect/timeout_disconnect )
       # Current version Npgsql(early 10 era) 3.2.x ( will CRASH rstudio on each first attempt in a newly loaded RStudio )
+      # Currently last known working well with the 'older' (9.6ish) Npgsql 3.2.6 INSTALLED 12/13/2017
       # [ ] TODO: LEFT_OFF: FUTURE ... ADJUSTMENT 
       
       cid <<- db.connect(user = "postgres", dbname = "finance_econ", default.schemas = "fe_data_store,public")
@@ -300,6 +303,53 @@ verify_connection <- function () {
   options(ops)
 }
 # verify_connection()
+
+
+
+release_connection <- function () {
+  
+  # R version 3.3.2 (2016-10-31) # sessionInfo()
+  
+  ops <- options()
+  
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  release_connection_inner <- function () {
+
+    # How to use dbGetQuery in tryCatch with PostgreSQL?
+    # http://stackoverflow.com/questions/34332769/how-to-use-dbgetquery-in-trycatch-with-postgresql
+    
+    #
+    require(PivotalR) #                                     # OSUser
+
+    if(exists("cid", envir = .GlobalEnv) || 
+       exists("con", envir = .GlobalEnv) || 
+       is_connected_postgresql_con() 
+    ) {
+      
+      # because connection gets hosed
+      db.disconnect(conn.id = cid, verbose = TRUE, force = TRUE)
+      rm("cid","con", envir = .GlobalEnv)
+      
+    }
+  }
+  
+  release_connection_inner()
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+}
+# release_connection()
+
 
 
 # uses verify_connection
@@ -6148,6 +6198,59 @@ upload_us_gov_bonds_to_db <- function(months_only_back = NULL) {
 # upload_us_gov_bonds_to_db(months_only_back = 13) # recent data
 
 
+
+vacuum_analyze_reindex <- function() {
+
+  release_connection()
+  verify_connection()
+
+  require(PivotalR)
+
+  # VACUUM cannot be executed from a function or multi-command string
+  # db.q("select 1;" , conn.id = cid)
+  
+  message(" ")
+  
+  message("Begin vacuum analyze verbose")
+  message("Begin vacuum analyze verbose")
+  message("Begin vacuum analyze verbose")
+  
+  message(" ")
+  
+  db.q("vacuum analyze verbose fe_data_store.si_finecon2;" , conn.id = cid)
+  
+  message(" ")
+  
+  message("End   vacuum analyze verbose")
+  message("End   vacuum analyze verbose")
+  message("End   vacuum analyze verbose")
+  
+  message(" ")
+  
+  message("Begin reindex (verbose)")
+  message("Begin reindex (verbose)")
+  message("Begin reindex (verbose)")
+  
+  message(" ")
+  
+  db.q("reindex (verbose) table fe_data_store.si_finecon2;", conn.id = cid)
+
+  message(" ")
+
+  message("End reindex (verbose)")
+  message("End reindex (verbose)")
+  message("End reindex (verbose)")
+
+  message(" ")
+
+  release_connection()
+  verify_connection()
+           
+}
+# vacuum_analyze_reindex()
+
+
+
 vacuum_reindex_check <- function(start_time = NULL, how_often = NULL) {
                               # 'last check/do time
 
@@ -6174,18 +6277,13 @@ vacuum_reindex_check <- function(start_time = NULL, how_often = NULL) {
       message(paste0("  During checking how_often_to/doing vacuum/reindex: BEGIN doing vacuum/reindex NOW on START_TIME/HOW_OFTEN/NOW: ", start_time, "/", how_often, "/", now_at_secs_since_UNIX_birth))
     
       # because connection gets hosed
-      db.disconnect(conn.id = cid, verbose = TRUE, force = TRUE)
-      rm("cid","con", envir = .GlobalEnv)
+      release_connection()
       verify_connection()
       
-      # VACUUM cannot be executed from a function or multi-command string
-      # db.q("select 1;" , conn.id = cid)
-      db.q("vacuum analyze verbose fe_data_store.si_finecon2;" , conn.id = cid)
-      db.q("reindex (verbose) table fe_data_store.si_finecon2;", conn.id = cid)
+      vacuum_analyze_reindex()
     
       # because connection gets hosed
-      db.disconnect(conn.id = cid, verbose = TRUE, force = TRUE)
-      rm("cid","con", envir = .GlobalEnv)
+      release_connection()
       verify_connection()
       
       message(paste0("  During checking how_often_to/doing vacuum/reindex: END  doing vacuum/reindex NOW on START_TIME/HOW_OFTEN/NOW: ", start_time, "/", how_often, "/", now_at_secs_since_UNIX_birth))
@@ -6201,9 +6299,15 @@ vacuum_reindex_check <- function(start_time = NULL, how_often = NULL) {
   
     message("  During checking how_often_to/doing vacuum/reindex: BEGIN doing vacuum/reindex NOW on demand.")
     
-    # db.q("select 2;" , conn.id = cid)
-    db.q("vacuum analyze verbose fe_data_store.si_finecon2;" , conn.id = cid)
-    db.q("reindex (verbose) table fe_data_store.si_finecon2;", conn.id = cid)
+    # because connection gets hosed
+    release_connection()
+    verify_connection()
+    
+    vacuum_analyze_reindex()
+  
+    # because connection gets hosed
+    release_connection()
+    verify_connection()
     
     message("  During checking how_often_to/doing vacuum/reindex: END doing vacuum/reindex NOW on demand.")
     
@@ -7063,6 +7167,9 @@ upload_mini_dbfs_no_future_look_to_db <- function(from_dir = "W:/AAIISIProDBFs",
   ## # load_inbnd_stmtstats
   ## # for_inbnd_stmtstats_is_null_months_only_back_check_NOT_done <- TRUE
   
+  # WANT TO SEE THIS HAPPENING
+  vacuum_analyze_reindex()
+  
   for(dir_i in near_month_end_dbf_dirs_ordered) {
     
     Sys.sleep(2)
@@ -7239,6 +7346,9 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
   
   ## # load_inbnd_stmtstats
   ## # for_inbnd_stmtstats_is_null_months_only_back_check_NOT_done <- TRUE
+  
+  # WANT TO SEE THIS HAPPENING
+  vacuum_analyze_reindex()
   
   for(dir_i in near_month_end_dbf_dirs_ordered) {
     
@@ -10123,5 +10233,6 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
 # 
 # quantmod::getSymbols("^GSPC", from = "1940-01-01")
 # rm(list=setdiff(ls(all.names=TRUE),c("con","cid","GSPC"))); debugSource('W:/R-3.4._/finecon01.R'); debugSource('W:/R-3.4._/goodsight01.R');verify_connection();options(upsert_temp_is_temporary=Inf)
-
+#
+# rm(list=setdiff(ls(all.names=TRUE),c("con","cid"))); debugSource('W:/R-3.4._/finecon01.R');debugSource('W:/R-3.4._/goodsight01.R');debugSource('W:/R-3.4._/valuesight01.R');verify_connection();options(upsert_temp_is_temporary=Inf);Quandl::Quandl.api_key(api_key= "API_KEY");setDefaults(getSymbols.av, api.key="API.KEY")
 
