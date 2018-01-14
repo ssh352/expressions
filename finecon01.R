@@ -7219,8 +7219,6 @@ upload_mini_dbfs_no_future_look_to_db <- function(from_dir = "W:/AAIISIProDBFs",
     message(paste0("**** Beginning disk dbf dir: ",dir_i," ", dir_i," ****"))
     Sys.sleep(2)
     
-    vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
-
     # ere_q
     #   si_cfq
     # 
