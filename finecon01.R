@@ -6252,8 +6252,8 @@ vacuum_analyze_reindex <- function() {
 
 
 vacuum_reindex_check <- function(start_time = NULL, how_often = NULL) {
-                              # 'last check/do time
 
+                              # 'last check/do time
   oldtz <- Sys.getenv('TZ')
   if(oldtz=='') {
     Sys.setenv(TZ="UTC")
@@ -6263,10 +6263,17 @@ vacuum_reindex_check <- function(start_time = NULL, how_often = NULL) {
   
   verify_connection()
   
-  message("Begin checking_how_often_to/doing vacuum/reindex.")
+  message("Begin vacuum_reindex_check checking_how_often_to/doing vacuum/reindex.")
 
   # before 'A' run
   now_at_secs_since_UNIX_birth <- as.numeric(Sys.time())
+  
+  message(paste0("                  start_time: " , start_time))
+  message(paste0("                   how_often: " , how_often))
+  message(paste0("now_at_secs_since_UNIX_birth: " , now_at_secs_since_UNIX_birth))
+  message(paste0("      start_time + how_often: " , start_time + how_often))
+  message(paste0("      start_time + how_often < now_at_secs_since_UNIX_birth: " , start_time + how_often < now_at_secs_since_UNIX_birth))
+  message(paste0("      how_often < now_at_secs_since_UNIX_birth - start_time: " , now_at_secs_since_UNIX_birth - start_time))
 
   if(!is.null(how_often)) { # run EVERY-SO-OFTEN
   
@@ -6274,8 +6281,8 @@ vacuum_reindex_check <- function(start_time = NULL, how_often = NULL) {
   
     if(start_time + how_often < now_at_secs_since_UNIX_birth) {
     
-      message(paste0("  During checking how_often_to/doing vacuum/reindex: BEGIN doing vacuum/reindex NOW on START_TIME/HOW_OFTEN/NOW: ", start_time, "/", how_often, "/", now_at_secs_since_UNIX_birth))
-    
+      message("Begin ACTUAL vacuum analyze reindex")
+
       # because connection gets hosed
       release_connection()
       verify_connection()
@@ -6286,12 +6293,23 @@ vacuum_reindex_check <- function(start_time = NULL, how_often = NULL) {
       release_connection()
       verify_connection()
       
-      message(paste0("  During checking how_often_to/doing vacuum/reindex: END  doing vacuum/reindex NOW on START_TIME/HOW_OFTEN/NOW: ", start_time, "/", how_often, "/", now_at_secs_since_UNIX_birth))
+       message("End   ACTUAL vacuum analyze reindex")
+    
+      # after the RUN
+      start_time <-  as.numeric(Sys.time()) 
+
+      Sys.setenv(TZ=oldtz)
+      message("End  vacuum_reindex_check checking_how_often_to/doing vacuum/reindex.")
+      return(start_time) # 'last check/do time
     
     } else { 
     
       message("  During checking how_often_to/doing vacuum/reindex: no vacuum/reindex needed.")
       message(paste0("    Time passed only: ", now_at_secs_since_UNIX_birth - start_time, " seconds."))
+    
+      Sys.setenv(TZ=oldtz)
+      message("End  vacuum_reindex_check checking_how_often_to/doing vacuum/reindex.")
+      return(start_time) # 'last check/do time
     
     }
     
@@ -6311,20 +6329,42 @@ vacuum_reindex_check <- function(start_time = NULL, how_often = NULL) {
     
     message("  During checking how_often_to/doing vacuum/reindex: END doing vacuum/reindex NOW on demand.")
     
+    # after the RUN
+    start_time <-  as.numeric(Sys.time()) 
+
+    Sys.setenv(TZ=oldtz)
+    message("End  vacuum_reindex_check checking_how_often_to/doing vacuum/reindex.")
+    return(start_time) # 'last check/do time
     
   }
   
-  # after the RUN/CHECK
-  now_at_secs_since_UNIX_birth <- as.numeric(Sys.time()) 
-  start_time <- now_at_secs_since_UNIX_birth
-
-  Sys.setenv(TZ=oldtz)
-  
-  message("End  checking_how_often_to/doing vacuum/reindex.")
-  
-  return(start_time) # 'last check/do time
-  
 }
+# ret <- vacuum_reindex_check()
+
+
+
+# DEBUGGING FUNCTION ONLY
+vacuum_reindex_check_time_looper_checker <- function(vacuum_reindex_every_x_seconds=10) {
+
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  start_at_secs_since_UNIX_birth <- as.numeric(Sys.time())
+
+  for(dir_i in 1:6) {
+  
+    Sys.sleep(4)
+    vacuum_reindex_check(start_time = start_at_secs_since_UNIX_birth, how_often = vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
+  
+  }
+
+}
+# vacuum_reindex_check_time_looper_checker()
+
+
+# PROB OBSOLETE NOW
+# 
 # local({
 #   # vacuum_reindex_every_x_seconds=1200
 #   vacuum_reindex_every_x_seconds=2
