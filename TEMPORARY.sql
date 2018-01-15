@@ -13303,6 +13303,7 @@ order by co.dateindex_dt_co
 
 -- [ USEFUL: KEEP ]
 -- quandle equivalent ?? -- ???
+-- ALREADY THERE AS goodsight01.R get_sipro_sp500_mktcap_o_netinc()
 select 
     co.* 
   , t4q.mktcap_o_netinc_d10_x10_4q 
@@ -13833,3 +13834,341 @@ select
 order by sq2.p03_bby_ann desc 
 
 
+
+-- proportion of interest expense over liabilities and RETURN
+
+
+
+-- JUST THIS ONE (excludes 2017 BECAUSE pradchg_f52w_ann is not KNOWN yet)
+-- JUST THIS ONE
+-- JUST THIS ONE TO LOOK AT (RECENT FUR YEARS) ( BUT HISTORICALLY *NOT* 'AT ALL' CONSISTENT )
+-- NOT CONSITENT IF I INCLUDE THE OTHER SPS (400,600)
+-- NOT COSISTENT IF I CHANGE THE ORDER BY TO (-1) AND/OR ASC
+select 
+    -- 19%
+           avg(pradchg_f26w_ann) over (partition by intno_o_liab_desc_ntile10)        avg_intno_o_liab_desc_ntile10_pradchg_f26w_ann
+    -- about global average
+  , stddev_pop(pradchg_f26w_ann) over (partition by intno_o_liab_desc_ntile10) stddev_pop_intno_o_liab_desc_ntile10_pradchg_f26w_ann
+  , sq2.*
+  from (
+  select 
+      -- must be EXACTLY THIS FORM "(-1) *" or "asc" NOT WORK (edge cases)
+      -- 12 - 19.2629881422924901;37.0531544021566000
+      -- 10 - 18.6881554677206851;36.2742053649500396 ( REST AVG 10 PERCENT )
+      ntile(12) over (order by sq1.intno_o_liab desc) intno_o_liab_desc_ntile10
+    , sq1.* 
+    from (
+    select 
+        dateindex, ticker, company
+      , pradchg_f04w_ann, pradchg_f13w_ann, pradchg_f26w_ann, pradchg_f52w_ann
+      , intno_q1/nullif(liab_q1,0) intno_o_liab, intno_q1/nullif(assets_q1,0) intno_o_assets, liab_q1/nullif(assets_q1,0) liab_o_assets
+    from fe_data_store.si_finecon2 now 
+    where intno_q1 is not null and liab_q1 is not null and assets_q1 is not null 
+      and pradchg_f04w_ann is not null and pradchg_f13w_ann is not null and pradchg_f26w_ann is not null and pradchg_f52w_ann is not null 
+      and sp in ('500') and dateindex >= 16071 -- (to 17529) -- 2014-01-01 - 4 years and every month
+      -- and sp in ('500') and dateindex >= 14610 and dateindex < 16071 -- 2010-01-01 -- 2014-01-01    (GOOD buy everything ALSO DID WELL)
+      -- and sp in ('500') and dateindex >= 13514 and dateindex < 14610 -- 2007-01-01 -- 2010-01-01 -- POOR and everthing else did POOR
+  ) sq1 
+) sq2;
+
+
+
+select 
+           avg(pradchg_f26w_ann) over (partition by intno_o_liab_desc_ntile10)        avg_intno_o_liab_desc_ntile10_pradchg_f26w_ann
+    -- about global average
+  , stddev_pop(pradchg_f26w_ann) over (partition by intno_o_liab_desc_ntile10) stddev_pop_intno_o_liab_desc_ntile10_pradchg_f26w_ann
+  , sq2.*
+  from (
+  select 
+      ntile(12) over (order by sq1.intno_o_liab desc) intno_o_liab_desc_ntile10
+    , sq1.* 
+    from (
+    select 
+        dateindex, dateindexyear, dateindexyear, ticker, company
+      , pradchg_f26w_ann
+      , intno_q1/nullif(liab_q1,0) intno_o_liab, intno_q1/nullif(assets_q1,0) intno_o_assets, liab_q1/nullif(assets_q1,0) liab_o_assets
+    from fe_data_store.si_finecon2 now 
+    where intno_q1 is not null and liab_q1 is not null and assets_q1 is not null 
+      and pradchg_f26w_ann is not null
+      and sp in ('500') and dateindex >= 17167 -- 2017-01-01-- dateindexyear = 2016 good year -- 2015 less worse performer in a bad year -- 2014 avg performer -- 2013 good performer (but all firms performed good) --
+  ) sq1 -- including 2017 6-months( VERY GOOD )
+) sq2;
+
+
+
+select 
+    -- 18%
+           avg(pradchg_f26w_ann) over (partition by intno_o_liab_desc_ntile10)        avg_intno_o_liab_desc_ntile10_pradchg_f26w_ann
+    -- about global average
+  , stddev_pop(pradchg_f26w_ann) over (partition by intno_o_liab_desc_ntile10) stddev_pop_intno_o_liab_desc_ntile10_pradchg_f26w_ann
+  , sq2.*
+  from (
+  select 
+      --  must be EXACTLY THIS FORM "(-1) *" or "asc" NOT WORK (edge cases)
+      -- 12 - 19.2629881422924901;37.0531544021566000
+      -- 10 - 18.6881554677206851;36.2742053649500396 ( REST AVG 10 PERCENT )
+      ntile(12) over (order by sq1.intno_o_liab desc) intno_o_liab_desc_ntile10
+    , sq1.* 
+    from (
+    select 
+        dateindex, ticker, company
+      , pradchg_f04w_ann, pradchg_f13w_ann, pradchg_f26w_ann, pradchg_f52w_ann
+      , intno_q1/nullif(liab_q1,0) intno_o_liab, intno_q1/nullif(assets_q1,0) intno_o_assets, liab_q1/nullif(assets_q1,0) liab_o_assets
+    from fe_data_store.si_finecon2 now 
+    where intno_q1 is not null and liab_q1 is not null and assets_q1 is not null 
+      and pradchg_f04w_ann is not null and pradchg_f13w_ann is not null and pradchg_f26w_ann is not null and pradchg_f52w_ann is not null 
+      and sp in ('500') and dateindex >= 16071 -- (to 17529) -- 2014-01-01 - 4 years and every month
+      -- and intno_q1 > 0 -- FAILS(12) "and intno_q1 > 0"  # 7.6706920077972710;29.7923442978375116
+      -- and intno_q1 = 0 -- FAILS(1) "and intno_q1 = 0   # 12.6975705820843499;36.4565792408334827
+      -- and intno_q1 < 0 # ( ONE RECORD )                 
+      -- and sp in ('400','600') and dateindex >= 16071 # FAILS(12) # 10 best performer # 16.6209711620016964;48.7800513316692602 
+      -- and sp in ('500','400','600') and dateindex >= 16071 # SUCESS(12) # 22.3839111233784157;45.5514235215664923(riskier)
+      -- all time
+  ) sq1 
+) sq2;
+
+
+
+select 
+           avg(pradchg_f26w_ann) over (partition by intno_o_liab_desc_ntile10)        avg_intno_o_liab_desc_ntile10_pradchg_f26w_ann
+    -- about global average
+  , stddev_pop(pradchg_f26w_ann) over (partition by intno_o_liab_desc_ntile10) stddev_pop_intno_o_liab_desc_ntile10_pradchg_f26w_ann
+  , sq2.*
+  from (
+  select 
+      ntile(12) over (order by sq1.intno_o_liab desc) intno_o_liab_desc_ntile10
+    , sq1.* 
+    from (
+    select 
+        dateindex, ticker, company
+      , pradchg_f04w_ann, pradchg_f13w_ann, pradchg_f26w_ann, pradchg_f52w_ann
+      , intno_q1/nullif(liab_q1,0) intno_o_liab, intno_q1/nullif(assets_q1,0) intno_o_assets, liab_q1/nullif(assets_q1,0) liab_o_assets
+    from fe_data_store.si_finecon2 now 
+    where intno_q1 is not null and liab_q1 is not null and assets_q1 is not null 
+      and pradchg_f04w_ann is not null and pradchg_f13w_ann is not null and pradchg_f26w_ann is not null and pradchg_f52w_ann is not null 
+      and sp in ('500')
+  ) sq1 
+) sq2
+; -- moderate returns and LARGE risk
+
+
+-- some idea of 6-months
+select 
+           avg(pradchg_f26w_ann) over (partition by intno_o_liab_desc_ntile10)          avg_intno_o_liab_desc_ntile10_pradchg_f26w_ann
+  , stddev_pop(pradchg_f26w_ann) over (partition by intno_o_liab_desc_ntile10)   stddev_pop_intno_o_liab_desc_ntile10_pradchg_f26w_ann
+  ,        avg(pradchg_f26w_ann) over (partition by intno_o_assets_desc_ntile10)        avg_intno_o_assets_desc_ntile10_desc_ntile10_pradchg_f26w_ann
+  , stddev_pop(pradchg_f26w_ann) over (partition by intno_o_assets_desc_ntile10) stddev_pop_intno_o_assets_desc_ntile10_desc_ntile10_pradchg_f26w_ann
+  ,        avg(pradchg_f26w_ann) over (partition by liab_o_assets_desc_ntile10)         avg_liab_o_assets_desc_ntile10_desc_ntile10_desc_ntile10_pradchg_f26w_ann
+  , stddev_pop(pradchg_f26w_ann) over (partition by liab_o_assets_desc_ntile10)  stddev_pop_liab_o_assets_desc_ntile10_desc_ntile10_desc_ntile10_pradchg_f26w_ann
+  , sq2.*
+  from (
+  select 
+      ntile(10) over (order by sq1.intno_o_liab   desc) intno_o_liab_desc_ntile10
+    , ntile(10) over (order by sq1.intno_o_assets desc) intno_o_assets_desc_ntile10
+    , ntile(10) over (order by sq1.liab_o_assets  desc) liab_o_assets_desc_ntile10
+    , sq1.* 
+    from (
+    select 
+        dateindex, dateindexyear, dateindexyear, ticker, company
+      , pradchg_f26w_ann
+      , intno_q1/nullif(liab_q1,0) intno_o_liab, intno_q1/nullif(assets_q1,0) intno_o_assets, liab_q1/nullif(assets_q1,0) liab_o_assets
+    from fe_data_store.si_finecon2 now 
+    where intno_q1 is not null and liab_q1 is not null and assets_q1 is not null 
+      and pradchg_f26w_ann is not null
+      and sp in ('500') and dateindex >= 17167 
+  ) sq1 
+) sq2 order by liab_o_assets_desc_ntile10 desc, intno_o_liab_desc_ntile10 desc, intno_o_assets_desc_ntile10 desc
+
+
+                                            --  avg: 22.0145263157894737;  stddev_pop  25.9931373035439188
+-- return of first 6months of 2017 - best deal: lowest(best)    ratio of intno_o_liab
+--                                              highest(worst)  ratio of intno_o_assets
+--                                              not matter or : highest(worst)liab_o_assets AND NOT lowest(best)
+-- this case: I want 'higher' ntile(good)_values
+select intno_o_liab_desc_ntile10, intno_o_assets_desc_ntile10, liab_o_assets_desc_ntile10
+  , avg(pradchg_f26w_ann) avg_pradchg_f26w_ann, stddev_pop(pradchg_f26w_ann) stddev_pop_pradchg_f26w_ann
+  , count(pradchg_f26w_ann) count_pradchg_f26w_ann
+  , avg(intno_o_liab) avg_intno_o_liab, avg(intno_o_assets) avg_intno_o_assets , avg(liab_o_assets) avg_liab_o_assets
+from (
+  select 
+             avg(pradchg_f26w_ann) over (partition by intno_o_liab_desc_ntile10)          avg_intno_o_liab_desc_ntile10_pradchg_f26w_ann
+    , stddev_pop(pradchg_f26w_ann) over (partition by intno_o_liab_desc_ntile10)   stddev_pop_intno_o_liab_desc_ntile10_pradchg_f26w_ann
+    ,        avg(pradchg_f26w_ann) over (partition by intno_o_assets_desc_ntile10)        avg_intno_o_assets_desc_ntile10_desc_ntile10_pradchg_f26w_ann
+    , stddev_pop(pradchg_f26w_ann) over (partition by intno_o_assets_desc_ntile10) stddev_pop_intno_o_assets_desc_ntile10_desc_ntile10_pradchg_f26w_ann
+    ,        avg(pradchg_f26w_ann) over (partition by liab_o_assets_desc_ntile10)         avg_liab_o_assets_desc_ntile10_desc_ntile10_desc_ntile10_pradchg_f26w_ann
+    , stddev_pop(pradchg_f26w_ann) over (partition by liab_o_assets_desc_ntile10)  stddev_pop_liab_o_assets_desc_ntile10_desc_ntile10_desc_ntile10_pradchg_f26w_ann
+    , sq2.*
+    from (
+    select 
+                                                 -- this case: I want 'higher' ntile(good)_values
+                                                 -- desc: higher the value, then the lower the ntile_value ( like 'rank' )
+                               -- diff than usual: higher value is 'bad'
+        ntile(2) over (order by sq1.intno_o_liab   desc) intno_o_liab_desc_ntile10
+      , ntile(2) over (order by sq1.intno_o_assets desc) intno_o_assets_desc_ntile10
+      , ntile(2) over (order by sq1.liab_o_assets  desc) liab_o_assets_desc_ntile10
+      , sq1.* 
+      from (
+      select 
+          dateindex, dateindexyear, dateindexyear, ticker, company
+        , pradchg_f26w_ann
+        , intno_q1/nullif(liab_q1,0) intno_o_liab, intno_q1/nullif(assets_q1,0) intno_o_assets, liab_q1/nullif(assets_q1,0) liab_o_assets
+      from fe_data_store.si_finecon2 now 
+      where intno_q1 is not null and liab_q1 is not null and assets_q1 is not null 
+        and pradchg_f26w_ann is not null
+        and sp in ('500') and dateindex >= 17167 -- (to 17529) -- pradchg_f26w_ann return of first 6months of 2017
+    ) sq1 
+  ) sq2 order by liab_o_assets_desc_ntile10 desc, intno_o_liab_desc_ntile10 desc, intno_o_assets_desc_ntile10 desc
+) sq3 group by cube(intno_o_liab_desc_ntile10, intno_o_assets_desc_ntile10, liab_o_assets_desc_ntile10) order by avg_pradchg_f26w_ann desc
+
+
+
+
+-- return of first 3.5years through first half of 2017 - best deal: 
+--                                              
+--                                              
+-- this case: I want 'higher' ntile(good)_values
+-- return of first 6months of 2017 - best deal: not matter or :lowest(best)    ratio of intno_o_liab
+--                                              lowest(best)  ratio of intno_o_assets
+--                                              highest(worst)liab_o_assets
+select intno_o_liab_desc_ntile10, intno_o_assets_desc_ntile10, liab_o_assets_desc_ntile10
+  , avg(pradchg_f26w_ann) avg_pradchg_f26w_ann, stddev_pop(pradchg_f26w_ann) stddev_pop_pradchg_f26w_ann
+  , count(pradchg_f26w_ann) count_pradchg_f26w_ann
+  , avg(intno_o_liab) avg_intno_o_liab, avg(intno_o_assets) avg_intno_o_assets , avg(liab_o_assets) avg_liab_o_assets
+from (
+  select 
+             avg(pradchg_f26w_ann) over (partition by intno_o_liab_desc_ntile10)          avg_intno_o_liab_desc_ntile10_pradchg_f26w_ann
+    , stddev_pop(pradchg_f26w_ann) over (partition by intno_o_liab_desc_ntile10)   stddev_pop_intno_o_liab_desc_ntile10_pradchg_f26w_ann
+    ,        avg(pradchg_f26w_ann) over (partition by intno_o_assets_desc_ntile10)        avg_intno_o_assets_desc_ntile10_desc_ntile10_pradchg_f26w_ann
+    , stddev_pop(pradchg_f26w_ann) over (partition by intno_o_assets_desc_ntile10) stddev_pop_intno_o_assets_desc_ntile10_desc_ntile10_pradchg_f26w_ann
+    ,        avg(pradchg_f26w_ann) over (partition by liab_o_assets_desc_ntile10)         avg_liab_o_assets_desc_ntile10_desc_ntile10_desc_ntile10_pradchg_f26w_ann
+    , stddev_pop(pradchg_f26w_ann) over (partition by liab_o_assets_desc_ntile10)  stddev_pop_liab_o_assets_desc_ntile10_desc_ntile10_desc_ntile10_pradchg_f26w_ann
+    , sq2.*
+    from (
+    select 
+                                                 -- this case: I want 'higher' ntile(good)_values
+                                                 -- desc: higher the value, then the lower the ntile_value ( like 'rank' )
+                               -- diff than usual: higher value is 'bad'
+        ntile(2) over (order by sq1.intno_o_liab   desc) intno_o_liab_desc_ntile10
+      , ntile(2) over (order by sq1.intno_o_assets desc) intno_o_assets_desc_ntile10
+      , ntile(2) over (order by sq1.liab_o_assets  desc) liab_o_assets_desc_ntile10
+      , sq1.* 
+      from (
+      select 
+          dateindex, dateindexyear, dateindexyear, ticker, company
+        , pradchg_f26w_ann
+        , intno_q1/nullif(liab_q1,0) intno_o_liab, intno_q1/nullif(assets_q1,0) intno_o_assets, liab_q1/nullif(assets_q1,0) liab_o_assets
+      from fe_data_store.si_finecon2 now 
+      where intno_q1 is not null and liab_q1 is not null and assets_q1 is not null 
+        and pradchg_f26w_ann is not null
+        and sp in ('500') and dateindex >= 16071 -- 2004-01-01 - (to 17529) -- pradchg_f26w_ann return of first 6months of 2017
+    ) sq1 
+  ) sq2 order by liab_o_assets_desc_ntile10 desc, intno_o_liab_desc_ntile10 desc, intno_o_assets_desc_ntile10 desc
+) sq3 group by cube(intno_o_liab_desc_ntile10, intno_o_assets_desc_ntile10, liab_o_assets_desc_ntile10) order by avg_pradchg_f26w_ann desc
+
+
+
+-- SAME AS ABOVE
+-- inttot: intno_q1 + int_q1
+-- return of first 3.5years through first half of 2017 - best deal: 
+--                                              
+--                                              
+-- this case: I want 'higher' ntile(good)_values
+-- return of first 6months of 2017 - best deal: not matter or :lowest(best)    ratio of intno_o_liab
+--                                              lowest(best)  ratio of intno_o_assets
+--                                              highest(worst)liab_o_assets                                          
+select inttot_o_liab_desc_ntile10, inttot_o_assets_desc_ntile10, liab_o_assets_desc_ntile10
+  , avg(pradchg_f26w_ann) avg_pradchg_f26w_ann, stddev_pop(pradchg_f26w_ann) stddev_pop_pradchg_f26w_ann
+  , count(pradchg_f26w_ann) count_pradchg_f26w_ann
+  , avg(inttot_o_liab) avg_inttot_o_liab, avg(inttot_o_assets) avg_inttot_o_assets , avg(liab_o_assets) avg_liab_o_assets
+from (
+  select 
+             avg(pradchg_f26w_ann) over (partition by inttot_o_liab_desc_ntile10)          avg_inttot_o_liab_desc_ntile10_pradchg_f26w_ann
+    , stddev_pop(pradchg_f26w_ann) over (partition by inttot_o_liab_desc_ntile10)   stddev_pop_inttot_o_liab_desc_ntile10_pradchg_f26w_ann
+    ,        avg(pradchg_f26w_ann) over (partition by inttot_o_assets_desc_ntile10)        avg_inttot_o_assets_desc_ntile10_desc_ntile10_pradchg_f26w_ann
+    , stddev_pop(pradchg_f26w_ann) over (partition by inttot_o_assets_desc_ntile10) stddev_pop_inttot_o_assets_desc_ntile10_desc_ntile10_pradchg_f26w_ann
+    ,        avg(pradchg_f26w_ann) over (partition by liab_o_assets_desc_ntile10)         avg_liab_o_assets_desc_ntile10_desc_ntile10_desc_ntile10_pradchg_f26w_ann
+    , stddev_pop(pradchg_f26w_ann) over (partition by liab_o_assets_desc_ntile10)  stddev_pop_liab_o_assets_desc_ntile10_desc_ntile10_desc_ntile10_pradchg_f26w_ann
+    , sq2.*
+    from (
+    select 
+                                                 -- this case: I want 'higher' ntile(good)_values
+                                                 -- desc: higher the value, then the lower the ntile_value ( like 'rank' )
+                               -- diff than usual: higher value is 'bad'
+        ntile(2) over (order by sq1.inttot_o_liab   desc) inttot_o_liab_desc_ntile10
+      , ntile(2) over (order by sq1.inttot_o_assets desc) inttot_o_assets_desc_ntile10
+      , ntile(2) over (order by sq1.liab_o_assets  desc)  liab_o_assets_desc_ntile10
+      , sq1.* 
+      from (
+      select 
+          dateindex, dateindexyear, dateindexyear, ticker, company
+        , pradchg_f26w_ann
+        , (intno_q1 + int_q1)/nullif(liab_q1,0) inttot_o_liab, (intno_q1 + int_q1)/nullif(assets_q1,0) inttot_o_assets, liab_q1/nullif(assets_q1,0) liab_o_assets
+      from fe_data_store.si_finecon2 now 
+      where intno_q1 is not null and liab_q1 is not null and assets_q1 is not null 
+        and pradchg_f26w_ann is not null
+        and sp in ('500') and dateindex >= 16071 -- 2004-01-01 - (to 17529) -- pradchg_f26w_ann return of first 6months of 2017
+    ) sq1 
+  ) sq2 order by liab_o_assets_desc_ntile10 desc, inttot_o_liab_desc_ntile10 desc, inttot_o_assets_desc_ntile10 desc
+) sq3 group by cube(inttot_o_liab_desc_ntile10, inttot_o_assets_desc_ntile10, liab_o_assets_desc_ntile10) order by avg_pradchg_f26w_ann desc
+
+
+
+-- MISSING VALUES so LESS OBS - NEED ONE QUERY PER ITEM ( OR BELOW SEE AVG ) 
+-- bad times and good times how does intno_q1 stack up
+-- 
+select mktcap, assets_q1, liab_q1, intno_q1, int_q1 from fe_data_store.si_finecon2 where dateindex = 16860 and sp = '500'; -- "2016-02-29"
+-- STARTED TO PUT IN ZEROS where intno_q1 and int_q1 ARE NULL
+select mktcap, assets_q1, liab_q1, intno_q1, int_q1 from fe_data_store.si_finecon2 where dateindex = 16891 and sp = '500'; -- 2016-03-31
+-- *** "2016-03-31" ( massive jump here  ) -- assets DOUBLED, liabilities 2.5x ..
+-- Stock Investor Pro 4.5 (3/31/2016 release)
+-- Null Handling
+-- With some database services, 
+-- missing data may simply be converted to a zero. While this is an 
+-- easy solution, it may lead to the end user drawing incorrect 
+-- conclusions about the company’s financial state or it may lead to 
+-- incorrect screening results. Stock Investor 4.5 now only 
+-- deliberately converts missing data to zeros in those cases where 
+-- the company has not reported a line item across its entire time 
+-- series. For example, if a company has never reported long-term 
+-- debt on its balance sheet or dividends on its income statement, 
+-- null (NA) values for these fields are converted to zeros. 
+-- Otherwise, if there is a missing piece of data for a given data 
+-- field within a time series, this null value remains a null (NA).
+
+-- Formula Changes for Existing Data Fields
+-- in some cases, that we had to start calculating the data ourselves.
+-- Interest expense (INT_Q1-Q8, 12M, Y1-Y7)
+
+explain
+select 
+    to_timestamp(dateindex*3600*24)::date 
+  , dateindex
+  , count(mktcap)
+  , sum(mktcap)    / count(mktcap)    a_mktcap
+  , sum(assets_q1) / count(assets_q1) a_assets
+  , sum(liab_q1)   / count(liab_q1)   a_liab
+  , (sum(intno_q1) + sum(int_q1))  / count(intno_q1)                        a_intno -- I could do better
+  , sum(mktcap)    / nullif(sum(intno_q1) + sum(int_q1),0)                  s_mktcap_o_s_inttot
+  , (sum(assets_q1) - sum(liab_q1)) / nullif(sum(intno_q1) + sum(int_q1),0) s_equity_o_s_inttot
+  , sum(assets_q1) / nullif(sum(intno_q1) + sum(int_q1),0)                  s_assets_o_s_inttot
+  , sum(liab_q1)   / nullif(sum(intno_q1) + sum(int_q1),0)                  s_liab_o_s_inttot
+  , sum(mktcap)    / nullif(sum(liab_q1),0)                                 s_mktcap_o_s_liab
+from ( select dateindex, sp, mktcap, assets_q1, liab_q1
+       , case when intno_q1 is null then 0 else intno_q1 end intno_q1
+       , case when int_q1   is null then 0 else   int_q1 end int_q1
+       -- Stock Investor Pro 4.5 (3/31/2016 release) -- Null Handling -- calculating the data ourselves -- Interest expense (INT_Q1-Q8, 12M, Y1-Y7)
+       from fe_data_store.si_finecon2 
+      ) sq1
+where mktcap is not null and intno_q1 is not null and assets_q1 is not null and liab_q1 is not null
+and sp in ('500') -- 
+group by dateindex order by dateindex
+-- before ave interest expense increaese through 2007 to a max at 2017-12-31 ... then started decreasing from there
+--   bounced eventually around 90 for a long time (min 82 @ "2014-07-31") 
+--   started re-increasing
+
+-- s_equite_o_s_intto 
+-- seems trending DOWN seems to be good
+-- seems trending UP seems to be bad
+-- LEFT_OFF
+ 
+-- NEED A LATERAL INSTEAD of MANY IS NULLs
