@@ -6644,6 +6644,108 @@ get_sipro_sp500_earnings_eom_xts <- function() {
 
 
 
+get_sipro_sp500_various_int_expenses_eom_xts  <- function() {
+
+  ops <- options()
+  
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  require(xts)
+  # uses package zoo function as.Date
+
+  message("Begin function get_sipro_sp500_various_int_expenses_eom_xts.")
+
+  verify_connection()
+
+  sipro_sp500_various_int_expenses_eom <- dbGetQuery(con, "
+
+  -- '2016-03-31' 
+  -- Stock Investor Pro 4.5 (3/31/2016 release)
+  -- Null Handling
+  --
+  -- in some cases, that we had to start calculating the data ourselves.
+  -- Interest expense (INT_Q1-Q8, 12M, Y1-Y7)
+  --
+  -- missing data may simply be converted to a zero
+
+  select 
+      to_timestamp(dateindexeom*3600*24)::date dateindexeom_dt
+    , dateindexeom
+    , count(mktcap)    
+    , sum(mktcap)    / count(mktcap)    a_mktcap
+    , sum(assets_q1) / count(assets_q1) a_assets
+    , sum(liab_q1)   / count(liab_q1)   a_liab
+    , (sum(intno_q1) + sum(int_q1))  / count(1)                               a_inttot -- best that I can do
+    , sum(mktcap)    / nullif(sum(intno_q1) + sum(int_q1),0)                  s_mktcap_o_s_inttot
+    , (sum(assets_q1) - sum(liab_q1)) / nullif(sum(intno_q1) + sum(int_q1),0) s_equity_o_s_inttot
+    , sum(assets_q1) / nullif(sum(intno_q1) + sum(int_q1),0)                  s_assets_o_s_inttot
+    , sum(liab_q1)   / nullif(sum(intno_q1) + sum(int_q1),0)                  s_liab_o_s_inttot
+    , sum(mktcap)    / nullif(sum(liab_q1),0)                                 s_mktcap_o_s_liab
+  from ( 
+         select dateindexeom, sp, mktcap, assets_q1, liab_q1
+         -- Stock Investor Pro 4.5 (3/31/2016 release) -- Null Handling -- calculating the data ourselves -- Interest expense (INT_Q1-Q8, 12M, Y1-Y7)
+         -- I do the entire history because it makes sense
+         , case when intno_q1 is null then 0 else intno_q1 end intno_q1  -- typically before 2016-03-31
+         , case when int_q1   is null then 0 else                        -- typically before 2016-03-31
+         -- errors at -- Stock Investor Pro 4.5 (3/31/2016 release)
+           case when dateindex = 16891 and int_q1 >= 5071.00 and adr = 0 then int_q1 / 1000.00 else -- MANY errors
+           case when dateindex = 17225 and ticker = 'AVB' then int_q1 / 1000.00 else         -- seems outlier error (fixable?)
+           case when dateindex = 17470 and ticker = 'JPM' then null             else int_q1  -- seems outlier error (not fixable) -- ONE case
+           end end end end int_q1
+         from fe_data_store.si_finecon2
+       ) sq1
+        -- outlier ONE case
+  where int_q1 is not null and mktcap is not null and assets_q1 is not null and liab_q1 is not null
+  and sp in ('500') -- 
+  group by dateindexeom order by dateindexeom
+
+  -- a_inttot
+  -- seems trending UP seems to be good 
+  -- just 'a' turning point(change in slope) matters ( what it MEANS depends on the context )
+  -- before ave interest expense increase through 2007 to a max 212 @ '2007-12-31' ... then started decreasing from there 
+  -- bounced eventually around 90 for a long time (min 81 @ '2014-10-31') 
+  -- after '2014-12-28' started re-increasing ( and still increasing since )
+
+  -- s_equity_o_s_inttot
+  -- seems trending DOWN seems to be good
+  -- max 86 @ '2004-09-31' ... min 45 @ '2007-12-31' ... max 168 @ '2015-02-27' ... 
+  -- after '2015-02-27' started re-decreasing ( and still decreasing since )
+
+  ;
+  ")
+
+  temp_coredata <- as.matrix(sipro_sp500_various_int_expenses_eom[ ,!colnames(sipro_sp500_various_int_expenses_eom) %in% c("dateindexeom_dt", "dateindexeom"), drop = FALSE])
+  rownames(temp_coredata) <- as.character(sipro_sp500_various_int_expenses_eom[["dateindexeom_dt"]])
+                                              # S3 dispatch as.xts.matrix
+  sipro_sp500_various_int_expenses_eom_xts <- as.xts(temp_coredata)
+  index(sipro_sp500_various_int_expenses_eom_xts) <- zoo::as.Date(index(sipro_sp500_various_int_expenses_eom_xts))
+
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  message("End   function get_sipro_sp500_various_int_expenses_eom_xts.")
+
+  return(sipro_sp500_various_int_expenses_eom_xts) 
+
+}
+# finecon01.R
+# sipro_sp500_various_int_expenses_eom_xts <- get_sipro_sp500_various_int_expenses_eom_xts()
+# View(sipro_sp500_various_int_expenses_eom_xts[,c("a_inttot","s_equity_o_s_inttot")]) # almost mirror images of each other
+# NOTE: was STRONG(good) through late 2015-early 2016 FALSE recession
+# But JUN 2016 - MAY 2017 they where NOT mirror images of each other
+# large era look at (only peaks and troughs matter)
+# short-term pct change is NOT useful
+
+
 
 
 # NOT! INFLATION ADJUSTED!
