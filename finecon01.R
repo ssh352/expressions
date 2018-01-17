@@ -5094,6 +5094,14 @@ load_inbnd_stmtstats_division_aggregates <- function(dateindex = NULL) {
             filter(where fe.last_inbnd_stmtstat_intno_q1    is not null and fe.mktcap is not null) /
           sum(fe.last_inbnd_stmtstat_mktcap) 
             filter(where fe.mktcap                          is not null and fe.last_inbnd_stmtstat_intno_q1  is not null)    * 1000 sum_last_intno_q1_o_mktcap_x1000
+         , sum(fe.last_inbnd_stmtstat_cash_q1) 
+            filter(where fe.last_inbnd_stmtstat_cash_q1    is not null and fe.last_inbnd_stmtstat_assets_q1 is not null) /
+          sum(fe.last_inbnd_stmtstat_assets_q1) 
+            filter(where fe.last_inbnd_stmtstat_assets_q1 is not null and fe.last_inbnd_stmtstat_cash_q1    is not null)    * 1000 sum_last_cash_q1_o_assets_q1_x1000
+        , sum(fe.last_inbnd_stmtstat_cash_q1) 
+            filter(where fe.last_inbnd_stmtstat_cash_q1    is not null and fe.mktcap is not null) /
+          sum(fe.last_inbnd_stmtstat_mktcap) 
+            filter(where fe.mktcap                          is not null and fe.last_inbnd_stmtstat_cash_q1  is not null)    * 1000 sum_last_cash_q1_o_mktcap_x1000
         --
 
         from ( -- fe
@@ -5136,6 +5144,7 @@ load_inbnd_stmtstats_division_aggregates <- function(dateindex = NULL) {
                  , fei.last_inbnd_stmtstat_ce_q1
                  , fei.last_inbnd_stmtstat_int_q1
                  , fei.last_inbnd_stmtstat_intno_q1
+                 , fei.last_inbnd_stmtstat_cash_q1
                  --
                  , fei.pradchg_f04w_ann, fei.pradchg_f13w_ann, fei.pradchg_f26w_ann, fei.pradchg_f52w_ann
                  , fei.price
@@ -7254,7 +7263,7 @@ get_sipro_sp500_mktcap_o_netinc_eom_xts <- function() {
 ### BEGIN METHOD TO ADD A *COMMON* COLUMN ###
 
 # no aggregation
-upload_mini_dbfs_no_future_look_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_only_back = NULL, exact_near_month_end_dbf_dirs = NULL, decreasing_sort_order = TRUE, vacuum_reindex_every_x_seconds=1200) {
+upload_mini_dbfs_no_future_look_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_only_back = NULL, exact_near_month_end_dbf_dirs = NULL, decreasing_sort_order = TRUE, vacuum_reindex_every_x_seconds=3600) {
 
   
   oldtz <- Sys.getenv('TZ')
@@ -7332,7 +7341,7 @@ upload_mini_dbfs_no_future_look_to_db <- function(from_dir = "W:/AAIISIProDBFs",
     # if WANT to include AS an 'inbound' statistics(generally a good) idea ( ADD to this LINE )
     # DYNAMIC SQL
     # columns MUST be named explicitly
-    print(dir_i);load_inbnd_stmtstats(dir_i, nowlast_columns = c("sales_q1", "netinc_q1", "ncc_q1", "assets_q1", "assets_q2", "tco_q1", "tcf_q1", "tci_q1", "ere_q1", "ca_q1", "cl_q1", "liab_q1"), support_dateindex_collection = sort(as.integer(dir(from_dir)), decreasing = TRUE)[dir_i>=  sort(as.integer(dir(from_dir)), decreasing = TRUE)][seq_len(min(sum(dir_i >=  sort(as.integer(dir(from_dir)), decreasing = TRUE)),11))], char_col_numeric_limit = 99999999999999.99) -> si_all_g_df
+    print(dir_i);load_inbnd_stmtstats(dir_i, nowlast_columns = c("sales_q1", "netinc_q1", "ncc_q1", "assets_q1", "assets_q2", "tco_q1", "tcf_q1", "tci_q1", "ere_q1", "ca_q1", "cl_q1", "liab_q1", "ce_q1", "int_q1", "intno_q1", "cash_q1"), support_dateindex_collection = sort(as.integer(dir(from_dir)), decreasing = TRUE)[dir_i>=  sort(as.integer(dir(from_dir)), decreasing = TRUE)][seq_len(min(sum(dir_i >=  sort(as.integer(dir(from_dir)), decreasing = TRUE)),11))], char_col_numeric_limit = 99999999999999.99) -> si_all_g_df
     print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
 
     # IF INVOLVED IN THIS QUERY
@@ -7400,7 +7409,7 @@ upload_mini_dbfs_no_future_look_to_db <- function(from_dir = "W:/AAIISIProDBFs",
                                     
                                            # NO CHECK: I must verify
                                                                                                 # that (1) exists AND (2) lwd
-upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_only_back = NULL, exact_near_month_end_dbf_dirs = NULL, decreasing_sort_order = TRUE, exactly_only_future_returns = FALSE, exactly_only_aggregates = FALSE, exactly_only_aggregates_group_bys_only = FALSE, vacuum_reindex_every_x_seconds=1200) {
+upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_only_back = NULL, exact_near_month_end_dbf_dirs = NULL, decreasing_sort_order = TRUE, exactly_only_future_returns = FALSE, exactly_only_aggregates = FALSE, exactly_only_aggregates_group_bys_only = FALSE, vacuum_reindex_every_x_seconds=3600) {
 
   # NOTE: to build from scratch
   # start from the earliest date (not default) and go thorugh the current date
@@ -7531,7 +7540,7 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
       verify_company_details(dateindex = c(dir_i),  table_f = "si_cfq", cnames_e = "^tco_q.$|^tcf_q.$|^tci_q.$|^ere_q.$|^ce_q.$") -> si_all_g_df
       print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
     
-      verify_company_details(dateindex = c(dir_i),  table_f = "si_bsq", cnames_e = "^ca_q.$|^cl_q.$|^liab_q.$") -> si_all_g_df
+      verify_company_details(dateindex = c(dir_i),  table_f = "si_bsq", cnames_e = "^ca_q.$|^cl_q.$|^liab_q.$|^cash_q.$") -> si_all_g_df
       print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
 
     }
