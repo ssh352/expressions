@@ -1335,7 +1335,14 @@ upsert <-  function(value = NULL, keys = NULL) { # vector of primary key values
 
     Sys.sleep(2)
     message("if NOT *Index Only Scan using ?si_finecon2_dateindex_idx?*, then MOST-LIKELY I need a REINDEX")
-    message(db.q(str_c("explain select distinct dateindex from si_finecon2;"), nrows = -1, conn.id = cid))
+    explain_result <- db.q(str_c("explain select distinct dateindex from si_finecon2;"), nrows = -1, conn.id = cid)
+    explain_result_full_message <-paste(explain_result[[1]], collapse = " ")
+    message(explain_result_full_message)
+    if(!grepl(".*Index Only Scan.*", explain_result_full_message)) {
+      message("Since not found: Index Only Scan ... vacuum_reindex_check ... starting")
+      # vacuum_reindex_check()
+      message("Since not found: Index Only Scan ... vacuum_reindex_check ... finished")
+    }
     Sys.sleep(5)
     
     # FAULTY LOGIC ( HAVE TO RETURN TO THIS 'TOPIC' )  
@@ -1938,7 +1945,14 @@ upsert2 <-  function(value = NULL, keys = NULL, target_table_name = "si_finecon2
 
     Sys.sleep(2)
     message("if NOT *Index Only Scan using ?si_finecon2_dateindex_idx?*, then MOST-LIKELY I need a REINDEX")
-    message(db.q(str_c("explain select distinct dateindex from si_finecon2;"), nrows = -1, conn.id = cid))
+    explain_result <- db.q(str_c("explain select distinct dateindex from si_finecon2;"), nrows = -1, conn.id = cid)
+    explain_result_full_message <-paste(explain_result[[1]], collapse = " ")
+    message(explain_result_full_message)
+    if(!grepl(".*Index Only Scan.*", explain_result_full_message)) {
+      message("Since not found: Index Only Scan ... vacuum_reindex_check ... starting")
+      # vacuum_reindex_check()
+      message("Since not found: Index Only Scan ... vacuum_reindex_check ... finished")
+    }
     Sys.sleep(5)
     
     # FAULTY LOGIC ( HAVE TO RETURN TO THIS 'TOPIC' )  
