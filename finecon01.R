@@ -1340,7 +1340,7 @@ upsert <-  function(value = NULL, keys = NULL) { # vector of primary key values
     message(explain_result_full_message)
     if(!grepl(".*Index Only Scan.*", explain_result_full_message)) {
       message("Since not found: Index Only Scan ... vacuum_reindex_check ... starting")
-      # vacuum_reindex_check()
+      vacuum_reindex_check()
       message("Since not found: Index Only Scan ... vacuum_reindex_check ... finished")
     }
     Sys.sleep(5)
@@ -1950,7 +1950,7 @@ upsert2 <-  function(value = NULL, keys = NULL, target_table_name = "si_finecon2
     message(explain_result_full_message)
     if(!grepl(".*Index Only Scan.*", explain_result_full_message)) {
       message("Since not found: Index Only Scan ... vacuum_reindex_check ... starting")
-      # vacuum_reindex_check()
+      vacuum_reindex_check()
       message("Since not found: Index Only Scan ... vacuum_reindex_check ... finished")
     }
     Sys.sleep(5)
