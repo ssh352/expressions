@@ -1938,7 +1938,7 @@ upsert2 <-  function(value = NULL, keys = NULL, target_table_name = "si_finecon2
 
     Sys.sleep(2)
     message("if NOT *Index Only Scan using ?si_finecon2_dateindex_idx?*, then MOST-LIKELY I need a REINDEX")
-    message(db.q(str_c("explain select distinct dateindex from ", dbQuoteIdentifier(con, target_table_name), ";"), nrows = -1, conn.id = cid))
+    message(db.q(str_c("explain select distinct dateindex from si_finecon2;"), nrows = -1, conn.id = cid))
     Sys.sleep(5)
     
     # FAULTY LOGIC ( HAVE TO RETURN TO THIS 'TOPIC' )  
