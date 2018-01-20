@@ -7388,7 +7388,10 @@ upload_mini_dbfs_no_future_look_to_db <- function(from_dir = "W:/AAIISIProDBFs",
 # 
 # e.g. restart from a HUNG
 # upload_mini_dbfs_no_future_look_to_db(decreasing_sort_order = FALSE, exact_near_month_end_dbf_dirs = sort(as.integer(dir("W:\\AAIISIProDBFs")))[ 13756 <= sort(as.integer(dir("W:\\AAIISIProDBFs")))])
-
+#   **
+#   ALWAYS!! WHILE THE PROGRAM *IS* RUNNING - check that the IS LOADING actually *IS* loading
+#   select STATISIC_q1, now_inbnd_stmtstat_STATISIC_q1 from fe_data_store.si_finecon2 where dateindex = <just finished loading this one>;
+#   **
 
 # looking for ere_q1
 # select dateindex, ere_q1, ere_qi from fe_data_store.si_finecon2 where dateindex = 12055
