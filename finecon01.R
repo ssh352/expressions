@@ -7373,14 +7373,15 @@ upload_mini_dbfs_no_future_look_to_db <- function(from_dir = "W:/AAIISIProDBFs",
     # ( and MODIFY this *STATIC* QUERY [x] NOW (add ere_q1 [x])AND permanently AND RUN )
     load_inbnd_stmtstats_division_aggregates(dir_i)
     
-    vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
+    Sys.sleep(2)
+    message(paste0("**** Ending disk dbf dir: ",dir_i," ", dir_i," ****"))
+    message(paste0("**** Ending disk dbf dir: ",dir_i," ", dir_i," ****"))
+    message(paste0("**** Ending disk dbf dir: ",dir_i," ", dir_i," ****"))
+    message(paste0("**** Ending disk dbf dir: ",dir_i," ", dir_i," ****"))
+    Sys.sleep(2)
     
-    Sys.sleep(2)
-    message(paste0("**** Ending disk dbf dir: ",dir_i," ", dir_i," ****"))
-    message(paste0("**** Ending disk dbf dir: ",dir_i," ", dir_i," ****"))
-    message(paste0("**** Ending disk dbf dir: ",dir_i," ", dir_i," ****"))
-    message(paste0("**** Ending disk dbf dir: ",dir_i," ", dir_i," ****"))
-    Sys.sleep(2)
+    vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
+
     
   }
   
