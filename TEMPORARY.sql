@@ -14118,8 +14118,30 @@ from (
 -- 
 select mktcap, assets_q1, liab_q1, intno_q1, int_q1 from fe_data_store.si_finecon2 where dateindex = 16860 and sp = '500'; -- "2016-02-29"
 -- STARTED TO PUT IN ZEROS where intno_q1 and int_q1 ARE NULL
+
 select mktcap, assets_q1, liab_q1, intno_q1, int_q1 from fe_data_store.si_finecon2 where dateindex = 16891 and sp = '500'; -- 2016-03-31
--- *** "2016-03-31" ( massive jump here  ) -- assets DOUBLED, liabilities 2.5x ..
+
+
+
+--WHEN I HAVE TIME SEARCH FOR OUTLIERS
+--NEED AN R FUNCTION [ ] -- dateindex by dateindex, column_by_column looper
+-- outlier comparer
+select 
+      le.company_id le_company_id, le.ticker le_ticker, le.company le_company
+    , le.int_q1 le_int_q1, re.int_q1 re_int_q1, re.int_q1/nullif(le.int_q1,0) re_o_le_multiplyer
+    , re.company re_company, re.ticker re_ticker, re.company_id re_company_id
+from fe_data_store.si_finecon2 le full outer join fe_data_store.si_finecon2 re on le.company_id = re.company_id 
+where le.dateindex = 16860 and re.dateindex = 16891 and le.sp = '500' and re.sp = '500' and le.adr = 0 and re.adr = 0
+order by re_o_le_multiplyer desc nulls last
+-- left(le) and right(re) compare dateindexes                 -- sp(le and re) filter_expr
+-- dir_i on "W:\AAIISIProDBFs" to to get the before and after dateindexes
+
+
+get_sipro_sp500_various_int_expenses_eom_xts 
+
+-- SAVE TO AN R FUNCTION [ ]
+
+-- "2016-03-31" 
 -- Stock Investor Pro 4.5 (3/31/2016 release)
 -- Null Handling
 -- With some database services, 
@@ -14139,36 +14161,214 @@ select mktcap, assets_q1, liab_q1, intno_q1, int_q1 from fe_data_store.si_fineco
 -- in some cases, that we had to start calculating the data ourselves.
 -- Interest expense (INT_Q1-Q8, 12M, Y1-Y7)
 
-explain
 select 
-    to_timestamp(dateindex*3600*24)::date 
+    to_timestamp(dateindex*3600*24)::date dateindex_dt
   , dateindex
-  , count(mktcap)
+  , count(mktcap)    
   , sum(mktcap)    / count(mktcap)    a_mktcap
   , sum(assets_q1) / count(assets_q1) a_assets
   , sum(liab_q1)   / count(liab_q1)   a_liab
-  , (sum(intno_q1) + sum(int_q1))  / count(intno_q1)                        a_intno -- I could do better
+  , (sum(intno_q1) + sum(int_q1))  / count(1)                               a_inttot -- best that I can do
   , sum(mktcap)    / nullif(sum(intno_q1) + sum(int_q1),0)                  s_mktcap_o_s_inttot
   , (sum(assets_q1) - sum(liab_q1)) / nullif(sum(intno_q1) + sum(int_q1),0) s_equity_o_s_inttot
   , sum(assets_q1) / nullif(sum(intno_q1) + sum(int_q1),0)                  s_assets_o_s_inttot
   , sum(liab_q1)   / nullif(sum(intno_q1) + sum(int_q1),0)                  s_liab_o_s_inttot
   , sum(mktcap)    / nullif(sum(liab_q1),0)                                 s_mktcap_o_s_liab
-from ( select dateindex, sp, mktcap, assets_q1, liab_q1
-       , case when intno_q1 is null then 0 else intno_q1 end intno_q1
-       , case when int_q1   is null then 0 else   int_q1 end int_q1
+from ( 
+       select dateindex, sp, mktcap, assets_q1, liab_q1
        -- Stock Investor Pro 4.5 (3/31/2016 release) -- Null Handling -- calculating the data ourselves -- Interest expense (INT_Q1-Q8, 12M, Y1-Y7)
-       from fe_data_store.si_finecon2 
-      ) sq1
-where mktcap is not null and intno_q1 is not null and assets_q1 is not null and liab_q1 is not null
+       -- I do the entire history because it makes sense
+       , case when intno_q1 is null then 0 else intno_q1 end intno_q1  -- typically before 2016-03-31
+       , case when int_q1   is null then 0 else                        -- typically before 2016-03-31
+       -- errors at -- Stock Investor Pro 4.5 (3/31/2016 release)
+         case when dateindex = 16891 and int_q1 >= 5071.00 and adr = 0 then int_q1 / 1000.00 else -- MANY errors
+         case when dateindex = 17225 and ticker = 'AVB' then int_q1 / 1000.00 else         -- seems outlier error (fixable?)
+         case when dateindex = 17470 and ticker = 'JPM' then null             else int_q1  -- seems outlier error (not fixable) -- ONE case
+         end end end end int_q1
+       from fe_data_store.si_finecon2
+     ) sq1
+      -- outlier ONE case
+where int_q1 is not null and mktcap is not null and assets_q1 is not null and liab_q1 is not null
 and sp in ('500') -- 
 group by dateindex order by dateindex
--- before ave interest expense increaese through 2007 to a max at 2017-12-31 ... then started decreasing from there
---   bounced eventually around 90 for a long time (min 82 @ "2014-07-31") 
---   started re-increasing
 
--- s_equite_o_s_intto 
--- seems trending DOWN seems to be good
--- seems trending UP seems to be bad
--- LEFT_OFF
- 
--- NEED A LATERAL INSTEAD of MANY IS NULLs
+-- COME BACK [ ] after reindex
+-- outlier comparer a_cash to wa_mktcap_cash jumps by double to next point
+
+select 
+      le.company_id le_company_id, le.ticker le_ticker, le.company le_company
+    , le.mktcap le_mktcap, re.mktcap re_mktcap, re.mktcap/nullif(le.mktcap,0) re_o_le_multiplyer
+    , re.company re_company, re.ticker re_ticker, re.company_id re_company_id
+from fe_data_store.si_finecon2 le full outer join fe_data_store.si_finecon2 re on le.company_id = re.company_id 
+where le.dateindex = 12783 and re.dateindex = 12814 and le.sp = '500' and re.sp = '500' and le.adr = 0 and re.adr = 0
+order by re_o_le_multiplyer desc nulls last
+-- O.K.
+
+select le.mktcap,
+      le.company_id le_company_id, le.ticker le_ticker, le.company le_company
+    , le.cash_q1 le_cash_q1, re.cash_q1 re_cash_q1, re.cash_q1/nullif(le.cash_q1,0) re_o_le_multiplyer
+    , re.company re_company, re.ticker re_ticker, re.company_id re_company_id
+from fe_data_store.si_finecon2 le full outer join fe_data_store.si_finecon2 re on le.company_id = re.company_id 
+where le.dateindex = 12783 and re.dateindex = 12814 and le.sp = '500' and re.sp = '500' and le.adr = 0 and re.adr = 0
+order by re_o_le_multiplyer desc nulls last
+--NOT OK
+385882.90;"3737N";"GE";"General Electric Company";10075.00;150800.00;14.9677419354838710;"General Electric Company";"GE";"3737N"
+39416.40;"7884N";"SLB";"Schlumberger Limited";201.20;2997.40;14.8976143141153082;"Schlumberger Limited";"SLB";"7884N"
+9034.30;"CE04D";"KMI";"Kinder Morgan, Inc.";12.20;177.00;14.5081967213114754;"Kinder Morgan, Inc.";"KMI";"CE04D"
+3898.70;"64702";"NVLS";"Novellus Systems, Inc.";51.90;583.00;11.2331406551059730;"Novellus Systems, Inc.";"NVLS";"64702"
+
+
+select le.mktcap,
+      le.company_id le_company_id, le.ticker le_ticker, le.company le_company
+    , le.cash_q1 le_cash_q1, re.cash_q1 re_cash_q1, re.cash_q1/nullif(le.cash_q1,0) re_o_le_multiplyer
+    , re.company re_company, re.ticker re_ticker, re.company_id re_company_id
+from fe_data_store.si_finecon2 le full outer join fe_data_store.si_finecon2 re on le.company_id = re.company_id 
+where le.dateindex = 12783 and re.dateindex = 12842 and le.sp = '500' and re.sp = '500' and le.adr = 0 and re.adr = 0
+order by re_o_le_multiplyer desc nulls last
+7093.70;"47507010";"JP";"Jefferson-Pilot Corporation";25.00;27655.00;1106.2000000000000000;"Jefferson-Pilot Corporation";"JP";"47507010"
+1613.40;"2284N";"CTB";"Cooper Tire & Rubber Company";24.90;938.60;37.6947791164658635;"Cooper Tire & Rubber Company";"CTB";"2284N"
+385882.90;"3737N";"GE";"General Electric Company";10075.00;150800.00;14.9677419354838710;"General Electric Company";"GE";"3737N"
+39416.40;"7884N";"SLB";"Schlumberger Limited";201.20;2997.40;14.8976143141153082;"Schlumberger Limited";"SLB";"7884N"
+9034.30;"CE04D";"KMI";"Kinder Morgan, Inc.";12.20;177.00;14.5081967213114754;"Kinder Morgan, Inc.";"KMI";"CE04D"
+3898.70;"64702";"NVLS";"Novellus Systems, Inc.";51.90;583.00;11.2331406551059730;"Novellus Systems, Inc.";"NVLS";"64702"
+
+
+
+-- 2007-2008 recession
+-- seems most noticable s_mktcap_o_cash, s_equity_o_cash - strong downtroddent before 2007-2008 recession
+--
+-- short way
+-- long way (very slow, does not scale - does not use pre-calculated pradchg_f13w_ann)
+--
+-- 2007-2008 recession
+-- inbound loosing value: seems most: s_mktcap_o_cash, s_equity_o_cash
+---late 2015-early 2016 false recession
+-- slight inbount loosing value: s_mktcap_o_cash, 'no loosing value': s_equity_o_cash
+-- 
+explain
+select 
+    to_timestamp(dateindex*3600*24)::date dateindex_dt
+  , dateindex
+  , count(mktcap)                     c_mktcap
+  , sum(mktcap)    / count(mktcap)    a_mktcap
+  , sum(assets_q1) / count(assets_q1) a_assets
+  , sum(liab_q1)   / count(liab_q1)   a_liab
+  , sum(cash_q1)   / count(cash_q1)                                                                 a_cash
+  , sum(cash_q1*mktcap)   / sum(mktcap)                                                             wa_mktcap_cash
+  , sum(mktcap)    / nullif(sum(cash_q1),0)                                                         s_mktcap_o_s_cash
+  , (sum(assets_q1) - sum(liab_q1)) / nullif(sum(cash_q1),0)                                        s_equity_o_s_cash
+  , sum(assets_q1) / nullif(sum(cash_q1),0)                                                         s_assets_o_s_cash
+  , sum(liab_q1)   / nullif(sum(cash_q1),0)                                                         s_liab_o_s_cash
+  , sum(mktcap)    / nullif(sum(liab_q1),0)                                                         s_mktcap_o_s_liab
+  , sum( (pradchg_f13w_ann) * 1      ) / count(pradchg_f13w_ann)     a_pradchg_f13w_ann   
+  , sum( (pradchg_f13w_ann) * mktcap ) / sum(mktcap)         wa_mktcap_pctchg_f03_price_ann 
+from ( 
+       select now.dateindex, now.sp, now.mktcap, now.assets_q1, now.liab_q1, now.cash_q1
+            , now.pradchg_f13w_ann
+       from fe_data_store.si_finecon2 now
+       where
+             now.sp in(values('500'))
+         and now.assets_q1 is not null and now.liab_q1 is not null  
+         and now.cash_q1 is not null 
+         and now.mktcap is not null 
+         and now.pradchg_f13w_ann is not null
+         and ((now.split_date < now.dateindex - 93) or now.split_date is null) -- no split within the last 93 days ( or never a split in history )
+     ) sq1
+group by dateindex order by dateindex
+
+
+
+-- SAME AS ABOVE ( but I also care about interest payments)
+
+--r_s_cash_o_s_intno_int
+--means something or ( somthing else means something)
+--
+--uptrending? seems better than downtrending
+--but downtrending does not (often) hurt(recently/toward 2008 recession)
+--slope flattens (high)"2004-12-31" 21.2660864028290493
+--slope flattens  (low)"2008-04-30" 6.1922659177590551
+--slope flattens (high)"2015-04-30" 47.8389552292651250
+--                     "2017-09-29" 26.3586874116369448
+--comment out --now.pradchg_f13w_ann
+--                      "2017-12-29" 27.3959806633438585
+explain
+select 
+    to_timestamp(dateindex*3600*24)::date dateindex_dt
+  , dateindex
+  , count(mktcap)                     c_mktcap
+  , sum(mktcap)    / count(mktcap)    a_mktcap
+  , sum(assets_q1) / count(assets_q1) a_assets
+  , sum(liab_q1)   / count(liab_q1)   a_liab
+  , sum(cash_q1)   / (sum(intno_q1) + sum(int_q1))                r_s_cash_o_s_intno_int
+  -- , sum( (pradchg_f13w_ann) * 1      ) / count(pradchg_f13w_ann)          a_pradchg_f13w_ann   
+  -- , sum( (pradchg_f13w_ann) * mktcap ) / sum(mktcap)              wa_mktcap_pctchg_f03_price_ann 
+from ( 
+       select now.dateindex, now.sp, now.mktcap, now.assets_q1, now.liab_q1, now.cash_q1
+           -- , now.pradchg_f13w_ann
+           -- Stock Investor Pro 4.5 (3/31/2016 release) -- Null Handling -- calculating the data ourselves -- Interest expense (INT_Q1-Q8, 12M, Y1-Y7)
+           -- I do the entire history because it makes sense
+           , case when now.intno_q1 is null then 0 else now.intno_q1 end intno_q1  -- typically before 2016-03-31
+           , case when now.int_q1   is null then 0 else                        -- typically before 2016-03-31
+           -- errors at -- Stock Investor Pro 4.5 (3/31/2016 release)
+             case when now.dateindex = 16891 and now.int_q1 >= 5071.00 and now.adr = 0 then now.int_q1 / 1000.00 else -- MANY errors
+             case when now.dateindex = 17225 and now.ticker = 'AVB' then now.int_q1 / 1000.00 else         -- seems outlier error (fixable?)
+             case when now.dateindex = 17470 and now.ticker = 'JPM' then null             else now.int_q1  -- seems outlier error (not fixable) -- ONE case
+             end end end end int_q1
+       from fe_data_store.si_finecon2 now
+       where
+             now.sp in(values('500'))
+         and now.assets_q1 is not null and now.liab_q1 is not null  
+         and now.cash_q1 is not null 
+         and now.mktcap is not null 
+         -- and now.pradchg_f13w_ann is not null
+         and now.int_q1 is not null -- ONE CASE
+         and ((now.split_date < now.dateindex - 93) or now.split_date is null) -- no split within the last 93 days ( or never a split in history )
+     ) sq1
+group by dateindex order by dateindex
+
+
+
+--SKIP THIS
+-- long way (very slow, does not scale - does not use pre-calculated pradchg_f13w_ann)
+-- 2007-2008 recession
+-- inbound loosing value: seems most s_mktcap_o_cash, s_equity_o_cash
+-- 
+--
+explain
+select 
+    to_timestamp(dateindex*3600*24)::date dateindex_dt
+  , dateindex
+  , count(mktcap)                     c_mktcap
+  , sum(mktcap)    / count(mktcap)    a_mktcap
+  , sum(assets_q1) / count(assets_q1) a_assets
+  , sum(liab_q1)   / count(liab_q1)   a_liab
+  , sum(cash_q1)   / count(cash_q1)                                                                 a_cash
+  , sum(cash_q1*mktcap)   / sum(mktcap)                                                             wa_mktcap__cash
+  , sum(mktcap)    / nullif(sum(cash_q1),0)                                                         s_mktcap_o_s_cash
+  , (sum(assets_q1) - sum(liab_q1)) / nullif(sum(cash_q1),0)                                        s_equity_o_s_cash
+  , sum(assets_q1) / nullif(sum(cash_q1),0)                                                         s_assets_o_s_cash
+  , sum(liab_q1)   / nullif(sum(cash_q1),0)                                                         s_liab_o_s_cash
+  , sum(mktcap)    / nullif(sum(liab_q1),0)                                                         s_mktcap_o_s_liab
+  , sum( ((f03_price - now_price) / nullif(abs(now_price),0) * 4 * 100) * 1      ) / count(now_price)            a_pctchg_f03_price_ann   
+  , sum( ((f03_price - now_price) / nullif(abs(now_price),0) * 4 * 100) * mktcap ) / sum(mktcap)         wa_mktcap_pctchg_f03_price_ann 
+from ( 
+       select now.dateindex, now.sp, now.mktcap, now.assets_q1, now.liab_q1, now.cash_q1
+            , now.price now_price, f03.price f03_price
+       from fe_data_store.si_finecon2 now, fe_data_store.si_finecon2 f03
+       where 
+             now.sp in(values('500'))
+         and now.assets_q1 is not null and now.liab_q1 is not null  
+         and now.cash_q1 is not null 
+         and now.mktcap is not null 
+         and now.price is not null and f03.price is not null is not null 
+         and ((f03.split_date < f03.dateindex - 93) or f03.split_date is null) -- no split within the last 93 days ( or never a split in history )
+         and now.dateindexf03eom = f03.dateindexeom and now.company_id = f03.company_id
+         and now.dateindex <= 12510 -- just first 12 months -- 15491 -- may2012 --  --17074 -- just recent 12 months
+     ) sq1
+group by dateindex order by dateindex
+-- 12(15)months 1:38 -- VERY LONG
+
+
+
+
+
