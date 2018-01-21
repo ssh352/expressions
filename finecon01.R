@@ -7359,7 +7359,7 @@ upload_mini_dbfs_no_future_look_to_db <- function(from_dir = "W:/AAIISIProDBFs",
     # 
 
     # columns CAN be named implicitely be regular expression
-    verify_company_details(dateindex = c(dir_i),  table_f = "si_cfq", cnames_e = "^ere_q.$") -> si_all_g_df
+    verify_company_details(dateindex = c(dir_i),  table_f = "si_bsq", cnames_e = "^cash_q.$") -> si_all_g_df
     print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
     
     # if WANT to include AS an 'inbound' statistics(generally a good) idea ( ADD to this LINE )
@@ -7381,7 +7381,6 @@ upload_mini_dbfs_no_future_look_to_db <- function(from_dir = "W:/AAIISIProDBFs",
     Sys.sleep(2)
     
     vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
-
     
   }
   
