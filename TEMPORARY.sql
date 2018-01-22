@@ -14161,6 +14161,11 @@ get_sipro_sp500_various_int_expenses_eom_xts
 -- in some cases, that we had to start calculating the data ourselves.
 -- Interest expense (INT_Q1-Q8, 12M, Y1-Y7)
 
+--s_liab_o_s_intot
+--actually -- 2007-2008 recession -- bounce around - no meaning
+--"2007-01-31"(275.2499124982313472) -- "2007-12-31"(230.0933670283258342) -- "2008-08-29"(306.5712525677708659)
+--actually improved(very slightly higher) during false recession of 2015-2016
+--
 select 
     to_timestamp(dateindex*3600*24)::date dateindex_dt
   , dateindex
@@ -14370,5 +14375,486 @@ group by dateindex order by dateindex
 
 
 
+--r_s_cash_o_s_intno_int
+--means something or ( somthing else means something)
+-- does drop fast in 2007-2008 recession
+-- does drop fast durring FALSE recession late 2015-early2016
+-- can be volitile and noisy
+explain
+select 
+    to_timestamp(dateindex*3600*24)::date dateindex_dt
+  , dateindex
+  , count(netinc_q1)                     c_netinc
+  , sum(netinc_q1)   / (sum(intno_q1) + sum(int_q1))                r_s_netinc_o_s_intno_int
+  , sum( (pradchg_f13w_ann) * 1      ) / count(pradchg_f13w_ann)          a_pradchg_f13w_ann   
+  , sum( (pradchg_f13w_ann) * mktcap ) / sum(mktcap)              wa_mktcap_pctchg_f03_price_ann 
+from ( 
+       select now.dateindex, now.sp, now.mktcap, now.assets_q1, now.liab_q1, now.netinc_q1
+           , now.pradchg_f13w_ann
+           -- Stock Investor Pro 4.5 (3/31/2016 release) -- Null Handling -- calculating the data ourselves -- Interest expense (INT_Q1-Q8, 12M, Y1-Y7)
+           -- I do the entire history because it makes sense
+           , case when now.intno_q1 is null then 0 else now.intno_q1 end intno_q1  -- typically before 2016-03-31
+           , case when now.int_q1   is null then 0 else                        -- typically before 2016-03-31
+           -- errors at -- Stock Investor Pro 4.5 (3/31/2016 release)
+             case when now.dateindex = 16891 and now.int_q1 >= 5071.00 and now.adr = 0 then now.int_q1 / 1000.00 else -- MANY errors
+             case when now.dateindex = 17225 and now.ticker = 'AVB' then now.int_q1 / 1000.00 else         -- seems outlier error (fixable?)
+             case when now.dateindex = 17470 and now.ticker = 'JPM' then null             else now.int_q1  -- seems outlier error (not fixable) -- ONE case
+             end end end end int_q1
+       from fe_data_store.si_finecon2 now
+       where
+             now.sp in(values('500'))
+         and now.netinc_q1 is not null                                      -- recent
+         and ( (now.pradchg_f13w_ann is not null and dateindex <= 17438) or (now.pradchg_f13w_ann is null and dateindex > 17438)) -- just: now.pradchg_f13w_ann is not null 
+         and now.int_q1 is not null -- ONE CASE
+         and ((now.split_date < now.dateindex - 93) or now.split_date is null) -- no split within the last 93 days ( or never a split in history )
+     ) sq1
+group by dateindex order by dateindex
 
 
+COMPARE? VS CL_Q1
+Current Liabilities = Short-term debt + Current portion of long-term debt + Accounts Payable + Accrued liabilities + Interest + Taxes Payable
+
+need to load?
+Short-term debt Q1, Q2, Q3, Q4, Q5, Q6, Q7, Q8
+Data Table Name: STDEBT_Q1, Q2, Q3, Q4, Q5, Q6, Q7, Q8
+Data Category: Balance Sheet - Quarterly
+
+
+------------------- BAD----------------------------
+-- LIAB_Q1 (SEEMS VERY WRONG)
+-- r_s_cl_o_s_intno_int  # CURRENT LIABLIIES OVER INTEREST EXPENSE
+-- "2004-07-02" (high) 106.5930618641591627 "2007-12-31"(cliff)16.0316857541260915 "2008-02-29"(low) 5.5250685031188751 
+-- "2015-02-27" (high)            31.8242798887058664
+-- "2016-02-29" (anticliff)       27.3194521282837935 (ANTICLIFF IN MANY MEASURES) (MASSIVE a_liab DECREASE) (a_cl in general CONSTANT)
+-- "2016-03-31" (someone rescued) 51.9565728490964515(and high)
+-- "2017-09-29" (last)            46.5637579996311803
+-- 
+-- a_liab (BEFORE CONCLUDING - SEE BELOW)
+-- "2007-12-31"(anticliff) 49813.623408624230 to "2008-01-31"(33%permanent inclease) 83950.084353741497
+-- after some(two) spurts of massive increases
+-- "2016-02-29"(cliff)    124075.691228070175 to "2016-03-31" 50508.437500000000
+--  (last) ~54500 "2017-07-31" to (last) "2017-12-29"
+-- 
+-- r_w_mktcap_o_s_cl
+-- local max                     "2008-01-31" (local max) 9.8507259189874136 ... very SLOW downtrend follows
+-- seems to max out around 10-11("2015-03-31"-"2015-12-31")
+explain
+select 
+    to_timestamp(dateindex*3600*24)::date dateindex_dt
+  , dateindex
+  , count(mktcap)                     c_mktcap
+  , sum(mktcap)    / count(mktcap)    a_mktcap
+  , sum(assets_q1) / count(assets_q1) a_assets
+  , sum(liab_q1)   / count(liab_q1)   a_liab
+  , sum(cl_q1)     / count(cl_q1)                               a_cl
+  , sum(mktcap)    / sum(cl_q1)                                 r_w_mktcap_o_s_cl
+  , sum(assets_q1) / sum(cl_q1)                                 r_s_assets_o_s_cl
+  , sum(liab_q1)   / sum(cl_q1)                                 r_s_liab_o_s_cl
+  , sum(cl_q1)   / (sum(intno_q1) + sum(int_q1))                r_s_cl_o_s_intno_int
+  , sum( (pradchg_f13w_ann) * 1      ) / count(pradchg_f13w_ann)         a_pradchg_f13w_ann   
+  , sum( (pradchg_f13w_ann) * mktcap ) / sum(mktcap)              wa_mktcap_pctchg_f03_price_ann 
+from ( 
+       select now.dateindex, now.sp, now.mktcap, now.assets_q1, now.liab_q1, now.cl_q1
+           , now.pradchg_f13w_ann
+           -- Stock Investor Pro 4.5 (3/31/2016 release) -- Null Handling -- calculating the data ourselves -- Interest expense (INT_Q1-Q8, 12M, Y1-Y7)
+           -- I do the entire history because it makes sense
+           , case when now.intno_q1 is null then 0 else now.intno_q1 end intno_q1  -- typically before 2016-03-31
+           , case when now.int_q1   is null then 0 else                        -- typically before 2016-03-31
+           -- errors at -- Stock Investor Pro 4.5 (3/31/2016 release)
+             case when now.dateindex = 16891 and now.int_q1 >= 5071.00 and now.adr = 0 then now.int_q1 / 1000.00 else -- MANY errors
+             case when now.dateindex = 17225 and now.ticker = 'AVB' then now.int_q1 / 1000.00 else         -- seems outlier error (fixable?)
+             case when now.dateindex = 17470 and now.ticker = 'JPM' then null             else now.int_q1  -- seems outlier error (not fixable) -- ONE case
+             end end end end int_q1
+       from fe_data_store.si_finecon2 now
+       where
+             now.sp in(values('500'))
+         and now.assets_q1 is not null and now.liab_q1 is not null  
+         and now.cl_q1 is not null 
+         and now.mktcap is not null 
+         -- and now.pradchg_f13w_ann is not null
+         and ( (now.pradchg_f13w_ann is not null and dateindex <= 17438) or (now.pradchg_f13w_ann is null and dateindex > 17438)) -- just: now.pradchg_f13w_ann is not null 
+         and now.int_q1 is not null -- ONE CASE
+         and ((now.split_date < now.dateindex - 93) or now.split_date is null) -- no split within the last 93 days ( or never a split in history )
+     ) sq1
+group by dateindex order by dateindex
+
+
+select le.mktcap,
+      le.company_id le_company_id, le.ticker le_ticker, le.company le_company
+    , le.liab_q1 le_liab_q1, re.liab_q1 re_liab_q1, re.liab_q1/nullif(le.liab_q1,0) re_o_le_multiplyer
+    , re.company re_company, re.ticker re_ticker, re.company_id re_company_id
+from fe_data_store.si_finecon2 le full outer join fe_data_store.si_finecon2 re on le.company_id = re.company_id 
+where le.dateindex = 16860 and re.dateindex = 16891 and le.sp = '500' and re.sp = '500' and le.adr = 0 and re.adr = 0
+order by re_o_le_multiplyer desc nulls last
+--16860 ( "2016-02-29" ) -- 16891 -- 2016-03-31
+-- I SEE NOTHING (liab_q1 SHOULD NOT HAVE JUMPED)
+
+
+explain
+select 
+    to_timestamp(dateindex*3600*24)::date dateindex_dt
+  , dateindex
+  , count(mktcap)                     c_mktcap
+  , count(assets_q1)                  c_assets
+  , count(liab_q1)                    c_liab
+  , sum(liab_q1)                      s_liab
+from ( 
+       select now.dateindex, now.sp, now.assets_q1, now.mktcap, now.liab_q1
+       from fe_data_store.si_finecon2 now
+       where
+             now.sp in(values('500'))
+     ) sq1
+group by dateindex order by dateindex
+-- I SEE NOTHING
+
+
+-- (BAD)
+-- int_q1/intno_q1 SCREWS UP liab_q1,assets_q1 (BIG DONATORS MISSING?)
+explain
+select 
+    to_timestamp(dateindex*3600*24)::date dateindex_dt
+  , dateindex
+  , count(mktcap)                     c_mktcap
+  , sum(mktcap)    / count(mktcap)    a_mktcap
+  , count(assets_q1)                  c_assets
+  , sum(assets_q1) / count(assets_q1) a_assets
+  , count(liab_q1)                    c_liab
+  , sum(liab_q1)   / count(liab_q1)   a_liab
+  , count(cl_q1)                      c_cl
+  , sum(cl_q1)     / count(cl_q1)                               a_cl
+  , sum(mktcap)    / sum(cl_q1)                                 r_w_mktcap_o_s_cl
+  , sum(assets_q1) / sum(cl_q1)                                 r_s_assets_o_s_cl
+  , sum(liab_q1)   / sum(cl_q1)                                 r_s_liab_o_s_cl
+  , sum( (pradchg_f13w_ann) * 1      ) / count(pradchg_f13w_ann)         a_pradchg_f13w_ann   
+  , sum( (pradchg_f13w_ann) * mktcap ) / sum(mktcap)              wa_mktcap_pctchg_f03_price_ann 
+from ( 
+       select now.dateindex, now.sp, now.mktcap, now.assets_q1, now.liab_q1, now.cl_q1
+           , now.pradchg_f13w_ann
+       from fe_data_store.si_finecon2 now
+       where
+             now.sp in(values('500'))
+         and now.assets_q1 is not null and now.liab_q1 is not null  
+         and now.cl_q1 is not null 
+         and now.mktcap is not null 
+         and now.pradchg_f13w_ann is not null
+         and ( (now.pradchg_f13w_ann is not null and dateindex <= 17438) or (now.pradchg_f13w_ann is null and dateindex > 17438)) -- just: now.pradchg_f13w_ann is not null 
+         and now.dateindex in(values (16860),(16891))
+         and ((now.split_date < now.dateindex - 93) or now.split_date is null) -- no split within the last 93 days ( or never a split in history )
+     ) sq1
+group by dateindex order by dateindex
+
+
+-- since current liablities includes interest payments anyways
+-- Current Liabilities = Short-term debt + Current portion of long-term debt + Accounts Payable + Accrued liabilities + Interest + Taxes Payable
+
+-- int_q1/intno_q1 is now removed ... so GOOD
+-- NO GOOD conclusion --
+explain
+select 
+    to_timestamp(dateindex*3600*24)::date dateindex_dt
+  , dateindex
+  , count(mktcap)                     c_mktcap
+  , sum(mktcap)    / count(mktcap)    a_mktcap
+  , sum(assets_q1) / count(assets_q1) a_assets
+  , sum(liab_q1)   / count(liab_q1)   a_liab
+  , sum(cl_q1)     / count(cl_q1)                               a_cl
+  , sum(mktcap)    / sum(cl_q1)                                 r_w_mktcap_o_s_cl
+  , sum(assets_q1) / sum(cl_q1)                                 r_s_assets_o_s_cl
+  , sum(liab_q1)   / sum(cl_q1)                                 r_s_liab_o_s_cl
+  , sum( (pradchg_f13w_ann) * 1      ) / count(pradchg_f13w_ann)         a_pradchg_f13w_ann   
+  , sum( (pradchg_f13w_ann) * mktcap ) / sum(mktcap)              wa_mktcap_pctchg_f03_price_ann 
+from ( 
+       select now.dateindex, now.sp, now.mktcap, now.assets_q1, now.liab_q1, now.cl_q1
+           , now.pradchg_f13w_ann
+       from fe_data_store.si_finecon2 now
+       where
+             now.sp in(values('500'))
+         and now.assets_q1 is not null and now.liab_q1 is not null  
+         and now.cl_q1 is not null 
+         and now.mktcap is not null 
+         and now.pradchg_f13w_ann is not null
+         and ( (now.pradchg_f13w_ann is not null and dateindex <= 17438) or (now.pradchg_f13w_ann is null and dateindex > 17438)) -- just: now.pradchg_f13w_ann is not null 
+         and ((now.split_date < now.dateindex - 93) or now.split_date is null) -- no split within the last 93 days ( or never a split in history )
+     ) sq1
+group by dateindex order by dateindex
+
+
+
+-- sum(cl_q1)/ sum(netinc_q1 ( WHICH? IS INCREASING FASTER )
+-- hangs lately around -- 11   -- (stable) -- late spring 2016 -- INCLINED to 14 as netinc DECLINED
+--                     -- SAME -- 2007-2008 recession
+-- a_cl     -- early 2008 ( too late a_cl begins rising ) NOT MUCH CLUE IS HERE
+-- a_netinc -- late 2007 began falling                   (and r_s_cl_o_s_netinc ROSE as cl STAYED CONSTANT )
+-- a_netinc -- late 2015 ROSE all the wey through JAN 29 (and r_s_cl_o_s_netinc STAYED CONSTANT )
+
+explain
+select 
+    to_timestamp(dateindex*3600*24)::date dateindex_dt
+  , dateindex
+  , count(cl_q1)                          c_cl
+  , sum(cl_q1)       / count(cl_q1)       a_cl
+  , count(netinc_q1)                      c_netinc
+  , sum(netinc_q1)   / count(netinc_q1)   a_netinc
+  , sum(cl_q1)   / sum(netinc_q1)         r_s_cl_o_s_netinc
+  -- , sum( (pradchg_f13w_ann) * 1      ) / count(pradchg_f13w_ann)         a_pradchg_f13w_ann   
+  -- , sum( (pradchg_f13w_ann) * mktcap ) / sum(mktcap)              wa_mktcap_pctchg_f03_price_ann -- mktcap not in SQL below
+from ( 
+       select now.dateindex, now.sp, now.cl_q1, now.netinc_q1
+       --     , now.pradchg_f13w_ann
+       from fe_data_store.si_finecon2 now
+       where
+             now.sp in(values('500')) 
+         and now.cl_q1 is not null 
+         and now.netinc_q1 is not null 
+         -- and now.pradchg_f13w_ann is not null
+         and ( (now.pradchg_f13w_ann is not null and dateindex <= 17438) or (now.pradchg_f13w_ann is null and dateindex > 17438)) -- just: now.pradchg_f13w_ann is not null 
+         and ((now.split_date < now.dateindex - 93) or now.split_date is null) -- no split within the last 93 days ( or never a split in history )
+     ) sq1
+group by dateindex order by dateindex
+
+
+
+-- INCLUDE weights
+-- wa_mktcap_netinc -- "2008-01-31"(1340.3925328144006818)     MAX("2008-11-28") 2018.6736103676804161 (weighted SP500 is INCREASING - NOT  MAKE SENSE)
+--          increasing "2016-03-31"(2027.4722442538156666)_CLIFF  "2016-04-29" (1518.7748976059815039)
+select 
+    to_timestamp(dateindex*3600*24)::date dateindex_dt
+  , dateindex
+  , count(cl_q1)                          c_cl
+  , sum(cl_q1)       / count(cl_q1)       a_cl
+  , count(netinc_q1)                      c_netinc
+  , sum(netinc_q1)   / count(netinc_q1)   a_netinc
+  , sum(netinc_q1 * mktcap ) / sum(mktcap)  wa_mktcap_netinc -- ONLY one ADDED
+  , sum(cl_q1)   / sum(netinc_q1)           r_s_cl_o_s_netinc
+  -- , sum( (pradchg_f13w_ann) * 1      ) / count(pradchg_f13w_ann)         a_pradchg_f13w_ann   
+  -- , sum( (pradchg_f13w_ann) * mktcap ) / sum(mktcap)              wa_mktcap_pctchg_f03_price_ann -- mktcap not in SQL below
+from ( 
+       select now.dateindex, now.sp, now.cl_q1, now.netinc_q1, now.mktcap
+       --     , now.pradchg_f13w_ann
+       from fe_data_store.si_finecon2 now
+       where
+             now.sp in(values('500')) 
+         and now.cl_q1 is not null 
+         and now.netinc_q1 is not null 
+         and now.mktcap is not null
+         -- and now.pradchg_f13w_ann is not null
+         and ( (now.pradchg_f13w_ann is not null and dateindex <= 17438) or (now.pradchg_f13w_ann is null and dateindex > 17438)) -- just: now.pradchg_f13w_ann is not null 
+         and ((now.split_date < now.dateindex - 93) or now.split_date is null) -- no split within the last 93 days ( or never a split in history )
+     ) sq1
+group by dateindex order by dateindex
+
+
+-- 500 'financial' ONLY ( SEEMS most correlated with general SP500 BIG swings )
+-- a_netinc and wa_mktcap_netinc "2008-01-31" BOTH TANKED to EXTREME negative NUMBERS
+-- a_netinc and wa_mktcap_netinc ... declined 13% to "2016-01-29" then stayed constant to "2016-06-30"
+select 
+    to_timestamp(dateindex*3600*24)::date dateindex_dt
+  , dateindex
+  , count(cl_q1)                          c_cl
+  , sum(cl_q1)       / count(cl_q1)       a_cl
+  , count(netinc_q1)                      c_netinc
+  , sum(netinc_q1)   / count(netinc_q1)   a_netinc
+  , sum(netinc_q1 * mktcap ) / sum(mktcap)  wa_mktcap_netinc -- ONLY one ADDED
+  , sum(cl_q1)   / sum(netinc_q1)           r_s_cl_o_s_netinc
+  -- , sum( (pradchg_f13w_ann) * 1      ) / count(pradchg_f13w_ann)         a_pradchg_f13w_ann   
+  -- , sum( (pradchg_f13w_ann) * mktcap ) / sum(mktcap)              wa_mktcap_pctchg_f03_price_ann -- mktcap not in SQL below
+from ( 
+       select now.dateindex, now.sp, now.cl_q1, now.netinc_q1, now.mktcap
+       --     , now.pradchg_f13w_ann
+       from fe_data_store.si_finecon2 now
+       where
+             now.sp in(values('500')) 
+         and sector_desc in(values('Financial')) 
+         and now.cl_q1 is not null 
+         and now.netinc_q1 is not null 
+         and now.mktcap is not null
+         -- and now.pradchg_f13w_ann is not null
+         and ( (now.pradchg_f13w_ann is not null and dateindex <= 17438) or (now.pradchg_f13w_ann is null and dateindex > 17438)) -- just: now.pradchg_f13w_ann is not null 
+         and ((now.split_date < now.dateindex - 93) or now.split_date is null) -- no split within the last 93 days ( or never a split in history )
+     ) sq1
+group by dateindex order by dateindex
+
+
+
+-- 500 'not financial' ONLY
+-- a_netinc          2007 361-263  -- improved in 2008 -- died early in 2009
+-- wa_mktcap_netinc  1730-1631     -- improved in 2008 -- died early in 2009
+-- a_netinc            "2016-03-31" - "2016-04-29" (short range) (exactly ONLY POOR months)
+-- wa_mktcap_netinc    "2016-04-29" - "2016-09-30" (large range) (exactly ONLY POOR months)
+select 
+    to_timestamp(dateindex*3600*24)::date dateindex_dt
+  , dateindex
+  , count(cl_q1)                          c_cl
+  , sum(cl_q1)       / count(cl_q1)       a_cl
+  , count(netinc_q1)                      c_netinc
+  , sum(netinc_q1)   / count(netinc_q1)   a_netinc
+  , sum(netinc_q1 * mktcap ) / sum(mktcap)  wa_mktcap_netinc -- ONLY one ADDED
+  , sum(cl_q1)   / sum(netinc_q1)           r_s_cl_o_s_netinc
+  -- , sum( (pradchg_f13w_ann) * 1      ) / count(pradchg_f13w_ann)         a_pradchg_f13w_ann   
+  -- , sum( (pradchg_f13w_ann) * mktcap ) / sum(mktcap)              wa_mktcap_pctchg_f03_price_ann -- mktcap not in SQL below
+from ( 
+       select now.dateindex, now.sp, now.cl_q1, now.netinc_q1, now.mktcap
+       --     , now.pradchg_f13w_ann
+       from fe_data_store.si_finecon2 now
+       where
+             now.sp in(values('500')) 
+         and sector_desc not in(values('Financial')) 
+         and now.cl_q1 is not null 
+         and now.netinc_q1 is not null 
+         and now.mktcap is not null
+         -- and now.pradchg_f13w_ann is not null
+         and ( (now.pradchg_f13w_ann is not null and dateindex <= 17438) or (now.pradchg_f13w_ann is null and dateindex > 17438)) -- just: now.pradchg_f13w_ann is not null 
+         and ((now.split_date < now.dateindex - 93) or now.split_date is null) -- no split within the last 93 days ( or never a split in history )
+     ) sq1
+group by dateindex order by dateindex
+
+
+
+-- BETTER representative of FEAR/EXPECTATIONS on the 500 ( even though 400, 600 ) are NOT members of the 500
+-- larger spread of companies - now.sp in(values('500'),('400'),('600'))
+-- I DO NOT HAVE INDEX -- THIS WILL TAKE SOME TIME ... ABOUT THE same TIME
+-- a_netinc "2008-01-31" extreme drop ( extreme drop year 2007 JAN-DEC begin to 158->107 )  ***
+-- wa_mktcap_netinc              not as extreme                                 1619->1388  ***
+select 
+    to_timestamp(dateindex*3600*24)::date dateindex_dt
+  , dateindex
+  , count(cl_q1)                          c_cl
+  , sum(cl_q1)       / count(cl_q1)       a_cl
+  , count(netinc_q1)                      c_netinc
+  , sum(netinc_q1)   / count(netinc_q1)   a_netinc
+  , sum(netinc_q1 * mktcap ) / sum(mktcap)  wa_mktcap_netinc -- ONLY one ADDED
+  , sum(cl_q1)   / sum(netinc_q1)           r_s_cl_o_s_netinc
+  -- , sum( (pradchg_f13w_ann) * 1      ) / count(pradchg_f13w_ann)         a_pradchg_f13w_ann   
+  -- , sum( (pradchg_f13w_ann) * mktcap ) / sum(mktcap)              wa_mktcap_pctchg_f03_price_ann -- mktcap not in SQL below
+from ( 
+       select now.dateindex, now.sp, now.cl_q1, now.netinc_q1, now.mktcap
+       --     , now.pradchg_f13w_ann
+       from fe_data_store.si_finecon2 now
+       where
+             now.sp in(values('500'),('400'),('600')) 
+         and now.cl_q1 is not null 
+         and now.netinc_q1 is not null 
+         and now.mktcap is not null
+         -- and now.pradchg_f13w_ann is not null
+         and ( (now.pradchg_f13w_ann is not null and dateindex <= 17438) or (now.pradchg_f13w_ann is null and dateindex > 17438)) -- just: now.pradchg_f13w_ann is not null 
+         and ((now.split_date < now.dateindex - 93) or now.split_date is null) -- no split within the last 93 days ( or never a split in history )
+     ) sq1
+group by dateindex order by dateindex
+
+
+
+-- 500,400,600 Financial only
+-- a_netinc         2007     348  ->  167  2008+HORRIBLE
+-- wa_mktcap_netinc 2007     2052 -> 1151  2008+HORRIBLE
+-- a_netinc                  "2016-02-29"-"2016-04-29" only bad months range   
+-- wa_mktcap_netinc          "2016-01-29"-"2016-06-30" only bad months range
+select 
+    to_timestamp(dateindex*3600*24)::date dateindex_dt
+  , dateindex
+  , count(cl_q1)                          c_cl
+  , sum(cl_q1)       / count(cl_q1)       a_cl
+  , count(netinc_q1)                      c_netinc
+  , sum(netinc_q1)   / count(netinc_q1)   a_netinc
+  , sum(netinc_q1 * mktcap ) / sum(mktcap)  wa_mktcap_netinc -- ONLY one ADDED
+  , sum(cl_q1)   / sum(netinc_q1)           r_s_cl_o_s_netinc
+  -- , sum( (pradchg_f13w_ann) * 1      ) / count(pradchg_f13w_ann)         a_pradchg_f13w_ann   
+  -- , sum( (pradchg_f13w_ann) * mktcap ) / sum(mktcap)              wa_mktcap_pctchg_f03_price_ann -- mktcap not in SQL below
+from ( 
+       select now.dateindex, now.sp, now.cl_q1, now.netinc_q1, now.mktcap
+       --     , now.pradchg_f13w_ann
+       from fe_data_store.si_finecon2 now
+       where
+             now.sp in(values('500'),('400'),('600')) 
+         and sector_desc in(values('Financial')) 
+         and now.cl_q1 is not null 
+         and now.netinc_q1 is not null 
+         and now.mktcap is not null
+         -- and now.pradchg_f13w_ann is not null
+         and ( (now.pradchg_f13w_ann is not null and dateindex <= 17438) or (now.pradchg_f13w_ann is null and dateindex > 17438)) -- just: now.pradchg_f13w_ann is not null 
+         and ((now.split_date < now.dateindex - 93) or now.split_date is null) -- no split within the last 93 days ( or never a split in history )
+     ) sq1
+group by dateindex order by dateindex
+
+
+
+-- 500,400,600 not-Financial only
+-- a_netinc         2007     130->97    2008(improved) -- died early 2009
+-- wa_mktcap_netinc 2007     1508->1437 2008(improved) -- died early 2009
+-- a_netinc                  "2016-02-29"-"2016-04-29" -- only bad months range   
+-- wa_mktcap_netinc          late2015-early2016        -- SMOOTH SAILING ( NO PROBLEMS )
+select 
+    to_timestamp(dateindex*3600*24)::date dateindex_dt
+  , dateindex
+  , count(cl_q1)                          c_cl
+  , sum(cl_q1)       / count(cl_q1)       a_cl
+  , count(netinc_q1)                      c_netinc
+  , sum(netinc_q1)   / count(netinc_q1)   a_netinc
+  , sum(netinc_q1 * mktcap ) / sum(mktcap)  wa_mktcap_netinc -- ONLY one ADDED
+  , sum(cl_q1)   / sum(netinc_q1)           r_s_cl_o_s_netinc
+  -- , sum( (pradchg_f13w_ann) * 1      ) / count(pradchg_f13w_ann)          a_pradchg_f13w_ann   
+  -- , sum( (pradchg_f13w_ann) * mktcap ) / sum(mktcap)              wa_mktcap_pctchg_f03_price_ann -- mktcap not in SQL below
+from ( 
+       select now.dateindex, now.sp, now.cl_q1, now.netinc_q1, now.mktcap
+       --     , now.pradchg_f13w_ann
+       from fe_data_store.si_finecon2 now
+       where
+             now.sp in(values('500'),('400'),('600')) 
+         and sector_desc not in(values('Financial')) 
+         and now.cl_q1 is not null 
+         and now.netinc_q1 is not null 
+         and now.mktcap is not null
+         -- and now.pradchg_f13w_ann is not null
+         and ( (now.pradchg_f13w_ann is not null and dateindex <= 17438) or (now.pradchg_f13w_ann is null and dateindex > 17438)) -- just: now.pradchg_f13w_ann is not null 
+         and ((now.split_date < now.dateindex - 93) or now.split_date is null) -- no split within the last 93 days ( or never a split in history )
+     ) sq1
+group by dateindex order by dateindex
+
+
+
+-- very late 2007 
+-- sum(cl_q1)   / sum(cash_q1) -- SEEMS always constant
+explain
+select 
+    to_timestamp(dateindex*3600*24)::date dateindex_dt
+  , dateindex
+  , count(cl_q1)                          c_cl
+  , sum(cl_q1)       / count(cl_q1)       a_cl
+  , count(cash_q1)                      c_cash
+  , sum(cash_q1)   / count(cash_q1)     a_cash
+  , sum(cl_q1)   / sum(cash_q1)         r_s_cl_o_s_cash
+  -- , sum( (pradchg_f13w_ann) * 1      ) / count(pradchg_f13w_ann)         a_pradchg_f13w_ann   
+  -- , sum( (pradchg_f13w_ann) * mktcap ) / sum(mktcap)              wa_mktcap_pctchg_f03_price_ann -- mktcap not in SQL below
+from ( 
+       select now.dateindex, now.sp, now.cl_q1, now.cash_q1
+       --     , now.pradchg_f13w_ann
+       from fe_data_store.si_finecon2 now
+       where
+             now.sp in(values('500')) 
+         and now.cl_q1 is not null 
+         and now.cash_q1 is not null 
+         -- and now.pradchg_f13w_ann is not null
+         and ( (now.pradchg_f13w_ann is not null and dateindex <= 17438) or (now.pradchg_f13w_ann is null and dateindex > 17438)) -- just: now.pradchg_f13w_ann is not null 
+         and ((now.split_date < now.dateindex - 93) or now.split_date is null) -- no split within the last 93 days ( or never a split in history )
+     ) sq1
+group by dateindex order by dateindex
+
+# library(quantmod)
+# getSymbols("GLD")
+# GLD <- to.monthly(GLD[,"GLD.Adjusted"], indexAt = "lastof", OHLC = F)
+# GLD["2007/2008"] # goes up through 2008-05-31 87.45 then goes down
+# GLD["2015/2016"] # going down through 2015-12-31 # then starts going up 'external fear driven'
+
+-- very late 2007 
+-- need a lateral
+-- THIS ONE WORKS
+select distinct rt.dateindex rt_dateindex
+  , sq1.*
+from fe_data_store.si_finecon2 rt
+left join lateral ( 
+  select sq1i.dateindex 
+  from fe_data_store.si_finecon2 sq1i 
+  where sq1i.dateindex = rt.dateindex  and sq1i.dateindex in (values(17438)) and sq1i.sp = '500'
+) sq1 on true;
+
+-- LOAD xts into aaii finecon01
+-- DISTANCE of the threat from bonds 5% 10% 15% 20%
