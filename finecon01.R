@@ -7829,85 +7829,7 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
 
 
 
-# go out to th web, get the data, return the data into an xts object
-retrieve_us_bonds <- function(when = NULL){
-  
-  retrieve_us_bonds_inner <- function(when = NULL) {
-    
-    # uses XML zoo xts
-    
-    # EVERYTHING ( SINCE 1990 )
-    base_url        <- "http://data.treasury.gov/feed.svc/DailyTreasuryYieldCurveRateData"
-    url_when_filter <- "?$filter=year(NEW_DATE)%20eq%20"
-    run_url         <- base_url
-    
-    # when(character vectore of size 1): "all" xor "recent"(this year)(default),  xor "<specific year>"
-    when_processed <- FALSE
-    if((when_processed == FALSE) && (is.null(when) || (when == "recent"))) { 
-      run_url <- paste0(run_url,url_when_filter,format(Sys.Date(),"%Y")) 
-      when_processed <- TRUE
-    }
-    if((when_processed == FALSE) && (!is.null(when) && (when == "all"))) { 
-      run_url <- run_url 
-      when_processed <- TRUE
-    }
-    
-    if((when_processed == FALSE) && (!is.null(when) && (nchar(when) == 4))) { # e.g. specific  year "2010"
-      run_url <- paste0(run_url,url_when_filter,when)
-      when_processed <- TRUE
-    }
-    
-    # process: go get the data
-    treasury.xml <- XML::xmlParse(run_url)
-    
-    # function to process
-    xml.field <- function(name) {
-      XML::xpathSApply(XML::xmlRoot(treasury.xml), paste0('//ns:entry/ns:content//d:', name),
-                       function(x) {XML::xmlValue(x)},
-                       namespaces = c(ns = 'http://www.w3.org/2005/Atom',
-                                      d = 'http://schemas.microsoft.com/ado/2007/08/dataservices'))
-    }
-    
-    us_bonds <- data.frame(
-      us_bonds_1m = as.numeric(xml.field('BC_1MONTH')),
-      us_bonds_3m = as.numeric(xml.field('BC_3MONTH')),
-      us_bonds_6m = as.numeric(xml.field('BC_6MONTH')),
-      us_bonds_1y = as.numeric(xml.field('BC_1YEAR')),
-      us_bonds_3y = as.numeric(xml.field('BC_3YEAR')),
-      us_bonds_5y = as.numeric(xml.field('BC_5YEAR')),
-      us_bonds_7y = as.numeric(xml.field('BC_7YEAR')),
-      us_bonds_10y = as.numeric(xml.field('BC_10YEAR')),
-      us_bonds_20y = as.numeric(xml.field('BC_20YEAR')),
-      us_bonds_30y = as.numeric(xml.field('BC_30YEAR'))
-    )
-    
-    row.names(us_bonds) <- zoo::as.Date( strptime(xml.field('NEW_DATE'), format = '%Y-%m-%dT%H:%M:%S', tz = 'UTC') )
-    # non-Date index
-    us_bonds <- xts::as.xts(as.matrix(us_bonds)) # df SO NOT xts:::as.matrix.xts
-    
-    # index type will be 'Date'
-    us_bonds <- xts::xts(xts:::coredata.xts(us_bonds),zoo::as.Date( xts:::index.xts(us_bonds)))
-    
-    return(us_bonds)
-    
-  }
-  
-  return(retrieve_us_bonds_inner(when = when))
-  
-}
-# # this year
-# # us_bonds <- retrieve_us_bonds() 
-# # us_bonds <- retrieve_us_bonds("2016") # so from a specific year e.g. 2016 ONLY
-# # all since 1990
-# # us_bonds <- retrieve_us_bonds("all")
-# #
-# # note XXW will have NAs becuase the previous time(XXw) data is not available 
-# #   ( so I want to load the previous year)
-# # typically ( often )
-#
-#             # now(this year up to today)                                # all of last year
-# us_bonds <- xts::rbind.xts(retrieve_us_bonds(format(Sys.Date(),"%Y")),  retrieve_us_bonds( as.character(as.integer(format(Sys.Date(),"%Y")) -1) ) )
-#
+
 
 # add 'past change'(return-ish) data 04W, 13w, 26w, 52w in 'xts/quantmod style' (ignore weekend days)
 chgs_XXw_ann <- function(xtsobj = NULL) {
@@ -8139,6 +8061,91 @@ load_instruments <- function(dfobj = NULL, no_update_earliest_year = NULL) {
 # >            13 %/% 12 + 2
 # [1] 3
 # 
+
+
+
+# go out to th web, get the data, return the data into an xts object
+retrieve_us_bonds <- function(when = NULL){
+  
+  retrieve_us_bonds_inner <- function(when = NULL) {
+    
+    # uses XML zoo xts
+    
+    # EVERYTHING ( SINCE 1990 )
+    base_url        <- "http://data.treasury.gov/feed.svc/DailyTreasuryYieldCurveRateData"
+    url_when_filter <- "?$filter=year(NEW_DATE)%20eq%20"
+    run_url         <- base_url
+    
+    # when(character vectore of size 1): "all" xor "recent"(this year)(default),  xor "<specific year>"
+    when_processed <- FALSE
+    if((when_processed == FALSE) && (is.null(when) || (when == "recent"))) { 
+      run_url <- paste0(run_url,url_when_filter,format(Sys.Date(),"%Y")) 
+      when_processed <- TRUE
+    }
+    if((when_processed == FALSE) && (!is.null(when) && (when == "all"))) { 
+      run_url <- run_url 
+      when_processed <- TRUE
+    }
+    
+    if((when_processed == FALSE) && (!is.null(when) && (nchar(when) == 4))) { # e.g. specific  year "2010"
+      run_url <- paste0(run_url,url_when_filter,when)
+      when_processed <- TRUE
+    }
+    
+    # process: go get the data
+    treasury.xml <- XML::xmlParse(run_url)
+    
+    # function to process
+    xml.field <- function(name) {
+      XML::xpathSApply(XML::xmlRoot(treasury.xml), paste0('//ns:entry/ns:content//d:', name),
+                       function(x) {XML::xmlValue(x)},
+                       namespaces = c(ns = 'http://www.w3.org/2005/Atom',
+                                      d = 'http://schemas.microsoft.com/ado/2007/08/dataservices'))
+    }
+    
+    us_bonds <- data.frame(
+      us_bonds_1m = as.numeric(xml.field('BC_1MONTH')),
+      us_bonds_3m = as.numeric(xml.field('BC_3MONTH')),
+      us_bonds_6m = as.numeric(xml.field('BC_6MONTH')),
+      us_bonds_1y = as.numeric(xml.field('BC_1YEAR')),
+      us_bonds_3y = as.numeric(xml.field('BC_3YEAR')),
+      us_bonds_5y = as.numeric(xml.field('BC_5YEAR')),
+      us_bonds_7y = as.numeric(xml.field('BC_7YEAR')),
+      us_bonds_10y = as.numeric(xml.field('BC_10YEAR')),
+      us_bonds_20y = as.numeric(xml.field('BC_20YEAR')),
+      us_bonds_30y = as.numeric(xml.field('BC_30YEAR'))
+    )
+    
+    row.names(us_bonds) <- zoo::as.Date( strptime(xml.field('NEW_DATE'), format = '%Y-%m-%dT%H:%M:%S', tz = 'UTC') )
+    # non-Date index
+    us_bonds <- xts::as.xts(as.matrix(us_bonds)) # df SO NOT xts:::as.matrix.xts
+    
+    # index type will be 'Date'
+    us_bonds <- xts::xts(xts:::coredata.xts(us_bonds),zoo::as.Date( xts:::index.xts(us_bonds)))
+    
+    return(us_bonds)
+    
+  }
+  
+  return(retrieve_us_bonds_inner(when = when))
+  
+}
+# # this year
+# # us_bonds <- retrieve_us_bonds() 
+# # us_bonds <- retrieve_us_bonds("2016") # so from a specific year e.g. 2016 ONLY
+# # all since 1990
+# # us_bonds <- retrieve_us_bonds("all")
+# #
+# # note XXW will have NAs becuase the previous time(XXw) data is not available 
+# #   ( so I want to load the previous year)
+# # typically ( often )
+#
+#             # now(this year up to today)                                # all of last year
+# us_bonds <- xts::rbind.xts(retrieve_us_bonds(format(Sys.Date(),"%Y")),  retrieve_us_bonds( as.character(as.integer(format(Sys.Date(),"%Y")) -1) ) )
+#
+
+
+
 load_us_bond_instruments <- function(us_bonds_year_back = NULL) {
  
   message(gsub("\"","",capture.output(match.call())))
