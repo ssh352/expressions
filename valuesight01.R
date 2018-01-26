@@ -2428,13 +2428,13 @@ get_bankruptcy_filing_counts_eoq_xts <- function() {
 
   # earliest
   # http://www.uscourts.gov/statistics/table/f-2-three-months/bankruptcy-filings/2001/03/31
-  # info_data_dates <- seq(from = zoo::as.Date("2001/04/01"), to = Sys.Date(), by = "quarter") - 1
+  info_data_dates <- seq(from = zoo::as.Date("2001/04/01"), to = Sys.Date(), by = "quarter") - 1
   
   # single value testing 
   # (recent data)
   # info_data_dates <- zoo::as.Date("2017/12/31")
   # old(est) data
-  info_data_dates <- zoo::as.Date("2001/03/31")
+  # info_data_dates <- zoo::as.Date("2001/03/31")
   
   info_data_list <- list()
   for(info_data_date_i in info_data_dates) {
@@ -2491,10 +2491,15 @@ get_bankruptcy_filing_counts_eoq_xts <- function() {
     } else {
       file_type <- "xls"
     }
-    # NOTE older files: info_data is on line 8
+    # NOTE oldest files: info_data is on line 8
     if(!stringr::str_detect(info_data[[1]], "^TOTAL")) {
       if(file_type == "xlsx") info_data     <- readxl::read_xlsx("bankruptcies.excel", skip = 7, col_names = F, n_max = 1)
       if(file_type == "xls")  info_data     <- readxl::read_xls( "bankruptcies.excel", skip = 7, col_names = F, n_max = 1)
+    }
+    # NOTE less old files: (2004/06/30+) info_data is on line 13
+    if(!stringr::str_detect(info_data[[1]], "^TOTAL")) {
+      if(file_type == "xlsx") info_data     <- readxl::read_xlsx("bankruptcies.excel", skip = 12, col_names = F, n_max = 1)
+      if(file_type == "xls")  info_data     <- readxl::read_xls( "bankruptcies.excel", skip = 12, col_names = F, n_max = 1)
     }
     
     # uneeded columns
@@ -2507,9 +2512,6 @@ get_bankruptcy_filing_counts_eoq_xts <- function() {
                              "bus_chs_all", "bus_ch_7", "bus_ch_11", "bus_ch_12", "bus_ch_13",
                              "ind_chs_all", "ind_ch_7", "ind_ch_11",              "ind_ch_13")
   
-    # WRITE THE AUTHOR
-    # Found more than one class "xts" in cache; using the first, from namespace 'quantmod'
-    # Also defined by ‘spacetime’
     info_data <- xts(info_data, zoo::as.Date("2017/12/31"))
   
                         # prevent collapse
