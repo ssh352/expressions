@@ -2454,6 +2454,18 @@ get_bankruptcy_filing_counts_eoq_xts <- function() {
     # because the element was unclass-ed.
     info_data_date_i <-  zoo::as.Date(info_data_date_i)
     
+    #  verified, only PDF is available
+    # http://www.uscourts.gov/statistics/table/f-2-three-months/bankruptcy-filings/2004/12/31
+    # download bankruptcy file: http://www.uscourts.gov/file/12705/download
+    # Not an excel file
+    # can not download file or can not read file of date: 2004-12-31
+    
+    # verified, only PDF is available
+    # http://www.uscourts.gov/statistics/table/f-2-three-months/bankruptcy-filings/2005/03/31
+    # download bankruptcy file: http://www.uscourts.gov/file/12706/download
+    # Not an excel file
+    # can not download file or can not read file of date: 2005-03-31
+    
     # special processing
     if(info_data_date_i == zoo::as.Date("2016/03/31")) {
       
@@ -2466,6 +2478,10 @@ get_bankruptcy_filing_counts_eoq_xts <- function() {
       "ind_ch_7", "ind_ch_11", "ind_ch_13")), index = structure(1459382400, tzone = "UTC", tclass = "Date"), class = c("xts", 
       "zoo"), .indexCLASS = "Date", tclass = "Date", .indexTZ = "UTC", tzone = "UTC")
     
+       print(info_data_date_i)
+       print(NCOL(info_data))
+       print(colnames(info_data))
+      
                           # prevent collapse
       info_data_list <- c(list(info_data), info_data_list)
       
@@ -2485,6 +2501,10 @@ get_bankruptcy_filing_counts_eoq_xts <- function() {
       "ind_ch_7", "ind_ch_11", "ind_ch_13")), index = structure(1467244800, tzone = "UTC", tclass = "Date"), class = c("xts", 
       "zoo"), .indexCLASS = "Date", tclass = "Date", .indexTZ = "UTC", tzone = "UTC")
     
+       print(info_data_date_i)
+       print(NCOL(info_data))
+       print(colnames(info_data))
+      
                           # prevent collapse
       info_data_list <- c(list(info_data), info_data_list)
         
@@ -2550,14 +2570,14 @@ get_bankruptcy_filing_counts_eoq_xts <- function() {
     # http://www.uscourts.gov/file/19829/download
     # "   TOTAL"
     # has whitespace (3 spaces in front)
-    
+                                            # zero or more space allowed in front
     # NOTE oldest files: info_data is on line 8
-    if(!stringr::str_detect(info_data[[1]], "^\\s+TOTAL")) {
+    if(!stringr::str_detect(info_data[[1]], "^\\s*TOTAL")) {
       if(file_type == "xlsx") info_data     <- readxl::read_xlsx("bankruptcies.excel", skip = 7, col_names = F, n_max = 1)
       if(file_type == "xls")  info_data     <- readxl::read_xls( "bankruptcies.excel", skip = 7, col_names = F, n_max = 1)
     }
     # NOTE less old files: (2004/06/30+) info_data is on line 13
-    if(!stringr::str_detect(info_data[[1]], "^\\s+TOTAL")) {
+    if(!stringr::str_detect(info_data[[1]], "^\\s*TOTAL")) {
       if(file_type == "xlsx") info_data     <- readxl::read_xlsx("bankruptcies.excel", skip = 12, col_names = F, n_max = 1)
       if(file_type == "xls")  info_data     <- readxl::read_xls( "bankruptcies.excel", skip = 12, col_names = F, n_max = 1)
     }
@@ -2566,7 +2586,10 @@ get_bankruptcy_filing_counts_eoq_xts <- function() {
     # uneeded columns
     # "Sort column"
     if(file_type == "xlsx") info_data     <- info_data[,-NCOL(info_data)]
-    info_data     <- info_data[,-1]
+    
+    # remove the first column typically "TOTAL"
+    # remove any empty columns(2 cases this happens: 2006/12/31, 2011/03/31) ( keep only is.numeric)
+    info_data  <- info_data[,sapply(info_data, is.numeric)]
     
     # propers
     colnames(info_data) <- c("all_chs_all", "all_ch_7", "all_ch_11", "all_ch_12", "all_ch_13",
@@ -2574,6 +2597,9 @@ get_bankruptcy_filing_counts_eoq_xts <- function() {
                              "ind_chs_all", "ind_ch_7", "ind_ch_11",              "ind_ch_13")
   
     info_data <- xts(info_data, info_data_date_i)
+    print(info_data_date_i)
+    print(NCOL(info_data))
+    print(colnames(info_data))
   
                         # prevent collapse
     info_data_list <- c(list(info_data), info_data_list)
