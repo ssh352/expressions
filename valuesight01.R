@@ -2418,12 +2418,13 @@ get_bankruptcy_filing_counts_eoq_xts <- function() {
   # earliest
 
   # http://www.uscourts.gov/statistics/table/f-2-three-months/bankruptcy-filings/2001/03/31
-  # info_data_dates <- seq(from = zoo::as.Date("2001/04/01"), to = Sys.Date(), by = "quarter") - 1
+  info_data_dates <- seq(from = zoo::as.Date("2001/04/01"), to = Sys.Date(), by = "quarter") - 1
   
   # multiple value testing SKIP BAD ; NEED TO FIND SOMEHTING else TO READ OLD xls FILES(64BIT)
   # info_data_dates <- seq(from = zoo::as.Date("2016/04/01"), to = Sys.Date(), by = "quarter") - 1
   
-  info_data_dates <- rev(seq(from = zoo::as.Date("2016/04/01"), to = Sys.Date(), by = "quarter") - 1)
+  # multi value testing
+  # info_data_dates <- rev(seq(from = zoo::as.Date("2016/04/01"), to = Sys.Date(), by = "quarter") - 1)
   
   # single value testing 
   # (recent data)
@@ -2441,7 +2442,7 @@ get_bankruptcy_filing_counts_eoq_xts <- function() {
   # old(est) data
   # info_data_dates <- zoo::as.Date("2001/03/31")
   
-  # this two are  BAD
+  # this two areBAD
   # 2016/03/31
   # 2016/06/30
   # info_data_dates <- zoo::as.Date("2016/03/31")
@@ -2492,7 +2493,6 @@ get_bankruptcy_filing_counts_eoq_xts <- function() {
       next 
     }
     
-
     
     # e.g.                     "http://www.uscourts.gov/statistics/table/f-2-three-months/bankruptcy-filings/2017/12/31"
     read_url <- stringr::str_c("http://www.uscourts.gov/statistics/table/f-2-three-months/bankruptcy-filings/", format(info_data_date_i, "%Y/%m/%d"))
