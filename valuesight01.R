@@ -2420,15 +2420,20 @@ get_bankruptcy_filing_counts_eoq_xts <- function() {
   # http://www.uscourts.gov/statistics/table/f-2-three-months/bankruptcy-filings/2001/03/31
   # info_data_dates <- seq(from = zoo::as.Date("2001/04/01"), to = Sys.Date(), by = "quarter") - 1
   
+  # multiple value testing SKIP BAD ; NEED TO FIND SOMEHTING else TO READ OLD xls FILES(64BIT)
+  # info_data_dates <- seq(from = zoo::as.Date("2016/04/01"), to = Sys.Date(), by = "quarter") - 1
+  
+  info_data_dates <- rev(seq(from = zoo::as.Date("2016/04/01"), to = Sys.Date(), by = "quarter") - 1)
+  
   # single value testing 
   # (recent data)
-  info_data_dates <- zoo::as.Date("2017/12/31")
+  # info_data_dates <- zoo::as.Date("2017/12/31")
   # old(est) data
   # info_data_dates <- zoo::as.Date("2001/03/31")
 
   # earliest
   # http://www.uscourts.gov/statistics/table/f-2-three-months/bankruptcy-filings/2001/03/31
-  info_data_dates <- seq(from = zoo::as.Date("2001/04/01"), to = Sys.Date(), by = "quarter") - 1
+  # info_data_dates <- seq(from = zoo::as.Date("2001/04/01"), to = Sys.Date(), by = "quarter") - 1
   
   # single value testing 
   # (recent data)
@@ -2436,11 +2441,58 @@ get_bankruptcy_filing_counts_eoq_xts <- function() {
   # old(est) data
   # info_data_dates <- zoo::as.Date("2001/03/31")
   
+  # this two are  BAD
+  # 2016/03/31
+  # 2016/06/30
+  # info_data_dates <- zoo::as.Date("2016/03/31")
+  
+  
   info_data_list <- list()
   for(info_data_date_i in info_data_dates) {
     
     # because the element was unclass-ed.
     info_data_date_i <-  zoo::as.Date(info_data_date_i)
+    
+    # special processing
+    if(info_data_date_i == zoo::as.Date("2016/03/31")) {
+      
+      message(stringr::str_c("  Begin special processing ", info_data_date_i))
+      
+      info_data <- structure(c(201906, 126430, 1878, 122, 73430, 6227, 3885, 1596, 122, 578, 195679, 122545, 282, 72852), .Dim = c(1L, 14L), .Dimnames = list(NULL, 
+      c("all_chs_all", 
+      "all_ch_7", "all_ch_11", "all_ch_12", "all_ch_13", "bus_chs_all", 
+      "bus_ch_7", "bus_ch_11", "bus_ch_12", "bus_ch_13", "ind_chs_all", 
+      "ind_ch_7", "ind_ch_11", "ind_ch_13")), index = structure(1459382400, tzone = "UTC", tclass = "Date"), class = c("xts", 
+      "zoo"), .indexCLASS = "Date", tclass = "Date", .indexTZ = "UTC", tzone = "UTC")
+    
+                          # prevent collapse
+      info_data_list <- c(list(info_data), info_data_list)
+      
+      message(stringr::str_c("  End   special processing ", info_data_date_i))
+      
+      next
+    }
+    # special processing
+    if(info_data_date_i == zoo::as.Date("2016/06/30")) {
+      
+      message(stringr::str_c("  Begin special processing ", info_data_date_i))
+       
+      info_data <- structure(c(208871, 132538, 2298, 135, 73845, 6537, 3760, 1996, 135, 591, 202334, 128778, 302, 73254), .Dim = c(1L, 14L), .Dimnames = list(NULL, 
+      c("all_chs_all", 
+      "all_ch_7", "all_ch_11", "all_ch_12", "all_ch_13", "bus_chs_all", 
+      "bus_ch_7", "bus_ch_11", "bus_ch_12", "bus_ch_13", "ind_chs_all", 
+      "ind_ch_7", "ind_ch_11", "ind_ch_13")), index = structure(1467244800, tzone = "UTC", tclass = "Date"), class = c("xts", 
+      "zoo"), .indexCLASS = "Date", tclass = "Date", .indexTZ = "UTC", tzone = "UTC")
+    
+                          # prevent collapse
+      info_data_list <- c(list(info_data), info_data_list)
+        
+        
+      message(stringr::str_c("  End   special processing ", info_data_date_i))
+      next 
+    }
+    
+
     
     # e.g.                     "http://www.uscourts.gov/statistics/table/f-2-three-months/bankruptcy-filings/2017/12/31"
     read_url <- stringr::str_c("http://www.uscourts.gov/statistics/table/f-2-three-months/bankruptcy-filings/", format(info_data_date_i, "%Y/%m/%d"))
@@ -2467,13 +2519,13 @@ get_bankruptcy_filing_counts_eoq_xts <- function() {
     bankruptcy_file <- stringr::str_c("http://www.uscourts.gov", bankruptcy_file_number_part, "/download")
     # e.g. [1] "http://www.uscourts.gov/file/23687/download"
   
-    message(str_c("  Begin download bankruptcy file: ", bankruptcy_file))
+    message(stringr::str_c("  Begin download bankruptcy file: ", bankruptcy_file))
     
     # excel request "wb"                                 
     download.file(destfile = "bankruptcies.excel", url = bankruptcy_file, mode = "wb")
     # could be an .xls or .xlsx file
   
-    message(str_c("  End   download bankruptcy file: ", bankruptcy_file))
+    message(stringr::str_c("  End   download bankruptcy file: ", bankruptcy_file))
     
     file_type <- "unkown"
                                       # local file
@@ -2481,26 +2533,35 @@ get_bankruptcy_filing_counts_eoq_xts <- function() {
     info_data     <- try(readxl::read_xlsx("bankruptcies.excel", skip = 4, col_names = F, n_max = 1), silent = T)
     if(inherits(info_data, "try-error")){ # older .xls excel file
       info_data     <- try(readxl::read_xls("bankruptcies.excel", skip = 4, col_names = F, n_max = 1), silent = T)
+      if(inherits(info_data, "try-error")) {
+        message(str_c("can not download file or can not read file of date: ", info_data_date_i))
+        message("SO SKIPPING ...")
+        next # next loop iteration
+      } else {
+        file_type <- "xls"
+      }
     } else {
       file_type <- "xlsx"
     }
-    if(inherits(info_data, "try-error")){ # 
-      message(str_c("can not download file or can not read file of date: ", info_data_date_i))
-      message("SO SKIPPING ...")
-      next # next loop iteration
-    } else {
-      file_type <- "xls"
-    }
+    
+    # expression test is "^\\s+TOTAL" instead of "^TOTAL"
+    # Because
+    # http://www.uscourts.gov/statistics/table/f-2-three-months/bankruptcy-filings/2016/03/31
+    # http://www.uscourts.gov/file/19829/download
+    # "   TOTAL"
+    # has whitespace (3 spaces in front)
+    
     # NOTE oldest files: info_data is on line 8
-    if(!stringr::str_detect(info_data[[1]], "^TOTAL")) {
+    if(!stringr::str_detect(info_data[[1]], "^\\s+TOTAL")) {
       if(file_type == "xlsx") info_data     <- readxl::read_xlsx("bankruptcies.excel", skip = 7, col_names = F, n_max = 1)
       if(file_type == "xls")  info_data     <- readxl::read_xls( "bankruptcies.excel", skip = 7, col_names = F, n_max = 1)
     }
     # NOTE less old files: (2004/06/30+) info_data is on line 13
-    if(!stringr::str_detect(info_data[[1]], "^TOTAL")) {
+    if(!stringr::str_detect(info_data[[1]], "^\\s+TOTAL")) {
       if(file_type == "xlsx") info_data     <- readxl::read_xlsx("bankruptcies.excel", skip = 12, col_names = F, n_max = 1)
       if(file_type == "xls")  info_data     <- readxl::read_xls( "bankruptcies.excel", skip = 12, col_names = F, n_max = 1)
     }
+    # 2016/03/31
     
     # uneeded columns
     # "Sort column"
@@ -2512,17 +2573,17 @@ get_bankruptcy_filing_counts_eoq_xts <- function() {
                              "bus_chs_all", "bus_ch_7", "bus_ch_11", "bus_ch_12", "bus_ch_13",
                              "ind_chs_all", "ind_ch_7", "ind_ch_11",              "ind_ch_13")
   
-    info_data <- xts(info_data, zoo::as.Date("2017/12/31"))
+    info_data <- xts(info_data, info_data_date_i)
   
                         # prevent collapse
     info_data_list <- c(list(info_data), info_data_list)
     
-    message(str_c("  End   read_url: ", read_url))
+    message(stringr::str_c("  End   read_url: ", read_url))
   
   }
 
   # S3 dispatch merge.xts
-  bankruptcy_filing_counts_eoq_xts <- do.call(merge,info_data_list)
+  bankruptcy_filing_counts_eoq_xts <- do.call(rbind.xts,info_data_list)
   
   message("End   get_bankruptcy_filing_counts_eoq_xts")
   
@@ -2533,8 +2594,8 @@ get_bankruptcy_filing_counts_eoq_xts <- function() {
 
 }
 # bankruptcy_filing_counts_eoq_xts <- get_bankruptcy_filing_counts_eoq_xts()
-# View(bankruptcy_filing_counts)
-
+# View(bankruptcy_filing_counts_eoq_xts)
+# save(bankruptcy_filing_counts_eoq_xts, file = "bankruptcy_filing_counts_eoq_xts.RData")
 
 # valuesight01.R
 
