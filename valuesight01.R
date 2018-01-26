@@ -2597,9 +2597,9 @@ get_bankruptcy_filing_counts_eoq_xts <- function() {
                              "ind_chs_all", "ind_ch_7", "ind_ch_11",              "ind_ch_13")
   
     info_data <- xts(info_data, info_data_date_i)
-    print(info_data_date_i)
-    print(NCOL(info_data))
-    print(colnames(info_data))
+    # print(info_data_date_i)
+    # print(NCOL(info_data))
+    # print(colnames(info_data))
   
                         # prevent collapse
     info_data_list <- c(list(info_data), info_data_list)
@@ -2621,6 +2621,7 @@ get_bankruptcy_filing_counts_eoq_xts <- function() {
 }
 # bankruptcy_filing_counts_eoq_xts <- get_bankruptcy_filing_counts_eoq_xts()
 # View(bankruptcy_filing_counts_eoq_xts)
+# bus_ch_11 IS A pattern ( 2000-2001, 2007-2008, 2015-2016
 # save(bankruptcy_filing_counts_eoq_xts, file = "bankruptcy_filing_counts_eoq_xts.RData")
 
 # valuesight01.R
