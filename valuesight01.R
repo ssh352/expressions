@@ -1439,12 +1439,12 @@ get_willshire_less_agg_equity_premium_eom_xts <- function() {
   return(willshire_less_agg_equity_premium_eom_xts)
 
 }
-# ret <- get_willshire_less_agg_equity_premium_eom_xts()
+# willshire_less_agg_equity_premium <- get_willshire_less_agg_equity_premium_eom_xts()
 # 3-MONTH IS TOO VOLITILE TO BE TRUSTED
 # I DID NOT SEE ANY DIFFERENCE BETWEEN 6,9.12-MONTH
 # dygraphs::dygraph(ret[,c("equity_prem_p03m_ann","equity_prem_p06m_ann","equity_prem_p09m_ann","equity_prem_p12m_ann")])
 # 
-# > str(ret)
+# > str(willshire_less_agg_equity_premium)
 # An 'xts' object on 2003-09-30/2017-11-30 containing:
 #   Data: num [1:171, 1:6] NA 84.3 17.1 48.9 21.4 ...
 #  - attr(*, "dimnames")=List of 2
@@ -1458,7 +1458,7 @@ get_willshire_less_agg_equity_premium_eom_xts <- function() {
 #  $ na.action:Class 'omit'  atomic [1:2550] 2 3 4 5 6 7 8 9 10 11 ...
 #   .. ..- attr(*, "index")= num [1:2550] 31536000 31795200 31881600 31968000 32054400 ...
 #   
-# > head(ret)
+# > head(willshire_less_agg_equity_premium)
 #            equity_prem_p01m_ann equity_prem_p02m_ann equity_prem_p03m_ann equity_prem_p06m_ann equity_prem_p09m_ann equity_prem_p12m_ann
 # 2003-09-30                   NA                   NA                   NA                   NA                   NA                   NA
 # 2003-10-31  84.2987450884582472                   NA                   NA                   NA                   NA                   NA
@@ -1467,7 +1467,7 @@ get_willshire_less_agg_equity_premium_eom_xts <- function() {
 # 2004-01-31  21.3658774060835412   35.737669848211752   29.913895463481893                   NA                   NA                   NA
 # 2004-02-29   7.0787195864594263   14.393577095692896   26.552312397718790                   NA                   NA                   NA
 # 
-# > tail(ret,12)
+# > tail(willshire_less_agg_equity_premium,12)
 #            equity_prem_p01m_ann equity_prem_p02m_ann equity_prem_p03m_ann equity_prem_p06m_ann equity_prem_p09m_ann equity_prem_p12m_ann
 # 2016-12-31  26.6785409468942873  57.6792731404528567  33.6783351827045294  26.1460287693127249   19.396159765021100   13.318836650160643
 # 2017-01-31  18.8136356428537788  22.9679704390198687  45.2262122134306637  21.9183884075927082   20.889474629676457   23.013005909026440
@@ -1484,7 +1484,7 @@ get_willshire_less_agg_equity_premium_eom_xts <- function() {
 # # RUN OF DEC 03 2017
 # 
 # # NOTE ( COMPARE TO : https://fredblog.stlouisfed.org/2016/07/the-equity-premium/ )
-# > ret["2015/2016"]
+# > willshire_less_agg_equity_premium["2015/2016"]
 #            equity_prem_p01m_ann equity_prem_p02m_ann  equity_prem_p03m_ann  equity_prem_p06m_ann equity_prem_p09m_ann equity_prem_p12m_ann
 # 2015-01-31 -57.8567990386709852 -26.5413755239343239 -10.00440168939763552   2.36547709549237428   4.7117603788284619  9.16153232475986812
 # 2015-02-28  80.9510484434047441  10.7300704238034079   8.71338104452690487   9.73305556262234539  12.4025926472196097 11.60080700164916578
@@ -1512,7 +1512,7 @@ get_willshire_less_agg_equity_premium_eom_xts <- function() {
 # 2016-12-31  26.6785409468942873  57.6792731404528567  33.67833518270452942  26.14602876931272490  19.3961597650210997 13.31883665016064278
 # 
 # # NOTE ( COMPARE TO : https://fredblog.stlouisfed.org/2016/07/the-equity-premium/ )
-# > ret["2008"]
+# willshire_less_agg_equity_premium["2008"]
 #             equity_prem_p01m_ann  equity_prem_p02m_ann  equity_prem_p03m_ann equity_prem_p06m_ann equity_prem_p09m_ann equity_prem_p12m_ann
 # 2008-01-31 -100.4084757860892410  -48.6917771027152924  -54.6455473379572823 -18.1290358804996004 -11.9348124531106556  -6.5234632388542320
 # 2008-02-29  -29.4604818257940551  -63.7613354597350650  -41.4488737069382793 -23.5321257863188578 -21.0263145424547808  -6.1178404308165248
@@ -2377,6 +2377,161 @@ get_phil_survey_of_prof_forecasters_eom_xts <- function(file_data_loc = NULL, su
 # dygraphs::dygraph(merge.xts(DBAA, baabond[,"baabond__baabond3__median"]))
 # 2015-2016<2016 stress builds UP TO AND INCLUDING dec 31 2015 ... then release in a downhill slope
 
+
+get_bankruptcy_filing_counts_eoq_xts <- function() {
+
+  # JAN 2018 
+  # More recent data quickly than the St. Louis FRED 
+  # (may or may not be as accurate or as good?!)
+  # Bankruptcy Filings
+  # UNITED STATES COURTS
+  # http://www.uscourts.gov/report-name/bankruptcy-filings
+
+  # end of EACH calendar quarter 
+  # AND delivered QUICKLY just after the END of the calendar quarter
+  
+  # earliest
+  # http://www.uscourts.gov/statistics/table/f-2-three-months/bankruptcy-filings/2001/03/31
+  
+  ops <- options()
+  
+  options(warn = 1)
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(min.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+
+  # uses package stringr
+  # uses package xml2
+  # uses package rvest
+  # uses package readxl
+  library(xts) # also uses package zoo
+
+  message("Begin get_bankruptcy_filing_counts_eoq_xts")
+
+  # earliest
+
+  # http://www.uscourts.gov/statistics/table/f-2-three-months/bankruptcy-filings/2001/03/31
+  # info_data_dates <- seq(from = zoo::as.Date("2001/04/01"), to = Sys.Date(), by = "quarter") - 1
+  
+  # single value testing 
+  # (recent data)
+  info_data_dates <- zoo::as.Date("2017/12/31")
+  # old(est) data
+  # info_data_dates <- zoo::as.Date("2001/03/31")
+
+  # earliest
+  # http://www.uscourts.gov/statistics/table/f-2-three-months/bankruptcy-filings/2001/03/31
+  # info_data_dates <- seq(from = zoo::as.Date("2001/04/01"), to = Sys.Date(), by = "quarter") - 1
+  
+  # single value testing 
+  # (recent data)
+  # info_data_dates <- zoo::as.Date("2017/12/31")
+  # old(est) data
+  info_data_dates <- zoo::as.Date("2001/03/31")
+  
+  info_data_list <- list()
+  for(info_data_date_i in info_data_dates) {
+    
+    # because the element was unclass-ed.
+    info_data_date_i <-  zoo::as.Date(info_data_date_i)
+    
+    # e.g.                     "http://www.uscourts.gov/statistics/table/f-2-three-months/bankruptcy-filings/2017/12/31"
+    read_url <- stringr::str_c("http://www.uscourts.gov/statistics/table/f-2-three-months/bankruptcy-filings/", format(info_data_date_i, "%Y/%m/%d"))
+
+    message(str_c("  Begin read_url: ", read_url))
+    
+    webpage       <-  xml2::read_html(x = read_url)
+    Sys.sleep(3.0) # be nice; do not attack the website
+    
+    download_area <- rvest::html_nodes(webpage, "#content")
+    # S3 dispatch
+    download_area <- as.character(download_area)
+  
+    # always the 2nd(lower (last) link)
+    # some early data does not have a pdf file (1st link)
+    # 1 or 2 links
+    bankruptcy_file_number_part <- stringr::str_extract_all(download_area, "/file/\\d+")[[1]]
+    if(length(bankruptcy_file_number_part) > 1) {
+      # 2nd or last part is garanteed to be the .xls or .xlsx file
+      bankruptcy_file_number_part <- bankruptcy_file_number_part[length(bankruptcy_file_number_part)]
+    }
+    # e.g. [1] "/file/23687"
+  
+    bankruptcy_file <- stringr::str_c("http://www.uscourts.gov", bankruptcy_file_number_part, "/download")
+    # e.g. [1] "http://www.uscourts.gov/file/23687/download"
+  
+    message(str_c("  Begin download bankruptcy file: ", bankruptcy_file))
+    
+    # excel request "wb"                                 
+    download.file(destfile = "bankruptcies.excel", url = bankruptcy_file, mode = "wb")
+    # could be an .xls or .xlsx file
+  
+    message(str_c("  End   download bankruptcy file: ", bankruptcy_file))
+    
+    file_type <- "unkown"
+                                      # local file
+    # tibble
+    info_data     <- try(readxl::read_xlsx("bankruptcies.excel", skip = 4, col_names = F, n_max = 1), silent = T)
+    if(inherits(info_data, "try-error")){ # older .xls excel file
+      info_data     <- try(readxl::read_xls("bankruptcies.excel", skip = 4, col_names = F, n_max = 1), silent = T)
+    } else {
+      file_type <- "xlsx"
+    }
+    if(inherits(info_data, "try-error")){ # 
+      message(str_c("can not download file or can not read file of date: ", info_data_date_i))
+      message("SO SKIPPING ...")
+      next # next loop iteration
+    } else {
+      file_type <- "xls"
+    }
+    # NOTE older files: info_data is on line 8
+    if(!stringr::str_detect(info_data[[1]], "^TOTAL")) {
+      if(file_type == "xlsx") info_data     <- readxl::read_xlsx("bankruptcies.excel", skip = 7, col_names = F, n_max = 1)
+      if(file_type == "xls")  info_data     <- readxl::read_xls( "bankruptcies.excel", skip = 7, col_names = F, n_max = 1)
+    }
+    
+    # uneeded columns
+    # "Sort column"
+    if(file_type == "xlsx") info_data     <- info_data[,-NCOL(info_data)]
+    info_data     <- info_data[,-1]
+    
+    # propers
+    colnames(info_data) <- c("all_chs_all", "all_ch_7", "all_ch_11", "all_ch_12", "all_ch_13",
+                             "bus_chs_all", "bus_ch_7", "bus_ch_11", "bus_ch_12", "bus_ch_13",
+                             "ind_chs_all", "ind_ch_7", "ind_ch_11",              "ind_ch_13")
+  
+    # WRITE THE AUTHOR
+    # Found more than one class "xts" in cache; using the first, from namespace 'quantmod'
+    # Also defined by ‘spacetime’
+    info_data <- xts(info_data, zoo::as.Date("2017/12/31"))
+  
+                        # prevent collapse
+    info_data_list <- c(list(info_data), info_data_list)
+    
+    message(str_c("  End   read_url: ", read_url))
+  
+  }
+
+  # S3 dispatch merge.xts
+  bankruptcy_filing_counts_eoq_xts <- do.call(merge,info_data_list)
+  
+  message("End   get_bankruptcy_filing_counts_eoq_xts")
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  return(bankruptcy_filing_counts_eoq_xts)
+
+}
+# bankruptcy_filing_counts_eoq_xts <- get_bankruptcy_filing_counts_eoq_xts()
+# View(bankruptcy_filing_counts)
 
 
 # valuesight01.R
