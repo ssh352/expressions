@@ -2381,10 +2381,15 @@ get_phil_survey_of_prof_forecasters_eom_xts <- function(file_data_loc = NULL, su
 get_bankruptcy_filing_counts_eoq_xts <- function() {
 
   # JAN 2018 
-  # More recent data quickly than the St. Louis FRED 
+  # More recent data that is delivered 'quicker' than the St. Louis FRED 
+    # Delinquency Rate on Commercial and Industrial Loans, All Commercial Banks (DRBLACBS)
+    # https://fred.stlouisfed.org/series/DRBLACBS
+    # https://fred.stlouisfed.org/data/DRBLACBS.txt
   # (may or may not be as accurate or as good?!)
   # Bankruptcy Filings
   # UNITED STATES COURTS
+  # each of 'end of quarer'
+  # U.S. Bankruptcy Courts - Business and Nonbusiness Cases Filed, by Chapter of the Bankruptcy Code F-2 (Three Months)
   # http://www.uscourts.gov/report-name/bankruptcy-filings
 
   # end of EACH calendar quarter 
@@ -2415,10 +2420,12 @@ get_bankruptcy_filing_counts_eoq_xts <- function() {
 
   message("Begin get_bankruptcy_filing_counts_eoq_xts")
 
-  # earliest
-
+  # earliest date
   # http://www.uscourts.gov/statistics/table/f-2-three-months/bankruptcy-filings/2001/03/31
-  info_data_dates <- seq(from = zoo::as.Date("2001/04/01"), to = Sys.Date(), by = "quarter") - 1
+  # 'from' must be the first day of a quarter
+  #                                                              # last day of the quarter
+  #                                                              # tries to get 'that days publishing'
+  info_data_dates <- seq(from = zoo::as.Date("2001/04/01"), to = (Sys.Date() + 1) , by = "quarter") - 1
   
   # multiple value testing SKIP BAD ; NEED TO FIND SOMEHTING else TO READ OLD xls FILES(64BIT)
   # info_data_dates <- seq(from = zoo::as.Date("2016/04/01"), to = Sys.Date(), by = "quarter") - 1
@@ -2447,26 +2454,53 @@ get_bankruptcy_filing_counts_eoq_xts <- function() {
   # 2016/06/30
   # info_data_dates <- zoo::as.Date("2016/03/31")
   
-  
   info_data_list <- list()
   for(info_data_date_i in info_data_dates) {
     
     # because the element was unclass-ed.
     info_data_date_i <-  zoo::as.Date(info_data_date_i)
     
-    #  verified, only PDF is available
+    # ONLY pdf is available, so I manually wrote in here
+    # Table F-2 (Three Months)— Bankruptcy Filings (December 31, 2004)
+    # http://www.uscourts.gov/sites/default/files/statistics_import_dir/1204_f23.pdf
     # http://www.uscourts.gov/statistics/table/f-2-three-months/bankruptcy-filings/2004/12/31
     # download bankruptcy file: http://www.uscourts.gov/file/12705/download
     # Not an excel file
     # can not download file or can not read file of date: 2004-12-31
-    
-    # verified, only PDF is available
+    # 
+    if(info_data_date_i == zoo::as.Date("2004/12/31")) {
+
+      info_data <- structure(c(371668, 259531, 1796, 71, 110220, 7778, 5013, 1543, 71, 1104, 363890, 254518, 253, 109116), .Dim = c(1L, 14L), .Dimnames = list(NULL, 
+      c("all_chs_all", 
+      "all_ch_7", "all_ch_11", "all_ch_12", "all_ch_13", "bus_chs_all", 
+      "bus_ch_7", "bus_ch_11", "bus_ch_12", "bus_ch_13", "ind_chs_all", 
+      "ind_ch_7", "ind_ch_11", "ind_ch_13")), index = structure(1104451200, tzone = "UTC", tclass = "Date"), class = c("xts", 
+      "zoo"), .indexCLASS = "Date", tclass = "Date", .indexTZ = "UTC", tzone = "UTC")
+
+    }
+
+    # ONLY pdf is available, so I manually wrote in here
+    # Table F-2 (Three Months)— Bankruptcy Filings (March 31, 2005)
+    # http://www.uscourts.gov/sites/default/files/statistics_import_dir/0305_f23.pdf
     # http://www.uscourts.gov/statistics/table/f-2-three-months/bankruptcy-filings/2005/03/31
     # download bankruptcy file: http://www.uscourts.gov/file/12706/download
     # Not an excel file
     # can not download file or can not read file of date: 2005-03-31
-    
+    #
+    if(info_data_date_i == zoo::as.Date("2005/03/31")) {
+
+      info_data <- structure(c(401149, 294520, 1722, 99, 104796, 8063, 5281, 1521, 99, 1150, 393086, 289239, 201, 103646), .Dim = c(1L, 14L), .Dimnames = list(NULL, 
+      c("all_chs_all", 
+      "all_ch_7", "all_ch_11", "all_ch_12", "all_ch_13", "bus_chs_all", 
+      "bus_ch_7", "bus_ch_11", "bus_ch_12", "bus_ch_13", "ind_chs_all", 
+      "ind_ch_7", "ind_ch_11", "ind_ch_13")), index = structure(1112227200, tzone = "UTC", tclass = "Date"), class = c("xts", 
+      "zoo"), .indexCLASS = "Date", tclass = "Date", .indexTZ = "UTC", tzone = "UTC")
+
+    }
+
     # special processing
+    # readxl::read_xls COULD only read the first column: "  TOTAL"
+    # Therefore, I manually enter the information here
     if(info_data_date_i == zoo::as.Date("2016/03/31")) {
       
       message(stringr::str_c("  Begin special processing ", info_data_date_i))
@@ -2489,7 +2523,10 @@ get_bankruptcy_filing_counts_eoq_xts <- function() {
       
       next
     }
+    
     # special processing
+    # readxl::read_xls COULD only read the first column: "  TOTAL"
+    # Therefore, I manually enter the information here
     if(info_data_date_i == zoo::as.Date("2016/06/30")) {
       
       message(stringr::str_c("  Begin special processing ", info_data_date_i))
