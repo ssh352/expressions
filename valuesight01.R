@@ -2644,8 +2644,8 @@ get_bankruptcy_filing_counts_eoq_xts <- function(pub_dates = Sys.Date(), updatin
                              "bus_chs_all", "bus_ch_7", "bus_ch_11", "bus_ch_12", "bus_ch_13",
                              "ind_chs_all", "ind_ch_7", "ind_ch_11",              "ind_ch_13")
   
-    # xts:: required - prevent xts class clashing with spacetime
-    info_data <- xts::xts(info_data, info_data_date_i)
+    
+    info_data <- xts(info_data, info_data_date_i)
   
                         # prevent collapse
     info_data_list <- c(list(info_data), info_data_list)
@@ -2654,8 +2654,8 @@ get_bankruptcy_filing_counts_eoq_xts <- function(pub_dates = Sys.Date(), updatin
   
   }
 
-  # S3 dispatch merge.xts                   # xts:: required - prevent xts class clashing with spacetime
-  bankruptcy_filing_counts_eoq_xts <- do.call(xts::rbind.xts,info_data_list)
+  # S3 dispatch merge.xts                   
+  bankruptcy_filing_counts_eoq_xts <- do.call(rbind.xts,info_data_list)
   
   # want to update an .RData file
   if(!is.null(updating_file)) {
@@ -2665,8 +2665,8 @@ get_bankruptcy_filing_counts_eoq_xts <- function(pub_dates = Sys.Date(), updatin
       load(file = updating_file, envir = environment())
       # delete old values (if any)
       bankruptcy_filing_counts_eoq_xts <- bankruptcy_filing_counts_eoq_xts[!index(bankruptcy_filing_counts_eoq_xts) %in% index(bankruptcy_filing_counts_eoq_xts_new)]
-      # add (back) values               # xts:: required - prevent xts class clashing with spacetime
-      bankruptcy_filing_counts_eoq_xts <- xts::rbind.xts(bankruptcy_filing_counts_eoq_xts, bankruptcy_filing_counts_eoq_xts_new)
+      # add (back) values               
+      bankruptcy_filing_counts_eoq_xts <- rbind.xts(bankruptcy_filing_counts_eoq_xts, bankruptcy_filing_counts_eoq_xts_new)
     } 
     # make data permanent
     save(bankruptcy_filing_counts_eoq_xts, file = updating_file, envir = environment())
@@ -2685,15 +2685,15 @@ get_bankruptcy_filing_counts_eoq_xts <- function(pub_dates = Sys.Date(), updatin
 # updating_file =  NULL # do not create/update and .RData FILE
 # updating_file = "bankruptcy_filing_counts_eoq_xts.RData" # update this file if exists
 #                                                          # if not exists, then create a new file of new data
-# get everything and save it                                                        
-# bankruptcy_filing_counts_eoq_xts <- get_bankruptcy_filing_counts_eoq_xts(pub_dates = NULL, updating_file = "bankruptcy_filing_counts_eoq_xts.RData")
+# get everything and save/add_to "bankruptcy_filing_counts_eoq_xts.RData"                                                       
+# bankruptcy_filing_counts_eoq_xts <- get_bankruptcy_filing_counts_eoq_xts(pub_dates = NULL)
 # View(bankruptcy_filing_counts_eoq_xts)
 # bus_ch_11 IS A pattern ( 2000-2001, 2007-2008, 2015-2016
 # save(bankruptcy_filing_counts_eoq_xts, file = "bankruptcy_filing_counts_eoq_xts.RData")
 # 
 # defaults: ( expect to manually and end-of-quarterly)
 # bankruptcy_filing_counts_eoq_xts <- get_bankruptcy_filing_counts_eoq_xts(pub_dates = Sys.Date(), updating_file = "bankruptcy_filing_counts_eoq_xts.RData")
-
+# bankruptcy_filing_counts_eoq_xts <- get_bankruptcy_filing_counts_eoq_xts()
 
 # valuesight01.R 
 
