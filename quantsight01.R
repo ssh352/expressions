@@ -719,8 +719,8 @@ quantstrat01 <- function() {
     # tradeStats(Portfolios, Symbols . . .
     # Single symbol portolio: 'Net.Trading.PL'
     # in Multisymbol portolio, the NAME will be different: "Total.Net.Profit"
-    faber.stats<-tradeStats("will5000ind_f_drblacbs")[,c('Net.Trading.PL','Max.Drawdown','Num.Trades','Profit.Factor','Std.Dev.Trade.PL','Largest.Winner','Largest.Loser','Max.Equity','Min.Equity')]
-    View(faber.stats) # per symbol, summary statistics
+    will5000ind_f_drblacbs.stats<-tradeStats("will5000ind_f_drblacbs")[,c('Net.Trading.PL','Max.Drawdown','Num.Trades','Profit.Factor','Std.Dev.Trade.PL','Largest.Winner','Largest.Loser','Max.Equity','Min.Equity')]
+    View(will5000ind_f_drblacbs.stats) # per symbol, summary statistics
     # slide 37
     # trade related
     # profit related
