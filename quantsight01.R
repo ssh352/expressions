@@ -873,5 +873,22 @@ quantstrat01 <- function() {
 }
 # quantstrat01() 
 
+# # Open project(quantstrat package) in new session ( REQUIRED package: breakpoints will not work otherwise )
+# setwd("..")
+# 
+# rm(list=setdiff(ls(all.names=TRUE),c("con","cid")));debugSource('W:/R-3.4._/finecon01.R');debugSource('W:/R-3.4._/goodsight01.R');debugSource('W:/R-3.4._/valuesight01.R'); debugSource('W:/R-3.4._/faber.R'); debugSource('W:/R-3.4._/quantsight01.R'); debugSource('W:/R-3.4._/quantsight02.R');verify_connection();options(upsert_temp_is_temporary=Inf);setDefaults(getSymbols.av, api.key="WN6SS6MSDDVU79RZ")
+# devtools::load_all(pkg = "./quantstrat");scriptests::source.pkg(pkg = "./quantstrat")
+# debugSourceDir <- function(path, traceMe = TRUE, ...) {
+#   for (nm in list.files(path, pattern = "[.][RrSsQq]$")) {
+#      if(traceMe) cat(nm,":")
+#      debugSource(file.path(path, nm), ...)
+#      if(traceMe) cat("\n")
+#   }
+# }
+# debugSourceDir(path = "W:\\R-3.4._\\quantstrat\\R")
+# # place down breakpoint
+# quantstrat01() 
+
 # quantsight01.R
+
 
