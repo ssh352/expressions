@@ -159,10 +159,8 @@ quantstrat01 <- function() {
       Sys.setenv(TZ="UTC")
     }
     # Try to clean up in case the demo was run previously
-    suppressWarnings(rm("account.faber","portfolio.faber",pos=.blotter))
-    suppressWarnings(rm("ltaccount", "ltportfolio", "ClosePrice", "CurrentDate", "equity", 
-             "GSPC", "stratFaber", "initDate", "initEq", "Posn", "UnitSize", "verbose"))
-     suppressWarnings(rm("order_book.faber",pos=.strategy))
+    suppressWarnings(rm("account.will5000ind_f_drblacbs"   ,"portfolio.will5000ind_f_drblacbs", pos=.blotter))
+    suppressWarnings(rm("order_book.will5000ind_f_drblacbs",                                    pos=.strategy))
   
     ##### PLACE DEMO AND TEST DATES HERE #################
     #
@@ -649,7 +647,7 @@ quantstrat01 <- function() {
     #  returns.ret <- Return.calculate(getAccount("will5000ind_f_drblacbs")$summary$End.Eq, method = "log")
     bothreturns <- cbind(returns.ret,WILL5000IND.ret)
     colnames(bothreturns) <- c("drblacbs","BuyHold")
-    View(bothreturns["2011"])
+    print(bothreturns["2011"])
     # Rstudio?!
     # Error in par(op) : invalid value specified for graphical parameter "pin"
     if (!any(search() %in% "tools:rstudio")) {
@@ -773,9 +771,10 @@ quantstrat01 <- function() {
     # blotter function chart.Posn charts trades against market data, position through time, and cumulative P&L
     # botter function: trades against market data, position through time, and cumulative P&L
     # strategy                           # [first] Portfolio symbol
-    chart.Posn("will5000ind_f_drblacbs", Symbol = "WILL5000IND",theme=myTheme)
-    plot(add_SMA(n=10,col=4, on=1))
-    
+    if (!any(search() %in% "tools:rstudio")) {
+      chart.Posn("will5000ind_f_drblacbs", Symbol = "WILL5000IND",theme=myTheme)
+      plot(add_SMA(n=10,col=4, on=1))
+    }
     # # if MANY Symbols ( a mult-asset porfolio )
     # # e.g. 9 Symbols in a specific portfolio
     # par(mfrow=c(3,3))
@@ -788,8 +787,10 @@ quantstrat01 <- function() {
     # # Quantstrat_II(12_2013))(GuyYollin)_quantstrat(blotter).pdf
     
     # blotter maximum adverse excursion (MAE) and maximum favorable excursion (MFE) charts
-    chart.ME(Portfolio="will5000ind_f_drblacbs", Symbol="WILL5000IND", type="MAE", scale="percent")
-    chart.ME(Portfolio="will5000ind_f_drblacbs", Symbol="WILL5000IND", type="MFE", scale="percent")
+    if (!any(search() %in% "tools:rstudio")) {
+      chart.ME(Portfolio="will5000ind_f_drblacbs", Symbol="WILL5000IND", type="MAE", scale="percent")
+      chart.ME(Portfolio="will5000ind_f_drblacbs", Symbol="WILL5000IND", type="MFE", scale="percent")
+    }
     # slide 49
     # Quantstrat_II(12_2013))(GuyYollin)_quantstrat(blotter).pdf
 
