@@ -1,5 +1,7 @@
 
 # valuesight01.R
+# R 3.4.3 commonly debugged with RStudio-1.1.383
+
 
 get_large_nationals_yearly_gdp_weights_by_month <- function(keep_eom_date_since = "2003-01-01") {
 
@@ -2398,6 +2400,21 @@ get_bankruptcy_filing_counts_eoq_xts <- function(pub_dates = Sys.Date(), updatin
   # earliest 
   # http://www.uscourts.gov/statistics/table/f-2-three-months/bankruptcy-filings/2001/03/31
   
+  # chapter-13-bankruptcy
+  # plan to repay all or part of their debts
+  # http://www.uscourts.gov/services-forms/bankruptcy/bankruptcy-basics/chapter-13-bankruptcy-basics
+  # 
+  # chapter-11-bankruptcy
+  # debtors plan of reorganization is confirmed, 
+  # the debtors case is dismissed or converted to chapter 7, or a chapter 11
+  # http://www.uscourts.gov/services-forms/bankruptcy/bankruptcy-basics/chapter-11-bankruptcy-basics
+  # 
+  # chapter-7-bankruptcy
+  # bankruptcy trustee gathers and sells the debtors nonexempt assets 
+  # and uses the proceeds of such assets to pay holders of claims (creditors)
+  # http://www.uscourts.gov/services-forms/bankruptcy/bankruptcy-basics/chapter-7-bankruptcy-basics
+
+  
   ops <- options()
   
   options(warn = 1)
@@ -2419,6 +2436,10 @@ get_bankruptcy_filing_counts_eoq_xts <- function(pub_dates = Sys.Date(), updatin
   library(xts) # also uses package zoo
 
   message("Begin get_bankruptcy_filing_counts_eoq_xts")
+
+
+  
+  # get at least SOME data from the internet
 
   # earliest date
   # http://www.uscourts.gov/statistics/table/f-2-three-months/bankruptcy-filings/2001/03/31
@@ -2656,22 +2677,24 @@ get_bankruptcy_filing_counts_eoq_xts <- function(pub_dates = Sys.Date(), updatin
 
   # S3 dispatch merge.xts                   
   bankruptcy_filing_counts_eoq_xts <- do.call(rbind.xts,info_data_list)
+
+  # want to update the local(if exists) .RData file
+  # get the data locally
+  if(!is.null(updating_file) && file.exists(updating_file)) {
+    bankruptcy_filing_counts_eoq_xts_new <- bankruptcy_filing_counts_eoq_xts
+    load(file = updating_file, envir = environment())
+    # update the file -  no need to destroy
+    # delete old values (if any)
+    bankruptcy_filing_counts_eoq_xts <- bankruptcy_filing_counts_eoq_xts[!index(bankruptcy_filing_counts_eoq_xts) %in% index(bankruptcy_filing_counts_eoq_xts_new)]
+    # add (back) values               
+    bankruptcy_filing_counts_eoq_xts <- rbind.xts(bankruptcy_filing_counts_eoq_xts, bankruptcy_filing_counts_eoq_xts_new)
+  } 
   
-  # want to update an .RData file
+  # in any case, make data permanent
   if(!is.null(updating_file)) {
-    # update
-    if(file.exists(updating_file)) {
-      bankruptcy_filing_counts_eoq_xts_new <- bankruptcy_filing_counts_eoq_xts
-      load(file = updating_file, envir = environment())
-      # delete old values (if any)
-      bankruptcy_filing_counts_eoq_xts <- bankruptcy_filing_counts_eoq_xts[!index(bankruptcy_filing_counts_eoq_xts) %in% index(bankruptcy_filing_counts_eoq_xts_new)]
-      # add (back) values               
-      bankruptcy_filing_counts_eoq_xts <- rbind.xts(bankruptcy_filing_counts_eoq_xts, bankruptcy_filing_counts_eoq_xts_new)
-    } 
-    # make data permanent
     save(bankruptcy_filing_counts_eoq_xts, file = updating_file, envir = environment())
   }
-  
+    
   message("End   get_bankruptcy_filing_counts_eoq_xts")
   
   Sys.setenv(TZ=oldtz)
@@ -2681,19 +2704,25 @@ get_bankruptcy_filing_counts_eoq_xts <- function(pub_dates = Sys.Date(), updatin
 
 }
 # pub_dates = NULL       # get everything
-# pub_dates = Sys.Date() # get just this end/begin-of-quarter-day information: calls zoo::as.Date(input)
+# pub_dates = Sys.Date() # get just this end-of-recent-quarter-day information: calls zoo::as.Date(input)
 # updating_file =  NULL # do not create/update and .RData FILE
 # updating_file = "bankruptcy_filing_counts_eoq_xts.RData" # update this file if exists
 #                                                          # if not exists, then create a new file of new data
-# get everything and save/add_to "bankruptcy_filing_counts_eoq_xts.RData"                                                       
+# GET EVERYTHING and save/add_to "bankruptcy_filing_counts_eoq_xts.RData"                                                       
 # bankruptcy_filing_counts_eoq_xts <- get_bankruptcy_filing_counts_eoq_xts(pub_dates = NULL)
 # View(bankruptcy_filing_counts_eoq_xts)
-# bus_ch_11 IS A pattern ( 2000-2001, 2007-2008, 2015-2016
+# bus_ch_11 IS A pattern ( 2000-2001, 2007-2008, 2015-2016 ) TRY SMA2
 # save(bankruptcy_filing_counts_eoq_xts, file = "bankruptcy_filing_counts_eoq_xts.RData")
 # 
-# defaults: ( expect to manually and end-of-quarterly)
+# defaults: ( expect to do manually and end-of-quarterly)
 # bankruptcy_filing_counts_eoq_xts <- get_bankruptcy_filing_counts_eoq_xts(pub_dates = Sys.Date(), updating_file = "bankruptcy_filing_counts_eoq_xts.RData")
+# THIS_ONE
 # bankruptcy_filing_counts_eoq_xts <- get_bankruptcy_filing_counts_eoq_xts()
+#
+# just a specific date ( and save )
+# bankruptcy_filing_counts_eoq_xts <- get_bankruptcy_filing_counts_eoq_xts(pub_dates = zoo::as.Date("2017-06-30"))
+# just a specific date and do not save
+# bankruptcy_filing_counts_eoq_xts <- get_bankruptcy_filing_counts_eoq_xts(pub_dates = zoo::as.Date("2017-09-30"), updating_file = NULL)
 
 # valuesight01.R 
 
