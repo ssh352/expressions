@@ -2414,7 +2414,6 @@ get_bankruptcy_filing_counts_eoq_xts <- function(pub_dates = Sys.Date(), updatin
   # and uses the proceeds of such assets to pay holders of claims (creditors)
   # http://www.uscourts.gov/services-forms/bankruptcy/bankruptcy-basics/chapter-7-bankruptcy-basics
 
-  
   ops <- options()
   
   options(warn = 1)
@@ -2437,8 +2436,34 @@ get_bankruptcy_filing_counts_eoq_xts <- function(pub_dates = Sys.Date(), updatin
 
   message("Begin get_bankruptcy_filing_counts_eoq_xts")
 
-
+  # special case, just get all of the local data
+  if(is.na(pub_dates) && !is.null(updating_file)) {
   
+    load(file = updating_file, envir = environment())
+  
+    message("End   get_bankruptcy_filing_counts_eoq_xts")
+    
+    Sys.setenv(TZ=oldtz)
+    options(ops)
+    
+    return(bankruptcy_filing_counts_eoq_xts)
+  
+  }
+  
+  # user error
+  if(is.na(pub_dates) && is.null(updating_file)) {
+  
+    message("missing updating_file ... returning NULL")
+  
+    message("End   get_bankruptcy_filing_counts_eoq_xts")
+    
+    Sys.setenv(TZ=oldtz)
+    options(ops)
+    
+    return(NULL)
+  
+  }
+
   # get at least SOME data from the internet
 
   # earliest date
@@ -2723,6 +2748,11 @@ get_bankruptcy_filing_counts_eoq_xts <- function(pub_dates = Sys.Date(), updatin
 # bankruptcy_filing_counts_eoq_xts <- get_bankruptcy_filing_counts_eoq_xts(pub_dates = zoo::as.Date("2017-06-30"))
 # just a specific date and do not save
 # bankruptcy_filing_counts_eoq_xts <- get_bankruptcy_filing_counts_eoq_xts(pub_dates = zoo::as.Date("2017-09-30"), updating_file = NULL)
+#
+# use with other programs
+# just get all of the local data
+# bankruptcy_filing_counts_eoq_xts <- get_bankruptcy_filing_counts_eoq_xts(pub_dates = NA)
+
 
 # valuesight01.R 
 
