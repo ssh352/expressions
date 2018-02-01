@@ -38,7 +38,7 @@ checkBlotterUpdate <- function(port.st,account.st,verbose=TRUE)
 # 
 # slide 38
 # Quantstrat_II(12_2013))(GuyYollin)_quantstrat(blotter).pdf
-# checkBlotterUpdate("will5000ind_f_drblacbs", "will5000ind_f_drblacbs")
+# checkBlotterUpdate("will5000ind_f_drblacbs_or_busch11bnkr", "will5000ind_f_drblacbs_or_busch11bnkr")
 
 # FOMC Cycle Trading Strategy in Quantstrat
 # March 14, 2015
@@ -196,8 +196,8 @@ quantstrat02 <- function() {
       Sys.setenv(TZ="UTC")
     }
     # Try to clean up in case the demo was run previously
-    suppressWarnings(rm("account.will5000ind_f_drblacbs"   ,"portfolio.will5000ind_f_drblacbs", pos=.blotter))
-    suppressWarnings(rm("order_book.will5000ind_f_drblacbs",                                    pos=.strategy))
+    suppressWarnings(rm("account.will5000ind_f_drblacbs_or_busch11bnkr"   ,"portfolio.will5000ind_f_drblacbs_or_busch11bnkr", pos=.blotter))
+    suppressWarnings(rm("order_book.will5000ind_f_drblacbs_or_busch11bnkr",                                    pos=.strategy))
   
     ##### PLACE DEMO AND TEST DATES HERE #################
     #
@@ -419,7 +419,7 @@ quantstrat02 <- function() {
     initDate=as.character(zoo::as.Date(head(index(WILL5000IND),1)))  # ,1)) -1) # BEFORE!
 
     # PROBLEMS? xDATE BEING GREATER THAN TODAY?x, +NOT A REAL MARKET DATE!
-    # updatePortf(Portfolio="will5000ind_f_drblacbs",Dates=paste('::',as.Date(Sys.time()),sep=''))
+    # updatePortf(Portfolio="will5000ind_f_drblacbs_or_busch11bnkr",Dates=paste('::',as.Date(Sys.time()),sep=''))
     # see applyStrategy
     if(tail(index(WILL5000IND),1) > Sys.Date()) {
       finalDate = paste('::',as.character(zoo::as.Date(as.yearmon(tail(index(WILL5000IND),1))) - 1),sep='')
@@ -451,62 +451,62 @@ quantstrat02 <- function() {
     # Set initial values 
     initEq=100000.00 
     # Initialize portfolio and account
-    initPortf("will5000ind_f_drblacbs", symbols=symbols, initDate=initDate)
-    initAcct("will5000ind_f_drblacbs", portfolios="will5000ind_f_drblacbs", initDate=initDate, initEq=initEq)
-    initOrders(portfolio="will5000ind_f_drblacbs", initDate=initDate)
+    initPortf("will5000ind_f_drblacbs_or_busch11bnkr", symbols=symbols, initDate=initDate)
+    initAcct("will5000ind_f_drblacbs_or_busch11bnkr", portfolios="will5000ind_f_drblacbs_or_busch11bnkr", initDate=initDate, initEq=initEq)
+    initOrders(portfolio="will5000ind_f_drblacbs_or_busch11bnkr", initDate=initDate)
     
     # osMaxPos
     # for(symbol in symbols){
-    #   addPosLimit("will5000ind_f_drblacbs", symbol, initDate, maxpos=Inf, minpos=-Inf)
+    #   addPosLimit("will5000ind_f_drblacbs_or_busch11bnkr", symbol, initDate, maxpos=Inf, minpos=-Inf)
     # }
     
     message("setup completed")
   
     # Initialize a strategy object
-    strategy("will5000ind_f_drblacbs", store=TRUE)
+    strategy("will5000ind_f_drblacbs_or_busch11bnkr", store=TRUE)
   
     # faber indicators NOT USED
     # # Add an indicator
-    # add.indicator("will5000ind_f_drblacbs", name = "SMA", arguments = list(x = quote(Cl(mktdata)), n=10), label="SMA10")
+    # add.indicator("will5000ind_f_drblacbs_or_busch11bnkr", name = "SMA", arguments = list(x = quote(Cl(mktdata)), n=10), label="SMA10")
     
     # Add an indicator
     
     # strategy                              # function    # function arguments ( could be NOT here and be in applyStrategy parameters )
     # eventually, in mktdata, label "SMA4" becomes column SMA.SMA4 of values (1,NA)
     # sigCrossover/ruleSignal/sigval=TRUE( SMA.SMA4 = 1 )
-    add.indicator("will5000ind_f_drblacbs", name = "SMA", arguments = list(x = quote(get_DRBLACBS(mktdata)),    n=4), label="SMA4DR") 
+    add.indicator("will5000ind_f_drblacbs_or_busch11bnkr", name = "SMA", arguments = list(x = quote(get_DRBLACBS(mktdata)),    n=4), label="SMA4DR") 
 
-    add.indicator("will5000ind_f_drblacbs", name = "SMA", arguments = list(x = quote(get_BUSCH11BNKR(mktdata)), n=7), label="SMA7BCH11")
+    add.indicator("will5000ind_f_drblacbs_or_busch11bnkr", name = "SMA", arguments = list(x = quote(get_BUSCH11BNKR(mktdata)), n=7), label="SMA7BCH11")
     
     # faber signals NOT USED
     # # There are two signals:
     # # The first is when monthly price crosses over the 10-month SMA
-    # add.signal("will5000ind_f_drblacbs",name="sigCrossover",arguments = list(columns=c("Close","SMA10"),relationship="gte"),label="Cl.gt.SMA")
+    # add.signal("will5000ind_f_drblacbs_or_busch11bnkr",name="sigCrossover",arguments = list(columns=c("Close","SMA10"),relationship="gte"),label="Cl.gt.SMA")
     # # The second is when the monthly price crosses under the 10-month SMA
-    # add.signal("will5000ind_f_drblacbs",name="sigCrossover",arguments = list(columns=c("Close","SMA10"),relationship="lt"),label="Cl.lt.SMA")
+    # add.signal("will5000ind_f_drblacbs_or_busch11bnkr",name="sigCrossover",arguments = list(columns=c("Close","SMA10"),relationship="lt"),label="Cl.lt.SMA")
   
     # There are two signals
   
     # strategy
     # The first is when monthly DRBLACBS crosses over the 4-month SMA of DRBLACBS ( MORE Delinquencies)
-    add.signal("will5000ind_f_drblacbs", name="sigCrossover",arguments = list(columns=c("DRBLACBS","SMA4DR"),relationship="gt"),label="DR.gt.SMA4DR")
+    add.signal("will5000ind_f_drblacbs_or_busch11bnkr", name="sigCrossover",arguments = list(columns=c("DRBLACBS","SMA4DR"),relationship="gt"),label="DR.gt.SMA4DR")
     
     # The second is when the monthly DRBLACBS crosses under the 4-month of SMA DRBLACBS (LESS Delinquencies)
-    add.signal("will5000ind_f_drblacbs", name="sigCrossover",arguments = list(columns=c("DRBLACBS","SMA4DR"),relationship="lt"),label="DR.lt.SMA4DR")
+    add.signal("will5000ind_f_drblacbs_or_busch11bnkr", name="sigCrossover",arguments = list(columns=c("DRBLACBS","SMA4DR"),relationship="lt"),label="DR.lt.SMA4DR")
     
     # strategy
     # The first is when the monthly BUSCH11BNKR crosses over the 7-month SMA of BUSCH11BNKR ( MORE Delinquencies)
-    add.signal("will5000ind_f_drblacbs", name="sigCrossover",arguments = list(columns=c("BUSCH11BNKR","SMA7BCH11"),relationship="gt"),label="BCH11.gt.SMA7BCH11")
+    add.signal("will5000ind_f_drblacbs_or_busch11bnkr", name="sigCrossover",arguments = list(columns=c("BUSCH11BNKR","SMA7BCH11"),relationship="gt"),label="BCH11.gt.SMA7BCH11")
     
     # The second is when the monthly BUSCH11BNKR crosses under the 7-month of SMA BUSCH11BNKR (LESS Delinquencies)
-    add.signal("will5000ind_f_drblacbs", name="sigCrossover",arguments = list(columns=c("BUSCH11BNKR","SMA7BCH11"),relationship="lt"),label="BCH11.lt.SMA7BCH11")
+    add.signal("will5000ind_f_drblacbs_or_busch11bnkr", name="sigCrossover",arguments = list(columns=c("BUSCH11BNKR","SMA7BCH11"),relationship="lt"),label="BCH11.lt.SMA7BCH11")
     
     # faber rules NOT used
     # There are two rules:
     # The first is to buy when the price crosses above the SMA
-    #   add.rule("will5000ind_f_drblacbs", name='ruleSignal', arguments = list(sigcol="Cl.gt.SMA", sigval=TRUE, orderqty=1,        osFUN='osAllIn', ordertype='market', orderside='long', pricemethod='market',TxnFees=0), type='enter', path.dep=TRUE)
+    #   add.rule("will5000ind_f_drblacbs_or_busch11bnkr", name='ruleSignal', arguments = list(sigcol="Cl.gt.SMA", sigval=TRUE, orderqty=1,        osFUN='osAllIn', ordertype='market', orderside='long', pricemethod='market',TxnFees=0), type='enter', path.dep=TRUE)
     # The second is to sell when the price crosses below the SMA
-    #   add.rule("will5000ind_f_drblacbs", name='ruleSignal', arguments = list(sigcol="Cl.lt.SMA", sigval=TRUE, orderqty='all'                    , ordertype='market', orderside='long', pricemethod='market',TxnFees=0), type='exit',  path.dep=TRUE)
+    #   add.rule("will5000ind_f_drblacbs_or_busch11bnkr", name='ruleSignal', arguments = list(sigcol="Cl.lt.SMA", sigval=TRUE, orderqty='all'                    , ordertype='market', orderside='long', pricemethod='market',TxnFees=0), type='exit',  path.dep=TRUE)
   
     # There are two rules
 
@@ -539,34 +539,34 @@ quantstrat02 <- function() {
     ExecutionCost <- 0 # CAREFUL: ALSO HARDCODED ELSEWHERE
     
     # The first is to SELL when the DRBLACBS crosses above the SMA of DRBLACBS(MORE Delinquencies) # 
-    add.rule("will5000ind_f_drblacbs", name="ruleSignal", arguments = list(sigcol="DR.gt.SMA4DR", sigval=TRUE, orderqty="all"                , ordertype="market", TxnFees = "GeneralFee", orderside="long", pricemethod="market"),                                                                      type="exit", path.dep=TRUE) # , prefer = "High"
+    # DISABLED!
+    add.rule("will5000ind_f_drblacbs_or_busch11bnkr", disabled = TRUE, name="ruleSignal", arguments = list(sigcol="DR.gt.SMA4DR", sigval=TRUE, orderqty="all"                , ordertype="market", TxnFees = "GeneralFee", orderside="long", pricemethod="market"),                                                                      type="exit", path.dep=TRUE) # , prefer = "High"
   
     # if eq        ... no change ... 
     # if SMA is NA ... no change ...
 
     # The second is to BUY when the DRBLACBS crosses below the SMA of DRBLACBS (LESS Delinquencies)                                                                                                                                # global variables can not be seen
-    add.rule("will5000ind_f_drblacbs", name="ruleSignal", arguments = list(sigcol="DR.lt.SMA4DR", sigval=TRUE, orderqty=1,    osFUN="osAllIn", ordertype="market", TxnFees = "GeneralFee", orderside="long", pricemethod="market", initDate = initDate, initEq = initEq, ExecutionCost = ExecutionCost), type="enter", path.dep=TRUE) # , prefer = "High"
+    # DISABLED!
+    add.rule("will5000ind_f_drblacbs_or_busch11bnkr", disabled = TRUE, name="ruleSignal", arguments = list(sigcol="DR.lt.SMA4DR", sigval=TRUE, orderqty=1,    osFUN="osAllIn", ordertype="market", TxnFees = "GeneralFee", orderside="long", pricemethod="market", initDate = initDate, initEq = initEq, ExecutionCost = ExecutionCost), type="enter", path.dep=TRUE) # , prefer = "High"
 
-    
     # enable.rule(. . . 
     
     # The first is to SELL when the BUSCH11BNKR crosses above the SMA of BUSCH11BNKR(MORE Delinquencies) # 
-    add.rule("will5000ind_f_drblacbs", name="ruleSignal", arguments = list(sigcol="BCH11.gt.SMA7BCH11", sigval=TRUE, orderqty="all"                , ordertype="market", TxnFees = "GeneralFee", orderside="long", pricemethod="market"),                                                                      type="exit", path.dep=TRUE) # , prefer = "High"
+    add.rule("will5000ind_f_drblacbs_or_busch11bnkr", name="ruleSignal", arguments = list(sigcol="BCH11.gt.SMA7BCH11", sigval=TRUE, orderqty="all"                , ordertype="market", TxnFees = "GeneralFee", orderside="long", pricemethod="market"),                                                                      type="exit", path.dep=TRUE) # , prefer = "High"
   
     # if eq        ... no change ... 
     # if SMA is NA ... no change ...
 
     # The second is to BUY when the BUSCH11BNKR crosses below the SMA of BUSCH11BNKR (LESS Delinquencies)                                                                                                                                # global variables can not be seen
-    add.rule("will5000ind_f_drblacbs", name="ruleSignal", arguments = list(sigcol="BCH11.lt.SMA7BCH11", sigval=TRUE, orderqty=1,    osFUN="osAllIn", ordertype="market", TxnFees = "GeneralFee", orderside="long", pricemethod="market", initDate = initDate, initEq = initEq, ExecutionCost = ExecutionCost), type="enter", path.dep=TRUE) # , prefer = "High"
+    add.rule("will5000ind_f_drblacbs_or_busch11bnkr", name="ruleSignal", arguments = list(sigcol="BCH11.lt.SMA7BCH11", sigval=TRUE, orderqty=1,    osFUN="osAllIn", ordertype="market", TxnFees = "GeneralFee", orderside="long", pricemethod="market", initDate = initDate, initEq = initEq, ExecutionCost = ExecutionCost), type="enter", path.dep=TRUE) # , prefer = "High"
 
-    
     
     # Process the indicators and generate trades
     # I want to buy on the "Close"(default) of the month
     # from Guy Yollin pdfs 
     # add.indicator ( function 'name' arguments = ) can be skipped here 
     #   and instead 'late bound' sent to applyStrategy(  parameters = )
-    out <- applyStrategy(strategy="will5000ind_f_drblacbs", portfolios="will5000ind_f_drblacbs") # add.rule = "" # BUT add.rule( prefer = "High" ) overrides
+    out <- applyStrategy(strategy="will5000ind_f_drblacbs_or_busch11bnkr", portfolios="will5000ind_f_drblacbs_or_busch11bnkr") # add.rule = "" # BUT add.rule( prefer = "High" ) overrides
     print("Strategy Loop:")
     # debug in ruleOrderProc, set a breakpoint at "switch(orderType"
     # print(orderbook[[portfolio]][[symbol]])
@@ -583,9 +583,9 @@ quantstrat02 <- function() {
     # xor
     #                    all dates: is.null(Dates):     : Dates = index(prices)
     message("Begin trade blotter portfolio update")
-    updatePortf(Portfolio="will5000ind_f_drblacbs") # , Dates= finalDate # NOT ANY GOOD ANYMORE
-    updateAcct("will5000ind_f_drblacbs")
-    updateEndEq("will5000ind_f_drblacbs")
+    updatePortf(Portfolio="will5000ind_f_drblacbs_or_busch11bnkr") # , Dates= finalDate # NOT ANY GOOD ANYMORE
+    updateAcct("will5000ind_f_drblacbs_or_busch11bnkr")
+    updateEndEq("will5000ind_f_drblacbs_or_busch11bnkr")
     message("End trade blotter portfolio update")
     
     message("begin portfolio info")
@@ -593,7 +593,7 @@ quantstrat02 <- function() {
     # slide 57
     # Quantstrat_I(12_2013))(GuyYollin)_quantstrat(blotter).pdf
                                 # Portfolio
-    thePortfolio = getPortfolio("will5000ind_f_drblacbs")
+    thePortfolio = getPortfolio("will5000ind_f_drblacbs_or_busch11bnkr")
     print(data.frame(names(thePortfolio)))
     print(data.frame(names(thePortfolio$symbols)))
     print(data.frame(names(thePortfolio$symbols$WILL5000IND)))
@@ -614,10 +614,10 @@ quantstrat02 <- function() {
     
     message("begin account info")
     # blotter account object
-    theAccount = getAccount("will5000ind_f_drblacbs")
+    theAccount = getAccount("will5000ind_f_drblacbs_or_busch11bnkr")
     print(data.frame(names(theAccount)))
     print(data.frame(names(theAccount$portfolios)))
-    print(data.frame(names(theAccount$portfolios$will5000ind_f_drblacbs)))
+    print(data.frame(names(theAccount$portfolios$will5000ind_f_drblacbs_or_busch11bnkr)))
     print(data.frame(names(theAccount$summary)))
     # by month, PL and End.Eq
     # slide 66
@@ -632,7 +632,7 @@ quantstrat02 <- function() {
     message("begin strategy info")
     # slide 20
     # Quantstrat_II(12_2013))(GuyYollin)_quantstrat(blotter).pdf
-    theStrategy <- getStrategy("will5000ind_f_drblacbs")
+    theStrategy <- getStrategy("will5000ind_f_drblacbs_or_busch11bnkr")
     print(data.frame(summary(theStrategy)))
     # indicators, signals, rules, constraints
     message("end strategy info")
@@ -640,19 +640,19 @@ quantstrat02 <- function() {
     message("begin orderbook info")
     # slide 45
     # Quantstrat_II(12_2013))(GuyYollin)_quantstrat(blotter).pdf
-    theOrderBook <- getOrderBook("will5000ind_f_drblacbs")
+    theOrderBook <- getOrderBook("will5000ind_f_drblacbs_or_busch11bnkr")
     print(data.frame(class(theOrderBook)))
     print(data.frame(names(theOrderBook)))
-    print(data.frame(names(theOrderBook$will5000ind_f_drblacbs)))
-    print(data.frame(names(theOrderBook$will5000ind_f_drblacbs$WILL5000IND)))
-    print(data.frame(theOrderBook$will5000ind_f_drblacbs$WILL5000IND[,1:5]))
+    print(data.frame(names(theOrderBook$will5000ind_f_drblacbs_or_busch11bnkr)))
+    print(data.frame(names(theOrderBook$will5000ind_f_drblacbs_or_busch11bnkr$WILL5000IND)))
+    print(data.frame(theOrderBook$will5000ind_f_drblacbs_or_busch11bnkr$WILL5000IND[,1:5]))
     message("end orderbook info")
     
     message("begin transactions")
     # Transactions
     # slide 34
     # Quantstrat_I(12_2013))(GuyYollin)_quantstrat(blotter).pdf
-    print(getTxns(Portfolio="will5000ind_f_drblacbs", Symbol="WILL5000IND"))
+    print(getTxns(Portfolio="will5000ind_f_drblacbs_or_busch11bnkr", Symbol="WILL5000IND"))
     # per date
     # Txn.Qty Txn.Price Txn.Fees Txn.Value Txn.Avg.Cost Net.Txn.Realized.PL
     message("end transactions")
@@ -661,7 +661,7 @@ quantstrat02 <- function() {
     # of each portfolio or the entire account
                         # account    # Portfolios = NULL(default NULL (all portfolios))
                                      # Dates: xts style ISO 8601 date subset to retrieve, default NULL (alldates)
-    portfolio_returns       <- PortfReturns("will5000ind_f_drblacbs")
+    portfolio_returns       <- PortfReturns("will5000ind_f_drblacbs_or_busch11bnkr")
     # slide 42
     # Quantstrat_I(12_2013))(GuyYollin)_quantstrat(blotter).pdf
     # rownames(returns) <- NULL # someimes to avoid errors using table.Arbitrary
@@ -710,7 +710,7 @@ quantstrat02 <- function() {
       for(symbol in symbols){
         # R Studio: Error in plot.new() : figure margins too large
         if (!any(search() %in% "tools:rstudio")) {
-          chart.Posn(Portfolio="will5000ind_f_drblacbs",Symbol=symbol,theme=themelist,TA="add_SMA(n=10,col='darkgreen')")
+          chart.Posn(Portfolio="will5000ind_f_drblacbs_or_busch11bnkr",Symbol=symbol,theme=themelist,TA="add_SMA(n=10,col='darkgreen')")
         }
       }
     }
@@ -721,9 +721,9 @@ quantstrat02 <- function() {
     if(!exists("WILL5000IND.ret")) WILL5000IND.ret <- Return.calculate(WILL5000IND$WILL5000IND.Close)
     # xor
     #   WILL5000IND.ret <- Return.calculate(WILL5000IND$WILL5000IND.Close, method = "log")
-    returns.ret <- Return.calculate(getAccount("will5000ind_f_drblacbs")$summary$End.Eq)
+    returns.ret <- Return.calculate(getAccount("will5000ind_f_drblacbs_or_busch11bnkr")$summary$End.Eq)
     # xor
-    #  returns.ret <- Return.calculate(getAccount("will5000ind_f_drblacbs")$summary$End.Eq, method = "log")
+    #  returns.ret <- Return.calculate(getAccount("will5000ind_f_drblacbs_or_busch11bnkr")$summary$End.Eq, method = "log")
     bothreturns <- cbind(returns.ret,WILL5000IND.ret)
     colnames(bothreturns) <- c("drblacbs","BuyHold")
     print(bothreturns["2011"])
@@ -798,8 +798,8 @@ quantstrat02 <- function() {
     # tradeStats(Portfolios, Symbols . . .
     # Single symbol portolio: 'Net.Trading.PL'
     # in Multisymbol portolio, the NAME will be different: "Total.Net.Profit"
-    will5000ind_f_drblacbs.stats<-tradeStats("will5000ind_f_drblacbs")[,c('Net.Trading.PL','Max.Drawdown','Num.Trades','Profit.Factor','Std.Dev.Trade.PL','Largest.Winner','Largest.Loser','Max.Equity','Min.Equity')]
-    View(will5000ind_f_drblacbs.stats) # per symbol, summary statistics
+    will5000ind_f_drblacbs_or_busch11bnkr.stats<-tradeStats("will5000ind_f_drblacbs_or_busch11bnkr")[,c('Net.Trading.PL','Max.Drawdown','Num.Trades','Profit.Factor','Std.Dev.Trade.PL','Largest.Winner','Largest.Loser','Max.Equity','Min.Equity')]
+    View(will5000ind_f_drblacbs_or_busch11bnkr.stats) # per symbol, summary statistics
     # slide 37
     # trade related
     # profit related
@@ -812,7 +812,7 @@ quantstrat02 <- function() {
     # # Quantstrat_II(12_2013))(GuyYollin)_quantstrat(blotter).pdf
     
     # perTradeStats(Portfolio, Symbol 
-    View(perTradeStats("will5000ind_f_drblacbs"))
+    View(perTradeStats("will5000ind_f_drblacbs_or_busch11bnkr"))
     # per 24hours# ticks # PL, MAE, MFE
     # slide 48
     # Quantstrat_I(12_2013))(GuyYollin)_quantstrat(blotter).pdf
@@ -824,7 +824,7 @@ quantstrat02 <- function() {
   
     # text plot results
     # too much data
-    # PerformanceAnalytics:::textplot(t(tradeStats("will5000ind_f_drblacbs", "WILL5000IND")))
+    # PerformanceAnalytics:::textplot(t(tradeStats("will5000ind_f_drblacbs_or_busch11bnkr", "WILL5000IND")))
     # slide 23
     # Quantstrat_IV(08_2013))(GuyYollin)_quantstrat(blotter).pdf
     
@@ -851,7 +851,7 @@ quantstrat02 <- function() {
     # botter function: trades against market data, position through time, and cumulative P&L
     # strategy                           # [first] Portfolio symbol
     if (!any(search() %in% "tools:rstudio")) {
-      chart.Posn("will5000ind_f_drblacbs", Symbol = "WILL5000IND",theme=myTheme)
+      chart.Posn("will5000ind_f_drblacbs_or_busch11bnkr", Symbol = "WILL5000IND",theme=myTheme)
       plot(add_SMA(n=10,col=4, on=1))
     }
     # # if MANY Symbols ( a mult-asset porfolio )
@@ -867,8 +867,8 @@ quantstrat02 <- function() {
     
     # blotter maximum adverse excursion (MAE) and maximum favorable excursion (MFE) charts
     if (!any(search() %in% "tools:rstudio")) {
-      chart.ME(Portfolio="will5000ind_f_drblacbs", Symbol="WILL5000IND", type="MAE", scale="percent")
-      chart.ME(Portfolio="will5000ind_f_drblacbs", Symbol="WILL5000IND", type="MFE", scale="percent")
+      chart.ME(Portfolio="will5000ind_f_drblacbs_or_busch11bnkr", Symbol="WILL5000IND", type="MAE", scale="percent")
+      chart.ME(Portfolio="will5000ind_f_drblacbs_or_busch11bnkr", Symbol="WILL5000IND", type="MFE", scale="percent")
     }
     # slide 49
     # Quantstrat_II(12_2013))(GuyYollin)_quantstrat(blotter).pdf
@@ -912,6 +912,22 @@ quantstrat02 <- function() {
   return(quanstrat02_inner())
 
 }
+# quantstrat02() 
+
+# # Open project(quantstrat package) in new session ( REQUIRED package: breakpoints will not work otherwise )
+# setwd("..")
+# 
+# rm(list=setdiff(ls(all.names=TRUE),c("con","cid")));debugSource('W:/R-3.4._/finecon01.R');debugSource('W:/R-3.4._/goodsight01.R');debugSource('W:/R-3.4._/valuesight01.R'); debugSource('W:/R-3.4._/faber.R'); debugSource('W:/R-3.4._/quantsight01.R'); debugSource('W:/R-3.4._/quantsight02.R');verify_connection();options(upsert_temp_is_temporary=Inf);setDefaults(getSymbols.av, api.key="WN6SS6MSDDVU79RZ")
+# devtools::load_all(pkg = "./quantstrat");scriptests::source.pkg(pkg = "./quantstrat")
+# debugSourceDir <- function(path, traceMe = TRUE, ...) {
+#   for (nm in list.files(path, pattern = "[.][RrSsQq]$")) {
+#      if(traceMe) cat(nm,":")
+#      debugSource(file.path(path, nm), ...)
+#      if(traceMe) cat("\n")
+#   }
+# }
+# debugSourceDir(path = "W:\\R-3.4._\\quantstrat\\R")
+# # place down breakpoint
 # quantstrat02() 
 
 # quantsight02.R
