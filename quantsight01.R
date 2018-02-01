@@ -40,7 +40,95 @@ checkBlotterUpdate <- function(port.st,account.st,verbose=TRUE)
 # Quantstrat_II(12_2013))(GuyYollin)_quantstrat(blotter).pdf
 # checkBlotterUpdate("will5000ind_f_drblacbs", "will5000ind_f_drblacbs")
 
+# FOMC Cycle Trading Strategy in Quantstrat
+# March 14, 2015
+# By Peter Chan
+# http://www.returnandrisk.com/2015/03/fomc-cycle-trading-strategy-in.html
+# http://www.r-bloggers.com/fomc-cycle-trading-strategy-in-quantstrat/
+# 
 
+GeneralFee <- function(TxnQty, TxnPrice, Symbol, ...) {
+  
+  # list(...) # does NOT pass through add.rule( arguments = 
+  # if(hasArg(ExecutionCost)) ExecutionCost=match.call(expand.dots=TRUE)$ExecutionCost
+
+  ExecutionCost <- 0 # CAREFUL: ALSO HARDCODED ELSEWHERE
+  
+  return(abs(TxnQty) * TxnPrice * - ExecutionCost)
+  
+}
+
+# We will use a bet size of 100% of equity for all trades. 
+# This may not be optimal in developing trading systems but will allow for 
+# easy comparison with the buy and hold passive strategy, which is 100% allocated
+# 
+# https://www.r-bloggers.com/fomc-cycle-trading-strategy-in-quantstrat/
+# https://github.com/returnandrisk/r-code/blob/master/FOMC%20Cycle%20Trading%20Strategy%20in%20Quantstrat.R
+
+# AUTHOR BUYS AT CLOSE 
+################################################################################
+# run strategy backtest                                                        #
+################################################################################
+# applyStrategy(strategy = qs.strategy, portfolios = qs.portfolio)
+
+# ANDRE ADDED BACK MISSING 2018 ARGUMENTS
+################################################################################
+# custom order sizing function to allocate 100% of equity to a trade           #
+################################################################################
+
+osAllIn <- function(data, timestamp, orderqty, ordertype, orderside, portfolio, symbol, ruletype, digits, 
+                    roundqty = FALSE, ...) {
+  
+  # global variables
+  # , initDate = initDate, initEq = initEq, ExecutionCost = ExecutionCost
+  if(hasArg(initDate)) initDate=match.call(expand.dots=TRUE)$initDate
+  if(hasArg(initEq))     initEq=match.call(expand.dots=TRUE)$initEq
+  
+  if(hasArg(initEq))  ExecutionCost=match.call(expand.dots=TRUE)$ ExecutionCost
+
+
+  # NOTE: to manage "prefer"(Open,High,Low,Close) pass "prefer" variable to add.rule
+  # if(hasArg(prefer)) prefer=match.call(expand.dots=TRUE)$prefer
+  
+  # SEE
+  # https://github.com/returnandrisk/r-code/blob/master/FOMC%20Cycle%20Trading%20Strategy%20in%20Quantstrat.R
+ 
+  # ANDRE                                                                             # do not know how to get
+  if(!periodicity(mktdata)$scale %in% c("yearly", "quarterly", "monthly", "daily WITH allowMagicalThinking == T")) {
+    # ANDRE
+    # next bar Close
+    # AUTHOR
+    # authors original date
+    # hack to get correct index for trading on today's close  
+    idx <- which(index(mktdata) == as.Date(timestamp)) + 1
+  } else { 
+    # ANDRE
+    # this bar Close
+    # see   ruleOrderProc.R > ruleOrderProc -> switch(freq$scale
+    idx <- which(index(mktdata) == as.Date(timestamp)) 
+  }
+  
+  close <- as.numeric(Cl(mktdata[idx, ]))
+  txns <- getTxns(portfolio, symbol, paste0(initDate, "::", timestamp))
+  # calculate unrealised pnl
+  tmp <- getPos(portfolio, symbol, timestamp)
+  unreal.pl <- (close - as.numeric(tmp$Pos.Avg.Cost)) * as.numeric(tmp$Pos.Qty)
+  # round qty down or not
+  if (roundqty) {
+      orderqty <- floor((initEq + sum(txns$Net.Txn.Realized.PL) + unreal.pl) / 
+                            (close * (1 + ExecutionCost))) * sign(orderqty)
+  } else {
+      orderqty <- (initEq + sum(txns$Net.Txn.Realized.PL) + unreal.pl) / 
+          (close * (1 + ExecutionCost)) * sign(orderqty)
+  } 
+  return(orderqty[1])
+}
+# function is LOCATED HERE because R studio 
+# would not let me place a BREAKPOINT inside OF non-Global osAllIn 
+# REQUIRED to be IN THE GLOBAL ENV so QUANTSTRAT functions CAN see
+# already in the global env
+# assign("osAllIn", osAllIn, envir = .GlobalEnv)
+    
 quantstrat01 <- function() {
 
 # quantsight01.R
@@ -81,58 +169,7 @@ quantstrat01 <- function() {
     # # - update roxygen docs
     # # - bump version
   
-    # We will use a bet size of 100% of equity for all trades. 
-    # This may not be optimal in developing trading systems but will allow for 
-    # easy comparison with the buy and hold passive strategy, which is 100% allocated
-    # 
-    # https://www.r-bloggers.com/fomc-cycle-trading-strategy-in-quantstrat/
-    # https://github.com/returnandrisk/r-code/blob/master/FOMC%20Cycle%20Trading%20Strategy%20in%20Quantstrat.R
-    
-    # AUTHOR BUYS AT CLOSE 
-    ################################################################################
-    # run strategy backtest                                                        #
-    ################################################################################
-    # applyStrategy(strategy = qs.strategy, portfolios = qs.portfolio)
-    
-    # ANDRE ADDED BACK MISSING 2018 ARGUMENTS
-    ################################################################################
-    # custom order sizing function to allocate 100% of equity to a trade           #
-    ################################################################################
-    
-    osAllIn <- function(data, timestamp, orderqty, ordertype, orderside, portfolio, symbol, ruletype, digits, 
-                        roundqty = FALSE, ...) {
-      
-      # ANDRE ADDED
-      ExecutionCost <- 0 
-      # SEE
-      # https://github.com/returnandrisk/r-code/blob/master/FOMC%20Cycle%20Trading%20Strategy%20in%20Quantstrat.R
-    
-      # hack to get correct index for trading on today's close
-      idx <- which(index(mktdata) == as.Date(timestamp)) + 1
-      close <- as.numeric(Cl(mktdata[idx, ]))
-      txns <- getTxns(portfolio, symbol, paste0(initDate, "::", timestamp))
-      # calculate unrealised pnl
-      tmp <- getPos(portfolio, symbol, timestamp)
-      unreal.pl <- (close - as.numeric(tmp$Pos.Avg.Cost)) * as.numeric(tmp$Pos.Qty)
-      # round qty down or not
-      if (roundqty) {
-          orderqty <- floor((initEq + sum(txns$Net.Txn.Realized.PL) + unreal.pl) / 
-                                (close * (1 + ExecutionCost))) * sign(orderqty)
-      } else {
-          orderqty <- (initEq + sum(txns$Net.Txn.Realized.PL) + unreal.pl) / 
-              (close * (1 + ExecutionCost)) * sign(orderqty)
-      } 
-      return(orderqty[1])
-    }
-    assign("osAllIn", osAllIn, envir = .GlobalEnv)
-    
-    # https://github.com/returnandrisk/r-code/blob/master/FOMC%20Cycle%20Trading%20Strategy%20in%20Quantstrat.R
-    # 
-    # FOMC Cycle Trading Strategy in Quantstrat
-    # March 14, 2015
-    # By Peter Chan
-    # http://www.returnandrisk.com/2015/03/fomc-cycle-trading-strategy-in.html
-    # http://www.r-bloggers.com/fomc-cycle-trading-strategy-in-quantstrat/
+
     
     # Load required libraries
     ### require(quantstrat) 
@@ -473,14 +510,15 @@ quantstrat01 <- function() {
     # 
     # add.rule( prefer = "????" ) # overrides applyStrategy
     #
+
     # The first is to SELL when the DRBLACBS crosses above the SMA of DRBLACBS(MORE Delinquencies) # 
-    add.rule("will5000ind_f_drblacbs", name="ruleSignal", arguments = list(sigcol="DR.gt.SMA4", sigval=TRUE, orderqty="all"             , ordertype="market", orderside="long", pricemethod="market",TxnFees=0), type="exit", path.dep=TRUE) # , prefer = "High"
+    add.rule("will5000ind_f_drblacbs", name="ruleSignal", arguments = list(sigcol="DR.gt.SMA4", sigval=TRUE, orderqty="all"               , ordertype="market", TxnFees = "GeneralFee", orderside="long", pricemethod="market"),                                                                      type="exit", path.dep=TRUE) # , prefer = "High"
   
     # if eq        ... no change ... 
     # if SMA is NA ... no change ...
-    
-    # The second is to BUY when the DRBLACBS crosses below the SMA of DRBLACBS (LESS Delinquencies)
-    add.rule("will5000ind_f_drblacbs", name="ruleSignal", arguments = list(sigcol="DR.lt.SMA4", sigval=TRUE, orderqty=1, osFUN="osAllIn", ordertype="market", orderside="long", pricemethod="market",TxnFees=0), type="enter", path.dep=TRUE) # , prefer = "High"
+    ExecutionCost <- 0 # CAREFUL: ALSO HARDCODED ELSEWHERE
+    # The second is to BUY when the DRBLACBS crosses below the SMA of DRBLACBS (LESS Delinquencies)                                                                                                                           # global variables can not be seen
+    add.rule("will5000ind_f_drblacbs", name="ruleSignal", arguments = list(sigcol="DR.lt.SMA4", sigval=TRUE, orderqty=1,    osFUN="osAllIn", ordertype="market", TxnFees = "GeneralFee", orderside="long", pricemethod="market", initDate = initDate, initEq = initEq, ExecutionCost = ExecutionCost), type="enter", path.dep=TRUE) # , prefer = "High"
 
     # Process the indicators and generate trades
     # I want to buy on the "Close"(default) of the month
