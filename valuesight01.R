@@ -1080,7 +1080,7 @@ get_av_agg_eom_xts <- function() {
 
   # setDefaults(getSymbols.av, api.key="YOURAPIKEY")
     
-  AGG <- getSymbols("AGG", src = "av", output.size = "full", auto.assign = FALSE)
+  AGG <- getSymbols("AGG", src = "av", api.key = Sys.getenv("AV_API_KEY"), output.size = "full", auto.assign = FALSE)
   temp <- AGG[,"AGG.Close"]
   colnames(temp)[1] <- "agg"
   temp <- to.monthly(temp, OHLC = FALSE, indexAt = "lastof") 
@@ -2736,7 +2736,7 @@ get_bankruptcy_filing_counts_eoq_xts <- function(pub_dates = Sys.Date(), updatin
 # GET EVERYTHING and save/add_to "bankruptcy_filing_counts_eoq_xts.RData"                                                       
 # bankruptcy_filing_counts_eoq_xts <- get_bankruptcy_filing_counts_eoq_xts(pub_dates = NULL)
 # View(bankruptcy_filing_counts_eoq_xts)
-# bus_ch_11 IS A pattern ( 2000-2001, 2007-2008, 2015-2016 ) TRY SMA2
+# bus_ch_11 IS A pattern ( 2000-2001, 2007-2008, 2015-2016) try SMA2(sma7 =  2 quarters)(by month)
 # save(bankruptcy_filing_counts_eoq_xts, file = "bankruptcy_filing_counts_eoq_xts.RData")
 # 
 # defaults: ( expect to do manually and end-of-quarterly)
