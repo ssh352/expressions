@@ -1,5 +1,6 @@
 
 # finecon01.R   
+# R 3.4.3 commonly debugged with RStudio-1.1.383
 
 # dateindexlwd IS WRONG everywhere ( patch fixed )
 # DATA needs left to be fixed [ ] ( but I do not join on it anywhere )
@@ -7734,8 +7735,12 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
 # tester                                                                  # assuming all of the previous months isq,bsq,cfq have been loaded
 # upload_lwd_sipro_dbfs_to_db(                                             months_only_back = 5, exactly_only_future_returns = TRUE) 
 
+# after INSTALLING latest 'last business day'(MUST BE) SIPro. . .exe installer # SEE OTHER INSTRUCTOINS ### MONTHLY METHOD BEGINS ####
+# after checking 'latest' 'new' day using as.integer(getAAIISIProDate())       # SEE OTHER INSTRUCTIONS ### MONTHLY METHOD BEGINS ####
+# after COPIED new files using copyAAIISIProDBFs                               # SEE OTHER INSTRUCTIONS ### MONTHLY METHOD BEGINS ####
+# after checking W:\AAIISIProDBFs looking for the latest new directory
  # # typical *new month*                                # *new(top) month*  # assuming all of the previous months isq,bsq,cfq have been loaded                                                    
- # { upload_lwd_sipro_dbfs_to_db(exact_near_month_end_dbf_dirs = c(17438), exactly_only_aggregates = NULL, exactly_only_aggregates_group_bys_only = NULL,  decreasing_sort_order = FALSE)  
+ # { upload_lwd_sipro_dbfs_to_db(exact_near_month_end_dbf_dirs = c(999999), exactly_only_aggregates = NULL, exactly_only_aggregates_group_bys_only = NULL,  decreasing_sort_order = FALSE)  
  #   upload_lwd_sipro_dbfs_to_db(                                                months_only_back = 14, exactly_only_future_returns = TRUE) 
  # }
 
@@ -9653,8 +9658,8 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
 # > getAAIISIProDate() # Reads: C:/Program Files (x86)/Stock Investor/Professional
 # [1] "17500"
 # 
-# > zoo::as.Date(as.integer("17500")) # reads directly from # C:/Program Files (x86)/Stock Investor/Professional/Setup.dbf
-# [1] "2017-11-30"                                          # MUST BE THE 'last weekday of the lastmonth' (CAN! (and has_been! Christmas))
+# > zoo::as.Date(as.integer(getAAIISIProDate())) # reads directly from # C:/Program Files (x86)/Stock Investor/Professional/Setup.dbf
+# [1] "2017-11-30"                                # MUST BE THE 'last weekday of the lastmonth' (CAN! (and has_been! Christmas))
 # 
 # 
 # # will create the folder  ##### ( DO NOT FORGET TO DO ) #####
@@ -9686,15 +9691,15 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
 # # view last months data
 #
 # # 'just loaded month' ( check aggregates loaded )
-# select * from fe_data_store.si_finecon2_aggregates where dateindex = 17500
+# select * from fe_data_store.si_finecon2_aggregates where dateindex = 17500 where ticker = 'AAPL';
 # 
 # # the previous month ( check future prices loaded )
 # look at column prchg_04w_ann ( of previous month now should be filled )
-# select prchg_f04w_ann, pradchg_f04w_ann from fe_data_store.si_finecon2 where dateindex = 17470;
+# select prchg_f04w_ann, pradchg_f04w_ann from fe_data_store.si_finecon2 where dateindex = 17470 where ticker = 'AAPL';
 # 
 ## the 3 months ago ( check future prices laoded )
 # look at column prchg_13w_ann ( of previous month now should be filled )
-# select prchg_f04w_ann, pradchg_f04w_ann, prchg_f13w_ann, pradchg_f13w_ann from fe_data_store.si_finecon2 where dateindex = 17409;
+# select prchg_f04w_ann, pradchg_f04w_ann, prchg_f13w_ann, pradchg_f13w_ann from fe_data_store.si_finecon2 where dateindex = 17409 where ticker = 'AAPL';
 #
 # -- last month ( look for 4 week loaded returns )
 # select * from fe_data_store.si_finecon2 where dateindex = 17470 and ticker in ('MSFT','AAPL')
