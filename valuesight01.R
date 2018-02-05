@@ -2959,5 +2959,88 @@ get_illogical_excitement_eom_xts <- function(pub_dates = Sys.Date(), updating_fi
 # dygraphs::dygraph( illogical_excitement_eom_xts[,"real_price"] /  illogical_excitement_eom_xts[,"real_dividend"] )
 
 
+get_valuesight <- function() {
+
+  ops <- options()
+  
+  options(warn = 1)
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(min.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+
+  # uses package dygraphs
+  require(lubridate)
+  
+  message("Begin get_valuesight") 
+
+  # Delinquency Rate on Commercial and Industrial Loans, All Commercial Banks
+  DRBLACBS <- getSymbols("DRBLACBS", src = "FRED", auto.assign = F)
+  index(DRBLACBS) <- (index(DRBLACBS) - 1) 
+  index(DRBLACBS) <- index(DRBLACBS) %m+% months(6)
+  DRBLACBS_X_50 <- DRBLACBS * 50
+  colnames(DRBLACBS_X_50) <- "DRBLACBS_X_50"
+
+  # future 3 months one month return, back sma 3, annualized
+
+  WILL5000IND_1MO_PCTCHG_ANN <- get_fred_wilshire5000_1mo_pctchg_ann_eom_xts()
+  WILL5000IND_1MO_PCTCHG_ANN_F3_BBANDS <- BBands(na.trim(lag.xts(WILL5000IND_1MO_PCTCHG_ANN,-3), sides = "right"), n = 3, sd =1)[,"mavg"]
+  colnames(WILL5000IND_1MO_PCTCHG_ANN_F3_BBANDS) <- "WILL5000IND_1MO_PCTCHG_ANN_F3_BBANDS"
+
+  # GOOD
+  # dygraphs::dygraph(merge.xts(DRBLACBS_X_50,WILL5000IND_1MO_PCTCHG_ANN_F3_BBANDS), main = "DRBLACBS_X_50, WILL5000IND_1MO_PCTCHG_ANN_F3_BBANDS")
+
+  # unemployment rate
+  UNRATE <- getSymbols("UNRATE", src = "FRED", auto.assign = F); index(UNRATE) <- index(UNRATE) - 1
+  UNRATE_X_20 <- UNRATE * 20
+  colnames(UNRATE_X_20) <- "UNRATE_X_20"
+
+  # OK
+  # dygraphs::dygraph(merge.xts(DRBLACBS_X_50,WILL5000IND_1MO_PCTCHG_ANN_F3_BBANDS, UNRATE_X_20), main = "DRBLACBS_X_50, WILL5000IND_1MO_PCTCHG_ANN_F3_BBANDS, UNRATE_X_20")
+
+  # three/six month equity premium
+  equity_prem_p06m_ann <- get_willshire_less_agg_equity_premium_eom_xts()[,c("equity_prem_p06m_ann")]
+  # "equity_prem_p06m_ann" 
+  # GOOD
+  # dygraphs::dygraph(merge.xts(DRBLACBS_X_50,WILL5000IND_1MO_PCTCHG_ANN_F3_BBANDS, UNRATE_X_20, equity_prem_p06m_ann), main = "DRBLACBS_X_50, WILL5000IND_1MO_PCTCHG_ANN_F3_BBANDS, UNRATE_X_10, equity_prem_p06m_ann")
+
+  # price/earnings ratio
+  sp500_pe_ratio_month_4q <- get_quandl_sp500_pe_ratio_month_4q_eom_xts()
+  # "sp500_pe_ratio_month_4q"
+  sp500_pe_ratio_month_4q_X_2 <- sp500_pe_ratio_month_4q * 2
+  colnames(sp500_pe_ratio_month_4q_X_2) <- "sp500_pe_ratio_month_4q_X_2"
+
+  bus_ch_13     <- bankruptcy_filing_counts_eoq_xts[,"bus_ch_13"]
+  bus_ch_13_d_4 <- bus_ch_13 / 4 # NOT SURE: DOTS + TOO MANY LINES: MESSUP GRAPH BELOW
+  
+  # SOME? REASON? WILL NOT PLOT FROM INSIDE A FUNCTON ( I HAVE NOT FIGURED THAT ONE OUT YET )                                                  # , bus_ch_13_d_4                                                                                                             # , bus_ch_13_d_4
+  dygraphs::dygraph(merge.xts(DRBLACBS_X_50,WILL5000IND_1MO_PCTCHG_ANN_F3_BBANDS, UNRATE_X_20, equity_prem_p06m_ann, sp500_pe_ratio_month_4q_X_2), main = "DRBLACBS_X_50, WILL5000IND_1MO_PCTCHG_ANN_F3_BBANDS, UNRATE_X_10, equity_prem_p06m_ann, sp500_pe_ratio_month_4q_X_2")
+
+  # assign to the .GlobalEnv (for some flexibility)
+  sapply(ls(), function(x) { assign(x, get(x), envir = .GlobalEnv)  } )
+
+  message("End   get_valuesight") 
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  message("index of *DRBLACBS* shifted forward six months to reflex its long report behind time")
+  return(tail(merge.xts(DRBLACBS, WILL5000IND_1MO_PCTCHG_ANN, UNRATE, equity_prem_p06m_ann, sp500_pe_ratio_month_4q, bus_ch_13), 7))
+  # ADD AGG  [ ] - supply/demand
+  # ADD GS10 [ ] - the number itself
+  # ADD average net income from AAII (I already have the function ) # FALLING NET_INCOME OF THE S&P 500[400?,600?] BANKING SECTOR
+
+}
+# valuesight <- get_valuesight() 
+# dygraphs::dygraph(merge.xts(DRBLACBS_X_50,WILL5000IND_1MO_PCTCHG_ANN_F3_BBANDS, UNRATE_X_20, equity_prem_p06m_ann, sp500_pe_ratio_month_4q_X_2), main = "DRBLACBS_X_50, WILL5000IND_1MO_PCTCHG_ANN_F3_BBANDS, UNRATE_X_10, equity_prem_p06m_ann, sp500_pe_ratio_month_4q_X_2")
+
+
+
 # valuesight01.R 
 
