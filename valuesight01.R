@@ -2754,5 +2754,210 @@ get_bankruptcy_filing_counts_eoq_xts <- function(pub_dates = Sys.Date(), updatin
 # bankruptcy_filing_counts_eoq_xts <- get_bankruptcy_filing_counts_eoq_xts(pub_dates = NA)
 
 
+
+get_illogical_excitement_eom_xts <- function(pub_dates = Sys.Date(), updating_file = "illogical_excitement_eom_xts.RData") {
+
+  # FEB 2018 
+  
+  # http://www.econ.yale.edu/~shiller/data.htm (some instructions)
+  # EXACTLY HERE *Data* TAB columns
+  # U.S. Stock Markets 1871-Present and CAPE Ratio
+  # http://www.econ.yale.edu/~shiller/data/ie_data.xls
+
+  # Monthly dividend and earnings data are computed from the S&P four-quarter totals for the quarter since 1926, 
+  # with linear interpolation to monthly figures.
+  # 
+  # Dividend and earnings data before 1926 are 
+  # from Cowles and associates (Common Stock Indexes, 2nd ed. [Bloomington, Ind.: Principia Press, 1939]), 
+  # interpolated from annual data. 
+  # 
+  # Stock price data are monthly averages of daily closing prices
+
+  # library(MultipleBubbles) 
+  
+  # the S&P 500 price dividend ratio from January 1871 to December 2010 ( CRAN package )
+  # S&P 500 stock price index and the real S&P 500 stock price index dividend, ( journal article )
+  # both obtained from Robert Shiller???s website.
+  # 
+  # sp_data
+  # 
+  # TESTING FOR MULTIPLE BUBBLES: HISTORICAL EPISODES OF EXUBERANCE AND COLLAPSE IN THE S&P 500
+  # 2015
+  # http://korora.econ.yale.edu/phillips/pubs/art/p1498.pdf
+  # JAN 2018
+  # https://cran.r-project.org/web/packages/MultipleBubbles/index.html
+  
+  ops <- options()
+  
+  options(warn = 1)
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(min.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+
+  # uses package stringr
+  # uses package libridate
+  # uses package readxl
+  library(xts) # also uses package zoo
+
+  message("Begin get_illogical_excitement_eom_xts")
+
+  # special case, just get all of the local data
+  if(length(pub_dates) && is.na(pub_dates) && !is.null(updating_file)) {
+  
+    load(file = updating_file, envir = environment())
+  
+    message("End   get_illogical_excitement_eom_xts")
+    
+    Sys.setenv(TZ=oldtz)
+    options(ops)
+    
+    return(illogical_excitement_eom_xts)
+  
+  }
+  
+  if(!is.null(pub_dates) && !is.na(pub_dates)) {
+    pub_dates <- zoo::as.Date(zoo::as.yearmon(zoo::as.Date(pub_dates)),frac = 1)
+  } 
+  
+  # want to update the local(if exists) .RData file
+  # get the data locally
+  # if ALL OF pub_dates data is already in the local file then get it there, then RETURN
+  if(!is.null(pub_dates) && !is.null(updating_file) && file.exists(updating_file)) {
+    load(file = updating_file, envir = environment())
+    if(all(pub_dates %in% index(illogical_excitement_eom_xts))) {
+    
+      # just the dates of interest
+      illogical_excitement_eom_xts <- illogical_excitement_eom_xts[pub_dates]
+      
+      message("End   get_illogical_excitement_eom_xts")
+      
+      Sys.setenv(TZ=oldtz)
+      options(ops)
+    
+      return(illogical_excitement_eom_xts)
+    
+    }
+    rm(illogical_excitement_eom_xts)
+
+  } 
+  
+  
+  # user error
+  if(length(pub_dates) && is.na(pub_dates) && is.null(updating_file)) {
+  
+    message("missing updating_file ... returning NULL")
+  
+    message("End   get_illogical_excitement_eom_xts")
+    
+    Sys.setenv(TZ=oldtz)
+    options(ops)
+    
+    return(NULL)
+  
+  }
+
+  # get at least SOME data from the internet
+  # in THIS CASE all of the data becauese everything comes in ONE excel sheet
+
+  data_file <- ("http://www.econ.yale.edu/~shiller/data/ie_data.xls")
+
+  message(stringr::str_c("  Begin download data file: ", data_file))
+  
+  # excel request "wb"                                 
+  download.file(destfile = "illogical_excitement_eom_xts.excel", url = data_file, mode = "wb")
+  # could be an .xls or .xlsx file
+
+  message(stringr::str_c("  End   download data file: ", data_file))
+  
+  file_type <- "unkown"
+                                    # local file
+  # tibble 
+  info_data     <- try(readxl::read_xlsx("illogical_excitement_eom_xts.excel", sheet = "Data", skip = 8, col_types = "text", col_names = F), silent = T)
+  if(inherits(info_data, "try-error")){ # older .xls excel file
+    info_data     <- try(readxl::read_xls("illogical_excitement_eom_xts.excel", sheet = "Data", skip = 8, col_types = "text", col_names = F), silent = T)
+    if(inherits(info_data, "try-error")) {
+      message("can not download file or can not read file")
+      message("SO SKIPPING ... FAILED")
+
+      message("End   get_illogical_excitement_eom_xts")
+    
+      Sys.setenv(TZ=oldtz)
+      options(ops)
+    
+      return(NULL)
+      
+    } else {
+      file_type <- "xls"
+    }
+  } else {
+    file_type <- "xlsx"
+  }
+  info_data <- data.frame(lapply(info_data, as.numeric))
+  
+  # last line is blank so remove it
+  info_data <- info_data[-NROW(info_data),, drop = FALSE]
+  
+  # propers
+  colnames(info_data) <- c("date", "s_and_p", "dividend", "earnings", "cpi",
+                           "date_fraq_num", "fred_gs10", "real_price", "real_dividend", "real_earnings",
+                           "cape")
+
+  # earliest date JAN 1871
+  info_data_dates  <- zoo::as.Date(zoo::as.yearmon(lubridate::parse_date_time(as.character(info_data[["date"]]), orders = c("y.m"))), frac = 1)
+
+  info_data <- 
+  xts(
+      info_data[, !colnames(info_data) %in% "date"]
+    , info_data_dates
+  )
+
+  # get everything
+  if(is.null(pub_dates)) {
+    illogical_excitement_eom_xts <- info_data
+  }
+
+  if(!is.null(pub_dates)) {
+    illogical_excitement_eom_xts <- info_data[zoo::as.Date(zoo::as.yearmon(zoo::as.Date(pub_dates)),frac = 1)]
+  }
+
+  # want to update the local(if exists) .RData file
+  # get the data locally
+  if(!is.null(updating_file) && file.exists(updating_file)) {
+    illogical_excitement_eom_xts_new <- illogical_excitement_eom_xts
+    load(file = updating_file, envir = environment())
+    # update the file -  no need to destroy
+    # delete old values (if any)
+    illogical_excitement_eom_xts <- illogical_excitement_eom_xts[!index(illogical_excitement_eom_xts) %in% index(illogical_excitement_eom_xts_new)]
+    # add (back) values               
+    illogical_excitement_eom_xts <- rbind.xts(illogical_excitement_eom_xts, illogical_excitement_eom_xts_new)
+  } 
+  
+  # in any case, make data permanent
+  if(!is.null(updating_file)) {
+    save(illogical_excitement_eom_xts, file = updating_file, envir = environment())
+  }
+    
+  message("End   get_illogical_excitement_eom_xts") 
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  return(illogical_excitement_eom_xts)
+
+}
+# illogical_excitement_eom_xts <- get_illogical_excitement_eom_xts(pub_dates = NULL)
+# NOT EXACT 'real price'/'real dividend' 
+# DO NOT USERSTAND
+# dygraphs::dygraph( illogical_excitement_eom_xts[,"s_and_p"] /  illogical_excitement_eom_xts[,"dividend"] )
+# dygraphs::dygraph( illogical_excitement_eom_xts[,"real_price"] /  illogical_excitement_eom_xts[,"real_dividend"] )
+
+
 # valuesight01.R 
 
