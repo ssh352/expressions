@@ -10401,6 +10401,6 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
 # 
 # quantmod::getSymbols("^GSPC", from = "1940-01-01")
 # rm(list=setdiff(ls(all.names=TRUE),c("con","cid","GSPC"))); debugSource('W:/R-3.4._/finecon01.R'); debugSource('W:/R-3.4._/goodsight01.R');verify_connection();options(upsert_temp_is_temporary=Inf)
-#
+# 
 # rm(list=setdiff(ls(all.names=TRUE),c("con","cid"))); debugSource('W:/R-3.4._/finecon01.R');debugSource('W:/R-3.4._/goodsight01.R');debugSource('W:/R-3.4._/valuesight01.R');verify_connection();options(upsert_temp_is_temporary=Inf);Quandl::Quandl.api_key(api_key= "API_KEY");setDefaults(getSymbols.av, api.key="API.KEY")
 
