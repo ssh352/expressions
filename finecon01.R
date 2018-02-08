@@ -5128,7 +5128,15 @@ load_inbnd_stmtstats_division_aggregates <- function(dateindex = NULL) {
           sum(fe.last_inbnd_stmtstat_mktcap) 
             filter(where fe.mktcap                          is not null and fe.last_inbnd_stmtstat_cash_q1  is not null)    * 1000 sum_last_cash_q1_o_mktcap_x1000
         --
-
+         , sum(fe.last_inbnd_stmtstat_divpaid_q1) 
+            filter(where fe.last_inbnd_stmtstat_divpaid_q1    is not null and fe.last_inbnd_stmtstat_assets_q1 is not null) /
+          sum(fe.last_inbnd_stmtstat_assets_q1) 
+            filter(where fe.last_inbnd_stmtstat_assets_q1 is not null and fe.last_inbnd_stmtstat_divpaid_q1    is not null)    * 1000 sum_last_divpaid_q1_o_assets_q1_x1000
+        , sum(fe.last_inbnd_stmtstat_divpaid_q1) 
+            filter(where fe.last_inbnd_stmtstat_divpaid_q1    is not null and fe.mktcap is not null) /
+          sum(fe.last_inbnd_stmtstat_mktcap) 
+            filter(where fe.mktcap                          is not null and fe.last_inbnd_stmtstat_divpaid_q1  is not null)    * 1000 sum_last_divpaid_q1_o_mktcap_x1000
+        --
         from ( -- fe
                -- explain  -- NO_INDEX+CASE ( over 60+ ... ) INDEX+CASE ( 25 seconds )
                select
@@ -5170,6 +5178,8 @@ load_inbnd_stmtstats_division_aggregates <- function(dateindex = NULL) {
                  , fei.last_inbnd_stmtstat_int_q1
                  , fei.last_inbnd_stmtstat_intno_q1
                  , fei.last_inbnd_stmtstat_cash_q1
+                 --
+                 , fei.last_inbnd_stmtstat_divpaid_q1
                  --
                  , fei.pradchg_f04w_ann, fei.pradchg_f13w_ann, fei.pradchg_f26w_ann, fei.pradchg_f52w_ann
                  , fei.price
@@ -7360,13 +7370,13 @@ upload_mini_dbfs_no_future_look_to_db <- function(from_dir = "W:/AAIISIProDBFs",
     # 
 
     # columns CAN be named implicitely be regular expression
-    verify_company_details(dateindex = c(dir_i),  table_f = "si_bsq", cnames_e = "^cash_q.$") -> si_all_g_df
+    verify_company_details(dateindex = c(dir_i),  table_f = "si_cfq", cnames_e = "^divpaid_q.$") -> si_all_g_df
     print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
     
     # if WANT to include AS an 'inbound' statistics(generally a good) idea ( ADD to this LINE )
     # DYNAMIC SQL
     # columns MUST be named explicitly
-    print(dir_i);load_inbnd_stmtstats(dir_i, nowlast_columns = c("sales_q1", "netinc_q1", "ncc_q1", "assets_q1", "assets_q2", "tco_q1", "tcf_q1", "tci_q1", "ere_q1", "ca_q1", "cl_q1", "liab_q1", "ce_q1", "int_q1", "intno_q1", "cash_q1"), support_dateindex_collection = sort(as.integer(dir(from_dir)), decreasing = TRUE)[dir_i>=  sort(as.integer(dir(from_dir)), decreasing = TRUE)][seq_len(min(sum(dir_i >=  sort(as.integer(dir(from_dir)), decreasing = TRUE)),11))], char_col_numeric_limit = 99999999999999.99) -> si_all_g_df
+    print(dir_i);load_inbnd_stmtstats(dir_i, nowlast_columns = c("sales_q1", "netinc_q1", "ncc_q1", "assets_q1", "assets_q2", "tco_q1", "tcf_q1", "tci_q1", "ere_q1", "ca_q1", "cl_q1", "liab_q1", "ce_q1", "int_q1", "intno_q1", "cash_q1", "divpaid_q1"), support_dateindex_collection = sort(as.integer(dir(from_dir)), decreasing = TRUE)[dir_i>=  sort(as.integer(dir(from_dir)), decreasing = TRUE)][seq_len(min(sum(dir_i >=  sort(as.integer(dir(from_dir)), decreasing = TRUE)),11))], char_col_numeric_limit = 99999999999999.99) -> si_all_g_df
     print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
 
     # IF INVOLVED IN THIS QUERY
@@ -7400,6 +7410,16 @@ upload_mini_dbfs_no_future_look_to_db <- function(from_dir = "W:/AAIISIProDBFs",
 # *** ** IMPORTANT ** IMPORTANT ** better run OUTSIDE OF R-STUDIO ( MUCH MUCH MUCH FASTER ) ***
 # DBI con 'bloated' problem
 # upload_mini_dbfs_no_future_look_to_db(decreasing_sort_order = FALSE)
+# 
+# 
+# if column does not exist in EARLIER DAYS (e.g. divpaid_q first appeared(ReadMe.txt) in 2012-12-31 15705) t
+# then LOAD last ONE first
+# upload_mini_dbfs_no_future_look_to_db(decreasing_sort_order = FALSE, exact_near_month_end_dbf_dirs = 99999)
+# # FOLLOWED BY 
+# upload_mini_dbfs_no_future_look_to_db(decreasing_sort_order = FALSE)
+#   xor BETTER ( if I know when column first appeared )
+# upload_mini_dbfs_no_future_look_to_db(decreasing_sort_order = FALSE, exact_near_month_end_dbf_dirs = sort(as.integer(dir("W:\\AAIISIProDBFs")))[ 12055 <= sort(as.integer(dir("W:\\AAIISIProDBFs")))])
+# 
 # 
 # e.g. restart from a HUNG
 # upload_mini_dbfs_no_future_look_to_db(decreasing_sort_order = FALSE, exact_near_month_end_dbf_dirs = sort(as.integer(dir("W:\\AAIISIProDBFs")))[ 13756 <= sort(as.integer(dir("W:\\AAIISIProDBFs")))])
@@ -7565,7 +7585,7 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
       verify_company_details(dateindex = c(dir_i),  table_f = "si_mlt", cnames_e = "^bby_1t$") -> si_all_g_df
       print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
   
-      verify_company_details(dateindex = c(dir_i),  table_f = "si_cfq", cnames_e = "^tco_q.$|^tcf_q.$|^tci_q.$|^ere_q.$|^ce_q.$") -> si_all_g_df
+      verify_company_details(dateindex = c(dir_i),  table_f = "si_cfq", cnames_e = "^tco_q.$|^tcf_q.$|^tci_q.$|^ere_q.$|^ce_q.$|^divpaid_q.$") -> si_all_g_df
       print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
     
       verify_company_details(dateindex = c(dir_i),  table_f = "si_bsq", cnames_e = "^ca_q.$|^cl_q.$|^liab_q.$|^cash_q.$") -> si_all_g_df
@@ -7615,7 +7635,7 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
         # support_dateindex_collection is the 
         # minimum of 11 months: current + ( 6 month Quarter period reporter with 4 month Q-10 report filing delay ) 
         #                           # current or earlier                               # current or up to 10 earlier
-        print(dir_i);load_inbnd_stmtstats(dir_i, nowlast_columns = c("sales_q1", "netinc_q1", "ncc_q1", "assets_q1", "assets_q2", "tco_q1", "tcf_q1", "tci_q1", "ere_q1", "ca_q1", "cl_q1", "liab_q1", "ce_q1", "int_q1", "intno_q1", "cash_q1"), support_dateindex_collection = sort(as.integer(dir(from_dir)), decreasing = TRUE)[dir_i>=  sort(as.integer(dir(from_dir)), decreasing = TRUE)][seq_len(min(sum(dir_i >=  sort(as.integer(dir(from_dir)), decreasing = TRUE)),11))], char_col_numeric_limit = 99999999999999.99) -> si_all_g_df
+        print(dir_i);load_inbnd_stmtstats(dir_i, nowlast_columns = c("sales_q1", "netinc_q1", "ncc_q1", "assets_q1", "assets_q2", "tco_q1", "tcf_q1", "tci_q1", "ere_q1", "ca_q1", "cl_q1", "liab_q1", "ce_q1", "int_q1", "intno_q1", "cash_q1", "divpaid_q1"), support_dateindex_collection = sort(as.integer(dir(from_dir)), decreasing = TRUE)[dir_i>=  sort(as.integer(dir(from_dir)), decreasing = TRUE)][seq_len(min(sum(dir_i >=  sort(as.integer(dir(from_dir)), decreasing = TRUE)),11))], char_col_numeric_limit = 99999999999999.99) -> si_all_g_df
         print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
         # 
         # 
@@ -7735,6 +7755,7 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
 # tester                                                                  # assuming all of the previous months isq,bsq,cfq have been loaded
 # upload_lwd_sipro_dbfs_to_db(                                             months_only_back = 5, exactly_only_future_returns = TRUE) 
 
+# typical NEW month
 # after INSTALLING latest 'last business day'(MUST BE) SIPro. . .exe installer # SEE OTHER INSTRUCTOINS ### MONTHLY METHOD BEGINS ####
 # after checking 'latest' 'new' day using as.integer(getAAIISIProDate())       # SEE OTHER INSTRUCTIONS ### MONTHLY METHOD BEGINS ####
 # after COPIED new files using copyAAIISIProDBFs                               # SEE OTHER INSTRUCTIONS ### MONTHLY METHOD BEGINS ####
@@ -10401,6 +10422,6 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
 # 
 # quantmod::getSymbols("^GSPC", from = "1940-01-01")
 # rm(list=setdiff(ls(all.names=TRUE),c("con","cid","GSPC"))); debugSource('W:/R-3.4._/finecon01.R'); debugSource('W:/R-3.4._/goodsight01.R');verify_connection();options(upsert_temp_is_temporary=Inf)
-# 
+#
 # rm(list=setdiff(ls(all.names=TRUE),c("con","cid"))); debugSource('W:/R-3.4._/finecon01.R');debugSource('W:/R-3.4._/goodsight01.R');debugSource('W:/R-3.4._/valuesight01.R');verify_connection();options(upsert_temp_is_temporary=Inf);Quandl::Quandl.api_key(api_key= "API_KEY");setDefaults(getSymbols.av, api.key="API.KEY")
 
