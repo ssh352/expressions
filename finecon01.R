@@ -7418,7 +7418,7 @@ upload_mini_dbfs_no_future_look_to_db <- function(from_dir = "W:/AAIISIProDBFs",
 # # FOLLOWED BY 
 # upload_mini_dbfs_no_future_look_to_db(decreasing_sort_order = FALSE)
 #   xor BETTER ( if I know when column first appeared )
-# upload_mini_dbfs_no_future_look_to_db(decreasing_sort_order = FALSE, exact_near_month_end_dbf_dirs = sort(as.integer(dir("W:\\AAIISIProDBFs")))[ 12055 <= sort(as.integer(dir("W:\\AAIISIProDBFs")))])
+# upload_mini_dbfs_no_future_look_to_db(decreasing_sort_order = FALSE, exact_near_month_end_dbf_dirs = sort(as.integer(dir("W:\\AAIISIProDBFs")))[ 15705 <= sort(as.integer(dir("W:\\AAIISIProDBFs")))])
 # 
 # 
 # e.g. restart from a HUNG
