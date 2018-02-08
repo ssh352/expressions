@@ -2959,6 +2959,155 @@ get_illogical_excitement_eom_xts <- function(pub_dates = Sys.Date(), updating_fi
 # dygraphs::dygraph( illogical_excitement_eom_xts[,"real_price"] /  illogical_excitement_eom_xts[,"real_dividend"] )
 
 
+
+get_important_bonds_eom_xts <- function() {
+
+  ops <- options()
+
+  options(warn = 1)
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(min.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+
+  require(xts)
+  require(FRBData)
+  require(quantmod)
+  # uses file  valuesight.R  function get_fred_wilshire5000_1mo_pctchg_ann_eom_xts
+  # uses file                         get_clev_easing_balances_eom_xts
+  
+  message("Begin get_important_bonds_eom_xts") 
+  
+  message("Begin WILL5000IND_1MO_PCTCHG_ANN_F3_BBANDS")
+  # future 3 months one month return, back sma 3, annualized
+  WILL5000IND_1MO_PCTCHG_ANN <- get_fred_wilshire5000_1mo_pctchg_ann_eom_xts()
+  WILL5000IND_1MO_PCTCHG_ANN_F3_BBANDS <- BBands(na.trim(lag.xts(WILL5000IND_1MO_PCTCHG_ANN,-3), sides = "right"), n = 3, sd =1)[,"mavg"]
+  colnames(WILL5000IND_1MO_PCTCHG_ANN_F3_BBANDS) <- "WILL5000IND_1MO_PCTCHG_ANN_F3_BBANDS"
+  message("End WILL5000IND_1MO_PCTCHG_ANN_F3_BBANDS")
+  
+  # as of this mornings data
+
+  message("Begin FF")
+  # FF:Federal funds effective rate
+  FF <- GetInterestRates("FF", from = zoo::as.Date("1900-01-01"), to = Sys.Date())
+  FF <- to.monthly(FF, OHLC = F, indexAt = "lastof")
+  colnames(FF) <- "FF"
+  FF_X_20 <- FF * 20
+  colnames(FF_X_20)[1] <- "FF_X_20"
+  message("End FF")
+
+  message("Begin DWPC")
+  # DWPC:Discount window primary credit
+  DWPC <- GetInterestRates("DWPC", from = zoo::as.Date("1900-01-01"), to = Sys.Date())
+  colnames(DWPC) <- "DWPC"
+  DWPC <- to.monthly(DWPC, OHLC = F, indexAt = "lastof")
+  DWPC_X_20 <- DWPC * 20
+  colnames(DWPC_X_20)[1] <- "DWPC_X_20"
+  message("End DWPC")
+  
+  message("Begin JNK")
+  # junk bonds
+  JNK <- getSymbols("JNK", from = "1900-01-01", to = as.character(Sys.Date()), auto.assign = F)
+  # JNK contains missing values.
+  JNK <- JNK[,"JNK.Close"]
+  JNK <- to.monthly(JNK, OHLC = F, indexAt = "lastof")
+  # missing values removed from data
+  colnames(JNK)[1] <- "JNK"
+  message("End JNK")
+
+  message("Begin AGG")
+  # market index of bonds
+  AGG <- getSymbols("AGG", from = "1900-01-01", to = as.character(Sys.Date()), auto.assign = F)
+  # AGG contains missing values.
+  AGG <- AGG[,"AGG.Close"]
+  AGG <- to.monthly(AGG, OHLC = F, indexAt = "lastof")
+  # missing values removed from data
+  colnames(AGG)[1] <- "AGG"
+  AGG_D_5 <- AGG / 5
+  colnames(AGG_D_5)[1] <- "AGG_D_5"
+  message("End AGG")
+
+  message("Begin TCMNOM")
+  # TCMNOM:U.S. government securities/Treasury constant  maturities/Nominal
+  TCMNOM <- GetInterestRates("TCMNOM", from = zoo::as.Date("1900-01-01"), to = Sys.Date())
+  TCMNOM <- TCMNOM[,c("1M","10Y")]
+  message("End TCMNOM")
+  
+  message("Begin GB1M")
+  # risk free rate
+  GB1M  <-  TCMNOM[,"1M"]
+  GB1M <- to.monthly(GB1M, OHLC = F, indexAt = "lastof")
+  # missing values removed from data
+  colnames(GB1M) <- "GB1M"
+  GB1M_X_20 <- GB1M * 20 
+  colnames(GB1M_X_20)[1] <- "GB1M_X_20"
+  message("End GB1M")
+
+  message("Begin GB10Y")
+  # most likey same as GS10
+  GB10Y <-  TCMNOM[,"10Y"] 
+  GB10Y <- to.monthly(GB10Y, OHLC = F, indexAt = "lastof")
+  # missing values removed from data
+  colnames(GB10Y) <- "GB10Y"
+  GB10Y_X_10 <- GB10Y * 10
+  colnames(GB10Y_X_10)[1] <- "GB10Y_X_10"
+  message("End GB10Y")
+
+  message("Begin AAA")
+  # market best bonds
+  # AAA:Corporate bonds/Moody's seasoned Aaa
+  # Moody's Seasoned Aaa Corporate Bond Yield
+  # dailies since 2007
+  # weeklies since 1962
+  # monthlies since 1919
+  # Moody's Seasoned Aaa Corporate Bond Yiel
+  # https://fred.stlouisfed.org/data/AAA.txt
+  # Corporate Bonds
+  # Categories > Money, Banking, & Finance > Interest Rates
+  # https://fred.stlouisfed.org/categories/32348
+  AAA <- getSymbols("AAA", src = "FRED", auto.assign = F)
+  index(AAA) <- index(AAA) - 1
+  AAA_X_10 <- AAA * 10
+  colnames(AAA_X_10)[1] <- "AAA_X_10"
+  message("End AAA")
+
+  message("Begin clev_easing_balances")
+  clev_easing_balances_eom_xts <- get_clev_easing_balances_eom_xts()
+  clev_easing_balances         <- clev_easing_balances_eom_xts[,"clev_easing_balances"]
+  clev_easing_balances_D_10TH <-  clev_easing_balances / 100000
+  colnames(clev_easing_balances_D_10TH)[1] <- "clev_easing_balances_D_10TH"
+  message("End clev_easing_balances")
+
+  important_bonds_eom_xts <- na.locf(merge.xts(WILL5000IND_1MO_PCTCHG_ANN_F3_BBANDS, 
+                                               FF_X_20, DWPC_X_20, JNK, AGG_D_5, GB1M_X_20, GB10Y_X_10, AAA_X_10, 
+                                               clev_easing_balances_D_10TH
+                                             ))
+
+  dygraphs::dygraph(important_bonds_eom_xts, main ="bond comparisons")
+
+  message("End   get_important_bonds_eom_xts") 
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+
+  return(important_bonds_eom_xts)
+
+}
+# important_bonds_eom_xts <- get_important_bonds_eom_xts()
+# ** quick slope SHAPE falling of the GB10Y_X_10 signals? tubulant times ahead ( CURVE FITTING ) ***
+# ** quick slope SHAPE rising of the GB10Y_X_10 signals? improving times ( except FEB 2018 market mini-crash )
+# 2007-2008 # 2015-2016 # NOTICABLE FALL IN JUNK BOND (JNK) PRICE-VALUE GOING INTO THE VALLEY ( USEFUL - COULD B A GOOD SMA)
+# dygraphs::dygraph(important_bonds_eom_xts[,c("WILL5000IND_1MO_PCTCHG_ANN_F3_BBANDS", "GB10Y_X_10", "AGG_D_5", "JNK")])
+# tail(important_bonds_eom_xts)
+
+
+
 get_valuesight <- function() {
 
   ops <- options()
