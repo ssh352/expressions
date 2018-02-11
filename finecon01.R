@@ -8972,6 +8972,149 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
 #                                         )
 
 
+# entertaining
+get_all_raw_by_dateindex <- function(dateindex = NULL) { 
+
+  if(is.null(dateindex)) stop("load_all_raw_by_index  missing argument: dateindex")
+
+  # si_ci and si_exchg and si_mgsdc
+
+  require(foreign) # REQUIRED
+  require(xts)     # REQUIRED
+
+  # uses foreign
+  # uses stringi
+  # uses data.table
+  # uses plyr
+  # uses dplyr
+  # uses rlist
+  # Currently only select() and head()
+  # https://krlmlr.github.io/fstplyr/
+  # devtools::install_github("krlmlr/fstplyr")
+  # uses fst
+  
+  # dateindex <- 17562
+  
+  fst::threads_fst(nr_of_threads = 4)
+  print(fst::threads_fst())
+  
+  if(!file.exists(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_ci.fst"))) {
+    df <- read.dbf(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_ci.dbf"), as.is = T) # LASTMOD is not in earlier data
+    fst::write.fst(df, stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_ci.fst"), compress = 0)
+  } 
+  ft <- fst::fst(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_ci.fst"))
+  df <- ft[,]
+
+  # columns
+  df <- df[,grep("^X.*", colnames(df), value = T, invert = T), drop = F]
+  df <- plyr::rename(df, c("REPNO" = "SI_CI_REPNO"))
+  df <- plyr::rename(df, c("LASTMOD" = "SI_CI_LASTMOD"))  # LASTMOD is not in earlier data
+
+  # rows
+  df <- df[ !stringi::stri_duplicated(df$COMPANY_ID) & !stringi::stri_duplicated(df$COMPANY_ID, fromLast = TRUE), , drop = FALSE]
+  df <- df[ !stringi::stri_duplicated(df$TICKER)     & !stringi::stri_duplicated(df$TICKER,     fromLast = TRUE), , drop = FALSE]
+
+  # exchange
+  if(!file.exists(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_exchg.fst"))) {
+    exchg <- read.dbf(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_exchg.dbf"), as.is = T)
+    fst::write.fst(exchg, stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_exchg.fst"), compress = 0)
+  } 
+  ft <- fst::fst(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_exchg.fst"))
+  exchg <- ft[,]
+  exchg <- exchg[ !stringi::stri_duplicated(exchg$EXCHG_CODE) & !stringi::stri_duplicated(exchg$EXCHG_CODE, fromLast = TRUE), , drop = FALSE]
+  exchg <- data.table::as.data.table(exchg, keep.rownames= "RN_SI_EXCHG")
+  # different from other below
+  df$EXCHG_CODE <- df$EXCHANGE
+  df <- dplyr::left_join(df, exchg, by = c("EXCHG_CODE" = "EXCHG_CODE"))
+  df <- df[ !stringi::stri_duplicated(df$COMPANY_ID) & !stringi::stri_duplicated(df$COMPANY_ID, fromLast = TRUE), , drop = FALSE]
+    
+  # industry
+  if(!file.exists(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_mgdsc.fst"))) {
+    mgdsc <- read.dbf(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_mgdsc.dbf"), as.is = T)
+    fst::write.fst(mgdsc, stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_mgdsc.fst"), compress = 0)
+  } 
+  ft <- fst::fst(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_mgdsc.fst"))
+  mgdsc <- ft[,]
+  mgdsc <- mgdsc[ !stringi::stri_duplicated(mgdsc$MG_CODE) & !stringi::stri_duplicated(mgdsc$MG_CODE, fromLast = TRUE), , drop = FALSE]
+  mgdsc <- data.table::as.data.table(mgdsc, keep.rownames= "RN_SI_MGDSC_IND")
+  df$INDUSTRY_CODE <- df$IND_3_DIG
+  df <- dplyr::left_join(df, mgdsc, by = c("IND_3_DIG" = "MG_CODE"))
+  df <- df[ !stringi::stri_duplicated(df$COMPANY_ID) & !stringi::stri_duplicated(df$COMPANY_ID, fromLast = TRUE), , drop = FALSE]
+  df <- plyr::rename(df, c("MG_DESC" = "INDUSTRY_DESC"))
+
+  # sector
+  if(!file.exists(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_mgdsc.fst"))) {
+    mgdsc <- read.dbf(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_mgdsc.dbf"), as.is = T)
+    fst::write.fst(mgdsc, stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_mgdsc.fst"), compress = 0)
+  } 
+  ft <- fst::fst(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_mgdsc.fst"))
+  mgdsc <- ft[,]
+  mgdsc <- mgdsc[ !stringi::stri_duplicated(mgdsc$MG_CODE) & !stringi::stri_duplicated(mgdsc$MG_CODE, fromLast = TRUE), , drop = FALSE]
+  mgdsc <- data.table::as.data.table(mgdsc, keep.rownames= "RN_SI_MGDSC_SECT")
+  df$SECTOR_CODE <- df$IND_2_DIG
+  df <- dplyr::left_join(df, mgdsc, by = c("IND_2_DIG" = "MG_CODE"))
+  df <- df[ !stringi::stri_duplicated(df$COMPANY_ID) & !stringi::stri_duplicated(df$COMPANY_ID, fromLast = TRUE), , drop = FALSE]
+  df <- plyr::rename(df, c("MG_DESC" = "SECTOR_DESC"))
+
+  for(si_file in c("si_isq","si_cfq","si_bsq","si_date","si_psd","si_psdc","si_psdd","si_mlt","si_rat")) {
+
+    # si_file <- "si_isq"
+    
+    if(!file.exists(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\",si_file,".fst"))) {
+      dfnew <- read.dbf(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\",si_file,".dbf"), as.is = T)
+      fst::write.fst(dfnew, stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\",si_file,".fst"), compress = 0)
+    } 
+    ft <- fst::fst(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\",si_file,".fst"))
+    dfnew <- ft[,]
+
+    # columns
+    dfnew <- dfnew[,grep("^X.*", colnames(dfnew), value = T, invert = T), drop = F]
+    dfnew <- plyr::rename(dfnew, c("LASTMOD" = stringi::stri_c(toupper(si_file),"_LASTMOD")))  # LASTMOD is not in earlier data
+    dfnew <- plyr::rename(dfnew, c("UPDATED" = stringi::stri_c(toupper(si_file),"_UPDATED")))  # boolean 
+    dfnew <- plyr::rename(dfnew, c("REPNO"   = stringi::stri_c(toupper(si_file),"_REPNO")))    # character
+    
+    # rows
+    dfnew <- dfnew[ !stringi::stri_duplicated(dfnew$COMPANY_ID) & !stringi::stri_duplicated(dfnew$COMPANY_ID, fromLast = TRUE), , drop = FALSE]
+      
+    dfnew <- data.table::as.data.table(dfnew, keep.rownames=stringi::stri_c("RN_",toupper(si_file)))
+
+    df <- dplyr::left_join(df, dfnew, by = "COMPANY_ID")
+    
+  }
+  
+  # last before saft to .fst
+  df <- data.table::as.data.table(df, keep.rownames= "RN_SI_CI")
+  # sort
+  data.table::setkeyv(df, "COMPANY_ID")
+  
+  # change Dates to integers
+  df <- data.frame(plyr::llply(df, function(x) { if(is.timeBased(x)){ return(as.integer(zoo::as.Date(x))) } else { x } } ), stringsAsFactors = FALSE)  
+
+  # change Booleans to integers
+  df <- data.frame(plyr::llply(df, function(x) { if(is.logical(x))  { return(as.integer(x)) }               else { x } } ), stringsAsFactors = FALSE)  
+
+  df <- data.frame(plyr::llply(rlist::list.zip(as.list(df), colnames(df)), function(x) {  
+
+    # change to integer
+    if(grepl("SIC|EMPLOYEES|^PERLEN_[Q,Y].*$|^RN_.*$",x[[2]])) { return(as.integer(x[[1]])) } else
+    # if had been converted to an integer up to this point then keep as an integer
+    if(is.integer(x[[1]])) { return(x[[1]]) } else
+    # keep as character
+    if(grepl("^PERTYP_[Q,Y].*$|^UPDTYP_[Q,Y].*$|^COMPANY_ID$|^COMPANY$|^TICKER$|^EXCHANGE$|^STREET$|^CITY$|^STATE$|^ZIP$|^COUNTRY$|^PHONE$|^WEB_ADDR$|^BUSINESS$|^ANALYST_FN$|^IND_2_DIG$|^IND_3_DIG$|^SP$|^DOW$|^.*CODE$|^.*DESC$|^.*REPNO$",x[[2]]))  { return(x[[1]]) } else
+    # others become numeric
+    { return(as.numeric(x[[1]]))}
+
+  } ), stringsAsFactors = FALSE)
+  
+  colnames(df) <- tolower(colnames(df))
+  all_raw_by_dateindex <- df
+  return(all_raw_by_dateindex)
+  
+}
+# expermental: load MUCH
+# all_raw_by_dateindex <- get_all_raw_by_dateindex(17562)
+
+
 
 # -- [X] ALREADY IN SIFINECON.01
 # -- BEGIN OUTLIER DETECTION --
