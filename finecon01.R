@@ -9013,6 +9013,8 @@ get_all_raw_by_dateindex <- function(dateindex = NULL) {
   df <- plyr::rename(df, c("LASTMOD" = "SI_CI_LASTMOD"))  # LASTMOD is not in earlier data
 
   # rows
+  # keep one 'all columns' duplicate
+  df <- df[ !data.table:::duplicated.data.table(df, fromLast = TRUE),,drop = FALSE]
   df <- df[ !stringi::stri_duplicated(df$COMPANY_ID) & !stringi::stri_duplicated(df$COMPANY_ID, fromLast = TRUE), , drop = FALSE]
   df <- df[ !stringi::stri_duplicated(df$TICKER)     & !stringi::stri_duplicated(df$TICKER,     fromLast = TRUE), , drop = FALSE]
 
@@ -9023,6 +9025,7 @@ get_all_raw_by_dateindex <- function(dateindex = NULL) {
   } 
   ft <- fst::fst(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_exchg.fst"))
   exchg <- ft[,]
+  exchg <- exchg[ !data.table:::duplicated.data.table(exchg, fromLast = TRUE),,drop = FALSE]
   exchg <- exchg[ !stringi::stri_duplicated(exchg$EXCHG_CODE) & !stringi::stri_duplicated(exchg$EXCHG_CODE, fromLast = TRUE), , drop = FALSE]
   exchg <- data.table::as.data.table(exchg, keep.rownames= "RN_SI_EXCHG")
   # different from other below
@@ -9038,6 +9041,7 @@ get_all_raw_by_dateindex <- function(dateindex = NULL) {
   } 
   ft <- fst::fst(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_mgdsc.fst"))
   mgdsc <- ft[,]
+  mgdsc <- mgdsc[ !data.table:::duplicated.data.table(mgdsc, fromLast = TRUE),,drop = FALSE]
   mgdsc <- mgdsc[ !stringi::stri_duplicated(mgdsc$MG_CODE) & !stringi::stri_duplicated(mgdsc$MG_CODE, fromLast = TRUE), , drop = FALSE]
   mgdsc <- data.table::as.data.table(mgdsc, keep.rownames= "RN_SI_MGDSC_IND")
   df$INDUSTRY_CODE <- df$IND_3_DIG
@@ -9053,6 +9057,7 @@ get_all_raw_by_dateindex <- function(dateindex = NULL) {
   } 
   ft <- fst::fst(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_mgdsc.fst"))
   mgdsc <- ft[,]
+  mgdsc <- mgdsc[ !data.table:::duplicated.data.table(mgdsc, fromLast = TRUE),,drop = FALSE]
   mgdsc <- mgdsc[ !stringi::stri_duplicated(mgdsc$MG_CODE) & !stringi::stri_duplicated(mgdsc$MG_CODE, fromLast = TRUE), , drop = FALSE]
   mgdsc <- data.table::as.data.table(mgdsc, keep.rownames= "RN_SI_MGDSC_SECT")
   df$SECTOR_CODE <- df$IND_2_DIG
@@ -9079,6 +9084,7 @@ get_all_raw_by_dateindex <- function(dateindex = NULL) {
     dfnew <- plyr::rename(dfnew, c("REPNO"   = stringi::stri_c(toupper(si_file),"_REPNO")))    # character
     
     # rows
+    dfnew <- dfnew[ !data.table:::duplicated.data.table(dfnew, fromLast = TRUE),,drop = FALSE]
     dfnew <- dfnew[ !stringi::stri_duplicated(dfnew$COMPANY_ID) & !stringi::stri_duplicated(dfnew$COMPANY_ID, fromLast = TRUE), , drop = FALSE]
       
     dfnew <- data.table::as.data.table(dfnew, keep.rownames=stringi::stri_c("RN_",toupper(si_file)))
