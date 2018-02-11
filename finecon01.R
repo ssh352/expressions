@@ -8988,11 +8988,13 @@ get_all_raw_by_dateindex <- function(dateindex = NULL) {
   # uses plyr
   # uses dplyr
   # uses rlist
+  # uses fst (CRAN)
+  #  
+  # FUTURE
   # Currently only select() and head()
   # https://krlmlr.github.io/fstplyr/
   # devtools::install_github("krlmlr/fstplyr")
-  # uses fst
-  
+ 
   # dateindex <- 17562
   
   fst::threads_fst(nr_of_threads = 4)
@@ -9025,7 +9027,8 @@ get_all_raw_by_dateindex <- function(dateindex = NULL) {
   exchg <- data.table::as.data.table(exchg, keep.rownames= "RN_SI_EXCHG")
   # different from other below
   df$EXCHG_CODE <- df$EXCHANGE
-  df <- dplyr::left_join(df, exchg, by = c("EXCHG_CODE" = "EXCHG_CODE"))
+  # df <- dplyr::left_join(df, exchg, by = c("EXCHG_CODE" = "EXCHG_CODE"))
+  df <- data.table:::merge.data.table(df, exchg, by.x = "EXCHG_CODE", by.y = "EXCHG_CODE", all.x = TRUE, sort = FALSE)
   df <- df[ !stringi::stri_duplicated(df$COMPANY_ID) & !stringi::stri_duplicated(df$COMPANY_ID, fromLast = TRUE), , drop = FALSE]
     
   # industry
@@ -9038,7 +9041,8 @@ get_all_raw_by_dateindex <- function(dateindex = NULL) {
   mgdsc <- mgdsc[ !stringi::stri_duplicated(mgdsc$MG_CODE) & !stringi::stri_duplicated(mgdsc$MG_CODE, fromLast = TRUE), , drop = FALSE]
   mgdsc <- data.table::as.data.table(mgdsc, keep.rownames= "RN_SI_MGDSC_IND")
   df$INDUSTRY_CODE <- df$IND_3_DIG
-  df <- dplyr::left_join(df, mgdsc, by = c("IND_3_DIG" = "MG_CODE"))
+  # df <- dplyr::left_join(df, mgdsc, by = c("IND_3_DIG" = "MG_CODE"))
+  df <- data.table:::merge.data.table(df, mgdsc, by.x = "IND_3_DIG", by.y = "MG_CODE", all.x = TRUE, sort = FALSE)
   df <- df[ !stringi::stri_duplicated(df$COMPANY_ID) & !stringi::stri_duplicated(df$COMPANY_ID, fromLast = TRUE), , drop = FALSE]
   df <- plyr::rename(df, c("MG_DESC" = "INDUSTRY_DESC"))
 
@@ -9052,7 +9056,8 @@ get_all_raw_by_dateindex <- function(dateindex = NULL) {
   mgdsc <- mgdsc[ !stringi::stri_duplicated(mgdsc$MG_CODE) & !stringi::stri_duplicated(mgdsc$MG_CODE, fromLast = TRUE), , drop = FALSE]
   mgdsc <- data.table::as.data.table(mgdsc, keep.rownames= "RN_SI_MGDSC_SECT")
   df$SECTOR_CODE <- df$IND_2_DIG
-  df <- dplyr::left_join(df, mgdsc, by = c("IND_2_DIG" = "MG_CODE"))
+  # df <- dplyr::left_join(df, mgdsc, by = c("IND_2_DIG" = "MG_CODE"))
+  df <- data.table:::merge.data.table(df, mgdsc, by.x = "IND_2_DIG", by.y = "MG_CODE", all.x = TRUE, sort = FALSE)
   df <- df[ !stringi::stri_duplicated(df$COMPANY_ID) & !stringi::stri_duplicated(df$COMPANY_ID, fromLast = TRUE), , drop = FALSE]
   df <- plyr::rename(df, c("MG_DESC" = "SECTOR_DESC"))
 
@@ -9078,7 +9083,8 @@ get_all_raw_by_dateindex <- function(dateindex = NULL) {
       
     dfnew <- data.table::as.data.table(dfnew, keep.rownames=stringi::stri_c("RN_",toupper(si_file)))
 
-    df <- dplyr::left_join(df, dfnew, by = "COMPANY_ID")
+    # df <- dplyr::left_join(df, dfnew, by = "COMPANY_ID") # SEEM(not SORTED) seem the same speed
+    df <- data.table:::merge.data.table(df, dfnew, by = "COMPANY_ID", all.x = TRUE, sort = FALSE) # will sort LATER below
     
   }
   
