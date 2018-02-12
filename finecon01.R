@@ -6564,8 +6564,8 @@ get_sipro_sp500_earnings <- function() {
   return(sipro_sp500_earnings)
   
 }
-# ret <- get_sipro_sp500_earnings()  
-# > str(ret)
+# sipro_sp500_earnings <- get_sipro_sp500_earnings()  
+# > str(sipro_sp500_earnings)
 # 'data.frame':	179 obs. of  13 variables:
 #  $ dateindex_dt_co                  : Date, format: "2003-01-03" "2003-01-31" "2003-02-28" "2003-04-04" ...
 #  $ dateindexeom_dt_co               : Date, format: "2002-12-31" "2003-01-31" "2003-02-28" "2003-03-31" ...
@@ -6834,7 +6834,7 @@ get_sipro_earnings_per_avg_share_x10_4q_eom_xts <- function() {
   
 }
 # NOT! INFLATION ADJUSTED!
-# res <- get_sipro_earnings_per_avg_share_x10_4q_eom_xts()
+# sipro_earnings_per_avg_share_x10_4q_eom_xts <- get_sipro_earnings_per_avg_share_x10_4q_eom_xts()
 # > str(res)
 # An ‘xts’ object on 2002-12-31/2017-10-31 containing:
 #   Data: num [1:179, 1] 5.81 4.75 3.2 2.93 7.1 ...
@@ -7041,8 +7041,11 @@ get_quandl_sipro_earnings_per_avg_share_x10_4q_eom_xts <- function() {
   return(quandl_sipro_earnings_per_avg_share_x10_4q_eom_xts)
   
 }
-# ret <- get_quandl_sipro_earnings_per_avg_share_x10_4q_eom_xts()
-# > str(ret)
+# inflation ( cpiaucns ) adjusted, so can be aggressive ( different than others that do nominal calculations)
+# 
+# quandl_sipro_earnings_per_avg_share_x10_4q_eom_xts <- get_quandl_sipro_earnings_per_avg_share_x10_4q_eom_xts()
+# 
+# > str(quandl_sipro_earnings_per_avg_share_x10_4q_eom_xts)
 # An ‘xts’ object on 1871-01-31/2017-09-30 containing:
 #   Data: num [1:1761, 1] 7.88 7.65 7.54 7.82 8 8.13 8.13 8.26 8.06 7.94 ...
 #  - attr(*, "dimnames")=List of 2
@@ -7292,6 +7295,104 @@ get_sipro_sp500_mktcap_o_netinc_eom_xts <- function() {
 # 2017-10-31                        493                   23.11135                   23.81306                   22.89608                   22.26932
 # 2017-11-30                        499                   24.04328                   23.36232                   22.97016                   23.06993
 
+
+get_sipro_inbnd_netinc_marginals_eom_xts <- function() {
+
+  # NOTE USES : now_inbnd_stmtid_dateindex is not null
+ 
+   ops <- options()
+  
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  require(xts)
+
+  message("Begin function get_sipro_inbnd_netinc_marginals_eom_xts")
+
+  verify_connection()
+  
+  sipro_inbnd_netinc_marginals_eom <- dbGetQuery(con,
+  
+  "
+  select 
+      every.dateindex_dt, 
+      banks.banks_count                 ,      banks.banks_mktcap_div_mill_x_40,   banks.banks_rat_mktcap_o_netinc_q1_x_4,
+      banks.banks_pradchg_f04w_ann_wtd_mktcap, banks_prchg_netinc_q1q2,
+      every.every_count_d_10            ,      every.every_mktcap_div_mill_x_4 ,   every.every_rat_mktcap_o_netinc_q1_x_4,
+      every.every_pradchg_f04w_ann_wtd_mktcap, every_prchg_netinc_q1q2
+  from (
+  select dateindex, to_timestamp(dateindex*3600*24)::date dateindex_dt,
+    count(netinc_q1 + netinc_q2 + mktcap)        banks_count,
+    sum(mktcap) / 1000000.0 * 40.0 banks_mktcap_div_mill_x_40,
+    sum(mktcap) / sum(netinc_q1 * 4) banks_rat_mktcap_o_netinc_q1_x_4,
+    sum(mktcap * pradchg_f04w_ann) / sum(mktcap) banks_pradchg_f04w_ann_wtd_mktcap,
+    (sum(netinc_q1) - sum(netinc_q2))/ abs( nullif(sum(netinc_q2),0) )* 100 banks_prchg_netinc_q1q2
+  from fe_data_store.si_finecon2  
+  where now_inbnd_stmtid_dateindex is not null
+    and sp in ('500','400','600') and industry_desc in ('Money Center Banks', 'Regional Banks', 'Consumer Financial Services', 'S&Ls/Savings Banks')
+    and netinc_q1 is not null and netinc_q2 is not null and mktcap is not null
+  group by dateindex
+  order by dateindex
+  ) banks join  (
+  select dateindex, to_timestamp(dateindex*3600*24)::date dateindex_dt,
+    count(netinc_q1 + netinc_q2 + mktcap) / 10.0 every_count_d_10,
+    sum(mktcap) / 1000000.0 * 4.0 every_mktcap_div_mill_x_4,
+    sum(mktcap) / sum(netinc_q1 * 4) every_rat_mktcap_o_netinc_q1_x_4,
+    sum(mktcap * pradchg_f04w_ann) / sum(mktcap) every_pradchg_f04w_ann_wtd_mktcap,
+    (sum(netinc_q1) - sum(netinc_q2))/ abs( nullif(sum(netinc_q2),0) )* 100 every_prchg_netinc_q1q2
+  from fe_data_store.si_finecon2  
+  where now_inbnd_stmtid_dateindex is not null
+    and sp in ('500','400','600') 
+    and netinc_q1 is not null and netinc_q2 is not null and mktcap is not null
+  group by dateindex
+  order by dateindex
+  ) every on banks.dateindex = every.dateindex
+  "
+  )
+  
+  temp <- as.matrix(sipro_inbnd_netinc_marginals_eom[ ,!colnames(sipro_inbnd_netinc_marginals_eom) %in% c("dateindex_dt"), drop = FALSE])
+  rownames(temp) <- as.character(sipro_inbnd_netinc_marginals_eom[["dateindex_dt"]])
+  # S3 dispatch as.xts.matrix ... will return with a non-Date index
+  temp2 <- as.xts(temp)
+  rm(temp)
+  index(temp2) <- zoo::as.Date(index(temp2))
+  sipro_inbnd_netinc_marginals_eom_xts <- temp2
+  rm(temp2)
+ 
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+
+  message("End   function get_sipro_inbnd_netinc_marginals_eom_xts")
+
+  return(sipro_inbnd_netinc_marginals_eom_xts)
+    
+}
+# sipro_inbnd_netinc_marginals_eom_xts <- get_sipro_inbnd_netinc_marginals_eom_xts()
+# dygraphs::dygraph(sipro_inbnd_netinc_marginals_eom_xts[, grep("^bank",colnames(sipro_inbnd_netinc_marginals_eom_xts), value = T)])
+# 
+# tail(sipro_inbnd_netinc_marginals_eom_xts[, grep("^bank",colnames(sipro_inbnd_netinc_marginals_eom_xts), value = T)])
+#            banks_count banks_mktcap_div_mill_x_40 banks_rat_mktcap_o_netinc_q1_x_4 banks_pradchg_f04w_ann_wtd_mktcap
+# 2017-08-31           9         2.2166960000000002               38.656110491071431                19.463693496988309
+# 2017-09-29           1         0.1204440000000000               44.542899408284022               -38.159999999999997
+# 2017-10-31          96        73.4735359999999957               15.893180127018187                24.847137116689197
+# 2017-11-30          10         1.2360320000000000               22.588304093567253               -15.357971314658521
+# 2017-12-29           1         0.1150120000000000               68.459523809523816                84.719999999999999
+# 2018-01-31          98        70.7588279999999941               35.166446003005795                                NA
+#            banks_prchg_netinc_q1q2
+# 2017-08-31    -10.8457711442786078
+# 2017-09-29     20.7142857142857153
+# 2017-10-31      4.7173264617514556
+# 2017-11-30     13.8103161397670551
+# 2017-12-29    -37.8698224852071021
+# 2018-01-31    -67.1173668164061468
 
 
 #############################################
