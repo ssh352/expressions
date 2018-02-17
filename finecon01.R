@@ -9182,10 +9182,10 @@ get_all_raw_by_dateindex <- function(dateindex = NULL) {
 
   require(foreign) # REQUIRED
   require(xts)     # REQUIRED
-
+  # uses data.table LATER REPLACE PRIVATE functions data.table:::duplicated.data.table, 
+  #                                                 data.table:::merge.data.table
   # uses foreign
   # uses stringi
-  # uses data.table
   # uses plyr
   # uses dplyr
   # uses rlist
