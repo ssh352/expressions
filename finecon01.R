@@ -7295,7 +7295,7 @@ get_sipro_sp500_mktcap_o_netinc_eom_xts <- function() {
 # 2017-10-31                        493                   23.11135                   23.81306                   22.89608                   22.26932
 # 2017-11-30                        499                   24.04328                   23.36232                   22.97016                   23.06993
 
-
+# *** THIS_ONE ***
 get_sipro_inbnd_netinc_marginals_eom_xts <- function() {
 
   # NOTE USES : now_inbnd_stmtid_dateindex is not null
@@ -7314,6 +7314,7 @@ get_sipro_inbnd_netinc_marginals_eom_xts <- function() {
   }
   
   require(xts)
+  require(TTR)
 
   message("Begin function get_sipro_inbnd_netinc_marginals_eom_xts")
 
@@ -7375,6 +7376,7 @@ get_sipro_inbnd_netinc_marginals_eom_xts <- function() {
   return(sipro_inbnd_netinc_marginals_eom_xts)
     
 }
+# *** THIS_ONE ***
 # sipro_inbnd_netinc_marginals_eom_xts <- get_sipro_inbnd_netinc_marginals_eom_xts()
 # dygraphs::dygraph(sipro_inbnd_netinc_marginals_eom_xts[, grep("^bank",colnames(sipro_inbnd_netinc_marginals_eom_xts), value = T)])
 # 
@@ -7393,6 +7395,104 @@ get_sipro_inbnd_netinc_marginals_eom_xts <- function() {
 # 2017-11-30     13.8103161397670551
 # 2017-12-29    -37.8698224852071021
 # 2018-01-31    -67.1173668164061468
+
+
+get_sipro_inbnd_rat_chg_owe_chg_netinc_eom_xts <- function() {
+
+  # NOTE USES : now_inbnd_stmtid_dateindex is not null
+ 
+   ops <- options()
+  
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  require(xts)
+
+  message("Begin function get_sipro_inbnd_rat_chg_owe_chg_netinc_eom_xts")
+
+  verify_connection()
+  
+  sipro_inbnd_netinc_marginals_eom <- dbGetQuery(con,
+  
+  "
+  with 
+  data_info as (
+  select dateindex, 
+    liab_q1,
+    liab_q2,
+    cl_q1,
+    cl_q2,
+    netinc_q1,
+    netinc_q2,
+    mktcap,
+    now_inbnd_stmtid_dateindex
+  from fe_data_store.si_finecon2 fe
+  where 
+    sp in ('500','400','600')
+    and mktcap is not null
+    and liab_q1 is not null and liab_q2 is not null and netinc_q1 is not null and netinc_q2 is not null
+    and cl_q1 is not null and cl_q2 is not null
+  ),
+  data_info_agg as (
+    select
+      dateindex,
+      sum(mktcap) sum_mktcap_all
+      from data_info
+      group by dateindex 
+      order by dateindex
+  )
+  select -- data_info.dateindex, 
+    to_timestamp(data_info.dateindex*3600*24)::date dateindex_dt,
+    count(netinc_q1 + netinc_q2 + mktcap + liab_q1 + liab_q1 + cl_q1 + cl_q2) / 10.0 every_count_d_10,
+    sum(mktcap/sum_mktcap_all) * 100  pr_mktcap,
+    sum(mktcap) / 1000000.0 * 4.0 every_mktcap_div_mill_x_4,
+    sum(mktcap) / sum(netinc_q1 * 4) every_rat_mktcap_o_netinc_q1_x_4,
+    (sum(liab_q1) - sum(liab_q2)) / ( sum(netinc_q1) - sum(netinc_q2) ) * 100 rat_chg_liab_o_chg_netinc,
+    (sum(  cl_q1) - sum(  cl_q2)) / ( sum(netinc_q1) - sum(netinc_q2) ) rat_chg_cl_o_chg_netinc
+  from data_info, data_info_agg
+  where data_info.dateindex = data_info_agg.dateindex and 
+        now_inbnd_stmtid_dateindex is not null
+  group by data_info.dateindex 
+  order by data_info.dateindex
+  "
+  )
+  
+  temp <- as.matrix(sipro_inbnd_netinc_marginals_eom[ ,!colnames(sipro_inbnd_netinc_marginals_eom) %in% c("dateindex_dt"), drop = FALSE])
+  rownames(temp) <- as.character(sipro_inbnd_netinc_marginals_eom[["dateindex_dt"]])
+  # S3 dispatch as.xts.matrix ... will return with a non-Date index
+  temp2 <- as.xts(temp)
+  rm(temp)
+  index(temp2) <- zoo::as.Date(index(temp2))
+  sipro_inbnd_netinc_marginals_eom_xts <- temp2
+  rm(temp2)
+
+  # COULD BE GENERALIZED
+  with(sipro_inbnd_netinc_marginals_eom_xts, {
+    lapply( setdiff(ls(),"pr_mktcap"), function(x){ TTR::WMA(get(x), n = 3, wts = as.vector(coredata(get("pr_mktcap")))) })
+  }) -> applied
+  names(applied) <- paste0(setdiff(colnames(sipro_inbnd_netinc_marginals_eom_xts), "pr_mktcap"), "_wtd", "_", "pr_mktcap")
+  results <- c(list(sipro_inbnd_netinc_marginals_eom_xts), applied)
+  sipro_inbnd_netinc_marginals_eom_xts <-  do.call(merge.xts, results)
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+
+  message("End   function get_sipro_inbnd_rat_chg_owe_chg_netinc_eom_xts")
+
+  return(sipro_inbnd_netinc_marginals_eom_xts)
+    
+}
+# MORE an example of rolling noise, but an example hof handling WEIGHTED measures and ROLLING measures
+# sipro_inbnd_rat_chg_owe_chg_netinc_eom_xts <- get_sipro_inbnd_rat_chg_owe_chg_netinc_eom_xts()
+#  View(sipro_inbnd_rat_chg_owe_chg_netinc_eom_xts)
 
 
 #############################################
@@ -9167,7 +9267,7 @@ get_all_raw_by_dateindex <- function(dateindex = NULL) {
   df <- df[ !stringi::stri_duplicated(df$COMPANY_ID) & !stringi::stri_duplicated(df$COMPANY_ID, fromLast = TRUE), , drop = FALSE]
   df <- plyr::rename(df, c("MG_DESC" = "SECTOR_DESC"))
 
-  for(si_file in c("si_isq","si_cfq","si_bsq","si_date","si_psd","si_psdc","si_psdd","si_mlt","si_rat")) {
+  for(si_file in c("si_isq","si_cfq","si_bsq","si_date","si_psd","si_psdc","si_psdd","si_mlt","si_rat","si_ee")) {
 
     # si_file <- "si_isq"
     
