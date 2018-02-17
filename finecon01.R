@@ -9174,7 +9174,7 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
 
 
 # entertaining
-get_all_raw_by_dateindex <- function(dateindex = NULL) { 
+get_all_raw_by_dateindex <- function(dateindex = NULL, file_type = "fst") { 
 
   if(is.null(dateindex)) stop("load_all_raw_by_index  missing argument: dateindex")
 
@@ -9198,15 +9198,19 @@ get_all_raw_by_dateindex <- function(dateindex = NULL) {
  
   # dateindex <- 17562
   
-  fst::threads_fst(nr_of_threads = 4)
-  print(fst::threads_fst())
+  if(file_type == "fst") {
+    fst::threads_fst(nr_of_threads = 4)
+    print(fst::threads_fst())
+  }
   
-  if(!file.exists(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_ci.fst"))) {
-    df <- read.dbf(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_ci.dbf"), as.is = T) # LASTMOD is not in earlier data
-    fst::write.fst(df, stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_ci.fst"), compress = 0)
-  } 
-  ft <- fst::fst(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_ci.fst"))
-  df <- ft[,]
+  if(file_type == "fst") {
+    if(!file.exists(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_ci.fst"))) {
+      df <- read.dbf(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_ci.dbf"), as.is = T) # LASTMOD is not in earlier data
+      fst::write.fst(df, stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_ci.fst"), compress = 0)
+    } 
+    ft <- fst::fst(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_ci.fst"))
+    df <- ft[,]
+  }
 
   # columns
   df <- df[,grep("^X.*", colnames(df), value = T, invert = T), drop = F]
@@ -9220,12 +9224,14 @@ get_all_raw_by_dateindex <- function(dateindex = NULL) {
   df <- df[ !stringi::stri_duplicated(df$TICKER)     & !stringi::stri_duplicated(df$TICKER,     fromLast = TRUE), , drop = FALSE]
 
   # exchange
-  if(!file.exists(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_exchg.fst"))) {
-    exchg <- read.dbf(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_exchg.dbf"), as.is = T)
-    fst::write.fst(exchg, stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_exchg.fst"), compress = 0)
-  } 
-  ft <- fst::fst(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_exchg.fst"))
-  exchg <- ft[,]
+  if(file_type == "fst") {
+    if(!file.exists(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_exchg.fst"))) {
+      exchg <- read.dbf(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_exchg.dbf"), as.is = T)
+      fst::write.fst(exchg, stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_exchg.fst"), compress = 0)
+    } 
+    ft <- fst::fst(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_exchg.fst"))
+    exchg <- ft[,]
+  }
   exchg <- exchg[ !data.table:::duplicated.data.table(exchg, fromLast = TRUE),,drop = FALSE]
   exchg <- exchg[ !stringi::stri_duplicated(exchg$EXCHG_CODE) & !stringi::stri_duplicated(exchg$EXCHG_CODE, fromLast = TRUE), , drop = FALSE]
   exchg <- data.table::as.data.table(exchg, keep.rownames= "RN_SI_EXCHG")
@@ -9236,12 +9242,14 @@ get_all_raw_by_dateindex <- function(dateindex = NULL) {
   df <- df[ !stringi::stri_duplicated(df$COMPANY_ID) & !stringi::stri_duplicated(df$COMPANY_ID, fromLast = TRUE), , drop = FALSE]
     
   # industry
-  if(!file.exists(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_mgdsc.fst"))) {
-    mgdsc <- read.dbf(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_mgdsc.dbf"), as.is = T)
-    fst::write.fst(mgdsc, stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_mgdsc.fst"), compress = 0)
-  } 
-  ft <- fst::fst(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_mgdsc.fst"))
-  mgdsc <- ft[,]
+  if(file_type == "fst") {
+    if(!file.exists(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_mgdsc.fst"))) {
+      mgdsc <- read.dbf(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_mgdsc.dbf"), as.is = T)
+      fst::write.fst(mgdsc, stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_mgdsc.fst"), compress = 0)
+    } 
+    ft <- fst::fst(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_mgdsc.fst"))
+    mgdsc <- ft[,]
+  }
   mgdsc <- mgdsc[ !data.table:::duplicated.data.table(mgdsc, fromLast = TRUE),,drop = FALSE]
   mgdsc <- mgdsc[ !stringi::stri_duplicated(mgdsc$MG_CODE) & !stringi::stri_duplicated(mgdsc$MG_CODE, fromLast = TRUE), , drop = FALSE]
   mgdsc <- data.table::as.data.table(mgdsc, keep.rownames= "RN_SI_MGDSC_IND")
@@ -9252,12 +9260,14 @@ get_all_raw_by_dateindex <- function(dateindex = NULL) {
   df <- plyr::rename(df, c("MG_DESC" = "INDUSTRY_DESC"))
 
   # sector
-  if(!file.exists(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_mgdsc.fst"))) {
-    mgdsc <- read.dbf(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_mgdsc.dbf"), as.is = T)
-    fst::write.fst(mgdsc, stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_mgdsc.fst"), compress = 0)
-  } 
-  ft <- fst::fst(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_mgdsc.fst"))
-  mgdsc <- ft[,]
+  if(file_type == "fst") {
+    if(!file.exists(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_mgdsc.fst"))) {
+      mgdsc <- read.dbf(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_mgdsc.dbf"), as.is = T)
+      fst::write.fst(mgdsc, stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_mgdsc.fst"), compress = 0)
+    } 
+    ft <- fst::fst(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_mgdsc.fst"))
+    mgdsc <- ft[,]
+  }
   mgdsc <- mgdsc[ !data.table:::duplicated.data.table(mgdsc, fromLast = TRUE),,drop = FALSE]
   mgdsc <- mgdsc[ !stringi::stri_duplicated(mgdsc$MG_CODE) & !stringi::stri_duplicated(mgdsc$MG_CODE, fromLast = TRUE), , drop = FALSE]
   mgdsc <- data.table::as.data.table(mgdsc, keep.rownames= "RN_SI_MGDSC_SECT")
@@ -9271,12 +9281,14 @@ get_all_raw_by_dateindex <- function(dateindex = NULL) {
 
     # si_file <- "si_isq"
     
-    if(!file.exists(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\",si_file,".fst"))) {
-      dfnew <- read.dbf(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\",si_file,".dbf"), as.is = T)
-      fst::write.fst(dfnew, stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\",si_file,".fst"), compress = 0)
-    } 
-    ft <- fst::fst(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\",si_file,".fst"))
-    dfnew <- ft[,]
+    if(file_type == "fst") {
+      if(!file.exists(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\",si_file,".fst"))) {
+        dfnew <- read.dbf(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\",si_file,".dbf"), as.is = T)
+        fst::write.fst(dfnew, stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\",si_file,".fst"), compress = 0)
+      } 
+      ft <- fst::fst(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\",si_file,".fst"))
+      dfnew <- ft[,]
+    }
 
     # columns
     dfnew <- dfnew[,grep("^X.*", colnames(dfnew), value = T, invert = T), drop = F]
@@ -9295,7 +9307,7 @@ get_all_raw_by_dateindex <- function(dateindex = NULL) {
     
   }
   
-  # last before saft to .fst
+  # last before save
   df <- data.table::as.data.table(df, keep.rownames= "RN_SI_CI")
   # sort
   data.table::setkeyv(df, "COMPANY_ID")
@@ -9308,14 +9320,16 @@ get_all_raw_by_dateindex <- function(dateindex = NULL) {
 
   df <- data.frame(plyr::llply(rlist::list.zip(as.list(df), colnames(df)), function(x) {  
 
-    # change to integer
-    if(grepl("SIC|EMPLOYEES|^PERLEN_[Q,Y].*$|^RN_.*$",x[[2]])) { return(as.integer(x[[1]])) } else
-    # if had been converted to an integer up to this point then keep as an integer
-    if(is.integer(x[[1]])) { return(x[[1]]) } else
-    # keep as character
-    if(grepl("^PERTYP_[Q,Y].*$|^UPDTYP_[Q,Y].*$|^COMPANY_ID$|^COMPANY$|^TICKER$|^EXCHANGE$|^STREET$|^CITY$|^STATE$|^ZIP$|^COUNTRY$|^PHONE$|^WEB_ADDR$|^BUSINESS$|^ANALYST_FN$|^IND_2_DIG$|^IND_3_DIG$|^SP$|^DOW$|^.*CODE$|^.*DESC$|^.*REPNO$",x[[2]]))  { return(x[[1]]) } else
-    # others become numeric
-    { return(as.numeric(x[[1]]))}
+    if(file_type == "fst") {
+      # change to integer
+      if(grepl("SIC|EMPLOYEES|^PERLEN_[Q,Y].*$|^RN_.*$",x[[2]])) { return(as.integer(x[[1]])) } else
+      # if had been converted to an integer up to this point then keep as an integer
+      if(is.integer(x[[1]])) { return(x[[1]]) } else
+      # keep as character
+      if(grepl("^PERTYP_[Q,Y].*$|^UPDTYP_[Q,Y].*$|^COMPANY_ID$|^COMPANY$|^TICKER$|^EXCHANGE$|^STREET$|^CITY$|^STATE$|^ZIP$|^COUNTRY$|^PHONE$|^WEB_ADDR$|^BUSINESS$|^ANALYST_FN$|^IND_2_DIG$|^IND_3_DIG$|^SP$|^DOW$|^.*CODE$|^.*DESC$|^.*REPNO$",x[[2]]))  { return(x[[1]]) } else
+      # others become numeric
+      { return(as.numeric(x[[1]]))}
+    }
 
   } ), stringsAsFactors = FALSE)
   
