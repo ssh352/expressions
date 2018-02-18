@@ -9174,7 +9174,7 @@ sipro_adhoc_disk <- function(   fields           = c("company_id")
 
 
 # entertaining
-get_all_raw_by_dateindex <- function(dateindex = NULL, file_type = "fst") { 
+get_all_raw_by_dateindex <- function(dateindex = NULL, file_type = "fst", aaii_sipro_dir = getsetvar_aaii_sipro_dir()) { 
 
   if(is.null(dateindex)) stop("load_all_raw_by_index  missing argument: dateindex")
 
@@ -9206,22 +9206,24 @@ get_all_raw_by_dateindex <- function(dateindex = NULL, file_type = "fst") {
     print(fst::threads_fst())
   }
   
+  message("  Begin si_ci")
+  
   if(file_type == "fst") {
-    if(!file.exists(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_ci.fst"))) {
-      df <- read.dbf(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_ci.dbf"), as.is = T) # LASTMOD is not in earlier data
-      fst::write.fst(df, stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_ci.fst"), compress = 0)
+    if(!file.exists(stringi::stri_c(aaii_sipro_dir,"/",dateindex,"/si_ci.fst"))) {
+      df <- read.dbf(stringi::stri_c(aaii_sipro_dir,"/",dateindex,"/si_ci.dbf"), as.is = T) # LASTMOD is not in earlier data
+      fst::write.fst(df, stringi::stri_c(aaii_sipro_dir,"/",dateindex,"/si_ci.fst"), compress = 0)
     } 
-    ft <- fst::fst(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_ci.fst"))
+    ft <- fst::fst(stringi::stri_c(aaii_sipro_dir,"/",dateindex,"/si_ci.fst"))
     df <- ft[,]
   }
   if(file_type == "sqlite") {
-    if(!file.exists(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_ci.sqlite"))) {
-      df <- read.dbf(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_ci.dbf"), as.is = T) # LASTMOD is not in earlier data
-      consqlite <- dbConnect(RSQLite::SQLite(), stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_ci.sqlite"))
+    if(!file.exists(stringi::stri_c(aaii_sipro_dir,"/",dateindex,"/si_ci.sqlite"))) {
+      df <- read.dbf(stringi::stri_c(aaii_sipro_dir,"/",dateindex,"/si_ci.dbf"), as.is = T) # LASTMOD is not in earlier data
+      consqlite <- dbConnect(RSQLite::SQLite(), stringi::stri_c(aaii_sipro_dir,"/",dateindex,"/si_ci.sqlite"))
       dbWriteTable(consqlite, "si_ci", df)
       dbDisconnect(consqlite)
     } 
-    consqlite <- dbConnect(RSQLite::SQLite(), stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_ci.sqlite"))
+    consqlite <- dbConnect(RSQLite::SQLite(), stringi::stri_c(aaii_sipro_dir,"/",dateindex,"/si_ci.sqlite"))
     st <- dbGetQuery(consqlite, "select * from si_ci")
     dbDisconnect(consqlite)
     df <- st
@@ -9238,23 +9240,27 @@ get_all_raw_by_dateindex <- function(dateindex = NULL, file_type = "fst") {
   df <- df[ !stringi::stri_duplicated(df$COMPANY_ID) & !stringi::stri_duplicated(df$COMPANY_ID, fromLast = TRUE), , drop = FALSE]
   df <- df[ !stringi::stri_duplicated(df$TICKER)     & !stringi::stri_duplicated(df$TICKER,     fromLast = TRUE), , drop = FALSE]
 
+  message("  End   si_ci")  
+  
+  message("  Begin si_exchg")
+
   # exchange
   if(file_type == "fst") {
-    if(!file.exists(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_exchg.fst"))) {
-      exchg <- read.dbf(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_exchg.dbf"), as.is = T)
-      fst::write.fst(exchg, stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_exchg.fst"), compress = 0)
+    if(!file.exists(stringi::stri_c(aaii_sipro_dir,"/",dateindex,"/si_exchg.fst"))) {
+      exchg <- read.dbf(stringi::stri_c(aaii_sipro_dir,"/",dateindex,"/si_exchg.dbf"), as.is = T)
+      fst::write.fst(exchg, stringi::stri_c(aaii_sipro_dir,"/",dateindex,"/si_exchg.fst"), compress = 0)
     } 
-    ft <- fst::fst(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_exchg.fst"))
+    ft <- fst::fst(stringi::stri_c(aaii_sipro_dir,"/",dateindex,"/si_exchg.fst"))
     exchg <- ft[,]
   }
   if(file_type == "sqlite") {
-    if(!file.exists(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_exchg.sqlite"))) {
-      exchg <- read.dbf(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_exchg.dbf"), as.is = T) # LASTMOD is not in earlier data
-      consqlite <- dbConnect(RSQLite::SQLite(), stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_exchg.sqlite"))
+    if(!file.exists(stringi::stri_c(aaii_sipro_dir,"/",dateindex,"/si_exchg.sqlite"))) {
+      exchg <- read.dbf(stringi::stri_c(aaii_sipro_dir,"/",dateindex,"/si_exchg.dbf"), as.is = T) # LASTMOD is not in earlier data
+      consqlite <- dbConnect(RSQLite::SQLite(), stringi::stri_c(aaii_sipro_dir,"/",dateindex,"/si_exchg.sqlite"))
       dbWriteTable(consqlite, "si_exchg", exchg)
       dbDisconnect(consqlite)
     } 
-    consqlite <- dbConnect(RSQLite::SQLite(), stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_exchg.sqlite"))
+    consqlite <- dbConnect(RSQLite::SQLite(), stringi::stri_c(aaii_sipro_dir,"/",dateindex,"/si_exchg.sqlite"))
     st <- dbGetQuery(consqlite, "select * from si_exchg")
     dbDisconnect(consqlite)
     exchg <- st
@@ -9269,23 +9275,26 @@ get_all_raw_by_dateindex <- function(dateindex = NULL, file_type = "fst") {
   df <- data.table:::merge.data.table(df, exchg, by.x = "EXCHG_CODE", by.y = "EXCHG_CODE", all.x = TRUE, sort = FALSE)
   df <- df[ !stringi::stri_duplicated(df$COMPANY_ID) & !stringi::stri_duplicated(df$COMPANY_ID, fromLast = TRUE), , drop = FALSE]
     
+  message("  End   si_exchg")
+  message("  Begin si_mgdsc for industry")
+  
   # industry
   if(file_type == "fst") {
-    if(!file.exists(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_mgdsc.fst"))) {
-      mgdsc <- read.dbf(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_mgdsc.dbf"), as.is = T)
-      fst::write.fst(mgdsc, stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_mgdsc.fst"), compress = 0)
+    if(!file.exists(stringi::stri_c(aaii_sipro_dir,"/",dateindex,"/si_mgdsc.fst"))) {
+      mgdsc <- read.dbf(stringi::stri_c(aaii_sipro_dir,"/",dateindex,"/si_mgdsc.dbf"), as.is = T)
+      fst::write.fst(mgdsc, stringi::stri_c(aaii_sipro_dir,"/",dateindex,"/si_mgdsc.fst"), compress = 0)
     } 
-    ft <- fst::fst(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_mgdsc.fst"))
+    ft <- fst::fst(stringi::stri_c(aaii_sipro_dir,"/",dateindex,"/si_mgdsc.fst"))
     mgdsc <- ft[,]
   }
   if(file_type == "sqlite") {
-    if(!file.exists(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_mgdsc.sqlite"))) {
-      mgdsc <- read.dbf(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_mgdsc.dbf"), as.is = T) # LASTMOD is not in earlier data
-      consqlite <- dbConnect(RSQLite::SQLite(), stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_mgdsc.sqlite"))
+    if(!file.exists(stringi::stri_c(aaii_sipro_dir,"/",dateindex,"/si_mgdsc.sqlite"))) {
+      mgdsc <- read.dbf(stringi::stri_c(aaii_sipro_dir,"/",dateindex,"/si_mgdsc.dbf"), as.is = T) # LASTMOD is not in earlier data
+      consqlite <- dbConnect(RSQLite::SQLite(), stringi::stri_c(aaii_sipro_dir,"/",dateindex,"/si_mgdsc.sqlite"))
       dbWriteTable(consqlite, "si_mgdsc", mgdsc)
       dbDisconnect(consqlite)
     } 
-    consqlite <- dbConnect(RSQLite::SQLite(), stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_mgdsc.sqlite"))
+    consqlite <- dbConnect(RSQLite::SQLite(), stringi::stri_c(aaii_sipro_dir,"/",dateindex,"/si_mgdsc.sqlite"))
     st <- dbGetQuery(consqlite, "select * from si_mgdsc")
     dbDisconnect(consqlite)
     mgdsc <- st
@@ -9299,23 +9308,26 @@ get_all_raw_by_dateindex <- function(dateindex = NULL, file_type = "fst") {
   df <- df[ !stringi::stri_duplicated(df$COMPANY_ID) & !stringi::stri_duplicated(df$COMPANY_ID, fromLast = TRUE), , drop = FALSE]
   df <- plyr::rename(df, c("MG_DESC" = "INDUSTRY_DESC"))
 
+  message("  End   si_mgdsc for industry")
+  message("  Begin si_mgdsc for sector")
+
   # sector
   if(file_type == "fst") {
-    if(!file.exists(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_mgdsc.fst"))) {
-      mgdsc <- read.dbf(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_mgdsc.dbf"), as.is = T)
-      fst::write.fst(mgdsc, stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_mgdsc.fst"), compress = 0)
+    if(!file.exists(stringi::stri_c(aaii_sipro_dir,"/",dateindex,"/si_mgdsc.fst"))) {
+      mgdsc <- read.dbf(stringi::stri_c(aaii_sipro_dir,"/",dateindex,"/si_mgdsc.dbf"), as.is = T)
+      fst::write.fst(mgdsc, stringi::stri_c(aaii_sipro_dir,"/",dateindex,"/si_mgdsc.fst"), compress = 0)
     } 
-    ft <- fst::fst(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_mgdsc.fst"))
+    ft <- fst::fst(stringi::stri_c(aaii_sipro_dir,"/",dateindex,"/si_mgdsc.fst"))
     mgdsc <- ft[,]
   }
   if(file_type == "sqlite") {
-    if(!file.exists(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_mgdsc.sqlite"))) {
-      mgdsc <- read.dbf(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_mgdsc.dbf"), as.is = T) # LASTMOD is not in earlier data
-      consqlite <- dbConnect(RSQLite::SQLite(), stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_mgdsc.sqlite"))
+    if(!file.exists(stringi::stri_c(aaii_sipro_dir,"/",dateindex,"/si_mgdsc.sqlite"))) {
+      mgdsc <- read.dbf(stringi::stri_c(aaii_sipro_dir,"/",dateindex,"/si_mgdsc.dbf"), as.is = T) # LASTMOD is not in earlier data
+      consqlite <- dbConnect(RSQLite::SQLite(), stringi::stri_c(aaii_sipro_dir,"/",dateindex,"/si_mgdsc.sqlite"))
       dbWriteTable(consqlite, "si_mgdsc", mgdsc)
       dbDisconnect(consqlite)
     } 
-    consqlite <- dbConnect(RSQLite::SQLite(), stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_mgdsc.sqlite"))
+    consqlite <- dbConnect(RSQLite::SQLite(), stringi::stri_c(aaii_sipro_dir,"/",dateindex,"/si_mgdsc.sqlite"))
     st <- dbGetQuery(consqlite, "select * from si_mgdsc")
     dbDisconnect(consqlite)
     mgdsc <- st
@@ -9329,26 +9341,29 @@ get_all_raw_by_dateindex <- function(dateindex = NULL, file_type = "fst") {
   df <- df[ !stringi::stri_duplicated(df$COMPANY_ID) & !stringi::stri_duplicated(df$COMPANY_ID, fromLast = TRUE), , drop = FALSE]
   df <- plyr::rename(df, c("MG_DESC" = "SECTOR_DESC"))
 
+  message("  End   si_mgdsc for sector")
+  
   for(si_file in c("si_isq","si_cfq","si_bsq","si_date","si_psd","si_psdc","si_psdd","si_mlt","si_rat","si_ee")) {
 
     # si_file <- "si_isq"
+    message(stringi::stri_c("  Begin ",si_file))
     
     if(file_type == "fst") {
-      if(!file.exists(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\",si_file,".fst"))) {
-        dfnew <- read.dbf(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\",si_file,".dbf"), as.is = T)
-        fst::write.fst(dfnew, stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\",si_file,".fst"), compress = 0)
+      if(!file.exists(stringi::stri_c(aaii_sipro_dir,"/",dateindex,"/",si_file,".fst"))) {
+        dfnew <- read.dbf(stringi::stri_c(aaii_sipro_dir,"/",dateindex,"/",si_file,".dbf"), as.is = T)
+        fst::write.fst(dfnew, stringi::stri_c(aaii_sipro_dir,"/",dateindex,"/",si_file,".fst"), compress = 0)
       } 
-      ft <- fst::fst(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\",si_file,".fst"))
+      ft <- fst::fst(stringi::stri_c(aaii_sipro_dir,"/",dateindex,"/",si_file,".fst"))
       dfnew <- ft[,]
     }
     if(file_type == "sqlite") {
-      if(!file.exists(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\",si_file,".sqlite"))) {
-        dfnew <- read.dbf(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\",si_file,".dbf"), as.is = T)
-        consqlite <- dbConnect(RSQLite::SQLite(), stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\",si_file,".sqlite"))
+      if(!file.exists(stringi::stri_c(aaii_sipro_dir,"/",dateindex,"/",si_file,".sqlite"))) {
+        dfnew <- read.dbf(stringi::stri_c(aaii_sipro_dir,"/",dateindex,"/",si_file,".dbf"), as.is = T)
+        consqlite <- dbConnect(RSQLite::SQLite(), stringi::stri_c(aaii_sipro_dir,"/",dateindex,"/",si_file,".sqlite"))
         dbWriteTable(consqlite, si_file, dfnew)
         dbDisconnect(consqlite)
       } 
-      consqlite <- dbConnect(RSQLite::SQLite(), stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\",si_file,".sqlite"))
+      consqlite <- dbConnect(RSQLite::SQLite(), stringi::stri_c(aaii_sipro_dir,"/",dateindex,"/",si_file,".sqlite"))
       st <- dbGetQuery(consqlite, stringi::stri_c("select * from ", si_file))
       dbDisconnect(consqlite)
       dfnew <- st
@@ -9368,6 +9383,8 @@ get_all_raw_by_dateindex <- function(dateindex = NULL, file_type = "fst") {
 
     # df <- dplyr::left_join(df, dfnew, by = "COMPANY_ID") # SEEM(not SORTED) seem the same speed
     df <- data.table:::merge.data.table(df, dfnew, by = "COMPANY_ID", all.x = TRUE, sort = FALSE) # will sort LATER below
+    
+    message(stringi::stri_c("  End   ",si_file))
     
   }
   
@@ -9418,9 +9435,11 @@ get_all_raw_by_dateindex <- function(dateindex = NULL, file_type = "fst") {
 }
 # expermental: load MUCH
 # fst files
-# all_raw_by_dateindex <- get_all_raw_by_dateindex(17562)
+# 3 seconds 
+# all_raw_by_dateindex <- get_all_raw_by_dateindex(17562) # 
 # sqlite files
-# all_raw_by_dateindex <- get_all_raw_by_dateindex(17562, file_type = "sqlite")
+# 6 seconds ( but much more flexible)
+# all_raw_by_dateindex <- get_all_raw_by_dateindex(17562, file_type = "sqlite") 
 
 
 # -- [X] ALREADY IN SIFINECON.01
