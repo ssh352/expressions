@@ -9189,6 +9189,8 @@ get_all_raw_by_dateindex <- function(dateindex = NULL, file_type = "fst") {
   # uses plyr
   # uses dplyr
   # uses rlist
+  if(file_type == "sqlite") require(DBI)
+    # uses RSQLite
   # uses fst (CRAN)
   #  
   # FUTURE
@@ -9196,6 +9198,7 @@ get_all_raw_by_dateindex <- function(dateindex = NULL, file_type = "fst") {
   # https://krlmlr.github.io/fstplyr/
   # devtools::install_github("krlmlr/fstplyr")
  
+    
   # dateindex <- 17562
   
   if(file_type == "fst") {
@@ -9211,7 +9214,19 @@ get_all_raw_by_dateindex <- function(dateindex = NULL, file_type = "fst") {
     ft <- fst::fst(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_ci.fst"))
     df <- ft[,]
   }
-
+  if(file_type == "sqlite") {
+    if(!file.exists(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_ci.sqlite"))) {
+      df <- read.dbf(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_ci.dbf"), as.is = T) # LASTMOD is not in earlier data
+      consqlite <- dbConnect(RSQLite::SQLite(), stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_ci.sqlite"))
+      dbWriteTable(consqlite, "si_ci", df)
+      dbDisconnect(consqlite)
+    } 
+    consqlite <- dbConnect(RSQLite::SQLite(), stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_ci.sqlite"))
+    st <- dbGetQuery(consqlite, "select * from si_ci")
+    dbDisconnect(consqlite)
+    df <- st
+  }
+  
   # columns
   df <- df[,grep("^X.*", colnames(df), value = T, invert = T), drop = F]
   df <- plyr::rename(df, c("REPNO" = "SI_CI_REPNO"))
@@ -9232,6 +9247,19 @@ get_all_raw_by_dateindex <- function(dateindex = NULL, file_type = "fst") {
     ft <- fst::fst(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_exchg.fst"))
     exchg <- ft[,]
   }
+  if(file_type == "sqlite") {
+    if(!file.exists(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_exchg.sqlite"))) {
+      exchg <- read.dbf(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_exchg.dbf"), as.is = T) # LASTMOD is not in earlier data
+      consqlite <- dbConnect(RSQLite::SQLite(), stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_exchg.sqlite"))
+      dbWriteTable(consqlite, "si_exchg", exchg)
+      dbDisconnect(consqlite)
+    } 
+    consqlite <- dbConnect(RSQLite::SQLite(), stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_exchg.sqlite"))
+    st <- dbGetQuery(consqlite, "select * from si_exchg")
+    dbDisconnect(consqlite)
+    exchg <- st
+  }
+  
   exchg <- exchg[ !data.table:::duplicated.data.table(exchg, fromLast = TRUE),,drop = FALSE]
   exchg <- exchg[ !stringi::stri_duplicated(exchg$EXCHG_CODE) & !stringi::stri_duplicated(exchg$EXCHG_CODE, fromLast = TRUE), , drop = FALSE]
   exchg <- data.table::as.data.table(exchg, keep.rownames= "RN_SI_EXCHG")
@@ -9249,6 +9277,18 @@ get_all_raw_by_dateindex <- function(dateindex = NULL, file_type = "fst") {
     } 
     ft <- fst::fst(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_mgdsc.fst"))
     mgdsc <- ft[,]
+  }
+  if(file_type == "sqlite") {
+    if(!file.exists(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_mgdsc.sqlite"))) {
+      mgdsc <- read.dbf(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_mgdsc.dbf"), as.is = T) # LASTMOD is not in earlier data
+      consqlite <- dbConnect(RSQLite::SQLite(), stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_mgdsc.sqlite"))
+      dbWriteTable(consqlite, "si_mgdsc", mgdsc)
+      dbDisconnect(consqlite)
+    } 
+    consqlite <- dbConnect(RSQLite::SQLite(), stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_mgdsc.sqlite"))
+    st <- dbGetQuery(consqlite, "select * from si_mgdsc")
+    dbDisconnect(consqlite)
+    mgdsc <- st
   }
   mgdsc <- mgdsc[ !data.table:::duplicated.data.table(mgdsc, fromLast = TRUE),,drop = FALSE]
   mgdsc <- mgdsc[ !stringi::stri_duplicated(mgdsc$MG_CODE) & !stringi::stri_duplicated(mgdsc$MG_CODE, fromLast = TRUE), , drop = FALSE]
@@ -9268,11 +9308,23 @@ get_all_raw_by_dateindex <- function(dateindex = NULL, file_type = "fst") {
     ft <- fst::fst(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_mgdsc.fst"))
     mgdsc <- ft[,]
   }
+  if(file_type == "sqlite") {
+    if(!file.exists(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_mgdsc.sqlite"))) {
+      mgdsc <- read.dbf(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_mgdsc.dbf"), as.is = T) # LASTMOD is not in earlier data
+      consqlite <- dbConnect(RSQLite::SQLite(), stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_mgdsc.sqlite"))
+      dbWriteTable(consqlite, "si_mgdsc", mgdsc)
+      dbDisconnect(consqlite)
+    } 
+    consqlite <- dbConnect(RSQLite::SQLite(), stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\si_mgdsc.sqlite"))
+    st <- dbGetQuery(consqlite, "select * from si_mgdsc")
+    dbDisconnect(consqlite)
+    mgdsc <- st
+  }
   mgdsc <- mgdsc[ !data.table:::duplicated.data.table(mgdsc, fromLast = TRUE),,drop = FALSE]
   mgdsc <- mgdsc[ !stringi::stri_duplicated(mgdsc$MG_CODE) & !stringi::stri_duplicated(mgdsc$MG_CODE, fromLast = TRUE), , drop = FALSE]
   mgdsc <- data.table::as.data.table(mgdsc, keep.rownames= "RN_SI_MGDSC_SECT")
   df$SECTOR_CODE <- df$IND_2_DIG
-  # df <- dplyr::left_join(df, mgdsc, by = c("IND_2_DIG" = "MG_CODE"))
+  # df <- dplyr::left_join(df, mgdsc, by = c("IND_2_DIG" = "MG_CODE")) 
   df <- data.table:::merge.data.table(df, mgdsc, by.x = "IND_2_DIG", by.y = "MG_CODE", all.x = TRUE, sort = FALSE)
   df <- df[ !stringi::stri_duplicated(df$COMPANY_ID) & !stringi::stri_duplicated(df$COMPANY_ID, fromLast = TRUE), , drop = FALSE]
   df <- plyr::rename(df, c("MG_DESC" = "SECTOR_DESC"))
@@ -9288,6 +9340,18 @@ get_all_raw_by_dateindex <- function(dateindex = NULL, file_type = "fst") {
       } 
       ft <- fst::fst(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\",si_file,".fst"))
       dfnew <- ft[,]
+    }
+    if(file_type == "sqlite") {
+      if(!file.exists(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\",si_file,".sqlite"))) {
+        dfnew <- read.dbf(stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\",si_file,".dbf"), as.is = T)
+        consqlite <- dbConnect(RSQLite::SQLite(), stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\",si_file,".sqlite"))
+        dbWriteTable(consqlite, si_file, dfnew)
+        dbDisconnect(consqlite)
+      } 
+      consqlite <- dbConnect(RSQLite::SQLite(), stringi::stri_c("W:\\AAIISIProDBFs\\",dateindex,"\\",si_file,".sqlite"))
+      st <- dbGetQuery(consqlite, stringi::stri_c("select * from ", si_file))
+      dbDisconnect(consqlite)
+      dfnew <- st
     }
 
     # columns
@@ -9307,14 +9371,16 @@ get_all_raw_by_dateindex <- function(dateindex = NULL, file_type = "fst") {
     
   }
   
-  # last before save
+  # last before save ( note: for this here to  be here this late, 'merge' above must do a 'left join' )
   df <- data.table::as.data.table(df, keep.rownames= "RN_SI_CI")
   # sort
   data.table::setkeyv(df, "COMPANY_ID")
   
+  # fst keeps Dates as Dates
   # change Dates to integers
   df <- data.frame(plyr::llply(df, function(x) { if(is.timeBased(x)){ return(as.integer(zoo::as.Date(x))) } else { x } } ), stringsAsFactors = FALSE)  
 
+  # fst keeps Booleans as Booleans
   # change Booleans to integers
   df <- data.frame(plyr::llply(df, function(x) { if(is.logical(x))  { return(as.integer(x)) }               else { x } } ), stringsAsFactors = FALSE)  
 
@@ -9323,6 +9389,18 @@ get_all_raw_by_dateindex <- function(dateindex = NULL, file_type = "fst") {
     if(file_type == "fst") {
       # change to integer
       if(grepl("SIC|EMPLOYEES|^PERLEN_[Q,Y].*$|^RN_.*$",x[[2]])) { return(as.integer(x[[1]])) } else
+      # if had been converted to an integer up to this point then keep as an integer
+      if(is.integer(x[[1]])) { return(x[[1]]) } else
+      # keep as character
+      if(grepl("^PERTYP_[Q,Y].*$|^UPDTYP_[Q,Y].*$|^COMPANY_ID$|^COMPANY$|^TICKER$|^EXCHANGE$|^STREET$|^CITY$|^STATE$|^ZIP$|^COUNTRY$|^PHONE$|^WEB_ADDR$|^BUSINESS$|^ANALYST_FN$|^IND_2_DIG$|^IND_3_DIG$|^SP$|^DOW$|^.*CODE$|^.*DESC$|^.*REPNO$",x[[2]]))  { return(x[[1]]) } else
+      # others become numeric
+      { return(as.numeric(x[[1]]))}
+    }
+    # sqlite converts Booleans to integer ( I want, so I do not need to convert )
+    # sqlite converts Dates to numeric ( but I want integer, so the 'change to integer' line must have more entries )
+    if(file_type == "sqlite") {
+      # change to integer
+      if(grepl("SIC|EMPLOYEES|^PERLEN_[Q,Y].*$|^RN_.*$|LASTMOD|UPDATED|^PEREND_[Q,Y].*$|^PRICED.*$|^.*DATE$|^DATE.*$|^REPDT.*$",x[[2]])) { return(as.integer(x[[1]])) } else
       # if had been converted to an integer up to this point then keep as an integer
       if(is.integer(x[[1]])) { return(x[[1]]) } else
       # keep as character
@@ -9339,8 +9417,10 @@ get_all_raw_by_dateindex <- function(dateindex = NULL, file_type = "fst") {
   
 }
 # expermental: load MUCH
+# fst files
 # all_raw_by_dateindex <- get_all_raw_by_dateindex(17562)
-
+# sqlite files
+# all_raw_by_dateindex <- get_all_raw_by_dateindex(17562, file_type = "sqlite")
 
 
 # -- [X] ALREADY IN SIFINECON.01
