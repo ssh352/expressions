@@ -174,6 +174,148 @@ insert_df <- function(df = NULL, val = NULL, nm = NULL, pos = 0 ) {
 # ANDRE
 
 
+
+# psqlODBC
+#   09.06.0500
+# PSQLODBC_x64
+#   09.06.0500
+# https://www.postgresql.org/ftp/odbc/versions/msi/
+# ODBC data sources
+# ODBC Data Source Administrator (64-bit)
+# Drivers
+# PostgreSQL ANSI(x64)    9.06.05.00 PostgreSQL Global Development Group PSQLODBC30A.DLL 9/5/2017
+# PostgreSQL Unicode(x64) 9.06.05.00 PostgreSQL Global Development Group PSQLODBC30W.DLL 9/5/2017
+# ODBC Data Source Administrator (64-bit)
+# 
+# Drivers
+# PostgreSQL ANSI    9.06.05.00 PostgreSQL Global Development Group PSQLODBC30A.DLL 9/5/2017
+# PostgreSQL Unicode 9.06.05.00 PostgreSQL Global Development Group PSQLODBC30W.DLL 9/5/2017
+# DEC 2017 
+# 
+verify_channel <- function () {
+  
+  # R version 3.4.3 (2017-11-30) # sessionInfo()
+  
+  ops <- options()
+  
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  require(RODBC) # RODBC_1.3-15
+  message("Begin check of (re)connecting PostgreSQL RODBC channel")
+  
+                                               # see from .Global
+  if(!exists("channel", envir = .GlobalEnv) || !RODBC:::odbcValidChannel(channel)) {
+  
+    message("  Begin (re)connecting PostgreSQL RODBC channel")
+  
+    channel <-  odbcDriverConnect("DRIVER=PostgreSQL Unicode(x64);Port=5432;Database=finance_econ;Uid=postgres;Pwd=postgres;")
+    
+    sqlQuery(channel, "set search_path to fe_data_store;", max = 0, as.is = TRUE)
+    
+    sqlQuery(channel, "set effective_cache_size to '6144MB';",     max = 0, as.is = TRUE)
+    sqlQuery(channel, "set work_mem to '2047MB';",                 max = 0, as.is = TRUE)
+    sqlQuery(channel, "set maintenance_work_mem to '2047MB';",     max = 0, as.is = TRUE)
+    sqlQuery(channel, "set constraint_exclusion = on;",            max = 0, as.is = TRUE)
+    sqlQuery(channel, "set max_parallel_workers_per_gather to 4;", max = 0, as.is = TRUE)
+    
+    message("  End   (re)connecting PostgreSQL RODBC channel")
+  
+  }
+  
+  channel <<- channel
+  
+  message("End   check of (re)connecting PostgreSQL RODBC channel")
+
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+}
+# verify_channel()
+
+
+
+# It was made with SQLite 3.15.2 and a MinGW cross compiler
+#   select sqlite_version();
+# sqliteodbc.exe 
+# sqliteodbc_w64.exe 
+# sqliteodbc-0.9995.tar.gz 
+# DEC 2017 - FEB 2018
+# http://www.ch-werner.de/sqliteodbc/
+# > odbcGetInfo(channel)
+#         DBMS_Name          DBMS_Ver   Driver_ODBC_Ver  Data_Source_Name
+#          "SQLite"          "3.15.2"           "03.00"                ""
+#       Driver_Name        Driver_Ver          ODBC_Ver       Server_Name
+# "sqlite3odbc.dll"          "0.9995"      "03.80.0000" "<FILENAME>.sqlite"
+# FEB 2018
+# 
+verify_sqlite3_channel <- function(aaii_sipro_dir = getsetvar_aaii_sipro_dir(), dateindex,  sqlite_file_root) { 
+
+  # R version 3.4.3 (2017-11-30) # sessionInfo()
+  
+  ops <- options()
+  
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  require(RODBC) # RODBC_1.3-15
+  # uses stringi
+  
+  message("Begin check of (re)connecting SQLite RODBC channel")
+  
+  # different from postgreSQL verify_channel
+  # SQLite case will always close and open
+  
+  if(exists("sqlite3_channel", envir = .GlobalEnv) && RODBC:::odbcValidChannel(sqlite3_channel)) {
+  
+    odbcClose(get("sqlite3_channel", envir = .GlobalEnv))
+    rm("sqlite3_channel", envir = .GlobalEnv)
+  
+  }
+  
+                                                       # see from .Global
+  if(!exists("sqlite3_channel", envir = .GlobalEnv) || !RODBC:::odbcValidChannel(sqlite3_channel)) {
+  
+    message("  Begin (re)connecting SQLite RODBC channel")
+  
+    sqlite3_channel <- odbcDriverConnect(stringi::stri_c("DRIVER=SQLite3 ODBC Driver;Database=",getsetvar_aaii_sipro_dir(),"/",dateindex,"/",sqlite_file_root,".sqlite"), believeNRows =  FALSE)
+    
+    # any pragma or OTHER
+    # sqlQuery(sqlite3_channel, "",  max = 0, as.is = TRUE)
+
+    message("  End   (re)connecting SQLite RODBC channel")
+  
+  }
+  
+  sqlite3_channel <<- sqlite3_channel
+  
+  message("End   check of (re)connecting SQLite RODBC channel")
+
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+}
+# verify_sqlite3_channel(aaii_sipro_dir = getsetvar_aaii_sipro_dir(), dateindex = 17562,  sqlite_file_root = "si_ci")
+# odbcGetInfo(sqlite3_channel)
+
+
+
 is_connected_postgresql_con <- function() {  
 
   require(RPostgreSQL)
