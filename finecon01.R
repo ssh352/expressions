@@ -324,6 +324,8 @@ dbWriteTable3 <- function (con, table.name, df, fill.null = TRUE, row.names = FA
   , index = NULL
   , ...) {
   
+  ops <- options()
+  
   options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
   options(digits = 22) 
   options(max.print=99999)
@@ -386,63 +388,71 @@ dbWriteTable3 <- function (con, table.name, df, fill.null = TRUE, row.names = FA
   
   # FINDS NAMES IN THE DATA.FRAME COLUMNS THAT EXIST IN THE DATABASE FIELDS
   clmn.match <- match(names(df), fields)
-  # DETECTS NAMES IN THE DATA.FRAME COLUMNS THAT DO NOT EXIST IN THE DATABASE FIELDS
-  # THEN 'FORMAT' THE DATATYTPLE OF THE COLUMN IN PREPARATION FOR FUTURE PLACEMENT IN THE DB
+
+  # FINDS NAMES OF DATABASE FIELDS THAT EXIST IN THE DATA.FRAME COLUMNS
+  field.match <- match(fields, names(df))
+  
+  # ALL COLUMNS ( AND THEIR CLASSES )
+  all.clmns <- sapply(df, class)
+    
+  # 'FORMAT' THE DATATYTPLE OF THE COLUMN IN PREPARATION FOR FUTURE PLACEMENT IN THE DB
+  
+  # TO BE DONE IN R 
+  if(date_to_int) {
+    # CONVERT THE TYPE 'AT(IN)' THE R LANGUAGE
+    # ANY COLUMNS OF class Date
+    if(length(which(all.clmns %in% "Date"))) {
+       # CONVERT TO INTEGER
+      df[, names(all.clmns[which(all.clmns %in% "Date")])] <- lapply( df[, names(all.clmns[which(all.clmns %in% "Date")])], as.integer)
+      all.clmns <- sapply(df, class)
+    }
+  }
+  
+  # TO BE DONE IN R
+  if(logical_to_int) {
+    # CONVERT THE TYPE 'AT(IN)' THE R LANGUAGE
+    # ANY COLUMNS OF class logical (Boolean)
+    if(length(which(all.clmns %in% "logical"))) {
+       # CONVERT TO INTEGER
+      df[, names(all.clmns[which(all.clmns %in% "logical")])] <- lapply( df[, names(all.clmns[which(all.clmns %in% "logical")])], as.integer)
+      all.clmns <- sapply(df, class)
+    }
+  }
+  
+  if(double_to_numeric) {
+    # CONVERT THE TYPE 'AT(IN)' THE DATABASE 
+    all.clmns[all.clmns == "numeric"] <- "numeric(13,2)"
+  }
+  
+  # CONVERT THE TYPE 'AT(IN)' THE DATABASE 
+  all.clmns[all.clmns == "character"] <- "text"
+
   if (any(is.na(clmn.match))) { 
     warning(paste("Found '", names(df)[is.na(clmn.match)], 
     "' not in fields of '", table.name, "' table. Adding to database . . .",  # ANDRE CHANGED # Omiting ... Adding to database
     sep = ""))
     
-    new.fields <- sapply(df[,names(df)[!names(df) %in% fields], drop = F], class)
+    # NEW NAMES IN THE DATA.FRAME COLUMNS THAT DO NOT EXIST IN THE DATABASE FIELDS
+    new.fields <- all.clmns[!names(all.clmns) %in% fields]
     
-    # TO BE DONE IN R 
-    if(date_to_int) {
-      # CONVERT THE TYPE 'AT(IN)' THE R LANGUAGE
-      # ANY COLUMNS OF class Date
-      if(length(which(new.fields %in% "Date"))) {
-         # CONVERT TO INTEGER
-        df[, names(new.fields[which(new.fields %in% "Date")])] <- lapply( df[, names(new.fields[which(new.fields %in% "Date")])], as.integer)
-        new.fields <- sapply(df[,names(df)[!names(df) %in% fields], drop = F], class)
-      }
-    }
-    
-    # TO BE DONE IN R
-    if(logical_to_int) {
-      # CONVERT THE TYPE 'AT(IN)' THE R LANGUAGE
-      # ANY COLUMNS OF class logical (Boolean)
-      if(length(which(new.fields %in% "logical"))) {
-         # CONVERT TO INTEGER
-        df[, names(new.fields[which(new.fields %in% "logical")])] <- lapply( df[, names(new.fields[which(new.fields %in% "logical")])], as.integer)
-        new.fields <- sapply(df[,names(df)[!names(df) %in% fields], drop = F], class)
-      }
-    }
-    
-    if(double_to_numeric) {
-      # CONVERT THE TYPE 'AT(IN)' THE DATABASE 
-      new.fields[new.fields == "numeric"] <- "numeric(13,2)"
-    }
-    
-    # CONVERT THE TYPE 'AT(IN)' THE DATABASE 
-    new.fields[new.fields == "character"] <- "text"
-
-    # ACTUALLY ADD NEW COLUMNS TO THE DATABASE
+    # ACTUALLY ADD NEW COLUMNS TO THE DATABASE 
     for(new.fields_idx in seq_along(new.fields)) {
                                                             # field name                       # field type
       dbExecute(con, paste("ALTER TABLE", table.name, "ADD", names(new.fields)[new.fields_idx], new.fields[new.fields_idx]))
     }
     
-    # REDO (FROM ABOVE)
+    # REDO (FROM ABOVE)  
     fields <- dbListFields(con, table.name)
     # SOMTHING 'AUTHOR' SPECIFIC
     fields <- fields[!grepl("\\.\\.pg\\.dropped", fields)]
     
     # NOT USED (ANYMORE) BELOW ( BUT FOR INTEGRITY)
     clmn.match <- match(names(df), fields)
+    
+    # FINDS NAMES OF DATABASE FIELDS THAT EXIST IN THE DATA.FRAME COLUMNS
+    field.match <- match(fields, names(df))
+    
   }
-  # FINDS NAMES OF DATABASE FIELDS THAT EXIST IN THE DATA.FRAME COLUMNS
-  field.match <- match(fields, names(df))
-
-
 
   
   if(!is.null(index)) {
@@ -488,19 +498,32 @@ dbWriteTable3 <- function (con, table.name, df, fill.null = TRUE, row.names = FA
   # R Package RSQLite? OTHERS,I am not sure? UNTESTED
   # 
   # 
-  if (sum(is.na(field.match)) > 0 & fill.null == TRUE) {
+  if (sum(is.na(field.match)) > 0 && fill.null == TRUE) {
       message("creating NAs/NULLs for for fields of table that are missing in your df")
       # ORIGINAL df COLUMN NAMES before new (all NULL(NA)) columns are added
       df.nms.orgnl <- names(df)
-      nl <- as.list(rep(NA, sum(is.na(field.match))))
+      # ADD EMPTY COLUMNS ( logical() can be zero rows )
+      nl <- lapply(seq_len(sum(is.na(field.match))), function(x) { logical()})
       df <- cbind(df, nl)
       names(df) <- c(df.nms.orgnl, fields[is.na(field.match)])
+      
+    # FINDS NAMES OF DATABASE FIELDS THAT EXIST IN THE DATA.FRAME COLUMNS
+    field.match <- match(fields, names(df))
   }
-  # MAKE THE COLUMN ORDER the same as the database FIELD order
-  reordered.names <- names(df)[match(fields, names(df))]
-  if (any(is.na(reordered.names))) 
-      stop("Too many unmatched columns to database column list. Stopping")
-  df <- df[, reordered.names]
+  
+  # AUTO-REORDERING ( IF BOTH THE SAME TABLES AND COLUMNS EXIST IN BOTH, THE CAN AUTO-REORDER )
+  if (sum(is.na(field.match)) == 0){
+  
+    # MAKE THE COLUMN ORDER the same as the database FIELD order
+    reordered.names <- names(df)[match(fields, names(df))]
+    if (any(is.na(reordered.names))) 
+        stop("Too many unmatched columns to database column list. Stopping")
+    df <- df[, reordered.names]
+    
+    # FINDS NAMES OF DATABASE FIELDS THAT EXIST IN THE DATA.FRAME COLUMNS
+    field.match <- match(fields, names(df))
+  
+  }
   
   # BEGIN TO CHECK FOR NULL/NOTNULL, WRONG PRECISION, AND WRONG TYPE ( I WILL NOT KEEP THIS PART)
   # r <- dbSendQuery(con, paste("SELECT * FROM", table.name, "WHERE 0 = 1"))
