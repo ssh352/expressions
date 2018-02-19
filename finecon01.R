@@ -338,15 +338,18 @@ dbWriteTable3 <- function (con, table.name, df, fill.null = TRUE, row.names = FA
     Sys.setenv(TZ="UTC")
   }
 
-  
-  # ANDRE DOES table already exist (expected)
-  # RPostgreSQL will give an error
-  # RSQlite     will give an error
-  res <- try({ dbListFields(con, table.name) }, silent = TRUE)
-  if(!inherits(res, "try-error")) { 
+  if(dbExistsTable(con,table.name)) {
     target_table_exists <- TRUE
-    fields <- res 
-  } else {      
+    # ANDRE DOES table already exist (expected)
+    # RPostgreSQL will give an error
+    # RSQlite     will give an error
+    res <- try({ dbListFields(con, table.name) }, silent = TRUE)
+    if(!inherits(res, "try-error")) { 
+      fields <- res 
+    } else {      
+      fields <- character()
+    }
+  } else {
     # zero column table: Works on PostgreSQL.  
     # May NOT work on all databases
     #   Does NOT work on SQLite
@@ -358,7 +361,7 @@ dbWriteTable3 <- function (con, table.name, df, fill.null = TRUE, row.names = FA
     if(!inherits(res, "try-error")) { 
       target_table_exists <- TRUE
       # redo
-      fields <- dbListFields(con, table.name)
+      fields <- character() # dbListFields(con, table.name)
     } else {
       # TODO # find a better solution: like A dummy COLUMN that is DROPPED later
       # RSQLite (WITHOUT column DATA TYPE PROCESSING )
@@ -368,13 +371,17 @@ dbWriteTable3 <- function (con, table.name, df, fill.null = TRUE, row.names = FA
       res <- try({ dbExecute(con, paste("create table ", table.name, "(dummy integer)")) }, silent = TRUE)
       if(!inherits(res, "try-error")) {
         target_table_exists <- TRUE
-        fields <- dbListFields(con, table.name)
+        fields <- "dummmy"
         dummy_field_exists <- TRUE
       } else {
         stop("dbWriteTable3 could not create an ALMOST nothing table.")
       }
     }
+    
   }
+    
+
+
   
   # SOMTHING 'AUTHOR' SPECIFIC
   fields <- fields[!grepl("\\.\\.pg\\.dropped", fields)]
@@ -512,7 +519,7 @@ dbWriteTable3 <- function (con, table.name, df, fill.null = TRUE, row.names = FA
   }
   
   # AUTO-REORDERING ( IF BOTH THE SAME TABLES AND COLUMNS EXIST IN BOTH, THE CAN AUTO-REORDER )
-  if (sum(is.na(field.match)) == 0){
+  if ((sum(is.na(field.match)) == 0) && !identical(fields, names(df))){
   
     # MAKE THE COLUMN ORDER the same as the database FIELD order
     reordered.names <- names(df)[match(fields, names(df))]
