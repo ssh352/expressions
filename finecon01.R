@@ -314,6 +314,274 @@ verify_sqlite3_channel <- function(aaii_sipro_dir = getsetvar_aaii_sipro_dir(), 
 # verify_sqlite3_channel(aaii_sipro_dir = getsetvar_aaii_sipro_dir(), dateindex = 17562,  sqlite_file_root = "si_ci")
 # odbcGetInfo(sqlite3_channel)
 
+# ANDRE added the ARGUMENT: snake_case_cols
+# index is the unique ID
+dbWriteTable3 <- function (con, table.name, df, fill.null = TRUE, row.names = FALSE
+  , inbnd_snake_case_cols = TRUE
+  , date_to_int           = TRUE  # pre-dbWriteTable
+  , logical_to_int        = TRUE  # pre-dbWriteTable
+  , double_to_numeric     = TRUE  # pre-dbWriteTable
+  , index = NULL
+  , ...) {
+  
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  options(warnings = 1)
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+
+  
+  # ANDRE DOES table already exist (expected)
+  # RPostgreSQL will give an error
+  # RSQlite     will give an error
+  res <- try({ dbListFields(con, table.name) }, silent = TRUE)
+  if(!inherits(res, "try-error")) { 
+    target_table_exists <- TRUE
+    fields <- res 
+  } else {      
+    # zero column table: Works on PostgreSQL.  
+    # May NOT work on all databases
+    #   Does NOT work on SQLite
+    # CHECK(FUTURE)
+    #   attr(class(con), "package")        [1] "RPostgreSQL"
+    #   attr(class(sqlite_con), "package") [1] "RSQLite"
+    # NOTE, BUT DOING THIS, always need, append = TRUE to dbWriteTable
+    res <- try({ dbExecute(con, paste("create table ", table.name, "()")) }, silent = TRUE)
+    if(!inherits(res, "try-error")) { 
+      target_table_exists <- TRUE
+      # redo
+      fields <- dbListFields(con, table.name)
+    } else {
+      # TODO # find a better solution: like A dummy COLUMN that is DROPPED later
+      # RSQLite (WITHOUT column DATA TYPE PROCESSING )
+      #   db.write <- dbWriteTable(con, table.name, df, row.names = row.names, ...)
+      #   target_table_exists <- TRUE
+      #   return(db.write)
+      res <- try({ dbExecute(con, paste("create table ", table.name, "(dummy integer)")) }, silent = TRUE)
+      if(!inherits(res, "try-error")) {
+        target_table_exists <- TRUE
+        fields <- dbListFields(con, table.name)
+        dummy_field_exists <- TRUE
+      } else {
+        stop("dbWriteTable3 could not create an ALMOST nothing table.")
+      }
+    }
+  }
+  
+  # SOMTHING 'AUTHOR' SPECIFIC
+  fields <- fields[!grepl("\\.\\.pg\\.dropped", fields)]
+  
+  # ANDRE ADDED if-then
+  if(inbnd_snake_case_cols) {
+    # AUTHOR NAME CONVERSION (I WILL KEEP FOR NOW)
+    names(df) <- tolower(names(df))
+    names(df) <- gsub("\\.", "_", names(df))
+  }
+  
+  # FINDS NAMES IN THE DATA.FRAME COLUMNS THAT EXIST IN THE DATABASE FIELDS
+  clmn.match <- match(names(df), fields)
+  # DETECTS NAMES IN THE DATA.FRAME COLUMNS THAT DO NOT EXIST IN THE DATABASE FIELDS
+  # THEN 'FORMAT' THE DATATYTPLE OF THE COLUMN IN PREPARATION FOR FUTURE PLACEMENT IN THE DB
+  if (any(is.na(clmn.match))) { 
+    warning(paste("Found '", names(df)[is.na(clmn.match)], 
+    "' not in fields of '", table.name, "' table. Adding to database . . .",  # ANDRE CHANGED # Omiting ... Adding to database
+    sep = ""))
+    
+    new.fields <- sapply(df[,names(df)[!names(df) %in% fields], drop = F], class)
+    
+    # TO BE DONE IN R 
+    if(date_to_int) {
+      # CONVERT THE TYPE 'AT(IN)' THE R LANGUAGE
+      # ANY COLUMNS OF class Date
+      if(length(which(new.fields %in% "Date"))) {
+         # CONVERT TO INTEGER
+        df[, names(new.fields[which(new.fields %in% "Date")])] <- lapply( df[, names(new.fields[which(new.fields %in% "Date")])], as.integer)
+        new.fields <- sapply(df[,names(df)[!names(df) %in% fields], drop = F], class)
+      }
+    }
+    
+    # TO BE DONE IN R
+    if(logical_to_int) {
+      # CONVERT THE TYPE 'AT(IN)' THE R LANGUAGE
+      # ANY COLUMNS OF class logical (Boolean)
+      if(length(which(new.fields %in% "logical"))) {
+         # CONVERT TO INTEGER
+        df[, names(new.fields[which(new.fields %in% "logical")])] <- lapply( df[, names(new.fields[which(new.fields %in% "logical")])], as.integer)
+        new.fields <- sapply(df[,names(df)[!names(df) %in% fields], drop = F], class)
+      }
+    }
+    
+    if(double_to_numeric) {
+      # CONVERT THE TYPE 'AT(IN)' THE DATABASE 
+      new.fields[new.fields == "numeric"] <- "numeric(13,2)"
+    }
+    
+    # CONVERT THE TYPE 'AT(IN)' THE DATABASE 
+    new.fields[new.fields == "character"] <- "text"
+
+    # ACTUALLY ADD NEW COLUMNS TO THE DATABASE
+    for(new.fields_idx in seq_along(new.fields)) {
+                                                            # field name                       # field type
+      dbExecute(con, paste("ALTER TABLE", table.name, "ADD", names(new.fields)[new.fields_idx], new.fields[new.fields_idx]))
+    }
+    
+    # REDO (FROM ABOVE)
+    fields <- dbListFields(con, table.name)
+    # SOMTHING 'AUTHOR' SPECIFIC
+    fields <- fields[!grepl("\\.\\.pg\\.dropped", fields)]
+    
+    # NOT USED (ANYMORE) BELOW ( BUT FOR INTEGRITY)
+    clmn.match <- match(names(df), fields)
+  }
+  # FINDS NAMES OF DATABASE FIELDS THAT EXIST IN THE DATA.FRAME COLUMNS
+  field.match <- match(fields, names(df))
+
+
+
+  
+  if(!is.null(index)) {
+    # 
+    # ONLY INSERT(APPEND) NEW RECORDS that are not FOUND in the INDEX
+    # 
+    # then I want to reduce my df records ( that are going to dbWriteTable( append = TRUE ) )
+    # to just those df[, index] records NOT found in the database table.name(index)
+    # IN DB, INSERT(APPEND) *SOME* RECORDS
+  
+    # ( CHECK index COLUMNS EXIST AND ) GET index COLUMNS DATATYPES
+    res <- try({ dbSendQuery(con, paste0("SELECT ",paste(index, collapse = ", ")," FROM ", table.name, " WHERE 0 = 1")) }, silent = TRUE)
+    if(!inherits(res, "try-error")) {
+    
+      db.col.info <- dbColumnInfo(res)
+      dbClearResult(res)
+      if(double_to_numeric) {
+        db.col.info$type[db.col.info$type == "DECIMAL"] <- "NUMERIC(13,2)"
+      }
+      dbExecute(con, paste0("create temporary table index_temp( ", paste(db.col.info$name, db.col.info$type, collapse = ", "), ", not_in_db INTEGER )") )
+      dbWriteTable(con, "index_temp", cbind(df[, index, drop = F], not_in_db = 0L) , row.names = FALSE, append = TRUE)
+      # anti join   
+      df.reduced.not.in.db <- dbExecute(con, paste0(
+        "update index_temp te set not_in_db = 1 where not exists ( select 1 from  ", table.name, " where ", paste0(sapply(index, function(x) { paste0("te.",x," = ",x) } ), collapse = " and "), ")"
+        ))
+      df.reduced.not.in.db <- dbGetQuery(con, "select * from index_temp")
+      reduced.not.in.db    <- df.reduced.not.in.db[, "not_in_db", drop = TRUE]
+      df.full <- df
+      # FURTHER PROCESSING(below) - INSERT(APPEND) 
+      df  <- df[ifelse(reduced.not.in.db == 1L, TRUE, FALSE), , drop = F]
+      dbExecute(con, "drop table index_temp")
+    } else {
+      # [A] COLUMN(S) does(DO) NOT exists
+      stop("dbWriteTable3 was sent at least one index field that does not exist in the database table")
+    }
+    
+  }
+      
+
+  # fill.null == TRUE (KEEP DEFAULT FOR NOW: NOT SURE = NOT USEFUL)
+  # 
+  # R Package RPostgreSQL dbWriteTable will automatically match column names ( so fill.null = FALSE is O.K.)
+  # R Package RSQLite? OTHERS,I am not sure? UNTESTED
+  # 
+  # 
+  if (sum(is.na(field.match)) > 0 & fill.null == TRUE) {
+      message("creating NAs/NULLs for for fields of table that are missing in your df")
+      # ORIGINAL df COLUMN NAMES before new (all NULL(NA)) columns are added
+      df.nms.orgnl <- names(df)
+      nl <- as.list(rep(NA, sum(is.na(field.match))))
+      df <- cbind(df, nl)
+      names(df) <- c(df.nms.orgnl, fields[is.na(field.match)])
+  }
+  # MAKE THE COLUMN ORDER the same as the database FIELD order
+  reordered.names <- names(df)[match(fields, names(df))]
+  if (any(is.na(reordered.names))) 
+      stop("Too many unmatched columns to database column list. Stopping")
+  df <- df[, reordered.names]
+  
+  # BEGIN TO CHECK FOR NULL/NOTNULL, WRONG PRECISION, AND WRONG TYPE ( I WILL NOT KEEP THIS PART)
+  # r <- dbSendQuery(con, paste("SELECT * FROM", table.name, "WHERE 0 = 1"))
+  # db.col.info <- dbColumnInfo(r)
+  # DATABASE FIELD NAMES
+  # rownames(db.col.info) <- db.col.info$name
+  
+  # BEGIN CHECK FOR REQUIRED (NOT NULL FIELDS) (PROBABLY WILL NOT KEEP THIS PART ... TOO DB SPECIFIC)
+  # null.OK <- nv(db.col.info, "nullOK")
+  # reqd.fields <- names(null.OK[!null.OK])
+  # na.cols <- sapply(df, function(x) any(is.na(x)))
+  # req.miss <- na.cols[reqd.fields]
+  # if (any(req.miss)) 
+  #     stop(paste("Didn't load df because required field(s)", 
+  #         paste(names(req.miss)[req.miss], collapse = ", "), 
+  #         "contained missing values"))
+          
+  # BEGIN CHECK FOR PRECISION (float# to/from numeric(x,y) DOES NOT TRANSLATE: ... ERROR ... SO I WILL NOT KEEP)
+  # db.precisions <- nv(db.col.info, "precision")
+  # df.nchars <- sapply(df, function(c) max(nchar(c)))
+  # prec.reqd <- db.precisions > 0
+  # too.long <- db.precisions[prec.reqd] < df.nchars[prec.reqd]
+  # if (any(too.long)) 
+  #     stop(paste("Didn't load df because fields", paste(names(df.nchars)[prec.reqd][too.long], 
+  #         collapse = ", "), "were too long"))
+  
+  # AUTHOR DETECT TYPE MISMATCHES BUT DECIDES NOT TO DO 'ANYTHING ABOUT IT' (I WILL NOT KEEP THIS PART)
+  # db.sclasses <- nv(db.col.info, "Sclass")
+  # df.classes <- sapply(df, class)
+  # type.mismatches <- names(df.classes)[db.sclasses != df.classes & !na.cols]
+  # dbClearResult(r)
+  
+  print(paste("loading", table.name, "table to database"))   
+  # ANDRE ADDED append = TRUE ( because if the table DID does not exist, I made a stub table )
+  if(target_table_exists) {
+    db.write <- dbWriteTable(con, table.name, df, row.names = row.names, append = TRUE, ...)
+  }
+  # currently do not have a case where the 'target table does not exist'
+  
+  # NOT BEEN TESTED
+  if(exists("dummy_field_exists") && (dummy_field_exists == TRUE)) {
+    dbExecute(con, paste0("alter table ",table.name, " drop column dummy") )
+  }
+  
+  # ONLY UPDATED CURRENT RECORDS that are ___ FOUND in the INDEX
+  if(!is.null(index)) {
+    # df.full
+    # reduced.not.in.db # vectors of 1s and zeros
+    # ORIGINAL df COLUMN NAMES before new (all NULL(NA)) columns are added
+    # df.nms.orgnl 
+  }
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  return(db.write)
+}
+# DEBUGGING HELP
+# {
+#   mtcars2 <- { cbind(mtcar = rownames(mtcars), mtcars, stringsAsFactors = F) -> t; rownames(t) <- NULL; t }
+#   mtcars2      <- DataCombine::MoveFront(mtcars2, "mtcar")
+#   mtcars2$vs   <- as.integer(mtcars2$vs )
+#   mtcars2$am   <- as.integer(mtcars2$am )
+#   mtcars2$gear <- as.integer(mtcars2$gear)
+#   mtcars2$carb <- as.integer(mtcars2$carb)
+# }
+# str(mtcars2)
+# dbWriteTable( con, "mtcars", mtcars2[0,,drop = F], row.names = F)
+# dbWriteTable( con, "mtcars", mtcars2[1:16,c("mtcar", "qsec","vs"),drop = F], row.names = F, append = T)
+# dbWriteTable3(con, "mtcars",mtcars2[17:32, c("mtcar", "wt", "qsec","vs", "am"), drop = F] )
+# {
+#   mtcars3 <- mtcars2
+#   mtcars3$index2             <- seq_len(NROW(mtcars3)) # integner
+#   mtcars3$revindexdetaiiled <- as.numeric(rev(seq_len(NROW(mtcars3)))) 
+#   mtcars3$letter_index      <- letters[seq_len(NROW(mtcars3))]
+#   mtcars3$dattish           <- zoo::as.Date(seq_len(NROW(mtcars3)))
+#   mtcars3$dattishplus       <- zoo::as.Date(seq_len(NROW(mtcars3))) + 365L
+# }
+# dbWriteTable3(con, "mtcars",  mtcars3[17:32, !colnames(mtcars3) %in% c("wt", "qsec","vs", "am"), drop = F] )
+# dbWriteTable3(con, "mtcars",  mtcars3[, !colnames(mtcars3) %in% c("wt", "qsec","vs", "am"), drop = F], index = "mtcar" )
+
 
 
 is_connected_postgresql_con <- function() {  
@@ -6775,7 +7043,7 @@ get_sipro_sp500_earnings_eom_xts <- function() {
 # NOTE: NOT used in the code flow into get_quandl_sipro_earnings_per_avg_share_x10_4q_eom_xts
 # ret <- get_sipro_sp500_earnings_eom_xts()
 # > str(ret) 
-# An ‘xts’ object on 2002-12-31/2017-11-30 containing:
+# An 'xts' object on 2002-12-31/2017-11-30 containing:
 #   Data: num [1:180, 1:11] 500 500 500 500 500 500 500 500 499 500 ...
 #  - attr(*, "dimnames")=List of 2
 #   ..$ : NULL
@@ -6978,7 +7246,7 @@ get_sipro_earnings_per_avg_share_x10_4q_eom_xts <- function() {
 # NOT! INFLATION ADJUSTED!
 # sipro_earnings_per_avg_share_x10_4q_eom_xts <- get_sipro_earnings_per_avg_share_x10_4q_eom_xts()
 # > str(res)
-# An ‘xts’ object on 2002-12-31/2017-10-31 containing:
+# An 'xts' object on 2002-12-31/2017-10-31 containing:
 #   Data: num [1:179, 1] 5.81 4.75 3.2 2.93 7.1 ...
 #  - attr(*, "dimnames")=List of 2
 #   ..$ : NULL
@@ -7035,7 +7303,7 @@ get_quandl_earnings_per_avg_share_x10_4q_eom_xts <- function() {
 # Quandl.api_key(api_key= "YOURKEYHERE")
 # ret <- get_quandl_earnings_per_avg_share_x10_4q_eom_xts()
 # > str(ret)
-# An ‘xts’ object on 1871-01-31/2017-03-31 containing:
+# An 'xts' object on 1871-01-31/2017-03-31 containing:
 #   Data: num [1:1755, 1] 7.88 7.65 7.54 7.82 8 8.13 8.13 8.26 8.06 7.94 ...
 #  - attr(*, "dimnames")=List of 2
 #   ..$ : NULL
@@ -7098,7 +7366,7 @@ get_fred_inflation_cpiu_eom_xts <- function() {
 # (I HAVE TO CALCULATE %change% MYSELF)
 # ret <- get_fred_inflation_cpiu_eom_xts()
 # > str(ret)
-# An ‘xts’ object on 1912-12-31/2017-09-30 containing:
+# An 'xts' object on 1912-12-31/2017-09-30 containing:
 #   Data: num [1:1258, 1] 9.8 9.8 9.8 9.8 9.7 9.8 9.9 9.9 10 10 ...
 #  - attr(*, "dimnames")=List of 2
 #   ..$ : NULL
@@ -7188,7 +7456,7 @@ get_quandl_sipro_earnings_per_avg_share_x10_4q_eom_xts <- function() {
 # quandl_sipro_earnings_per_avg_share_x10_4q_eom_xts <- get_quandl_sipro_earnings_per_avg_share_x10_4q_eom_xts()
 # 
 # > str(quandl_sipro_earnings_per_avg_share_x10_4q_eom_xts)
-# An ‘xts’ object on 1871-01-31/2017-09-30 containing:
+# An 'xts' object on 1871-01-31/2017-09-30 containing:
 #   Data: num [1:1761, 1] 7.88 7.65 7.54 7.82 8 8.13 8.13 8.26 8.06 7.94 ...
 #  - attr(*, "dimnames")=List of 2
 #   ..$ : NULL
@@ -11034,5 +11302,5 @@ get_all_raw_by_dateindex <- function(dateindex = NULL, file_type = "fst", aaii_s
 # quantmod::getSymbols("^GSPC", from = "1940-01-01")
 # rm(list=setdiff(ls(all.names=TRUE),c("con","cid","GSPC"))); debugSource('W:/R-3.4._/finecon01.R'); debugSource('W:/R-3.4._/goodsight01.R');verify_connection();options(upsert_temp_is_temporary=Inf)
 #
-# rm(list=setdiff(ls(all.names=TRUE),c("con","cid"))); debugSource('W:/R-3.4._/finecon01.R');debugSource('W:/R-3.4._/goodsight01.R');debugSource('W:/R-3.4._/valuesight01.R');verify_connection();options(upsert_temp_is_temporary=Inf);Quandl::Quandl.api_key(api_key= "API_KEY");setDefaults(getSymbols.av, api.key="API.KEY")
+# rm(list=setdiff(ls(all.names=TRUE),c("con","cid"))); debugSource('W:/R-3.4._/finecon01.R');debugSource('W:/R-3.4._/goodsight01.R');debugSource('W:/R-3.4._/valuesight01.R');verify_connection();options(upsert_temp_is_temporary=Inf);verify_channel();Quandl::Quandl.api_key(api_key= "API_KEY");setDefaults(getSymbols.av, api.key="API.KEY")
 
