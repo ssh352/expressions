@@ -276,6 +276,7 @@ verify_sqlite3_channel <- function(aaii_sipro_dir = getsetvar_aaii_sipro_dir(), 
   
   require(RODBC) # RODBC_1.3-15
   # uses stringi
+  # uses dplyr   dplyr::filter dplyr::inner_join
   
   message("Begin check of (re)connecting SQLite RODBC channel")
   
@@ -314,13 +315,16 @@ verify_sqlite3_channel <- function(aaii_sipro_dir = getsetvar_aaii_sipro_dir(), 
 # verify_sqlite3_channel(aaii_sipro_dir = getsetvar_aaii_sipro_dir(), dateindex = 17562,  sqlite_file_root = "si_ci")
 # odbcGetInfo(sqlite3_channel)
 
+
+
+
 # ANDRE added the ARGUMENT: snake_case_cols
 # index is the unique ID
 dbWriteTable3 <- function (con, table.name, df, fill.null = TRUE, row.names = FALSE
   , inbnd_snake_case_cols = TRUE
   , date_to_int           = TRUE  # pre-dbWriteTable
   , logical_to_int        = TRUE  # pre-dbWriteTable
-  , double_to_numeric     = TRUE  # pre-dbWriteTable
+  , double_to_numeric     = TRUE  # pre-dbWriteTable # RSQLite # USE # "double_to_numeric = "numeric"
   , index = NULL
   , ...) {
   
@@ -337,6 +341,16 @@ dbWriteTable3 <- function (con, table.name, df, fill.null = TRUE, row.names = FA
   if(oldtz=='') {
     Sys.setenv(TZ="UTC")
   }
+  
+  # inspirated heavily by the R CRAN package caroline function dbWriteTable2
+  
+  require(DBI)
+  # expect a passed con of class "RPostgreSQLConnection"(RPostgreSQL package)
+  # should be able handle a con of class RSQLiteConnection(RSQLite package)
+  
+  # uses dplyr inner_join filter
+  
+  message("Begin dbWriteTable3")
 
   if(dbExistsTable(con,table.name)) {
     target_table_exists <- TRUE
@@ -350,24 +364,22 @@ dbWriteTable3 <- function (con, table.name, df, fill.null = TRUE, row.names = FA
       fields <- character()
     }
   } else {
-    # zero column table: Works on PostgreSQL.  
+    # zero column table
+    # 
+    # works on PostgreSQL.  
     # May NOT work on all databases
-    #   Does NOT work on SQLite
-    # CHECK(FUTURE)
+    # Does NOT work on SQLite
+    # TODO
     #   attr(class(con), "package")        [1] "RPostgreSQL"
     #   attr(class(sqlite_con), "package") [1] "RSQLite"
     # NOTE, BUT DOING THIS, always need, append = TRUE to dbWriteTable
     res <- try({ dbExecute(con, paste("create table ", table.name, "()")) }, silent = TRUE)
     if(!inherits(res, "try-error")) { 
       target_table_exists <- TRUE
-      # redo
       fields <- character() # dbListFields(con, table.name)
     } else {
-      # TODO # find a better solution: like A dummy COLUMN that is DROPPED later
+      # A dummy COLUMN that is DROPPED later
       # RSQLite (WITHOUT column DATA TYPE PROCESSING )
-      #   db.write <- dbWriteTable(con, table.name, df, row.names = row.names, ...)
-      #   target_table_exists <- TRUE
-      #   return(db.write)
       res <- try({ dbExecute(con, paste("create table ", table.name, "(dummy integer)")) }, silent = TRUE)
       if(!inherits(res, "try-error")) {
         target_table_exists <- TRUE
@@ -380,9 +392,6 @@ dbWriteTable3 <- function (con, table.name, df, fill.null = TRUE, row.names = FA
     
   }
     
-
-
-  
   # SOMTHING 'AUTHOR' SPECIFIC
   fields <- fields[!grepl("\\.\\.pg\\.dropped", fields)]
   
@@ -426,18 +435,20 @@ dbWriteTable3 <- function (con, table.name, df, fill.null = TRUE, row.names = FA
     }
   }
   
-  if(double_to_numeric) {
+  if(is.logical(double_to_numeric) && double_to_numeric) {
     # CONVERT THE TYPE 'AT(IN)' THE DATABASE 
     all.clmns[all.clmns == "numeric"] <- "numeric(13,2)"
+  } 
+  else if (is.character(double_to_numeric)) { 
+    all.clmns[all.clmns == "numeric"] <- double_to_numeric
   }
   
   # CONVERT THE TYPE 'AT(IN)' THE DATABASE 
   all.clmns[all.clmns == "character"] <- "text"
 
   if (any(is.na(clmn.match))) { 
-    warning(paste("Found '", names(df)[is.na(clmn.match)], 
-    "' not in fields of '", table.name, "' table. Adding to database . . .",  # ANDRE CHANGED # Omiting ... Adding to database
-    sep = ""))
+    print(paste0("Found '", paste0(names(df)[is.na(clmn.match)], collapse = ", "), 
+                 "' not in fields of '", table.name, "' table. Adding to database . . ."))
     
     # NEW NAMES IN THE DATA.FRAME COLUMNS THAT DO NOT EXIST IN THE DATABASE FIELDS
     new.fields <- all.clmns[!names(all.clmns) %in% fields]
@@ -445,7 +456,7 @@ dbWriteTable3 <- function (con, table.name, df, fill.null = TRUE, row.names = FA
     # ACTUALLY ADD NEW COLUMNS TO THE DATABASE 
     for(new.fields_idx in seq_along(new.fields)) {
                                                             # field name                       # field type
-      dbExecute(con, paste("ALTER TABLE", table.name, "ADD", names(new.fields)[new.fields_idx], new.fields[new.fields_idx]))
+      dbExecute(con, paste("alter table", table.name, "add", names(new.fields)[new.fields_idx], new.fields[new.fields_idx]))
     }
     
     # REDO (FROM ABOVE)  
@@ -460,10 +471,18 @@ dbWriteTable3 <- function (con, table.name, df, fill.null = TRUE, row.names = FA
     field.match <- match(fields, names(df))
     
   }
-
   
   if(!is.null(index)) {
-    # 
+    
+    res <- try({ dbListFields(con, table.name) }, silent = TRUE)
+    if(!inherits(res, "try-error")) { 
+      if(!all(index %in% res)) {
+        stop("No index columns are found in the database")
+      } 
+    } else {      
+      stop("No columns in the input data")
+    }
+    
     # ONLY INSERT(APPEND) NEW RECORDS that are not FOUND in the INDEX
     # 
     # then I want to reduce my df records ( that are going to dbWriteTable( append = TRUE ) )
@@ -471,25 +490,37 @@ dbWriteTable3 <- function (con, table.name, df, fill.null = TRUE, row.names = FA
     # IN DB, INSERT(APPEND) *SOME* RECORDS
   
     # ( CHECK index COLUMNS EXIST AND ) GET index COLUMNS DATATYPES
-    res <- try({ dbSendQuery(con, paste0("SELECT ",paste(index, collapse = ", ")," FROM ", table.name, " WHERE 0 = 1")) }, silent = TRUE)
+    res <- try({ dbSendQuery(con, paste0("select ",paste(index, collapse = ", ")," from ", table.name, " where 0 = 1")) }, silent = TRUE)
     if(!inherits(res, "try-error")) {
     
       db.col.info <- dbColumnInfo(res)
       dbClearResult(res)
-      if(double_to_numeric) {
+      if(is.logical(double_to_numeric) && double_to_numeric) {
         db.col.info$type[db.col.info$type == "DECIMAL"] <- "NUMERIC(13,2)"
+      } else if (is.character(double_to_numeric)) {
+        db.col.info$type[db.col.info$type == "DECIMAL"] <- double_to_numeric
       }
+      
       dbExecute(con, paste0("create temporary table index_temp( ", paste(db.col.info$name, db.col.info$type, collapse = ", "), ", not_in_db INTEGER )") )
+
       dbWriteTable(con, "index_temp", cbind(df[, index, drop = F], not_in_db = 0L) , row.names = FALSE, append = TRUE)
-      # anti join   
-      df.reduced.not.in.db <- dbExecute(con, paste0(
+      # performance helper
+      dbExecute(con, paste0("create index index_temp_idx on index_temp( ", paste(index,  collapse = ", " )," )"))
+
+       # anti join   
+      dbExecute(con, paste0(
         "update index_temp te set not_in_db = 1 where not exists ( select 1 from  ", table.name, " where ", paste0(sapply(index, function(x) { paste0("te.",x," = ",x) } ), collapse = " and "), ")"
         ))
-      df.reduced.not.in.db <- dbGetQuery(con, "select * from index_temp")
-      reduced.not.in.db    <- df.reduced.not.in.db[, "not_in_db", drop = TRUE]
-      df.full <- df
+                                              # ORDER is not garanteed
+      df.not_in_db  <- dbGetQuery(con, paste0("select * from index_temp"))
+      
       # FURTHER PROCESSING(below) - INSERT(APPEND) 
-      df  <- df[ifelse(reduced.not.in.db == 1L, TRUE, FALSE), , drop = F]
+      df.reduced.not.in.db <- dplyr::filter(dplyr::inner_join(df, df.not_in_db, by = index), not_in_db == 1)
+      df.reduced.not.in.db$not_in_db <- NULL
+      # FURTHER PROCESSING(below) - UPDATE 
+      df.reduced.in.db     <- dplyr::filter(dplyr::inner_join(df, df.not_in_db, by = index), not_in_db == 0)
+      df.reduced.in.db$not_in_db <- NULL
+      
       dbExecute(con, "drop table index_temp")
     } else {
       # [A] COLUMN(S) does(DO) NOT exists
@@ -498,27 +529,35 @@ dbWriteTable3 <- function (con, table.name, df, fill.null = TRUE, row.names = FA
     
   }
       
-
+  # PRE-INSERT(APPEND) ACTIVITY
+  # SWITCH TO 'current working df'
+  # (if I have an 'index')
+  # 
+  if(exists("df.reduced.not.in.db")) {
+    df <- df.reduced.not.in.db
+  } 
+  
   # fill.null == TRUE (KEEP DEFAULT FOR NOW: NOT SURE = NOT USEFUL)
   # 
-  # R Package RPostgreSQL dbWriteTable will automatically match column names ( so fill.null = FALSE is O.K.)
+  # R Package RPostgreSQL dbWriteTable will automatically match column names 
+  #  ( so fill.null = FALSE is O.K.)
+  #
   # R Package RSQLite? OTHERS,I am not sure? UNTESTED
   # 
-  # 
+  # ORIGINAL df COLUMN NAMES before new (all NULL(NA)) columns (COULD BE) added
+  df.nms.orgnl <- names(df)
   if (sum(is.na(field.match)) > 0 && fill.null == TRUE) {
       message("creating NAs/NULLs for for fields of table that are missing in your df")
-      # ORIGINAL df COLUMN NAMES before new (all NULL(NA)) columns are added
-      df.nms.orgnl <- names(df)
-      # ADD EMPTY COLUMNS ( logical() can be zero rows )
-      nl <- lapply(seq_len(sum(is.na(field.match))), function(x) { logical()})
-      df <- cbind(df, nl)
+
+      # ADD EMPTY COLUMNS 
+      for(i in seq_len(sum(is.na(field.match)))) df[[paste0("new",i)]] <- rep(NA, NROW(df))
       names(df) <- c(df.nms.orgnl, fields[is.na(field.match)])
       
     # FINDS NAMES OF DATABASE FIELDS THAT EXIST IN THE DATA.FRAME COLUMNS
     field.match <- match(fields, names(df))
   }
   
-  # AUTO-REORDERING ( IF BOTH THE SAME TABLES AND COLUMNS EXIST IN BOTH, THE CAN AUTO-REORDER )
+  # AUTO-REORDERING ( IF BOTH THE SAME DB FIELDS AND TABLE COLUMNS EXIST IN BOTH, THEN CAN AUTO-REORDER )
   if ((sum(is.na(field.match)) == 0) && !identical(fields, names(df))){
   
     # MAKE THE COLUMN ORDER the same as the database FIELD order
@@ -548,6 +587,8 @@ dbWriteTable3 <- function (con, table.name, df, fill.null = TRUE, row.names = FA
   #         paste(names(req.miss)[req.miss], collapse = ", "), 
   #         "contained missing values"))
           
+  # * PROACTIVE WAY OF CHECKING: I MAY RETURN TO THIS LATER *
+  # 
   # BEGIN CHECK FOR PRECISION (float# to/from numeric(x,y) DOES NOT TRANSLATE: ... ERROR ... SO I WILL NOT KEEP)
   # db.precisions <- nv(db.col.info, "precision")
   # df.nchars <- sapply(df, function(c) max(nchar(c)))
@@ -564,24 +605,90 @@ dbWriteTable3 <- function (con, table.name, df, fill.null = TRUE, row.names = FA
   # dbClearResult(r)
   
   print(paste("loading", table.name, "table to database"))   
-  # ANDRE ADDED append = TRUE ( because if the table DID does not exist, I made a stub table )
+  # ANDRE ADDED append = TRUE ( because if the table DID does not exist, I HAD made a 'stub' table )
   if(target_table_exists) {
     db.write <- dbWriteTable(con, table.name, df, row.names = row.names, append = TRUE, ...)
   }
   # currently do not have a case where the 'target table does not exist'
   
-  # NOT BEEN TESTED
+  # PRE-APPEND ACTIVITY
+  # SWITCH TO 'current working df'
+  # (if I have an 'index')
+  # 
+  if(exists("df.reduced.in.db")) {
+    df <- df.reduced.in.db
+  }
+  
+  # ONLY UPDATE CURRENT RECORDS that are *FOUND* in the INDEX 
+  if(!is.null(index)) {
+
+    # performance helper
+    try ({ dbExecute(con, paste0("create index ", table.name, "_", paste0( index, collapse = "_"), "_idx on ", table.name, " ( ", paste0( index, collapse = ", ")  ,  " )" ) ) }, silent = TRUE)
+    # discard results
+    
+    # ONLY the ORIGIAL columns SENT to dbWriteTable
+    df <- df[,df.nms.orgnl, drop = F]
+    
+    df.classes <- sapply(df, class)
+    
+    df.classes[df.classes == "character"] <- "text"
+    
+    # can not convert here
+    # existe in RPostgreSQL
+    # do not exist in RSQLite 
+    #  ( from experience: will convert "logical" to "integer": prob O.K. )
+    #  ( from experience: will convert "Date" to "numeric": prob not desirable )
+    # SHOULD NOT HAVE MADE it this FAR
+    # EARLIER, SHOULD have filtered out ( by the call to dbWriteTable3(with paramters) )
+    
+    df.classes[df.classes == "Date"]      <- "date"
+    df.classes[df.classes == "logical"]   <- "boolean"
+    
+    if(is.logical(double_to_numeric) && double_to_numeric) {
+      # PostgreSQL, SQLite does not have this
+      df.classes[df.classes == "numeric"]   <- "numeric(13,2)"       #  WRONG FOR #SQLite
+    } else if(is.logical(double_to_numeric) && !double_to_numeric) {
+      df.classes[df.classes == "numeric"]   <- "float8"              #  WRONG FOR #SQLite
+    } else if(is.character(double_to_numeric)){ 
+      df.classes[df.classes == "numeric"]   <- double_to_numeric     # SQLite #  double_to_numeric = "numeric"
+    } else { }
+    # "numeric"  #  correct FOR  SQLite
+
+    dbExecute( con,
+      paste0("create temporary table update_temp( ", paste0( names(df.classes), " " , df.classes, collapse = ", "), " )")
+    )
+    dbWriteTable(con, "update_temp", df, row.names = FALSE, append = TRUE)
+    # performance helper
+    dbExecute( con,
+      paste0("create index update_temp_idx on update_temp( ", paste0( index, collapse = ", "), " )")
+    )
+    
+    dbExecute(con, 
+    paste0(
+        "update ", table.name, " t \n"
+      , "  set "  , paste0(sapply(colnames(df)[!colnames(df) %in% index], function(x) { paste0(x," = s.",x) } ), collapse = ", "), " \n"
+      , "from update_temp s \n"
+      , "  where ", paste0(sapply(index, function(x) { paste0("s.", x," = t.",x) } ), collapse = " and ")
+    ))
+    
+    dbExecute( con, "drop table update_temp")
+    
+    # uses RODBC
+    # RETURN ERROR: would have LIKED this to WORK
+    # verify_channel()
+    # RODBC::sqlUpdate(channel, dat = df, tablename = table.name, 
+    #           index = index,
+    #           verbose = FALSE, test = FALSE, nastring = NULL,
+    #           fast = TRUE)
+
+  }
+  
+  # dummy handling HAS NOT BEEN TESTED
   if(exists("dummy_field_exists") && (dummy_field_exists == TRUE)) {
     dbExecute(con, paste0("alter table ",table.name, " drop column dummy") )
   }
   
-  # ONLY UPDATED CURRENT RECORDS that are ___ FOUND in the INDEX
-  if(!is.null(index)) {
-    # df.full
-    # reduced.not.in.db # vectors of 1s and zeros
-    # ORIGINAL df COLUMN NAMES before new (all NULL(NA)) columns are added
-    # df.nms.orgnl 
-  }
+  message("End   dbWriteTable3")
   
   Sys.setenv(TZ=oldtz)
   options(ops)
@@ -598,9 +705,6 @@ dbWriteTable3 <- function (con, table.name, df, fill.null = TRUE, row.names = FA
 #   mtcars2$carb <- as.integer(mtcars2$carb)
 # }
 # str(mtcars2)
-# dbWriteTable( con, "mtcars", mtcars2[0,,drop = F], row.names = F)
-# dbWriteTable( con, "mtcars", mtcars2[1:16,c("mtcar", "qsec","vs"),drop = F], row.names = F, append = T)
-# dbWriteTable3(con, "mtcars",mtcars2[17:32, c("mtcar", "wt", "qsec","vs", "am"), drop = F] )
 # {
 #   mtcars3 <- mtcars2
 #   mtcars3$index2             <- seq_len(NROW(mtcars3)) # integner
@@ -609,8 +713,12 @@ dbWriteTable3 <- function (con, table.name, df, fill.null = TRUE, row.names = FA
 #   mtcars3$dattish           <- zoo::as.Date(seq_len(NROW(mtcars3)))
 #   mtcars3$dattishplus       <- zoo::as.Date(seq_len(NROW(mtcars3))) + 365L
 # }
-# dbWriteTable3(con, "mtcars",  mtcars3[17:32, !colnames(mtcars3) %in% c("wt", "qsec","vs", "am"), drop = F] )
-# dbWriteTable3(con, "mtcars",  mtcars3[, !colnames(mtcars3) %in% c("wt", "qsec","vs", "am"), drop = F], index = "mtcar" )
+# TEST GROUP
+# dbGetQuery(con, "drop table mtcars")
+# dbWriteTable3(con, "mtcars",  mtcars3[17:32, !colnames(mtcars3) %in% c("wt", "qsec","vs", "am"), drop = F], index = "mtcar" )
+# CREATES COLUMNS
+# dbWriteTable3(con, "mtcars",  mtcars3[17:32, !colnames(mtcars3) %in% c(      "qsec","vs"),       drop = F], index = "mtcar" )
+# dbWriteTable3(con, "mtcars",  mtcars3[ 1:18, !colnames(mtcars3) %in% c("               "),       drop = F], index = "mtcar" )
 
 
 
