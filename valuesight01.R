@@ -2008,6 +2008,23 @@ get_clev_easing_balances_eom_xts <- function() {
   # INSPIRED FROM
   # https://github.com/cran/easingr
   
+  # In September 2008, the Treasury began issuing short-term debt and 
+  # placing the proceeds at the Fed. This helped offset the large balances 
+  # that other banks were holding at the Fed. 
+  # The SFP has been empty since July 2011; yet, there are still 
+  # large cash holdings to this date. There are two reasons for this: 
+  # First, late in 2008 the Treasury suspended its cash reinvestment program. 
+  # It used to make short-term loans to banks that needed liquidity. 
+  # Given low interest rates and the fact that banks have been 
+  # holding excess reserves, this program hasn’t been necessary, 
+  # and so the Treasury is holding more cash. 
+  # Second, since late 2015 the Treasury has been purposefully 
+  # holding more cash to be prepared for any major disruptions, 
+  # such as a potential cyber event or a systemic event like the crisis in 2008.
+  # 
+  # https://fredblog.stlouisfed.org/page/8/
+  # https://fredblog.stlouisfed.org/2017/10/treasuring-cash/
+  
   ops <- options()
   
   options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
