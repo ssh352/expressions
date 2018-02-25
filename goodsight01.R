@@ -2069,8 +2069,17 @@ is_year_less_than_or_equal_xts <- function(x, n = NULL) {
 #' @param  pushback_fred_1st_days if a FRED date appears on the 1st or later and nearby
 #'                                then pull the date back to the beginning of the month
 #'                                meant to use with src = "FRED' data
-#'                                required that the returns parameter includes "monthly" and 
+#'                                case 1: the returns parameter includes "monthly" and 
 #'                                an internal detected periodicity of "monthly"
+#'                                case 2: if used with a call of 'returns = "monthly"
+#'                                and during an internally detected periodicity == "quarterly"
+#'                                MUST not be caled with truncate_to_returns_frequency at the same time
+#' @param truncate_to_returns_frequency  meant for irregularly spaced dates for dates just after the 1st of the month
+#'                                       ignored elsewhere . . . otherwise
+#'                                       for use with a call of 'returns = "monthly"
+#'                                       will be used during an internally detected periodicity == "quarterly"
+#'                                       of the date of that month, will truncate the date back to the 1st
+#'                                       MUST not be caled pushback_fred_1st_days with at the same time
 #' @param month_delay same requirements as at the pushback_fred_1st_days
 #'                    adjustement to shift FRED return data dates to 
 #'                    "actually try to" be "on the date" that the data was published
@@ -2092,7 +2101,7 @@ is_year_less_than_or_equal_xts <- function(x, n = NULL) {
 #' }
 #' @rdname get_quantmod_xts_eox
 #' @export
-get_quantmod_xts_eox <- function(
+get_symbols_xts_eox <- function(
          Symbol=NULL,
          env=parent.frame(),            
          reload.Symbols=FALSE,
@@ -2102,6 +2111,7 @@ get_quantmod_xts_eox <- function(
          symbol.lookup=TRUE,
          case = "lower", # can be "upper", "ignore"
          returns = c("raw","daily", "weekly", "monthly", "quarterly", "ignore"),
+         truncate_to_returns_frequency = FALSE,
          pushback_fred_1st_days = FALSE, # some FRED series end on the 1st of the month, 
                                          # if TRUE, I want to push back to the 31st or 'last day of previous month' 
          month_delay = NULL,             # adjustement to shift FRED return data dates to 'actually try to ' be on the date that the data was published 
@@ -2125,13 +2135,12 @@ get_quantmod_xts_eox <- function(
   require(quantmod) # getSymbols # require(xts) # periodicity
   # uses lubridate `%m+%`
   `%m+%` <- lubridate::`%m+%`
-  # uses pkgmaker hasArg2
-
+  # uses Hmisc::truncPOSIXt
   # uses pushback_fred_1st_days_xts
 
-  message(paste0("Begin function get_quantmod_xts: ", Symbol))
+  message(paste0("Begin function get_symbols_xts_eox: ", Symbol))
   
-  if(is.null(Symbol)) stop("get_quantmod_xts: parameter Symbol; needed value")
+  if(is.null(Symbol)) stop("get_symbols_xts_eox: parameter Symbol; needed value")
   
   # just ONE symbol
   symbol_raw <- getSymbols(
@@ -2159,71 +2168,101 @@ get_quantmod_xts_eox <- function(
   if("weekly" %in% returns)  { returns_weekly  <- TRUE } 
   if("monthly" %in% returns) { returns_monthly <- TRUE } 
 
-  get_quantmod_xts <- list()
+  symbols_xts_eox <- list()
   
   if( exists("returns_raw") && (returns_raw == TRUE) )  {
-    get_quantmod_xts <- c(list(),get_quantmod_xts,list(raw = symbol_raw))
+    symbols_xts_eox <- c(list(),symbols_xts_eox,list(raw = symbol_raw))
   }
+  
+  periodicity_original <- periodicity(symbol_raw)$scale
   
   if( exists("returns_monthly") && (returns_monthly == TRUE) )  {
   
     temp <- symbol_raw
   
-    # already a monthly?
-    # seen in q u a n t s t r at
-    if(periodicity(temp)$scale == "monthly") {
+    if(periodicity_original == "quarterly") {
+    
+       if(truncate_to_returns_frequency == TRUE){
+         # if "irregular quarterly times" or "times not on the 1st of the month"
+         #                                or "times *just after* the 1st of the month"
+         # Hmisc::truncPOSIXt will create a 1st of the month date
+         # Note uses the "current timezone", so be careful
+         # -1L pushes back to yesterday ( that is the last day of the previous month)
+         # NOTE: Hmisc::truncPOSIXt IS NOT VECTORIZED ( single element only )
+         all_dates <- seq.Date(zoo::as.Date(Hmisc::truncPOSIXt(min(index(temp)), units = "months")), zoo::as.Date(Hmisc::truncPOSIXt(max(index(temp)), units = "months")), by = "month") - 1L
+         temp      <- na.locf(merge.xts( temp, xts(, all_dates) ))
+       } 
+       # would have to know something about the series
+       if(pushback_fred_1st_days) {
+         # keep at 1st date(0L), so seq.Date will work, and so I can do the code below
+         all_dates <- seq.Date(min(index(temp) + 0L), max(index(temp) + 0L), by = "month") - 1L
+         temp <- na.locf(merge.xts( pushback_fred_1st_days_xts(temp), xts(, all_dates) ))
+       }
+       
+       rm(all_dates)
+     
+    }
+    # periodicity(temp)$scale seen in q u a n t s t r a t
+    if(periodicity_original == "monthly") {
   
       # would have to know something about the series
       if(pushback_fred_1st_days) {
         temp <- pushback_fred_1st_days_xts(temp)
       }
       
-      if(!is.null(month_delay)) {
-        index(temp) <- index(temp) %m+% months(month_delay)
-      }
-      
-    } else {
+    } 
+    if(periodicity_original %in% c("weekly", "daily")) {
     
-      # convert to a monthly
-      temp <- to.monthly(temp, ...) # dots passed indexAt OHLC
-
+      # NOTHING TO DO
+      # lower periodicity will be handled in to.monthly
+      
     }
-    get_quantmod_xts <- c(list(),get_quantmod_xts,list(monthly = temp))
+    
+    if(!is.null(month_delay)) {
+      index(temp) <- index(temp) %m+% months(month_delay)
+    }
+    
+    # convert to a monthly
+    temp <- to.monthly(temp, ...) # dots passed indexAt OHLC
+    symbols_xts_eox <- c(list(),symbols_xts_eox,list(monthly = temp))
+
     
   }
   rm(temp)
   
-  if( exists("returns_weekly") && (returns_weekly == TRUE) ) {
-  
-    temp <- symbol_raw
-    
-    # already a weekly?
-    if(periodicity(temp)$scale == "weekly") {
-      temp <- temp
-    } else {
-      # expects MORE granular input data
-      # convert to a weekly
-      temp <- to.weekly(temp, ...) # dots passed indexAt OHLC 
-    }
-    
-    get_quantmod_xts <- c(list(),get_quantmod_xts,list(weekly = temp))
-    
-  }
+  # NOT IMPLEMENTED YET
+  # if( exists("returns_weekly") && (returns_weekly == TRUE) ) {
+  # 
+  #   temp <- symbol_raw
+  #   
+  #   # already a weekly?
+  #   if(periodicity(temp)$scale == "weekly") {
+  #     
+  #     # NOTHING TO DO
+  #     # lower periodicity will be handled in to.weekly
+  # 
+  #   }
+  #   
+  #   temp <- to.weekly(temp, ...) # dots passed indexAt OHLC 
+  #   get_quantmod_xts <- c(list(),get_quantmod_xts,list(weekly = temp))
+  #   
+  # }
+  # rm(temp)
   
   # OTHERS
   # 
-  # quarterly
-  # daily
+  # returns quarterly
+  # returns daily
   
   Sys.setenv(TZ=oldtz)
   options(ops)
   
-  message(paste0("End   function get_quantmod_xts: ", Symbol))
+  message(paste0("End   function get_symbols_xts_eox: ", Symbol))
   
-  return(get_quantmod_xts)
+  return(get_symbols_xts)
   
 }
-
+# 
 
 
 
