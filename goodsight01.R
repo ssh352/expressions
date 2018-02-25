@@ -1,6 +1,7 @@
 
 
 # goodsight01.R
+# R 3.4.3 commonly debugged with RStudio-1.1.383
 
 # Note: sinew::makeOxygen helped generate documentation template
 
@@ -2053,6 +2054,176 @@ is_year_less_than_or_equal_xts <- function(x, n = NULL) {
   return(year_less_than_or_equal_xts)
 
 }
+
+# 
+# smart wrapper over quantmod getSymbols, xts to.period in to.x
+
+#' @title sends back a list of symbol data converted to raw, weekly, monthly in a list
+#' @description smart wrapper over quantmod getSymbols, xts to.period in to.x
+#' @param Symbol one single symbol passed to quantmod getSymbols
+#' @param OTHERS passthrough to quantmod getSymbols or xts to.period
+#' @param case return the column names in "lower"case "upper"case or "ignore"
+#' @param returns any compbination of "raw","daily", "weekly", "monthly", "quarterly", "ignore"
+#'         currently only supported raw, monthly, weekly
+#'         future support may include daily and/or quarterly
+#' @param  pushback_fred_1st_days if a FRED date appears on the 1st or later and nearby
+#'                                then pull the date back to the beginning of the month
+#'                                meant to use with src = "FRED' data
+#'                                required that the returns parameter includes "monthly" and 
+#'                                an internal detected periodicity of "monthly"
+#' @param month_delay same requirements as at the pushback_fred_1st_days
+#'                    adjustement to shift FRED return data dates to 
+#'                    "actually try to" be "on the date" that the data was published
+#' @return list of xts objects ( determined by the returns parameter )
+#'         
+#' @details input is one 'multiple columned' xts object only
+#'          But, the style would be better to just input one single columned xts object only
+#' @examples
+#' \dontrun{
+#' # quantmod_xts_eox <- get_quantmod_xts_eox("USARECM", src ="FRED", returns = "monthly", pushback_fred_1st_days =  TRUE, month_delay = 4) 
+#' # > tail(quantmod_xts_eox[["monthly"]])
+#' #            usarecm
+#' # 2017-08-30       0
+#' # 2017-09-30       0
+#' # 2017-10-30       0
+#' # 2017-11-30       0
+#' # 2017-12-31       0
+#' # 2018-01-30       0
+#' }
+#' @rdname get_quantmod_xts_eox
+#' @export
+get_quantmod_xts_eox <- function(
+         Symbol=NULL,
+         env=parent.frame(),            
+         reload.Symbols=FALSE,
+         verbose=FALSE,
+         warnings=TRUE,
+         src="yahoo",
+         symbol.lookup=TRUE,
+         case = "lower", # can be "upper", "ignore"
+         returns = c("raw","daily", "weekly", "monthly", "quarterly", "ignore"),
+         pushback_fred_1st_days = FALSE, # some FRED series end on the 1st of the month, 
+                                         # if TRUE, I want to push back to the 31st or 'last day of previous month' 
+         month_delay = NULL,             # adjustement to shift FRED return data dates to 'actually try to ' be on the date that the data was published 
+         ... # quantmod getSymbols; src = "FRED" # Non-FRED(src="yahoo") : _from = ""/to = ""_
+  ) {        # xts  to.period/to.X; OHLC = F, indexAt = "lastof"
+
+
+  ops <- options()
+  
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  require(quantmod) # getSymbols # require(xts) # periodicity
+  # uses lubridate `%m+%`
+  `%m+%` <- lubridate::`%m+%`
+  # uses pkgmaker hasArg2
+
+  # uses pushback_fred_1st_days_xts
+
+  message(paste0("Begin function get_quantmod_xts: ", Symbol))
+  
+  if(is.null(Symbol)) stop("get_quantmod_xts: parameter Symbol; needed value")
+  
+  # just ONE symbol
+  symbol_raw <- getSymbols(
+         Symbol=Symbol,
+         env=env,         
+         reload.Symbols=FALSE,
+         verbose=verbose,
+         warnings=warnings,
+         src=src,
+         symbol.lookup=symbol.lookup,
+         auto.assign = FALSE, 
+         ...
+  )
+  if(length(case) > 1)                       stop("case: formal argument was sent to many actual arguements")
+  if(!case %in% c("lower","upper","ignore")) stop("case: formal argument was sent an invalid actual argement")
+  if(case == "lower") colnames(symbol_raw) <- tolower(colnames(symbol_raw))
+  if(case == "upper") colnames(symbol_raw) <- toupper(colnames(symbol_raw))
+  if(case == "ignore")                       message("case: no column name change")
+
+  if(length(returns) > 5)                                                stop("returns: formal argument; sent to many actual arguements")
+  if(!all(returns %in% c("raw","daily", "weekly", "monthly", "ignore"))) stop("returns: formal argument; sent an invalid actual argement")
+  if("ignore" %in% returns)  { returns_ignore  <- TRUE ;  message("returns: ignore; no data sent back to calling function") }
+  if("raw" %in% returns)     { returns_raw     <- TRUE } 
+  if("daily" %in% returns)   { returns_daily   <- TRUE } 
+  if("weekly" %in% returns)  { returns_weekly  <- TRUE } 
+  if("monthly" %in% returns) { returns_monthly <- TRUE } 
+
+  get_quantmod_xts <- list()
+  
+  if( exists("returns_raw") && (returns_raw == TRUE) )  {
+    get_quantmod_xts <- c(list(),get_quantmod_xts,list(raw = symbol_raw))
+  }
+  
+  if( exists("returns_monthly") && (returns_monthly == TRUE) )  {
+  
+    temp <- symbol_raw
+  
+    # already a monthly?
+    # seen in q u a n t s t r at
+    if(periodicity(temp)$scale == "monthly") {
+  
+      # would have to know something about the series
+      if(pushback_fred_1st_days) {
+        temp <- pushback_fred_1st_days_xts(temp)
+      }
+      
+      if(!is.null(month_delay)) {
+        index(temp) <- index(temp) %m+% months(month_delay)
+      }
+      
+    } else {
+    
+      # convert to a monthly
+      temp <- to.monthly(temp, ...) # dots passed indexAt OHLC
+
+    }
+    get_quantmod_xts <- c(list(),get_quantmod_xts,list(monthly = temp))
+    
+  }
+  rm(temp)
+  
+  if( exists("returns_weekly") && (returns_weekly == TRUE) ) {
+  
+    temp <- symbol_raw
+    
+    # already a weekly?
+    if(periodicity(temp)$scale == "weekly") {
+      temp <- temp
+    } else {
+      # expects MORE granular input data
+      # convert to a weekly
+      temp <- to.weekly(temp, ...) # dots passed indexAt OHLC 
+    }
+    
+    get_quantmod_xts <- c(list(),get_quantmod_xts,list(weekly = temp))
+    
+  }
+  
+  # OTHERS
+  # 
+  # quarterly
+  # daily
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  message(paste0("End   function get_quantmod_xts: ", Symbol))
+  
+  return(get_quantmod_xts)
+  
+}
+
 
 
 
