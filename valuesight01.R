@@ -913,7 +913,7 @@ get_symbol_FRED_xts <-function(symbol) {
   data_area   <- fres[seq(bo_data_area,eo_data_area ,1)]
 
   # separate dates and values
-  temp <- strsplit(data_area, "  ")
+  temp <- strsplit(data_area, "[[:blank:]]+")
   # 
   # idea from
   # 
