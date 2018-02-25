@@ -904,7 +904,6 @@ get_symbol_FRED_xts <-function(symbol) {
   close(fcon)
 
   # boundary splitter between header area and data area
-  grepl( "^DATE.*VALUE$",fres)
   bo_header_area <- 1
   eo_header_area <- match(TRUE, grepl( "^DATE.*VALUE$",fres)) - 1L
   bo_data_area   <- eo_header_area + 2L
@@ -975,6 +974,136 @@ get_symbol_FRED_xts <-function(symbol) {
 #  $ Notes              : chr "The series comes from the 'Current Population Survey (Household\nSurvey)'\nThe source code is: LNS12032194"
 
 
+
+# returns extended information
+# 
+# AND VERY! FAST
+# LIGHTNING LIGHTNING FAST
+# mult-request form symbol_FRED_xts
+# 
+get_multisymbols_FRED_xts <-function(symbols) {
+
+  # R version 3.4.3 (2017-11-30)
+  
+  ops <- options()
+  
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+
+  require(xts)
+  # uses package curl functions new_pool curl_fetch_multi multi_run
+  
+  message("Begin function get_multisymbols_FRED_xts")
+
+  if(is.null(symbols)) stop("get_multisymbols_FRED_xts: parameter symbols; needs a value")
+
+  done <- function(res) {
+    
+    new_name <- sub("[.]txt","",sub("https://fred.stlouisfed.org/data/","",res$url))
+    message(paste0("  Request of ",new_name," is done! Status:", res$status_code))
+
+    fres <- rawToChar(res$content)
+    fres <- strsplit(fres,"\r\n")[[1]]
+    
+    # boundary splitter between header area and data area
+    bo_header_area <- 1
+    eo_header_area <- match(TRUE, grepl( "^DATE.*VALUE$", fres)) - 1L
+    bo_data_area   <- eo_header_area + 2L
+    eo_data_area   <- length(fres)
+    header_area <- fres[seq(bo_header_area,eo_header_area,1)]
+    data_area   <- fres[seq(bo_data_area,eo_data_area ,1)]
+  
+    # separate dates and values
+    temp <- strsplit(data_area, "[[:blank:]]+")
+    # 
+    # idea from
+    # 
+    # Select first element of nested list
+    # MAR 2017
+    # https://stackoverflow.com/questions/20428742/select-first-element-of-nested-list
+    # 
+    temp     <- unlist(temp)
+    len_temp <- length(temp)
+    # every other one
+    dates  <- temp[seq(1,len_temp,2)]
+    values <- temp[seq(2,len_temp,2)]
+    
+    # read.dcf sometimes does not likes lines with blanks
+    header_area <- header_area[!grepl("^[[:blank:]]+$|^$",header_area)]
+    
+    # collect information about the series
+    tcon <- textConnection(paste0(header_area, collapse = "\n"))
+    series_info <- read.dcf(tcon)
+    close(tcon)
+     
+    # create xts
+    new_xts <- do.call(xts, c(list(), list(as.numeric(values)), list(zoo::as.Date(dates)), as.list(data.frame(series_info, stringsAsFactors = FALSE))) )
+
+    # see high above
+    colnames(new_xts) <- new_name
+                                  # from the outer env
+    data_content_xts <- c(list(), data_content_xts,list(new_xts))
+    # endpoint
+    names(data_content_xts)[length(data_content_xts)] <- new_name
+    data_content_xts <<- data_content_xts
+    
+  }
+  
+  fail <- function(msg) {
+    message(paste0("  Request failed! ", msg))
+  }
+  
+  data_content_xts <- list()
+  pool <- curl::new_pool()
+  for(symbol_i in symbols) {
+    url <- paste0("https://fred.stlouisfed.org/data/", symbol_i, ".txt")
+    curl::curl_fetch_multi(url, done = done, fail = fail, pool = pool)
+  }
+  out <- curl::multi_run(pool = pool)
+  
+  print(data.frame(out))
+  
+  multisymbols_FRED_xts <- data_content_xts
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  message("End   function get_multisymbols_FRED_xts")
+  
+  return(multisymbols_FRED_xts)
+  
+}
+#
+# LIGHTNING LIGHTNING FAST
+# mult-request form symbol_FRED_xts
+#
+# Employment Level: Part-Time for Economic Reasons, All Industries
+# Civilian Unemployment Rate
+#
+# returns extended information
+# 
+# > multisymbols_FRED_xts <- get_multisymbols_FRED_xts(c("LNS12032194","UNRATE"))
+# Begin function get_multisymbols_FRED_xts
+#   Request of UNRATE is done! Status:200
+#   Request of LNS12032194 is done! Status:200
+#   success error pending
+# 1       2     0       0
+# End   function get_multisymbols_FRED_xts
+# > names(multisymbols_FRED_xts)
+# [1] "UNRATE"      "LNS12032194"
+# > # str(multisymbols_FRED_xts)
+
+# str(multisymbols_FRED_xts[["LNS12032194"]])
+# str(multisymbols_FRED_xts[["UNRATE"]]
+# 
 
 
 
