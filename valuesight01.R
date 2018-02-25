@@ -875,6 +875,109 @@ get_one_large_nationals_bond_bond_ratings_wtd_by_month  <- function(keep_eom_dat
 
 
 
+# returns extended information
+# AND VERY! FAST
+get_symbol_FRED_xts <-function(symbol) {
+
+  ops <- options()
+  
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+
+  require(xts)
+  # uses curl curl
+  
+  message("Begin function get_symbol_FRED_xts")
+
+  if(is.null(symbol)) stop("get_symbol_FRED_xts: parameter symbol; needs a value")
+
+  fcon <-curl::curl(paste0("https://fred.stlouisfed.org/data/", symbol, ".txt"))
+  fres <- readLines(fcon)
+  close(fcon)
+
+  # boundary splitter between header area and data area
+  grepl( "^DATE.*VALUE$",fres)
+  bo_header_area <- 1
+  eo_header_area <- match(TRUE, grepl( "^DATE.*VALUE$",fres)) - 1L
+  bo_data_area   <- eo_header_area + 2L
+  eo_data_area   <- length(fres)
+  header_area <- fres[seq(bo_header_area,eo_header_area,1)]
+  data_area   <- fres[seq(bo_data_area,eo_data_area ,1)]
+
+  # separate dates and values
+  temp <- strsplit(data_area, "  ")
+  # 
+  # idea from
+  # 
+  # Select first element of nested list
+  # MAR 2017
+  # https://stackoverflow.com/questions/20428742/select-first-element-of-nested-list
+  # 
+  temp     <- unlist(temp)
+  len_temp <- length(temp)
+  # every other one
+  dates  <- temp[seq(1,len_temp,2)]
+  values <- temp[seq(2,len_temp,2)]
+  
+  # read.dcf sometimes does not likes lines with blanks
+  header_area <- header_area[!grepl("^[[:blank:]]+$|^$",header_area)]
+  
+  # collect information about the series
+  tcon <- textConnection(paste0(header_area, collapse = "\n"))
+  series_info <- read.dcf(tcon)
+  close(tcon)
+   
+  # create xts
+  new_xts <- do.call(xts, c(list(), list(as.numeric(values)), list(zoo::as.Date(dates)), as.list(data.frame(series_info, stringsAsFactors = FALSE))) )
+  colnames(new_xts) <- symbol
+
+  symbol_FRED_xts <- new_xts
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  message("End   function get_symbol_FRED_xts")
+  
+  return(symbol_FRED_xts)
+  
+}
+# Employment Level: Part-Time for Economic Reasons, All Industries
+#
+# returns extended information
+# 
+# symbol_FRED_xts <- get_symbol_FRED_xts("LNS12032194")
+# > str(symbol_FRED_xts)
+# An 'xts' object on 1955-05-01/2018-01-01 containing:
+#   Data: num [1:753, 1] 2063 1982 2123 2203 2133 ...
+#  - attr(*, "dimnames")=List of 2
+#   ..$ : NULL
+#   ..$ : chr "LNS12032194"
+#   Indexed by objects of class: [Date] TZ: UTC
+#   xts Attributes:
+# List of 10
+#  $ Title              : chr "Employment Level: Part-Time for Economic Reasons, All Industries"
+#  $ Series.ID          : chr "LNS12032194"
+#  $ Source             : chr "U.S. Bureau of Labor Statistics"
+#  $ Release            : chr "Employment Situation"
+#  $ Seasonal.Adjustment: chr "Seasonally Adjusted"
+#  $ Frequency          : chr "Monthly"
+#  $ Units              : chr "Thousands of Persons"
+#  $ Date.Range         : chr "1955-05-01 to 2018-01-01"
+#  $ Last.Updated       : chr "2018-02-02 8:01 AM CST"
+#  $ Notes              : chr "The series comes from the 'Current Population Survey (Household\nSurvey)'\nThe source code is: LNS12032194"
+
+
+
+
+
 # given 
 # two dataframes from two different sources that are close to each other ( but not exactly the same )
 #
