@@ -2056,11 +2056,14 @@ is_year_less_than_or_equal_xts <- function(x, n = NULL) {
 }
 
 # 
-# smart wrapper over quantmod getSymbols, xts to.period in to.x
+# smart wrapper over financial symbol fetching functions, xts to.period in to.x
 
 #' @title sends back a list of symbol data converted to raw, weekly, monthly in a list
 #' @description smart wrapper over quantmod getSymbols, xts to.period in to.x
 #' @param Symbol one single symbol passed to quantmod getSymbols
+#'               if the Symbol contains a slash, then the Symbol instead is passed to Quandl Quanl
+#' @param src valus is passed to quantmod getSymbols
+#'            if the value is instead "Quandl", the instead is called Quandl Quandl               
 #' @param OTHERS passthrough to quantmod getSymbols or xts to.period
 #' @param case return the column names in "lower"case "upper"case or "ignore"
 #' @param returns any compbination of "raw","daily", "weekly", "monthly", "quarterly", "ignore"
@@ -2083,6 +2086,8 @@ is_year_less_than_or_equal_xts <- function(x, n = NULL) {
 #' @param month_delay same requirements as at the pushback_fred_1st_days
 #'                    adjustement to shift FRED return data dates to 
 #'                    "actually try to" be "on the date" that the data was published
+#' @param src if is parameter is in the call then quantmod getSymbols will be used to get the data
+#'            typeical values of src are "FRED" and "yahoo"
 #' @return list of xts objects ( determined by the returns parameter )
 #'         
 #' @details input is one 'multiple columned' xts object only
@@ -2099,16 +2104,10 @@ is_year_less_than_or_equal_xts <- function(x, n = NULL) {
 #' # 2017-12-31       0
 #' # 2018-01-30       0
 #' }
-#' @rdname get_quantmod_xts_eox
+#' @rdname get_symbols_xts_eox
 #' @export
 get_symbols_xts_eox <- function(
          Symbol=NULL,
-         env=parent.frame(),            
-         reload.Symbols=FALSE,
-         verbose=FALSE,
-         warnings=TRUE,
-         src="yahoo",
-         symbol.lookup=TRUE,
          case = "lower", # can be "upper", "ignore"
          returns = c("raw","daily", "weekly", "monthly", "quarterly", "ignore"),
          truncate_to_returns_frequency = FALSE,
@@ -2119,6 +2118,12 @@ get_symbols_xts_eox <- function(
   ) {        # xts  to.period/to.X; OHLC = F, indexAt = "lastof"
 
 
+  call_expanded     = match.call(expand.dots=TRUE)
+  call_not_expanded = match.call(expand.dots=FALSE)
+  get_dot   <- function(x) { call_expanded[[x]] }
+  is_in_dot <- function(x) { x %in% setdiff(names(call_expanded)[-1], names(call_not_expanded)[-1] ) }
+  
+  
   ops <- options()
   
   options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
@@ -2132,33 +2137,20 @@ get_symbols_xts_eox <- function(
     Sys.setenv(TZ="UTC")
   }
   
-  require(quantmod) # getSymbols # require(xts) # periodicity
+  require(xts) # getSymbols # require(xts) # periodicity
   # uses lubridate `%m+%`
   `%m+%` <- lubridate::`%m+%`
-  # uses Hmisc::truncPOSIXt
-  # uses pushback_fred_1st_days_xts
+  # may use quantmod getSymbols
+  # may use Hmisc    truncPOSIXt
+  # may use pushback_fred_1st_days_xts
 
   message(paste0("Begin function get_symbols_xts_eox: ", Symbol))
   
   if(is.null(Symbol)) stop("get_symbols_xts_eox: parameter Symbol; needed value")
   
-  # just ONE symbol
-  symbol_raw <- getSymbols(
-         Symbol=Symbol,
-         env=env,         
-         reload.Symbols=FALSE,
-         verbose=verbose,
-         warnings=warnings,
-         src=src,
-         symbol.lookup=symbol.lookup,
-         auto.assign = FALSE, 
-         ...
-  )
+
   if(length(case) > 1)                       stop("case: formal argument was sent to many actual arguements")
   if(!case %in% c("lower","upper","ignore")) stop("case: formal argument was sent an invalid actual argement")
-  if(case == "lower") colnames(symbol_raw) <- tolower(colnames(symbol_raw))
-  if(case == "upper") colnames(symbol_raw) <- toupper(colnames(symbol_raw))
-  if(case == "ignore")                       message("case: no column name change")
 
   if(length(returns) > 5)                                                stop("returns: formal argument; sent to many actual arguements")
   if(!all(returns %in% c("raw","daily", "weekly", "monthly", "ignore"))) stop("returns: formal argument; sent an invalid actual argement")
@@ -2168,6 +2160,36 @@ get_symbols_xts_eox <- function(
   if("weekly" %in% returns)  { returns_weekly  <- TRUE } 
   if("monthly" %in% returns) { returns_monthly <- TRUE } 
 
+  if(is_in_dot("src") && (get_dot("src") != "Quandl")) {
+    
+    require(quantmod) 
+    # just ONE symbol
+    symbol_raw <- getSymbols(
+           Symbol=Symbol,
+           auto.assign = FALSE, 
+           ...
+    ) 
+    # a slash in the Symbol name means that this  must be aQuandle symbol
+  } else if (grepl("/", Symbol) || (is_in_dot("src") && (get_dot("src") == "Quandl"))) {
+    
+    require(Quandl)
+    symbol_raw <- Quandl(Symbol, type="xts", start_date="1800-01-01", ...)
+    # NOTE Quandl does not return a column name
+    # from zoo classes yearqtr or yearmon to Date(beginning of the period)
+    index(symbol_raw) <- zoo::as.Date(index(symbol_raw), frac = 0L) 
+    
+  } else {
+    stop("get_symbols_xts_eox does not know which financial function to call.") 
+  }
+  # NOTE Quandl does not return a column name
+  if(is.null(colnames(symbol_raw))) colnames(symbol_raw) <- gsub("/","_",Symbol)
+  # 
+  if(case == "lower") colnames(symbol_raw) <- tolower(colnames(symbol_raw))
+  if(case == "upper") colnames(symbol_raw) <- toupper(colnames(symbol_raw))
+  if(case == "ignore")                        message("case: no column case change")
+
+  # periodicity transforms begin
+  
   symbols_xts_eox <- list()
   
   if( exists("returns_raw") && (returns_raw == TRUE) )  {
@@ -2259,7 +2281,7 @@ get_symbols_xts_eox <- function(
   
   message(paste0("End   function get_symbols_xts_eox: ", Symbol))
   
-  return(get_symbols_xts)
+  return(symbols_xts_eox)
   
 }
 # 
