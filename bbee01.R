@@ -20,6 +20,7 @@ get_up_side_down_side <- function(){
   # uses lubridate `%m+%`
   `%m+%` <- lubridate::`%m+%`
   
+  
   # PRE/POST RECESSION ONLY
   # MOST BROAD STATISTIC
   #
@@ -32,13 +33,13 @@ get_up_side_down_side <- function(){
   # https://www.bls.gov/schedule/news_release/empsit.htm
   # # just four month delay (Last Updated - max(Date Range))
   # https://fred.stlouisfed.org/data/UNRATE.txt
-  unrate <- get_quantmod_xts_eox("UNRATE", src ="FRED", returns = "monthly", pushback_fred_1st_days =  TRUE, month_delay = 1)
+  unrate <- get_symbols_xts_eox("UNRATE", src ="FRED", returns = "monthly", pushback_fred_1st_days =  TRUE, month_delay = 1, OHLC = FALSE, indexAt = "lastof")
   
   # PRE/POST RECESSION ONLY
   # PART OF BROAD STATISTIC (UNRATE(ABOVE))
   # SNEAK PEAK INTO THE FUTURE OF THE "MOST CONSERVATIVE(OUTSIDE) STATISTIC"
   #
-  #  Employment Level: Part-Time for Economic Reasons, All Industries
+  # Employment Level: Part-Time for Economic Reasons, All Industries
   # back through 1955
   # updated the 'first or second' friday of each month ( variable: same as UNRATE )
   # ** ASSUME I run just after the RELEASE of the month ***  *** IMPORTANT ***
@@ -47,7 +48,7 @@ get_up_side_down_side <- function(){
   # https://www.bls.gov/schedule/news_release/empsit.htm
   # # just four month delay (Last Updated - max(Date Range))
   # https://fred.stlouisfed.org/data/LNS12032194.txt
-  lns12032194 <- get_quantmod_xts_eox("LNS12032194", src ="FRED", returns = "monthly", pushback_fred_1st_days =  TRUE, month_delay = 1)
+  lns12032194 <- get_symbols_xts_eox("LNS12032194", src ="FRED", returns = "monthly", pushback_fred_1st_days =  TRUE, month_delay = 1, OHLC = FALSE, indexAt = "lastof")
   
   # RECESSION AND ECONOMIC DOWNTURN ( NOTE: TODO: verify ON ALFRED )
   # MEDIUM STATISTICS
@@ -56,7 +57,7 @@ get_up_side_down_side <- function(){
   # updated 'near' the middle of each month
   # just four month delay (Last Updated - max(Date Range))
   # http://research.stlouisfed.org/fred2/data/usarecm.txt
-  usarecm <- get_quantmod_xts_eox("USARECM", src ="FRED", returns = "monthly", pushback_fred_1st_days =  TRUE, month_delay = 4)
+  usarecm <- get_symbols_xts_eox("USARECM", src ="FRED", returns = "monthly", pushback_fred_1st_days =  TRUE, month_delay = 4, OHLC = FALSE, indexAt = "lastof")
     
   # OFFICIAL RECESSION ONLY ( author in journal articles claims to be faster than USRECM(NBER))
   # NARROW STATISTIC (MAY BE LATE)
@@ -67,7 +68,7 @@ get_up_side_down_side <- function(){
   # http://research.stlouisfed.org/fred2/data/RECPROUSM156N.txt
   # NOTE:Piger screwed up in 2015/2016 # but only alfred shows
   # NOTE: R package alfred # SOMETIMES # can get the 'actual day reported'
-  recprousm156n <- get_quantmod_xts_eox("RECPROUSM156N", src ="FRED", returns = "monthly", pushback_fred_1st_days =  TRUE, month_delay = 3)
+  recprousm156n <- get_symbols_xts_eox("RECPROUSM156N", src ="FRED", returns = "monthly", pushback_fred_1st_days =  TRUE, month_delay = 3, OHLC = FALSE, indexAt = "lastof")
 
   # OFFICIAL RECESSION ONLY
   # (MOST) NARROW STATISTIC, (MAY BE EVEN 'TOO' LATE)
@@ -78,7 +79,7 @@ get_up_side_down_side <- function(){
   # updated 'at' or 'just after' the 1st of each month
   # just one month delay (Last Updated - max(Date Range))
   # https://fred.stlouisfed.org/data/USRECM.txt
-  usrecm <- get_quantmod_xts_eox("USRECM", src ="FRED", returns = "monthly", pushback_fred_1st_days =  TRUE, month_delay = 1)
+  usrecm <- get_symbols_xts_eox("USRECM", src ="FRED", returns = "monthly", pushback_fred_1st_days =  TRUE, month_delay = 1, OHLC = FALSE, indexAt = "lastof")
 
   # RECESSION AND ECONOMIC DOWNTURN 
   # MEDIUM STATISTIC
@@ -96,32 +97,90 @@ get_up_side_down_side <- function(){
   # 
   bankruptcy_filing_counts_eoq_xts <- get_bankruptcy_filing_counts_eoq_xts(pub_dates = Sys.Date(), updating_file = "bankruptcy_filing_counts_eoq_xts.RData")
   # seq.Date by = "unit" (to be accurate) needs to start on the 1st of the month
-  all_dates <- seq.Date(min(index(bankruptcy_filing_counts_eoq_xts) + 1L), Sys.Date(), by = "month") - 1L
-  bankruptcy_filing_counts_eom_xts <- na.locf(merge.xts(bankruptcy_filing_counts_eoq_xts, xts(, all_dates) ))
-  rm(all_dates)
+  bus_ch_13 <- get_symbols_xts_eox(symbol_raw = bankruptcy_filing_counts_eoq_xts[ , "bus_ch_13"], returns = "monthly", raise_to_returns_frequency = TRUE, OHLC = FALSE, indexAt = "lastof")
+  bus_ch_11 <- get_symbols_xts_eox(symbol_raw = bankruptcy_filing_counts_eoq_xts[ , "bus_ch_11"], returns = "monthly", raise_to_returns_frequency = TRUE, OHLC = FALSE, indexAt = "lastof")
   
+  # RECESSION ONLY
+  # NARROW STATISTIC (AND GREAT TIMING)
+  # *ANY* DOWNSLOPING, then the PARTY is OVER
+  # updated weekly (published on a THU, refers back to the previous FRI)
+  # HELPFUL ( but just helpful - very smooth and *peaks* just before a recession )
+  # Chicago Feds National Financial Conditions Index (NFCI) NFCINONFINLEVERAGE
+  #   and HAS 3 components ( but only 'always!' useful component is NFCICREDIT )
+  # DOWTNURNVERY VERY SENSITIVE # where the SLOPE # STARTS! dipping DOWNWARD matters
+  # https://fred.stlouisfed.org/data/NFCINONFINLEVERAGE.txt
+  nfcinonfinleverage <- get_symbols_xts_eox("NFCINONFINLEVERAGE", src = "FRED", returns = "monthly", day_delay = 6, OHLC = FALSE, indexAt = "lastof")
+  
+  # RECESSION AND ECONOMIC DOWNTURN
+  # NARROW STATISTIC (AND GREAT TIMING)
+  # updated quarterly. Publish date is later: 'one month and one day (the 2nd)'
+  # just one month + one day delay: Last Updated - max(Date Range)) ** IMPORTANT **
+  # ** "invest below zero" and/or "invest after seeing a 'very' steep downward slope" **
+  # The January 2018 Senior Loan Officer Opinion Survey on Bank Lending Practices 
+  # https://www.federalreserve.gov/data/sloos/sloos-201802.htm
+  # Senior Loan Officer Opinion Survey on Bank Lending Practices
+  # https://www.federalreserve.gov/data/sloos.htm
+  # Senior Loan Officer Survey
+  # Categories > Money, Banking, & Finance > Banking
+  # https://fred.stlouisfed.org/categories/32239
+  # Net Percentage of Domestic Banks Tightening Standards for Commercial and Industrial Loans to Large and Middle-Market Firms (DRTSCILM)
+  # https://fred.stlouisfed.org/data/DRTSCILM.txt
+  drtscilm <- get_quantmod_xts_eox("DRTSCILM", src ="FRED", returns = "monthly", pushback_fred_1st_days =  TRUE, month_delay = 1, OHLC = FALSE, indexAt = "lastof")
+
+  # RECESSION AND ECONOMIC DOWNTURN
+  # ANOTHER NARROW STATISTIC (AND GREAT TIMING)
+  # updated quarterly. Publish date is later: 'one month and one day (the 2nd)'
+  # just one month + one day delay: Last Updated - max(Date Range)) ** IMPORTANT **
+  # ** "invest below zero" and/or "invest after seeing a 'very' steep downward slope" **
+  # The January 2018 Senior Loan Officer Opinion Survey on Bank Lending Practices 
+  # https://www.federalreserve.gov/data/sloos/sloos-201802.htm
+  # Senior Loan Officer Opinion Survey on Bank Lending Practices
+  # https://www.federalreserve.gov/data/sloos.htm
+  # Senior Loan Officer Survey
+  # Categories > Money, Banking, & Finance > Banking
+  # https://fred.stlouisfed.org/categories/32239
+  # NOT IN FRED
+  # Net percentage of domestic banks increasing premiums charged on riskier loans for large and middle-market firms
+  # https://www.quandl.com/data/FED/SUBLPDCILTR_N_Q-Net-percentage-of-domestic-banks-increasing-premiums-charged-on-riskier-loans-for-large-and-middle-market-firms-Quarterly
+  fed_sublpdciltr_n_q <- get_symbols_xts_eox("FED/SUBLPDCILTR_N_Q", src = "Quandl", returns = "monthly", pushback_fred_1st_days =  TRUE, month_delay = 1, OHLC = FALSE, indexAt = "lastof")
+  # or just
+  # fed_sublpdciltr_n_q <- get_symbols_xts_eox("FED/SUBLPDCILTR_N_Q",               , returns = "monthly", pushback_fred_1st_days =  TRUE, month_delay = 1, OHLC = FALSE, indexAt = "lastof")
+  
+  # vote on performance
+  # (more banks)
+  # # All/banks: mktcap / net_income
+  # other strengthening/weakening
+  # DRBLACBS, DALLCIACBEP,
+  
+  # gov support
+  #
+  # discount rate
+  # INTDSRUSM193N
+  # 
+  # federal funds rate
+  # FEDFUNDS
+  # 
+  # get_clev_easing_balances_eom_xts
+  
+  # competition/pessimism
+  #
+  # zimmerman equity index
+  # LEFT OFF: 
+  # competition ( something better )
+  # 6 months seems to work best
+  # get_willshire_less_agg_equity_premium_eom_xts
+
+  # internal performance ( from PostgreSQL database )
+  # # All/banks: median net_income, mktcap net_income
+  # # mktcap / net_income
+
   Sys.setenv(TZ=oldtz)
   options(ops)
   
   up_side_down_side <- NULL
   return(up_side_down_side)
-  
-  # zimmerman
-  # LEFT OFF: 
-  # competition ( something better )
-  # 6 months seems to work best
-  # get_willshire_less_agg_equity_premium_eom_xts
-  # 
-  # internal performance
-  # # All/banks: median net_income, mktcap net_income
-  # 
-  # vote on performance
-  # # All/banks: mktcap / net_income
-  # other strengthening/weakening
-  # DRBLACBS, DALLCIACBEP, Senior Load Officer Opinion Survey , mktcap / net_income
 
 }
 # get_up_side_down_side()
 
 # bbee01.R
-
