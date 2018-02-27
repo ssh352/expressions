@@ -20,6 +20,11 @@ get_up_side_down_side <- function(){
   # uses lubridate `%m+%`
   `%m+%` <- lubridate::`%m+%`
   
+  # Order is mostly from 
+  # RECESSION TO DRAWDOWN
+  # BROAD TO NARROW
+  # "MORE RELIABLE" TO LESS RELIABLE
+  
   
   # PRE/POST RECESSION ONLY
   # MOST BROAD STATISTIC
@@ -50,6 +55,40 @@ get_up_side_down_side <- function(){
   # https://fred.stlouisfed.org/data/LNS12032194.txt
   lns12032194 <- get_symbols_xts_eox("LNS12032194", src ="FRED", returns = "monthly", pushback_fred_1st_days =  TRUE, month_delay = 1, OHLC = FALSE, indexAt = "lastof")
   
+  # RECESSION
+  # BROAD STATISTIC
+  # TREND OF PRINTING MORE MONEY(RISING SLOPE) IS A GOOD THING
+  # [FED] balance sheet with its components broadly divided into these categories
+  # https://www.clevelandfed.org/our-research/indicators-and-data/credit-easing.aspx
+  # INSPIRED FROM
+  # https://github.com/cran/easingr
+  clev_easing_balances_eom_xts <- get_clev_easing_balances_eom_xts()
+  clev_easing_balances <- get_symbols_xts_eox(symbol_raw = clev_easing_balances_eom_xts[,"clev_easing_balances"], returns = "monthly", OHLC = FALSE, indexAt = "lastof")
+
+  # RECESSION
+  # BROAD STATISTIC
+  # TREND OF LOWERING INTEREST RATES IS A GOOD THING
+  # Effective Federal Funds Rate
+  # monthly, published 
+  # back through 1954
+  # updated delay is one month ( published on the 1st )
+  # one month dely (Last Updated - max(Date Range))
+  # https://fred.stlouisfed.org/data/FEDFUNDS.txt
+  fedfunds <- get_symbols_xts_eox("FEDFUNDS", src ="FRED", returns = "monthly", pushback_fred_1st_days =  TRUE, month_delay = 1, OHLC = FALSE, indexAt = "lastof")
+
+  # RECESSION
+  # BROAD STATISTIC
+  # TREND OF LOWERING INTEREST RATES IS A GOOD THING
+  # Interest Rates, Discount Rate for United States
+  # monthly, published at change on the 1st of the month
+  # back through 1950
+  # updated at time of change: NA on the month ( on the 1st )
+  # NA: (Last Updated - max(Date Range))
+  # https://fred.stlouisfed.org/data/INTDSRUSM193N.txt
+  intdsrusm193n <- get_symbols_xts_eox("INTDSRUSM193N", src ="FRED", returns = "monthly", pushback_fred_1st_days =  TRUE, month_delay = 0, OHLC = FALSE, indexAt = "lastof")
+  
+
+  
   # RECESSION AND ECONOMIC DOWNTURN ( NOTE: TODO: verify ON ALFRED )
   # MEDIUM STATISTICS
   # OECD based Recession Indicators for the United States from the Peak through the Trough
@@ -58,7 +97,7 @@ get_up_side_down_side <- function(){
   # just four month delay (Last Updated - max(Date Range))
   # http://research.stlouisfed.org/fred2/data/usarecm.txt
   usarecm <- get_symbols_xts_eox("USARECM", src ="FRED", returns = "monthly", pushback_fred_1st_days =  TRUE, month_delay = 4, OHLC = FALSE, indexAt = "lastof")
-    
+
   # OFFICIAL RECESSION ONLY ( author in journal articles claims to be faster than USRECM(NBER))
   # NARROW STATISTIC (MAY BE LATE)
   # Piger, Jeremy Max, Chauvet, Marcelle
@@ -125,8 +164,40 @@ get_up_side_down_side <- function(){
   # https://fred.stlouisfed.org/categories/32239
   # Net Percentage of Domestic Banks Tightening Standards for Commercial and Industrial Loans to Large and Middle-Market Firms (DRTSCILM)
   # https://fred.stlouisfed.org/data/DRTSCILM.txt
-  drtscilm <- get_quantmod_xts_eox("DRTSCILM", src ="FRED", returns = "monthly", pushback_fred_1st_days =  TRUE, month_delay = 1, OHLC = FALSE, indexAt = "lastof")
+  drtscilm <- get_symbols_xts_eox("DRTSCILM", src ="FRED", returns = "monthly", pushback_fred_1st_days =  TRUE, month_delay = 1, OHLC = FALSE, indexAt = "lastof")
 
+  # OFFICIAL RECESSION AND  DRAWDOWN
+  # NARROW STATISTIC : five month delay hurts performance
+  # *ANY* DOWNSLOPING, then the PARTY is OVER
+  # TOO LATE IN REC 1990
+  # EARLY IN REC 2000 (GOOD)
+  # TOO LATE IN REC 2008
+  # EARLY IN 2016 DRAWDOWN (GOOD)
+  # Delinquency Rate on Commercial and Industrial Loans, All Commercial Banks
+  # quarterly, at the end of the period
+  # back through 1987
+  # updated 'just near' the end of the fifth month ( on the 22nd )
+  # nearly five month delay (Last Updated - max(Date Range))
+  # https://fred.stlouisfed.org/data/DRBLACBS.txt
+  # this one seems right
+  drblacbs <- get_symbols_xts_eox("DRBLACBS", src ="FRED", returns = "monthly", raise_to_returns_frequency = TRUE, month_delay = 4, OHLC = FALSE, indexAt = "lastof")
+
+  # OFFICIAL RECESSION AND  DRAWDOWN
+  # NARROW STATISTIC : five month delay hurts performance
+  # *ANY* UPSLOPING*, then the PARTY is OVER ( BUT HAS YEAR OF HANGING JAGGEDNEWSS )
+  # TOO LATE IN REC 1990
+  # EARLY IN REC 2000 (GOOD)
+  # TOO LATE IN REC 2008
+  # EARLY IN 2016 DRAWDOWN (GOOD)
+  # Delinquencies on All Loans and Leases, Commercial and Industrial, All Commercial Banks
+  # quarterly, at the end of the period
+  # back through 1987
+  # updated 'just near' the end of the fifth month ( on the 22nd )
+  # nearly five month delay (Last Updated - max(Date Range))
+  # https://fred.stlouisfed.org/data/DALLCIACBEP.txt
+  # this one seems right
+  dallciacbep <- get_symbols_xts_eox("DALLCIACBEP", src ="FRED", returns = "monthly", raise_to_returns_frequency = TRUE, month_delay = 4, OHLC = FALSE, indexAt = "lastof")
+  
   # RECESSION AND ECONOMIC DOWNTURN
   # ANOTHER NARROW STATISTIC (AND GREAT TIMING)
   # updated quarterly. Publish date is later: 'one month and one day (the 2nd)'
@@ -146,22 +217,7 @@ get_up_side_down_side <- function(){
   # or just
   # fed_sublpdciltr_n_q <- get_symbols_xts_eox("FED/SUBLPDCILTR_N_Q",               , returns = "monthly", pushback_fred_1st_days =  TRUE, month_delay = 1, OHLC = FALSE, indexAt = "lastof")
   
-  # vote on performance
-  # (more banks)
-  # # All/banks: mktcap / net_income
-  # other strengthening/weakening
-  # DRBLACBS, DALLCIACBEP,
-  
-  # gov support
-  #
-  # discount rate
-  # INTDSRUSM193N
-  # 
-  # federal funds rate
-  # FEDFUNDS
-  # 
-  # get_clev_easing_balances_eom_xts
-  
+  # LEFT_OFF
   # competition/pessimism
   #
   # zimmerman equity index
@@ -173,6 +229,10 @@ get_up_side_down_side <- function(){
   # internal performance ( from PostgreSQL database )
   # # All/banks: median net_income, mktcap net_income
   # # mktcap / net_income
+  
+  # vote on performance
+  # (more banks)
+  # # All/banks: mktcap / net_income
 
   Sys.setenv(TZ=oldtz)
   options(ops)
