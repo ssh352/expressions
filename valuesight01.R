@@ -895,6 +895,12 @@ get_symbol_FRED_xts <-function(symbol) {
   # @AndreMikulec : good work getting the date range 
   # https://github.com/joshuaulrich/quantmod/issues/209
   
+  # NOTE: THIS *DOES* WORK AND FAST (COMMA SEPARATED RESULTS),  NO HEADER INFORMATION
+  # fcon <-curl::curl("https://fred.stlouisfed.org/graph/fredgraph.csv?cosd=2013-01-05&coed=2018-01-04&id=DGS3MO")
+  # fres <- readLines(fcon)
+  # close(fcon)
+  # writeLines(fres)
+  
   ops <- options()
   
   options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
