@@ -879,6 +879,22 @@ get_one_large_nationals_bond_bond_ratings_wtd_by_month  <- function(keep_eom_dat
 # AND VERY! FAST
 get_symbol_FRED_xts <-function(symbol) {
 
+  # 2018+
+  # future work in limiting return results by the date range
+  # FUTURE 
+  # 
+  # FRED ALT API
+  # 
+  # GOOD LESS DATA
+  # https://fred.stlouisfed.org/graph/fredgraph.csv?cosd=2013-01-05&coed=2018-01-04&id=DGS3MO
+  # GOOD MORE DATA
+  # https://fred.stlouisfed.org/graph/fredgraph.csv?cosd=1800-01-01&coed=2018-01-04&id=DGS3MO
+  #
+  # getSymbols('DTWEXB',src='FRED') broken #209
+  # JAN 06 2018
+  # @AndreMikulec : good work getting the date range 
+  # https://github.com/joshuaulrich/quantmod/issues/209
+  
   ops <- options()
   
   options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
@@ -984,6 +1000,22 @@ get_symbol_FRED_xts <-function(symbol) {
 get_multisymbols_FRED_xts <-function(symbols) {
 
   # R version 3.4.3 (2017-11-30)
+  
+  # 2018+
+  # future work in limiting return results by the date range
+  # FUTURE 
+  # 
+  # FRED ALT API
+  # 
+  # GOOD LESS DATA
+  # https://fred.stlouisfed.org/graph/fredgraph.csv?cosd=2013-01-05&coed=2018-01-04&id=DGS3MO
+  # GOOD MORE DATA
+  # https://fred.stlouisfed.org/graph/fredgraph.csv?cosd=1800-01-01&coed=2018-01-04&id=DGS3MO
+  #
+  # getSymbols('DTWEXB',src='FRED') broken #209
+  # JAN 06 2018
+  # @AndreMikulec : good work getting the date range 
+  # https://github.com/joshuaulrich/quantmod/issues/209
   
   ops <- options()
   
