@@ -2322,7 +2322,7 @@ get_symbols_xts_eox <- function(
       index(temp) <- index(temp) %m+% months(month_delay)
     }
     
-    if(!is.null(month_delay)) {
+    if(!is.null(day_delay)) {
       index(temp) <- index(temp) + day_delay
     }
     
