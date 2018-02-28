@@ -2295,6 +2295,18 @@ get_clev_easing_balances_eom_xts <- function() {
   # https://fredblog.stlouisfed.org/page/8/
   # https://fredblog.stlouisfed.org/2017/10/treasuring-cash/
   
+  # DISCOVERED FEB 2018 *( looks DEAD_EXACTLY like my 'total' "clev_easing_balances" )
+  # Categories > Money, Banking, & Finance > Monetary Data > Factors Affecting Reserve Balances
+  # All Federal Reserve Banks: Total Assets (WALCL)
+  # since December of 2002
+  # Units: Millions of Dollars,
+  # Not Seasonally Adjusted
+  # Frequency: Weekly, As of Wednesday
+  # Factors Affecting Reserve Balances - H.4.1
+  # https://www.federalreserve.gov/releases/h41/
+  # https://fred.stlouisfed.org/data/WALCL.txt
+    
+  
   ops <- options()
   
   options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
