@@ -241,7 +241,24 @@ get_up_side_down_side <- function(){
   # competition ( something better )
   # 6 months seems to work best
   # get_willshire_less_agg_equity_premium_eom_xts
-
+  
+  # RECESSION AND ECONOMIC DOWNTURN
+  # ANOTHER NARROW STATISTIC
+  # EARLY BEFORE RECESSION, JUST LATE-ISH BEFORE DOWNTURN
+  # ORIG FROM ( INSPIRED BY )
+  # The equity premium
+  # https://fredblog.stlouisfed.org/2016/07/the-equity-premium/
+  willshire_less_agg_equity_premium <- get_willshire_less_agg_equity_premium_eom_xts()
+  # downtrending and below 5% means RECESSION or DRAWDOWN
+  # equity_prem_p06m_ann <- willshire_less_agg_equity_premium[,c("equity_prem_p06m_ann")]
+  # ALREADY IN FORM ( NOTHING TO DO )
+  # XOR
+  # FOR COMPLETENESS
+  equity_prem_p06m_ann2 <- get_symbols_xts_eox(symbol_raw = willshire_less_agg_equity_premium[,c("equity_prem_p06m_ann")], returns = "monthly", OHLC = FALSE, indexAt = "lastof")
+  
+  
+  # LEFT_OFF
+  
   # internal performance ( from PostgreSQL database )
   # # All/banks: median net_income, mktcap net_income
   # # mktcap / net_income
