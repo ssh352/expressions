@@ -2537,6 +2537,152 @@ get_phil_survey_of_prof_forecasters_eom_xts <- function(file_data_loc = NULL, su
     # Subject: Survey of Professional Forecasters question about 'number' determination
     #     
     
+    # Re: Survey of Professional Forecasters question about 'number' determination
+    # Stark, Tom C. <tom.stark@phil.frb.org>
+    # Wed 2/28/2018 10:23 PM
+    # Andre Mikulec (andre_mikulec@hotmail.com);Chew, John (john.chew@phil.frb.org)
+    # 
+    # NTERNAL FR/OFFICIAL USE // FRSONLY
+    # 
+    # Andre -
+    # 
+    # The historical values you referenced for payroll employment in the SPF are the quarterly average values, 
+    # where the quarterly average is the average of the three months of the quarter.  
+    # These values are the ones that existed at the time of the survey. 
+    # They do not reflect revision by the U.S. Bureau of Labor Statistics (BLS). 
+    # You seem to be comparing unrevised historical values in the SPF with revised historical values. 
+    # That comparison is invalid. 
+    # Hence, you should not expect a match between the two numbers. 
+    # See the online SPF documentation for more detail on the SPF variables and SPF data transformations. 
+    # 
+    # By the way, the Federal Reserve Bank of St Louis is not an official U.S. government statistical agency and 
+    # you should not in general try to validate data with the observations you locate at that institution. 
+    # It is better to validate with the official observations of the U.S. government source agency (BLS). 
+    # 
+    # Dr. Thomas Stark
+    # Research Officer and Assistant Director, Real-Time Data Research Center
+    # Economic Research Department
+    # Federal Reserve Bank of Philadelphia
+    # Ten Independence Mall
+    # Philadelphia, PA 19106
+    # 
+    # Tel: 215-574-6436
+    # Fax: 215-574-2546
+    # 
+    # E-mail:
+    # Tom.Stark@phil.frb.org
+    # 
+    # Stark Web Page:
+    # www.philadelphiafed.org/research-and-data/research-contacts/stark/
+    # 
+    # Real-Time Data Research Center Web Page:
+    # 
+    # www.philadelphiafed.org/research-and-data/real-time-center/
+    # 
+    # On February 28, 2018 at 9:52:03 PM EST, Andre Mikulec <andre_mikulec@hotmail.com> wrote:
+    # Hello John Chew and Tom Stark,
+    # 
+    # How are you doing today.
+    # I am fine.
+    # 
+    # I do not understand where the "Survey of Forecasters" 
+    # forecasters actually get their 'already known past' data.
+    # Or, I do not understand how the math is done.
+    # 
+    # From the latest spreadsheet
+    # 
+    # latest micro5.xlxs
+    # Surveys 2010:1–present* Excel spreadsheet 
+    # (3.8 MB; last update: February 9, 2018)
+    # https://www.philadelphiafed.org/-/media/research-and-data/real-time-center/survey-of-professional-forecasters/historical-data/micro5.xlsx?la=en
+    # 
+    # The information shows that every forecaster 
+    # predicted for EMP exactly the value of 147197.00
+    # during the previous quarter.
+    # 
+    # EMP    column EMP1
+    # 2018 Q1
+    # 147197.00
+    # 
+    # This makes sense that the values are all the same,
+    # since the information has already been made available to the public here.
+    # 
+    # https://fred.stlouisfed.org/data/PAYEMS.txt
+    # 
+    # Title:               All Employees: Total Nonfarm Payrolls
+    # Series ID:           PAYEMS
+    # Source:              U.S. Bureau of Labor Statistics
+    # Release:             Employment Situation
+    # Seasonal Adjustment: Seasonally Adjusted
+    # Frequency:           Monthly
+    # Units:               Thousands of Persons
+    # Date Range:          1939-01-01 to 2018-01-01
+    # Last Updated:        2018-02-02 8:31 AM CST
+    # Date Range:          1939-01-01 to 2018-01-01
+    # Last Updated:        2018-02-02 8:31 AM CST
+    # ...
+    # 2017-07-01  146728
+    # 
+    # 2017-08-01  146949
+    # 2017-09-01  146963
+    # 2017-10-01  147234
+    # 
+    # 2017-11-01  147450
+    # 2017-12-01  147610
+    # 2018-01-01  147810
+    # 
+    # Since all of the forecasters "know the answer, I do not
+    # understand how the number "147197.00" is determined
+    # 
+    # I try here.
+    # 
+    # 2017-11-01  147450
+    # 2017-12-01  147610
+    # 2018-01-01  147810
+    # 
+    # # ave
+    # > (147450 + 147610 + 147810 ) /3
+    # [1] 147623.3  #  ** not the anwer **
+    # 
+    # # or if I made a mistake and am off by 3 months . . 
+    # 
+    # 2017-08-01  146949
+    # 2017-09-01  146963
+    # 2017-10-01  147234
+    # 
+    # # ave
+    # > ( 146949 + 146963 + 147234 ) /3
+    # [1] 147048.7   # ** still not the answer **
+    # 
+    # I also tried
+    # 
+    # https://fred.stlouisfed.org/data/PAYNSA.txt
+    # 
+    # Title:               All Employees: Total Nonfarm Payrolls
+    # Series ID:           PAYNSA
+    # Source:              U.S. Bureau of Labor Statistics
+    # Release:             Employment Situation
+    # Seasonal Adjustment: Not Seasonally Adjusted
+    # Frequency:           Monthly
+    # Units:               Thousands of Persons
+    # Date Range:          1939-01-01 to 2018-01-01
+    # Last Updated:        2018-02-02 8:32 AM CST
+    # ...
+    # 2017-11-01  148783
+    # 2017-12-01  148558
+    # 2018-01-01  145473
+    # 
+    # > ( 145473 + 148558 + 148783 ) / 3
+    # [1] 147604.7  # ** still not the answer **
+    # 
+    # Where are the forecasters getting their numbers from?
+    # How is the number determined?
+    # 
+    # Thank you,
+    # Andre Mikulec
+    # Andre_Mikulec@Hotmail.com
+    
+    
     # from the pdf
     # UNEMP ( FRED: UNRATE?!? )
     # Quarterly forecasts are for the quarterly average of the underlying monthly levels
