@@ -55,6 +55,22 @@ get_up_side_down_side <- function(){
   # https://fred.stlouisfed.org/data/LNS12032194.txt
   lns12032194 <- get_symbols_xts_eox("LNS12032194", src ="FRED", returns = "monthly", pushback_fred_1st_days =  TRUE, month_delay = 1, OHLC = FALSE, indexAt = "lastof")
   
+  # RECESSION ONLY
+  # BROAD STATISTIC
+  # # GOOD EXAMPLE ( notece: EXACTLY when BEFORE/AFTER going in/out OF MAJOR recessions )
+  # ret <- get_phil_survey_of_prof_forecasters_eom_xts(file_data_loc = "DISK", surveys_of_interest_regex = "^(unemp__).*(3|4)$", future_dates_regex = "(3|4)$")
+  require(quantmod)
+  quantmod::getSymbols("UNRATE", src = "FRED", from = "1940-01-01")
+  # # to make eom
+  # # keep at "forcast_target" date ( NOTE: UNRATE data is published one month later))
+  index(UNRATE) <- index(UNRATE) - 1 # FRED 1st day shift
+  # NOTE: FORECASTERS overshoot downtrends and undershoot up trends
+  # ONLY GOOD CONCLUSION: during UNRATE downtrend ( or flat )
+  #   when the unemp3 suprisingly undershoots the UNRATE then A RECESSION BEGINS
+  dygraphs::dygraph(merge.xts(UNRATE,ret[,"unemp__unemp3__median"])) # 4.5 months into the future
+  # NEED SOME SLOPE TO PROPERLY FORM modellable data
+  # COME BACK
+  
   # RECESSION
   # BROAD STATISTIC
   # TREND OF PRINTING MORE MONEY(RISING SLOPE) IS A GOOD THING
@@ -64,7 +80,9 @@ get_up_side_down_side <- function(){
   # https://github.com/cran/easingr
   clev_easing_balances_eom_xts <- get_clev_easing_balances_eom_xts()
   clev_easing_balances <- get_symbols_xts_eox(symbol_raw = clev_easing_balances_eom_xts[,"clev_easing_balances"], returns = "monthly", OHLC = FALSE, indexAt = "lastof")
-
+  # NEED SOME SLOPE TO PROPERLY FORM modellable data
+  # COME BACK
+  
   # RECESSION
   # BROAD STATISTIC
   # TREND OF LOWERING INTEREST RATES IS A GOOD THING
@@ -86,8 +104,6 @@ get_up_side_down_side <- function(){
   # NA: (Last Updated - max(Date Range))
   # https://fred.stlouisfed.org/data/INTDSRUSM193N.txt
   intdsrusm193n <- get_symbols_xts_eox("INTDSRUSM193N", src ="FRED", returns = "monthly", pushback_fred_1st_days =  TRUE, month_delay = 0, OHLC = FALSE, indexAt = "lastof")
-  
-
   
   # RECESSION AND ECONOMIC DOWNTURN ( NOTE: TODO: verify ON ALFRED )
   # MEDIUM STATISTICS
@@ -219,7 +235,7 @@ get_up_side_down_side <- function(){
   
   # LEFT_OFF
   # competition/pessimism
-  #
+  # MORNING
   # zimmerman equity index
   # LEFT OFF: 
   # competition ( something better )
@@ -234,6 +250,21 @@ get_up_side_down_side <- function(){
   # (more banks)
   # # All/banks: mktcap / net_income
 
+  # BAZZAR
+  # Assets: Central Bank Liquidity Swaps (WACBS)
+  # https://fred.stlouisfed.org/series/WACBS
+  # BAZAAR - ** MASIVE DROP **
+  # Capital: Total Capital (WCTCL)
+  #   MASSIVE DROP DEC2015/JAN2016
+  # https://fred.stlouisfed.org/series/WCTCL
+  # BAZAAR
+  # Capital: Surplus (WCSL)
+  #     MASSIVE DROP DEC2015/JAN2016
+  # https://fred.stlouisfed.org/series/WCSL
+  # BAZAAR
+  # Factors Affecting Reserve Balances of Depository Institutions: Reverse Repurchase Agreements: Foreign Official and International Accounts (WREPOFOR)
+  # https://fred.stlouisfed.org/series/WREPOFOR
+  
   Sys.setenv(TZ=oldtz)
   options(ops)
   
