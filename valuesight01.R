@@ -2508,7 +2508,39 @@ get_phil_survey_of_prof_forecasters_eom_xts <- function(file_data_loc = NULL, su
     # TO DO:  CHOP OF END NUMBER/CHARACTER "1-6", "a","b" instead
     forecast_end_represent_id_loc <- regexpr(future_dates_regex, survey_name_i, perl = TRUE)
     
+    # Release Schedule for the Survey of Professional Forecasters
     # 
+    # First Quarter	
+    #   February 9, 2018
+    # Second Quarter	
+    #   May 11, 2018
+    # Third Quarter	
+    #   August 10, 2018
+    # Fourth Quarter	
+    #   November 13, 2018
+    # 
+    # Questions may be addressed to:
+    # 
+    # John Chew E-mail: john.chew@phil.frb.org
+    # Senior Economic Analyst
+    # (215) 574-3814
+    # Tom Stark E-mail: tom.stark@phil.frb.org
+    # Assistant Director and Manager, Real-Time Data Research Center
+    # (215) 574-6436
+    # 
+    # https://www.philadelphiafed.org/research-and-data/real-time-center/survey-of-professional-forecasters/schedule
+    
+    # my question about data determination
+    # From: Andre Mikulec <andre_mikulec@hotmail.com>
+    # Sent: Wednesday, February 28, 2018 9:51 PM
+    # To: john.chew@phil.frb.org; tom.stark@phil.frb.org
+    # Subject: Survey of Professional Forecasters question about 'number' determination
+    #     
+    
+    # from the pdf
+    # UNEMP ( FRED: UNRATE?!? )
+    # Quarterly forecasts are for the quarterly average of the underlying monthly levels
+    
     # The survey’s timing is geared to the release of the Bureau of Economic Analysis’ advance report (URL is below)
     #   of the national income and product accounts. 
     # 
@@ -2547,6 +2579,11 @@ get_phil_survey_of_prof_forecasters_eom_xts <- function(file_data_loc = NULL, su
     # zoo::as.Date(zoo::as.yearqtr(x), frac = 0) + add %m+% days(45) -> News Release Date('publishing date')
     
     # number  "1" represents the "forecast" for the quarter prior
+    # e.g. ( from pdf )
+    # NGDP1 is the real-time quarterly historical value for the previous quarter—that is, 
+    #   the quarter before the quarter when we conducted the survey. 
+    # NGDP2 is the forecast (nowcast) for the current quarter—that is, 
+    #   the quarter when we conducted the survey. 
       # 
       # e.g.
       # as FEB 28 2018
@@ -2566,10 +2603,10 @@ get_phil_survey_of_prof_forecasters_eom_xts <- function(file_data_loc = NULL, su
           
     # number  "2" represents the forecast for the current quarter 
     #   ( defined as the quarter in which the survey is conducted ), 
-    #   so "2" means "publication date" + 1.5 months in the future -> "forecasted_at date"
+    #   so "2" means "publication date" + 1.5 months in the future -> "forecast_target_date"
     #     ( but would have to wait for a 'later than future' FRED series to back-check for accuracy: e.g. /unemp/UNRATE)
     # numbers "3" through "6" represent the forecasts for the  four quarters after the current quarter.
-    #   so "3" means "publication date" + 4.5 months in the future -> "forecasted_at date"
+    #   so "3" means "publication date" + 4.5 months in the future -> "forecast_target_date"
     #     ( but would have to wait for a 'later than future' FRED series to back-check for accuracy: e.g./unemp/UNRATE )
 
     # letters "a" and "b" (and somtimes "c") represent annual average forecasts for 
@@ -2589,8 +2626,8 @@ get_phil_survey_of_prof_forecasters_eom_xts <- function(file_data_loc = NULL, su
     # currently not yet defined("programed-in") for c("a","b","c") # COME_BACK
     if(!any(forecast_end_represent_id %in% c("a","b","c"))) {
       forecast_end_represent_id     <- as.numeric(forecast_end_represent_id)
-      # this the **"forecast_at" DATE**
-      # e.g. 2018 Q1 sheet CPI column CPI3 ("cpi__cpi3") yields "2018-06-30" "forecast_at" date
+      # this the **forecast_target_date DATE**
+      # e.g. 2018 Q1 sheet CPI column CPI3 ("cpi__cpi3") yields "2018-06-30" "forecast_target_date" date
       # ( RETURN the data of the future prediction )
       #                              # now             # "next_quarter == 3"
       # zoo::as.Date(zoo::as.yearmon(1968 + (1/4) + ( (3 - 2) * (1/4) )- 0.00001), frac = 1)
@@ -2691,13 +2728,92 @@ get_phil_survey_of_prof_forecasters_eom_xts <- function(file_data_loc = NULL, su
 # just two future quarters of unemployment
 # ret <- get_phil_survey_of_prof_forecasters_eom_xts(file_data_loc = "DISK", surveys_of_interest_regex = "^(unemp__).*(3|4)$", future_dates_regex = "(3|4)$")
 #
+
+# # NO REVISIONS
+# > library(alfred)
+# > UNRATE_vintages <- get_alfred_series("UNRATE")
+# > sort(unique(UNRATE_vintages$realtime_period))
+# [671] "2016-01-08" "2016-02-05" "2016-03-04" "2016-04-01" "2016-05-06"
+# [676] "2016-06-03" "2016-07-08" "2016-08-05" "2016-09-02" "2016-10-07"
+# [681] "2016-11-04" "2016-12-02" "2017-01-06" "2017-02-03" "2017-03-10"
+# [686] "2017-04-07" "2017-05-05" "2017-06-02" "2017-07-07" "2017-08-04"
+# [691] "2017-09-01" "2017-10-06" "2017-11-03" "2017-12-08" "2018-01-05"
+# [696] "2018-02-02"
+# 
+# # predictions of the "previous quarter"
+# # in the case of unemp/UNRATE, they alreay had BEEN known AND published, 
+# # 
+# # predictions of 1.5 months in the past
+# #
+# # https://fred.stlouisfed.org/data/UNRATE.txt
+# # SEEN FEB 28 2018
+# 2016-09-01   5.0
+# 2016-10-01   4.9 ** HERE ** ( ave. of 3 past months )
+# 2016-11-01   4.6
+# 2016-12-01   4.7
+# 2017-01-01   4.8 ** HERE ** ( ave. of 3 past months )
+# 2017-02-01   4.7
+# 2017-03-01   4.5
+# 2017-04-01   4.4 ** HERE ** ( ave. of 3 past months )
+# 2017-05-01   4.3
+# 2017-06-01   4.3
+# 2017-07-01   4.3 ** HERE ** ( ave. of 3 past months )
+# 2017-08-01   4.4
+# 2017-09-01   4.2
+# 2017-10-01   4.1 ** HERE ** ( ave. of 3 past months )
+# 2017-11-01   4.1
+# 2017-12-01   4.1
+# 2018-01-01   4.1 ** HERE ** ( ave. of 3 past months )
+# # 
+# # so  emp__unemp1__median SHOULD [HAVE BEEN]/BE exact (TRUE ANSWER)
+# # predictions of 1.5 months in the past
+# #
+# # forecast_target_date"
+# > tail(ret[,c("unemp__unemp1__median","unemp__unemp1__sd")])
+#            unemp__unemp1__median     unemp__unemp1__sd
+# 2016-09-30    4.9000000000000004 0.0074410803055308576
+# 2016-12-31    4.7000000000000002 0.0000000000000000000
+# 2017-03-31    4.7000000000000002 0.0056287273364920131
+# 2017-06-30    4.4000000000000004 0.0092149335320447553 # sd: ONE forecaster said 4.37 
+# 2017-09-30    4.2999999999999998 0.0000000000000000000 # TRUE prediction MASS too high
+# 2017-12-31    4.0999999999999996 0.0000000000000000000
+# 
+# # predictions of 1.5 months into the future
+# # forecast_target_date"
+# > tail(ret[,c("unemp__unemp2__median","unemp__unemp2__sd")])
+#            unemp__unemp2__median    unemp__unemp2__sd
+# 2016-12-31    4.8429000000000002 0.066355975662127697
+# 2017-03-31    4.7000000000000002 0.077102994633000618
+# 2017-06-30    4.5000000000000000 0.113164194459038192
+# 2017-09-30    4.2999999999999998 0.072341674385189972
+# 2017-12-31    4.1900000000000004 0.087862058569284585
+# 2018-03-31    4.0352499999999996 0.072697801286854241
+# 
+# # preductions of 4.5 months into the future
+# # forecast_target_date"
+# > tail(ret[,c("unemp__unemp3__median","unemp__unemp3__sd")])
+#            unemp__unemp3__median   unemp__unemp3__sd
+# 2017-03-31    4.7900000000000000 0.11544976614105495
+# 2017-06-30    4.6313000000000004 0.12262275454630607
+# 2017-09-30    4.4000000000000004 0.15070633099402519
+# 2017-12-31    4.2297000000000002 0.12717873001948621
+# 2018-03-31    4.0999999999999996 0.13069412632505889
+# 2018-06-30    3.9800000000000004 0.10204546752339234
+
+# NO useful PATTERN
+# data.frame(ret[,c("unemp__unemp3__median","unemp__unemp3__sd")], rat = ret[,c("unemp__unemp3__median")] /ret[,("unemp__unemp3__sd")])
+
 # # GOOD EXAMPLE ( notece: EXACTLY when BEFORE/AFTER going in/out OF MAJOR recessions )
 # ret <- get_phil_survey_of_prof_forecasters_eom_xts(file_data_loc = "DISK", surveys_of_interest_regex = "^(unemp__).*(3|4)$", future_dates_regex = "(3|4)$")
 # quantmod::getSymbols("UNRATE", src = "FRED", from = "1940-01-01")
 # # to make eom
 # # actual publication date is "one month later"
-# # zoo::index(UNRATE) <- zoo::index(UNRATE) + 1  # unemp1(prev month) # unemp2(current month of survey)
-# dygraphs::dygraph(merge.xts(UNRATE,ret[,"unemp__unemp3__median"])) # two months into the future
+# # keep at "forcast_target" date ( NOTE: UNRATE data is published one month later))
+# index(UNRATE) <- index(UNRATE) - 1 # FRED 1st day shift
+# NOTE: FORECASTERS overshoot downtrends and undershoot up trends
+# ONLY GOOD CONCLUSION: during UNRATE downtrend ( or flat )
+#   when the unemp3 suprisingly undershoots the UNRATE then A RECESSION BEGINS
+# dygraphs::dygraph(merge.xts(UNRATE,ret[,"unemp__unemp3__median"])) # 4.5 months into the future
 # 
 # dygraphs::dygraph(ret)
 
