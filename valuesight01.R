@@ -1714,7 +1714,7 @@ get_willshire_less_agg_equity_premium_eom_xts <- function() {
 # willshire_less_agg_equity_premium <- get_willshire_less_agg_equity_premium_eom_xts()
 # 3-MONTH IS TOO VOLITILE TO BE TRUSTED
 # I DID NOT SEE ANY DIFFERENCE BETWEEN 6,9.12-MONTH
-# dygraphs::dygraph(ret[,c("equity_prem_p03m_ann","equity_prem_p06m_ann","equity_prem_p09m_ann","equity_prem_p12m_ann")])
+# dygraphs::dygraph(willshire_less_agg_equity_premium[,c("equity_prem_p03m_ann","equity_prem_p06m_ann","equity_prem_p09m_ann","equity_prem_p12m_ann")])
 # 
 # > str(willshire_less_agg_equity_premium)
 # An 'xts' object on 2003-09-30/2017-11-30 containing:
