@@ -2373,10 +2373,12 @@ get_clev_easing_balances_eom_xts <- function() {
 # dygraphs::dygraph(ret)
 
 
+
 # NOTE: I HAVE NOT DONE/DO NOT KNOW HOW TO DO PR*obabilities99
 # 
-                                       # common place override ( by user )
-get_phil_survey_of_prof_forecasters_eom_xts <- function(file_data_loc = NULL, surveys_of_interest_regex = "^(unemp__|cpi__).*(3|4|5|6)$", future_dates_regex = "(3|4|5|6)$") {
+                                                        # common place override ( by user )                                 # 1 and unemp1/UNRATE sanity/debug check
+#                                                                                                                                       # currently () PART of surveys_of_interest_regex
+get_phil_survey_of_prof_forecasters_eom_xts <- function(file_data_loc = NULL, surveys_of_interest_regex = "^(unemp__|cpi__).*(1|2|3)$", future_dates_regex = "(1|2|3)$") {
   
  # Individual Forecasts for the Survey of Professional Forecasters
  # https://www.philadelphiafed.org/research-and-data/real-time-center/survey-of-professional-forecasters/historical-data/individual-forecasts
@@ -2472,13 +2474,13 @@ get_phil_survey_of_prof_forecasters_eom_xts <- function(file_data_loc = NULL, su
     
     # common place override
     if(!is.null(file_data_loc) || (file_data_loc == "DISK")) {
-      if(file_data_loc == "DISK") {
+      if(file_data_loc == "DISK") {                        # exactly dir/name as hard-coded in the program code
         message(paste0("  Begin loading file ", save_file_loc))
         load(file = save_file_loc, envir = environment())
         message(paste0("  End    loading file ", save_file_loc))
       }else {
         # common place override
-        load(file = file_data_loc, envir = environment())
+        load(file = file_data_loc, envir = environment())  # exactly dir/name as specified in the function call
       }
     }
      
@@ -2496,25 +2498,87 @@ get_phil_survey_of_prof_forecasters_eom_xts <- function(file_data_loc = NULL, su
   survey_i_rbinded_xtss <- xts()
   
                                 # entered by user           # entered by user
+  # e.g. "cpi__cpi3"
   for(survey_name_i in sort(grep(surveys_of_interest_regex, colnames(all_files_in_one), value = TRUE, perl = TRUE))) {
     
     message(paste0("  Begin survey ", survey_name_i))
     
                                               # entered by user
     # character position in the survey_i string where the 'forecast time end characters are located.'
+    # TO DO:  CHOP OF END NUMBER/CHARACTER "1-6", "a","b" instead
     forecast_end_represent_id_loc <- regexpr(future_dates_regex, survey_name_i, perl = TRUE)
     
+    # 
+    # The survey’s timing is geared to the release of the Bureau of Economic Analysis’ advance report (URL is below)
+    #   of the national income and product accounts. 
+    # 
+    # We send our survey questionnaires (and wait less than 3 month until the questionare is returned)
+    # after this report is released to the public.
+    # For the surveys we conducted after the 1990:Q2 survey, 
+    # we have set the deadlines for responses at late 
+    # in the second to third week of the middle month of each quarter. 
+    # 
+    # 2005:Q1. Beginning with this survey, we tightened our production schedule. 
+    # The dates of the deadlines for responses were moved up a few days (in most surveys), 
+    # to the second week of the middle month.
+    
+    # A complete
+    # list of the dates of deadlines for surveys from 1990:Q2 to the present is available on the
+    # Philadelphia Fed’s website at:
+    # https://www.philadelphiafed.org/-/media/research-and-data/real-time-center/survey-of-professional-forecasters/spf-release-dates.txt?la=en
+    # 
+    # This report (means'published date') is released 
+    # at/AFTER the end of the first month of each quarter (IN THE 'middle of' the SECOND MONTH).
+    # 
+    # This report 'published date' is released 'just' before the
+    # National Income and Product Accounts Tables (NIPA) 'second report'
+    # https://www.bea.gov/iTable/index_nipa.cfm
+    #
+    # Therefore
+    #               (survey resp. receved)True Deadline Date  + 3-7 days   -> "News Release Date"
+    # excel(YYYY/Q#)                                          + 1.5 months -> "News Release Date" 
+    #                                                                        ('published date'(near the middle of the 2nd month))
+
+    # if I want an "approximation" of the News Release Date('publishing date')
+    #   AND I do not want to READ exactly from 
+    #   https://www.philadelphiafed.org/-/media/research-and-data/real-time-center/survey-of-professional-forecasters/spf-release-dates.txt?la=en
+    # then here is an approximation
+    # zoo::as.Date.yearqtr truncates x to beginning of the quarter/month
+    # zoo::as.Date(zoo::as.yearqtr(x), frac = 0) + add %m+% days(45) -> News Release Date('publishing date')
+    
     # number  "1" represents the "forecast" for the quarter prior
-    # number  "2" represents the forecast for the current quarter
-    # numbers "3" through "6" represent the forecasts for the  four quarters after the current quarter. 
+      # 
+      # e.g.
+      # as FEB 28 2018
+      # micro5.xlsx 2018 Q1 sheet UNEMP column E UNEMP1("quarter prior") are ALL 4.10 
+      #                                                                     ( every SURVEYOR responded this way )
+      # because this data(correct answer) was already released by FRED in 
+      # 
+      # https://fred.stlouisfed.org/data/UNRATE.txt
+      # 
+      # Frequency:           Monthly
+      # Units:               Percent
+      # Date Range:          1948-01-01 to 2018-01-01
+      # Last Updated:        2018-02-02 7:41 AM CST (released to the public)
+      # 
+      # 2017-12-01   4.1
+      # 2018-01-01   4.1 # end of previous quarter (the *new released data*)
+          
+    # number  "2" represents the forecast for the current quarter 
+    #   ( defined as the quarter in which the survey is conducted ), 
+    #   so "2" means "publication date" + 1.5 months in the future -> "forecasted_at date"
+    #     ( but would have to wait for a 'later than future' FRED series to back-check for accuracy: e.g. /unemp/UNRATE)
+    # numbers "3" through "6" represent the forecasts for the  four quarters after the current quarter.
+    #   so "3" means "publication date" + 4.5 months in the future -> "forecasted_at date"
+    #     ( but would have to wait for a 'later than future' FRED series to back-check for accuracy: e.g./unemp/UNRATE )
+
     # letters "a" and "b" (and somtimes "c") represent annual average forecasts for 
-    #   the current year (the year in which the survey is conducted) 
+    #   the current year   (the year in which the survey is conducted) 
     #     and 
-    #   the following year.
-    #     (and
-    #   the following year following year)
+    #   the following year ( the year after 'the year' in which the survey was conducted )
     # 
     # determinte the forcast_end_represent_id
+    # e.g. forecast_end_represent_id == "3" (of "cpi__cpi3")
     forecast_end_represent_id <- substr(survey_name_i, start = attr(forecast_end_represent_id_loc, "capture.start")[1], stop = attr(forecast_end_represent_id_loc, "capture.start")[1] + attr(forecast_end_represent_id_loc, "capture.length")[1])
     message(paste0("  forecast_end_represent_id ", forecast_end_represent_id))
     
@@ -2522,11 +2586,13 @@ get_phil_survey_of_prof_forecasters_eom_xts <- function(file_data_loc = NULL, su
     survey <- all_files_in_one[ ,c("year", "quarter", "id", "industry", survey_name_i), drop = FALSE]
     
     # add future dates
-    # currently not yet defined for c("a","b","c") # COME_BACK
+    # currently not yet defined("programed-in") for c("a","b","c") # COME_BACK
     if(!any(forecast_end_represent_id %in% c("a","b","c"))) {
       forecast_end_represent_id     <- as.numeric(forecast_end_represent_id)
+      # this the **"forecast_at" DATE**
+      # e.g. 2018 Q1 sheet CPI column CPI3 ("cpi__cpi3") yields "2018-06-30" "forecast_at" date
       # ( RETURN the data of the future prediction )
-      #                              # now             # next_quarter (#3)
+      #                              # now             # "next_quarter == 3"
       # zoo::as.Date(zoo::as.yearmon(1968 + (1/4) + ( (3 - 2) * (1/4) )- 0.00001), frac = 1)
       dates <- as.character(zoo::as.Date(zoo::as.yearmon(survey[["year"]] + survey[["quarter"]]/4 + ( (forecast_end_represent_id - 2) * (1/4) )- 0.00001), frac = 1))
       message("  Message max(dates) ", paste0(max(dates)))
@@ -2541,7 +2607,7 @@ get_phil_survey_of_prof_forecasters_eom_xts <- function(file_data_loc = NULL, su
     # column subset on the future date
     survey_summary_by_date_result <- plyr::dlply(survey, "date", function(x) { 
       
-      # returns a df
+      # returns a df of 13 summary statistics
       summary <- hydroTSM::smry(x[survey_name_i], na.rm = TRUE)
       # remove 0/0 math
       summary[is.nan(as.vector(unlist(summary))),] <- NA_real_
@@ -2558,7 +2624,7 @@ get_phil_survey_of_prof_forecasters_eom_xts <- function(file_data_loc = NULL, su
       names(temp) <- gsub("(\\d)","d\\1", names(temp))
       
       x <- temp
-      attr(x, "label") <- survey_name_i
+      attr(x, "label") <- survey_name_i # see Hmisc::llist
       
       return(x)
       
@@ -2629,8 +2695,9 @@ get_phil_survey_of_prof_forecasters_eom_xts <- function(file_data_loc = NULL, su
 # ret <- get_phil_survey_of_prof_forecasters_eom_xts(file_data_loc = "DISK", surveys_of_interest_regex = "^(unemp__).*(3|4)$", future_dates_regex = "(3|4)$")
 # quantmod::getSymbols("UNRATE", src = "FRED", from = "1940-01-01")
 # # to make eom
-# zoo::index(UNRATE) <- zoo::index(UNRATE) - 1
-# dygraphs::dygraph(merge.xts(UNRATE,ret[,"unemp__unemp3__median"]))
+# # actual publication date is "one month later"
+# # zoo::index(UNRATE) <- zoo::index(UNRATE) + 1  # unemp1(prev month) # unemp2(current month of survey)
+# dygraphs::dygraph(merge.xts(UNRATE,ret[,"unemp__unemp3__median"])) # two months into the future
 # 
 # dygraphs::dygraph(ret)
 
