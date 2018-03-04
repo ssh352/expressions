@@ -7179,8 +7179,8 @@ get_sipro_sp500_earnings_eom_xts <- function() {
 
 }
 # NOTE: NOT used in the code flow into get_quandl_sipro_earnings_per_avg_share_x10_4q_eom_xts
-# ret <- get_sipro_sp500_earnings_eom_xts()
-# > str(ret) 
+# sipro_sp500_earnings_eom_xts <- get_sipro_sp500_earnings_eom_xts()
+# > str(sipro_sp500_earnings_eom_xts) 
 # An 'xts' object on 2002-12-31/2017-11-30 containing:
 #   Data: num [1:180, 1:11] 500 500 500 500 500 500 500 500 499 500 ...
 #  - attr(*, "dimnames")=List of 2
@@ -7189,7 +7189,7 @@ get_sipro_sp500_earnings_eom_xts <- function() {
 #   Indexed by objects of class: [Date] TZ: UTC
 #   xts Attributes:  
 #  NULL
-# > head(ret)
+# > head(sipro_sp500_earnings_eom_xts)
 #            count_elig avg_shares earnings_x10_4q earnings_per_avg_share_x10_4q
 # 2002-12-31        500   562.5667        3.270284                      5.813149
 # 2003-01-31        500   562.0457        2.668336                      4.747543
@@ -7383,7 +7383,7 @@ get_sipro_earnings_per_avg_share_x10_4q_eom_xts <- function() {
 }
 # NOT! INFLATION ADJUSTED!
 # sipro_earnings_per_avg_share_x10_4q_eom_xts <- get_sipro_earnings_per_avg_share_x10_4q_eom_xts()
-# > str(res)
+# > str(sipro_earnings_per_avg_share_x10_4q_eom_xts)
 # An 'xts' object on 2002-12-31/2017-10-31 containing:
 #   Data: num [1:179, 1] 5.81 4.75 3.2 2.93 7.1 ...
 #  - attr(*, "dimnames")=List of 2
@@ -7439,8 +7439,8 @@ get_quandl_earnings_per_avg_share_x10_4q_eom_xts <- function() {
 }
 # INFLATION ADJUSTED
 # Quandl.api_key(api_key= "YOURKEYHERE")
-# ret <- get_quandl_earnings_per_avg_share_x10_4q_eom_xts()
-# > str(ret)
+# quandl_earnings_per_avg_share_x10_4q_eom_xts <- get_quandl_earnings_per_avg_share_x10_4q_eom_xts()
+# > str(quandl_earnings_per_avg_share_x10_4q_eom_xts)
 # An 'xts' object on 1871-01-31/2017-03-31 containing:
 #   Data: num [1:1755, 1] 7.88 7.65 7.54 7.82 8 8.13 8.13 8.26 8.06 7.94 ...
 #  - attr(*, "dimnames")=List of 2
@@ -7449,7 +7449,7 @@ get_quandl_earnings_per_avg_share_x10_4q_eom_xts <- function() {
 #   Indexed by objects of class: [Date] TZ: UTC
 #   xts Attributes:  
 #  NULL
-# > head(ret)
+# > head(quandl_earnings_per_avg_share_x10_4q_eom_xts)
 #            sp500_earnings_month
 # 1871-01-31                 7.88
 # 1871-02-28                 7.65
@@ -7873,34 +7873,42 @@ get_sipro_inbnd_netinc_marginals_eom_xts <- function() {
   "
   select 
       every.dateindex_dt, 
-      banks.banks_count                 ,      banks.banks_mktcap_div_mill_x_40,   banks.banks_rat_mktcap_o_netinc_q1_x_4,
-      banks.banks_pradchg_f04w_ann_wtd_mktcap, banks_prchg_netinc_q1q2,
-      every.every_count_d_10            ,      every.every_mktcap_div_mill_x_4 ,   every.every_rat_mktcap_o_netinc_q1_x_4,
-      every.every_pradchg_f04w_ann_wtd_mktcap, every_prchg_netinc_q1q2
+      banks.banks_count                 ,      banks.banks_mktcap_div_mill_x_40, banks_a_netinc_q1, banks_rat_mktcap_o_netinc_q1_x_4, banks_a_netinc_q1q2_x_2, banks_rat_mktcap_o_netinc_q1q2_x_2,
+      banks.banks_pradchg_f04w_ann_wtd_mktcap, banks_pchg_netinc_q1q2,
+      every.every_count_d_10            ,      every.every_mktcap_div_mill_x_4 , every_a_netinc_q1, every_rat_mktcap_o_netinc_q1_x_4, every_a_netinc_q1q2_x_2, every_rat_mktcap_o_netinc_q1q2_x_2,
+      every.every_pradchg_f04w_ann_wtd_mktcap, every_pchg_netinc_q1q2
   from (
   select dateindex, to_timestamp(dateindex*3600*24)::date dateindex_dt,
     count(netinc_q1 + netinc_q2 + mktcap)        banks_count,
     sum(mktcap) / 1000000.0 * 40.0 banks_mktcap_div_mill_x_40,
+    sum(netinc_q1) /  count(netinc_q1 + netinc_q2 + mktcap) banks_a_netinc_q1,
     sum(mktcap) / sum(netinc_q1 * 4) banks_rat_mktcap_o_netinc_q1_x_4,
+    sum((netinc_q1 + netinc_q2)*mktcap/nullif(mktcap,0)) /  count(netinc_q1 + netinc_q2 + mktcap) banks_a_netinc_q1q2_x_2,
+    sum(mktcap) / sum((netinc_q1 + netinc_q2) * 2) banks_rat_mktcap_o_netinc_q1q2_x_2,
     sum(mktcap * pradchg_f04w_ann) / sum(mktcap) banks_pradchg_f04w_ann_wtd_mktcap,
-    (sum(netinc_q1) - sum(netinc_q2))/ abs( nullif(sum(netinc_q2),0) )* 100 banks_prchg_netinc_q1q2
+    (sum(netinc_q1) - sum(netinc_q2))/ abs( nullif(sum(netinc_q2),0) )* 100 banks_pchg_netinc_q1q2
   from fe_data_store.si_finecon2  
-  where now_inbnd_stmtid_dateindex is not null
-    and sp in ('500','400','600') and industry_desc in ('Money Center Banks', 'Regional Banks', 'Consumer Financial Services', 'S&Ls/Savings Banks')
+  where 
+        sp in ('500','400','600') and industry_desc in ('Money Center Banks', 'Regional Banks', 'Consumer Financial Services', 'S&Ls/Savings Banks')
     and netinc_q1 is not null and netinc_q2 is not null and mktcap is not null
+    and now_inbnd_stmtid_dateindex is not null
   group by dateindex
   order by dateindex
   ) banks join  (
   select dateindex, to_timestamp(dateindex*3600*24)::date dateindex_dt,
     count(netinc_q1 + netinc_q2 + mktcap) / 10.0 every_count_d_10,
     sum(mktcap) / 1000000.0 * 4.0 every_mktcap_div_mill_x_4,
+    sum(netinc_q1) /  count(netinc_q1 + netinc_q2 + mktcap) every_a_netinc_q1,
     sum(mktcap) / sum(netinc_q1 * 4) every_rat_mktcap_o_netinc_q1_x_4,
+    sum((netinc_q1 + netinc_q2)*mktcap/nullif(mktcap,0)) /  count(netinc_q1 + netinc_q2 + mktcap) every_a_netinc_q1q2_x_2,
+    sum(mktcap) / sum((netinc_q1 + netinc_q2) * 2) every_rat_mktcap_o_netinc_q1q2_x_2,
     sum(mktcap * pradchg_f04w_ann) / sum(mktcap) every_pradchg_f04w_ann_wtd_mktcap,
-    (sum(netinc_q1) - sum(netinc_q2))/ abs( nullif(sum(netinc_q2),0) )* 100 every_prchg_netinc_q1q2
+    (sum(netinc_q1) - sum(netinc_q2))/ abs( nullif(sum(netinc_q2),0) )* 100 every_pchg_netinc_q1q2
   from fe_data_store.si_finecon2  
-  where now_inbnd_stmtid_dateindex is not null
-    and sp in ('500','400','600') 
+  where 
+        sp in ('500','400','600') 
     and netinc_q1 is not null and netinc_q2 is not null and mktcap is not null
+    and now_inbnd_stmtid_dateindex is not null
   group by dateindex
   order by dateindex
   ) every on banks.dateindex = every.dateindex
