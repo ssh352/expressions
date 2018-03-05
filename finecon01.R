@@ -7844,7 +7844,7 @@ get_sipro_sp500_mktcap_o_netinc_eom_xts <- function() {
 # 2017-11-30                        499                   24.04328                   23.36232                   22.97016                   23.06993
 
 # *** THIS_ONE ***
-get_sipro_inbnd_netinc_marginals_eom_xts <- function() {
+get_sipro_inbnd_netinc_any_marginals_eom_xts <- function(marginals = FALSE) {
 
   # NOTE USES : now_inbnd_stmtid_dateindex is not null
  
@@ -7864,43 +7864,32 @@ get_sipro_inbnd_netinc_marginals_eom_xts <- function() {
   require(xts)
   require(TTR)
 
-  message("Begin function get_sipro_inbnd_netinc_marginals_eom_xts")
+  message("Begin function get_sipro_inbnd_netinc_any_marginals_eom_xts")
 
   verify_connection()
   
-  sipro_inbnd_netinc_marginals_eom <- dbGetQuery(con,
-  
+  query <- paste0(
   "
   select 
       every.dateindex_dt, 
-      banks.banks_count                 ,      banks.banks_mktcap_div_mill_x_40, banks_a_netinc_q1, banks_rat_mktcap_o_netinc_q1_x_4, banks_a_netinc_q1q2_x_2, banks_rat_mktcap_o_netinc_q1q2_x_2,
-      banks.banks_pradchg_f04w_ann_wtd_mktcap, banks_pchg_netinc_q1q2,
-      every.every_count_d_10            ,      every.every_mktcap_div_mill_x_4 , every_a_netinc_q1, every_rat_mktcap_o_netinc_q1_x_4, every_a_netinc_q1q2_x_2, every_rat_mktcap_o_netinc_q1q2_x_2,
-      every.every_pradchg_f04w_ann_wtd_mktcap, every_pchg_netinc_q1q2
+      every_count,                             every_mktcap_div_mill_x_4,        every_a_netinc_q1,   every_wtd_mktcap_a_netinc_q1,     every_rat_mktcap_o_netinc_q1_x_4,    every_a_netinc_q1q2_d_2,
+      every_wtd_mktcap_a_netinc_q1q2_d_2,     every_rat_mktcap_o_netinc_q1q2_x_2,
+      every_pradchg_f04w_ann_wtd_mktcap, every_pchg_netinc_q1q2,
+      banks_count,                             banks_mktcap_div_mill_x_40,       banks_a_netinc_q1,   banks_wtd_mktcap_a_netinc_q1,     banks_rat_mktcap_o_netinc_q1_x_4,    banks_a_netinc_q1q2_d_2,
+      banks_wtd_mktcap_a_netinc_q1q2_d_2,      banks_rat_mktcap_o_netinc_q1q2_x_2,
+      banks_pradchg_f04w_ann_wtd_mktcap,       banks_pchg_netinc_q1q2,
+      notbanks_count,                          notbanks_mktcap_div_mill_x_40, notbanks_a_netinc_q1, notbanks_wtd_mktcap_a_netinc_q1, notbanks_rat_mktcap_o_netinc_q1_x_4, notbanks_a_netinc_q1q2_d_2,
+      notbanks_wtd_mktcap_a_netinc_q1q2_d_2,   notbanks_rat_mktcap_o_netinc_q1q2_x_2,
+      notbanks_pradchg_f04w_ann_wtd_mktcap,    notbanks_pchg_netinc_q1q2
   from (
   select dateindex, to_timestamp(dateindex*3600*24)::date dateindex_dt,
-    count(netinc_q1 + netinc_q2 + mktcap)        banks_count,
-    sum(mktcap) / 1000000.0 * 40.0 banks_mktcap_div_mill_x_40,
-    sum(netinc_q1) /  count(netinc_q1 + netinc_q2 + mktcap) banks_a_netinc_q1,
-    sum(mktcap) / sum(netinc_q1 * 4) banks_rat_mktcap_o_netinc_q1_x_4,
-    sum((netinc_q1 + netinc_q2)*mktcap/nullif(mktcap,0)) /  count(netinc_q1 + netinc_q2 + mktcap) banks_a_netinc_q1q2_x_2,
-    sum(mktcap) / sum((netinc_q1 + netinc_q2) * 2) banks_rat_mktcap_o_netinc_q1q2_x_2,
-    sum(mktcap * pradchg_f04w_ann) / sum(mktcap) banks_pradchg_f04w_ann_wtd_mktcap,
-    (sum(netinc_q1) - sum(netinc_q2))/ abs( nullif(sum(netinc_q2),0) )* 100 banks_pchg_netinc_q1q2
-  from fe_data_store.si_finecon2  
-  where 
-        sp in ('500','400','600') and industry_desc in ('Money Center Banks', 'Regional Banks', 'Consumer Financial Services', 'S&Ls/Savings Banks')
-    and netinc_q1 is not null and netinc_q2 is not null and mktcap is not null
-    and now_inbnd_stmtid_dateindex is not null
-  group by dateindex
-  order by dateindex
-  ) banks join  (
-  select dateindex, to_timestamp(dateindex*3600*24)::date dateindex_dt,
-    count(netinc_q1 + netinc_q2 + mktcap) / 10.0 every_count_d_10,
+    count(netinc_q1 + netinc_q2 + mktcap) every_count,
     sum(mktcap) / 1000000.0 * 4.0 every_mktcap_div_mill_x_4,
     sum(netinc_q1) /  count(netinc_q1 + netinc_q2 + mktcap) every_a_netinc_q1,
+    sum(netinc_q1 * mktcap) / sum(mktcap) every_wtd_mktcap_a_netinc_q1,
     sum(mktcap) / sum(netinc_q1 * 4) every_rat_mktcap_o_netinc_q1_x_4,
-    sum((netinc_q1 + netinc_q2)*mktcap/nullif(mktcap,0)) /  count(netinc_q1 + netinc_q2 + mktcap) every_a_netinc_q1q2_x_2,
+    sum(netinc_q1 + netinc_q2) /  count(netinc_q1 + netinc_q2 + mktcap) / 2 every_a_netinc_q1q2_d_2,
+    sum((netinc_q1 + netinc_q2)* mktcap ) / sum(mktcap) / 2 every_wtd_mktcap_a_netinc_q1q2_d_2,
     sum(mktcap) / sum((netinc_q1 + netinc_q2) * 2) every_rat_mktcap_o_netinc_q1q2_x_2,
     sum(mktcap * pradchg_f04w_ann) / sum(mktcap) every_pradchg_f04w_ann_wtd_mktcap,
     (sum(netinc_q1) - sum(netinc_q2))/ abs( nullif(sum(netinc_q2),0) )* 100 every_pchg_netinc_q1q2
@@ -7908,35 +7897,74 @@ get_sipro_inbnd_netinc_marginals_eom_xts <- function() {
   where 
         sp in ('500','400','600') 
     and netinc_q1 is not null and netinc_q2 is not null and mktcap is not null
-    and now_inbnd_stmtid_dateindex is not null
+    ", if(marginals) {"and now_inbnd_stmtid_dateindex is not null"} else {""}, "
   group by dateindex
   order by dateindex
-  ) every on banks.dateindex = every.dateindex
+  ) every left join (
+  select dateindex, to_timestamp(dateindex*3600*24)::date dateindex_dt,
+    count(netinc_q1 + netinc_q2 + mktcap)        banks_count,
+    sum(mktcap) / 1000000.0 * 40.0 banks_mktcap_div_mill_x_40,
+    sum(netinc_q1) /  count(netinc_q1 + netinc_q2 + mktcap) banks_a_netinc_q1,
+    sum(netinc_q1 * mktcap) / sum(mktcap) banks_wtd_mktcap_a_netinc_q1,
+    sum(mktcap) / sum(netinc_q1 * 4) banks_rat_mktcap_o_netinc_q1_x_4,
+    sum(netinc_q1 + netinc_q2) /  count(netinc_q1 + netinc_q2 + mktcap) / 2 banks_a_netinc_q1q2_d_2,
+    sum((netinc_q1 + netinc_q2)* mktcap ) / sum(mktcap) / 2 banks_wtd_mktcap_a_netinc_q1q2_d_2,
+    sum(mktcap) / sum((netinc_q1 + netinc_q2) * 2) banks_rat_mktcap_o_netinc_q1q2_x_2,
+    sum(mktcap * pradchg_f04w_ann) / sum(mktcap) banks_pradchg_f04w_ann_wtd_mktcap,
+    (sum(netinc_q1) - sum(netinc_q2))/ abs( nullif(sum(netinc_q2),0) )* 100 banks_pchg_netinc_q1q2
+  from fe_data_store.si_finecon2  
+  where 
+        sp in ('500','400','600') and industry_desc     in ('Money Center Banks', 'Regional Banks', 'Consumer Financial Services', 'S&Ls/Savings Banks')
+    and netinc_q1 is not null and netinc_q2 is not null and mktcap is not null
+    ", if(marginals) {"and now_inbnd_stmtid_dateindex is not null"} else {""}, "
+  group by dateindex
+  order by dateindex
+  ) banks on every.dateindex = banks.dateindex left join (
+  select dateindex, to_timestamp(dateindex*3600*24)::date dateindex_dt,
+    count(netinc_q1 + netinc_q2 + mktcap)        notbanks_count,
+    sum(mktcap) / 1000000.0 * 40.0 notbanks_mktcap_div_mill_x_40,
+    sum(netinc_q1) /  count(netinc_q1 + netinc_q2 + mktcap) notbanks_a_netinc_q1,
+    sum(netinc_q1 * mktcap) / sum(mktcap) notbanks_wtd_mktcap_a_netinc_q1,
+    sum(mktcap) / sum(netinc_q1 * 4) notbanks_rat_mktcap_o_netinc_q1_x_4,
+    sum(netinc_q1 + netinc_q2) /  count(netinc_q1 + netinc_q2 + mktcap) / 2 notbanks_a_netinc_q1q2_d_2,
+    sum((netinc_q1 + netinc_q2)* mktcap ) / sum(mktcap) / 2 notbanks_wtd_mktcap_a_netinc_q1q2_d_2,
+    sum(mktcap) / sum((netinc_q1 + netinc_q2) * 2) notbanks_rat_mktcap_o_netinc_q1q2_x_2,
+    sum(mktcap * pradchg_f04w_ann) / sum(mktcap) notbanks_pradchg_f04w_ann_wtd_mktcap,
+    (sum(netinc_q1) - sum(netinc_q2))/ abs( nullif(sum(netinc_q2),0) )* 100 notbanks_pchg_netinc_q1q2
+  from fe_data_store.si_finecon2  
+  where 
+        sp in ('500','400','600') and industry_desc not in ('Money Center Banks', 'Regional Banks', 'Consumer Financial Services', 'S&Ls/Savings Banks')
+    and netinc_q1 is not null and netinc_q2 is not null and mktcap is not null
+    ", if(marginals) {"and now_inbnd_stmtid_dateindex is not null"} else {""}, "
+  group by dateindex
+  order by dateindex
+  ) notbanks on every.dateindex = notbanks.dateindex 
   "
   )
+  sipro_inbnd_netinc_any_marginals_eom <- dbGetQuery(con, query)
   
-  temp <- as.matrix(sipro_inbnd_netinc_marginals_eom[ ,!colnames(sipro_inbnd_netinc_marginals_eom) %in% c("dateindex_dt"), drop = FALSE])
-  rownames(temp) <- as.character(sipro_inbnd_netinc_marginals_eom[["dateindex_dt"]])
+  temp <- as.matrix(sipro_inbnd_netinc_any_marginals_eom[ ,!colnames(sipro_inbnd_netinc_any_marginals_eom) %in% c("dateindex_dt"), drop = FALSE])
+  rownames(temp) <- as.character(sipro_inbnd_netinc_any_marginals_eom[["dateindex_dt"]])
   # S3 dispatch as.xts.matrix ... will return with a non-Date index
   temp2 <- as.xts(temp)
   rm(temp)
   index(temp2) <- zoo::as.Date(index(temp2))
-  sipro_inbnd_netinc_marginals_eom_xts <- temp2
+  sipro_inbnd_netinc_any_marginals_eom_xts <- temp2
   rm(temp2)
  
   Sys.setenv(TZ=oldtz)
   options(ops)
 
-  message("End   function get_sipro_inbnd_netinc_marginals_eom_xts")
+  message("End   function get_sipro_inbnd_netinc_any_marginals_eom_xts")
 
-  return(sipro_inbnd_netinc_marginals_eom_xts)
+  return(sipro_inbnd_netinc_any_marginals_eom_xts)
     
 }
 # *** THIS_ONE ***
-# sipro_inbnd_netinc_marginals_eom_xts <- get_sipro_inbnd_netinc_marginals_eom_xts()
-# dygraphs::dygraph(sipro_inbnd_netinc_marginals_eom_xts[, grep("^bank",colnames(sipro_inbnd_netinc_marginals_eom_xts), value = T)])
+# sipro_inbnd_netinc_any_marginals_eom_xts <- get_sipro_inbnd_netinc_any_marginals_eom_xts()
+# dygraphs::dygraph(sipro_inbnd_netinc_any_marginals_eom_xts[, grep("^bank",colnames(sipro_inbnd_netinc_any_marginals_eom_xts), value = T)])
 # 
-# tail(sipro_inbnd_netinc_marginals_eom_xts[, grep("^bank",colnames(sipro_inbnd_netinc_marginals_eom_xts), value = T)])
+# tail(sipro_inbnd_netinc_any_marginals_eom_xts[, grep("^bank",colnames(sipro_inbnd_netinc_any_marginals_eom_xts), value = T)])
 #            banks_count banks_mktcap_div_mill_x_40 banks_rat_mktcap_o_netinc_q1_x_4 banks_pradchg_f04w_ann_wtd_mktcap
 # 2017-08-31           9         2.2166960000000002               38.656110491071431                19.463693496988309
 # 2017-09-29           1         0.1204440000000000               44.542899408284022               -38.159999999999997
