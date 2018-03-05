@@ -257,15 +257,29 @@ get_up_side_down_side <- function(){
   equity_prem_p06m_ann2 <- get_symbols_xts_eox(symbol_raw = willshire_less_agg_equity_premium[,c("equity_prem_p06m_ann")], returns = "monthly", OHLC = FALSE, indexAt = "lastof")
   
   
-  # LEFT_OFF
-  
   # internal performance ( from PostgreSQL database )
   # # All/banks: median net_income, mktcap net_income
-  # # mktcap / net_income
   
-  # vote on performance
-  # (more banks)
-  # # All/banks: mktcap / net_income
+  # NOTE BUT THINK ABOUT USING INSTEAD "FRED BROAD STATISTICS (ABOVE)" ( THEY TEND TO BE BETTER )
+  #
+  # FAST DRAWDOWN NARROW STATISTIC 
+  # BEFORE A FAST_DRAWDOWN(MINICRASH) ONE SEES A SHARP DROP IN NON-MARGINAL                                   every_pchg_netinc_q1q2
+  # BEFORE A FAST_DRAWDOWN(MINICRASH) ONE SEES A SHARP DROP IN     MARGINAL                                   every_pchg_netinc_q1q2
+  # BEFORE A FAST DRAWDOWN ONE SEES A MARGINAL *HISTORICALLY TOO HIGH*                                        every_rat_mktcap_o_netinc_q1_x_4
+  # 
+  # DOWNTURN NARROW-TO-BROAD STATISTIC 
+  # BEFORE A DOWNTURN ONE SEES A GRADULE MONTH-BY-MONTH (AND NEGATIVE) GETTING WORSE NON-MARGINAL              banks_pchg_netinc_q1q2
+  # BEFORE A DOWNTURN ONE SEES A GRADULE MONTH-BY-MONTH (AND NEGATIVE AND FAST ) GETTING WORSE MARGINAL        banks_pchg_netinc_q1q2
+  # 
+  # RECESSION BROAD STATISTICS
+  # BEFORE A RECESSION ONE SEES A GRADULE MONTH-BY-MONTH (AND NEGATIVE AND SLOWLY ) GETTING WORSE NON-MARGINAL every_pchg_netinc_q1q2
+  # BEFORE A RECESSION ONE SEES A GRADULE MONTH-BY-MONTH SLOWLY GETTING BIGGER MARGINAL                        every_rat_mktcap_o_netinc_q1_x_4
+  #  NOTE: THIS IS FULLY RELIABLE: THIS CAN PEAK 6-12 MONTHS BEFORE A RECESSION
+  # BEFORE A RECESSION ONE SEES A GRADULE MONTH-BY-MONTH AND VERY NEGATIVE                                     banks_rat_mktcap_o_netinc_q1_x_4
+  # 
+  sipro_inbnd_netinc_any_marginals_eom_xts           <- get_sipro_inbnd_netinc_any_marginals_eom_xts()
+  sipro_inbnd_netinc_any_marginals_eom_xts_marginals <- get_sipro_inbnd_netinc_any_marginals_eom_xts(marginals = TRUE)
+    
 
   # BAZZAR
   # Assets: Central Bank Liquidity Swaps (WACBS)
