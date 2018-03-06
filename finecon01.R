@@ -320,13 +320,29 @@ verify_sqlite3_channel <- function(aaii_sipro_dir = getsetvar_aaii_sipro_dir(), 
 
 # ANDRE added the ARGUMENT: snake_case_cols
 # index is the unique ID
-dbWriteTable3 <- function (con, table.name, df, fill.null = TRUE, row.names = FALSE
+dbWriteTableX <- function (con, table.name, df, fill.null = TRUE, row.names = FALSE
   , inbnd_snake_case_cols = TRUE
   , date_to_int           = TRUE  # pre-dbWriteTable
   , logical_to_int        = TRUE  # pre-dbWriteTable
   , double_to_numeric     = TRUE  # pre-dbWriteTable # RSQLite # USE # "double_to_numeric = "numeric"
   , index = NULL
   , ...) {
+  
+  # # FUTURE ( IN dots ... INTERCEPT field.types AND USE )
+  # field.types 
+  #   character vector of named SQL field types where the names are the names of new table’s columns
+  # https://cran.r-project.org/web/packages/RSQLite/RSQLite.pdf
+  # field.types 
+  #   is a list of named field SQL types where names(field.types) provide the new table’s column names 
+  # https://cran.r-project.org/web/packages/RPostgreSQL/RPostgreSQL.pdf
+  # field.types
+  #   character vector of named SQL field types where the names are the names of new table’s columns. 
+  # https://cran.r-project.org/web/packages/RPostgres/RPostgres.pdf
+  # field.types 
+  #   Additional field types used to override derived types
+  # https://cran.r-project.org/web/packages/odbc/odbc.pdf
+  # dbWriteTable signature(conn = "JDBCConnection", ...)
+  # https://cran.r-project.org/web/packages/RJDBC/RJDBC.pdf
   
   ops <- options()
   
@@ -344,13 +360,14 @@ dbWriteTable3 <- function (con, table.name, df, fill.null = TRUE, row.names = FA
   
   # inspirated heavily by the R CRAN package caroline function dbWriteTable2
   
-  require(DBI)
+  ## X require(DBI) X ##
+  # #bring your own dbWriteTable ( S3 or S4 dispath on the class of 'con' )
   # expect a passed con of class "RPostgreSQLConnection"(RPostgreSQL package)
   # should be able handle a con of class RSQLiteConnection(RSQLite package)
   
   # uses dplyr inner_join filter
   
-  message("Begin dbWriteTable3")
+  message("Begin dbWriteTableX")
 
   if(dbExistsTable(con,table.name)) {
     target_table_exists <- TRUE
@@ -386,7 +403,7 @@ dbWriteTable3 <- function (con, table.name, df, fill.null = TRUE, row.names = FA
         fields <- "dummmy"
         dummy_field_exists <- TRUE
       } else {
-        stop("dbWriteTable3 could not create an ALMOST nothing table.")
+        stop("dbWriteTableX could not create an ALMOST nothing table.")
       }
     }
     
@@ -524,7 +541,7 @@ dbWriteTable3 <- function (con, table.name, df, fill.null = TRUE, row.names = FA
       dbExecute(con, "drop table index_temp")
     } else {
       # [A] COLUMN(S) does(DO) NOT exists
-      stop("dbWriteTable3 was sent at least one index field that does not exist in the database table")
+      stop("dbWriteTableX was sent at least one index field that does not exist in the database table")
     }
     
   }
@@ -639,7 +656,7 @@ dbWriteTable3 <- function (con, table.name, df, fill.null = TRUE, row.names = FA
     #  ( from experience: will convert "logical" to "integer": prob O.K. )
     #  ( from experience: will convert "Date" to "numeric": prob not desirable )
     # SHOULD NOT HAVE MADE it this FAR
-    # EARLIER, SHOULD have filtered out ( by the call to dbWriteTable3(with paramters) )
+    # EARLIER, SHOULD have filtered out ( by the call to dbWriteTableX(with paramters) )
     
     df.classes[df.classes == "Date"]      <- "date"
     df.classes[df.classes == "logical"]   <- "boolean"
@@ -688,7 +705,7 @@ dbWriteTable3 <- function (con, table.name, df, fill.null = TRUE, row.names = FA
     dbExecute(con, paste0("alter table ",table.name, " drop column dummy") )
   }
   
-  message("End   dbWriteTable3")
+  message("End   dbWriteTableX")
   
   Sys.setenv(TZ=oldtz)
   options(ops)
@@ -715,10 +732,10 @@ dbWriteTable3 <- function (con, table.name, df, fill.null = TRUE, row.names = FA
 # }
 # TEST GROUP
 # dbGetQuery(con, "drop table mtcars")
-# dbWriteTable3(con, "mtcars",  mtcars3[17:32, !colnames(mtcars3) %in% c("wt", "qsec","vs", "am"), drop = F], index = "mtcar" )
+# dbWriteTableX(con, "mtcars",  mtcars3[17:32, !colnames(mtcars3) %in% c("wt", "qsec","vs", "am"), drop = F], index = "mtcar" )
 # CREATES COLUMNS
-# dbWriteTable3(con, "mtcars",  mtcars3[17:32, !colnames(mtcars3) %in% c(      "qsec","vs"),       drop = F], index = "mtcar" )
-# dbWriteTable3(con, "mtcars",  mtcars3[ 1:18, !colnames(mtcars3) %in% c("               "),       drop = F], index = "mtcar" )
+# dbWriteTableX(con, "mtcars",  mtcars3[17:32, !colnames(mtcars3) %in% c(      "qsec","vs"),       drop = F], index = "mtcar" )
+# dbWriteTableX(con, "mtcars",  mtcars3[ 1:18, !colnames(mtcars3) %in% c("               "),       drop = F], index = "mtcar" )
 
 
 
