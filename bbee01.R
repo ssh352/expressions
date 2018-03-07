@@ -18,6 +18,7 @@ get_up_side_down_side <- function(){
   
   require(xts) # cbind.xts
   require(TTR) # ROC
+  require(PerformanceAnalytics) # Return.portfolio
   # uses lubridate `%m+%`
   `%m+%` <- lubridate::`%m+%`
   
@@ -386,6 +387,10 @@ get_up_side_down_side <- function(){
   # BAZAAR
   # Factors Affecting Reserve Balances of Depository Institutions: Reverse Repurchase Agreements: Foreign Official and International Accounts (WREPOFOR)
   # https://fred.stlouisfed.org/series/WREPOFOR
+  # BAZARR
+  # ANOTHER DEC/JAN 2015/2016 mass drop
+  # Factors Affecting Reserve Balances of Depository Institutions: Other Liabilities and Capital (WOTHLIAB)
+  # https://fred.stlouisfed.org/series/WOTHLIAB
   
   Sys.setenv(TZ=oldtz)
   options(ops)
