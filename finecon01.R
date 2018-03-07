@@ -247,7 +247,7 @@ verify_channel <- function () {
 #   select sqlite_version();
 # sqliteodbc.exe 
 # sqliteodbc_w64.exe 
-# sqliteodbc-0.9995.tar.gz 
+# sqliteodbc-0.9995.tar.gz ( NOTE: NOW 0.9996 has my error correction/fix )
 # DEC 2017 - FEB 2018
 # http://www.ch-werner.de/sqliteodbc/
 # > odbcGetInfo(channel)
@@ -327,6 +327,9 @@ dbWriteTableX <- function (con, table.name, df, fill.null = TRUE, row.names = FA
   , double_to_numeric     = TRUE  # pre-dbWriteTable # RSQLite # USE # "double_to_numeric = "numeric"
   , index = NULL
   , ...) {
+  
+  # FUTURE - ADD ALLOW UPDATING - NO WHERE CLAUSE
+  # index = character()
   
   # # FUTURE ( IN dots ... INTERCEPT field.types AND USE )
   # field.types 
@@ -9832,9 +9835,13 @@ get_all_raw_by_dateindex <- function(dateindex = NULL, file_type = "fst", aaii_s
   
   # columns
   df <- df[,grep("^X.*", colnames(df), value = T, invert = T), drop = F]
-  df <- plyr::rename(df, c("REPNO" = "SI_CI_REPNO"))
-  df <- plyr::rename(df, c("LASTMOD" = "SI_CI_LASTMOD"))  # LASTMOD is not in earlier data
 
+  # df <- plyr::rename(df, c("REPNO" = "SI_CI_REPNO"))
+  # df <- plyr::rename(df, c("LASTMOD" = "SI_CI_LASTMOD"))  # LASTMOD is not in earlier data
+  # CONSISTENT WITH BELOW
+  df <- plyr::rename(df, c("REPNO" = "CI_REPNO"))
+  df <- plyr::rename(df, c("LASTMOD" = "CI_LASTMOD"))  # LASTMOD is not in earlier data
+  
   # rows
   # keep one 'all columns' duplicate
   df <- df[ !data.table:::duplicated.data.table(df, fromLast = TRUE),,drop = FALSE]
@@ -9970,12 +9977,19 @@ get_all_raw_by_dateindex <- function(dateindex = NULL, file_type = "fst", aaii_s
       dfnew <- st
     }
 
+    # columns ( tested - WORKS )
+    # dfnew <- dfnew[,grep("^X.*", colnames(dfnew), value = T, invert = T), drop = F]
+    # dfnew <- plyr::rename(dfnew, c("LASTMOD" = stringi::stri_c(toupper(si_file),"_LASTMOD")))  # LASTMOD is not in earlier data
+    # dfnew <- plyr::rename(dfnew, c("UPDATED" = stringi::stri_c(toupper(si_file),"_UPDATED")))  # boolean 
+    # dfnew <- plyr::rename(dfnew, c("REPNO"   = stringi::stri_c(toupper(si_file),"_REPNO")))    # character
+    
+    # BARELY TESTED IN R CONSOLE ( SHOULD WORK )
     # columns
     dfnew <- dfnew[,grep("^X.*", colnames(dfnew), value = T, invert = T), drop = F]
-    dfnew <- plyr::rename(dfnew, c("LASTMOD" = stringi::stri_c(toupper(si_file),"_LASTMOD")))  # LASTMOD is not in earlier data
-    dfnew <- plyr::rename(dfnew, c("UPDATED" = stringi::stri_c(toupper(si_file),"_UPDATED")))  # boolean 
-    dfnew <- plyr::rename(dfnew, c("REPNO"   = stringi::stri_c(toupper(si_file),"_REPNO")))    # character
-    
+    dfnew <- plyr::rename(dfnew, c("LASTMOD" = stringi::stri_c(toupper(stri_extract_first_regex(si_file, "(?<=si_).*")),"_LASTMOD")))  # LASTMOD is not in earlier data
+    dfnew <- plyr::rename(dfnew, c("UPDATED" = stringi::stri_c(toupper(stri_extract_first_regex(si_file, "(?<=si_).*")),"_UPDATED")))  # boolean 
+    dfnew <- plyr::rename(dfnew, c("REPNO"   = stringi::stri_c(toupper(stri_extract_first_regex(si_file, "(?<=si_).*")),"_REPNO")))    # character
+
     # rows
     dfnew <- dfnew[ !data.table:::duplicated.data.table(dfnew, fromLast = TRUE),,drop = FALSE]
     dfnew <- dfnew[ !stringi::stri_duplicated(dfnew$COMPANY_ID) & !stringi::stri_duplicated(dfnew$COMPANY_ID, fromLast = TRUE), , drop = FALSE]
