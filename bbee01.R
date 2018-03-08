@@ -1,6 +1,63 @@
  
 # bbee01.R
 
+# do not do this
+#
+# note: will fail
+# within.xts ( xts(, zoo::as.Date(0), { ___ } )
+# 
+# note: will fail
+# xts:::as.data.frame.xts
+# will fail
+#
+# no such thing exists to be a "zero number of rowsrow and "greater than zero length row.names" data.frame 
+# 
+
+# my old work
+#
+# safely make an xts into a data.frame
+dfize <- function(xtso) {
+  require(xts)
+  df <- as.data.frame(xtso)  # zoo::as.data.frame.zoo # xts:::as.data.frame.xts
+  rn <- as.numeric( zoo::as.Date( row.names(df) ) )
+  cb <- cbind(rn,df)
+  colnames(cb)[1] <- "tindex"
+  return(cb)
+} 
+
+
+# safely make an xts into a data.frame
+xtsize <- function(dfo) {
+  require(xts)
+  id <- zoo::as.Date(as.numeric(  as.vector(unlist(dfo[,"tindex"]))   ))   
+  # drop column
+  dfo[,"tindex"] <- NULL
+  cd <- coredata(as.matrix(dfo))
+  xts(cd,id)  # could be 'zoo'
+}
+# 
+
+
+within.xts <- function (data, expr, ...) {
+  data <- dfize(data)
+  parent <- environment()    # JUST CHANGED parent.frame() to environment()
+  e <- evalq(environment(), data, parent)
+  eval(substitute(expr), e)
+  l <- as.list(e, all.names = TRUE)
+  l <- l[!vapply(l, is.null, NA, USE.NAMES = FALSE)]
+  nD <- length(del <- setdiff(names(data), (nl <- names(l))))
+  data[nl] <- l
+  if (nD)
+    data[del] <- if (nD == 1)
+      NULL
+  else
+    vector("list", nD)
+  xtsize(data)
+}
+
+
+
+
 get_up_side_down_side <- function(){
   
   ops <- options()
@@ -16,11 +73,14 @@ get_up_side_down_side <- function(){
     Sys.setenv(TZ="UTC")
   }
   
-  require(xts) # cbind.xts
-  require(TTR) # ROC
-  require(PerformanceAnalytics) # Return.portfolio
+  require(xts)      # merge.xts
+  require(TTR)      # ROC
+  require(quantmod) # monthlyReturn
+  require(PerformanceAnalytics) # Return.portfolio # table.CalendarReturns
   # uses lubridate `%m+%`
   `%m+%` <- lubridate::`%m+%`
+  
+  market_log_rets <- xts(, zoo::as.Date(0)[0])
   
   # WHAT I AM TRYING TO OPTIMIZE
   # Wilshire 5000 Total Market Index
@@ -43,6 +103,23 @@ get_up_side_down_side <- function(){
   will5000ind_log_rets <- ROC(will5000ind)               # which(is.na(will5000ind_log_rets))
   will5000ind_log_rets[is.na(will5000ind_log_rets)] <- 0 # usually just the 1st observation
   
+  # will5000ind
+  market_log_rets <- merge.xts(market_log_rets, will5000ind_log_rets)
+  
+  # "other"
+  other_log_rets <- xts(rep(0,NROW(market_log_rets)),index(market_log_rets))
+  colnames(other_log_rets) <- "other"
+
+   # "other" # will5000ind 
+  market_log_rets <- merge.xts(other_log_rets, market_log_rets)
+  
+  ##################################
+  ### BEGIN BIG CALCULATE WEIGHTS ##
+  
+  # default benchmark
+  buyandhold_will5000ind_wts <- xts(rep(1,NROW(market_log_rets)),index(market_log_rets))
+  # "will5000ind"
+  colnames(buyandhold_will5000ind_wts) <- "will5000ind"
   
   # Order is mostly from 
   # RECESSION TO DRAWDOWN
@@ -64,19 +141,35 @@ get_up_side_down_side <- function(){
   # https://fred.stlouisfed.org/data/UNRATE.txt
   unrate <- get_symbols_xts_eox("UNRATE", src ="FRED", returns = "monthly", pushback_fred_1st_days =  TRUE, month_delay = 1, OHLC = FALSE, indexAt = "lastof")
   
-  bm <- 1
+  # other will5000ind
+  portfolio_wts <- within.xts( unrate[["monthly"]], { 
+
+    # Return.portfolio requirement: rets columns to  weights columns matchups 
+    
+    # 2007-09-30 + lag(+-1) IS THE time of SWITCH
+    # performanceAnalytics Return.portfolio weights(xts)
+    # SMOOTHER HACK(OVERFIT)
+    # SHOULD WORK TO FIND SOMETHING *MORE* PRECISE
+    will5000ind <- ifelse( ((SMA(unrate,2)        - SMA(unrate,6)) <= 0)           | 
+                           ((SMA(lag(unrate),2)   - SMA(lag(unrate),6)) <= 0) | 
+                           ((SMA(lag(unrate,2),2) - SMA(lag(unrate,2),6)) <= 0), 1.00, 0.00) 
+    
+    # some early time before the indictator 
+    # has enough information to make a decison
+    # then just simply "buy and hold"
+    will5000ind[is.na(will5000ind)] <- 1 # 100% allocated
+    
+    # what is "left over"
+    other <- 1 - will5000ind
+    
+    # what happened last month affects next months decision
+    # APROPRIATE # 1st of the NEXT MONTH # all DECISIONS happening in that NEXT MONTH
+    # Return.portfolio requirement
+    tindex <- tindex + 1; rm(unrate)
   
-  # 2007-09-30 + lag(-1) IS THE time of SWITCH
-  # performanceAnalytics Return.portfolio weights(xts)
-  # SMOOTHER HACK(OVERFIT)
-  # SHOULD WORK TO FIND SOMETHING *MORE* PRECISE
-  w <- with( unrate[["monthly"]], { ifelse( ((SMA(unrate,2) - SMA(unrate,6)) <= 0) | ((SMA(lag(unrate),2) - SMA(lag(unrate),6)) <= 0) | ((SMA(lag(unrate,2),2) - SMA(lag(unrate,2),6)) <= 0), 1.00, 0.00) } )
-  # what happened last month affects next months decision
-  # PE R.p requirement
-  # # APROPRIATE # FIRST of the MONTH # all DECISIONS affecting THAT month
-  index(w) <- index(w) + 1 
-  # PE R.p requirement
-  colnames(w) <- "will5000ind"
+  })
+  
+
   
   # PRE/POST RECESSION ONLY
   # PART OF BROAD STATISTIC (UNRATE(ABOVE))
@@ -391,6 +484,60 @@ get_up_side_down_side <- function(){
   # ANOTHER DEC/JAN 2015/2016 mass drop
   # Factors Affecting Reserve Balances of Depository Institutions: Other Liabilities and Capital (WOTHLIAB)
   # https://fred.stlouisfed.org/series/WOTHLIAB
+  
+  # rebalance_on: Ignored if 'weights' is an xts object that specifies the rebalancing dates
+  # 100,000 dollars to start
+  # verbose is TRUE, return a list of intermediary calculations
+  
+  initial_value <- 100000
+  
+  # strategies 
+  
+  return_portfolio_res <- Return.portfolio(R = market_log_rets, weights =  portfolio_wts, value = initial_value, verbose = TRUE)
+  # "portfolio.returns"
+  portfolio_log_rets <- return_portfolio_res$returns
+
+  # "portfolio.returns"
+  portfolio <- exp(cumsum(portfolio_log_rets)) * initial_value
+  colnames(portfolio) <- "portfolio"
+ 
+  # default benchmark
+
+  return_buyandhold_will5000ind_res <- Return.portfolio(R = market_log_rets[,"will5000ind"], weights =  buyandhold_will5000ind_wts, value = initial_value, verbose = TRUE)
+  # "portfolio.returns"
+  return_buyandhold_will5000ind_log_rets <- return_buyandhold_will5000ind_res$returns
+
+  # "portfolio.returns"
+  buyandhold_will5000ind_portfolio <- exp(cumsum(return_buyandhold_will5000ind_log_rets)) * initial_value
+  colnames(buyandhold_will5000ind_portfolio) <- "buyandhold"
+ 
+  # 
+  # 
+  # Creating a Table of Monthly Returns With R and a Volatility Trading Interview
+  # February 20, 2018
+  # By Ilya Kipnis
+  # https://quantstrattrader.wordpress.com/2018/02/20/creating-a-table-of-monthly-returns-with-r-and-a-volatility-trading-interview/
+  # https://www.r-bloggers.com/creating-a-table-of-monthly-returns-with-r-and-a-volatility-trading-interview/
+  # 
+  # default class yearmon # type="arithmetic"
+  # 
+  portfolio_nonlog_monthly_rets                        <- monthlyReturn(portfolio) 
+  # COMPARE and CONTRAST with
+  buyandhold_will5000ind_portfolio_nonlog_monthly_rets <- monthlyReturn(buyandhold_will5000ind_portfolio) 
+  
+  # geometric: utilize geometric chaining (TRUE) or simple/arithmetic
+  #            chaining (FALSE) to aggregate returns, default TRUE
+  # View(table.CalendarReturns(portfolio_nonlog_monthly_rets, digits = 1, as.perc = TRUE, geometric = TRUE))
+  # WORKS
+  
+  # NEXT return of stocks verses return of bonds
+  #      willshire_less_agg_equity_premium (6 months) 5% rule
+  # NEXT NEXT rolling percentile rank of price /earnings ratio
+  #
+  # weighted ave ( by mktcap ) of the last three months + a SMA over the last three monhts
+  # NOTE NEED TO inver the query results so net_income is in the denominator 
+  # every_rat_mktcap_o_netinc_q1_x_4
+  # sipro_inbnd_netinc_any_marginals_eom_xts_marginals <- get_sipro_inbnd_netinc_any_marginals_eom_xts(marginals = TRUE)
   
   Sys.setenv(TZ=oldtz)
   options(ops)
