@@ -776,8 +776,6 @@ load_columns_direct <- function(
   candidate_getvar_all_load_days_var <- all_load_days
   candidate_old_columns_to_upload    <- candidate_columns
   
-  message("End   load_columns_direct")
-  
   verify_connection()
   
   # per dateindex
@@ -786,9 +784,10 @@ load_columns_direct <- function(
     # per si_#
     for(file_name_i in  file_names) {
    
-      si_xxx_tbl_df <- suppressWarnings(suppressMessages(foreign::read.dbf(file = paste0(getsetvar_aaii_sipro_dir(),"/",load_days_var_i,"/","si_", file_name_i, ".dbf"), as.is = TRUE)))
+      file_name_i_with_path <- paste0(getsetvar_aaii_sipro_dir(),"/",load_days_var_i,"/", file_name_i, ".dbf")
+      si_xxx_tbl_df <- suppressWarnings(suppressMessages(foreign::read.dbf(file = file_name_i_with_path, as.is = TRUE)))
 
-      old_columns_to_upload <- colnames(si_xxx_tbl_df)[colnames(si_xxx_tbl_df) %in% c(candidate_old_columns_to_upload)]
+      old_columns_to_upload <- colnames(si_xxx_tbl_df)[colnames(si_xxx_tbl_df) %in% candidate_old_columns_to_upload]
 
       # per column
       new_column_names <- character()
@@ -809,8 +808,9 @@ load_columns_direct <- function(
          # usually convert datatype
          if(any(names(col_conversions) == old_columns_to_upload_i)) {
          
-           si_xxx_tbl_df[[new_column_name]] <- eval(parse(text=gsub("<COL>","si_xxx_tbl_df[[new_column_name]]","col_conversions[names(col_conversions) == old_columns_to_upload_i]")[[1]]))
-         
+           col_conversion <- col_conversions[names(col_conversions) == old_columns_to_upload_i]
+           si_xxx_tbl_df[[new_column_name]] <- eval(parse(text=gsub("<COL>","si_xxx_tbl_df[[new_column_name]]",col_conversion)[[1]]))
+           
          }
          # add to the collection
          new_column_names <- c(new_column_names, new_column_name)
@@ -830,7 +830,7 @@ load_columns_direct <- function(
         # subset
         si_xxx_tbl_df_sub <- si_xxx_tbl_df[ ,c("dateindex", "company_id_orig", new_column_names), drop = FALSE]
          
-        dbWriteTableX(con, "si_finecon2", si_xxx_tbl_df_sub, index = c("dateindex", "company_id_orig"))
+        columns_direct <- dbWriteTableX(con, "si_finecon2", si_xxx_tbl_df_sub, index = c("dateindex", "company_id_orig"))
 
       }
 
@@ -839,12 +839,12 @@ load_columns_direct <- function(
   }
 
   
-  one_column <- TRUE
+  message("End   load_columns_direct")
   
   Sys.setenv(TZ=oldtz)
   options(ops)
   
-  return(one_column)
+  if(exists("columns_direct")) { return(columns_direct) } else { return(NULL) }
 } 
 
 # # CALL 1
