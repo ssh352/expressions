@@ -744,6 +744,137 @@ dbWriteTableX <- function (con, table.name, df, fill.null = TRUE, row.names = FA
 # dbWriteTableX(con, "mtcars",  mtcars3[ 1:18, !colnames(mtcars3) %in% c("               "),       drop = F], index = "mtcar" )
 
 
+load_columns_direct <- function(
+    con
+  , all_load_days = getvar_all_load_days()
+  , file_names    = c("si_ci", "si_isq", "si_cfq", "si_isq", "si_psd", "si_psdc", "si_date", "si_mlt", "si_rat", "si_ee")
+  , candidate_columns = NULL 
+  , col_conversions   = NULL
+  , add_file_name_root_prefix = TRUE
+  ) {
+  
+  ops <- options() 
+  
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  options(warn = 1)
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  message("Begin load_columns_direct")
+  
+  if(is.null(all_load_days))        stop("load_columns_direct must have at least one value in the parameter all_load_days")
+  if(is.null(file_names))           stop("load_columns_direct must have at least one value in the parameter file_names")
+  if(is.null(candidate_columns))    stop("load_columns_direct must have at least one value in the parameter candidate_columns")
+  
+  candidate_getvar_all_load_days_var <- all_load_days
+  candidate_old_columns_to_upload    <- candidate_columns
+  
+  message("End   load_columns_direct")
+  
+  verify_connection()
+  
+  # per dateindex
+  for(load_days_var_i in  candidate_getvar_all_load_days_var) {
+
+    # per si_#
+    for(file_name_i in  file_names) {
+   
+      si_xxx_tbl_df <- suppressWarnings(suppressMessages(foreign::read.dbf(file = paste0(getsetvar_aaii_sipro_dir(),"/",load_days_var_i,"/","si_", file_name_i, ".dbf"), as.is = TRUE)))
+
+      old_columns_to_upload <- colnames(si_xxx_tbl_df)[colnames(si_xxx_tbl_df) %in% c(candidate_old_columns_to_upload)]
+
+      # per column
+      new_column_names <- character()
+      for( old_columns_to_upload_i in old_columns_to_upload)  {
+      
+         new_column_name <- tolower(old_columns_to_upload_i)
+         # add decoraton
+         if(add_file_name_root_prefix) {
+         
+           file_name_root_prefix <- sub("^si_","",file_name_i)
+           new_column_name       <- paste0(file_name_root_prefix, "_", new_column_name)
+           
+         } 
+         
+         # add
+         si_xxx_tbl_df[[new_column_name]] <-  si_xxx_tbl_df[[old_columns_to_upload_i]]
+   
+         # usually convert datatype
+         if(any(names(col_conversions) == old_columns_to_upload_i)) {
+         
+           si_xxx_tbl_df[[new_column_name]] <- eval(parse(text=gsub("<COL>","si_xxx_tbl_df[[new_column_name]]","col_conversions[names(col_conversions) == old_columns_to_upload_i]")[[1]]))
+         
+         }
+         # add to the collection
+         new_column_names <- c(new_column_names, new_column_name)
+         
+         # if I did not add the "file_name_root_prefix"
+         # many databases can not have columns of the same name in different cases
+   
+         si_xxx_tbl_df[[old_columns_to_upload_i]] <- NULL
+   
+      }
+      
+      if(length(old_columns_to_upload)) {
+   
+        si_xxx_tbl_df[["company_id_orig"]] <- si_xxx_tbl_df[["COMPANY_ID"]]
+        si_xxx_tbl_df[["dateindex"]]       <- load_days_var_i
+        
+        # subset
+        si_xxx_tbl_df_sub <- si_xxx_tbl_df[ ,c("dateindex", "company_id_orig", new_column_names), drop = FALSE]
+         
+        dbWriteTableX(con, "si_finecon2", si_xxx_tbl_df_sub, index = c("dateindex", "company_id_orig"))
+
+      }
+
+    }
+
+  }
+
+  
+  one_column <- TRUE
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  return(one_column)
+} 
+
+# # CALL 1
+# columns_direct <-  load_columns_direct(
+#     con
+#   , file_names        = "si_ee"
+#   , candidate_columns = "QS_DATE"
+#                           # Date to integer
+#   , col_conversions   = c("QS_DATE" = "as.integer(zoo::as.Date(<COL>))")
+#   , add_file_name_root_prefix = FALSE
+#   ) 
+
+# # CALL 2
+# columns_direct <-  load_columns_direct(
+#     con
+#   # first added to the database # "2004-09-30" # so do not bother looking for earlier data
+#   , all_load_days = getvar_all_load_days()[12691 <= getvar_all_load_days()]
+#   # I (currently) do not have any "si_rat" columns in the database
+#   , file_names    = c("si_ci", "si_isq", "si_cfq", "si_isq", "si_psd", "si_psdc", "si_date", "si_mlt", "si_ee")
+#   , candidate_columns = c("LASTMOD","UPDATED") 
+#                              # Date to integer
+#   , col_conversions   = c(   "LASTMOD" = "as.integer(zoo::as.Date(<COL>))"
+#                              # logical to integer
+#                            , "UPDATED" = "as.integer(<COL>)"
+#                          )
+#   ) 
+
+
+
+
 
 is_connected_postgresql_con <- function() {  
 
