@@ -789,6 +789,12 @@ load_columns_direct <- function(
       file_name_i_with_path <- paste0(getsetvar_aaii_sipro_dir(),"/",load_days_var_i,"/", file_name_i, ".dbf")
       si_xxx_tbl_df <- suppressWarnings(suppressMessages(foreign::read.dbf(file = file_name_i_with_path, as.is = TRUE)))
 
+      # remove dangerous duplicates
+      si_xxx_tbl_df <- si_xxx_tbl_df[!duplicated(si_xxx_tbl_df),,drop = FALSE]
+      
+      si_xxx_tbl_df <- si_xxx_tbl_df[!duplicated(si_xxx_tbl_df$COMPANY_ID),                 ,drop = FALSE]
+      si_xxx_tbl_df <- si_xxx_tbl_df[!duplicated(si_xxx_tbl_df$COMPANY_ID, fromLast = TRUE),,drop = FALSE]
+      
       old_columns_to_upload <- colnames(si_xxx_tbl_df)[colnames(si_xxx_tbl_df) %in% candidate_old_columns_to_upload]
 
       # per column
