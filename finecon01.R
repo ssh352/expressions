@@ -780,6 +780,8 @@ load_columns_direct <- function(
   
   # per dateindex
   for(load_days_var_i in  candidate_getvar_all_load_days_var) {
+    
+    message(paste0("  Begin dateindex: ", load_days_var_i))
 
     # per si_#
     for(file_name_i in  file_names) {
@@ -835,6 +837,8 @@ load_columns_direct <- function(
       }
 
     }
+    
+    message(paste0("  End   dateindex: ", load_days_var_i))
 
   }
 
