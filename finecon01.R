@@ -713,7 +713,10 @@ dbWriteTableX <- function (con, table.name, df, fill.null = TRUE, row.names = FA
   Sys.setenv(TZ=oldtz)
   options(ops)
   
-  return(db.write)
+  # currently ONLY dbWriteTable result (if ever executed)
+  # COULD I choose SOMETHING better
+  if(exists("db.write")) { return(db.write) } else { return(NULL)}
+  
 }
 # DEBUGGING HELP
 # {
