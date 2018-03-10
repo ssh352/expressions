@@ -317,11 +317,54 @@ verify_sqlite3_channel <- function(aaii_sipro_dir = getsetvar_aaii_sipro_dir(), 
 
 
 
-
-# ANDRE added the ARGUMENT: snake_case_cols
-# index is the unique ID
+# con, 
+#   DBI connectoin
+# table.name, 
+#   string
+# df, 
+#   dataframe in insert(append) and updated
+#   Be careful column datatypes especially 
+#   integer and numeric MATTER.
+# fill.null = TRUE,
+#   if the local df only has less columns than
+#   the remote database, then create dummy columns
+#   and fill them with NA. May be required in some
+#   datebase where dbWriteTable requires this.
+#   PostgreSQL does not require this.
+#   SQLite has not been tested(yet) 
+# row.names = FALSE
+#   passed
+# inbnd_snake_case_cols = TRUE
+#   upper case letters become lowercase
+#   dots(.) become underscores
+# skip_insert_recs      = FALSE
+#   sometimes not enough information exists in the df
+#   to do an insert ( e.g. a multicolumed PK may exist )
+#   but the df only contains some columns of the PK,
+#   so skip doing inserts
+# date_to_int           = TRUE  # pre-dbWriteTable
+#   R Date classed datatypes are convertd to integers
+# logical_to_int        = TRUE  # pre-dbWriteTable
+#   R boolen datatypes are convert to integers
+# double_to_numeric     = TRUE  # pre-dbWriteTable # RSQLite # USE # "double_to_numeric = "numeric"
+#   R numeric datatypes are converted
+#     choices
+#       exactly name the datatype ( goodl for SQLite )
+#         double_to_numeric = "numeric"
+#       precise type ( good for PostgreSQL )
+#         double_to_numeric = TRUE ( good for PostgreSQL )
+#           numeric becomes "numeric(13,2)"
+# index = NULL
+#   columns in "where clause" forming a join between the temporary table and the target table
+#   that is used in the "UPDATE" statement.  These/this are/is VERY IMPORTANT
+# ...
+#   passed to dbWriteTable e.g. 'field types'
+#   TO DO 'field types' no longer works because data is ONLY appended
+#          ADJUST intercept 'field types' and USE the information
+# 
 dbWriteTableX <- function (con, table.name, df, fill.null = TRUE, row.names = FALSE
   , inbnd_snake_case_cols = TRUE
+  , skip_insert_recs      = FALSE
   , date_to_int           = TRUE  # pre-dbWriteTable
   , logical_to_int        = TRUE  # pre-dbWriteTable
   , double_to_numeric     = TRUE  # pre-dbWriteTable # RSQLite # USE # "double_to_numeric = "numeric"
@@ -333,13 +376,13 @@ dbWriteTableX <- function (con, table.name, df, fill.null = TRUE, row.names = FA
   
   # # FUTURE ( IN dots ... INTERCEPT field.types AND USE )
   # field.types 
-  #   character vector of named SQL field types where the names are the names of new table’s columns
+  #   character vector of named SQL field types where the names are the names of new table's columns
   # https://cran.r-project.org/web/packages/RSQLite/RSQLite.pdf
   # field.types 
-  #   is a list of named field SQL types where names(field.types) provide the new table’s column names 
+  #   is a list of named field SQL types where names(field.types) provide the new table's column names 
   # https://cran.r-project.org/web/packages/RPostgreSQL/RPostgreSQL.pdf
   # field.types
-  #   character vector of named SQL field types where the names are the names of new table’s columns. 
+  #   character vector of named SQL field types where the names are the names of new table's columns. 
   # https://cran.r-project.org/web/packages/RPostgres/RPostgres.pdf
   # field.types 
   #   Additional field types used to override derived types
@@ -467,7 +510,7 @@ dbWriteTableX <- function (con, table.name, df, fill.null = TRUE, row.names = FA
   all.clmns[all.clmns == "character"] <- "text"
 
   if (any(is.na(clmn.match))) { 
-    print(paste0("Found '", paste0(names(df)[is.na(clmn.match)], collapse = ", "), 
+    message(paste0("  Found '", paste0(names(df)[is.na(clmn.match)], collapse = ", "), 
                  "' not in fields of '", table.name, "' table. Adding to database . . ."))
     
     # NEW NAMES IN THE DATA.FRAME COLUMNS THAT DO NOT EXIST IN THE DATABASE FIELDS
@@ -475,8 +518,10 @@ dbWriteTableX <- function (con, table.name, df, fill.null = TRUE, row.names = FA
     
     # ACTUALLY ADD NEW COLUMNS TO THE DATABASE 
     for(new.fields_idx in seq_along(new.fields)) {
+      message(paste0("  Begin adding column ", names(new.fields)[new.fields_idx], "."))
                                                             # field name                       # field type
       dbExecute(con, paste("alter table", table.name, "add", names(new.fields)[new.fields_idx], new.fields[new.fields_idx]))
+      message(paste0("  End   adding column ", names(new.fields)[new.fields_idx], "."))
     }
     
     # REDO (FROM ABOVE)  
@@ -515,14 +560,18 @@ dbWriteTableX <- function (con, table.name, df, fill.null = TRUE, row.names = FA
     
       db.col.info <- dbColumnInfo(res)
       dbClearResult(res)
+      
+      # NON-PRECISE KEY ( ALWAYS A BAD IDEA )
       if(is.logical(double_to_numeric) && double_to_numeric) {
         db.col.info$type[db.col.info$type == "DECIMAL"] <- "NUMERIC(13,2)"
       } else if (is.character(double_to_numeric)) {
         db.col.info$type[db.col.info$type == "DECIMAL"] <- double_to_numeric
       }
       
-      dbExecute(con, paste0("create temporary table index_temp( ", paste(db.col.info$name, db.col.info$type, collapse = ", "), ", not_in_db INTEGER )") )
+      # temporary table
+      dbExecute(con, paste0("create ", if(!is.null(getOption("upsert_temp_is_temporary"))) { "temporary" } else { "" }," table index_temp( ", paste(db.col.info$name, db.col.info$type, collapse = ", "), ", not_in_db INTEGER )") )
 
+      # not_in_db  == 0 expects/shows *new* records to be added
       dbWriteTable(con, "index_temp", cbind(df[, index, drop = F], not_in_db = 0L) , row.names = FALSE, append = TRUE)
       # performance helper
       dbExecute(con, paste0("create index index_temp_idx on index_temp( ", paste(index,  collapse = ", " )," )"))
@@ -531,14 +580,16 @@ dbWriteTableX <- function (con, table.name, df, fill.null = TRUE, row.names = FA
       dbExecute(con, paste0(
         "update index_temp te set not_in_db = 1 where not exists ( select 1 from  ", table.name, " where ", paste0(sapply(index, function(x) { paste0("te.",x," = ",x) } ), collapse = " and "), ")"
         ))
-                                              # ORDER is not garanteed
-      df.not_in_db  <- dbGetQuery(con, paste0("select * from index_temp"))
       
-      # FURTHER PROCESSING(below) - INSERT(APPEND) 
-      df.reduced.not.in.db <- dplyr::filter(dplyr::inner_join(df, df.not_in_db, by = index), not_in_db == 1)
+      # optimistic: everthing is not in the database 
+                                              # ORDER is not garanteed
+     df.index_temp  <- dbGetQuery(con, paste0("select * from index_temp"))
+      
+      # FURTHER PROCESSING(below) - INSERT(APPEND)
+      df.reduced.not.in.db <- dplyr::filter(dplyr::inner_join(df, df.index_temp, by = index), not_in_db == 1L)
       df.reduced.not.in.db$not_in_db <- NULL
-      # FURTHER PROCESSING(below) - UPDATE 
-      df.reduced.in.db     <- dplyr::filter(dplyr::inner_join(df, df.not_in_db, by = index), not_in_db == 0)
+      # FURTHER PROCESSING(below) - UPDATE
+      df.reduced.in.db     <- dplyr::filter(dplyr::inner_join(df, df.index_temp, by = index), not_in_db == 0L)
       df.reduced.in.db$not_in_db <- NULL
       
       dbExecute(con, "drop table index_temp")
@@ -624,10 +675,13 @@ dbWriteTableX <- function (con, table.name, df, fill.null = TRUE, row.names = FA
   # type.mismatches <- names(df.classes)[db.sclasses != df.classes & !na.cols]
   # dbClearResult(r)
   
-  print(paste("loading", table.name, "table to database"))   
-  # ANDRE ADDED append = TRUE ( because if the table DID does not exist, I HAD made a 'stub' table )
-  if(target_table_exists) {
+     
+  # ANDRE ADDED append = TRUE because (earlier in the code), 
+  # if the table DID not exist, I HAD made a 'stub' table
+  if(target_table_exists && !skip_insert_recs) {
+    message(paste0("  Begin loading ", table.name, " new table data into the target database"))
     db.write <- dbWriteTable(con, table.name, df, row.names = row.names, append = TRUE, ...)
+    message(paste0("  End   loading ", table.name, " new table data into the target database"))
   }
   # currently do not have a case where the 'target table does not exist'
   
@@ -674,15 +728,19 @@ dbWriteTableX <- function (con, table.name, df, fill.null = TRUE, row.names = FA
     } else { }
     # "numeric"  #  correct FOR  SQLite
 
+    # temporary table
     dbExecute( con,
-      paste0("create temporary table update_temp( ", paste0( names(df.classes), " " , df.classes, collapse = ", "), " )")
+      paste0("create ",if(!is.null(getOption("upsert_temp_is_temporary"))) { "temporary" } else { "" }," table update_temp( ", paste0( names(df.classes), " " , df.classes, collapse = ", "), " )")
     )
+    message(paste0("  Begin loading ", table.name, " updated table data into the target database"))
     dbWriteTable(con, "update_temp", df, row.names = FALSE, append = TRUE)
+    message(paste0("  End   loading ", table.name, " updated table data into the target database"))
     # performance helper
     dbExecute( con,
       paste0("create index update_temp_idx on update_temp( ", paste0( index, collapse = ", "), " )")
     )
     
+    message(paste0("  Begin updating ", table.name, " old table data using new data in the the target database"))
     dbExecute(con, 
     paste0(
         "update ", table.name, " t \n"
@@ -690,6 +748,7 @@ dbWriteTableX <- function (con, table.name, df, fill.null = TRUE, row.names = FA
       , "from update_temp s \n"
       , "  where ", paste0(sapply(index, function(x) { paste0("s.", x," = t.",x) } ), collapse = " and ")
     ))
+    message(paste0("  End   updating ", table.name, " old table data using new data in the the target database"))
     
     dbExecute( con, "drop table update_temp")
     
@@ -744,6 +803,22 @@ dbWriteTableX <- function (con, table.name, df, fill.null = TRUE, row.names = FA
 # dbWriteTableX(con, "mtcars",  mtcars3[ 1:18, !colnames(mtcars3) %in% c("               "),       drop = F], index = "mtcar" )
 
 
+# con
+#   DBI CONNECTION
+# all_load_days = getvar_all_load_days()
+#   interger Dates since 1970
+# file_names    = c("si_ci", "si_isq", "si_cfq", "si_isq", "si_psd", "si_psdc", "si_date", "si_mlt", "si_rat", "si_ee")
+#   sipro 'before the dot' file names of the .dbf files
+# candidate_columns = NULL 
+#   columns (IN UPPERCASE) that I want to create in the database and update records, e.g.
+#   candidate_columns = c("LASTMOD","UPDATED")
+# col_conversions   = NULL
+#   named vector of column names and datatype conversions, e.g.
+#   col_conversions   = c("LASTMOD" = "as.integer(zoo::as.Date(<COL>))"
+# add_file_name_root_prefix = TRUE
+#   add the "si_..." ... part of the name to the beginning of the new column name
+#   only useful on columns of the 'same name' that are found in different .dbf files
+# 
 load_columns_direct <- function(
     con
   , all_load_days = getvar_all_load_days()
@@ -838,7 +913,18 @@ load_columns_direct <- function(
         # subset
         si_xxx_tbl_df_sub <- si_xxx_tbl_df[ ,c("dateindex", "company_id_orig", new_column_names), drop = FALSE]
          
-        columns_direct <- dbWriteTableX(con, "si_finecon2", si_xxx_tbl_df_sub, index = c("dateindex", "company_id_orig"))
+        # skip_insert_recs = TRUE
+        # 
+        # 12783 "2004-12-31"00509L10 Acura Pharmaceuticals, Inc. is 
+        # not in the target progresd database because the ticker is bad(actually missing).
+        # If I do not have enough information to form a "primary key" for insert, then I may receive the message
+        # # null value in column "PK" violates not-null constraint # #
+        # In this case, I do not really want to insert a new record anyways.
+        # (I do not have enough information to form the primary key(dateindex, company_id)
+        # (I do not have the TRUE company_id)
+        # So, I will just ignore that record. I will just update the rest of the records.
+
+        columns_direct <- dbWriteTableX(con, "si_finecon2", si_xxx_tbl_df_sub, skip_insert_recs = TRUE, index = c("dateindex", "company_id_orig"))
 
       }
 
@@ -856,6 +942,17 @@ load_columns_direct <- function(
   
   if(exists("columns_direct")) { return(columns_direct) } else { return(NULL) }
 } 
+# # CALL 0
+# BE VERY CAREFUL all_load_days MUST BE INTEGER
+# columns_direct <-  load_columns_direct(
+#     con
+#   , all_load_days     = 12783L # MUST BE INTEGER!
+#   , file_names        = "si_ee"
+#   , candidate_columns = "QS_DATE"
+#                           # Date to integer
+#   , col_conversions   = c("QS_DATE" = "as.integer(zoo::as.Date(<COL>))")
+#   , add_file_name_root_prefix = FALSE
+#   )
 
 # # CALL 1
 # columns_direct <-  load_columns_direct(
