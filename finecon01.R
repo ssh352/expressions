@@ -921,7 +921,7 @@ load_columns_direct <- function(
         # # null value in column "PK" violates not-null constraint # #
         # In this case, I do not really want to insert a new record anyways.
         # (I do not have enough information to form the primary key(dateindex, company_id)
-        # (I do not have the TRUE company_id)
+        # (I do not have the TRUE company_id) 
         # So, I will just ignore that record. I will just update the rest of the records.
 
         columns_direct <- dbWriteTableX(con, "si_finecon2", si_xxx_tbl_df_sub, skip_insert_recs = TRUE, index = c("dateindex", "company_id_orig"))
@@ -8625,7 +8625,7 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
       print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
   
       # MAY? have not been reliable?
-      verify_company_details(dateindex = c(dir_i),  table_f = "si_ee"  , cnames_e = "^date_eq0$") -> si_all_g_df
+      verify_company_details(dateindex = c(dir_i),  table_f = "si_ee"  , cnames_e = "^date_eq0$|^qs_date$") -> si_all_g_df
       upsert(si_all_g_df, keys = c("company_id"))
       
       verify_company_details(dateindex = c(dir_i),  table_f = "si_mlt", cnames_e = "^bby_1t$") -> si_all_g_df
