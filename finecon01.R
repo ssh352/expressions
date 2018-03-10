@@ -1901,7 +1901,29 @@ rm_df_dups <- function(df = NULL, cols = NULL) {
 ##   In the call to rm_df_dups, parameter element cols[i] 'SpeciesX' was entered that does not exist in df
 
 
-lcase_a_remove_useless_columns <- function(df) {
+# lcase_a_remove_useless_columns <- function(df) {
+# 
+#   require(stringr)
+# 
+#   # all lower ( PostgreSQL friendly )
+#   colnames(df) <- tolower(colnames(df))
+#   
+#   # remove useless columns
+#   # nothing starts with 'x'
+#   # x_nullflags, x., x, x.1, x.2 ...
+#   # 
+#   df[, !str_detect(colnames(df),"^x\\.?+")   & 
+#                  !str_detect(colnames(df),"^repno$")   & 
+#                  !str_detect(colnames(df),"^lastmod$") &
+#                  !str_detect(colnames(df),"^updated$") &
+#                  !str_detect(colnames(df),"^business$|^analyst_fn$") # UNTESTED - si_ci binary garbage
+#   , drop = FALSE] -> df
+#   
+#   return(df)
+# 
+# }
+
+lcase_a_remove_useless_columns <- function(df, prefix = NULL) {
 
   require(stringr)
 
@@ -1912,12 +1934,15 @@ lcase_a_remove_useless_columns <- function(df) {
   # nothing starts with 'x'
   # x_nullflags, x., x, x.1, x.2 ...
   # 
-  df[, !str_detect(colnames(df),"^x\\.?+")   & 
+  df[,           !str_detect(colnames(df),"^x\\.?+")   & 
                  !str_detect(colnames(df),"^repno$")   & 
-                 !str_detect(colnames(df),"^lastmod$") &
-                 !str_detect(colnames(df),"^updated$") &
-                 !str_detect(colnames(df),"^business$|^analyst_fn$") # UNTESTED - si_ci binary garbage
+                 !str_detect(colnames(df),"^business$|^analyst_fn$")
   , drop = FALSE] -> df
+  
+  if(!is.null(prefix)) {
+    colnames(df)[str_detect(colnames(df),"^lastmod$")] <- str_c(prefix, "_", "lastmod")
+    colnames(df)[str_detect(colnames(df),"^updated$")] <- str_c(prefix, "_", "updated")
+  }
   
   return(df)
 
@@ -3426,9 +3451,10 @@ verify_company_basics <- function (dateindex = NULL) {
         #                !str_detect(colnames(si_si_tbl_df),"^updated$")
         # , drop = FALSE] -> si_si_tbl_df 
         
-        lcase_a_remove_useless_columns(si_si_tbl_df) -> si_si_tbl_df
-        
-        
+      #    lcase_a_remove_useless_columns(si_si_tbl_df)       -> si_si_tbl_df
+        if(si_tbl_i = "si_ci") {
+           lcase_a_remove_useless_columns(si_si_tbl_df, "ci") -> si_si_tbl_df
+        }
         # unique ids
         
         if(si_tbl_i == "si_ci") {
@@ -3666,11 +3692,13 @@ update_from_future_new_company_ids <- function(df = NULL, ref = NULL) {
       
       lwd_of_month(month_i) -> lwd
       
+                                                                       # OLD # lcase_a_remove_useless_columns(.) %>%
+      
       print(str_c("Looking in direction at ... ", zoo::as.Date(lwd)," ",lwd," Maybe in "))
       if(file.exists(str_c("W:/AAIISIProDBFs/",lwd))) { print(str_c("  Exists: ","W:/AAIISIProDBFs/",lwd)) }
       
       suppressWarnings(suppressMessages(foreign::read.dbf(file = str_c("W:/AAIISIProDBFs/",lwd,"/si_ci.dbf")
-                                                          , as.is = TRUE))) %>% lcase_a_remove_useless_columns(.) %>%
+                                                          , as.is = TRUE))) %>% lcase_a_remove_useless_columns(.,"ci") %>%
         ## setNames(.,tolower(colnames(.))) %>%
         rm_df_dups(.,c("company_id","ticker"))  -> trg_db
       
@@ -3975,7 +4003,8 @@ verify_company_details <- function(dateindex = NULL,  table_f = NULL, cnames_e =
     #                !str_detect(colnames(si_si_tbl_df),"^updated$")
     # , drop = FALSE] -> si_si_tbl_df 
     
-    lcase_a_remove_useless_columns(si_si_tbl_df) -> si_si_tbl_df
+    # lcase_a_remove_useless_columns(si_si_tbl_df) -> si_si_tbl_df
+    lcase_a_remove_useless_columns(si_si_tbl_df,  str_replace(si_tbl_i,"si_","")) -> si_si_tbl_df
     
     # keep the ones that I have interest
     si_si_tbl_df[,str_subset(colnames(si_si_tbl_df),str_c("^company_id$","|",cnames_e)),drop = FALSE] -> si_si_tbl_df
