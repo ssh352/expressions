@@ -860,6 +860,8 @@ load_columns_direct <- function(
 
     # per si_#
     for(file_name_i in  file_names) {
+      
+      message(paste0("    Begin file_name: ", file_name_i))
    
       file_name_i_with_path <- paste0(getsetvar_aaii_sipro_dir(),"/",load_days_var_i,"/", file_name_i, ".dbf")
       si_xxx_tbl_df <- suppressWarnings(suppressMessages(foreign::read.dbf(file = file_name_i_with_path, as.is = TRUE)))
@@ -875,6 +877,8 @@ load_columns_direct <- function(
       # per column
       new_column_names <- character()
       for( old_columns_to_upload_i in old_columns_to_upload)  {
+        
+         message(paste0("      Begin old column: ", old_columns_to_upload_i))
       
          new_column_name <- tolower(old_columns_to_upload_i)
          # add decoraton
@@ -903,6 +907,8 @@ load_columns_direct <- function(
    
          si_xxx_tbl_df[[old_columns_to_upload_i]] <- NULL
    
+         message(paste0("      End   old column: ", old_columns_to_upload_i))
+         
       }
       
       if(length(old_columns_to_upload)) {
@@ -927,6 +933,8 @@ load_columns_direct <- function(
         columns_direct <- dbWriteTableX(con, "si_finecon2", si_xxx_tbl_df_sub, skip_insert_recs = TRUE, index = c("dateindex", "company_id_orig"))
 
       }
+      
+      message(paste0("    End   file_name: ", file_name_i))
 
     }
     
