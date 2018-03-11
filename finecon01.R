@@ -3460,7 +3460,7 @@ verify_company_basics <- function (dateindex = NULL) {
         # , drop = FALSE] -> si_si_tbl_df 
         
       #    lcase_a_remove_useless_columns(si_si_tbl_df)       -> si_si_tbl_df
-        if(si_tbl_i = "si_ci") {
+        if(si_tbl_i == "si_ci") {
            lcase_a_remove_useless_columns(si_si_tbl_df, "ci") -> si_si_tbl_df
         }
         # unique ids
