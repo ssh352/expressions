@@ -424,8 +424,6 @@ get_large_nationals_last_know_bond_ratings_by_month <- function(keep_eom_date_si
     Sys.sleep(1.0)
   }
   
-  # browser()
-  
   # combine all data.frames
   ### all_countries <- do.call(merge, c(list(), all_countries, by = c("dateindex", "dateindex_dt"), all = TRUE))
   
@@ -1199,7 +1197,7 @@ bridge_dfs <- function( dbfs, adjs = list() ) {
     dbfs_i_name <- names(dbfs)[dbfs_index] 
     
     # LEFT_OFF ( NOTHING SPECIAL: JUST 'MORE' 'single column values
-    # browser( expr = { dbfs_i_name == "house__zoo"  } )
+    # ( expr = { dbfs_i_name == "house__zoo"  } )
     
     # > combn(colnames(dbfs_i), 1, simplify = FALSE)
     # [[1]]
@@ -1326,6 +1324,643 @@ bridge_dfs <- function( dbfs, adjs = list() ) {
 #   ..$ house__zoo__color__unique__value: chr [1:3] "blue" "red" "yellow"
 # 
 # # END TEST
+
+# NOTE: CURRENLTY, CAN NOT GET "MULTISYMBOL" IMPORT TO WORK
+getFin.advfn <- function(
+  Symbol,                       # ticker(s)
+  env=parent.frame(), 
+  auto.assign=TRUE, 
+  n=10, 			                  # number of periods
+  mode=c('quarterly','annual'), # periodicity
+  max.attempts=5,	              # maximum number of attempts to download before exiting
+  ...) {
+
+  getFin.advfn_inner <- function(
+    Symbol=NULL,                # ticker(s)
+    env=NULL, 
+    auto.assign=NULL, 
+    n=NULL, 	 		              # number of periods
+    mode=NULL,                  # periodicity
+    max.attempts=NULL,	        # maximum number of attempts to download before exiting
+    ...) {
+    
+    if(is.null(Symbol)      || is.null(env) || 
+       is.null(auto.assign) || is.null(n)   ||
+       is.null(mode)        || is.null(max.attempts) ) 
+         stop("getFin.advfn_inner needs actuall sent parameters not be null")
+    
+    ops <- options()
+    
+    options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+    options(digits = 22) 
+    options(max.print=99999)
+    options(scipen=255) # Try these = width
+    
+    #correct for TZ 
+    oldtz <- Sys.getenv('TZ')
+    if(oldtz=='') {
+      Sys.setenv(TZ="UTC")
+    }
+    
+    # uses  curl    curl
+    # uses  stringr str_c str_detect str_extract
+    # uses  XML     htmlParse
+    # uses  htmltab htmltab
+    # uses  xml2    read_html
+    # uses  rvest   html_nodes
+    # uses  recoder recoder
+    # uses  purrr   transpose
+    # uses  rlist   list.merge
+    
+    # uses 
+    `%>%` <- magrittr::`%>%`
+    
+    # QUANTMOD GETFIN SPECIFIC
+    
+    if(missing(env))
+      env <- parent.frame(1)
+    if(is.null(env))
+      auto.assign <- FALSE
+    Symbol <- strsplit(Symbol,";")[[1]]
+    if(       (length(Symbol)>1) && (auto.assign = TRUE)) { # will 'auto.assign == TRUE' later
+      # I always want it returned to the user
+      return(lapply(Symbol, getFin.advfn, env=env, auto.assign=FALSE      , n = n, mode = mode, max.attempts = max.attempts, ... = ...))
+    } else if((length(Symbol)>1) && (auto.assign = FALSE)) {
+      # unwrap error on unlist() WRAPPER so I REMOVED IT
+      # I always want it returned to the user
+      return(lapply(Symbol, getFin.advfn, env=env, auto.assign=auto.assign, n = n, mode = mode, max.attempts = max.attempts, ... = ...))
+    } else {  } # length(Symbol) == 1L processing continues
+    Symbol.name <- Symbol
+    
+    # ANDRE WILL USE LATER USE CURL
+    ##
+    ## google.fin <- "http://finance.google.com/finance?fstype=ii&q="
+    ## tmp <- tempfile()
+    ## on.exit(unlink(tmp))
+    ## download.file(paste(google.fin,Symbol,sep=""),quiet=TRUE,destfile=tmp)
+    ## Symbol <- readLines(tmp, warn=FALSE)
+  
+    # ADVFN DATA EXRACTION BASE "HEAVILY" (BUT NOT ALL) UPON . . . 
+    # https://github.com/systematicinvestor/SIT/blob/master/R/fundamental.data.r
+    
+    # THIS PART WILL BE REREPLACED BY 'MOST-OF SYSTEMATIC" INVESTOR CODE
+    
+    # # thead contains the column names
+    # # tbody contains the data
+    # thead <- grep('thead', Symbol)
+    # tbody <- grep('tbody', Symbol)
+    # 
+    # # extract the column names
+    # c1 <- lapply(seq(1,11,2), function(x) Symbol[thead[x]:thead[x+1]])
+    # c2 <- lapply(c1,gsub,pattern="<.*?>",replacement="")
+    # cnames <- lapply(c2,function(x) x[-which(x=="")][-1])
+    # 
+    # # extract the data.  fnames if financial names (rownames)
+    # d1 <- lapply(seq(1,11,2), function(x) { Symbol[tbody[x]:tbody[x+1]]})
+    # d2 <- lapply(d1, gsub, pattern="<.*?>", replacement="", perl=TRUE)
+    # d3 <- lapply(d2, function(x) x[-which(x=="")])
+    # fnames <- lapply(d3, function(x) {
+    #                  gsub("&amp;","&",x[grep("[A-Za-z]",x)])} )
+    # # extract data and fill NAs where needed
+    # vals   <- lapply(d3, function(x) {
+    #           as.numeric(gsub(",","",
+    #           gsub("^-$",NA,x[-grep("[A-Za-z]",x)]))) })
+    
+    # SYSTEMATIC INVESTOR ( USED IN the function fund.data )
+    # https://github.com/systematicinvestor/SIT/blob/master/pkg/R/utils.r
+    # 
+    spl <- function(
+      s,          # input string
+      delim = ',' # delimiter
+    ) {
+      unlist(strsplit(s,delim))
+    }
+    
+    # SYSTEMATIC INVESTOR
+    # remnove any leading and trailing spaces
+    # trim('  a b c  ')
+    # https://github.com/systematicinvestor/SIT/blob/master/R/utils.r
+    
+    trim <- function
+    (
+      s # string
+    )
+    {
+      s = sub(pattern = '^\\s+', replacement = '', x = s)
+      sub(pattern = '\\s+$', replacement = '', x = s)
+    }
+    
+    # SYSTEMATIC INVESTOR
+    # https://cran.r-project.org/web/packages/purrr/purrr.pdf
+    len <- function
+    (
+      x # vector
+    )
+    {
+      length(x)
+    }
+    
+    # (SLIGHTLY MODIFIED WORK OF: ) SYSTEMATIC INVESTOR
+    # https://github.com/systematicinvestor/SIT/blob/master/R/fundamental.data.r
+    # 
+    fund.data <- function (
+    	Symbol, 		                    # ticker 
+    	n=10, 			                    # number of periods
+    	mode=c('quarterly','annual'),  # periodicity
+    	max.attempts=5,	                # maximum number of attempts to download before exiting
+      ...
+    )
+    {
+    	all.data <- c() 
+    	option.value <- -1
+    	
+    	start_date = spl('istart_date,start_date')
+    	names(start_date) = spl('quarterly,annual')
+    		
+      id_sheets_all <- data.frame()
+      is_sheets_all <- data.frame()
+      bs_sheets_all <- data.frame()
+      cf_sheets_all <- data.frame()
+      rc_sheets_all <- data.frame()
+      
+      all.data.colnames <- character()
+
+    	repeat {
+    		# download Quarterly Financial Report data
+    		if(option.value >= 0) {
+    			url <- paste('https://uk.advfn.com/p.php?pid=financials&symbol=', Symbol, '&btn=', mode[1], '_reports&', start_date[mode[1]], '=', option.value, sep = '')	
+    		} else {
+    			url <- paste('https://uk.advfn.com/p.php?pid=financials&symbol=', Symbol, '&btn=', mode[1], '_reports', sep = '')
+    		}
+    		
+    		cat('Downloading', url, '\n')
+    		
+    		#txt = join(readLines(url))		
+    		for(iattempt in 1:max.attempts) { 
+    			flag <- T
+    		    tryCatch({
+    		      fcon <-curl::curl(url)
+    		      fres <- readLines(fcon)
+    			}, interrupt = function(ex) {
+    				flag <<-  F
+    		  		Sys.sleep(0.1)
+    			}, error = function(ex) {
+    				flag <<-  F
+    				Sys.sleep(0.1)
+    			}, finally = {
+    			  close(fcon)
+    				if(flag) break
+    			})
+    		}
+    		# BETTER IDEA TO DO THIS *outside of the try loop*
+    		# txt = join(readLines(url))
+    		txt  <- stringr::str_c(fres, collapse = "")
+    		# SAVE FOR INPUT TO htmltab::htmltab
+    		txth <- XML::htmlParse(txt, asText = TRUE)
+    		
+        if( !stringr::str_detect(txt, 'INDICATORS') ) {
+          cat('No Data Found for', Symbol, '\n')
+          return(all.data)
+        }
+    		
+    		# get title
+    		# pos = regexpr(pattern = '<title>(.*?)</title>', txt, ignore.case = TRUE, perl = TRUE)
+    		# if(len(pos) == 1)
+    		# 	title = substr(txt, attr(pos, 'capture.start'), attr(pos, 'capture.start') + attr(pos, 'capture.length') - 1)
+        # e.g. "Walmart Inc. Company Financial Information"
+    		title <- stringr::str_extract(txt,'(?<=<title>).*(?=</title>)')
+    		title <- if(!is.na(title)) { title } else { "No Title" } 
+    		
+    		# ANDRE SPECIFIC
+    		# e.g. "All amounts in Millions of   US Dollars except per share items"
+    		units_long_message <- suppressMessages(names(htmltab::htmltab(txth, which = 6))[2])
+    		# e.g. "Millions" (SAVE FOR MATH LATER?)
+    		units              <- stringr::str_extract(units_long_message,'(?<=amounts in ).*(?= of)')
+    		# e.g. "Walmart Inc."
+        company <- str_extract(suppressMessages(names(htmltab::htmltab(txth, which = 5))),"[A-Za-z0-9].*")
+    		
+    		
+    		# extract table from this page
+    		# data = extract.table.from.webpage(txt, 'INDICATORS', has.header = T)
+    		# 	colnames(data) = data[1,]
+    		# 	rownames(data) = data[,1]
+    		# 	data = data[,-1,drop=F]
+    		
+    		# XML code or Goolge chrome XPath selects did not work
+    		data <- htmltab::htmltab(txth, which = 9)
+
+    		# REDONE BELOW ( SEE BELOW )
+    		# only add not already present data
+    		# add.index <- which( is.na(match( colnames(data), colnames(all.data) )) )			
+    		# all.data  <- cbind(data[,add.index,drop=F], all.data)
+    	
+        # new 1st row
+        data    <- rbind(colnames(data),data, stringsAsFactors = FALSE)
+        
+        # index of the row that  has the new column names
+        qed_idx <- which(stringr::str_detect(data[,1,drop = TRUE],'^quarter end date$|^year end date$'))
+        colnames(data)    <- data[qed_idx,,drop = TRUE]
+        colnames(data)[1] <- ""
+        
+        # dated column names
+        colnames(data) <- 
+          lubridate::parse_date_time(colnames(data), orders = c('ym')) %>% zoo::as.Date(.) %>%
+            zoo::as.yearmon(.) %>% zoo::as.Date(., frac = 1) %>% as.character(.)
+        colnames(data)[1] <- ""
+        
+        # 'quarter end date' 'year end date'
+        qed_col_idx <- which(str_detect(as.vector(unlist(data[qed_idx,])), "\\d{4}/\\d{2}"),TRUE)
+        data[qed_idx,qed_col_idx] <- as.vector(unlist(data[qed_idx,qed_col_idx])) %>% 
+          lubridate::parse_date_time(., orders = c('ym')) %>% zoo::as.Date(.) %>% 
+            zoo::as.yearmon(.) %>% zoo::as.Date(., frac = 1) %>% as.character(.)
+        
+        # filter columns
+        # only add not already present data
+        data <- data[,which(is.na(match(colnames(data), all.data.colnames))),drop = FALSE]
+        
+        # remove askterisks in row.names
+        ask_log <- stringr::str_detect(data[,1,drop = TRUE],'[*]')
+        data     <- data[!ask_log,,drop = FALSE]
+        rm(ask_log)
+        rm(qed_idx)
+        
+        # some statistcs are repeated
+        # remove duplicates in the 1st column ( to become row.names )
+        data <- data[!duplicated(data[,1,drop = TRUE]),]
+        
+        # assign new rows.names
+        row.names(data) <- data[,1,drop = TRUE]
+        data <- data[,-1,drop = FALSE]
+        
+        # remove row mini-statement titles
+        first_3_caps_lgl <- stringr::str_detect(row.names(data),'^[A-Z]{3}.*')
+        statements_lgl   <- stringr::str_detect(row.names(data),'^INDICATORS$|^INCOME STATEMENT$|^BALANCE SHEET$|^CASH-FLOW STATEMENT$|^RATIOS CALCULATIONS$')
+        ebits_lgl        <- stringr::str_detect(row.names(data),'^EBIT$|^EBITDA$')
+        data <- data[!(first_3_caps_lgl & !statements_lgl & !ebits_lgl),,drop = FALSE]
+        rm(first_3_caps_lgl,statements_lgl,ebits_lgl)
+        
+        # row indexes of where to do matrix extractions
+        indicators_idx  <- which(str_detect(row.names(data),'INDICATORS'),TRUE)
+        net_income_idx  <- which(str_detect(row.names(data),'INCOME STATEMENT'),TRUE)
+        bal_sheet_idx   <- which(str_detect(row.names(data),'BALANCE SHEET'),TRUE)
+        cash_flow_idx   <- which(str_detect(row.names(data),'CASH-FLOW STATEMENT'),TRUE)
+        ratio_calcs_idx <- which(str_detect(row.names(data),'RATIOS CALCULATIONS'),TRUE)
+        end_idx         <- NROW(data)
+        
+        # create sheets
+        id_sheet <- data[((indicators_idx+1):(net_income_idx-1)),,drop = FALSE] 
+        is_sheet <- data[((net_income_idx+1):(bal_sheet_idx-1)), ,drop = FALSE] 
+        bs_sheet <- data[((bal_sheet_idx+1):(cash_flow_idx-1)),  ,drop = FALSE] 
+        cf_sheet <- data[((cash_flow_idx+1):(ratio_calcs_idx-1)),,drop = FALSE] 
+        rc_sheet <- data[((ratio_calcs_idx+1):(end_idx)),        ,drop = FALSE] 
+        
+        # move rows 'cf' 'auditor name' and 'auditor report' to 'id'
+        auditor_name_idx   <- which(stringr::str_detect(row.names(cf_sheet),'auditor name'))
+        auditor_report_idx <- which(stringr::str_detect(row.names(cf_sheet),'auditor report'))
+        id_sheet <- rbind(id_sheet, cf_sheet[auditor_name_idx,  ,drop = FALSE], stringsAsFactors = FALSE)
+        id_sheet <- rbind(id_sheet, cf_sheet[auditor_report_idx,,drop = FALSE], stringsAsFactors = FALSE)
+        cf_sheet <- cf_sheet[-auditor_name_idx,  ,drop = FALSE]
+        rm(auditor_name_idx)
+        rm(auditor_report_idx)
+        auditor_report_idx <- which(stringr::str_detect(row.names(cf_sheet),'auditor report'))
+        cf_sheet <- cf_sheet[-auditor_report_idx,,drop = FALSE]
+        rm(auditor_report_idx)
+        
+        # ADD SUPPLEMENTARY INFORMATION TO THE ID SHEET
+        # MOVED FROM OUTSIDE THE REAPEAT LOOP 
+        # TO INSIDE THE REPEAT LOOP
+      	# all.data = rbind(all.data, title)
+        id_sheet <- rbind(id_sheet
+          , title   = title
+          , company = company
+          , symbol  = Symbol.name # so I can tell the calling program what I have sent
+          , units   = units
+          , stringsAsFactors = FALSE
+        )
+      	# LONG TIME AGO I SUGGESTED THIS.
+      	# BUT I PROBABLY WILL NOT KEEP THIS
+      	# rownames(all.data)[nrow(all.data)] = 'HTMLTITLEtext'
+        
+        # BEGIN CLEANING AND TYPE CONVERSIONS
+        
+        clean_to_numeric <- function(x) {
+        
+         `%>%` <- magrittr::`%>%`
+        
+          x %>% lapply(., function(x) { stringr::str_replace(x,",","") %>% as.numeric } ) %>%
+            data.frame(.,stringsAsFactors = FALSE) %>% 
+            `colnames<-`(.,colnames(x)) %>% `row.names<-`(.,row.names(x))  %>% as.matrix 
+        }
+        
+        # cleaned and convert to matrix
+        id_sheet <- id_sheet %>% as.matrix # class is a character
+        
+        # set col_desc attribute
+        # one XOR the_other will be present
+        # 
+
+        if(any(row.names(id_sheet) == 'quarter end date')) {
+          salutation <- 'quarter end date'
+        }
+        # 
+        if(any(row.names(id_sheet) == 'year end date')) {
+          salutation <- 'year end date'
+        }
+        attr(id_sheet,'col_desc') <- stringr::str_c(salutation, ' ',colnames(id_sheet))
+        
+        
+        # rest: class is numeric
+        # copy over attrib form the 'id' sheet
+        is_sheet <- is_sheet[,,drop = FALSE] %>% {suppressWarnings(clean_to_numeric(.))} 
+        attr(is_sheet,'col_desc') <- attr(id_sheet,'col_desc') 
+        
+        bs_sheet <- bs_sheet[,,drop = FALSE] %>% {suppressWarnings(clean_to_numeric(.))} 
+        attr(bs_sheet,'col_desc') <- attr(id_sheet,'col_desc')
+        
+        cf_sheet <- cf_sheet[,,drop = FALSE] %>% {suppressWarnings(clean_to_numeric(.))} 
+        attr(cf_sheet,'col_desc') <- attr(id_sheet,'col_desc')
+        
+        rc_sheet <- rc_sheet[,,drop = FALSE] %>% {suppressWarnings(clean_to_numeric(.))} 
+        attr(rc_sheet,'col_desc') <- attr(id_sheet,'col_desc')
+        
+        # END CLEANING AND TYPE CONVERSIONS
+        
+        # accumulate
+         
+        id_sheets_all <- c(list(),list(id_sheet),id_sheets_all)
+        is_sheets_all <- c(list(),list(is_sheet),is_sheets_all)
+        bs_sheets_all <- c(list(),list(bs_sheet),bs_sheets_all)
+        cf_sheets_all <- c(list(),list(cf_sheet),cf_sheets_all)
+        rc_sheets_all <- c(list(),list(rc_sheet),rc_sheets_all)
+        
+        # NOT USED ANYWHERE IN THE PROGRAM
+        # I DO NOT REMEMBER WHAT IT WAS FOR 
+        # BROWSING THE ORIGINAL SYSTEMATIC INVESTOR CODE
+        # AND COMPARING MY WORK, I MAY/MUST HAVE OTHER-WRITTEN THE LOGIC BELOW
+        # all.data.columns  <- c(colnames(id_sheet), all.data.colnames)
+          
+        # GRAND EXIT from FUND.DATA
+        all.data <- list(ID=id_sheets_all,IS=is_sheets_all,BS=bs_sheets_all,CF=cf_sheets_all,RC=rc_sheets_all)
+
+        # check if it is time to stop
+   		  # ABOVE REDONE
+    		# # check if it is time to stop
+    		# #if(ncol(all.data) >= n) break
+    		if(NROW(as.vector(unlist(sapply(id_sheets_all, colnames)))) >= n) break
+ 
+    		if(option.value == 0)  break
+    		
+    		# extract option value to go to the next page
+    		# temp = gsub(pattern = '<option', replacement = '<tr>', txt, perl = TRUE)
+    		# temp = gsub(pattern = '</option>', replacement = '</tr>', temp, perl = TRUE)	
+    		# temp = extract.table.from.webpage(temp, 'All amounts', has.header = T)
+    		raw_html <- xml2::read_html(txt)
+    		# temp = apply(temp,1,join)
+    		# S3 dispatch
+    		# From the user drop down box
+    		# vector of "<option>. . .</options"
+        if(mode == 'quarterly') {
+    		  temp <- as.character(rvest::html_nodes(raw_html, 'table select#istart_dateid option'))
+        }
+        if(mode == 'annual') {
+    		  temp <- as.character(rvest::html_nodes(raw_html, 'table select#start_dateid option'))
+        }
+        
+        # index.selected = grep('selected', temp)
+        index.selected <- match(TRUE, str_detect(temp, 'selected'))
+    		
+        option.value <- 0
+        if(	len(index.selected) ) {
+          # option.value = as.double( gsub('.*value=\'([0-9]*).*', '\\1', temp[index.selected]) ) 
+          option.value <-  as.integer(str_extract(temp[index.selected], "\\d+"))
+        }
+          
+        
+    		if(option.value > 0) {
+    			# can only get 5 time periods at a time
+    			option.value = option.value - 5
+    			option.value = max(0, option.value)		
+    		} else {
+    			break
+    		}
+    	} # end repeat
+    	
+      # REST OF THE PROGAM DOES NOT EXPECT AN 
+      # *INTERMEDIARY BLANK LIST LEVEL*
+      # SO I WILL REMOVE THAT *BLANK LEVEL* HERE
+      # ITER OVER: "ID" "IS" "BS" "CF" "RC"
+      # I WILL ALSO COMBINE(CBIND) ALL DATES/PER (ITER) INTO ONE PLACE
+      
+      # CBIND DOES PRESERVE MATRIX ROWNAMES AND COLNAMES
+      # HOWEVER, IT DOES NOT PRESERVE ATTRIBUTES
+      for(name_i in names(all.data)) {
+      
+        all.data_temp <- all.data[[name_i]]
+        col_desc_temp <- do.call(c,lapply(all.data_temp,function(x) {attr(x,"col_desc")}))
+        all.data_temp <- do.call(cbind,all.data_temp)
+        attr(all.data_temp,"col_desc") <- col_desc_temp
+        all.data[[name_i]] <- all.data_temp 
+      
+      } 
+      rm(all.data_temp)
+      rm(col_desc_temp)
+      
+      # EQUIVALENT IS BELOW
+    	# remove empty columns
+    	# all.data = all.data[, colSums(nchar(trim(all.data))) > 0, drop=F]
+    	# remove empty columns
+      for(i in seq_along(all.data)) {
+      
+        # keep_lgl <- colSums(nchar(trim(all.data[[i]]))) > 0
+        # I THINK THAT THE ORIGINAL AUTHOR MEANT THIS
+        keep_lgl <- sapply( data.frame(all.data[[i]], stringsAsFactors = F), function(x) { nchar(paste0(trim(as.character(x)), collapse = "")) > 0 } )
+        attr_temp <- attr(all.data[[i]], "col_desc")
+        # SUPRISINGLY THIS CALL "[, keep_lgl, drop=F]" dropS attributes
+        all.data[[i]] <- all.data[[i]][, keep_lgl, drop=F]
+        all.data_temp <- all.data[[i]]
+        attr(all.data_temp, "col_desc") <- attr_temp[keep_lgl]
+        all.data[[i]]  <- all.data_temp
+      }
+      rm(i);rm(all.data_temp);rm(keep_lgl);rm(attr_temp)
+
+
+      
+      # AFTER HE GETS *A LITTLE MORE DATA THAN HE NEEDS* from the remote,
+      # THEN and ONLY then DOES  he DECIDE TO filter WHAT is returned TO THE USER
+      
+      # I REPLACED all.data using all.data[["ID"]]
+      # I REPLACED ncol WITH 'NCOL'
+    	if( NCOL(all.data[["ID"]]) > n ) {	
+    		return(all.data[,(NCOL(all.data[["ID"]])-n+1):NCOL(all.data[["ID"]]), drop=F])
+    	} else {
+    		return(all.data)
+    	}
+    } # end function fund.data
+  
+    # calls begin
+    fund_data_all <- list()
+    for(mode_i in mode) {
+      fund_data <- fund.data (
+      	Symbol = Symbol, 		            # ticker 
+      	n=n, 			                      # number of periods
+      	mode= mode_i,                   # periodicity
+      	max.attempts=max.attempts,	    # maximum number of attempts to download before exiting
+        ...
+      )
+      # NOT RIGHT NEED: COME BACK
+      #
+      # GRAND EXIT from FIN ( BUT DONE EARLIER )
+      # attrib(GOOG.f[["IS"]][["Q"]],"col_desc") <- c("Quarter End Date YYYY-MM-DD1","Quarter End Date YYYY-MM-DD2") 
+      #
+      # getting fund_data[["IS"]], fund_data[["BS"]]
+      fund_data_all <- c(list(),fund_data_all, list(fund_data))
+      names(fund_data_all)[length(fund_data_all)] <- recoder::recoder( mode_i, ' "quarterly":"Q"; "annual":"A" ' ) 
+
+    } # end calls loop
+
+    # TRANSPOSE THE LIST MAIN with LIST SUB layer
+
+    Q_list <- purrr::transpose(list(Q = fund_data_all$Q))
+    A_list <- purrr::transpose(list(A = fund_data_all$A))
+    fund_data_all <- rlist::list.merge(Q_list, A_list)
+    fin <- fund_data_all
+  
+    # THIS AREA, I PROB WILL REPLACE
+    #
+    # # convert to a matrix with correct dim and names
+    # make_col_names <- function(name) {
+    #   substr(name, nchar(name)-9, nchar(name))
+    # }
+    # fin <- lapply(1:6,
+    #        function(x) {
+    #          structure(matrix(vals[[x]],nrow=length(fnames[[x]]),byrow=TRUE),
+    #                    .Dimnames=list(fnames[[x]],make_col_names(cnames[[x]])),
+    #                    col_desc=cnames[[x]])})
+    # fin <- list(IS=list(Q=fin[[1]], A=fin[[2]]),
+    #             BS=list(Q=fin[[3]], A=fin[[4]]),
+    #             CF=list(Q=fin[[5]], A=fin[[6]]))
+                
+    # # src = "google"
+    # > getFinancials("GOOG;GE")
+    # 
+    # > mode(GOOG.f[["IS"]][["Q"]])
+    # [1] "numeric"
+    # > class(GOOG.f[["IS"]][["Q"]])
+    # [1] "matrix"
+    # > mode(GOOG.f[["IS"]])
+    # [1] "list"
+    # > class(GOOG.f[["IS"]])
+    # [1] "list"
+    # 
+    # > attributes(GOOG.f[["IS"]][["Q"]])
+    # $dim
+    # [1] 49  5
+    # 
+    # $dimnames
+    # $dimnames[[1]]
+    #  [1] "Revenue"
+    #  [2] "Other Revenue, Total"
+    # 
+    # [47] "Normalized Income Avail to Common"
+    # [48] "Basic Normalized EPS"
+    # [49] "Diluted Normalized EPS"
+    # 
+    # $dimnames[[2]]
+    # [1] "2017-12-31" "2017-09-30" "2017-06-30" "2017-03-31" "2016-12-31"
+    # 
+    # $col_desc ( ADVFN: Quarter End Date  2016/10 )
+    # [1] "3 months ending 2017-12-31" "3 months ending 2017-09-30"
+    # [3] "3 months ending 2017-06-30" "3 months ending 2017-03-31"
+    # [5] "3 months ending 2016-12-31"
+    # 
+    # > attributes(GOOG.f[["IS"]])
+    # $names
+    # [1] "Q" "A"
+    # 
+    # # I THINK HTAT THE CODE BELOW ADDS BELOW)
+    # # 
+    # > attributes(GOOG.f)
+    # $names
+    # [1] "IS" "BS" "CF"
+    # 
+    # $symbol
+    # [1] "GOOG"
+    # 
+    # $class
+    # [1] "financials"
+    # 
+    # $src
+    # [1] "google"
+    # 
+    # $updated
+    # [1] "2018-03-11 03:16:10 GMT"
+    
+    # QUANTMOD/GETFIN SPECIFIC STUFF STAYS
+    
+    # TO "auto.assign == TRUE' later"
+    # I have to move this to an OUTER wrapper
+    
+    # if (auto.assign) {
+    #   assign(paste(gsub(":", ".", Symbol.name), "f", sep = "."),
+    #          structure(fin, symbol = Symbol.name, class = "financials",
+    #          src = "advfn", updated = Sys.time()), env)
+    #   return(paste(gsub(":", ".", Symbol.name), "f", sep = "."))
+    # } else {
+    #   return(structure(fin, symbol = Symbol.name, class = "financials",
+    #          src = "advfn", updated = Sys.time()))
+    # }
+    
+    # ALWAYS RETURN (LET THE OUTER FUNCTION HANDLE 
+    # 1. ATTRIBUTES
+    # 2. THE ENVIRONMENT ASSIGNMENT
+    return(list(fin = fin, Symbol.name = Symbol.name))
+    
+  }
+  
+  getFin.advfn_inner(
+    Symbol=Symbol,              # ticker(s)
+    env=env, 
+    auto.assign=auto.assign, 
+    n=n, 			                  # number of periods
+    mode=mode,                  # periodicity
+    max.attempts=max.attempts,	# maximum number of attempts to download before exiting
+    ...
+  ) -> Fin.advfn_inner 
+  
+  # browser()
+  
+  fin         <- Fin.advfn_inner$fin
+  Symbol.name <- Fin.advfn_inner$Symbol.name
+  
+  # DOES WORK
+  # Symbol.name <- with ( Fin.advfn_inner$ID, { 
+  #   if(exists('Q')) return(Q[which(rownames(Q) == 'symbol'),1])
+  #   if(exists('A')) return(A[which(rownames(A) == 'symbol'),1])
+  # })
+  
+  if (auto.assign) {
+    assign(paste(gsub(":", ".", Symbol.name), "f", sep = "."),
+           structure(fin, symbol = Symbol.name, class = "financials",
+           src = "advfn", updated = Sys.time()), env)
+    return(paste(gsub(":", ".", Symbol.name), "f", sep = "."))
+  } else {
+    return(structure(fin, symbol = Symbol.name, class = "financials",
+           src = "advfn", updated = Sys.time()))
+  }
+  
+}
+  
+`getFinancials.advfn` <- getFin.advfn
+# getFinancials.advfn("WMT")
+
+# library(quantmod)
+# NOTE: places GOOG.f and GE.f in the .GlobalEnv
+# library(quantmod)
+# getFinancials("GOOG;GE")
+# DO NOT DO BELOW, THIS DOES NOT WORK
+# IT PRODUCES A STRING OUTPUT
+# Financials <- getFinancials("GOOG;GE", auto.assign = FALSE)
+
 
 
 
@@ -2286,7 +2921,7 @@ get_clev_easing_balances_eom_xts <- function() {
   # First, late in 2008 the Treasury suspended its cash reinvestment program. 
   # It used to make short-term loans to banks that needed liquidity. 
   # Given low interest rates and the fact that banks have been 
-  # holding excess reserves, this program hasn’t been necessary, 
+  # holding excess reserves, this program hasn't been necessary, 
   # and so the Treasury is holding more cash. 
   # Second, since late 2015 the Treasury has been purposefully 
   # holding more cash to be prepared for any major disruptions, 
@@ -2592,7 +3227,7 @@ get_phil_survey_of_prof_forecasters_eom_xts <- function(file_data_loc = NULL, su
     # From the latest spreadsheet
     # 
     # latest micro5.xlxs
-    # Surveys 2010:1–present* Excel spreadsheet 
+    # Surveys 2010:1-present* Excel spreadsheet 
     # (3.8 MB; last update: February 9, 2018)
     # https://www.philadelphiafed.org/-/media/research-and-data/real-time-center/survey-of-professional-forecasters/historical-data/micro5.xlsx?la=en
     # 
@@ -2687,7 +3322,7 @@ get_phil_survey_of_prof_forecasters_eom_xts <- function(file_data_loc = NULL, su
     # UNEMP ( FRED: UNRATE?!? )
     # Quarterly forecasts are for the quarterly average of the underlying monthly levels
     
-    # The survey’s timing is geared to the release of the Bureau of Economic Analysis’ advance report (URL is below)
+    # The survey's timing is geared to the release of the Bureau of Economic Analysis' advance report (URL is below)
     #   of the national income and product accounts. 
     # 
     # We send our survey questionnaires (and wait less than 3 month until the questionare is returned)
@@ -2702,7 +3337,7 @@ get_phil_survey_of_prof_forecasters_eom_xts <- function(file_data_loc = NULL, su
     
     # A complete
     # list of the dates of deadlines for surveys from 1990:Q2 to the present is available on the
-    # Philadelphia Fed’s website at:
+    # Philadelphia Fed's website at:
     # https://www.philadelphiafed.org/-/media/research-and-data/real-time-center/survey-of-professional-forecasters/spf-release-dates.txt?la=en
     # 
     # This report (means'published date') is released 
@@ -2726,9 +3361,9 @@ get_phil_survey_of_prof_forecasters_eom_xts <- function(file_data_loc = NULL, su
     
     # number  "1" represents the "forecast" for the quarter prior
     # e.g. ( from pdf )
-    # NGDP1 is the real-time quarterly historical value for the previous quarter—that is, 
+    # NGDP1 is the real-time quarterly historical value for the previous quarter-that is, 
     #   the quarter before the quarter when we conducted the survey. 
-    # NGDP2 is the forecast (nowcast) for the current quarter—that is, 
+    # NGDP2 is the forecast (nowcast) for the current quarter-that is, 
     #   the quarter when we conducted the survey. 
       # 
       # e.g.
