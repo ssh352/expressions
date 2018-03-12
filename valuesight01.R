@@ -1368,6 +1368,8 @@ getFin.advfn <- function(
     # uses  htmltab htmltab
     # uses  xml2    read_html
     # uses  rvest   html_nodes
+    # uses  lubridate parse_date_time
+    # uses  zoo     as.Date as.yearmon
     # uses  recoder recoder
     # uses  purrr   transpose
     # uses  rlist   list.merge
