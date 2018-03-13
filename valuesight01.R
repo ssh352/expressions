@@ -1325,7 +1325,14 @@ bridge_dfs <- function( dbfs, adjs = list() ) {
 # 
 # # END TEST
 
-# NOTE: CURRENLTY, CAN NOT GET "MULTISYMBOL" IMPORT TO WORK
+
+
+# NOTE: TODO 
+#            [ ] PULL OUT 'fund_data' to the OUTSIDE so rstudio can see breakpoints
+#            [ ] PULL OUT getFin.advfn_inner FROM getFin.advfn (
+#            [ ] CURRENLTY, CAN NOT GET "MULTISYMBOL" IMPORT TO WORK
+#            [ ] REPLACE replace DANGEROUS cbind with data.table WORK
+# 
 getFin.advfn <- function(
   Symbol,                       # ticker(s)
   env=parent.frame(), 
@@ -1374,10 +1381,16 @@ getFin.advfn <- function(
     # uses  purrr   transpose
     # uses  rlist   list.merge
     
+    # USE OF xml2 and rvest is INSPIRED BY ... ( downloads data from advfn )
+    # https://github.com/artichaud1/stocks/blob/master/download_financials.R
+    
     # uses 
     `%>%` <- magrittr::`%>%`
     
     # QUANTMOD GETFIN SPECIFIC
+    
+    # I think that it worked better when I called getFin.advfn_inner
+    # come back: I MAY change this back later
     
     if(missing(env))
       env <- parent.frame(1)
@@ -1404,6 +1417,18 @@ getFin.advfn <- function(
   
     # ADVFN DATA EXRACTION BASE "HEAVILY" (BUT NOT ALL) UPON . . . 
     # https://github.com/systematicinvestor/SIT/blob/master/R/fundamental.data.r
+    
+    # COULD be USEFUL in ITERATION
+    # 
+    # get all stocks on that exchange
+    # ------------------------------------
+    # A-Z
+    # http://www.advfn.com/nyse/nyse.asp?companies=A
+    # http://www.advfn.com/nasdaq/nasdaq.asp?companies=A
+    # http://www.advfn.com/amex/amex.asp?companies=A
+    # 
+    # SEEN MAR 2018
+    # https://github.com/lanerjo/plutus/blob/master/scrapethis.py
     
     # THIS PART WILL BE REREPLACED BY 'MOST-OF SYSTEMATIC" INVESTOR CODE
     
@@ -1616,7 +1641,7 @@ getFin.advfn <- function(
         cf_sheet <- data[((cash_flow_idx+1):(ratio_calcs_idx-1)),,drop = FALSE] 
         rc_sheet <- data[((ratio_calcs_idx+1):(end_idx)),        ,drop = FALSE] 
         
-        # move rows 'cf' 'auditor name' and 'auditor report' to 'id'
+        # from CF sheet, move rows of 'auditor name' and 'auditor report' to ID sheet
         auditor_name_idx   <- which(stringr::str_detect(row.names(cf_sheet),'auditor name'))
         auditor_report_idx <- which(stringr::str_detect(row.names(cf_sheet),'auditor report'))
         id_sheet <- rbind(id_sheet, cf_sheet[auditor_name_idx,  ,drop = FALSE], stringsAsFactors = FALSE)
@@ -1658,7 +1683,7 @@ getFin.advfn <- function(
         id_sheet <- id_sheet %>% as.matrix # class is a character
         
         # set col_desc attribute
-        # one XOR the_other will be present
+        # one XOR the_other (quarter/year) will be present
         # 
 
         if(any(row.names(id_sheet) == 'quarter end date')) {
@@ -1670,9 +1695,8 @@ getFin.advfn <- function(
         }
         attr(id_sheet,'col_desc') <- stringr::str_c(salutation, ' ',colnames(id_sheet))
         
-        
         # rest: class is numeric
-        # copy over attrib form the 'id' sheet
+        # copy over attrib form the ID sheet
         is_sheet <- is_sheet[,,drop = FALSE] %>% {suppressWarnings(clean_to_numeric(.))} 
         attr(is_sheet,'col_desc') <- attr(id_sheet,'col_desc') 
         
@@ -1721,6 +1745,7 @@ getFin.advfn <- function(
     		# S3 dispatch
     		# From the user drop down box
     		# vector of "<option>. . .</options"
+        # 
         if(mode == 'quarterly') {
     		  temp <- as.character(rvest::html_nodes(raw_html, 'table select#istart_dateid option'))
         }
@@ -1729,12 +1754,12 @@ getFin.advfn <- function(
         }
         
         # index.selected = grep('selected', temp)
-        index.selected <- match(TRUE, str_detect(temp, 'selected'))
+        index.selected <- match(TRUE, stringr::str_detect(temp, 'selected'))
     		
         option.value <- 0
         if(	len(index.selected) ) {
           # option.value = as.double( gsub('.*value=\'([0-9]*).*', '\\1', temp[index.selected]) ) 
-          option.value <-  as.integer(str_extract(temp[index.selected], "\\d+"))
+          option.value <-  as.integer(stringr::str_extract(temp[index.selected], "\\d+"))
         }
           
         
@@ -1759,6 +1784,20 @@ getFin.advfn <- function(
       
         all.data_temp <- all.data[[name_i]]
         col_desc_temp <- do.call(c,lapply(all.data_temp,function(x) {attr(x,"col_desc")}))
+        # 
+        # ASSUMES perfect rownames are the same ON each sheet ( not garenteed )
+        # so this is dangerous ... rewrite this ( [ ] FIX THIS )
+        # [ ] REQUIRED FIX
+        # mtcars1 and mtcars2 each have distinct row.names and distinct colnmes from each other
+        # cbind PRODUCES the WRONG anser
+        # library(data.table)
+        # NEED A MULTIVARIATE magrittr ( CAN library(rmonads) HELP?)
+        # would like to *dual pass arguments*
+        # data.table:::merge.data.table PRODUCES the RIGHT answer
+        # merge(data.table(mtcars1, keep.rownames = T), data.table(mtcars2, keep.rownames = T), all = TRUE, sort = FALSE) %>% 
+        #   SAVE_ROW_NAMES %>% `[`(, -1) %>% as.matrix %>% ADD BACK ROWNAMES
+        #                      # REMOVE COLUMN # 
+        # 
         all.data_temp <- do.call(cbind,all.data_temp)
         attr(all.data_temp,"col_desc") <- col_desc_temp
         all.data[[name_i]] <- all.data_temp 
@@ -1785,10 +1824,8 @@ getFin.advfn <- function(
       }
       rm(i);rm(all.data_temp);rm(keep_lgl);rm(attr_temp)
 
-
-      
-      # AFTER HE GETS *A LITTLE MORE DATA THAN HE NEEDS* from the remote,
-      # THEN and ONLY then DOES  he DECIDE TO filter WHAT is returned TO THE USER
+      # just in case he gets MORE DATA THAN HE NEEDS from the remote,
+      # THEN and ONLY then DOES  he DECIDE TO filter (if needed) WHAT is returned TO THE USER
       
       # I REPLACED all.data using all.data[["ID"]]
       # I REPLACED ncol WITH 'NCOL'
@@ -1809,12 +1846,11 @@ getFin.advfn <- function(
       	max.attempts=max.attempts,	    # maximum number of attempts to download before exiting
         ...
       )
-      # NOT RIGHT NEED: COME BACK
-      #
-      # GRAND EXIT from FIN ( BUT DONE EARLIER )
+
+      # GRAND EXIT from FIN 
       # attrib(GOOG.f[["IS"]][["Q"]],"col_desc") <- c("Quarter End Date YYYY-MM-DD1","Quarter End Date YYYY-MM-DD2") 
       #
-      # getting fund_data[["IS"]], fund_data[["BS"]]
+      # getting fund_data[["IS"]], fund_data[["BS"]], etc, . . .
       fund_data_all <- c(list(),fund_data_all, list(fund_data))
       names(fund_data_all)[length(fund_data_all)] <- recoder::recoder( mode_i, ' "quarterly":"Q"; "annual":"A" ' ) 
 
@@ -1827,7 +1863,9 @@ getFin.advfn <- function(
     fund_data_all <- rlist::list.merge(Q_list, A_list)
     fin <- fund_data_all
   
-    # THIS AREA, I PROB WILL REPLACE
+    # THIS AREA below REPLACE has been repaced with ABOVE
+    #
+    # code from the original "getFinancials
     #
     # # convert to a matrix with correct dim and names
     # make_col_names <- function(name) {
@@ -1897,7 +1935,7 @@ getFin.advfn <- function(
     # $updated
     # [1] "2018-03-11 03:16:10 GMT"
     
-    # QUANTMOD/GETFIN SPECIFIC STUFF STAYS
+    # QUANTMOD/GETFIN SPECIFIC STUFF STAYS ( I MOVED IT down MORE )
     
     # TO "auto.assign == TRUE' later"
     # I have to move this to an OUTER wrapper
@@ -1912,7 +1950,7 @@ getFin.advfn <- function(
     #          src = "advfn", updated = Sys.time()))
     # }
     
-    # ALWAYS RETURN (LET THE OUTER FUNCTION HANDLE 
+    # ALWAYS RETURN - LET THE OUTER FUNCTION HANDLE 
     # 1. ATTRIBUTES
     # 2. THE ENVIRONMENT ASSIGNMENT
     return(list(fin = fin, Symbol.name = Symbol.name))
@@ -1928,8 +1966,6 @@ getFin.advfn <- function(
     max.attempts=max.attempts,	# maximum number of attempts to download before exiting
     ...
   ) -> Fin.advfn_inner 
-  
-  # browser()
   
   fin         <- Fin.advfn_inner$fin
   Symbol.name <- Fin.advfn_inner$Symbol.name
@@ -1951,15 +1987,16 @@ getFin.advfn <- function(
   }
   
 }
-  
 `getFinancials.advfn` <- getFin.advfn
+# 
 # getFinancials.advfn("WMT")
-
-# library(quantmod)
-# NOTE: places GOOG.f and GE.f in the .GlobalEnv
+# 
 # library(quantmod)
 # getFinancials("GOOG;GE")
-# DO NOT DO BELOW, THIS DOES NOT WORK
+# NOTE: places GOOG.f and GE.f in the .GlobalEnv
+# library(quantmod)
+# 
+# DO NOT DO BELOW, THIS DOES NOT WORK ( SHOULD ASK how to do )
 # IT PRODUCES A STRING OUTPUT
 # Financials <- getFinancials("GOOG;GE", auto.assign = FALSE)
 
