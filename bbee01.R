@@ -11,7 +11,7 @@
 # will fail
 #
 # no such thing exists to be a "zero number of rowsrow and "greater than zero length row.names" data.frame 
-# 
+# [ ] ADD attributes(df) <- list(tindex = )
 
 # my old work
 #
@@ -26,7 +26,7 @@ dfize <- function(xtso) {
 } 
 
 
-# safely make an xts into a data.frame
+# safely make a df into an xts
 xtsize <- function(dfo) {
   require(xts)
   id <- zoo::as.Date(as.numeric(  as.vector(unlist(dfo[,"tindex"]))   ))   
@@ -77,12 +77,18 @@ get_up_side_down_side <- function(){
   require(TTR)      # ROC
   require(quantmod) # monthlyReturn
   require(PerformanceAnalytics) # Return.portfolio # table.CalendarReturns
-  # uses lubridate `%m+%`
+  # uses R.utils    hpaste
+  # uses lubridate  `%m+%`
   `%m+%` <- lubridate::`%m+%`
   
+  message("begin get_up_side_down_side")
+  
+  # 1st empty xts
   market_log_rets <- xts(, zoo::as.Date(0)[0])
   
-  # WHAT I AM TRYING TO OPTIMIZE
+  ### ### ### ### ### ### ### ### ### ### 
+  ### WHAT I AM TRYING TO OPTIMIZE ###
+  # 
   # Wilshire 5000 Total Market Index
   # back through 1970
   # Daily, Close
@@ -99,24 +105,34 @@ get_up_side_down_side <- function(){
   # to.monthy ROUNDS FORWARD ( FORWARD: KEEP FOR NOW; I MAY WANT TO CHANGE LATER )
   # > tail(index(fred_wilshire5000_eom_xts))
   # [1] "2017-10-31" "2017-11-30" "2017-12-31" "2018-01-31" "2018-02-28" "2018-03-31"
-  will5000ind <- get_fred_wilshire5000_eom_xts()
-  will5000ind_log_rets <- ROC(will5000ind)               # which(is.na(will5000ind_log_rets))
+  will5000ind          <- get_fred_wilshire5000_eom_xts()
+  will5000ind_log_rets <- ROC(will5000ind)               # which(is.na(will5000ind_log_rets)) # logrithmic
   will5000ind_log_rets[is.na(will5000ind_log_rets)] <- 0 # usually just the 1st observation
   
-  # will5000ind
+  # will5000ind                # 1st empty xts
   market_log_rets <- merge.xts(market_log_rets, will5000ind_log_rets)
   
-  # "other"
+  # "other"             # no returns good/bad
   other_log_rets <- xts(rep(0,NROW(market_log_rets)),index(market_log_rets))
   colnames(other_log_rets) <- "other"
 
-   # "other" # will5000ind 
+  # colnames: will5000ind", "other" 
   market_log_rets <- merge.xts(other_log_rets, market_log_rets)
   
-  ##################################
-  ### BEGIN BIG CALCULATE WEIGHTS ##
+  ### ### ### ### ### ### ### ### ### ### 
+  ### BEGIN BIG CALCULATE WEIGHTS ### 
+  #
   
-  # default benchmark
+  all_possible_indicators <- xts(, zoo::as.Date(0)[0])
+  
+  # strategies 
+  # COLUMN order DOES matter
+  #  Return.porfolio
+  #  "weights" must have the same number of columns as "R"
+  #  "weights" colnames are ignored!  
+  
+  # default benchmark: zero percent(0.00) to one hundred percent(1.00)
+  # 100%
   buyandhold_will5000ind_wts <- xts(rep(1,NROW(market_log_rets)),index(market_log_rets))
   # "will5000ind"
   colnames(buyandhold_will5000ind_wts) <- "will5000ind"
@@ -139,19 +155,48 @@ get_up_side_down_side <- function(){
   ## https://www.bls.gov/schedule/news_release/empsit.htm
   # # just four month delay (Last Updated - max(Date Range))
   # https://fred.stlouisfed.org/data/UNRATE.txt
+  # contains: unrate[["monthly"]]
   unrate <- get_symbols_xts_eox("UNRATE", src ="FRED", returns = "monthly", pushback_fred_1st_days =  TRUE, month_delay = 1, OHLC = FALSE, indexAt = "lastof")
-  
-  # other will5000ind
-  portfolio_wts <- within.xts( unrate[["monthly"]], { 
 
-    # Return.portfolio requirement: rets columns to  weights columns matchups 
-    
+  all_possible_indicators <- merge.xts(all_possible_indicators, unrate[["monthly"]])
+
+  # other will5000ind
+  portfolio_wts <- within.xts( all_possible_indicators, { 
+
+    # register before using
+    wts_vars <- "unrate"
+    wts_vars_missing <- character()
+    for(wts_var in wts_vars) {
+      if(!exists(wts_var, envir = environment()))  wts_vars_missing <- c(wts_vars_missing, wts_var)
+    }
+    if(length(wts_vars_missing)) {
+      stop(paste0("  portfolio_wts within is missing variables . . . \n  ", R.utils::hpaste(wts_vars_missing,  maxHead = Inf, lastCollapse=" and ") ))
+    }
+    rm(wts_var, wts_vars_missing, wts_vars)
+
+    # Return.portfolio requirement: rets columns to  weights columns matchups: same # of columns 
+    #                                                                          weights column names are ignored
+  
     # 2007-09-30 + lag(+-1) IS THE time of SWITCH
     # performanceAnalytics Return.portfolio weights(xts)
     # SMOOTHER HACK(OVERFIT)
     # SHOULD WORK TO FIND SOMETHING *MORE* PRECISE
-    will5000ind <- ifelse( ((SMA(unrate,2)        - SMA(unrate,6)) <= 0)           | 
-                           ((SMA(lag(unrate),2)   - SMA(lag(unrate),6)) <= 0) | 
+    
+    # # rough eyball check
+    # # months of 4% loss or more
+    # 1978: OCT(very very bad)
+    # 1998: AUG(very very bad)
+    # 1981: AUG
+    # 1987: OCT(very very bad)
+    # 1994: MAR
+    # 1997: MAR
+    # 1998: AUG(very very bad)
+    # 2000: JAN, APR
+    # 2010: JUN, AUG
+    # 2011: MAY, JUN, JUL, SEP(very bad)
+    # 2016: JAN(bad)
+    will5000ind <- ifelse( ((SMA(unrate,2)        - SMA(    unrate   ,6)) <= 0)              | 
+                           ((SMA(lag(unrate),2)   - SMA(lag(unrate  ),6)) <= 0)              | 
                            ((SMA(lag(unrate,2),2) - SMA(lag(unrate,2),6)) <= 0), 1.00, 0.00) 
     
     # some early time before the indictator 
@@ -160,16 +205,17 @@ get_up_side_down_side <- function(){
     will5000ind[is.na(will5000ind)] <- 1 # 100% allocated
     
     # what is "left over"
+    # creates column
     other <- 1 - will5000ind
     
     # what happened last month affects next months decision
     # APROPRIATE # 1st of the NEXT MONTH # all DECISIONS happening in that NEXT MONTH
     # Return.portfolio requirement
-    tindex <- tindex + 1; rm(unrate)
+    tindex <- tindex + 1; rm(unrate) # required "rm position"
   
   })
   
-
+  bookmark <- 1
   
   # PRE/POST RECESSION ONLY
   # PART OF BROAD STATISTIC (UNRATE(ABOVE))
@@ -285,7 +331,7 @@ get_up_side_down_side <- function(){
   # just one month delay (Last Updated - max(Date Range))
   # https://fred.stlouisfed.org/data/USRECM.txt
   ####usrecm <- get_symbols_xts_eox("USRECM", src ="FRED", returns = "monthly", pushback_fred_1st_days =  TRUE, month_delay = 1, OHLC = FALSE, indexAt = "lastof")
-
+  
   
   
   # RECESSION AND ECONOMIC DOWNTURN 
@@ -485,14 +531,18 @@ get_up_side_down_side <- function(){
   # Factors Affecting Reserve Balances of Depository Institutions: Other Liabilities and Capital (WOTHLIAB)
   # https://fred.stlouisfed.org/series/WOTHLIAB
   
-  # rebalance_on: Ignored if 'weights' is an xts object that specifies the rebalancing dates
   # 100,000 dollars to start
-  # verbose is TRUE, return a list of intermediary calculations
-  
   initial_value <- 100000
   
-  # strategies 
+  # begin portfolio
   
+  # strategies 
+  # COLUMN order DOES matter
+  #  Return.porfolio
+  #  "weights" must have the same number of columns as "R"
+  #  "weights" colnames are ignored!
+  # rebalance_on: Ignored if 'weights' is an xts object that specifies the rebalancing dates
+  # verbose is TRUE, return a list of intermediary calculations
   return_portfolio_res <- Return.portfolio(R = market_log_rets, weights =  portfolio_wts, value = initial_value, verbose = TRUE)
   # "portfolio.returns"
   portfolio_log_rets <- return_portfolio_res$returns
@@ -501,7 +551,32 @@ get_up_side_down_side <- function(){
   portfolio <- exp(cumsum(portfolio_log_rets)) * initial_value
   colnames(portfolio) <- "portfolio"
  
-  # default benchmark
+  # default class yearmon # type="arithmetic"
+  portfolio_nonlog_monthly_rets                        <- monthlyReturn(portfolio)
+  
+  # extra portfolio information
+  
+  # alternative method
+  # 
+  # CalendarReturnTable
+  # 
+  # Creating a Table of Monthly Returns With R and a Volatility Trading Interview
+  # February 20, 2018
+  # By Ilya Kipnis
+  # https://quantstrattrader.wordpress.com/2018/02/20/creating-a-table-of-monthly-returns-with-r-and-a-volatility-trading-interview/
+  # https://www.r-bloggers.com/creating-a-table-of-monthly-returns-with-r-and-a-volatility-trading-interview/
+  
+  # geometric: utilize geometric chaining (TRUE) or simple/arithmetic
+  #            chaining (FALSE) to aggregate returns, default TRUE
+  
+  #          geometric: only used for the cumulative return for each year
+  # other table values: just displays whatever is input
+  View(table.CalendarReturns(portfolio_nonlog_monthly_rets, digits = 1, as.perc = TRUE, geometric = TRUE))   
+  # WORKS
+  
+  # end portfolio
+  
+  # begin default benchmark
 
   return_buyandhold_will5000ind_res <- Return.portfolio(R = market_log_rets[,"will5000ind"], weights =  buyandhold_will5000ind_wts, value = initial_value, verbose = TRUE)
   # "portfolio.returns"
@@ -511,25 +586,17 @@ get_up_side_down_side <- function(){
   buyandhold_will5000ind_portfolio <- exp(cumsum(return_buyandhold_will5000ind_log_rets)) * initial_value
   colnames(buyandhold_will5000ind_portfolio) <- "buyandhold"
  
-  # 
-  # 
-  # Creating a Table of Monthly Returns With R and a Volatility Trading Interview
-  # February 20, 2018
-  # By Ilya Kipnis
-  # https://quantstrattrader.wordpress.com/2018/02/20/creating-a-table-of-monthly-returns-with-r-and-a-volatility-trading-interview/
-  # https://www.r-bloggers.com/creating-a-table-of-monthly-returns-with-r-and-a-volatility-trading-interview/
-  # 
   # default class yearmon # type="arithmetic"
-  # 
-  portfolio_nonlog_monthly_rets                        <- monthlyReturn(portfolio) 
-  # COMPARE and CONTRAST with
   buyandhold_will5000ind_portfolio_nonlog_monthly_rets <- monthlyReturn(buyandhold_will5000ind_portfolio) 
   
-  # geometric: utilize geometric chaining (TRUE) or simple/arithmetic
-  #            chaining (FALSE) to aggregate returns, default TRUE
-  # View(table.CalendarReturns(portfolio_nonlog_monthly_rets, digits = 1, as.perc = TRUE, geometric = TRUE))
-  # WORKS
+  # end default benchmark
   
+  # begin COMPARE and CONTRAST area 
+  
+    # anything v.s buyandhold_will5000ind_portfolio_nonlog_monthly_rets
+
+  # end COMPARE and CONTRAST area
+
   # NEXT return of stocks verses return of bonds
   #      willshire_less_agg_equity_premium (6 months) 5% rule
   # NEXT NEXT rolling percentile rank of price /earnings ratio
@@ -541,6 +608,8 @@ get_up_side_down_side <- function(){
   
   Sys.setenv(TZ=oldtz)
   options(ops)
+  
+  message("end get_up_side_down_side")
   
   up_side_down_side <- NULL
   return(up_side_down_side)
