@@ -83,8 +83,14 @@ get_up_side_down_side <- function(){
   
   message("begin get_up_side_down_side")
   
+  # begin gather data
+  
   # 1st empty xts
   market_log_rets <- xts(, zoo::as.Date(0)[0])
+  
+  
+  # as as I gather data, place the value in my indicators xts
+  all_possible_indicators <- xts(, zoo::as.Date(0)[0])
   
   ### ### ### ### ### ### ### ### ### ### 
   ### WHAT I AM TRYING TO OPTIMIZE ###
@@ -119,24 +125,6 @@ get_up_side_down_side <- function(){
   # colnames: will5000ind", "other" 
   market_log_rets <- merge.xts(other_log_rets, market_log_rets)
   
-  ### ### ### ### ### ### ### ### ### ### 
-  ### BEGIN BIG CALCULATE WEIGHTS ### 
-  #
-  
-  all_possible_indicators <- xts(, zoo::as.Date(0)[0])
-  
-  # strategies 
-  # COLUMN order DOES matter
-  #  Return.porfolio
-  #  "weights" must have the same number of columns as "R"
-  #  "weights" colnames are ignored!  
-  
-  # default benchmark: zero percent(0.00) to one hundred percent(1.00)
-  # 100%
-  buyandhold_will5000ind_wts <- xts(rep(1,NROW(market_log_rets)),index(market_log_rets))
-  # "will5000ind"
-  colnames(buyandhold_will5000ind_wts) <- "will5000ind"
-  
   # Order is mostly from 
   # RECESSION TO DRAWDOWN
   # BROAD TO NARROW
@@ -155,67 +143,12 @@ get_up_side_down_side <- function(){
   ## https://www.bls.gov/schedule/news_release/empsit.htm
   # # just four month delay (Last Updated - max(Date Range))
   # https://fred.stlouisfed.org/data/UNRATE.txt
-  # contains: unrate[["monthly"]]
+  # contains: unrate[["monthly"]] column named "unrate"
   unrate <- get_symbols_xts_eox("UNRATE", src ="FRED", returns = "monthly", pushback_fred_1st_days =  TRUE, month_delay = 1, OHLC = FALSE, indexAt = "lastof")
 
+  # add "unrate"
   all_possible_indicators <- merge.xts(all_possible_indicators, unrate[["monthly"]])
 
-  # other will5000ind
-  portfolio_wts <- within.xts( all_possible_indicators, { 
-
-    # register before using
-    wts_vars <- "unrate"
-    wts_vars_missing <- character()
-    for(wts_var in wts_vars) {
-      if(!exists(wts_var, envir = environment()))  wts_vars_missing <- c(wts_vars_missing, wts_var)
-    }
-    if(length(wts_vars_missing)) {
-      stop(paste0("  portfolio_wts within is missing variables . . . \n  ", R.utils::hpaste(wts_vars_missing,  maxHead = Inf, lastCollapse=" and ") ))
-    }
-    rm(wts_var, wts_vars_missing, wts_vars)
-
-    # Return.portfolio requirement: rets columns to  weights columns matchups: same # of columns 
-    #                                                                          weights column names are ignored
-  
-    # 2007-09-30 + lag(+-1) IS THE time of SWITCH
-    # performanceAnalytics Return.portfolio weights(xts)
-    # SMOOTHER HACK(OVERFIT)
-    # SHOULD WORK TO FIND SOMETHING *MORE* PRECISE
-    
-    # # rough eyball check
-    # # months of 4% loss or more
-    # 1978: OCT(very very bad)
-    # 1998: AUG(very very bad)
-    # 1981: AUG
-    # 1987: OCT(very very bad)
-    # 1994: MAR
-    # 1997: MAR
-    # 1998: AUG(very very bad)
-    # 2000: JAN, APR
-    # 2010: JUN, AUG
-    # 2011: MAY, JUN, JUL, SEP(very bad)
-    # 2016: JAN(bad)
-    will5000ind <- ifelse( ((SMA(unrate,2)        - SMA(    unrate   ,6)) <= 0)              | 
-                           ((SMA(lag(unrate),2)   - SMA(lag(unrate  ),6)) <= 0)              | 
-                           ((SMA(lag(unrate,2),2) - SMA(lag(unrate,2),6)) <= 0), 1.00, 0.00) 
-    
-    # some early time before the indictator 
-    # has enough information to make a decison
-    # then just simply "buy and hold"
-    will5000ind[is.na(will5000ind)] <- 1 # 100% allocated
-    
-    # what is "left over"
-    # creates column
-    other <- 1 - will5000ind
-    
-    # what happened last month affects next months decision
-    # APROPRIATE # 1st of the NEXT MONTH # all DECISIONS happening in that NEXT MONTH
-    # Return.portfolio requirement
-    tindex <- tindex + 1; rm(unrate) # required "rm position"
-  
-  })
-  
-  bookmark <- 1
   
   # PRE/POST RECESSION ONLY
   # PART OF BROAD STATISTIC (UNRATE(ABOVE))
@@ -350,9 +283,9 @@ get_up_side_down_side <- function(){
   # 
   ####bankruptcy_filing_counts_eoq_xts <- get_bankruptcy_filing_counts_eoq_xts(pub_dates = Sys.Date(), updating_file = "bankruptcy_filing_counts_eoq_xts.RData")
   # seq.Date by = "unit" (to be accurate) needs to start on the 1st of the month
-  ####bus_ch_13 <- get_symbols_xts_eox(symbol_raw = bankruptcy_filing_counts_eoq_xts[ , "bus_ch_13"], returns = "monthly", raise_to_returns_frequency = TRUE, OHLC = FALSE, indexAt = "lastof")
   ####bus_ch_11 <- get_symbols_xts_eox(symbol_raw = bankruptcy_filing_counts_eoq_xts[ , "bus_ch_11"], returns = "monthly", raise_to_returns_frequency = TRUE, OHLC = FALSE, indexAt = "lastof")
-  
+  ####bus_ch_13 <- get_symbols_xts_eox(symbol_raw = bankruptcy_filing_counts_eoq_xts[ , "bus_ch_13"], returns = "monthly", raise_to_returns_frequency = TRUE, OHLC = FALSE, indexAt = "lastof")
+
   
   
   # RECESSION ONLY
@@ -531,10 +464,92 @@ get_up_side_down_side <- function(){
   # Factors Affecting Reserve Balances of Depository Institutions: Other Liabilities and Capital (WOTHLIAB)
   # https://fred.stlouisfed.org/series/WOTHLIAB
   
+  # end gather data
+  
+  # strategies 
+  # COLUMN order DOES matter
+  #  Return.porfolio
+  #  "weights" must have the same number of columns as "R"
+  #  "weights" colnames are ignored!  
+  
+  # begin buy and hold weights
+  
+  # default benchmark: zero percent(0.00) to one hundred percent(1.00) weights
+                                        # 100%
+  buyandhold_will5000ind_wts <- xts(rep(1,NROW(market_log_rets)),index(market_log_rets))
+  # "will5000ind"
+  colnames(buyandhold_will5000ind_wts) <- "will5000ind"
+  
+  # end buy and hold weights
+  
+  # begin portfolio weights
+  
+  # other will5000ind
+  portfolio_wts <- within.xts( all_possible_indicators, { 
+
+    # register before using
+    wts_vars <- "unrate"
+    wts_vars_missing <- character()
+    for(wts_var in wts_vars) {
+      if(!exists(wts_var, envir = environment()))  wts_vars_missing <- c(wts_vars_missing, wts_var)
+    }
+    if(length(wts_vars_missing)) {
+      stop(paste0("  portfolio_wts within is missing variables . . . \n  ", R.utils::hpaste(wts_vars_missing,  maxHead = Inf, lastCollapse=" and ") ))
+    }
+    rm(wts_var, wts_vars_missing, wts_vars)
+
+    # Return.portfolio requirement: rets columns to  weights columns matchups: same # of columns 
+    #                                                                          weights column names are ignored
+  
+    # 2007-09-30 + lag(+-1) IS THE time of SWITCH
+    # performanceAnalytics Return.portfolio weights(xts)
+    # SMOOTHER HACK(OVERFIT)
+    # SHOULD WORK TO FIND SOMETHING *MORE* PRECISE
+    
+    # # rough eyball check
+    # # months of 4% loss or more
+    # 1978: OCT(very very bad)
+    # 1998: AUG(very very bad)
+    # 1981: AUG
+    # 1987: OCT(very very bad)
+    # 1994: MAR
+    # 1997: MAR
+    # 1998: AUG(very very bad)
+    # 2000: JAN, APR
+    # 2010: JUN, AUG
+    # 2011: MAY, JUN, JUL, SEP(very bad)
+    # 2016: JAN(bad)
+    will5000ind <- ifelse( ((SMA(unrate,2)        - SMA(    unrate   ,6)) <= 0)              | 
+                           ((SMA(lag(unrate),2)   - SMA(lag(unrate  ),6)) <= 0)              | 
+                           ((SMA(lag(unrate,2),2) - SMA(lag(unrate,2),6)) <= 0), 1.00, 0.00) 
+    
+    # some early time before the indictator 
+    # has enough information to make a decison
+    # then just simply "buy and hold"
+    will5000ind[is.na(will5000ind)] <- 1 # 100% allocated
+    
+    # what is "left over"
+    # creates column
+    other <- 1 - will5000ind
+    
+    # what happened last month affects next months decision
+    # APROPRIATE # 1st of the NEXT MONTH # all DECISIONS happening in that NEXT MONTH
+    # Return.portfolio requirement
+    tindex <- tindex + 1; rm(unrate) # required "rm position"
+  
+  })
+  
+  bookmark <- 1
+  
+  # end portfolio wieghts
+
+  ### END   BIG CALCULATE WEIGHTS ### 
+  ### ### ### ### ### ### ### ### ### ### 
+
+  # begin portfolio
+
   # 100,000 dollars to start
   initial_value <- 100000
-  
-  # begin portfolio
   
   # strategies 
   # COLUMN order DOES matter
