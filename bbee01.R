@@ -1,17 +1,6 @@
  
 # bbee01.R
 
-# do not do this
-#
-# note: will fail
-# within.xts ( xts(, zoo::as.Date(0), { ___ } )
-# 
-# note: will fail
-# xts:::as.data.frame.xts
-# will fail
-#
-# no such thing exists to be a "zero number of rowsrow and "greater than zero length row.names" data.frame 
-# [ ] ADD attributes(df) <- list(tindex = )
 
 # my old work
 #
@@ -19,27 +8,50 @@
 dfize <- function(xtso) {
   require(xts)
   df <- as.data.frame(xtso)  # zoo::as.data.frame.zoo # xts:::as.data.frame.xts
-  rn <- as.numeric( zoo::as.Date( row.names(df) ) )
+  # rn <- as.numeric( zoo::as.Date( row.names(df) ) )
+  rn <- index(xtso)
   cb <- cbind(rn,df)
-  colnames(cb)[1] <- "tindex"
+  colnames(cb)[1] <- "datetime"
+  # attributes(cb) <- list(tindex = index)
   return(cb)
 } 
-
+# see test/example below
 
 # safely make a df into an xts
 xtsize <- function(dfo) {
   require(xts)
-  id <- zoo::as.Date(as.numeric(  as.vector(unlist(dfo[,"tindex"]))   ))   
+  id <-  dfo[["datetime"]] 
   # drop column
-  dfo[,"tindex"] <- NULL
+  dfo[,"datetime"] <- NULL
   cd <- coredata(as.matrix(dfo))
   xts(cd,id)  # could be 'zoo'
 }
+# library(xts)
+# sample_xts <- as.xts(sample_matrix)
+# str(head(xtsize(dfize(sample_xts))))
+#
+# edge case tests
 # 
+# xts1 <- xts(NA_real_, zoo::as.Date(0))
+# colnames(xts1) <- "col1"
+# xts1 <- xts1[0,]
+# 
+# exiting from: dfize(xts1)
+# 'data.frame':   0 obs. of  2 variables:
+#  $ datetime:Class 'Date'  num(0)
+#  $ col1    : num
+# 
+# > xtsize(dfize(xts1))
+#      col1
+# > str(xtsize(dfize(xts1)))
+# An 'xts' object of zero-width
+# > index(xtsize(dfize(xts1)))
+# [1] "Date of length 0"
 
 
 within.xts <- function (data, expr, ...) {
   data <- dfize(data)
+  # tindex <- attrib(data, "tindex")
   parent <- environment()    # JUST CHANGED parent.frame() to environment()
   e <- evalq(environment(), data, parent)
   eval(substitute(expr), e)
@@ -52,8 +64,58 @@ within.xts <- function (data, expr, ...) {
       NULL
   else
     vector("list", nD)
+  
   xtsize(data)
 }
+
+
+
+ifelse         <- function(test, yes, no) UseMethod("ifelse")
+ifelse.default <- function(test, yes, no) base::ifelse(test, yes, no )
+
+ifelse.xts  <- function(test, yes, no) {
+
+  require(xts)
+
+  if(!is.xts(yes)) {
+    if(NROW(yes) == 1) yes <- rep(yes,NROW(test))
+    yes <- xts(yes, index(test))
+  }
+  if(!is.xts(no)) {
+    if(NROW(no) == 1) no <- rep(no,NROW(test))
+    no <- xts(no, index(test))
+  }
+  test.yes.no <- merge(test,yes,no)
+  colnames(test.yes.no) <- c("test", "yes", "no" )
+  res <- within( test.yes.no, { res <- ifelse(test,yes,no);rm(test,yes,no);return(res) } )
+  colnames(res) <-"result"
+  return(res)
+  
+}
+# debug(ifelse.xts)
+# PURPOSE OF THIS: 
+# SO I CAN DO ifelse( . . . ) WITHOUT having TO DO ( within.xts( xts, { ifelse . . .} ) )
+# SIMILAR TO zoo in quantmod::tradeModel
+# library(xts)
+# sample_xts <- as.xts(sample_matrix)
+# head( ifelse( sample_xts[,"Open"] > sample_xts[,"Close"], -1, sample_xts[,"Open"] ) )
+# except index class is wrong because, I did not keep the index: within, dfize, xtsize
+#              result
+# 2007-01-02 50.03978
+# 2007-01-03 50.23050
+# 2007-01-04 -1.00000
+# 2007-01-05 -1.00000
+# 2007-01-06 -1.00000
+# 2007-01-07 -1.00000
+# str( ifelse( sample_xts[,"Open"] > sample_xts[,"Close"], -1, sample_xts[,"Open"] ) )
+# An 'xts' object on 2007-01-02/2007-06-30 containing:
+#   Data: num [1:180, 1] 50 50.2 -1 -1 -1 ...
+#  - attr(*, "dimnames")=List of 2
+#   ..$ : NULL
+#   ..$ : chr "result"
+#   Indexed by objects of class: [POSIXct,POSIXt] TZ:
+#   xts Attributes:
+#  NULL
 
 
 
@@ -85,8 +147,7 @@ get_up_side_down_side <- function(){
   
   # begin gather data
   
-  # 1st empty xts
-  market_log_rets <- xts(, zoo::as.Date(0)[0])
+
   
   
   # as as I gather data, place the value in my indicators xts
@@ -115,15 +176,18 @@ get_up_side_down_side <- function(){
   will5000ind_log_rets <- ROC(will5000ind)               # which(is.na(will5000ind_log_rets)) # logrithmic
   will5000ind_log_rets[is.na(will5000ind_log_rets)] <- 0 # usually just the 1st observation
   
+  # 1st empty xts
+  market_log_rets <- xts(, zoo::as.Date(0)[0])
+  
   # will5000ind                # 1st empty xts
   market_log_rets <- merge.xts(market_log_rets, will5000ind_log_rets)
   
-  # "other"             # no returns good/bad
-  other_log_rets <- xts(rep(0,NROW(market_log_rets)),index(market_log_rets))
-  colnames(other_log_rets) <- "other"
+  # "cash"             # no returns good/bad
+  cash_log_rets <- xts(rep(0,NROW(market_log_rets)),index(market_log_rets))
+  colnames(cash_log_rets) <- "cash"
 
-  # colnames: will5000ind", "other" 
-  market_log_rets <- merge.xts(other_log_rets, market_log_rets)
+  # colnames: will5000ind", "cash" 
+  market_log_rets <- merge.xts(cash_log_rets, market_log_rets)
   
   # Order is mostly from 
   # RECESSION TO DRAWDOWN
@@ -484,7 +548,7 @@ get_up_side_down_side <- function(){
   
   # begin portfolio weights
   
-  # other will5000ind
+  # will5000ind cash
   portfolio_wts <- within.xts( all_possible_indicators, { 
 
     # register before using
@@ -525,17 +589,17 @@ get_up_side_down_side <- function(){
     
     # some early time before the indictator 
     # has enough information to make a decison
-    # then just simply "buy and hold"
+    # then just simply "buy and hold" in "cash"
     will5000ind[is.na(will5000ind)] <- 1 # 100% allocated
     
     # what is "left over"
     # creates column
-    other <- 1 - will5000ind
+    cash <- 1 - will5000ind
     
     # what happened last month affects next months decision
     # APROPRIATE # 1st of the NEXT MONTH # all DECISIONS happening in that NEXT MONTH
     # Return.portfolio requirement
-    tindex <- tindex + 1; rm(unrate) # required "rm position"
+    datetime <- datetime + 1; rm(unrate) # required "rm position"
   
   })
   
@@ -624,7 +688,7 @@ get_up_side_down_side <- function(){
   Sys.setenv(TZ=oldtz)
   options(ops)
   
-  message("end get_up_side_down_side")
+  message("  end get_up_side_down_side")
   
   up_side_down_side <- NULL
   return(up_side_down_side)
