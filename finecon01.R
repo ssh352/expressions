@@ -4870,6 +4870,8 @@ load_inbnd_stmtstats <- function (dateindex = NULL, nowlast_columns = NULL, supp
     
     verify_connection()
     
+    # !NOTE! last_value() over () is broken in PostgreSQL 10.0 over clause is completely ignored
+    
     message(paste0("Beginning load_inbnd_stmtstats query SQL of dateindex: ", dateindex))
     
     ## ratios not usefull 'right now' because of explosion
@@ -7277,8 +7279,220 @@ vacuum_reindex_check_time_looper_checker <- function(vacuum_reindex_every_x_seco
 # })
 
 #
-# start_at_secs_since_UNIX_birth <- as.numeric(Sys.time())
+# start_at_secs_since_UNIX_birth <- as.numeric(Sys.time()) 
 # vacuum_reindex_check(start_at_secs_since_UNIX_birth, how_often = 3600) ->  start_at_secs_since_UNIX_birth
+
+
+
+# meant for rolling 10 trillion of SP companies reporting
+# this gives me a better idea of what is coming inbound withing the last 10 trilliion 
+# by mktcap
+# NOTE: this is NOT meant to show the FULL set
+get_sipro_rolling_finstats <- function(
+  dateindex_criteria = NULL,
+  other_criteria = NULL,
+  rolling_limit = NULL
+  ) {
+
+  ops <- options()
+  
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  message("Begin function get_sipro_rolling_finstats.")
+
+  verify_connection()
+  
+  if(is.null(dateindex_criteria)) {
+    dateindex_criteria <- "now.dateindex in ( select distinct dateindex from fe_data_store.si_finecon2 order by dateindex desc offset 0 limit 6 )"
+  } 
+  if(is.null(other_criteria)) {
+    other_criteria <- "now.sp in ('500','400','600')"
+  } 
+  # 10 trillion
+  if(is.null(rolling_limit)) {
+    rolling_limit <- "10000000.00"
+  } 
+  
+  query <- paste0("
+
+  with dat as (
+  -- all data
+  select
+    now.qs_date,
+    now.dateindex,
+    now.perend_q1,
+    now.perlen_q1,
+    now.pertyp_q1,
+    now.company_id,
+    now.ticker,
+    now.mktcap,
+    now.sp,
+    now.company,
+    now.netinc_q1,
+    now.netinc_q2,
+    now.liab_q1,
+    now.liab_q2
+  from fe_data_store.si_finecon2 now
+    -- where now.dateindex in (17590, 17562, 17529, 17500, 17470, 17438)  -- dateindexes now and in the past
+    -- where now.dateindex in ( select distinct dateindex from fe_data_store.si_finecon2 order by dateindex desc offset 0 limit 6 )
+    where 1 = 1
+     and ", dateindex_criteria, "
+      -- original
+      -- and now.ticker in('MSFT','AAPL')
+      -- and now.ticker in('MSFT','AAPL','ORCL','IBM','HPQ')
+      and ", other_criteria,"
+      -- and now.sp in ('500') and sector_desc = 'Financial'
+      and now.qs_date is not null -- 28 of 1500 are NULL ( and OLD )
+  order by now.qs_date, now.ticker
+  ), 
+  -- select * from dat
+  --  qs_date | dateindex | ticker |  mktcap
+  -- ---------+-----------+--------+-----------
+  --    17379 |     17438 | AAPL   | 791726.10
+  --    17367 |     17438 | MSFT   | 568964.80
+  --    17379 |     17470 | AAPL   | 873130.10
+  --    17465 |     17470 | MSFT   | 641699.60
+  --    17472 |     17500 | AAPL   | 870163.20
+  --    17465 |     17500 | MSFT   | 642933.90
+  --    17472 |     17529 | AAPL   | 878378.10
+  --    17465 |     17529 | MSFT   | 661294.70
+  --    17472 |     17562 | AAPL   | 857276.10
+  --    17562 |     17562 | MSFT   | 715451.10
+  --    17563 |     17590 | AAPL   | 905153.20
+  --    17562 |     17590 | MSFT   | 725320.50
+  -- (12 rows)
+  fv_qs as (
+    -- per every dateindex, first value ( first time) that a new qs had appeared ( in the past )
+  select
+    distinct
+    dat.qs_date fv_qs_date,
+    first_value(dat.dateindex) over (partition by dat.company_id, dat.qs_date order by dat.dateindex) fv_dateindex,
+    dat.company_id fv_company_id
+  from dat
+  order by fv_qs_date, fv_dateindex
+  ),
+  -- select * from fv_qs
+  --  fv_qs_date | fv_dateindex | fv_ticker
+  -- ------------+--------------+-----------
+  --       17367 |        17438 | MSFT
+  --       17379 |        17438 | AAPL
+  --       17465 |        17470 | MSFT
+  --       17472 |        17500 | AAPL
+  --       17562 |        17562 | MSFT
+  --       17563 |        17590 | AAPL
+  -- (6 rows)
+  qs_dateindex_company_id as (
+  -- PostgreSQL 10.0 last_value is BROKE(ignored), instead use 'first_value ... order by ... desc'
+  -- for real time reporting, per ticker, last time(most recent) a *new* qs appeared 
+  -- the month of the new qs is reported
+  -- modifiable here
+  -- advice: https://www.postgresql.org/docs/10/static/functions-window.html
+  select 
+    distinct
+    -- last_value: written as over(... order by ... desc)
+    first_value(fv_qs.fv_company_id) over (partition by fv_qs.fv_company_id order by fv_qs.fv_qs_date desc) lv_qs_company_id,
+    first_value(fv_qs.fv_dateindex)  over (partition by fv_qs.fv_company_id order by fv_qs.fv_qs_date desc) lv_qs_dateindex
+  from fv_qs
+  order by lv_qs_dateindex, lv_qs_company_id
+  ),
+  --select * from qs_dateindex_ticker
+  --  lv_qs_ticker | lv_qs_dateindex
+  -- --------------+-----------------
+  --  MSFT         |           17562
+  --  AAPL         |           17590
+  -- (2 rows)
+  -- 
+  -- combine to do some inbound statistics
+  recent as(
+  select dat.qs_date, dat.dateindex, dat.company_id, dat.ticker, dat.mktcap,  -- 1700000.00 -- small list of tech firms only
+    sum(dat.mktcap) over (order by dat.qs_date desc)                         <= ", rolling_limit, " is_within_last_10t
+  from qs_dateindex_company_id, dat
+    where dat.dateindex   = qs_dateindex_company_id.lv_qs_dateindex 
+      and dat.company_id  = qs_dateindex_company_id.lv_qs_company_id
+  order by dat.qs_date, dat.company_id
+  )
+  -- select * from recent
+  --  qs_date | dateindex | ticker |  mktcap   | is_within_10b
+  -- ---------+-----------+--------+-----------+---------------
+  --    17514 |     17529 | ORCL   | 198324.10 | f
+  --    17549 |     17562 | IBM    | 151478.00 | f
+  --    17562 |     17562 | MSFT   | 715451.10 | t
+  --    17563 |     17590 | AAPL   | 905153.20 | t
+  --    17584 |     17590 | HPQ    |  38695.80 | t
+  -- (5 rows)
+  -- select * from qs_dateindex_ticker
+  select 
+    to_timestamp(dat.qs_date*3600*24)::date   qs_date_dt,
+    to_timestamp(dat.dateindex*3600*24)::date dateindex_dt,
+    to_timestamp(dat.perend_q1*3600*24)::date perend_q1_dt,
+    dat.perlen_q1, 
+    dat.pertyp_q1,
+    recent.is_within_last_10t,
+    sum(dat.mktcap)    over (partition by recent.is_within_last_10t) sums_mktcap_within_last,
+    sum(dat.netinc_q1) over (partition by recent.is_within_last_10t) / nullif(sum(dat.netinc_q2) over (partition by recent.is_within_last_10t),0) * 100 rat_sums_recent_netinc_q2q1_x100, 
+    sum(dat.liab_q1)   over (partition by recent.is_within_last_10t) / nullif(sum(dat.liab_q2)   over (partition by recent.is_within_last_10t),0) * 100 rat_sums_recent_liab_q2q1_x100,
+    dat.company_id,
+    dat.ticker,
+    dat.sp,
+    dat.company,
+    dat.mktcap,
+    dat.liab_q1,
+    dat.liab_q2,
+    (dat.liab_q1 - dat.liab_q2)  / nullif(abs(dat.liab_q2),0)   * 100.00 prchg_liab_q2q1,
+    dat.netinc_q1,
+    dat.netinc_q2,
+    (dat.netinc_q1 - dat.netinc_q2)/ nullif(abs(dat.netinc_q2),0) * 100.00 prchg_netinc_q2q1,
+    ( (dat.liab_q1   - dat.liab_q2)  / nullif(abs(dat.liab_q2),0) ) / nullif((dat.netinc_q1 - dat.netinc_q2)/ nullif(abs(dat.netinc_q2),0),0) * 100 rat_prchg_liab_netinc_q1q2_x_100
+  from qs_dateindex_company_id, dat, recent
+  where dat.dateindex  = qs_dateindex_company_id.lv_qs_dateindex 
+    and dat.company_id = qs_dateindex_company_id.lv_qs_company_id
+    -- as of 'now.dateindex' in 17590, 17562, 17529, 17500, 17470, 17438
+    -- explicit remove nulls: very little difference in rat_sums_recent_netinc_q2q1_x100 ( 44 percent better net income )
+    -- BUT I do not like the number)
+    and dat.netinc_q1 is not null and dat.netinc_q2 is not null and dat.liab_q1 is not null and dat.liab_q2 is not null
+    and qs_dateindex_company_id.lv_qs_dateindex  = recent.dateindex
+    and qs_dateindex_company_id.lv_qs_company_id = recent.company_id
+  order by dat.qs_date, dat.company_id
+  ;
+  ")
+    
+  sipro_rolling_finstats <- dbGetQuery(con, query)
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  message("End   function get_sipro_rolling_finstats.")
+  
+  return(sipro_rolling_finstats)
+  
+}
+# View each
+# sipro_rolling_finstats <- get_sipro_rolling_finstats()
+#
+# # PARTIAL view
+# # NOT a GOOD view of the 'ENTIRE'
+# # instantaneous look-at: sp rolling last 10 trillion
+# sipro_rolling_finstats <- get_sipro_rolling_finstats()
+
+# # PARTIAL view
+# # NOT A GOOD view of the 'ENTIRE'
+# # large financial instititutions
+# sipro_rolling_finstats <- get_sipro_rolling_finstats(
+#     dateindex_criteria = "now.dateindex in ( select distinct dateindex from fe_data_store.si_finecon2 order by dateindex desc offset 0 limit 6 )"
+#   , other_criteria     = "now.sp in ('500') and now.industry_desc in ('Money Center Banks', 'Regional Banks', 'Consumer Financial Services', 'S&Ls/Savings Banks')"
+#   , rolling_limit     = "600000.00"
+#   )
+
+
 
 
 
