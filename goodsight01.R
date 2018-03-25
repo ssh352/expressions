@@ -3394,11 +3394,11 @@ rm(list=setdiff(ls(all.names=TRUE),c("sample_xts","unrate","unrate_40s", "ibm", 
 
 
 
-# same as UBL::SmoteRegress
-# except the user most pass exactly one of the following: thr.rel or y.extreme.start
-# y.extreme.start defines where the extreme values start
-#                 on behalf of the user, parameter y.extreme.start 
-#                 will deterimine the value of the parameter thr.rel 
+# same as UBL::SmoteRegress ( note: extreme value are ONLY upper/higher/greater values )
+# except the user must pass exactly one of the following: thr.rel xor y.extreme.start
+# y.extreme.start: defines where the extreme values start
+#                  on behalf of the user, parameter y.extreme.start 
+#                  will deterimine the value of the parameter thr.rel 
 SmoteRegressMngd <- function(form, dat, rel = "auto", thr.rel = NULL,
                          C.perc = "balance", k = 5, repl = FALSE,
                          dist   = "Euclidean", p = 2, 
@@ -3479,6 +3479,11 @@ SmoteRegressMngd <- function(form, dat, rel = "auto", thr.rel = NULL,
     # Chapter 3 Utility-based Regression of
     # Ribeiro, R.P.: Utility-based Regression. PhD thesis, Dep. Computer Science,
     # Faculty of Sciences - University of Porto (2011)
+    # http://www.dcc.fc.up.pt/~rpribeiro/publ/rpribeiroPhD11.pdf
+    # Rita P. Ribeiro
+    # Faculty of Sciences, University of Porto
+    # Verified email at dcc.fc.up.pt
+    # https://scholar.google.com/citations?user=ptDBgpkAAAAJ&hl=en
 
     # see
     # 6.4 The SmoteR Algorithm
@@ -3496,84 +3501,11 @@ SmoteRegressMngd <- function(form, dat, rel = "auto", thr.rel = NULL,
     temp.one.start.pos <- match(1, temp)
     
     # s.y value at temp one.start.pos
-    # prefer y.extreme.start to be less then or equal to this value
+    # prefer y.extreme.start to be less then or equal to this value: s.y.start.value.at.temp.one
     s.y.start.value.at.temp.one <- s.y[temp.one.start.pos]
     message(paste0("  s.y == ", s.y.start.value.at.temp.one," at the first 'temp == 1' at s.y position index ", temp.one.start.pos))
     
-    # e.g some distributions? may start extreme values too far to the left?
-    if( s.y.start.value.at.temp.one < y.extreme.start ) {
-    # maybe? this should NOT have been true
-      
-      y.extreme.start.original <- y.extreme.start
-      y.original   <- y
-      s.y.original <- s.y
-      temp.one.start.pos.original          <- temp.one.start.pos
-      s.y.start.value.at.temp.one.original <- s.y.start.value.at.temp.one
-      
-      for(poweradj in 1:999) {
-      
-        # need y-transformation
-
-        y <- y.original
-        y.extreme.start <- y.extreme.start.original
-        
-        # power y up and look for y.extreme.start <= s.y.start.value.at.temp.one
-        y <- y^(1 + poweradj*(1/1000))
-        y.extreme.start <- y.extreme.start^(1 + poweradj*(1/1000))
-        
-        ###############################################
-        # BEGIN "copy of code from UBL::SmoteRegress" #
-        
-        attr(y, "names") <- rownames(dat)
-        s.y <- sort(y)
-    
-        if (is.matrix(rel)) {
-          pc <- phi.control(y, method = "range", control.pts = rel)
-        } else if (is.list(rel)) {
-          pc <- rel
-        } else if (rel == "auto") {
-          pc <- phi.control(y, method = "extremes")
-        } else {# handle other relevance functions and not using the threshold!
-          stop("future work!")
-        }
-      
-        temp <- y.relev <- phi(s.y, pc)
-        if (!length(which(temp < 1))) {
-          stop("All the points have relevance 1.
-               Please, redefine your relevance function!")
-        }
-        if (!length(which(temp > 0))) {
-          stop("All the points have relevance 0.
-               Please, redefine your relevance function!")
-        }
-  
-        # END   "copy of code from UBL::SmoteRegress" #
-        ###############################################
-  
-        # where the relevance function value of number 1 first appears
-        temp.one.start.pos <- match(1, temp)
-        
-        # s.y value at temp one.start.pos
-        # we *would have preferred* this value to equal  y.extreme.start
-        s.y.start.value.at.temp.one <- s.y[temp.one.start.pos]
-        
-        if( y.extreme.start <= s.y.start.value.at.temp.one ) {
-          break
-        }
-          
-      }
-      
-      transformation_applied <- paste0("y <- y^(1 + ", poweradj, " * (1/1000))")
-      message(paste0("  transformation needed and applied: ", transformation_applied))
-      
-      writeLines("       (new) relevance function: phi results")
-      txtplot::txtplot(temp, xlab = "s.y position index", ylab = "phi")
-      message(paste0("  s.y == ", s.y.start.value.at.temp.one," at the first 'temp == 1' at s.y position index ", temp.one.start.pos))
-      
-    }
-
-    y.phi.df <- data.frame(rn = seq_along(s.y), sorty=s.y,y.phi = temp)
-    # thr.rel candidates
+    y.phi.df <- data.frame(rn = seq_along(s.y), sorty=s.y, y.phi = temp)
 
     # determine where the y value ( y.extreme.start ) 
     # crosses the line of the relevance function                                                 # not on x-axis                                                                                          # not on x-axis
@@ -3582,16 +3514,12 @@ SmoteRegressMngd <- function(form, dat, rel = "auto", thr.rel = NULL,
     message(paste0("  chose thr.rel == ", y.phi.df.at.thr.rel.candidate$y.phi, " at s.y == ", y.phi.df.at.thr.rel.candidate$sorty), " at s.y position index ", y.phi.df.at.thr.rel.candidate$rn)
     # unfortunately I can not add this line to a txtplot::txtplot
     
+    # thr.rel candidates
     thr.rel.candidate <- y.phi.df.at.thr.rel.candidate$y.phi
     
     # final decision
     thr.rel <- thr.rel.candidate
     
-    # NOTE:! 
-    # SOMETIMES can break the range of the extreme into more detail
-    # newy <- (y)^(power) transform 
-    # for example, power is slightly less than one e.g. 0.8
-
     ###############################################
     # BEGIN "copy of code from UBL::SmoteRegress" #
                     
@@ -3622,16 +3550,6 @@ SmoteRegressMngd <- function(form, dat, rel = "auto", thr.rel = NULL,
                                    C.perc = C.perc, k = k, repl = repl,
                                    dist = dist, p = p)
       
-      # if I powered down then I have to power up
-      if(exists("poweradj")) {
-        
-        # THIS may OR MAY not BE allowed
-        # FOR NOW I will allow it
-        transformation_applied <- paste0("y^(1/(1 + ", poweradj, "*(1/1000)))")
-        message(paste0("  reverse transformation needed and applied: ", transformation_applied))
-        Regress <- Regress^(1/(1 + poweradj*(1/1000)))
-        
-      }
       RegressMngd <- Regress
       
       options(ops)
@@ -3644,6 +3562,8 @@ SmoteRegressMngd <- function(form, dat, rel = "auto", thr.rel = NULL,
   return(RegressMngd)
  
 }
+# old stuff ...
+#
 # # pass thorugh to the default method
 #
 # ir  <- iris[-c(95:130), ]
@@ -3656,6 +3576,13 @@ SmoteRegressMngd <- function(form, dat, rel = "auto", thr.rel = NULL,
 #
 # # default method
 # RegressMngd <- SmoteRegressMngd(Sepal.Width~., ir, thr.rel = 0.5, dist = "HEOM", C.perc=list(0.5,2.5))
+# 
+# txtplot::txtplot(ir$Sepal.Width)
+# txtplot::txtplot(RegressMngd$Sepal.Width)
+#
+# new stuff ...
+#
+# RegressMngd <- SmoteRegressMngd(Sepal.Width~., ir, y.extreme.start = 4, dist = "HEOM", C.perc=list(0.5,2.5))
 # 
 # txtplot::txtplot(ir$Sepal.Width)
 # txtplot::txtplot(RegressMngd$Sepal.Width)
@@ -3678,6 +3605,10 @@ SmoteRegressMngd <- function(form, dat, rel = "auto", thr.rel = NULL,
 # txtplot::txtplot(xy$y)
 # txtplot::txtplot(RegressMngd$y)
 
+# data(ImbR)
+# mysm <- SmoteRegressMngd(Tgt~., ImbR,  y.extreme.start = 20 , dist="Manhattan", C.perc= list(0.1, 8))
+# txtplot::txtplot(ImbR$Tgt)
+# txtplot::txtplot(mysm$Tgt)
 
 
 
