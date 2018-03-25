@@ -479,7 +479,21 @@ get_up_side_down_side <- function(){
   # 
   ####sipro_inbnd_netinc_any_marginals_eom_xts           <- get_sipro_inbnd_netinc_any_marginals_eom_xts()
   ####sipro_inbnd_netinc_any_marginals_eom_xts_marginals <- get_sipro_inbnd_netinc_any_marginals_eom_xts(marginals = TRUE)
-    
+
+  # # PARTIAL view
+  # # NOT a GOOD view of the 'ENTIRE'
+  # # instantaneous look-at: sp rolling last 10 trillion
+  #####sipro_rolling_finstats <- get_sipro_rolling_finstats()
+  
+  # # PARTIAL view
+  # # NOT A GOOD view of the 'ENTIRE'
+  # # large financial instititutions
+  # ####sipro_rolling_finstats <- get_sipro_rolling_finstats(
+  #        dateindex_criteria = "now.dateindex in ( select distinct dateindex from fe_data_store.si_finecon2 order by dateindex desc offset 0 limit 6 )"
+  #      , other_criteria     = "now.sp in ('500') and now.industry_desc in ('Money Center Banks', 'Regional Banks', 'Consumer Financial Services', 'S&Ls/Savings Banks')"
+  #      , rolling_limit     = "600000.00"
+  #      )
+  
   # HIGHLY recommend 
   #   something on VOLUME of trading
   # HIGHLY recommend
