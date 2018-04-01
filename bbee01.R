@@ -276,6 +276,9 @@ get_up_side_down_side <- function(){
   # back through 1954
   # updated delay is one month ( published on the 1st )
   # one month dely (Last Updated - max(Date Range))
+  # AFTER THIS IS ACCELERATED UP TO A *HIGH MOUNTAIN* AND
+  #   MUST BE *HIGH MOUNTAIN* AND THEN REQUIRED! THE 
+  #   FED STARTS LOWERING INTEREST RATES, THEN THE GAME IS OVER!
   # https://fred.stlouisfed.org/data/FEDFUNDS.txt
   ####fedfunds <- get_symbols_xts_eox("FEDFUNDS", src ="FRED", returns = "monthly", pushback_fred_1st_days =  TRUE, month_delay = 1, OHLC = FALSE, indexAt = "lastof")
 
