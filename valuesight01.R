@@ -2972,6 +2972,8 @@ get_clev_easing_balances_eom_xts <- function() {
   # DISCOVERED FEB 2018 *( looks DEAD_EXACTLY like my 'total' "clev_easing_balances" )
   # Categories > Money, Banking, & Finance > Monetary Data > Factors Affecting Reserve Balances
   # All Federal Reserve Banks: Total Assets (WALCL)
+  # GAME STARTS AS SOON AS FED STARTS PUTTING DOWN "INTEREST RATES" (GOING DOWN TO MINIMIZED)
+  #   AND when 'walcl' STARTS INCREASING, THE GAME CONTINUES
   # since December of 2002
   # Units: Millions of Dollars,
   # Not Seasonally Adjusted
