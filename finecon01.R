@@ -8844,7 +8844,7 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
   ## # for_inbnd_stmtstats_is_null_months_only_back_check_NOT_done <- TRUE
   
   # WANT TO SEE THIS HAPPENING
-  #### vacuum_analyze_reindex()
+  vacuum_analyze_reindex()
   
   for(dir_i in near_month_end_dbf_dirs_ordered) {
     
@@ -8978,7 +8978,7 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
     message(paste0("**** Ending disk dbf dir: ",dir_i," ", dir_i," ****"))
     Sys.sleep(2)
     
-    #### vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
+    vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
     
   }
   
@@ -9058,6 +9058,7 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
 # after INSTALLING latest 'last business day'(MUST BE) SIPro. . .exe installer # SEE OTHER INSTRUCTOINS ### MONTHLY METHOD BEGINS ####
 # after checking 'latest' 'new' day using as.integer(getAAIISIProDate())       # SEE OTHER INSTRUCTIONS ### MONTHLY METHOD BEGINS ####
 # after COPIED new files using copyAAIISIProDBFs                               # SEE OTHER INSTRUCTIONS ### MONTHLY METHOD BEGINS ####
+# BEST: run the following at the COMMAND PROMPT
 # after checking W:\AAIISIProDBFs looking for the latest new directory
  # # typical *new month*                                # *new(top) month*  # assuming all of the previous months isq,bsq,cfq have been loaded                                                    
  # { upload_lwd_sipro_dbfs_to_db(exact_near_month_end_dbf_dirs = c(999999), exactly_only_aggregates = NULL, exactly_only_aggregates_group_bys_only = NULL,  decreasing_sort_order = FALSE)  
