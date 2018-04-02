@@ -3462,7 +3462,11 @@ verify_company_basics <- function (dateindex = NULL) {
       #    lcase_a_remove_useless_columns(si_si_tbl_df)       -> si_si_tbl_df
         if(si_tbl_i == "si_ci") {
            lcase_a_remove_useless_columns(si_si_tbl_df, "ci") -> si_si_tbl_df
+        } else { # "si_exchg","si_mgdsc"
+          # all lower ( PostgreSQL friendly )
+          colnames(si_si_tbl_df) <- tolower(colnames(si_si_tbl_df))
         }
+        
         # unique ids
         
         if(si_tbl_i == "si_ci") {
@@ -7494,8 +7498,6 @@ get_sipro_rolling_finstats <- function(
 
 
 
-
-
 get_sipro_sp500_earnings <- function() {
 
   ops <- options()
@@ -8842,7 +8844,7 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
   ## # for_inbnd_stmtstats_is_null_months_only_back_check_NOT_done <- TRUE
   
   # WANT TO SEE THIS HAPPENING
-  vacuum_analyze_reindex()
+  #### vacuum_analyze_reindex()
   
   for(dir_i in near_month_end_dbf_dirs_ordered) {
     
@@ -8976,7 +8978,7 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
     message(paste0("**** Ending disk dbf dir: ",dir_i," ", dir_i," ****"))
     Sys.sleep(2)
     
-    vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
+    #### vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
     
   }
   
