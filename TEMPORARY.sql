@@ -13200,6 +13200,42 @@ select count(1) from fe_data_store.si_finecon2 fei where fei.dateindex in (value
       ;
 
 
+
+explain
+select distinct count(1) from fe_data_store.si_finecon2 fe where 
+  dateindex = 17562 and fe.sector_desc = 'Financial' and fe.sp = '500';
+-- 76
+explain
+select distinct count(1) from fe_data_store.si_finecon2 fe where 
+  dateindex = 17562 and fe.sector_desc = 'Financial' and fe.sp in ('500','400','600');
+-- 221
+explain
+select distinct count(1) from fe_data_store.si_finecon2 fe where 
+  dateindex = 17562 and fe.sector_desc = 'Financial' and fe.sp in (values ('500'),('400'),('600'));
+
+explain
+select distinct count(1) from fe_data_store.si_finecon2 fe where 
+  dateindex = 17562 and fe.sector_desc = 'Financial' and fe.sp = ANY('{500,400,600}'::text[])
+
+select distinct count(1) from fe_data_store.si_finecon2 fe where 
+  dateindex = 17562 and fe.sector_desc = 'Financial' and fe.sp = '500';
+
+fe.industry_desc
+select count(1) from fe_data_store.si_finecon2 fe where dateindex = 17562 and fe.industry_desc = 'MONEY CENTER BANKS'
+
+select distinct fe.industry_desc from fe_data_store.si_finecon2 fe where dateindex = 17562 order by 1 
+
+"Money Center Banks" 
+"Regional Banks"
+"Consumer Financial Services"
+"S&Ls/Savings Banks"
+
+-- KEEP: creaping stress
+-- where fe.sp = '500' and fe.sector_desc = 'Financial'
+
+-- TRY
+-- where fe.sp = '500' and fe.industry_desc = 'MONEY CENTER BANKS'
+
 -- [ USEFUL: KEEP ]
 -- NOV 29 2017 -- 101.00
 -- res <- Quandl('MULTPL/SP500_EARNINGS_MONTH') 
@@ -13223,7 +13259,7 @@ from (
     , count(1) count_elig
     , sum( mktcap / price ) / count(1) avg_shares 
 from fe_data_store.si_finecon2 fe
-where sp = '500'
+where fe.sp in ('500','400','600') and fe.industry_desc in ('Money Center Banks', 'Regional Banks', 'Consumer Financial Services', 'S&Ls/Savings Banks')
   and fe.netinc_q1 is not null
   and fe.netinc_q2 is not null
   and fe.netinc_q3 is not null
@@ -13241,7 +13277,7 @@ select
   , sum( netinc_q1 + netinc_q2 + netinc_q3 + netinc_q4 ) / sum( mktcap / price ) * 10 * 4/4 earnings_per_avg_share_x10_4q                                    
   , sum( netinc_q1 + netinc_q2 + netinc_q3 + netinc_q4 ) / sum( mktcap / price ) / 29.8287359691438460 * 101.00 * 10 * 4/4 earnings_per_avg_share_x10_bal_4q 
 from fe_data_store.si_finecon2 fe
-where sp = '500'
+where fe.sp in ('500','400','600') and fe.industry_desc in ('Money Center Banks', 'Regional Banks', 'Consumer Financial Services', 'S&Ls/Savings Banks')
   and fe.netinc_q1 is not null
   and fe.netinc_q2 is not null
   and fe.netinc_q3 is not null
@@ -13256,7 +13292,7 @@ select
   , sum( netinc_q1 + netinc_q2 + netinc_q3  ) / count(1) / 100 * 4/3 earnings_x13_3q                                                                                               
   , sum( netinc_q1 + netinc_q2 + netinc_q3  ) / sum( mktcap / price ) * 10 * 4/3 earnings_per_avg_share_x13_3q                                    
 from fe_data_store.si_finecon2 fe
-where sp = '500'
+where fe.sp in ('500','400','600') and fe.industry_desc in ('Money Center Banks', 'Regional Banks', 'Consumer Financial Services', 'S&Ls/Savings Banks')
   and fe.netinc_q1 is not null
   and fe.netinc_q2 is not null
   and fe.netinc_q3 is not null
@@ -13271,7 +13307,7 @@ select
   , sum( netinc_q1 + netinc_q2 ) / count(1) / 100 * 4/2 earnings_x20_2q                                                                                               
   , sum( netinc_q1 + netinc_q2 ) / sum( mktcap / price ) * 10 * 4/2 earnings_per_avg_share_x20_2q                                    
 from fe_data_store.si_finecon2 fe
-where sp = '500'
+where fe.sp in ('500','400','600') and fe.industry_desc in ('Money Center Banks', 'Regional Banks', 'Consumer Financial Services', 'S&Ls/Savings Banks')
   and fe.netinc_q1 is not null
   and fe.netinc_q2 is not null
   and fe.netinc_q3 is not null
@@ -13286,7 +13322,7 @@ select
   , sum( netinc_q1 ) / count(1) / 100 * 4/1 earnings_x40_1q                                                                                               
   , sum( netinc_q1 ) / sum( mktcap / price ) * 10 * 4/1 earnings_per_avg_share_x40_1q                                    
 from fe_data_store.si_finecon2 fe
-where sp = '500'
+where fe.sp in ('500','400','600') and fe.industry_desc in ('Money Center Banks', 'Regional Banks', 'Consumer Financial Services', 'S&Ls/Savings Banks')
   and fe.netinc_q1 is not null
   and fe.netinc_q2 is not null
   and fe.netinc_q3 is not null
@@ -13298,6 +13334,20 @@ order by dateindex asc
 ) t1q on co.dateindex_dt_co = t1q.dateindex_dt_1q 
 order by co.dateindex_dt_co
 ;
+
+
+select 
+    to_timestamp(fe.dateindex*3600*24)::date dateindex_dt_1q
+  , sum( netinc_q1 ) / count(1) / 100 * 4/1 earnings_x40_1q                                                                                               
+  , sum( netinc_q1 ) / sum( mktcap / price ) * 10 * 4/1 earnings_per_avg_share_x40_1q                                    
+from fe_data_store.si_finecon2 fe
+where fe.sp in ('500','400','600') and fe.industry_desc in ('Money Center Banks', 'Regional Banks', 'Consumer Financial Services', 'S&Ls/Savings Banks')
+  and fe.netinc_q1 is not null
+  and mktcap is not null
+  and price  is not null
+group by dateindex
+order by dateindex asc
+
 
 
 
@@ -14333,7 +14383,7 @@ group by dateindex order by dateindex
 
 
 
---SKIP THIS
+--SKIP THIS (MANUAL CALCULATION OF FUTURE three month returns) - IF WANT TO PERSUE - THEN PROGRAM INSIDE A lateral
 -- long way (very slow, does not scale - does not use pre-calculated pradchg_f13w_ann)
 -- 2007-2008 recession
 -- inbound loosing value: seems most s_mktcap_o_cash, s_equity_o_cash
@@ -14718,12 +14768,13 @@ group by dateindex order by dateindex
 select 
     to_timestamp(dateindex*3600*24)::date dateindex_dt
   , dateindex
-  , count(cl_q1)                          c_cl
-  , sum(cl_q1)       / count(cl_q1)       a_cl
-  , count(netinc_q1)                      c_netinc
-  , sum(netinc_q1)   / count(netinc_q1)   a_netinc
-  , sum(netinc_q1 * mktcap ) / sum(mktcap)  wa_mktcap_netinc -- ONLY one ADDED
-  , sum(cl_q1)   / sum(netinc_q1)           r_s_cl_o_s_netinc
+  , count(cl_q1)                          c_cl_q1
+  , sum(cl_q1)       / count(cl_q1)       a_cl_q1
+  , count(netinc_q1)                      c_netinc_q1
+  , sum(netinc_q1)   / count(netinc_q1)   a_netinc_q1
+  , sum(mktcap)/(sum(netinc_q1) * 4)        rat_mktcap_o_netinc_q1_x4
+  , sum(netinc_q1 * mktcap ) / sum(mktcap)  wa_mktcap_netinc_q1 -- ONLY one ADDED
+  , sum(cl_q1)   / sum(netinc_q1)           r_s_cl_o_s_netinc_q1
   -- , sum( (pradchg_f13w_ann) * 1      ) / count(pradchg_f13w_ann)         a_pradchg_f13w_ann   
   -- , sum( (pradchg_f13w_ann) * mktcap ) / sum(mktcap)              wa_mktcap_pctchg_f03_price_ann -- mktcap not in SQL below
 from ( 
@@ -14736,10 +14787,15 @@ from (
          and now.netinc_q1 is not null 
          and now.mktcap is not null
          -- and now.pradchg_f13w_ann is not null
-         and ( (now.pradchg_f13w_ann is not null and dateindex <= 17438) or (now.pradchg_f13w_ann is null and dateindex > 17438)) -- just: now.pradchg_f13w_ann is not null 
+         and ( (now.pradchg_f13w_ann is not null and dateindex <= 17500) or (now.pradchg_f13w_ann is null and dateindex > 17500)) -- just: now.pradchg_f13w_ann is not null 
          and ((now.split_date < now.dateindex - 93) or now.split_date is null) -- no split within the last 93 days ( or never a split in history )
      ) sq1
 group by dateindex order by dateindex
+
+--17438
+--17500 -- 3 months
+--17590
+
 
 
 
@@ -14856,5 +14912,1290 @@ left join lateral (
   where sq1i.dateindex = rt.dateindex  and sq1i.dateindex in (values(17438)) and sq1i.sp = '500'
 ) sq1 on true;
 
--- LOAD xts into aaii finecon01
--- DISTANCE of the threat from bonds 5% 10% 15% 20%
+
+
+-- FIND COMPARISON of PERFORMANCE 'company by company REPORTING' (UNFINISHED)
+
+-- NOT a SOLUTION yet
+select sq2.* 
+from ( -- sq2
+  select sq1.*
+    , lag(sq1.netinc_q1,1) over(partition by ticker order by dateindex) netinc_q1_lag
+    , lag(sq1.date_eq0, 1) over(partition by ticker order by dateindex) date_eq0_lag
+  from ( --sq1
+    select now.company_id, now.ticker, now.company, now.dateindex, now.date_eq0, now.dateindex - now.date_eq0 diff 
+        ,  now.netinc_q1, now.assets_q1, now.assets_q1/nullif(now.netinc_q1,0) assets_o_netinc, now.mktcap, now.mktcap/nullif(now.netinc_q1,0) mktcap_o_netinc
+    from fe_data_store.si_finecon2 now 
+    where now.dateindex in (values(17438),(17409)) and now.sp in(values('500')) -- offet: -3, -4
+    --  and 30 < (now.dateindex - now.date_eq0) and (now.dateindex - now.date_eq0) <= 60;
+      and now.dateindex - now.date_eq0 <= 30
+    union all
+    select now.company_id, now.ticker, now.company, now.dateindex, now.date_eq0, now.dateindex - now.date_eq0 diff 
+        ,  now.netinc_q1, now.assets_q1, now.assets_q1/nullif(now.netinc_q1,0) assets_o_netinc, now.mktcap, now.mktcap/nullif(now.netinc_q1,0) mktcap_o_netinc
+    from fe_data_store.si_finecon2 now 
+    where now.dateindex in (values(17529)) and now.sp in(values('500'))         -- last: 0
+      and now.dateindex - now.date_eq0 <= 30
+    order by ticker, dateindex
+  ) sq1
+) sq2 -- where date_eq0_lag is not null;
+-- GENERAL IDEA (within 30 days) -- compare 17529
+
+
+----scratch
+                                  , fe_data_store.si_finecon2 past
+where now.dateindex in (values(17500)) and now.sp in (values('500')) 
+ and now.now_inbnd_stmtid_dateindex is not null
+ and now.now_inbnd_stmtid_dateindex = past.now_inbnd_stmtid_dateindex
+
+
+select now.dateindex, now.company_id, now.ticker, now.company
+  , now.now_inbnd_stmtid_dateindex, now.date_eq0  ,now.last_inbnd_stmtid_dateindex
+  , now.now_inbnd_stmtstat_netinc_q1, now.last_inbnd_stmtstat_netinc_q1
+from fe_data_store.si_finecon2 now 
+where now.dateindex in (values(17500)) and now.sp in (values('500')) 
+ and now.now_inbnd_stmtid_dateindex is not null
+--              (within WHENEVER days) -- BUT THE LAST REPORTED -- compare 17529
+----
+
+
+
+-- TRYING: USING now/last
+explain
+select now.dateindex, now.dateindexeom, now.company_id, now.ticker, now.company
+  , now.now_inbnd_stmtid_dateindex, now.date_eq0  ,now.last_inbnd_stmtid_dateindex
+  , now.now_inbnd_stmtstat_netinc_q1, now.last_inbnd_stmtstat_netinc_q1
+from fe_data_store.si_finecon2 now
+where now.ticker = 'AAPL'
+order by now.dateindex
+
+select now.dateindex, now.dateindexeom, now.company_id, now.ticker, now.company
+  , now.now_inbnd_stmtid_dateindex, now.date_eq0  ,now.last_inbnd_stmtid_dateindex
+  , now.now_inbnd_stmtstat_netinc_q1, now.last_inbnd_stmtstat_netinc_q1
+from fe_data_store.si_finecon2 now
+where now.ticker = 'AAPL'
+  and now.now_inbnd_stmtid_dateindex = now.last_inbnd_stmtid_dateindex
+order by now.dateindex
+
+explain
+select now.dateindex, now.dateindexeom, now.company_id, now.ticker, now.company
+  , now.now_inbnd_stmtid_dateindex, now.date_eq0  ,now.last_inbnd_stmtid_dateindex
+  , now.now_inbnd_stmtstat_netinc_q1, now.last_inbnd_stmtstat_netinc_q1
+from fe_data_store.si_finecon2 now
+where now.ticker in (values('AAPL'),('MSFT')) -- (values('AAPL'),('MSFT'))  -- ('AAPL','MSFT')
+  and now.now_inbnd_stmtid_dateindex = now.last_inbnd_stmtid_dateindex
+order by now.ticker, now.dateindex
+
+
+-- ('AAPL','MSFT')
+"Sort  (cost=31103.77..31103.78 rows=3 width=65)"
+"  Sort Key: ticker, dateindex"
+"  ->  Index Scan using si_finecon2_dateindex_ticker_id_key on si_finecon2 now  (cost=0.43..31103.74 rows=3 width=65)"
+"        Index Cond: (ticker = ANY ('{AAPL,MSFT}'::text[]))"
+"        Filter: (now_inbnd_stmtid_dateindex = last_inbnd_stmtid_dateindex)"
+
+-- (values('AAPL'),('MSFT'))
+"Sort  (cost=29518.74..29518.75 rows=1 width=65)"
+"  Sort Key: now.ticker, now.dateindex"
+"  ->  Nested Loop  (cost=0.46..29518.73 rows=1 width=65)"
+"        ->  Unique  (cost=0.04..0.04 rows=2 width=32)"
+"              ->  Sort  (cost=0.04..0.04 rows=2 width=32)"
+"                    Sort Key: "*VALUES*".column1"
+"                    ->  Values Scan on "*VALUES*"  (cost=0.00..0.03 rows=2 width=32)"
+"        ->  Index Scan using si_finecon2_dateindex_ticker_id_key on si_finecon2 now  (cost=0.43..14759.33 rows=1 width=65)"
+"              Index Cond: (ticker = "*VALUES*".column1)"
+"              Filter: (now_inbnd_stmtid_dateindex = last_inbnd_stmtid_dateindex)"
+
+--GOODISH
+select now.dateindex, now.dateindexeom, now.company_id, now.ticker
+  , now.now_inbnd_stmtid_dateindex, now.date_eq0  ,now.last_inbnd_stmtid_dateindex
+  , now.now_inbnd_stmtstat_netinc_q1, now.last_inbnd_stmtstat_netinc_q1
+  , lag(now.now_inbnd_stmtstat_netinc_q1) over(partition by ticker order by dateindex) now_inbnd_stmtstat_netinc_q1_lag
+from fe_data_store.si_finecon2 now
+where now.ticker in (values('AAPL'),('MSFT')) -- (values('AAPL'),('MSFT'))  -- ('AAPL','MSFT')
+  and now.now_inbnd_stmtid_dateindex = now.last_inbnd_stmtid_dateindex
+order by now.ticker, now.dateindex
+--HOW TO BE LIBERAL ON THE SP?
+
+-- how long every ticker
+explain -- one minute
+select 1
+from fe_data_store.si_finecon2 now
+where 
+-- now.ticker in (values('AAPL'),('MSFT')) -- (values('AAPL'),('MSFT'))  -- ('AAPL','MSFT')
+--and 
+  now.now_inbnd_stmtid_dateindex = now.last_inbnd_stmtid_dateindex
+order by now.ticker, now.dateindex
+
+
+-- aggregates
+-- technically works: BUT BOUNCY: FOCUS on the MONTH with the SMALLEST NUMBER OF FIRMS (still BOUNCY)
+-- average inbound net income
+-- 
+--
+select now.dateindex, to_timestamp(dateindex*3600*24)::date dateindex_dt
+  , count(now.now_inbnd_stmtstat_netinc_q1)
+  , sum(now.now_inbnd_stmtstat_netinc_q1)/ count(now.now_inbnd_stmtstat_netinc_q1) a_now_inbnd_stmtstat_netinc_q1
+  , stddev_pop(now.now_inbnd_stmtstat_netinc_q1)
+from fe_data_store.si_finecon2 now 
+where now.sp in (values('500')) 
+ and now.now_inbnd_stmtid_dateindex is not null
+group by now.dateindex
+order by now.dateindex
+
+select max(dateindex) from fe_data_store.si_finecon2;
+-- 17529
+select max(dateindex) from fe_data_store.si_finecon2;
+-- 17562
+select * from fe_data_store.si_finecon2 where dateindex = 17529;
+
+select count(1) from fe_data_store.si_finecon2 where dateindex = 17562;
+
+
+select count(1) from fe_data_store.si_finecon2 where dateindex = 17562;
+
+-- BAZARRO ( COME BACK )
+-- 2ND HALF OF THE FIRST ASSIGNMENT
+-- COME BACK AFTER DATA LOADS
+select 
+    to_timestamp(dateindex*3600*24)::date dateindex_dt
+  , dateindex
+  , count(netinc_q1 - cl_q1 + divpaid_q1) c_freenetic
+  , sum(  netinc_q1 - cl_q1 + divpaid_q1)/count(netinc_q1 - cl_q1 + divpaid_q1)        a_free_netinc
+  , sum( (netinc_q1 - cl_q1 + divpaid_q1) * mktcap ) / sum(mktcap)             wa_mktcap_free_netinc
+from ( 
+       select now.dateindex, now.sp, now.cl_q1, now.netinc_q1, now.divpaid_q1, now.mktcap
+       --     , now.pradchg_f13w_ann
+       from fe_data_store.si_finecon2 now
+       where
+             now.sp in(values('500'),('400'),('600')) 
+         and sector_desc in(values('Financial')) 
+         and now.cl_q1 is not null 
+         and now.divpaid_q1 is not null 
+         and now.netinc_q1 is not null 
+         and now.mktcap is not null-
+         -- and now.pradchg_f13w_ann is not null
+         and ( (now.pradchg_f13w_ann is not null and dateindex <= 17438) or (now.pradchg_f13w_ann is null and dateindex > 17438)) -- just: now.pradchg_f13w_ann is not null 
+         and ((now.split_date < now.dateindex - 93) or now.split_date is null) -- no split within the last 93 days ( or never a split in history )
+     ) sq1
+group by dateindex order by dateindex
+
+
+
+select dateindex, count(netinc_q1 + netinc_q2) count_netinc_q1q2, 
+  avg( (netinc_q1 - netinc_q2)/abs(nullif(netinc_q1,0)) * 100 ) avg_pctchg_netinc_q1q2
+from fe_data_store.si_finecon2 
+where now_inbnd_stmtid_dateindex is not null
+  and sp = '500'
+group by dateindex
+order by dateindex;
+
+
+select dateindex, count(netinc_q1 + netinc_q2) count_netinc_q1q2, count(netinc_q1 + netinc_q2 + mktcap) count_netinc_q1q2_mktcap,
+    avg( (netinc_q1 - netinc_q2)/abs(nullif(netinc_q1,0)) * 100 ) avg_pctchg_netinc_q1q2
+  , avg( (netinc_q1 - netinc_q2)/abs(nullif(netinc_q1,0)) * 100 * mktcap) / avg(mktcap) avg_pctchg_netinc_q1q2_wtd_mktcap
+from fe_data_store.si_finecon2 
+where now_inbnd_stmtid_dateindex is not null
+  and sp = '500'
+group by dateindex
+order by dateindex;
+
+
+select
+dateindex, to_timestamp(dateindex*3600*24)::date dateindex_dt, date_eq0, perend_q1, perend_q2, 
+company_id, ticker, company, (netinc_q1 - netinc_q2)/abs(netinc_q1) * 100 netinc_diff,
+now_inbnd_stmtid_dateindex, now_inbnd_stmtstat_mktcap, now_inbnd_stmtstat_assets_q1, now_inbnd_stmtstat_netinc_q1,  now_inbnd_stmtstat_price
+from fe_data_store.si_finecon2
+order by dateindex;
+
+
+, to_timestamp(dateindex*3600*24)::date dateindex_dt, date_eq0, perend_q1, perend_q2, 
+company_id, ticker, company, (netinc_q1 - netinc_q2)/abs( nullif(sum(netinc_q2),0) ) * 100 netinc_diff,
+now_inbnd_stmtid_dateindex, now_inbnd_stmtstat_mktcap, now_inbnd_stmtstat_assets_q1, now_inbnd_stmtstat_netinc_q1,  now_inbnd_stmtstat_price
+
+
+select to_timestamp(dateindex*3600*24)::date dateindex_dt, 
+to_timestamp(date_eq0*3600*24)::date  date_eq0_dt,
+to_timestamp(perend_q1*3600*24)::date perend_q1_dt,
+perend_q1 - perend_q2 period_days,
+ticker, company, netinc_q1, netinc_q2, 
+netinc_q1 - netinc_q2 diff_netinc_q1q2, (netinc_q1 - netinc_q2)/abs(nullif(netinc_q2,0)) * 100.0 pctchg_netinc_q1q2,
+(netinc_q1 - netinc_q2) / (perend_q1 - perend_q2) * 365 pctchg_netinc_q1q2_ann
+from fe_data_store.si_finecon2
+where dateindex = 17562 and now_inbnd_stmtid_dateindex is not null and sp in ('500','400','600')
+  and netinc_q1 is not null and netinc_q2 is not null and mktcap is not null and assets_q1 is not null
+order by date_eq0
+
+
+
+
+
+-- bad marginals ( minicrash of 2018-02-02 )
+select dateindex, to_timestamp(dateindex*3600*24)::date dateindex_dt,
+count(netinc_q1 + netinc_q2 + netinc_q2 ) count_netinc_q1q2_mktcap_assets_q1
+    , (sum(netinc_q1) - sum(netinc_q2))/ abs( nullif(sum(netinc_q2),0) )* 100  prchg_netinc_q1q2
+    , (sum(netinc_q1   +    netinc_q2))/ abs( nullif(sum(netinc_q2),0) )* 100  rat_netinc_q1q2_o_q3
+    , (sum(netinc_q2) - sum(netinc_q3))/ abs( nullif(sum(netinc_q4),0) )* 100  prchg_netinc_q2q3
+    , (sum(netinc_q1) - sum(netinc_q3))/ abs( nullif(sum(netinc_q3),0) )* 100  prchg_netinc_q1q3
+    , (sum(netinc_q1) - sum(netinc_q4))/ abs( nullif(sum(netinc_q4),0) )* 100  prchg_netinc_q1q4
+from fe_data_store.si_finecon2  
+where now_inbnd_stmtid_dateindex is not null
+  and sp in ('500','400','600')
+  and netinc_q1 is not null and netinc_q2 is not null and netinc_q3 is not null
+group by dateindex
+order by dateindex;
+
+
+-- get_sipro_inbnd_netinc_marginals_eom_xts <- function() {
+
+
+ 
+
+  select 
+      every.dateindex_dt, 
+      banks.banks_count                 ,      banks.banks_mktcap_div_mill_x_40,   banks.banks_rat_mktcap_o_netinc_q1_x_4,
+      banks.banks_pradchg_f04w_ann_wtd_mktcap, banks_prchg_netinc_q1q2,
+      every.every_count_d_10            ,      every.every_mktcap_div_mill_x_4 ,   every.every_rat_mktcap_o_netinc_q1_x_4,
+      every.every_pradchg_f04w_ann_wtd_mktcap, every_prchg_netinc_q1q2
+  from (
+  select dateindex, to_timestamp(dateindex*3600*24)::date dateindex_dt,
+    count(netinc_q1 + netinc_q2 + mktcap)        banks_count,
+    sum(mktcap) / 1000000.0 * 40.0 banks_mktcap_div_mill_x_40,
+    sum(mktcap) / sum(netinc_q1 * 4) banks_rat_mktcap_o_netinc_q1_x_4,
+    sum(mktcap * pradchg_f04w_ann) / sum(mktcap) banks_pradchg_f04w_ann_wtd_mktcap,
+    (sum(netinc_q1) - sum(netinc_q2))/ abs( nullif(sum(netinc_q2),0) )* 100 banks_prchg_netinc_q1q2
+  from fe_data_store.si_finecon2  
+  where now_inbnd_stmtid_dateindex is not null
+    and sp in ('500','400','600') and industry_desc in ('Money Center Banks', 'Regional Banks', 'Consumer Financial Services', 'S&Ls/Savings Banks')
+    and netinc_q1 is not null and netinc_q2 is not null and mktcap is not null
+  group by dateindex
+  order by dateindex
+  ) banks join  (
+  select dateindex, to_timestamp(dateindex*3600*24)::date dateindex_dt,
+    count(netinc_q1 + netinc_q2 + mktcap) / 10.0 every_count_d_10,
+    sum(mktcap) / 1000000.0 * 4.0 every_mktcap_div_mill_x_4,
+    sum(mktcap) / sum(netinc_q1 * 4) every_rat_mktcap_o_netinc_q1_x_4,
+    sum(mktcap * pradchg_f04w_ann) / sum(mktcap) every_pradchg_f04w_ann_wtd_mktcap,
+    (sum(netinc_q1) - sum(netinc_q2))/ abs( nullif(sum(netinc_q2),0) )* 100 every_prchg_netinc_q1q2
+  from fe_data_store.si_finecon2  
+  where now_inbnd_stmtid_dateindex is not null
+    and sp in ('500','400','600') 
+    and netinc_q1 is not null and netinc_q2 is not null and mktcap is not null
+  group by dateindex
+  order by dateindex
+  ) every on banks.dateindex = every.dateindex
+--  "
+-- }
+-- # sipro_inbnd_netinc_marginals_eom_xts <- get_sipro_inbnd_netinc_marginals_eom_xts()
+-- # dygraphs::dygraph(sipro_inbnd_netinc_marginals_eom_xts)
+
+
+
+-- currentLiablities
+-- %newDebt%/%newIncome%
+-- %totalLiabilities%/%newIncome%
+-- (sum(cl_q1) -sum(cl_q2)) / (sum(net_inc_q1) - sum(netinc_q1))
+
+
+select dateindex, to_timestamp(dateindex*3600*24)::date dateindex_dt, count(1)
+from fe_data_store.si_finecon2  
+where now_inbnd_stmtid_dateindex is not null
+  and sp in ('500','400','600') 
+  and netinc_q1 is not null and netinc_q2 is not null and cl_q1 is not null and cl_q2 is not null
+  and mktcap is not null
+group by dateindex
+order by dateindex -- all months
+
+
+-- KEEP ( GOOD FORM TO DO TTR::WMA ROLLABLE ) --
+with 
+data_info as (
+select dateindex, 
+  liab_q1,
+  liab_q2,
+  cl_q1,
+  cl_q2,
+  netinc_q1,
+  netinc_q2,
+  mktcap,
+  now_inbnd_stmtid_dateindex
+from fe_data_store.si_finecon2 fe
+where 
+  sp in ('500','400','600')
+  and mktcap is not null
+  and liab_q1 is not null and liab_q2 is not null and netinc_q1 is not null and netinc_q2 is not null
+  and cl_q1 is not null and cl_q2 is not null
+),
+data_info_agg as (
+  select
+    dateindex,
+    sum(mktcap) sum_mktcap_all
+    from data_info
+    group by dateindex 
+    order by dateindex
+)
+select -- data_info.dateindex, 
+  to_timestamp(data_info.dateindex*3600*24)::date dateindex_dt,
+  count(netinc_q1 + netinc_q2 + mktcap + liab_q1 + liab_q1 + cl_q1 + cl_q2) / 10.0 every_count_d_10,
+  sum(mktcap/sum_mktcap_all) * 100  pr_mktcap,
+  sum(mktcap) / 1000000.0 * 4.0 every_mktcap_div_mill_x_4,
+  sum(mktcap) / sum(netinc_q1 * 4) every_rat_mktcap_o_netinc_q1_x_4,
+  (sum(liab_q1) - sum(liab_q2)) / ( sum(netinc_q1) - sum(netinc_q2) ) * 100 rat_chg_liab_o_chg_netinc,
+  (sum(  cl_q1) - sum(  cl_q2)) / ( sum(netinc_q1) - sum(netinc_q2) ) rat_chg_cl_o_chg_netinc
+from data_info, data_info_agg
+where data_info.dateindex = data_info_agg.dateindex and 
+      now_inbnd_stmtid_dateindex is not null
+group by data_info.dateindex 
+order by data_info.dateindex
+
+
+select count(1) from fe_data_store.si_finecon2 fe where dateindex in (17562) and sp in ('500','400','600') 
+-1499
+select count(1) from fe_data_store.si_finecon2 fe where dateindex in (17562) and sp in ('500','400','600')
+and mktcap is not null and netinc_q1 is not null and netinc_q2 is not null and liab_q1 is not null and liab_q2 is not null;
+
+select count(1) from fe_data_store.si_finecon2 fe where dateindex in (17562) and sp in ('500','400','600')
+and mktcap is not null and netinc_q1 is not null and netinc_q2 is not null and liab_q1 is not null and liab_q2 is not null
+and now_inbnd_stmtid_dateindex is not null;
+--352
+
+select count(1) from fe_data_store.si_finecon2 fe where dateindex in (17529) and sp in ('500','400','600')
+and mktcap is not null and netinc_q1 is not null and netinc_q2 is not null and liab_q1 is not null and liab_q2 is not null
+and now_inbnd_stmtid_dateindex is not null;
+--82
+select count(1) from fe_data_store.si_finecon2 fe where dateindex in (17500) and sp in ('500','400','600')
+and mktcap is not null and netinc_q1 is not null and netinc_q2 is not null and liab_q1 is not null and liab_q2 is not null
+and now_inbnd_stmtid_dateindex is not null;
+--654
+
+--select 654 + 82 + 352; -- 1088
+--1/3 of th ferms of are loster
+
+select dateindex, company_id, date_eq0, perend_q1, perlen_q1, pertyp_q1, perend_q2 from 
+fe_data_store.si_finecon2 fe where dateindex in (17562,17529,17500) and sp in ('500','400','600')
+order by company_id, dateindex;  -- , 17470, 17438
+17470;"0147N";17439;17348
+17500;"0147N";17439;17439
+17529;"0147N";17439;17439
+17562;"0147N";17531;17530
+
+17470;"0177N";17439;17347
+17500;"0177N";17439;17439
+17529;"0177N";17439;17439
+17562;"0177N";17531;17531
+
+select 4498 / 1500.0; 2.99
+
+
+
+
+  select 
+      every.dateindex_dt, 
+      every_count,                             every_mktcap_div_mill_x_4,        every_a_netinc_q1,   every_wtd_mktcap_a_netinc_q1,     every_rat_mktcap_o_netinc_q1_x_4,    every_a_netinc_q1q2_d_2,
+      every_wtd_mktcap_a_netinc_q1q2_d_2,     every_rat_mktcap_o_netinc_q1q2_x_2,
+      every_pradchg_f04w_ann_wtd_mktcap, every_pchg_netinc_q1q2,
+      banks_count,                             banks_mktcap_div_mill_x_40,       banks_a_netinc_q1,   banks_wtd_mktcap_a_netinc_q1,     banks_rat_mktcap_o_netinc_q1_x_4,    banks_a_netinc_q1q2_d_2,
+      banks_wtd_mktcap_a_netinc_q1q2_d_2,      banks_rat_mktcap_o_netinc_q1q2_x_2,
+      banks_pradchg_f04w_ann_wtd_mktcap,       banks_pchg_netinc_q1q2,
+      notbanks_count,                          notbanks_mktcap_div_mill_x_40, notbanks_a_netinc_q1, notbanks_wtd_mktcap_a_netinc_q1, notbanks_rat_mktcap_o_netinc_q1_x_4, notbanks_a_netinc_q1q2_d_2,
+      notbanks_wtd_mktcap_a_netinc_q1q2_d_2,   notbanks_rat_mktcap_o_netinc_q1q2_x_2,
+      notbanks_pradchg_f04w_ann_wtd_mktcap,    notbanks_pchg_netinc_q1q2
+  from (
+  select dateindex, to_timestamp(dateindex*3600*24)::date dateindex_dt,
+    count(netinc_q1 + netinc_q2 + mktcap) every_count,
+    sum(mktcap) / 1000000.0 * 4.0 every_mktcap_div_mill_x_4,
+    sum(netinc_q1) /  count(netinc_q1 + netinc_q2 + mktcap) every_a_netinc_q1,
+    sum(netinc_q1 * mktcap) / sum(mktcap) every_wtd_mktcap_a_netinc_q1,
+    sum(mktcap) / sum(netinc_q1 * 4) every_rat_mktcap_o_netinc_q1_x_4,
+    sum(netinc_q1 + netinc_q2) /  count(netinc_q1 + netinc_q2 + mktcap) / 2 every_a_netinc_q1q2_d_2,
+    sum((netinc_q1 + netinc_q2)* mktcap ) / sum(mktcap) / 2 every_wtd_mktcap_a_netinc_q1q2_d_2,
+    sum(mktcap) / sum((netinc_q1 + netinc_q2) * 2) every_rat_mktcap_o_netinc_q1q2_x_2,
+    sum(mktcap * pradchg_f04w_ann) / sum(mktcap) every_pradchg_f04w_ann_wtd_mktcap,
+    (sum(netinc_q1) - sum(netinc_q2))/ abs( nullif(sum(netinc_q2),0) )* 100 every_pchg_netinc_q1q2
+  from fe_data_store.si_finecon2  
+  where 
+        sp in ('500','400','600') 
+    and netinc_q1 is not null and netinc_q2 is not null and mktcap is not null
+    and now_inbnd_stmtid_dateindex is not null
+  group by dateindex
+  order by dateindex
+  ) every left join (
+  select dateindex, to_timestamp(dateindex*3600*24)::date dateindex_dt,
+    count(netinc_q1 + netinc_q2 + mktcap)        banks_count,
+    sum(mktcap) / 1000000.0 * 40.0 banks_mktcap_div_mill_x_40,
+    sum(netinc_q1) /  count(netinc_q1 + netinc_q2 + mktcap) banks_a_netinc_q1,
+    sum(netinc_q1 * mktcap) / sum(mktcap) banks_wtd_mktcap_a_netinc_q1,
+    sum(mktcap) / sum(netinc_q1 * 4) banks_rat_mktcap_o_netinc_q1_x_4,
+    sum(netinc_q1 + netinc_q2) /  count(netinc_q1 + netinc_q2 + mktcap) / 2 banks_a_netinc_q1q2_d_2,
+    sum((netinc_q1 + netinc_q2)* mktcap ) / sum(mktcap) / 2 banks_wtd_mktcap_a_netinc_q1q2_d_2,
+    sum(mktcap) / sum((netinc_q1 + netinc_q2) * 2) banks_rat_mktcap_o_netinc_q1q2_x_2,
+    sum(mktcap * pradchg_f04w_ann) / sum(mktcap) banks_pradchg_f04w_ann_wtd_mktcap,
+    (sum(netinc_q1) - sum(netinc_q2))/ abs( nullif(sum(netinc_q2),0) )* 100 banks_pchg_netinc_q1q2
+  from fe_data_store.si_finecon2  
+  where 
+        sp in ('500','400','600') and industry_desc     in ('Money Center Banks', 'Regional Banks', 'Consumer Financial Services', 'S&Ls/Savings Banks')
+    and netinc_q1 is not null and netinc_q2 is not null and mktcap is not null
+    and now_inbnd_stmtid_dateindex is not null
+  group by dateindex
+  order by dateindex
+  ) banks on every.dateindex = banks.dateindex left join (
+  select dateindex, to_timestamp(dateindex*3600*24)::date dateindex_dt,
+    count(netinc_q1 + netinc_q2 + mktcap)        notbanks_count,
+    sum(mktcap) / 1000000.0 * 40.0 notbanks_mktcap_div_mill_x_40,
+    sum(netinc_q1) /  count(netinc_q1 + netinc_q2 + mktcap) notbanks_a_netinc_q1,
+    sum(netinc_q1 * mktcap) / sum(mktcap) notbanks_wtd_mktcap_a_netinc_q1,
+    sum(mktcap) / sum(netinc_q1 * 4) notbanks_rat_mktcap_o_netinc_q1_x_4,
+    sum(netinc_q1 + netinc_q2) /  count(netinc_q1 + netinc_q2 + mktcap) / 2 notbanks_a_netinc_q1q2_d_2,
+    sum((netinc_q1 + netinc_q2)* mktcap ) / sum(mktcap) / 2 notbanks_wtd_mktcap_a_netinc_q1q2_d_2,
+    sum(mktcap) / sum((netinc_q1 + netinc_q2) * 2) notbanks_rat_mktcap_o_netinc_q1q2_x_2,
+    sum(mktcap * pradchg_f04w_ann) / sum(mktcap) notbanks_pradchg_f04w_ann_wtd_mktcap,
+    (sum(netinc_q1) - sum(netinc_q2))/ abs( nullif(sum(netinc_q2),0) )* 100 notbanks_pchg_netinc_q1q2
+  from fe_data_store.si_finecon2  
+  where 
+        sp in ('500','400','600') and industry_desc not in ('Money Center Banks', 'Regional Banks', 'Consumer Financial Services', 'S&Ls/Savings Banks')
+    and netinc_q1 is not null and netinc_q2 is not null and mktcap is not null
+    and now_inbnd_stmtid_dateindex is not null
+  group by dateindex
+  order by dateindex
+  ) notbanks on every.dateindex = notbanks.dateindex 
+
+
+-- si_ee.qs_date
+
+-- find inbound ( help on/with WITH RECURSIVE, other )
+
+select now.qs_date, now.mktcap, now.dateindex, now.company_id, now.ticker, now.company, now.netinc_q1, now.assets_q1,
+  -- % need % change in mktcap
+  (now.assets_q1 - now.assets_q2) / abs(now.assets_q2) * 100 prchg_assets_q2q1,
+  (now.netinc_q1 - now.netinc_q2) / abs(now.netinc_q2) * 100 prchg_netinc_q2q1,
+  ( (now.assets_q1 - now.assets_q2) / abs(now.assets_q2) ) / ( (now.netinc_q1 - now.netinc_q2) / abs(now.netinc_q2) ) * 100 rat_prchg_assets_o_netinc_x_100
+  from fe_data_store.si_finecon2 now
+    where now.dateindex in (17590, 17562, 17529, 17500, 17470, 17438)
+      and now.sp = '500' -- would actually want the company_ids of the leading index ( 17590 )
+      and now.ticker = 'MSFT' -- in('MSFT','AAPL')
+order by now.qs_date, now.mktcap, now.dateindex
+limit 10
+
+-- find inbound exactly
+
+select now.qs_date, 
+  now.mktcap, now.dateindex, now.ticker,
+  first_value(qs_date) over (partition by ticker order by dateindex),
+  (now.netinc_q1 - now.netinc_q2) / abs(now.netinc_q2) * 100 prchg_netinc_q2q1
+  from fe_data_store.si_finecon2 now
+    where now.dateindex in (17590, 17562, 17529, 17500, 17470, 17438)
+      and now.ticker = 'MSFT' --in('MSFT','AAPL')
+order by now.qs_date, now.mktcap, now.dateindex
+limit 10
+
+select now.qs_date, 
+  now.dateindex, now.ticker,
+  first_value(qs_date) over (partition by ticker order by dateindex) fv_qs_date,
+  (now.netinc_q1 - now.netinc_q2) / abs(now.netinc_q2) * 100 prchg_netinc_q2q1
+  from fe_data_store.si_finecon2 now
+    where now.dateindex in (17590, 17562, 17529, 17500, 17470, 17438)
+      and now.ticker in('MSFT','AAPL')
+order by now.ticker, now.qs_date, now.mktcap, now.dateindex
+limit 10
+
+-- need the dateindex of the earliest qs_date per "ticker, qs_date"
+
+select now.qs_date, 
+  first_value(dateindex) over (partition by ticker, qs_date order by dateindex) fv_dateindex,
+  now.dateindex, now.ticker,
+  (now.netinc_q1 - now.netinc_q2) / abs(now.netinc_q2) * 100 prchg_netinc_q2q1
+  from fe_data_store.si_finecon2 now
+    where now.dateindex in (17590, 17562, 17529, 17500, 17470, 17438)
+      and now.ticker in('MSFT','AAPL')
+order by now.ticker, now.qs_date, now.mktcap, now.dateindex
+limit 10
+
+select  
+  first_value(dateindex) over (partition by ticker, qs_date order by dateindex) fv_dateindex,
+  ticker,
+  -- dateindex
+  from fe_data_store.si_finecon2 now
+    where now.dateindex in (17590, 17562, 17529, 17500, 17470, 17438)
+      and now.ticker in('MSFT','AAPL')
+order by now.ticker, now.qs_date, now.mktcap, now.dateindex
+limit 10
+
+-- [ ] replace NOW with CUR, fut, pst
+
+select  
+  distinct
+    first_value(now.dateindex) over (partition by now.ticker, now.qs_date order by now.dateindex) fv_dateindex,
+    now.ticker -- ,
+  -- dateindex
+  from fe_data_store.si_finecon2 now
+    -- LATER: upsize to WITH
+    where now.dateindex in (17590, 17562, 17529, 17500, 17470, 17438)
+      and now.ticker in('MSFT','AAPL')
+order by fv_dateindex
+limit 10 
+-- GOOD
+
+
+
+
+select dateindex, ticker from fe_data_store.si_finecon2 where
+(dateindex, ticker) in 
+(
+select  
+  distinct
+    first_value(now.dateindex) over (partition by now.ticker, now.qs_date order by now.dateindex) fv_dateindex,
+    now.ticker -- ,
+  -- dateindex
+  from fe_data_store.si_finecon2 now
+    -- LATER: upsize to WITH
+    where now.dateindex in (17590, 17562, 17529, 17500, 17470, 17438)
+      and now.ticker in('MSFT','AAPL')
+order by fv_dateindex
+limit 10 )
+-- WORKS
+
+
+--fv
+  select
+    distinct
+    now.qs_date fv_qs_date,
+    first_value(now.dateindex) over (partition by now.ticker, now.qs_date order by now.dateindex) fv_dateindex,
+    now.ticker fv_ticker -- ,
+  -- dateindex
+  from fe_data_store.si_finecon2 now
+    -- LATER: upsize to WITH
+    where now.dateindex in (17590, 17562, 17529, 17500, 17470, 17438)
+      and now.ticker in('MSFT','AAPL')
+order by fv_dateindex
+
+
+with dat as (
+  select
+    now.qs_date,
+    now.dateindex,
+    now.ticker,
+    now.mktcap
+  from fe_data_store.si_finecon2 now
+    where now.dateindex in (17590, 17562, 17529, 17500, 17470, 17438)
+      and now.ticker in('MSFT','AAPL')
+order by now.dateindex
+),
+fv_qs as (
+  select
+    distinct
+    dat.qs_date fv_qs_date,
+    first_value(dat.dateindex) over (partition by dat.ticker, dat.qs_date order by dat.dateindex) fv_dateindex,
+    dat.ticker fv_ticker 
+  from dat
+order by fv_dateindex
+)
+select 
+    dat.qs_date,
+    dat.dateindex,
+    dat.ticker,
+    dat.mktcap
+from fv_qs, dat
+where 
+fv_qs.fv_dateindex = dat.dateindex and
+fv_qs.fv_ticker    = dat.ticker
+order by dat.qs_date, dat.mktcap;
+
+ qs_date | dateindex | ticker |  mktcap   -- CAN BE USED LATER
+---------+-----------+--------+-----------
+   17367 |     17438 | MSFT   | 568964.80
+   17379 |     17438 | AAPL   | 791726.10
+   17465 |     17470 | MSFT   | 641699.60
+   17472 |     17500 | AAPL   | 870163.20
+   17562 |     17562 | MSFT   | 715451.10
+   17563 |     17590 | AAPL   | 905153.20
+(6 rows)
+-- GOOD
+
+
+
+
+
+--create table fv_qs_temp as
+--create table fv_qs as
+--create table findata as
+--create table output_temp as 
+
+select distinct on (sq.dateindex) sq.dateindex, p01.dateindex p01_dateindex from (
+select distinct on (now.dateindex) now.dateindex, now.dateindexp01eom 
+from fe_data_store.si_finecon2 now 
+where now.dateindex = 17590) sq, fe_data_store.si_finecon2 p01
+  where sq.dateindexp01eom = p01.dateindexeom
+
+17590;17562
+select distinct dateindex from fe_data_store.si_finecon2 order by dateindex desc offset 0 limit 6
+
+
+with dat as (
+-- all data
+select
+  now.qs_date,
+  now.dateindex,
+  now.perend_q1,
+  now.perlen_q1,
+  now.pertyp_q1,
+  now.company_id,
+  now.ticker,
+  now.mktcap,
+  now.sp,
+  now.company,
+  now.netinc_q1,
+  now.netinc_q2,
+  now.liab_q1,
+  now.liab_q2
+from fe_data_store.si_finecon2 now
+  -- where now.dateindex in (17590, 17562, 17529, 17500, 17470, 17438)  -- dateindexes now and in the past
+  -- where now.dateindex in ( select distinct dateindex from fe_data_store.si_finecon2 order by dateindex desc offset 0 limit 6 )
+  where 1 = 1
+   and now.dateindex in ( select distinct dateindex from fe_data_store.si_finecon2 order by dateindex desc offset 0 limit 6 )
+    -- original
+    -- and now.ticker in('MSFT','AAPL')
+    -- and now.ticker in('MSFT','AAPL','ORCL','IBM','HPQ')
+    and now.sp in ('500','400','600')
+    -- and now.sp in ('500') and sector_desc = 'Financial'
+    and now.qs_date is not null -- 28 of 1500 are NULL ( and OLD )
+order by now.qs_date, now.ticker
+), 
+-- select * from dat
+--  qs_date | dateindex | ticker |  mktcap
+-- ---------+-----------+--------+-----------
+--    17379 |     17438 | AAPL   | 791726.10
+--    17367 |     17438 | MSFT   | 568964.80
+--    17379 |     17470 | AAPL   | 873130.10
+--    17465 |     17470 | MSFT   | 641699.60
+--    17472 |     17500 | AAPL   | 870163.20
+--    17465 |     17500 | MSFT   | 642933.90
+--    17472 |     17529 | AAPL   | 878378.10
+--    17465 |     17529 | MSFT   | 661294.70
+--    17472 |     17562 | AAPL   | 857276.10
+--    17562 |     17562 | MSFT   | 715451.10
+--    17563 |     17590 | AAPL   | 905153.20
+--    17562 |     17590 | MSFT   | 725320.50
+-- (12 rows)
+fv_qs as (
+  -- per every dateindex, first value ( first time) that a new qs had appeared ( in the past )
+select
+  distinct
+  dat.qs_date fv_qs_date,
+  first_value(dat.dateindex) over (partition by dat.company_id, dat.qs_date order by dat.dateindex) fv_dateindex,
+  dat.company_id fv_company_id
+from dat
+order by fv_qs_date, fv_dateindex
+),
+-- select * from fv_qs
+--  fv_qs_date | fv_dateindex | fv_ticker
+-- ------------+--------------+-----------
+--       17367 |        17438 | MSFT
+--       17379 |        17438 | AAPL
+--       17465 |        17470 | MSFT
+--       17472 |        17500 | AAPL
+--       17562 |        17562 | MSFT
+--       17563 |        17590 | AAPL
+-- (6 rows)
+qs_dateindex_company_id as (
+-- PostgreSQL 10.0 last_value is BROKE(ignored), instead use "first_value ... order by ... desc"
+-- for real time reporting, per ticker, last time(most recent) a *new* qs appeared 
+-- the month of the new qs is reported
+-- modifiable here
+-- advice: https://www.postgresql.org/docs/10/static/functions-window.html
+select 
+  distinct
+  -- last_value: written as over(... order by ... desc)
+  first_value(fv_qs.fv_company_id) over (partition by fv_qs.fv_company_id order by fv_qs.fv_qs_date desc) lv_qs_company_id,
+  first_value(fv_qs.fv_dateindex)  over (partition by fv_qs.fv_company_id order by fv_qs.fv_qs_date desc) lv_qs_dateindex
+from fv_qs
+order by lv_qs_dateindex, lv_qs_company_id
+),
+--select * from qs_dateindex_ticker
+--  lv_qs_ticker | lv_qs_dateindex
+-- --------------+-----------------
+--  MSFT         |           17562
+--  AAPL         |           17590
+-- (2 rows)
+-- 
+-- combine to do some inbound statistics
+recent as(
+select dat.qs_date, dat.dateindex, dat.company_id, dat.ticker, dat.mktcap,  -- 1700000.00 -- small list of tech firms only
+  sum(dat.mktcap) over (order by dat.qs_date desc)                         <= 10000000.00 is_within_last_10t
+from qs_dateindex_company_id, dat
+  where dat.dateindex   = qs_dateindex_company_id.lv_qs_dateindex 
+    and dat.company_id  = qs_dateindex_company_id.lv_qs_company_id
+order by dat.qs_date, dat.company_id
+)
+-- select * from recent
+--  qs_date | dateindex | ticker |  mktcap   | is_within_10b
+-- ---------+-----------+--------+-----------+---------------
+--    17514 |     17529 | ORCL   | 198324.10 | f
+--    17549 |     17562 | IBM    | 151478.00 | f
+--    17562 |     17562 | MSFT   | 715451.10 | t
+--    17563 |     17590 | AAPL   | 905153.20 | t
+--    17584 |     17590 | HPQ    |  38695.80 | t
+-- (5 rows)
+-- select * from qs_dateindex_ticker
+select 
+  to_timestamp(dat.qs_date*3600*24)::date   qs_date_dt,
+  to_timestamp(dat.dateindex*3600*24)::date dateindex_dt,
+  to_timestamp(dat.perend_q1*3600*24)::date perend_q1_dt,
+  dat.perlen_q1, 
+  dat.pertyp_q1,
+  recent.is_within_last_10t,
+  sum(dat.netinc_q1) over (partition by recent.is_within_last_10t) / nullif(sum(dat.netinc_q2) over (partition by recent.is_within_last_10t),0) * 100 rat_sums_recent_netinc_q2q1_x100, 
+  sum(dat.liab_q1)   over (partition by recent.is_within_last_10t) / nullif(sum(dat.liab_q2)   over (partition by recent.is_within_last_10t),0) * 100 rat_sums_recent_liab_q2q1_x100,
+  dat.company_id,
+  dat.ticker,
+  dat.sp,
+  dat.company,
+  dat.mktcap,
+  dat.liab_q1,
+  dat.liab_q2,
+  (dat.liab_q1 - dat.liab_q2)  / nullif(abs(dat.liab_q2),0)   * 100.00 prchg_liab_q2q1,
+  dat.netinc_q1,
+  dat.netinc_q2,
+  (dat.netinc_q1 - dat.netinc_q2)/ nullif(abs(dat.netinc_q2),0) * 100.00 prchg_netinc_q2q1,
+  ( (dat.liab_q1   - dat.liab_q2)  / nullif(abs(dat.liab_q2),0) ) / nullif((dat.netinc_q1 - dat.netinc_q2)/ nullif(abs(dat.netinc_q2),0),0) * 100 rat_prchg_liab_netinc_q1q2_x_100
+from qs_dateindex_company_id, dat, recent
+where dat.dateindex  = qs_dateindex_company_id.lv_qs_dateindex 
+  and dat.company_id = qs_dateindex_company_id.lv_qs_company_id
+  -- now.dateindex in (17590, 17562, 17529, 17500, 17470, 17438)
+  -- explicit remove nulls: very little difference in rat_sums_recent_netinc_q2q1_x100 ( 44 percent better net income )
+  -- BUT I do not like the number)
+  and dat.netinc_q1 is not null and dat.netinc_q2 is not null and dat.liab_q1 is not null and dat.liab_q2 is not null
+  and qs_dateindex_company_id.lv_qs_dateindex  = recent.dateindex
+  and qs_dateindex_company_id.lv_qs_company_id = recent.company_id
+order by dat.qs_date, dat.company_id
+
+-- GOOD SEEM to scall 
+
+-- select sum(mktcap) from fe_data_store.si_finecon2 where sp in ('500') and dateindex = 17590
+-- 24 trillion
+-- 24779646.90
+-- 10 trillion
+-- 10000000.00
+-- select sum(mktcap) from fe_data_store.si_finecon2 where sp in ('400','600') and dateindex = 17590
+-- 2.7 trillion
+-- 2736870.70
+
+--  qs_date | dateindex | ticker |  mktcap
+-- ---------+-----------+--------+-----------
+--    17562 |     17562 | MSFT   | 715451.10
+--    17563 |     17590 | AAPL   | 905153.20
+-- (2 rows)
+
+
+--  qs_date | dateindex | ticker |  mktcap   |  liab_q1  |  liab_q2  |      prchg_liab_q2q1      | netinc_q1 | netinc_q2 |     prchg_netinc_q2q1     | rat_prchg_liab_netinc_q1q2_x_100 
+--  ---------+-----------+--------+-----------+-----------+-----------+---------------------------+-----------+-----------+---------------------------+----------------------------------   
+--    17514 |     17529 | ORCL   | 198324.10 |  82894.00 |  77638.00 |  6.7698807285092351680000 |   2233.00 |   2210.00 |  1.0407239819004524890000 |         650.49723521762650942600
+--    17549 |     17562 | IBM    | 151478.00 | 107762.00 | 102009.00 |  5.6396984579791979140000 |  -1054.00 |   2726.00 |   -138.664710198092440000 |          -4.06714761810880790000
+--    17562 |     17562 | MSFT   | 715451.10 | 177643.00 | 159450.00 | 11.4098463468171840700000 |  -6302.00 |   6576.00 |   -195.833333333333330000 |          -5.82630451752366856000
+--    17563 |     17590 | AAPL   | 905153.20 | 266595.00 | 241272.00 | 10.4956231970556052920000 |  20065.00 |  10714.00 | 87.2783274220645883890000 |          12.02546325882298739200
+--    17584 |     17590 | HPQ    |  38695.80 |  36321.00 |  36273.00 |  0.1323298321065255150000 |    660.00 |    696.00 | -5.1724137931034482760000 |          -2.55837675405949329000
+-- (5 rows)
+
+select * from findata;
+-- rolling by sum of market cap
+
+-- finance_econ=# select * from findata order by qs_date;
+
+ qs_date | dateindex | ticker |  mktcap   |  liab_q1  |  liab_q2  |      prchg_liab_q2q1      | netinc_q1 | netinc_q2 |     prchg_netinc_q2q1     | rat_prchg_liab_netinc_q1q2_x_100 
+ ---------+-----------+--------+-----------+-----------+-----------+---------------------------+-----------+-----------+---------------------------+----------------------------------   
+   17514 |     17529 | ORCL   | 198324.10 |  82894.00 |  77638.00 |  6.7698807285092351680000 |   2233.00 |   2210.00 |  1.0407239819004524890000 |         650.49723521762650942600
+   17549 |     17562 | IBM    | 151478.00 | 107762.00 | 102009.00 |  5.6396984579791979140000 |  -1054.00 |   2726.00 |   -138.664710198092440000 |          -4.06714761810880790000
+   17562 |     17562 | MSFT   | 715451.10 | 177643.00 | 159450.00 | 11.4098463468171840700000 |  -6302.00 |   6576.00 |   -195.833333333333330000 |          -5.82630451752366856000
+   17563 |     17590 | AAPL   | 905153.20 | 266595.00 | 241272.00 | 10.4956231970556052920000 |  20065.00 |  10714.00 | 87.2783274220645883890000 |          12.02546325882298739200
+   17584 |     17590 | HPQ    |  38695.80 |  36321.00 |  36273.00 |  0.1323298321065255150000 |    660.00 |    696.00 | -5.1724137931034482760000 |          -2.55837675405949329000
+(5 rows)
+
+select qs_date, dateindex, ticker, mktcap,  
+  sum(mktcap) over (order by qs_date desc) <= 1700000 is_within_10b
+from findata order by qs_date
+
+-- GOOD
+
+ qs_date | dateindex | ticker |  mktcap   | is_within_10b
+---------+-----------+--------+-----------+---------------
+   17514 |     17529 | ORCL   | 198324.10 | f
+   17549 |     17562 | IBM    | 151478.00 | f
+   17562 |     17562 | MSFT   | 715451.10 | t  -- GOOD
+   17563 |     17590 | AAPL   | 905153.20 | t
+   17584 |     17590 | HPQ    |  38695.80 | t
+(5 rows)
+
+
+recent as(
+select qs_date, dateindex, ticker, mktcap,  
+  sum(mktcap) over (order by qs_date desc) <= 1700000 is_within_10b
+from qs_dateindex_ticker, dat
+where dat.dateindex = qs_dateindex_ticker.lv_qs_dateindex 
+  and dat.ticker    = qs_dateindex_ticker.lv_qs_ticker 
+order by dat.qs_date, dat.ticker
+)
+
+
+
+
+
+
+
+-- now and adding past sp members
+
+with 
+descdi as (
+  select distinct dateindex from fe_data_store.si_finecon2 order by dateindex desc 
+)
+select distinct now.company_id
+from fe_data_store.si_finecon2 now
+where 
+      now.dateindex = ( select dateindex from descdi offset 0 limit 1) and 
+      now.sp in ('500','400','600')
+union
+select distinct p01.company_id
+from fe_data_store.si_finecon2 p01
+where 
+      p01.dateindex = ( select dateindex from descdi offset 1 limit 1) and 
+      p01.sp in ('500','400','600')
+order by company_id desc
+
+
+
+
+-- KEEP SOMEHOW
+-- now, past, and future sp members
+------------------------------------
+
+-- begin section
+
+17619
+17590
+17562 -- now
+17529
+17500
+
+
+17590
+17562
+17529
+
+with 
+descdipast as (
+  select distinct dateindex 
+  from fe_data_store.si_finecon2 
+  where dateindex <= 17562
+  order by dateindex desc 
+),
+ascdifut as (
+  select distinct dateindex 
+  from fe_data_store.si_finecon2 
+  where dateindex >= 17562
+  order by dateindex  
+)
+select * from (select dateindex from ascdifut offset 1 limit 1) sq3
+union all
+select * from (select dateindex from descdipast offset 0 limit 1) sq1
+union all
+select * from (select dateindex from descdipast offset 1 limit 1) sq2
+
+with 
+descdipast as (
+  select distinct dateindex 
+  from fe_data_store.si_finecon2 
+  where dateindex <= 17562
+  order by dateindex desc 
+),
+ascdifut as (
+  select distinct dateindex 
+  from fe_data_store.si_finecon2 
+  where dateindex >= 17562
+  order by dateindex  
+)
+select distinct f01.company_id
+from fe_data_store.si_finecon2 f01
+where 
+      f01.dateindex = ( select dateindex from ascdifut offset 1 limit 1) and 
+      f01.sp in ('500','400','600')
+union
+select distinct now.company_id
+from fe_data_store.si_finecon2 now
+where 
+      now.dateindex = ( select dateindex from descdipast offset 0 limit 1) and 
+      now.sp in ('500','400','600')
+union
+select distinct p01.company_id
+from fe_data_store.si_finecon2 p01
+where 
+      p01.dateindex = ( select dateindex from descdipast offset 1 limit 1) and 
+      p01.sp in ('500','400','600')
+order by company_id desc
+-- 1510
+
+-- drop function fe_data_store.nearby_sp_members(int); -- LEFT_OFF( dropped )
+
+create or replace function fe_data_store.nearby_sp_members(di int)
+  returns table(company_id varchar) as
+$BODY$
+  select company_id from fe_data_store.si_finecon2 where dateindex = di order by dateindex --17562 
+$BODY$
+language sql;
+
+select nspm.company_id from fe_data_store.nearby_sp_members(di := 17562) nspm;
+
+-- common company_ids ( only here to prove that 'joins' work )
+select now.company_id, p01.company_id
+from fe_data_store.nearby_sp_members(di := 17562) now, fe_data_store.nearby_sp_members(di := 17529) p01
+where now.company_id = p01.company_id;
+
+17590
+17562 -- now
+17529
+
+-- where exactly they exist (top option)
+-- unique company_ids       (bottom option)
+
+---- select distinct company_id from (
+select dateindexes.dateindex, lat.company_id from (
+--select distinct lat.company_id from (
+
+  select fut.dateindex from (select distinct dateindex 
+  from fe_data_store.si_finecon2 
+  where dateindex > 17562                   -- monthly production load: max(dateindex) xor 'current index'
+  order by dateindex      limit 1) fut      -- monthly production load: 13
+  union all
+  select nowpast.dateindex from (select distinct dateindex 
+  from fe_data_store.si_finecon2 
+  where dateindex <= 17562                  -- monthly production load: max(dateindex) xor 'current index'
+  order by dateindex desc limit 2) nowpast  -- monthly production load: 14 
+  order by dateindex
+  
+) dateindexes
+join lateral ( 
+  select distinct now.company_id
+  from fe_data_store.si_finecon2 now
+  where 
+        now.dateindex = dateindexes.dateindex and 
+        now.sp in ('500','400','600')
+) lat on true
+order by lat.company_id, dateindexes.dateindex
+--order by lat.company_id -- , dateindexes.dateindex
+----) sq
+-- 1510
+
+-- end -- now, past, and future sp members
+
+
+
+-- look forward to try to find missing/more_correct data (netinc_q1)
+----------------------------------------------------------------------
+
+-- work in progress
+
+17619
+17590
+
+  select curr.dateindex, curr.company_id, curr.sp, curr.ticker, curr.company, 
+         curr.qs_date,
+         curr.now_inbnd_stmtid_dateindex, 
+         curr.last_inbnd_stmtid_dateindex,
+         curr.netinc_q1
+  from fe_data_store.si_finecon2 curr
+  where                            curr.sp in ('500','400','600') and curr.ticker = 'AAPL'
+  order by dateindex
+
+-- now_inbnd_stmtid_dateindex is not null is where the qs_date appears
+
+-- good to fill back-1 missing data
+-- good
+select now.*, 
+  fut1.dateindex                   fut1_dateindex,
+  fut1.perend_q1                   fut1_perend_q1,
+  fut1.qs_date                     fut1_qs_date,
+  fut1.now_inbnd_stmtid_dateindex  fut1_now_inbnd_stmtid_dateindex,
+  fut1.last_inbnd_stmtid_dateindex fut1_last_inbnd_stmtid_dateindex,
+  fut1.netinc_q1                   fut1_netinc_q1 
+
+from ( 
+
+  select curr.dateindex, curr.company_id, curr.sp, curr.ticker, curr.company, 
+         curr.perend_q1,
+         curr.qs_date,
+         curr.now_inbnd_stmtid_dateindex, 
+         curr.last_inbnd_stmtid_dateindex,
+         curr.netinc_q1
+  from fe_data_store.si_finecon2 curr
+  where curr.dateindex = 17590 and curr.sp in ('500','400','600') and curr.netinc_q1 is null 
+  -- 8 entries
+
+) now join lateral ( 
+
+  -- per item processing: may not be the fastest
+  select curr.dateindex, curr.company_id, 
+         curr.perend_q1,
+         curr.qs_date,
+         curr.now_inbnd_stmtid_dateindex, 
+         curr.last_inbnd_stmtid_dateindex,
+         curr.netinc_q1
+  from fe_data_store.si_finecon2 curr
+  where curr.dateindex = 17619 and curr.company_id = now.company_id
+
+) fut1 on true;
+-- 7 of 8 entries have net_inc_q1
+
+-- if the data is not there by the next_month, then the next_next_month does not help ( data is still not there )
+-- 17562;"EE9A4";"600";"OPB";"Opus Bank";17553;17562;17562;;17553;;17562;;17553;;17562;
+
+-- good idea
+-- may be good for 'voting on bad data'
+select now.*, 
+  fut1.dateindex                   fut1_dateindex,
+  fut1.qs_date                     fut1_qs_date,
+  fut1.perend_q1                   fut1_perend_q1,
+  fut1.now_inbnd_stmtid_dateindex  fut1_now_inbnd_stmtid_dateindex,
+  fut1.last_inbnd_stmtid_dateindex fut1_last_inbnd_stmtid_dateindex,
+  fut1.netinc_q1                   fut1_netinc_q1,
+
+  fut2.dateindex                   fut2_dateindex,
+  fut2.qs_date                     fut2_qs_date,
+  fut2.perend_q1                   fut2_perend_q1,
+  fut2.now_inbnd_stmtid_dateindex  fut2_now_inbnd_stmtid_dateindex,
+  fut2.last_inbnd_stmtid_dateindex fut2_last_inbnd_stmtid_dateindex,
+  fut2.netinc_q1                   fut2_netinc_q1 
+
+from ( 
+
+  select curr.dateindex, curr.company_id, curr.sp, curr.ticker, curr.company,
+         curr.perend_q1,
+         curr.qs_date,
+         curr.now_inbnd_stmtid_dateindex, 
+         curr.last_inbnd_stmtid_dateindex,
+         curr.netinc_q1
+  from fe_data_store.si_finecon2 curr
+  where curr.dateindex = 17562 and curr.sp in ('500','400','600') and curr.netinc_q1 is null 
+
+) now join lateral ( 
+
+  -- per item processing: may not be the fastest
+  select curr.dateindex, curr.company_id, 
+         curr.perend_q1,
+         curr.qs_date,
+         curr.now_inbnd_stmtid_dateindex, 
+         curr.last_inbnd_stmtid_dateindex,
+         curr.netinc_q1
+  from fe_data_store.si_finecon2 curr
+  where curr.dateindex = 17590 and curr.company_id = now.company_id
+
+) fut1 on true join lateral ( 
+
+  -- per item processing: may not be the fastest
+  select curr.dateindex, curr.company_id, 
+         curr.perend_q1,
+         curr.qs_date,
+         curr.now_inbnd_stmtid_dateindex, 
+         curr.last_inbnd_stmtid_dateindex,
+         curr.netinc_q1
+  from fe_data_store.si_finecon2 curr
+  where curr.dateindex = 17619 and curr.company_id = now.company_id
+
+) fut2 on true;
+
+
+-- need relative 
+-- good
+
+with 
+dateindexes_fut1 as (
+
+  select fut.dateindex from (select distinct dateindex 
+  from fe_data_store.si_finecon2 
+  where dateindex > 17562                       -- monthly production load: max(dateindex) xor 'current index'
+  order by dateindex      limit 1 offset 0) fut      
+
+), -- 17590
+dateindexes_fut2 as (
+
+  select fut.dateindex from (select distinct dateindex 
+  from fe_data_store.si_finecon2 
+  where dateindex > 17562                        -- monthly production load: max(dateindex) xor 'current index'
+  order by dateindex      limit 1 offset 1) fut      
+
+) -- 17619
+select now.*, 
+  -- fut1.dateindex                   fut1_dateindex,
+  fut1.qs_date                     fut1_qs_date,
+  fut1.perend_q1                   fut1_perend_q1,
+  fut1.now_inbnd_stmtid_dateindex  fut1_now_inbnd_stmtid_dateindex,
+  fut1.last_inbnd_stmtid_dateindex fut1_last_inbnd_stmtid_dateindex,
+  fut1.netinc_q1                   fut1_netinc_q1,
+
+  -- fut2.dateindex                   fut2_dateindex,
+  fut2.qs_date                     fut2_qs_date,
+  fut2.perend_q1                   fut2_perend_q1,
+  fut2.now_inbnd_stmtid_dateindex  fut2_now_inbnd_stmtid_dateindex,
+  fut2.last_inbnd_stmtid_dateindex fut2_last_inbnd_stmtid_dateindex,
+  fut2.netinc_q1                   fut2_netinc_q1
+
+from ( 
+
+  select curr.dateindex, 
+         dateindexes_fut1.dateindex fut1_dateindex,
+         dateindexes_fut2.dateindex fut2_dateindex,
+         curr.company_id, curr.sp, curr.ticker, curr.company,
+         curr.perend_q1,
+         curr.qs_date,
+         curr.now_inbnd_stmtid_dateindex, 
+         curr.last_inbnd_stmtid_dateindex,
+         curr.netinc_q1
+  from fe_data_store.si_finecon2 curr, dateindexes_fut1, dateindexes_fut2
+  where curr.dateindex = 17562 and curr.sp in ('500','400','600') and curr.netinc_q1 is null 
+                         -- monthly production load: max(dateindex) xor 'current index'
+
+) now         left join lateral ( -- 17590
+
+  -- per item processing: may not be the fastest
+  select curr.dateindex, curr.company_id, 
+         curr.perend_q1,
+         curr.qs_date,
+         curr.now_inbnd_stmtid_dateindex, 
+         curr.last_inbnd_stmtid_dateindex,
+         curr.netinc_q1
+  from fe_data_store.si_finecon2 curr
+  where curr.dateindex = now.fut1_dateindex and curr.company_id = now.company_id
+
+) fut1 on true left join lateral ( -- 17619
+
+  -- per item processing: may not be the fastest
+  select curr.dateindex, curr.company_id, 
+         curr.perend_q1,
+         curr.qs_date,
+         curr.now_inbnd_stmtid_dateindex, 
+         curr.last_inbnd_stmtid_dateindex,
+         curr.netinc_q1
+  from fe_data_store.si_finecon2 curr
+  where curr.dateindex = now.fut2_dateindex and curr.company_id = now.company_id
+
+) fut2 on true;
+
+
+
+
+-- need any sp company_id now +- 13 months ( SEE FAR ABOVE )
+--
+
+-- company_ids in the sp ever appearing now +- 13 months
+with company_ids as (
+  -- where exactly they exist (top option)
+  -- unique company_ids       (bottom option)
+
+  ---- select distinct company_id from (
+  --select dateindexes.dateindex, lat.company_id from (
+  select distinct lat.company_id from (
+
+    select fut.dateindex from (select distinct dateindex 
+    from fe_data_store.si_finecon2 
+    where dateindex > 17562                   -- monthly production load: max(dateindex) xor 'current index'
+    order by dateindex      limit 1) fut      -- monthly production load: 13
+    union all
+    select nowpast.dateindex from (select distinct dateindex 
+    from fe_data_store.si_finecon2 
+    where dateindex <= 17562                  -- monthly production load: max(dateindex) xor 'current index'
+    order by dateindex desc limit 2) nowpast  -- monthly production load: 14 
+    order by dateindex
+    
+  ) dateindexes
+  left join lateral ( 
+    select distinct now.company_id
+    from fe_data_store.si_finecon2 now
+    where 
+          now.dateindex = dateindexes.dateindex and 
+          now.sp in ('500','400','600')
+  ) lat on true
+  --order by lat.company_id, dateindexes.dateindex
+  order by lat.company_id -- , dateindexes.dateindex
+), 
+dateindexes_fut1 as (
+
+  select fut.dateindex from (select distinct dateindex 
+  from fe_data_store.si_finecon2 
+  where dateindex > 17562                       -- monthly production load: max(dateindex) xor 'current index'
+  order by dateindex      limit 1 offset 0) fut      
+
+), -- 17590
+dateindexes_fut2 as (
+
+  select fut.dateindex from (select distinct dateindex 
+  from fe_data_store.si_finecon2 
+  where dateindex > 17562                        -- monthly production load: max(dateindex) xor 'current index'
+  order by dateindex      limit 1 offset 1) fut      
+
+) -- 17619
+select now.*, 
+  -- fut1.dateindex                   fut1_dateindex,
+  fut1.qs_date                     fut1_qs_date,
+  fut1.perend_q1                   fut1_perend_q1,
+  fut1.now_inbnd_stmtid_dateindex  fut1_now_inbnd_stmtid_dateindex,
+  fut1.last_inbnd_stmtid_dateindex fut1_last_inbnd_stmtid_dateindex,
+  fut1.netinc_q1                   fut1_netinc_q1,
+
+  -- fut2.dateindex                   fut2_dateindex,
+  fut2.qs_date                     fut2_qs_date,
+  fut2.perend_q1                   fut2_perend_q1,
+  fut2.now_inbnd_stmtid_dateindex  fut2_now_inbnd_stmtid_dateindex,
+  fut2.last_inbnd_stmtid_dateindex fut2_last_inbnd_stmtid_dateindex,
+  fut2.netinc_q1                   fut2_netinc_q1
+
+from ( 
+
+  select curr.dateindex, 
+         dateindexes_fut1.dateindex fut1_dateindex,  -- here --
+         dateindexes_fut2.dateindex fut2_dateindex,  -- here --
+         curr.company_id, curr.sp, curr.ticker, curr.company,
+         curr.perend_q1,
+         curr.qs_date,
+         curr.now_inbnd_stmtid_dateindex, 
+         curr.last_inbnd_stmtid_dateindex,
+         curr.netinc_q1
+  from fe_data_store.si_finecon2 curr, 
+       dateindexes_fut1, dateindexes_fut2  -- here --
+  where curr.dateindex = 17562        -- monthly production load: max(dateindex) xor 'current index'
+    -- and curr.sp in ('500','400','600') 
+    and curr.company_id in ( select company_ids.company_id from company_ids )
+    and curr.netinc_q1 is null 
+                         
+) now         left join lateral ( -- 17590
+
+  -- per item processing: may not be the fastest
+  select curr.dateindex, curr.company_id, 
+         curr.perend_q1,
+         curr.qs_date,
+         curr.now_inbnd_stmtid_dateindex, 
+         curr.last_inbnd_stmtid_dateindex,
+         curr.netinc_q1
+  from fe_data_store.si_finecon2 curr
+  where curr.dateindex = now.fut1_dateindex and curr.company_id = now.company_id
+                         -- here --
+
+) fut1 on true left join lateral ( -- 17619
+
+  -- per item processing: may not be the fastest
+  select curr.dateindex, curr.company_id, 
+         curr.perend_q1,
+         curr.qs_date,
+         curr.now_inbnd_stmtid_dateindex, 
+         curr.last_inbnd_stmtid_dateindex,
+         curr.netinc_q1
+  from fe_data_store.si_finecon2 curr
+  where curr.dateindex = now.fut2_dateindex and curr.company_id = now.company_id
+                         -- here --
+
+) fut2 on true;
+
+
+-- LEFT_OFF
+-- need UPDATE statement ( a 'best' compare [|fut1_|fut2_]qs_date )
+-- if 'now' is empty 
+--   and 'fut1' is not empty then fill in                netinc_q1, netinc_q1_src, netinc_q1_dt -- watch out for regex type identifying IN new uploader
+-- if 'fut1' and 'fut2' are different than 'now' then 
+--                                fill in netinc_q1_old, netinc_q1, netinc_q1_src, netinc_q1_dt  -- watch out for regex type identifying IN new uploader
+
+-- end -- look forward to try to find missing/more_correct data (netinc_q1)
+
