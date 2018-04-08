@@ -7496,6 +7496,17 @@ get_sipro_rolling_finstats <- function(
 #   , rolling_limit     = "600000.00"
 #   )
 
+# USING THIS
+# sipro_rolling_finstats <- get_sipro_rolling_finstats()
+# View(sipro_rolling_finstats)
+
+# USING THIS ( econ IS MUCH more SENSTIVE to bank PERFORMANCE )
+# sipro_rolling_finstats <- get_sipro_rolling_finstats(
+#    dateindex_criteria = "now.dateindex in ( select distinct dateindex from fe_data_store.si_finecon2 order by dateindex desc offset 0 limit 6 )"
+#  , other_criteria     = "now.sp in ('500') and now.industry_desc in ('Money Center Banks', 'Regional Banks', 'Consumer Financial Services', 'S&Ls/Savings Banks')"
+#  , rolling_limit     = "600000.00"
+#  )
+
 
 
 get_sipro_sp500_earnings <- function() {
@@ -7692,6 +7703,16 @@ get_sipro_sp500_earnings_eom_xts <- function() {
   return(sipro_sp500_earnings_eom_xts)
 
 }
+#
+# USING THIS #
+# earnings up/down # pace over time
+# sum( NETINC_OVER_QUARTERS ) / sum( mktcap / price ) # earnings_per_avg_share
+# earnings_per_avg_share_x20_2q ( 6 month pace )
+# earnings_per_avg_share_x40_1q ( 3 month pace: last quarters performance )
+# sipro_sp500_earnings_eom_xts        <- get_sipro_sp500_earnings_eom_xts()
+# View(sipro_sp500_earnings_eom_xts)
+# 
+
 # NOTE: NOT used in the code flow into get_quandl_sipro_earnings_per_avg_share_x10_4q_eom_xts
 # sipro_sp500_earnings_eom_xts <- get_sipro_sp500_earnings_eom_xts()
 # > str(sipro_sp500_earnings_eom_xts) 
@@ -8321,6 +8342,15 @@ get_sipro_sp500_mktcap_o_netinc_eom_xts <- function() {
   return(sipro_sp500_mktcap_o_netinc_eom_xts)
 
 }
+#
+# USING THIS #
+# is the cost/return acceptable
+# mktcap/netinc # price earnings ratio # up/down # pace over time
+# mktcap_o_netinc_d20_x10_2q ( 6 month pace )
+# mktcap_o_netinc_d40_x10_1q ( 3 month pace: last quarters performance )
+# sipro_sp500_mktcap_o_netinc_eom_xts <- get_sipro_sp500_mktcap_o_netinc_eom_xts()
+# View(sipro_sp500_mktcap_o_netinc_eom_xts)
+# 
 # NOTE: NOT used in the code flow into get_quandl_sipro_mktcap_o_netinc_per_avg_share_x10_4q_eom_xts
 # ret <- get_sipro_sp500_mktcap_o_netinc_eom_xts()
 # str(ret)
@@ -8356,6 +8386,8 @@ get_sipro_sp500_mktcap_o_netinc_eom_xts <- function() {
 # 2017-09-30                        498                   23.03229                   23.57541                   22.99147                   22.85666
 # 2017-10-31                        493                   23.11135                   23.81306                   22.89608                   22.26932
 # 2017-11-30                        499                   24.04328                   23.36232                   22.97016                   23.06993
+
+
 
 # *** THIS_ONE ***
 get_sipro_inbnd_netinc_any_marginals_eom_xts <- function(marginals = FALSE) {
@@ -8474,9 +8506,24 @@ get_sipro_inbnd_netinc_any_marginals_eom_xts <- function(marginals = FALSE) {
   return(sipro_inbnd_netinc_any_marginals_eom_xts)
     
 }
-# *** THIS_ONE ***
+# 
+## marginals = TRUE ( NOT default ) 
+## every, banks, notbanks
+## marginals = TRUE ( just those 'reporting' in THAT month ) # BUT A rolling FUNCTIONs are BETTER
+##
+## USEFUL in the CASE when the PREVIOUS month WAS a MANY BIG COMPANIES LARGE REPORTING month
+## sipro_inbnd_netinc_any_marginals_eom_xts_marginals <- get_sipro_inbnd_netinc_any_marginals_eom_xts(marginals = TRUE)
+# 
+# USING THIS *** THIS_ONE *** ( NOT THE EASIEST TO READ )
 # sipro_inbnd_netinc_any_marginals_eom_xts <- get_sipro_inbnd_netinc_any_marginals_eom_xts()
-# dygraphs::dygraph(sipro_inbnd_netinc_any_marginals_eom_xts[, grep("^bank",colnames(sipro_inbnd_netinc_any_marginals_eom_xts), value = T)])
+# marginals = FALSE 
+# every, banks, notbanks
+# View(sipro_inbnd_netinc_any_marginals_eom_xts)
+# banks
+# View(sipro_inbnd_netinc_any_marginals_eom_xts[, grep("^bank",colnames(sipro_inbnd_netinc_any_marginals_eom_xts), value = T)])
+# 
+# sipro_inbnd_netinc_any_marginals_eom_xts <- get_sipro_inbnd_netinc_any_marginals_eom_xts()
+# View(sipro_inbnd_netinc_any_marginals_eom_xts[, grep("^bank",colnames(sipro_inbnd_netinc_any_marginals_eom_xts), value = T)])
 # 
 # tail(sipro_inbnd_netinc_any_marginals_eom_xts[, grep("^bank",colnames(sipro_inbnd_netinc_any_marginals_eom_xts), value = T)])
 #            banks_count banks_mktcap_div_mill_x_40 banks_rat_mktcap_o_netinc_q1_x_4 banks_pradchg_f04w_ann_wtd_mktcap
@@ -8493,6 +8540,7 @@ get_sipro_inbnd_netinc_any_marginals_eom_xts <- function(marginals = FALSE) {
 # 2017-11-30     13.8103161397670551
 # 2017-12-29    -37.8698224852071021
 # 2018-01-31    -67.1173668164061468
+
 
 
 get_sipro_inbnd_rat_chg_owe_chg_netinc_eom_xts <- function() {
@@ -11828,7 +11876,9 @@ get_all_raw_by_dateindex <- function(dateindex = NULL, file_type = "fst", aaii_s
 #   #          2 | Cadillac Fleetwood  |               2 | 10.4 |   8 |   472
 #   #         15 | Lincoln Continental |               3 | 10.4 |   8 |   460
 #   # ...
-# 
+#   # see 
+#   # data.table::data.table(cbind(rn = row.names(mtcars)[order(row.names(mtcars))], mtcars[order(row.names(mtcars)),])) 
+#
 #   Rlof___f.dist.to.knn <- function(dataset, neighbors, ...){
 # 
 #       m.dist <- as.matrix( Rlof:::distmc(dataset, ...))
