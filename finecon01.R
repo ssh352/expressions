@@ -8748,7 +8748,7 @@ upload_mini_dbfs_no_future_look_to_db <- function(from_dir = "W:/AAIISIProDBFs",
   }
   
   # at the 'end of the 'monthly' load, then re-index everything
-  vacuum_reindex_check()
+  # vacuum_reindex_check()
 
   Sys.setenv(TZ=oldtz)
   
@@ -8764,7 +8764,7 @@ upload_mini_dbfs_no_future_look_to_db <- function(from_dir = "W:/AAIISIProDBFs",
 # *** ** IMPORTANT ** IMPORTANT ** better run OUTSIDE OF R-STUDIO ( MUCH MUCH MUCH FASTER ) ***
 # DBI con 'bloated' problem
 # upload_mini_dbfs_no_future_look_to_db(decreasing_sort_order = FALSE)
-# 
+# vacuum_reindex_check()
 # 
 # if column does not exist in EARLIER DAYS (e.g. divpaid_q first appeared(ReadMe.txt) in 2012-12-31 15705) t
 # then LOAD last ONE first
@@ -8773,7 +8773,7 @@ upload_mini_dbfs_no_future_look_to_db <- function(from_dir = "W:/AAIISIProDBFs",
 # upload_mini_dbfs_no_future_look_to_db(decreasing_sort_order = FALSE)
 #   xor BETTER ( if I know when column first appeared )
 # upload_mini_dbfs_no_future_look_to_db(decreasing_sort_order = FALSE, exact_near_month_end_dbf_dirs = sort(as.integer(dir("W:\\AAIISIProDBFs")))[ 15705 <= sort(as.integer(dir("W:\\AAIISIProDBFs")))])
-# 
+# vacuum_reindex_check() 
 # 
 # e.g. restart from a HUNG
 # upload_mini_dbfs_no_future_look_to_db(decreasing_sort_order = FALSE, exact_near_month_end_dbf_dirs = sort(as.integer(dir("W:\\AAIISIProDBFs")))[ 13756 <= sort(as.integer(dir("W:\\AAIISIProDBFs")))])
@@ -8781,6 +8781,7 @@ upload_mini_dbfs_no_future_look_to_db <- function(from_dir = "W:/AAIISIProDBFs",
 #   ALWAYS!! WHILE THE PROGRAM *IS* RUNNING - check that the IS LOADING actually *IS* loading
 #   select STATISIC_q1, now_inbnd_stmtstat_STATISIC_q1 from fe_data_store.si_finecon2 where dateindex = <just finished loading this one>;
 #   **
+# vacuum_reindex_check()
 
 # looking for ere_q1
 # select dateindex, ere_q1, ere_qi from fe_data_store.si_finecon2 where dateindex = 12055
@@ -8811,7 +8812,7 @@ upload_mini_dbfs_no_future_look_to_db <- function(from_dir = "W:/AAIISIProDBFs",
                                     
                                            # NO CHECK: I must verify
                                                                                                 # that (1) exists AND (2) lwd
-upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_only_back = NULL, exact_near_month_end_dbf_dirs = NULL, decreasing_sort_order = TRUE, exactly_only_future_returns = FALSE, exactly_only_aggregates = FALSE, exactly_only_aggregates_group_bys_only = FALSE, vacuum_reindex_every_x_seconds=3600) {
+upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_only_back = NULL, exact_near_month_end_dbf_dirs = NULL, decreasing_sort_order = TRUE, exactly_only_future_returns = FALSE, exactly_only_aggregates = FALSE, exactly_only_aggregates_group_bys_only = FALSE, vacuum_reindex_every_x_seconds=3600, run_update_from_future_new_company_ids = TRUE) {
 
   # NOTE: to build from scratch
   # start from the earliest date (not default) and go thorugh the current date
@@ -8915,7 +8916,10 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
     if((!exactly_only_future_returns && (!is.null(exactly_only_aggregates) && !exactly_only_aggregates)) || is.null(exactly_only_aggregates) ) {
   
       verify_company_basics(dateindex = c(dir_i)) -> si_all_g_df
-      update_from_future_new_company_ids(df = si_all_g_df, ref = dir_i) -> si_all_g_df
+      # only *NEW MONTH* data needs to be UPDATED
+      if(run_update_from_future_new_company_ids) {
+        update_from_future_new_company_ids(df = si_all_g_df, ref = dir_i) -> si_all_g_df
+      }
       print(dir_i);upsert(si_all_g_df, keys = c("company_id")) # HERE #
   
       verify_company_details(dateindex = c(dir_i),  table_f = "si_psd", cnames_e = "^price$|^mktcap$|^split_fact$|^split_date$") -> si_all_g_df
@@ -9053,6 +9057,9 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
   #   load_us_bond_instruments() # ALL OF the data
   # }
 
+  # at the 'end of the 'monthly' load, then re-index everything
+  # vacuum_reindex_check()
+  
   Sys.setenv(TZ=oldtz)
   
   options(ops)
@@ -9087,26 +9094,32 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
 # upload_lwd_sipro_dbfs_to_db() # HARD NOTE: THIS DOES EVERYTHING - ALL (14) YEARS
 # upload_lwd_sipro_dbfs_to_db(months_only_back = 13)
 # upload_lwd_sipro_dbfs_to_db(exact_near_month_end_dbf_dirs = 16678) 
+# vacuum_reindex_check()
 
 #
 # exactly what I want 
 #                     exactly in this order ( processed left to right in for-loop)
 # upload_lwd_sipro_dbfs_to_db(                      exact_near_month_end_dbf_dirs = any # of elements, decreasing_sort_order = NULL )
-# 
+# vacuum_reindex_check()
+
 # tester
 # upload_lwd_sipro_dbfs_to_db(exact_near_month_end_dbf_dirs = c(17409,17378,17347,17317, 17284, 17317,17347,17378,17409), decreasing_sort_order = NULL )
+# vacuum_reindex_check()
 
 # probably not useful
 # head of 4 elements, eactly in this order ( processed left to right in for-loop)
 # upload_lwd_sipro_dbfs_to_db(months_only_back = 4, exact_near_month_end_dbf_dirs = any # of elements, decreasing_sort_order = NULL)
+# vacuum_reindex_check()
 
 # tester
 # { upload_lwd_sipro_dbfs_to_db(exact_near_month_end_dbf_dirs = c(       17409,17378,17347,17317, 17284, decreasing_sort_order = NULL, exactly_only_future_returns = TRUE)
 #   upload_lwd_sipro_dbfs_to_db(exact_near_month_end_dbf_dirs = c(17284, 17317,17347,17378,17409),       decreasing_sort_order = NULL) 
 # }
+# vacuum_reindex_check()
 
 # NOTE: CAN BE RAN ( RECOMMENDED )
-# vacuum_reindex_check(); { upload_lwd_sipro_dbfs_to_db(. . . }; vacuum_reindex_check()
+# { upload_lwd_sipro_dbfs_to_db(. . . }
+# vacuum_reindex_check()
 # 
 # tester                                                                  # assuming all of the previous months isq,bsq,cfq have been loaded
 # upload_lwd_sipro_dbfs_to_db(                                             months_only_back = 5, exactly_only_future_returns = TRUE) 
@@ -9118,26 +9131,30 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
 # BEST: run the following at the COMMAND PROMPT
 # after checking W:\AAIISIProDBFs looking for the latest new directory
  # # typical *new month*                                # *new(top) month*  # assuming all of the previous months isq,bsq,cfq have been loaded                                                    
- # { upload_lwd_sipro_dbfs_to_db(exact_near_month_end_dbf_dirs = c(999999), exactly_only_aggregates = NULL, exactly_only_aggregates_group_bys_only = NULL,  decreasing_sort_order = FALSE)  
- #   upload_lwd_sipro_dbfs_to_db(                                                months_only_back = 14, exactly_only_future_returns = TRUE) 
+ # { upload_lwd_sipro_dbfs_to_db(exact_near_month_end_dbf_dirs = c(NEW_INDEX_HERE), exactly_only_aggregates = NULL, exactly_only_aggregates_group_bys_only = NULL,  decreasing_sort_order = FALSE)  
+ #   upload_lwd_sipro_dbfs_to_db(                                                months_only_back = 14, exactly_only_future_returns = TRUE, run_update_from_future_new_company_ids = FALSE) 
  # }
-
+# vacuum_reindex_check()
 
 # loading 'inbnd' and next 'group by' aggregates (from the beginning)
 # upload_lwd_sipro_dbfs_to_db(exactly_only_aggregates = TRUE               , decreasing_sort_order = FALSE)
+# vacuum_reindex_check()
 
 # loading                  'group by' aggregates (from the beginning)
 # upload_lwd_sipro_dbfs_to_db(exactly_only_aggregates_group_bys_only = TRUE, decreasing_sort_order = FALSE)
+# vacuum_reindex_check()
 
 # maybe for loading or re-testing the (past to now) aggregate calculations
 # upload_lwd_sipro_dbfs_to_db(                                              months_only_back = 5, exactly_only_aggregates = TRUE, decreasing_sort_order = FALSE)
-
+# vacuum_reindex_check()
 
 # all returns from now through the past to the beginning
 # upload_lwd_sipro_dbfs_to_db(exactly_only_future_returns = TRUE)
+# vacuum_reindex_check()
 
 # load future returns going backward beyond a certain point
 # upload_lwd_sipro_dbfs_to_db( exact_near_month_end_dbf_dirs = c(sort(as.integer(dir("W:\\AAIISIProDBFs")))[  12664 > sort(as.integer(dir("W:\\AAIISIProDBFs")))]), exactly_only_future_returns = TRUE)
+# vacuum_reindex_check()
 
 ### ###
 
