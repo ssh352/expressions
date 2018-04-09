@@ -2182,9 +2182,9 @@ upsert <-  function(value = NULL, keys = NULL) { # vector of primary key values
     explain_result_full_message <-paste(explain_result[[1]], collapse = " ")
     message(explain_result_full_message)
     if(!grepl(".*Index Only Scan.*", explain_result_full_message)) {
-      message("Since not found: Index Only Scan ... vacuum_reindex_check ... starting")
-      vacuum_reindex_check(index = "fe_data_store.si_finecon2_dateindex_idx")
-      message("Since not found: Index Only Scan ... vacuum_reindex_check ... finished")
+      message("Since not found: Index Only Scan ... vacuum_analyze_reindex ... starting")
+      vacuum_analyze_reindex(index = "fe_data_store.si_finecon2_dateindex_idx")
+      message("Since not found: Index Only Scan ... vacuum_analyze_reindex ... finished")
     }
     Sys.sleep(5)
     
@@ -2792,9 +2792,9 @@ upsert2 <-  function(value = NULL, keys = NULL, target_table_name = "si_finecon2
     explain_result_full_message <-paste(explain_result[[1]], collapse = " ")
     message(explain_result_full_message)
     if(!grepl(".*Index Only Scan.*", explain_result_full_message)) {
-      message("Since not found: Index Only Scan ... vacuum_reindex_check ... starting")
-      vacuum_reindex_check()
-      message("Since not found: Index Only Scan ... vacuum_reindex_check ... finished")
+      message("Since not found: Index Only Scan ... vacuum_analyze_reindex ... starting")
+      vacuum_analyze_reindex(index = "fe_data_store.si_finecon2_dateindex_idx")
+      message("Since not found: Index Only Scan ... vacuum_analyze_reindex ... finished")
     }
     Sys.sleep(5)
     
@@ -7222,7 +7222,7 @@ vacuum_reindex_check <- function(start_time = NULL, how_often = NULL, index = NU
     release_connection()
     verify_connection()
     
-    vacuum_analyze_reindex()
+    vacuum_analyze_reindex(index = index)
   
     # because connection gets hosed
     release_connection()
@@ -8748,7 +8748,7 @@ upload_mini_dbfs_no_future_look_to_db <- function(from_dir = "W:/AAIISIProDBFs",
   }
   
   # at the 'end of the 'monthly' load, then re-index everything
-  # vacuum_reindex_check()
+  # vacuum_analyze_reindex()
 
   Sys.setenv(TZ=oldtz)
   
@@ -8759,12 +8759,12 @@ upload_mini_dbfs_no_future_look_to_db <- function(from_dir = "W:/AAIISIProDBFs",
 }
 # 
 # NOTE: CAN BE RAN ( RECOMMENDED )
-# vacuum_reindex_check(); { upload_mini_dbfs_no_future_look_to_db(. . . }; vacuum_reindex_check()
+# vacuum_analyze_reindex(); { upload_mini_dbfs_no_future_look_to_db(. . . }; vacuum_analyze_reindex()
 # 
 # *** ** IMPORTANT ** IMPORTANT ** better run OUTSIDE OF R-STUDIO ( MUCH MUCH MUCH FASTER ) ***
 # DBI con 'bloated' problem
 # upload_mini_dbfs_no_future_look_to_db(decreasing_sort_order = FALSE)
-# vacuum_reindex_check()
+# vacuum_analyze_reindex()
 # 
 # if column does not exist in EARLIER DAYS (e.g. divpaid_q first appeared(ReadMe.txt) in 2012-12-31 15705) t
 # then LOAD last ONE first
@@ -8773,7 +8773,7 @@ upload_mini_dbfs_no_future_look_to_db <- function(from_dir = "W:/AAIISIProDBFs",
 # upload_mini_dbfs_no_future_look_to_db(decreasing_sort_order = FALSE)
 #   xor BETTER ( if I know when column first appeared )
 # upload_mini_dbfs_no_future_look_to_db(decreasing_sort_order = FALSE, exact_near_month_end_dbf_dirs = sort(as.integer(dir("W:\\AAIISIProDBFs")))[ 15705 <= sort(as.integer(dir("W:\\AAIISIProDBFs")))])
-# vacuum_reindex_check() 
+# vacuum_analyze_reindex() 
 # 
 # e.g. restart from a HUNG
 # upload_mini_dbfs_no_future_look_to_db(decreasing_sort_order = FALSE, exact_near_month_end_dbf_dirs = sort(as.integer(dir("W:\\AAIISIProDBFs")))[ 13756 <= sort(as.integer(dir("W:\\AAIISIProDBFs")))])
@@ -8781,7 +8781,7 @@ upload_mini_dbfs_no_future_look_to_db <- function(from_dir = "W:/AAIISIProDBFs",
 #   ALWAYS!! WHILE THE PROGRAM *IS* RUNNING - check that the IS LOADING actually *IS* loading
 #   select STATISIC_q1, now_inbnd_stmtstat_STATISIC_q1 from fe_data_store.si_finecon2 where dateindex = <just finished loading this one>;
 #   **
-# vacuum_reindex_check()
+# vacuum_analyze_reindex()
 
 # looking for ere_q1
 # select dateindex, ere_q1, ere_qi from fe_data_store.si_finecon2 where dateindex = 12055
@@ -9058,7 +9058,7 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
   # }
 
   # at the 'end of the 'monthly' load, then re-index everything
-  # vacuum_reindex_check()
+  # vacuum_analyze_reindex()
   
   Sys.setenv(TZ=oldtz)
   
@@ -9086,7 +9086,7 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
 # --select distinct dateindex from si_finecon2 order by dateindex desc;
 
 # NOTE: ** ANY BELOW CAN BE RUN **
-# vacuum_reindex_check(); { upload_lwd_sipro_dbfs_to_db(. . . }; vacuum_reindex_check()
+# vacuum_analyze_reindex(); { upload_lwd_sipro_dbfs_to_db(. . . }; vacuum_analyze_reindex()
 
 # 
 # upload_lwd_sipro_dbfs_to_db(from_dir = "W:/AAIISIProDBFs", months_only_back = NULL, exact_near_month_end_dbf_dirs = NULL, decreasing_sort_order = TRUE)
@@ -9094,32 +9094,32 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
 # upload_lwd_sipro_dbfs_to_db() # HARD NOTE: THIS DOES EVERYTHING - ALL (14) YEARS
 # upload_lwd_sipro_dbfs_to_db(months_only_back = 13)
 # upload_lwd_sipro_dbfs_to_db(exact_near_month_end_dbf_dirs = 16678) 
-# vacuum_reindex_check()
+# vacuum_analyze_reindex()
 
 #
 # exactly what I want 
 #                     exactly in this order ( processed left to right in for-loop)
 # upload_lwd_sipro_dbfs_to_db(                      exact_near_month_end_dbf_dirs = any # of elements, decreasing_sort_order = NULL )
-# vacuum_reindex_check()
+# vacuum_analyze_reindex()
 
 # tester
 # upload_lwd_sipro_dbfs_to_db(exact_near_month_end_dbf_dirs = c(17409,17378,17347,17317, 17284, 17317,17347,17378,17409), decreasing_sort_order = NULL )
-# vacuum_reindex_check()
+# vacuum_analyze_reindex()
 
 # probably not useful
 # head of 4 elements, eactly in this order ( processed left to right in for-loop)
 # upload_lwd_sipro_dbfs_to_db(months_only_back = 4, exact_near_month_end_dbf_dirs = any # of elements, decreasing_sort_order = NULL)
-# vacuum_reindex_check()
+# vacuum_analyze_reindex()
 
 # tester
 # { upload_lwd_sipro_dbfs_to_db(exact_near_month_end_dbf_dirs = c(       17409,17378,17347,17317, 17284, decreasing_sort_order = NULL, exactly_only_future_returns = TRUE)
 #   upload_lwd_sipro_dbfs_to_db(exact_near_month_end_dbf_dirs = c(17284, 17317,17347,17378,17409),       decreasing_sort_order = NULL) 
 # }
-# vacuum_reindex_check()
+# vacuum_analyze_reindex()
 
 # NOTE: CAN BE RAN ( RECOMMENDED )
 # { upload_lwd_sipro_dbfs_to_db(. . . }
-# vacuum_reindex_check()
+# vacuum_analyze_reindex()
 # 
 # tester                                                                  # assuming all of the previous months isq,bsq,cfq have been loaded
 # upload_lwd_sipro_dbfs_to_db(                                             months_only_back = 5, exactly_only_future_returns = TRUE) 
@@ -9130,31 +9130,32 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
 # after COPIED new files using copyAAIISIProDBFs                               # SEE OTHER INSTRUCTIONS ### MONTHLY METHOD BEGINS ####
 # BEST: run the following at the COMMAND PROMPT
 # after checking W:\AAIISIProDBFs looking for the latest new directory
+#
  # # typical *new month*                                # *new(top) month*  # assuming all of the previous months isq,bsq,cfq have been loaded                                                    
  # { upload_lwd_sipro_dbfs_to_db(exact_near_month_end_dbf_dirs = c(NEW_INDEX_HERE), exactly_only_aggregates = NULL, exactly_only_aggregates_group_bys_only = NULL,  decreasing_sort_order = FALSE)  
  #   upload_lwd_sipro_dbfs_to_db(                                                months_only_back = 14, exactly_only_future_returns = TRUE, run_update_from_future_new_company_ids = FALSE) 
  # }
-# vacuum_reindex_check()
+# vacuum_analyze_reindex()
 
 # loading 'inbnd' and next 'group by' aggregates (from the beginning)
 # upload_lwd_sipro_dbfs_to_db(exactly_only_aggregates = TRUE               , decreasing_sort_order = FALSE)
-# vacuum_reindex_check()
+# vacuum_analyze_reindex()
 
 # loading                  'group by' aggregates (from the beginning)
 # upload_lwd_sipro_dbfs_to_db(exactly_only_aggregates_group_bys_only = TRUE, decreasing_sort_order = FALSE)
-# vacuum_reindex_check()
+# vacuum_analyze_reindex()
 
 # maybe for loading or re-testing the (past to now) aggregate calculations
 # upload_lwd_sipro_dbfs_to_db(                                              months_only_back = 5, exactly_only_aggregates = TRUE, decreasing_sort_order = FALSE)
-# vacuum_reindex_check()
+# vacuum_analyze_reindex()
 
 # all returns from now through the past to the beginning
 # upload_lwd_sipro_dbfs_to_db(exactly_only_future_returns = TRUE)
-# vacuum_reindex_check()
+# vacuum_analyze_reindex()
 
 # load future returns going backward beyond a certain point
 # upload_lwd_sipro_dbfs_to_db( exact_near_month_end_dbf_dirs = c(sort(as.integer(dir("W:\\AAIISIProDBFs")))[  12664 > sort(as.integer(dir("W:\\AAIISIProDBFs")))]), exactly_only_future_returns = TRUE)
-# vacuum_reindex_check()
+# vacuum_analyze_reindex()
 
 ### ###
 
@@ -11336,12 +11337,20 @@ get_all_raw_by_dateindex <- function(dateindex = NULL, file_type = "fst", aaii_s
 # [1] "2017-11-30"                                # MUST BE THE 'last weekday of the lastmonth' (CAN! (and has_been! Christmas))
 # 
 # 
-# # will create the folder  ##### ( DO NOT FORGET TO DO ) #####
+# # will create the folder in the Monthlies directory ##### ( DO NOT FORGET TO DO ) #####
 # copyAAIISIProDBFs(
 #     from = "C:/Program Files (x86)/Stock Investor/Professional"
 #   , to   = paste0("W:/AAIISIProDBFs/",getAAIISIProDate()) # # Reads: C:/Program Files (x86)/Stock Investor/Professional
 # )
 # 
+
+# # # CASE: to update past (missing) data with FUTURE data:  
+# # # will create the folder in the NonMonthlies directory 
+# # copyAAIISIProDBFs(
+# #     from = "C:/Program Files (x86)/Stock Investor/Professional"
+# #   , to   = paste0("W:/AAIISIProDBFs_NonMonthlies/",getAAIISIProDate()) # # Reads: C:/Program Files (x86)/Stock Investor/Professional
+# # )
+
 # 
 # SET upsert_temp TO make a temporary table
 # rm(list=setdiff(ls(all.names=TRUE),c("con","cid"))); debugSource('W:/R-3.4._/finecon01.R'); debugSource('W:/R-3.4._/goodsight01.R');verify_connection();options(upsert_temp_is_temporary=Inf)
