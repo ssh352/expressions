@@ -2183,7 +2183,7 @@ upsert <-  function(value = NULL, keys = NULL) { # vector of primary key values
     message(explain_result_full_message)
     if(!grepl(".*Index Only Scan.*", explain_result_full_message)) {
       message("Since not found: Index Only Scan ... vacuum_reindex_check ... starting")
-      vacuum_reindex_check()
+      vacuum_reindex_check(index = "fe_data_store.si_finecon2_dateindex_idx")
       message("Since not found: Index Only Scan ... vacuum_reindex_check ... finished")
     }
     Sys.sleep(5)
@@ -8706,7 +8706,7 @@ upload_mini_dbfs_no_future_look_to_db <- function(from_dir = "W:/AAIISIProDBFs",
   ## # for_inbnd_stmtstats_is_null_months_only_back_check_NOT_done <- TRUE
   
   # WANT TO SEE THIS HAPPENING
-  vacuum_analyze_reindex()
+  # vacuum_analyze_reindex()
   
   for(dir_i in near_month_end_dbf_dirs_ordered) {
     
@@ -8743,10 +8743,12 @@ upload_mini_dbfs_no_future_look_to_db <- function(from_dir = "W:/AAIISIProDBFs",
     message(paste0("**** Ending disk dbf dir: ",dir_i," ", dir_i," ****"))
     Sys.sleep(2)
     
-    vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
+    # vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
     
   }
   
+  # at the 'end of the 'monthly' load, then re-index everything
+  vacuum_reindex_check()
 
   Sys.setenv(TZ=oldtz)
   
@@ -8898,7 +8900,7 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
   
   # WANT TO SEE THIS HAPPENING
   # vacuum_analyze_reindex()
-  vacuum_analyze_reindex(index = "fe_data_store.si_finecon2_dateindex_company_id_key")
+  # vacuum_analyze_reindex(index = "? ? ?")
   
   for(dir_i in near_month_end_dbf_dirs_ordered) {
     
@@ -9033,7 +9035,7 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
     Sys.sleep(2)
     
     # vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
-    vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds, index = "fe_data_store.si_finecon2_dateindex_company_id_key") ->  start_at_secs_since_UNIX_birth
+    # vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds, index = "? ? ?") ->  start_at_secs_since_UNIX_birth
     
   }
   
