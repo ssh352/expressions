@@ -1342,6 +1342,56 @@ getFin.advfn <- function(
   max.attempts=5,	              # maximum number of attempts to download before exiting
   ...) {
 
+
+  # SEEN APR 09 2018
+  # Quantmod getFX function error
+  # https://stackoverflow.com/questions/49688058/quantmod-getfx-function-error
+  # 
+  # getFX produces 404 error #226
+  # https://github.com/joshuaulrich/quantmod/issues/226
+  # 
+  # @joshuaulrich
+  # Defunct all Google source functions  …
+  # Google Finance stopped providing historical price data for download
+  # in mid-March, 2018. Mark getSymbols.google() as defunct and suggest
+  # users call getSymbols(..., src = "yahoo") instead. Also mark getFin()
+  # and getFinancials() as defunct.
+  # 
+  # I considered automatically calling getSymbols.yahoo() to try and
+  # return _some_ data, but Ethan Smith rightly commented that Yahoo
+  # and Google data differ enough to potentially cause subtle bugs.
+  # 
+  # See #221.
+  # 
+  # Google Finance no longer providing data #221
+  # https://github.com/joshuaulrich/quantmod/issues/221
+  # 
+  # --
+  # GUTTED:  getFin, getSymbols.google
+  # 
+  # Defunct all Google source functions
+  # 
+  # Google Finance stopped providing historical price data for download
+  # in mid-March, 2018. Mark getSymbols.google() as defunct and suggest
+  # users call getSymbols(..., src = "yahoo") instead. Also mark getFin()
+  # and getFinancials() as defunct.
+  # 
+  # I considered automatically calling getSymbols.yahoo() to try and
+  # return _some_ data, but Ethan Smith rightly commented that Yahoo
+  # and Google data differ enough to potentially cause subtle bugs.
+  # 
+  # https://github.com/joshuaulrich/quantmod/commit/24616e0cc2f5f6e950a7899c68ddade5a67e1332
+  #   
+  # FOUND old FORMAT
+  # INTERNET WAY BACK MACHINE - MAR 09 2016
+  # https://web.archive.org/web/20160309092330/http://www.google.com/finance?fstype=ii&q=MSFT
+  #
+  # (last know good working)
+  # Google Finance ( the last getFin/getFinancials  viewFin/viewFinancials 
+  # APR 09 2018
+  # quantmod    * 0.4-13     2018-01-08 Github (joshuaulrich/quantmod@fa2966a)
+  
+  
   getFin.advfn_inner <- function(
     Symbol=NULL,                # ticker(s)
     env=NULL, 
@@ -1976,6 +2026,8 @@ getFin.advfn <- function(
   #   if(exists('A')) return(A[which(rownames(A) == 'symbol'),1])
   # })
   
+  browser()
+  
   if (auto.assign) {
     assign(paste(gsub(":", ".", Symbol.name), "f", sep = "."),
            structure(fin, symbol = Symbol.name, class = "financials",
@@ -1988,9 +2040,7 @@ getFin.advfn <- function(
   
 }
 `getFinancials.advfn` <- getFin.advfn
-# 
-# getFinancials.advfn("WMT")
-# 
+
 # library(quantmod)
 # getFinancials("GOOG;GE")
 # NOTE: places GOOG.f and GE.f in the .GlobalEnv
@@ -1999,8 +2049,282 @@ getFin.advfn <- function(
 # DO NOT DO BELOW, THIS DOES NOT WORK ( SHOULD ASK how to do )
 # IT PRODUCES A STRING OUTPUT
 # Financials <- getFinancials("GOOG;GE", auto.assign = FALSE)
+#
+# tests
+# 
+# getFin.advfn("WMT")
+# str(WMT.f)
+# ViewFin(WMT.f, type="BS", period = "Q")
+#
 
 
+
+# UNTESTED
+startFinPhantomDriver <- function(pjs_cmd = "", port = 4444L, extras = "", ...){
+
+  require(RSelenium)
+  
+  require(RSelenium)
+  # uses XML function htmlParse
+  # uses htmltab function htmltab
+
+  # Download phantomjs-2.1.1-windows.zip (17.4 MB) and extract (unzip) the content.
+  # http://phantomjs.org/download.html
+
+  # phantom help
+  # https://cran.r-project.org/web/packages/RSelenium/vignettes/RSelenium-headless.html
+  # 
+  # place in the PATH
+  # C:\OTHERBIN\phantomjs.exe
+  # 
+  # C:\Users\AnonymousUser>echo %PATH%
+  # C:\OTHERBIN
+
+  # phantom exe help
+  # http://phantomjs.org/api/command-line.html
+  # 
+  # consider
+  #
+  # peformance
+  #
+  # --load-images=[true|false]           load all inlined images (default is true). Also accepted: [yes|no].
+  # --max-disk-cache-size=size           limits the size of disk cache (in KB).
+  # 
+  # debugging
+  # 
+  # --debug=[true|false]                          prints additional warning and debug message, default is false. Also accepted: [yes|no].
+  # --local-to-remote-url-access=[true|false]     allows local content to access remote URL (default is false)
+
+  # RSelenium basics
+  # https://cran.r-project.org/web/packages/RSelenium/vignettes/RSelenium-basics.html#sending-mouse-events-to-elements
+
+  ops <- options() 
+  options(warn = 1)
+  
+  pJS <- suppressWarnings(phantom(pjs_cmd = pjs_cmd, port = port, extras = c("--load-images=false", extras), ...))
+  Sys.sleep(5)
+  remDr <- remoteDriver(browserName = 'phantomjs')
+  
+  options(ops)
+  return(list(pJS = pJS, remDr = remDr))
+
+}
+# FinPhantomDriver <- startFinPhantomDriver()
+# UNTESTED
+
+
+
+# UNTESTED
+stopFinPhantomDriver <- function(FinPhantomDriver) {
+
+  require(RSelenium)
+
+  ops <- options() 
+  options(warn = 1)
+
+  FinPhantomDriver$remDr$close()
+  FinPhantomDriver$pJS$stop() 
+
+  options(ops)
+  invisible()
+
+}
+# stopFinPhantomDriver(FinPhantomDriver)
+# UNTESTED
+#
+# FinPhantomDriver <- startFinPhantomDriver()
+# stopFinPhantomDriver(FinPhantomDriver)
+# UNTESTED
+
+
+
+getFin.yahoo <- function(Symbol, env=parent.frame(), src="yahoo", auto.assign=TRUE, FinPhantomDriver = NULL, ...) {
+
+  ops <- options()
+  options(warn = 1)
+  
+  # uses
+  # package XML function htmlParse
+  # package htmltab function htmltab 
+  # package lubridate function parse_date_time
+  # package zoo(attached) various functions and S3 functions
+  
+  `%>%` <-magrittr::`%>%`
+  
+  if(missing(env))
+    env <- parent.frame(1)
+  if(is.null(env))
+    auto.assign <- FALSE
+  Symbol <- strsplit(Symbol,";")[[1]]
+  if(length(Symbol)>1)
+    return(unlist(lapply(Symbol, getFin, env=env, src=src, auto.assign=auto.assign)))
+  Symbol.name <- Symbol
+  
+  # # GET THE DATA ( into the Symbol txt file )
+  # # 
+  # google.fin <- "http://finance.google.com/finance?fstype=ii&q="
+  # tmp <- tempfile()
+  # on.exit(unlink(tmp))
+  # download.file(paste(google.fin,Symbol,sep=""),quiet=TRUE,destfile=tmp)
+  # Symbol <- readLines(tmp, warn=FALSE)
+
+  # # FROM the Symbol txt file scrape the data into 'fin'
+  # #
+  # # thead contains the column names
+  # # tbody contains the data
+  # thead <- grep('thead', Symbol)
+  # tbody <- grep('tbody', Symbol)
+  # 
+  # # extract the column names
+  # c1 <- lapply(seq(1,11,2), function(x) Symbol[thead[x]:thead[x+1]])
+  # c2 <- lapply(c1,gsub,pattern="<.*?>",replacement="")
+  # cnames <- lapply(c2,function(x) x[-which(x=="")][-1])
+  # 
+  # # extract the data.  fnames if financial names (rownames)
+  # d1 <- lapply(seq(1,11,2), function(x) { Symbol[tbody[x]:tbody[x+1]]})
+  # d2 <- lapply(d1, gsub, pattern="<.*?>", replacement="", perl=TRUE)
+  # d3 <- lapply(d2, function(x) x[-which(x=="")])
+  # fnames <- lapply(d3, function(x) {
+  #                  gsub("&amp;","&",x[grep("[A-Za-z]",x)])} )
+  # # extract data and fill NAs where needed
+  # vals   <- lapply(d3, function(x) {
+  #           as.numeric(gsub(",","",
+  #           gsub("^-$",NA,x[-grep("[A-Za-z]",x)]))) })
+  # 
+  # # convert to a matrix with correct dim and names
+  # make_col_names <- function(name) {
+  #   substr(name, nchar(name)-9, nchar(name))
+  # }
+  # fin <- lapply(1:6,
+  #        function(x) {
+  #          structure(matrix(vals[[x]],nrow=length(fnames[[x]]),byrow=TRUE),
+  #                    .Dimnames=list(fnames[[x]],make_col_names(cnames[[x]])),
+  #                    col_desc=cnames[[x]])})
+  # 
+  
+  # HTML table on the page ( XPath )
+  #
+  # chrome devtools help
+  # which = 2
+  # //*[@id="Col1-1-Financials-Proxy"]/section
+  # APR 2018
+
+  # "Quarterly" HTML link on the page ( XPath )
+  #
+  # chrome dev tools help 
+  # //*[@id="Col1-1-Financials-Proxy"]/section/div[1]/div[2]/button/div/span
+  # APR 2018
+
+  fin <- list()
+
+  remDr$open()
+
+  # IS A
+  fin[[2]] <- htmltab::htmltab(doc = "https://finance.yahoo.com/quote/WMT/financials?p=WMT", which = 2) 
+
+  # IS Q
+  remDr$navigate("https://finance.yahoo.com/quote/WMT/financials?p=WMT")
+  webElem <- remDr$findElement(using = 'xpath', '//*[@id="Col1-1-Financials-Proxy"]/section/div[1]/div[2]/button/div/span')
+  Sys.sleep(1)            # --load-images=false # OTHERWISE one MUST wait longer
+  
+  webElem$clickElement()
+  Sys.sleep(1)            # --load-images=false # OTHERWISE one MUST wait longer
+  fin[[1]] <- htmltab::htmltab(XML::htmlParse(remDr$getPageSource()[[1]]), which = 2)
+
+  fini <- fin[[1]]
+
+  # dated column names
+  colnames(fini)[2:length(colnames(fini))] <- 
+    lubridate::parse_date_time(colnames(fini)[2:length(colnames(fini))], orders = c("mdy")) %>% 
+    zoo::as.Date(.) %>% as.character(.)
+
+  colnames(fini)[1] <- ""
+
+  # remove all character "title" columns
+
+  # keep any rows that contains a digit  OR contains a hyphen("-")
+  fini <- fini[grepl("\\d", fini[[2]]) | grepl("^-$", fini[[2]]), , drop = F]
+  
+  # save
+  col_names <- colnames(fini)[-1]
+  row_names <- fini[[1]]
+
+  # begin process
+  tmp <- fini[,-1]
+  colnames(tmp) <- NULL
+  
+  tmp <- as.matrix(tmp)
+  
+  # replace "-" with NA
+  tmp <- apply(tmp,2 , function(x) {  x[ x == "-" ] <- NA_character_; x })
+  # replace commas "," with ""
+  tmp <- apply(tmp,2 , function(x) { gsub(",", "", x) })
+  # convert to numeric
+  tmp <- apply(tmp,2 , function(x) { as.numeric(x) })
+  # set identifiers
+  rownames(tmp)  <- row_names
+  colnames(tmp)  <- col_names
+  attr(tmp, "col_desc") <- paste0("quarter end date ", col_names)
+  fini     <- tmp 
+  fin[[1]] <- fini
+  rm(fini)
+  rm(tmp)
+
+  # LEFT_OFF
+
+  # end proces
+
+  # BS A
+  fin[[4]] <- htmltab::htmltab(doc = "https://finance.yahoo.com/quote/WMT/balance-sheet?p=WMT", which = 2)
+
+  # BS Q
+  remDr$navigate("https://finance.yahoo.com/quote/WMT/balance-sheet?p=WMT")
+  webElem <- remDr$findElement(using = 'xpath', '//*[@id="Col1-1-Financials-Proxy"]/section/div[1]/div[2]/button/div/span')
+  Sys.sleep(1)            # --load-images=false # OTHERWISE one MUST wait longer
+  
+  webElem$clickElement()
+  Sys.sleep(1)            # --load-images=false # OTHERWISE one MUST wait longer
+  fin[[3]] <- htmltab::htmltab(XML::htmlParse(remDr$getPageSource()[[1]]), which = 2) 
+  
+  # CF A
+  fin[[6]] <- htmltab::htmltab(doc = "https://finance.yahoo.com/quote/WMT/cash-flow?p=WMT", which = 2)
+
+  # CF Q
+  remDr$navigate("https://finance.yahoo.com/quote/WMT/cash-flow?p=WMT")
+  webElem <- remDr$findElement(using = 'xpath', '//*[@id="Col1-1-Financials-Proxy"]/section/div[1]/div[2]/button/div/span')
+  Sys.sleep(1)            # --load-images=false # OTHERWISE one MUST wait longer
+  
+  webElem$clickElement()
+  Sys.sleep(1)            # --load-images=false # OTHERWISE one MUST wait longer
+  fin[[5]] <- htmltab::htmltab(XML::htmlParse(remDr$getPageSource()[[1]]), which = 2) 
+
+  options(ops)
+  
+  fin <- list(IS=list(Q=fin[[1]], A=fin[[2]]),
+              BS=list(Q=fin[[3]], A=fin[[4]]),
+              CF=list(Q=fin[[5]], A=fin[[6]]))
+  
+  if (auto.assign) {
+    assign(paste(gsub(":", ".", Symbol.name), "f", sep = "."),
+           structure(fin, symbol = Symbol.name, class = "financials",
+           src = "yahoo", updated = Sys.time()), env)
+    return(paste(gsub(":", ".", Symbol.name), "f", sep = "."))
+  } else {
+    return(structure(fin, symbol = Symbol.name, class = "financials",
+           src = "yahoo", updated = Sys.time()))
+  }
+}
+getFinancials.yahoo <- getFin.yahoo
+#
+# tests
+# 
+# FinPhantomDriver <- startFinPhantomDriver()
+# getFin.yahoo("WMT")
+# stopFinPhantomDriver(FinPhantomDriver)
+# 
+# str(WMT.f)
+# ViewFin(WMT.f, type="BS", period = "Q")
+#
 
 
 get_av_agg_eom_xts <- function() {
@@ -2389,6 +2713,13 @@ get_willshire_less_agg_equity_premium_eom_xts <- function() {
 # 3-MONTH IS TOO VOLITILE TO BE TRUSTED
 # I DID NOT SEE ANY DIFFERENCE BETWEEN 6,9.12-MONTH
 # dygraphs::dygraph(willshire_less_agg_equity_premium[,c("equity_prem_p03m_ann","equity_prem_p06m_ann","equity_prem_p09m_ann","equity_prem_p12m_ann")])
+# 
+#
+# USING THIS
+# zimmerman equity premium
+# willshire_less_agg_equity_premium <- get_willshire_less_agg_equity_premium_eom_xts()
+# dygraphs::dygraph(willshire_less_agg_equity_premium[,c("equity_prem_p06m_ann","equity_prem_p12m_ann")])
+# 
 # 
 # > str(willshire_less_agg_equity_premium)
 # An 'xts' object on 2003-09-30/2017-11-30 containing:
