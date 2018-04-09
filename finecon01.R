@@ -7095,7 +7095,7 @@ upload_us_gov_bonds_to_db <- function(months_only_back = NULL) {
 
 
 
-vacuum_analyze_reindex <- function() {
+vacuum_analyze_reindex <- function(index = NULL) {
 
   release_connection()
   verify_connection()
@@ -7129,8 +7129,13 @@ vacuum_analyze_reindex <- function() {
   
   message(" ")
   
-  db.q("reindex (verbose) table fe_data_store.si_finecon2;", conn.id = cid)
-
+  if(is.null(index)){
+    db.q(       "reindex (verbose) table fe_data_store.si_finecon2;", conn.id = cid)
+  } else {
+    # reindex (verbose) index fe_data_store.si_finecon2_dateindex_company_id_key;
+    db.q(paste0("reindex (verbose) index ", index, ";"), conn.id = cid)
+  }
+    
   message(" ")
 
   message("End reindex (verbose)")
@@ -7144,10 +7149,10 @@ vacuum_analyze_reindex <- function() {
            
 }
 # vacuum_analyze_reindex()
+# vacuum_analyze_reindex(index = "fe_data_store.si_finecon2_dateindex_company_id_key")
 
 
-
-vacuum_reindex_check <- function(start_time = NULL, how_often = NULL) {
+vacuum_reindex_check <- function(start_time = NULL, how_often = NULL, index = NULL) {
 
                               # 'last check/do time
   oldtz <- Sys.getenv('TZ')
@@ -7183,7 +7188,7 @@ vacuum_reindex_check <- function(start_time = NULL, how_often = NULL) {
       release_connection()
       verify_connection()
       
-      vacuum_analyze_reindex()
+      vacuum_analyze_reindex(index = index)
     
       # because connection gets hosed
       release_connection()
@@ -8892,7 +8897,8 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
   ## # for_inbnd_stmtstats_is_null_months_only_back_check_NOT_done <- TRUE
   
   # WANT TO SEE THIS HAPPENING
-  vacuum_analyze_reindex()
+  # vacuum_analyze_reindex()
+  vacuum_analyze_reindex(index = "fe_data_store.si_finecon2_dateindex_company_id_key")
   
   for(dir_i in near_month_end_dbf_dirs_ordered) {
     
@@ -9026,7 +9032,8 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
     message(paste0("**** Ending disk dbf dir: ",dir_i," ", dir_i," ****"))
     Sys.sleep(2)
     
-    vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
+    # vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds) ->  start_at_secs_since_UNIX_birth
+    vacuum_reindex_check(start_at_secs_since_UNIX_birth, vacuum_reindex_every_x_seconds, index = "fe_data_store.si_finecon2_dateindex_company_id_key") ->  start_at_secs_since_UNIX_birth
     
   }
   
