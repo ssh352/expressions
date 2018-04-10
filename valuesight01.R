@@ -2063,7 +2063,7 @@ startFinPhantomDriver <- function(pjs_cmd = "", port = 4444L, extras = "", ...){
 
   require(RSelenium)
   
-
+  # APR 2018
   # Download phantomjs-2.1.1-windows.zip (17.4 MB) and extract (unzip) the content.
   # http://phantomjs.org/download.html
 
@@ -2073,7 +2073,7 @@ startFinPhantomDriver <- function(pjs_cmd = "", port = 4444L, extras = "", ...){
   # place in the PATH
   # C:\OTHERBIN\phantomjs.exe
   # 
-  # C:\Users\AnonymousUser>echo %PATH%
+  # C:\Users\ComputerUser>echo %PATH%
   # C:\OTHERBIN
 
   # phantom exe help
@@ -2097,7 +2097,12 @@ startFinPhantomDriver <- function(pjs_cmd = "", port = 4444L, extras = "", ...){
   ops <- options() 
   options(warn = 1)
   
-  pJS <- suppressWarnings(phantom(pjs_cmd = pjs_cmd, port = port, extras = c("--load-images=false", extras), ...))
+  pJS <- suppressWarnings(phantom(pjs_cmd = pjs_cmd, port = port, 
+    extras = c("--load-images=false", "--disk-cache=true", paste0("--max-disk-cache-size=size=",10485760), 
+            paste0("--disk-cache-path=", normalizePath(tempdir(), winslash = "/")), 
+            paste0("--cookies-file=",    normalizePath(tempdir(), winslash = "/"), "/cookies.txt"),
+            extras)
+    , ...))
   Sys.sleep(5)
   remDr <- remoteDriver(browserName = 'phantomjs')
   
@@ -2140,8 +2145,9 @@ getFin.yahoo <- function(Symbol, env=parent.frame(), src="yahoo", auto.assign=TR
   # package XML function htmlParse
   # package htmltab function htmltab 
   # package lubridate function parse_date_time
-  # package zoo(attached) various functions and S3 functions
+  # package zoo(attached) various functions and S3 methods
   
+  # package magrittr function `%>%`
   `%>%` <-magrittr::`%>%`
   
   if(missing(env))
@@ -2153,116 +2159,92 @@ getFin.yahoo <- function(Symbol, env=parent.frame(), src="yahoo", auto.assign=TR
     return(unlist(lapply(Symbol, getFin.yahoo, env=env, src=src, auto.assign=auto.assign, FinPhantomDriver=FinPhantomDriver)))
   Symbol.name <- Symbol
   
-  # # GET THE DATA ( into the Symbol txt file )
-  # # 
-  # google.fin <- "http://finance.google.com/finance?fstype=ii&q="
-  # tmp <- tempfile()
-  # on.exit(unlink(tmp))
-  # download.file(paste(google.fin,Symbol,sep=""),quiet=TRUE,destfile=tmp)
-  # Symbol <- readLines(tmp, warn=FALSE)
-
-  # # FROM the Symbol txt file scrape the data into 'fin'
-  # #
-  # # thead contains the column names
-  # # tbody contains the data
-  # thead <- grep('thead', Symbol)
-  # tbody <- grep('tbody', Symbol)
-  # 
-  # # extract the column names
-  # c1 <- lapply(seq(1,11,2), function(x) Symbol[thead[x]:thead[x+1]])
-  # c2 <- lapply(c1,gsub,pattern="<.*?>",replacement="")
-  # cnames <- lapply(c2,function(x) x[-which(x=="")][-1])
-  # 
-  # # extract the data.  fnames if financial names (rownames)
-  # d1 <- lapply(seq(1,11,2), function(x) { Symbol[tbody[x]:tbody[x+1]]})
-  # d2 <- lapply(d1, gsub, pattern="<.*?>", replacement="", perl=TRUE)
-  # d3 <- lapply(d2, function(x) x[-which(x=="")])
-  # fnames <- lapply(d3, function(x) {
-  #                  gsub("&amp;","&",x[grep("[A-Za-z]",x)])} )
-  # # extract data and fill NAs where needed
-  # vals   <- lapply(d3, function(x) {
-  #           as.numeric(gsub(",","",
-  #           gsub("^-$",NA,x[-grep("[A-Za-z]",x)]))) })
-  # 
-  # # convert to a matrix with correct dim and names
-  # make_col_names <- function(name) {
-  #   substr(name, nchar(name)-9, nchar(name))
-  # }
-  # fin <- lapply(1:6,
-  #        function(x) {
-  #          structure(matrix(vals[[x]],nrow=length(fnames[[x]]),byrow=TRUE),
-  #                    .Dimnames=list(fnames[[x]],make_col_names(cnames[[x]])),
-  #                    col_desc=cnames[[x]])})
-  # 
-  
   # HTML table on the page ( XPath )
   #
   # chrome devtools help
   # which = 2
   # //*[@id="Col1-1-Financials-Proxy"]/section
-  # APR 2018
+  # UNUSED instead using 'which = 2' 
   HTMLTableXPath <- '//*[@id="Col1-1-Financials-Proxy"]/section'
-
+  # APR 2018
+  
   # "Quarterly" HTML link on the page ( XPath )
   #
   # chrome dev tools help 
   # //*[@id="Col1-1-Financials-Proxy"]/section/div[1]/div[2]/button/div/span
-  # APR 2018
   QuarterlyHTMLlinkXPath <- '//*[@id="Col1-1-Financials-Proxy"]/section/div[1]/div[2]/button/div/span'
-
-  fin <- list()
-
-  remDr <- FinPhantomDriver$remDr
-  remDr$open()
-
-  remDr$navigate(paste0("https://finance.yahoo.com/quote/", Symbol.name, "/financials?p=", Symbol.name))
-  # IS A
-  fin[[2]] <- htmltab::htmltab(XML::htmlParse(remDr$getPageSource()[[1]]), which = 2)
+  # APR 2018
   
-  webElem <- remDr$findElement(using = 'xpath', '//*[@id="Col1-1-Financials-Proxy"]/section/div[1]/div[2]/button/div/span')
+  # collection of sheets
+  fin <- list()
+  
+  FinanceRootURL <- "https://finance.yahoo.com/quote/"
+  
+  remDr <- FinPhantomDriver$remDr
+  sink("nul") # Windows OS Platform specific: I should dynamically detect the OS and adjust
+  remDr$open()
+  sink()
+  
+  writeLines(paste0("Begin ", Symbol.name))
+  URL <- paste0(FinanceRootURL, Symbol.name, "/financials?p=", Symbol.name)
+  message(paste0(" ", URL))
+  remDr$navigate(URL)
+  # IS A
+  message("    Collecting Income Statement Annual data")
+  fin[[2]] <- suppressMessages(htmltab::htmltab(XML::htmlParse(remDr$getPageSource()[[1]]), which = 2))
+  
+  webElem <- remDr$findElement(using = 'xpath', QuarterlyHTMLlinkXPath)
   Sys.sleep(1)            # --load-images=false # OTHERWISE one MUST wait longer
   webElem$clickElement()
   Sys.sleep(1)            # --load-images=false # OTHERWISE one MUST wait longer
   # IS Q
-  fin[[1]] <- htmltab::htmltab(XML::htmlParse(remDr$getPageSource()[[1]]), which = 2)
+  message("      Collecting Income Statement Quarterly data")
+  fin[[1]] <- suppressMessages(htmltab::htmltab(XML::htmlParse(remDr$getPageSource()[[1]]), which = 2))
 
-  remDr$navigate(paste0("https://finance.yahoo.com/quote/", Symbol.name, "/balance-sheet?p=", Symbol.name))
+  URL <- paste0(FinanceRootURL, Symbol.name, "/balance-sheet?p=", Symbol.name)
+  message(paste0(" ", URL))
+  remDr$navigate(URL)
   # BS A
-  fin[[4]] <- htmltab::htmltab(XML::htmlParse(remDr$getPageSource()[[1]]), which = 2)
+  message("    Collecting Balance Sheet Annual data")
+  fin[[4]] <- suppressMessages(htmltab::htmltab(XML::htmlParse(remDr$getPageSource()[[1]]), which = 2))
   
-  webElem <- remDr$findElement(using = 'xpath', '//*[@id="Col1-1-Financials-Proxy"]/section/div[1]/div[2]/button/div/span')
+  webElem <- remDr$findElement(using = 'xpath', QuarterlyHTMLlinkXPath)
   Sys.sleep(1)            # --load-images=false # OTHERWISE one MUST wait longer
   webElem$clickElement()
   Sys.sleep(1)            # --load-images=false # OTHERWISE one MUST wait longer
   # BS Q
-  fin[[3]] <- htmltab::htmltab(XML::htmlParse(remDr$getPageSource()[[1]]), which = 2) 
+  message("      Collecting Balance Sheet Quarterly data")
+  fin[[3]] <- suppressMessages(htmltab::htmltab(XML::htmlParse(remDr$getPageSource()[[1]]), which = 2))
   
   # CF A
-  remDr$navigate(paste0("https://finance.yahoo.com/quote/", Symbol.name, "/cash-flow?p=", Symbol.name))
-  fin[[6]] <- htmltab::htmltab(XML::htmlParse(remDr$getPageSource()[[1]]), which = 2)
+  URL <- paste0(FinanceRootURL, Symbol.name, "/cash-flow?p=", Symbol.name)
+  message(paste0(" ", URL))
+  remDr$navigate(URL)
+  message("    Collecting Cash Flow Annual data")
+  fin[[6]] <- suppressMessages(htmltab::htmltab(XML::htmlParse(remDr$getPageSource()[[1]]), which = 2))
   
-  webElem <- remDr$findElement(using = 'xpath', '//*[@id="Col1-1-Financials-Proxy"]/section/div[1]/div[2]/button/div/span')
+  webElem <- remDr$findElement(using = 'xpath', QuarterlyHTMLlinkXPath)
   Sys.sleep(1)            # --load-images=false # OTHERWISE one MUST wait longer
   webElem$clickElement()
   Sys.sleep(1)            # --load-images=false # OTHERWISE one MUST wait longer
   # CF Q
-  fin[[5]] <- htmltab::htmltab(XML::htmlParse(remDr$getPageSource()[[1]]), which = 2) 
-
+  message("      Collecting Cash Flow Quarterly data")
+  fin[[5]] <- suppressMessages(htmltab::htmltab(XML::htmlParse(remDr$getPageSource()[[1]]), which = 2)) 
+  writeLines(paste0("End   ", Symbol.name))
+  
   fin_iter <- 0L
   for(fi in fin) {
     fin_iter <- fin_iter + 1L
-    
     fini <- fi
   
-    # dated column names
+    # dated column names format to YYYY-MM-DD
     colnames(fini)[2:length(colnames(fini))] <- 
       lubridate::parse_date_time(colnames(fini)[2:length(colnames(fini))], orders = c("mdy")) %>% 
       zoo::as.Date(.) %>% as.character(.)
-
     colnames(fini)[1] <- ""
   
-    # remove all character "title" columns
-    # keep any rows that contains a digit  OR contains a hyphen("-")
+    # remove all character "title" rows
+    # keep any rows that contains a digit OR contains a hyphen("-")
     fini <- fini[grepl("\\d", fini[[2]]) | grepl("^-$", fini[[2]]), , drop = F]
     
     # metadata
@@ -2276,11 +2258,11 @@ getFin.yahoo <- function(Symbol, env=parent.frame(), src="yahoo", auto.assign=TR
     rm(tmp)
     
     # replace "-" with NA
-    fini <- apply(fini,2 , function(x) {  x[ x == "-" ] <- NA_character_; x })
+    fini <- apply(fini, 2, function(x) {  x[ x == "-" ] <- NA_character_; x })
     # replace commas "," with ""
-    fini <- apply(fini,2 , function(x) { gsub(",", "", x) })
+    fini <- apply(fini, 2, function(x) { gsub(",", "", x) })
     # convert to numeric
-    fini <- apply(fini,2 , function(x) { as.numeric(x) })
+    fini <- apply(fini, 2, function(x) { as.numeric(x) })
     
     # set metadata
     rownames(fini)  <- row_names; colnames(fini)  <- col_names
@@ -2317,6 +2299,8 @@ getFinancials.yahoo <- getFin.yahoo
 # 
 # FinPhantomDriver <- startFinPhantomDriver()
 # getFin.yahoo("WMT", FinPhantomDriver = FinPhantomDriver)
+# getFin.yahoo("WMT;MSFT", FinPhantomDriver = FinPhantomDriver)
+# IBM.f <- getFin.yahoo("IBM", FinPhantomDriver = FinPhantomDriver, auto.assign = FALSE)
 # stopFinPhantomDriver(FinPhantomDriver)
 # 
 # str(WMT.f)
