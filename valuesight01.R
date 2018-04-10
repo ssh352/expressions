@@ -1350,8 +1350,8 @@ getFin.advfn <- function(
   # getFX produces 404 error #226
   # https://github.com/joshuaulrich/quantmod/issues/226
   # 
-  # @joshuaulrich
-  # Defunct all Google source functions  …
+  # joshuaulrich
+  # Defunct all Google source functions
   # Google Finance stopped providing historical price data for download
   # in mid-March, 2018. Mark getSymbols.google() as defunct and suggest
   # users call getSymbols(..., src = "yahoo") instead. Also mark getFin()
@@ -3348,6 +3348,8 @@ get_clev_easing_balances_eom_xts <- function() {
   colnames(clev_easing_balances_eom_xts)[1] <- "clev_easing_balances"
   # flat since NOV 2014, but WITHOUT "clev_easing_balances" ACTUALLY INCREASING!+ since the BEGINNING of 2017          
 
+  
+  
   Sys.setenv(TZ=oldtz)
   options(ops)
   
@@ -4229,7 +4231,19 @@ get_bankruptcy_filing_counts_eoq_xts <- function(pub_dates = Sys.Date(), updatin
 
     message(str_c("  Begin read_url: ", read_url))
     
-    webpage       <-  xml2::read_html(x = read_url)
+    webpage <-  try(xml2::read_html(x = read_url), silent = TRUE)
+    if(inherits(webpage, "try-error")) {
+      message(paste0("Nothing found at URL:", read_url))
+      message("  #   ")
+      message("  # Maybe the most recent calendar quarter ending Bankruptcy excel spreadsheet is not available (yet)?")
+      message("  #   ")
+      message("  # just get all of the local data")
+      message("  # bankruptcy_filing_counts_eoq_xts <- get_bankruptcy_filing_counts_eoq_xts(pub_dates = NA)")
+      message("  # or")
+      message("  # just a specific date ( and save )")
+      message("  # bankruptcy_filing_counts_eoq_xts <- get_bankruptcy_filing_counts_eoq_xts(pub_dates = zoo::as.Date(\"2017-06-30\"))")
+      return(NULL)
+    }
     Sys.sleep(3.0) # be nice; do not attack the website
     
     download_area <- rvest::html_nodes(webpage, "#content")
@@ -4809,3 +4823,4 @@ get_valuesight <- function() {
 
 # valuesight01.R 
 
+ 
