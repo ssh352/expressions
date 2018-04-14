@@ -526,10 +526,27 @@ get_up_side_down_side <- function(){
   # October 27, 2015
   # http://blog.alphaarchitect.com/2015/10/27/which-asset-allocation-weights-work-the-best/#gs.Xq5taBI
 
+  # NOVEL CASE: 
+  # NARROW STATISTIC: SOMEWHERE AT AN UPTURN TRYING TO GET OUT OF A MAJOR RECESSION: 
+  # A NEW SHARP UP 'INCREASE IN SIZE OF BALANCE SHEET' ONLY MATTERS
+  # 
+  # In addition, after careful planning and public communication, 
+  # last October [2017] the FOMC began to gradually and predictably reduce the size of the Fed's balance sheet. 
+  # Reducing our securities holdings is another way to move the stance of monetary policy toward neutral. 
+  # The balance sheet reduction process is going smoothly and is expected to contribute over time to a gradual tightening of financial conditions. 
+  # Over the next few years, the size of our balance sheet is expected to shrink significantly.
+  # https://www.federalreserve.gov/newsevents/speech/powell20180406a.htm
+  # 
+  # U.S. Treasury securities held by the Federal Reserve: All Maturities (TREAST)
+  # https://fred.stlouisfed.org/series/TREAST
+  # (SEE: https://github.com/AndreMikulec/expressions/blob/master/main-rcsnsight2-999.R)
+  
   # BAZZAR
   # Assets: Central Bank Liquidity Swaps (WACBS)
   # https://fred.stlouisfed.org/series/WACBS
-  # BAZAAR - ** MASIVE DROP **
+  #
+  # (GIFT OF *FREE MONEY* TO BANKS)
+  # BAZAAR - ** MASSIVE DROP **
   # Capital: Total Capital (WCTCL)
   #   MASSIVE DROP DEC2015/JAN2016
   # https://fred.stlouisfed.org/series/WCTCL
