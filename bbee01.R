@@ -653,7 +653,9 @@ get_up_side_down_side <- function(){
   # COLUMN order DOES matter
   #  Return.porfolio
   #  "weights" must have the same number of columns as "R"
-  #  "weights" colnames are ignored!
+  message("")
+  message("    portfolio_wts   ")
+  print(tail(portfolio_wts))
   # rebalance_on: Ignored if 'weights' is an xts object that specifies the rebalancing dates
   # verbose is TRUE, return a list of intermediary calculations
   return_portfolio_res <- Return.portfolio(R = market_log_rets, weights =  portfolio_wts, value = initial_value, verbose = TRUE)
