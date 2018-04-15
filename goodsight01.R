@@ -845,6 +845,96 @@ get_sma_xts <- function(x, n) {
 
 
 
+#' @title call an xts function
+#' @description call an xts in/and/out function ( e.g. from package TTR )
+#' @param x xts object
+#' @param fnct xts in/out function
+#' @param which parameter (2nd position passed to fun) 
+#' @param o_args other paramters passed to fnct
+#' @return modified xts object
+#' @details input is one single column xts object only
+#'          simplified(watered down) version of expand_xts
+#' @examples
+#' \dontrun{
+#' # head(sample_xts[,"Open"],4)
+#' #                          Open
+#' # 2007-01-02 50.039781911546299
+#' # 2007-01-03 50.230496197795397
+#' # 2007-01-04 50.420955209067003
+#' # 2007-01-05 50.373468054328498
+#' # 
+#' #get_functxts_xts(head(sample_xts[,"Open"],4), which = 2, lag)
+#' #
+#' #                     functxts
+#' #2007-01-02                 NA
+#' #2007-01-03                 NA
+#' #2007-01-04 50.039781911546299
+#' #2007-01-05 50.230496197795397
+#' #
+#' #get_functxts_xts(head(sample_xts[,"Open"],4), lag, o_args = list(k = 2))
+#' #
+#' #                     functxts
+#' #2007-01-02                 NA
+#' #2007-01-03                 NA
+#' #2007-01-04 50.039781911546299
+#' #2007-01-05 50.230496197795397
+#' # 
+#' }
+#' @rdname get_functxts_xts
+#' @export
+get_functxts_xts <- function(x = NULL, fnct = NULL, which = NULL, o_args = NULL) { 
+
+  ops <- options()
+  
+  options(warn = 1)
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(min.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  if(NCOL(x) > 1) stop("In get_functxts_xts, only ONE column is allowed.")
+  
+  require(xts) 
+  
+  has_which <- TRUE     # patch # if does not have a non-null wiches argument, then give it one so it can LASTER do ONE loop
+  if(is.null(which)) { has_which <- FALSE ; which = -Inf }  
+  
+  ## VERY BASIC attemped CLASS conversion ##
+  x_orig <- x
+  c_orig <- class(x)[1] # original class
+  
+  x_try.xts_success <- FALSE
+  x_try.xts <- try(xts::try.xts(x_orig), silent = T)
+  x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("get_functxts_xts can not make an xts object") } else { x_try.xts_success <- TRUE; x_try.xts }
+
+  if(!has_which) which = NULL # send nothing            # global
+  x_result <- DescTools::DoCall(fnct, c(list(x), which, o_args, list()))
+
+  # would/should always be/been true else I may/have/never ever made it his far
+  if(x_try.xts_success) { 
+    xts::reclass(x_result, x_orig) 
+  } -> x_result
+  
+  colnames(x_result) <- "functxts"
+  # if I did not do this earlier / failsafe / Really should have every only been xts/Date
+  if(inherits(x_result,"zoo")) index(x_result) <- zoo::as.Date(index(x_result))
+
+  functxts_xts <- x_result 
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  return(functxts_xts)
+} 
+
+
+
 # single column xts only
 #
 # simple moving (true)sortino
@@ -3214,6 +3304,29 @@ rm(list=setdiff(ls(all.names=TRUE),c("sample_xts","unrate","unrate_40s", "ibm", 
     )
     
   })
+  
+  test_that("package function get_functxts_xts", {
+
+    expect_equal(
+        get_functxts_xts(head(sample_xts[,"Open"],4), which = 2, lag)
+      , structure(c(NA, NA, 50.0397819115463, 50.2304961977954), .indexCLASS = "Date", tclass = c("POSIXct", 
+        "POSIXt"), .indexTZ = "", tzone = "", index = structure(c(1167696000, 
+        1167782400, 1167868800, 1167955200), tclass = "Date", tzone = "UTC"), .Dim = c(4L, 
+        1L), .Dimnames = list(NULL, "functxts"), class = c("xts", "zoo"
+        ))
+    )
+    
+    expect_equal(
+        get_functxts_xts(head(sample_xts[,"Open"],4), lag, o_args = list(k = 2))
+      , structure(c(NA, NA, 50.0397819115463, 50.2304961977954), .indexCLASS = "Date", tclass = c("POSIXct", 
+        "POSIXt"), .indexTZ = "", tzone = "", index = structure(c(1167696000, 
+        1167782400, 1167868800, 1167955200), tclass = "Date", tzone = "UTC"), .Dim = c(4L, 
+        1L), .Dimnames = list(NULL, "functxts"), class = c("xts", "zoo"
+        ))
+    )
+    
+  })
+  
   
   test_that("package function get_sma_xts", {
 
