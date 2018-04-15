@@ -901,6 +901,7 @@ get_functxts_xts <- function(x = NULL, fnct = NULL, which = NULL, o_args = NULL)
   if(NCOL(x) > 1) stop("In get_functxts_xts, only ONE column is allowed.")
   
   require(xts) 
+  # uses package DescTools function  DoCall
   
   has_which <- TRUE     # patch # if does not have a non-null wiches argument, then give it one so it can LASTER do ONE loop
   if(is.null(which)) { has_which <- FALSE ; which = -Inf }  
@@ -931,6 +932,129 @@ get_functxts_xts <- function(x = NULL, fnct = NULL, which = NULL, o_args = NULL)
   options(ops)
   
   return(functxts_xts)
+} 
+
+
+
+#' @title get the rolling simple moving function call
+#' @description result of xts observations into the rolling fnct
+#' @param x xts object
+#' @param fnct xts in/out function
+#' @param which parameter (2nd position passed to fun) 
+#'              = n number of rolling observations in the rolling frame 
+#' @param o_args other parameters passed to fnct
+#' @return modified xts object
+#' @details input is one single column xts object only
+#'          liberalized version of get_functxts_xts, get_sma_xts, get_smtsortino_xts, get_smrank_xts
+#' @examples
+#' \dontrun{
+#' # 
+#' # sma <- function(x, n) { if(n <= length(x)) { mean(x, na.rm = FALSE) } else { NA_real_ } }
+#' # get_smfunctxts_xts(head(sample_xts[,"Open"],4), sma, 2)
+#' #                    smfunctxts
+#' # 2007-01-02                 NA
+#' # 2007-01-03 50.135139054670844
+#' # 2007-01-04 50.325725703431203
+#' # 2007-01-05 50.397211631697751
+#' # 
+#' # tsortino <- function(x, n, rf = 0.0, na.rm = FALSE) { if(n <= length(x)) { (mean(x, na.rm = na.rm) - rf )/sd( local({x[x > 0] <- 0; x } ), na.rm = na.rm) } else { NA_real_ } }
+#' # get_smfunctxts_xts(get_pctchg_xts(head(sample_xts[,"Open"],6), n = 1), tsortino, 3, o_args = list(rf = 0.0, na.rm = FALSE))
+#' #                       smfunctxts
+#' # 2007-01-02                    NA
+#' # 2007-01-03                    NA
+#' # 2007-01-04                    NA
+#' # 2007-01-05  4.083408896943601540
+#' # 2007-01-06  0.073562112260411788
+#' # 2007-01-07 -2.231893800843009146
+#' # 
+#' # smrank <- function(x, n, n_ranks) {
+#' # 
+#' #     # if not too short
+#' #     if(n <= length(x)) {  
+#' #       # if zero NAs found
+#' #       if(!any(is.na(x))) { 
+#' #         # tail(_, 1): I only care about the value furthest value to the right
+#' #         # tested: pessimistic 
+#' #         # higher x values produce lower(better) 'sports' rank numbers: keep for now.  I may later change my mind.
+#' #                                                                                        # if any NA, then then 'error'
+#' #         tail(findInterval(-1 * x, tail(head(   quantile(-1 * x, seq(0, 1, 1/n_ranks) , na.rm = FALSE ),-1),-1)) + 1, 1)
+#' #       } else { NA_real_ } } else { NA_real_ } 
+#' #   
+#' # }
+#' # 
+#' # get_smfunctxts_xts(get_smtsortino_xts(get_pctchg_xts(head(sample_xts[,"Open"],11), n = 1), 3), smrank , 4, o_args = list(n_ranks = 2))
+#' #            smfunctxts
+#' # 2007-01-02         NA
+#' # 2007-01-03         NA
+#' # 2007-01-04         NA
+#' # 2007-01-05         NA
+#' # 2007-01-06         NA
+#' # 2007-01-07         NA
+#' # 2007-01-08          2
+#' # 2007-01-09          1
+#' # 2007-01-10          2
+#' # 2007-01-11          1
+#' # 2007-01-12          1
+#' # 
+#' }
+#' @rdname get_smfunctxts_xts
+#' @export                                            
+get_smfunctxts_xts <- function(x = NULL, fnct = NULL, which = NULL, o_args = NULL) { 
+                                                          # = n
+  ops <- options()
+  
+  options(warn = 1)
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(min.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  if(NCOL(x) > 1) stop("In get_smfunctxts_xts, only ONE column is allowed.")
+  
+  require(xts) 
+  # uses package DescTools function  DoCall
+  
+  has_which <- TRUE     # patch # if does not have a non-null wiches argument, then give it one so it can LASTER do ONE loop
+  if(is.null(which)) { has_which <- FALSE ; which = -Inf }  
+  
+  ## VERY BASIC attemped CLASS conversion ##
+  x_orig <- x
+  c_orig <- class(x)[1] # original class
+  
+  x_try.xts_success <- FALSE
+  x_try.xts <- try(xts::try.xts(x_orig), silent = T)
+  x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("get_smfunctxts_xts can not make an xts object") } else { x_try.xts_success <- TRUE; x_try.xts }
+
+  env <- environment()
+  
+  zoo::rollapply(as.zoo(x), width = which, partial = TRUE, align = "right", FUN = function(x, fnct, n, o_args) { 
+    # if not too short
+    if(!has_which) which = NULL # send nothing            # global
+    DescTools::DoCall(fnct, c(list(x), n, o_args, list()))
+    
+  }, fnct = fnct, n = which, o_args = o_args) -> x_result
+
+  # would/should always be/been true else I may/have/never ever made it his far
+  if(x_try.xts_success) { 
+    xts::reclass(x_result, x_orig) 
+  } -> x_result
+  
+  colnames(x_result) <- "smfunctxts"
+  # if I did not do this earlier / failsafe / Really should have every only been xts/Date
+  if(inherits(x_result,"zoo")) index(x_result) <- zoo::as.Date(index(x_result))
+  
+  smfunctxts_xts <- x_result 
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+ 
+  return(smfunctxts_xts)
 } 
 
 
@@ -3327,6 +3451,54 @@ rm(list=setdiff(ls(all.names=TRUE),c("sample_xts","unrate","unrate_40s", "ibm", 
     
   })
   
+  test_that("package function get_smfunctxts_xts", {
+  
+    sma <- function(x, n) { if(n <= length(x)) { mean(x, na.rm = FALSE) } else { NA_real_ } }
+
+    expect_equal(
+        get_smfunctxts_xts(head(sample_xts[,"Open"],4), sma, 2)
+      , structure(c(NA, 50.1351390546708, 50.3257257034312, 50.3972116316978
+        ), .Dim = c(4L, 1L), .Dimnames = list(NULL, "smfunctxts"), index = structure(c(1167696000, 
+        1167782400, 1167868800, 1167955200), tclass = "Date", tzone = "UTC"), .indexCLASS = "Date", .indexTZ = "", tclass = c("POSIXct", 
+        "POSIXt"), tzone = "", class = c("xts", "zoo"))
+    )
+    
+    tsortino <- function(x, n, rf = 0.0, na.rm = FALSE) { if(n <= length(x)) { (mean(x, na.rm = na.rm) - rf )/sd( local({x[x > 0] <- 0; x } ), na.rm = na.rm) } else { NA_real_ } }
+    
+    expect_equal(
+        get_smfunctxts_xts(get_pctchg_xts(head(sample_xts[,"Open"],6), n = 1), tsortino, 3, o_args = list(rf = 0.0, na.rm = FALSE))
+      , structure(c(NA, NA, NA, 4.0834088969436, 0.0735621122604118, 
+        -2.23189380084301), .Dim = c(6L, 1L), .Dimnames = list(NULL, 
+        "smfunctxts"), index = structure(c(1167696000, 1167782400, 
+        1167868800, 1167955200, 1168041600, 1168128000), tclass = "Date", tzone = "UTC"), .indexCLASS = "Date", .indexTZ = "UTC", tclass = "Date", tzone = "UTC", class = c("xts", 
+        "zoo"))
+    )
+  
+    smrank <- function(x, n, n_ranks) {
+    
+        # if not too short
+        if(n <= length(x)) {  
+          # if zero NAs found
+          if(!any(is.na(x))) { 
+            # tail(_, 1): I only care about the value furthest value to the right
+            # tested: pessimistic 
+            # higher x values produce lower(better) 'sports' rank numbers: keep for now.  I may later change my mind.
+                                                                                           # if any NA, then then 'error'
+            tail(findInterval(-1 * x, tail(head(   quantile(-1 * x, seq(0, 1, 1/n_ranks) , na.rm = FALSE ),-1),-1)) + 1, 1)
+          } else { NA_real_ } } else { NA_real_ } 
+      
+    }
+    
+    expect_equal(
+        get_smfunctxts_xts(get_smtsortino_xts(get_pctchg_xts(head(sample_xts[,"Open"],11), n = 1), 3), smrank , 4, o_args = list(n_ranks = 2))
+      , structure(c(NA, NA, NA, NA, NA, NA, 2, 1, 2, 1, 1), .Dim = c(11L, 
+        1L), .Dimnames = list(NULL, "smfunctxts"), index = structure(c(1167696000, 
+        1167782400, 1167868800, 1167955200, 1168041600, 1168128000, 1168214400, 
+        1168300800, 1168387200, 1168473600, 1168560000), tclass = "Date", tzone = "UTC"), .indexCLASS = "Date", .indexTZ = "UTC", tclass = "Date", tzone = "UTC", class = c("xts", 
+        "zoo"))
+    )
+  
+  })
   
   test_that("package function get_sma_xts", {
 
