@@ -2801,10 +2801,10 @@ expand_xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o
      
        # zoo, xts
       if(!is.null(indexClass(INPUT))) {
-        if(indexClass(INPUT) == "Date") {                                        # Global
-           ret <- as.xts(x, DescTools::DoCall(paste0("as.",indexClass(INPUT)),list(row.names(x)))                       )
+        if(any(indexClass(INPUT) %in% "Date")) {                                        # Global
+           ret <- as.xts(x, DescTools::DoCall(paste0("as.",indexClass(INPUT)[1]),list(row.names(x)))                       )
         } else { # could be? POSIXct, POSIXlt
-           ret <- as.xts(x, DescTools::DoCall(paste0("as.",indexClass(INPUT)),list(row.names(x))), tzone = indexTZ(INPUT))
+           ret <- as.xts(x, DescTools::DoCall(paste0("as.",indexClass(INPUT)[1]),list(row.names(x))), tzone = indexTZ(INPUT)[1])
         }
       } else { # something else - prepare to merge by "index"
         ret <- plyr::mutate(x, index = row.names(x))
