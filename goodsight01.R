@@ -684,6 +684,89 @@ get_annualized_xts <- function(x, n) {
 } 
 
 
+#' @title shift observations in time
+#' @description lag or pull-from-forward observations
+#' @param x xts object
+#' @param  n number of observations to lag by   
+#'        -n number of observations to pull from the future to backward 
+#' @return modified xts object
+#' @details input is one single column xts object only
+#' @examples
+#' \dontrun{
+#' # head(sample_xts[,"Open"],4)
+#' #                          Open
+#' # 2007-01-02 50.039781911546299
+#' # 2007-01-03 50.230496197795397
+#' # 2007-01-04 50.420955209067003
+#' # 2007-01-05 50.373468054328498
+#' # 
+#' # get_lagged_xts(head(sample_xts[,"Open"],4), 2)
+#' #                        lagged
+#' # 2007-01-02                 NA
+#' # 2007-01-03                 NA
+#' # 2007-01-04 50.039781911546299
+#' # 2007-01-05 50.230496197795397
+#' # 
+#' # # pull backwards from the future
+#' # get_lagged_xts(head(sample_xts[,"Open"],4), -2)
+#' #                        lagged
+#' # 2007-01-02 50.420955209067003
+#' # 2007-01-03 50.373468054328498
+#' # 2007-01-04                 NA
+#' # 2007-01-05                 NA
+#' # 
+#' }
+#' @rdname get_lagged_xts
+#' @export
+get_lagged_xts <- function(x, n) { 
+
+  ops <- options()
+  
+  options(warn = 1)
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(min.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  if(NCOL(x) > 1) stop("In get_lagged_xts, only ONE column is allowed.")
+  
+  require(xts) 
+  
+  ## VERY BASIC attemped CLASS conversion ##
+  x_orig <- x
+  c_orig <- class(x)[1] # original class
+  
+  x_try.xts_success <- FALSE
+  x_try.xts <- try(xts::try.xts(x_orig), silent = T)
+  x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("get_pctchg_xts can not make an xts object") } else { x_try.xts_success <- TRUE; x_try.xts }
+
+  # S3 dispatch xts::lag.xts
+  x_result <- lag(x, n)
+
+  # would/should always be/been true else I may/have/never ever made it his far
+  if(x_try.xts_success) { 
+    xts::reclass(x_result, x_orig) 
+  } -> x_result
+  
+  colnames(x_result) <- "lagged"
+  # if I did not do this earlier / failsafe / Really should have every only been xts/Date
+  if(inherits(x_result,"zoo")) index(x_result) <- zoo::as.Date(index(x_result))
+
+  lagged_xts <- x_result 
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  return(lagged_xts)
+} 
+
+
 
 #' @title get the simple moving average
 #' @description sma of xts observation
@@ -2768,7 +2851,8 @@ expand_xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o
 
 # 
 
-tests <- function() {
+# goodsight_tests()
+goodsight_tests <- function() {
 
 rm(list=setdiff(ls(all.names=TRUE),c("sample_xts","unrate","unrate_40s", "ibm", "ibm_missing_data"))); source(paste0(getwd(),"/","goodsight01.R"))
 
@@ -3033,7 +3117,9 @@ rm(list=setdiff(ls(all.names=TRUE),c("sample_xts","unrate","unrate_40s", "ibm", 
   
   test_that("package version tests", {
     
-    expect_equal(R.Version()$version.string, "R version 3.4.3 (2017-11-30)")
+    # expect_equal(R.Version()$version.string, "R version 3.4.3 (2017-11-30)")
+    expect_equal(R.Version()$version.string, "R version 3.4.4 (2018-03-15)")
+
 
   })
 
@@ -3107,6 +3193,28 @@ rm(list=setdiff(ls(all.names=TRUE),c("sample_xts","unrate","unrate_40s", "ibm", 
     
   })
     
+  test_that("package function get_lagged_xts", {
+    
+    expect_equal(
+        get_lagged_xts(head(sample_xts[,"Open"],4), 2)
+      , structure(c(NA, NA, 50.0397819115463, 50.2304961977954), .indexCLASS = "Date", tclass = c("POSIXct", 
+        "POSIXt"), .indexTZ = "", tzone = "", index = structure(c(1167696000, 
+        1167782400, 1167868800, 1167955200), tclass = "Date", tzone = "UTC"), .Dim = c(4L, 
+        1L), .Dimnames = list(NULL, "lagged"), class = c("xts", "zoo"
+        ))
+    )
+    
+    expect_equal(
+        get_lagged_xts(head(sample_xts[,"Open"],4), -2)
+      , structure(c(50.420955209067, 50.3734680543285, NA, NA), .indexCLASS = "Date", tclass = c("POSIXct", 
+        "POSIXt"), .indexTZ = "", tzone = "", index = structure(c(1167696000, 
+        1167782400, 1167868800, 1167955200), tclass = "Date", tzone = "UTC"), .Dim = c(4L, 
+        1L), .Dimnames = list(NULL, "lagged"), class = c("xts", "zoo"
+        ))
+    )
+    
+  })
+  
   test_that("package function get_sma_xts", {
 
     expect_equal(
