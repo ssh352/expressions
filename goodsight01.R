@@ -744,7 +744,7 @@ get_lagged_xts <- function(x, n) {
   
   x_try.xts_success <- FALSE
   x_try.xts <- try(xts::try.xts(x_orig), silent = T)
-  x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("get_pctchg_xts can not make an xts object") } else { x_try.xts_success <- TRUE; x_try.xts }
+  x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("get_lagged_xts can not make an xts object") } else { x_try.xts_success <- TRUE; x_try.xts }
 
   # S3 dispatch xts::lag.xts
   x_result <- lag(x, n)
