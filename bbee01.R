@@ -119,7 +119,6 @@ ifelse.xts  <- function(test, yes, no) {
 
 
 
-
 get_up_side_down_side <- function(){
   
   ops <- options()
@@ -147,14 +146,15 @@ get_up_side_down_side <- function(){
   
   # begin gather data
   
-
+  ### ### ### ### ### ###
+  ### BEGIN MARKETS   ###
   
+  # 1st empty xts
+  all_possible_market_log_rets <- xts(, zoo::as.Date(0)[0])
+  all_possible_market_dates    <- xts(, index(all_possible_market_log_rets))
   
-  # as as I gather data, place the value in my indicators xts
-  all_possible_indicators <- xts(, zoo::as.Date(0)[0])
-  
-  ### ### ### ### ### ### ### ### ### ### 
-  ### WHAT I AM TRYING TO OPTIMIZE ###
+  ### ### 
+  ### WHAT I AM TRYING TO OPTIMIZE 
   # 
   # Wilshire 5000 Total Market Index
   # back through 1970
@@ -176,18 +176,23 @@ get_up_side_down_side <- function(){
   will5000ind_log_rets <- ROC(will5000ind)               # which(is.na(will5000ind_log_rets)) # logrithmic
   will5000ind_log_rets[is.na(will5000ind_log_rets)] <- 0 # usually just the 1st observation
   
-  # 1st empty xts
-  market_log_rets <- xts(, zoo::as.Date(0)[0])
-  
   # will5000ind                # 1st empty xts
-  market_log_rets <- merge.xts(market_log_rets, will5000ind_log_rets)
+  all_possible_market_log_rets <- merge.xts(all_possible_market_log_rets, will5000ind_log_rets)
+  all_possible_market_dates    <- xts(, index(all_possible_market_log_rets))
   
   # "cash"             # no returns good/bad
-  cash_log_rets <- xts(rep(0,NROW(market_log_rets)),index(market_log_rets))
+  cash_log_rets <- xts(rep(0,NROW(all_possible_market_log_rets)),index(all_possible_market_log_rets))
   colnames(cash_log_rets) <- "cash"
 
-  # colnames: will5000ind", "cash" 
-  market_log_rets <- merge.xts(cash_log_rets, market_log_rets)
+  # colnames:                              "cash"          "will5000ind"
+  all_possible_market_log_rets <- merge.xts(cash_log_rets, all_possible_market_log_rets)
+  all_possible_market_dates    <- xts(, index( all_possible_market_log_rets))
+  
+  ### ### ### ### ### ###
+  ### BEGIN SIGNALS   ###
+  
+  # as as I gather data, place the value in my indicators xts
+  all_possible_indicators <- xts(, zoo::as.Date(0)[0])
   
   # Order is mostly from 
   # RECESSION TO DRAWDOWN
@@ -210,7 +215,7 @@ get_up_side_down_side <- function(){
   # contains: unrate[["monthly"]] column named "unrate"
   unrate <- get_symbols_xts_eox("UNRATE", src ="FRED", returns = "monthly", pushback_fred_1st_days =  TRUE, month_delay = 1, OHLC = FALSE, indexAt = "lastof")
 
-  # add "unrate"
+  #                                                             "unrate"
   all_possible_indicators <- merge.xts(all_possible_indicators, unrate[["monthly"]])
 
   
@@ -574,7 +579,7 @@ get_up_side_down_side <- function(){
   
   # default benchmark: zero percent(0.00) to one hundred percent(1.00) weights
                                         # 100%
-  buyandhold_will5000ind_wts <- xts(rep(1,NROW(market_log_rets)),index(market_log_rets))
+  buyandhold_will5000ind_wts <- xts(rep(1,NROW(all_possible_market_log_rets)),index(all_possible_market_log_rets))
   # "will5000ind"
   colnames(buyandhold_will5000ind_wts) <- "will5000ind"
   
@@ -658,7 +663,7 @@ get_up_side_down_side <- function(){
   print(tail(portfolio_wts))
   # rebalance_on: Ignored if 'weights' is an xts object that specifies the rebalancing dates
   # verbose is TRUE, return a list of intermediary calculations
-  return_portfolio_res <- Return.portfolio(R = market_log_rets, weights =  portfolio_wts, value = initial_value, verbose = TRUE)
+  return_portfolio_res <- Return.portfolio(R = all_possible_market_log_rets, weights =  portfolio_wts, value = initial_value, verbose = TRUE)
   # "portfolio.returns"
   portfolio_log_rets <- return_portfolio_res$returns
 
@@ -693,7 +698,7 @@ get_up_side_down_side <- function(){
   
   # begin default benchmark
 
-  return_buyandhold_will5000ind_res <- Return.portfolio(R = market_log_rets[,"will5000ind"], weights =  buyandhold_will5000ind_wts, value = initial_value, verbose = TRUE)
+  return_buyandhold_will5000ind_res <- Return.portfolio(R = all_possible_market_log_rets[,"will5000ind"], weights =  buyandhold_will5000ind_wts, value = initial_value, verbose = TRUE)
   # "portfolio.returns"
   return_buyandhold_will5000ind_log_rets <- return_buyandhold_will5000ind_res$returns
 
