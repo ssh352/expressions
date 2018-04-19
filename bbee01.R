@@ -723,7 +723,17 @@ get_up_side_down_side <- function(){
   message("    unrate_will5000ind_portf   ")
   print(tail(unrate_will5000ind_rules_wts))
 
-  unrate_will5000ind_portf <- Return.portfolio(R = all_possible_instrument_log_rets, weights =  unrate_will5000ind_rules_wts, value = initial_value, verbose = TRUE)
+  # see caroline::dbWriteTable2
+  # match: returns a vector of the positions of (first) matches of its first argument in its second.
+  # c("b","d","c")[match(c("c","b"),c("b","d","c"))]
+  # [1] "c" "b"
+  # garantee 
+
+  # NEED a Return.portfolio.X safe R/weights form: errors out if many exact common columns do not exist in each
+
+  # very few instruments # very many weights
+  
+  unrate_will5000ind_portf <- Return.portfolio(R = all_possible_instrument_log_rets[,match(colnames(unrate_will5000ind_rules_wts), colnames(all_possible_instrument_log_rets))], weights =  unrate_will5000ind_rules_wts, value = initial_value, verbose = TRUE)
   # "portfolio.returns"
   unrate_will5000ind_portf_log_rets <- unrate_will5000ind_portf$returns
 
@@ -742,10 +752,10 @@ get_up_side_down_side <- function(){
   # https://quantstrattrader.wordpress.com/2018/02/20/creating-a-table-of-monthly-returns-with-r-and-a-volatility-trading-interview/
   # https://www.r-bloggers.com/creating-a-table-of-monthly-returns-with-r-and-a-volatility-trading-interview/
   
+  # geometric: only used for the cumulative return for each year
   # geometric: utilize geometric chaining (TRUE) or simple/arithmetic
   #            chaining (FALSE) to aggregate returns, default TRUE
-  
-  #          geometric: only used for the cumulative return for each year
+
   # other table values: just displays whatever is input
   View(table.CalendarReturns(unrate_will5000ind_portf_nonlog_monthly_rets, digits = 1, as.perc = TRUE, geometric = TRUE))   
   # WORKS
@@ -759,7 +769,7 @@ get_up_side_down_side <- function(){
   ### message("    buyandhold_will5000ind_rules_wts   ")
   ### print(tail(buyandhold_will5000ind_rules_wts))
 
-  buyandhold_will5000ind_portf <- Return.portfolio(R = all_possible_instrument_log_rets[,"will5000ind"], weights =  buyandhold_will5000ind_rules_wts, value = initial_value, verbose = TRUE)
+  buyandhold_will5000ind_portf <- Return.portfolio(R = all_possible_instrument_log_rets[,match(colnames(buyandhold_will5000ind_rules_wts), colnames(all_possible_instrument_log_rets))], weights =  buyandhold_will5000ind_rules_wts, value = initial_value, verbose = TRUE)
   # "portfolio.returns"
   buyandhold_will5000ind_portf_log_rets <- buyandhold_will5000ind_portf$returns
 
