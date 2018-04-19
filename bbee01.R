@@ -942,15 +942,20 @@ get_up_side_down_side <- function(){
   ### TODO AREA
   ### 
   
+  # NEXT need
+  # 
+  # NEXT corporate/bigbanks last_quarter/rolling_one_third average net_income
+  # 
   # NEXT return of stocks verses return of bonds
   #      willshire_less_agg_equity_premium (6 months) 5% rule
-  # NEXT NEXT rolling percentile rank of price /earnings ratio
+  # 
+  # NEXT rolling 'long-term' percentile rank of price: earnings/mktcap ratio
   #
   # weighted ave ( by mktcap ) of the last three months + a SMA over the last three monhts
   # NOTE NEED TO inver the query results so net_income is in the denominator 
   # every_rat_mktcap_o_netinc_q1_x_4
   # sipro_inbnd_netinc_any_marginals_eom_xts_marginals <- get_sipro_inbnd_netinc_any_marginals_eom_xts(marginals = TRUE)
-  
+
   Sys.setenv(TZ=oldtz)
   options(ops)
   
