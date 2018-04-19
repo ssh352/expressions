@@ -49,6 +49,8 @@ xtsize <- function(dfo) {
 # [1] "Date of length 0"
 
 
+# unstable structure to debug inside: holds for 2 seconds then bounces out
+# within.xts IS TOO VOLITILE: CAN NOT browser()/rstudio debug inside: SOMETHING IS NOT RIGHT
 within.xts <- function (data, expr, ...) {
   data <- dfize(data)
   # tindex <- attrib(data, "tindex")
@@ -179,7 +181,7 @@ get_up_side_down_side <- function(){
   # https://r-forge.r-project.org/scm/viewvc.php/pkg/quantstrat/?root=blotter
   
   require(xts)      # merge.xts
-  require(TTR)      # ROC
+  require(TTR)      # ROC, SMA
   require(quantmod) # monthlyReturn
   require(PerformanceAnalytics) # Return.portfolio # table.CalendarReturns
   # uses R.utils    hpaste
@@ -195,7 +197,7 @@ get_up_side_down_side <- function(){
   
   # 1st empty xts
   all_possible_instrument_log_rets <- xts(, zoo::as.Date(0)[0])
-  all_possible_instrument_dates    <- xts(, index(all_possible_instrument_log_rets))
+  all_possible_instrument_log_rets_dates    <- xts(, index(all_possible_instrument_log_rets))
   
   ### ### 
   ### WHAT I AM TRYING TO OPTIMIZE 
@@ -220,24 +222,39 @@ get_up_side_down_side <- function(){
   will5000ind_log_rets <- ROC(will5000ind)               # which(is.na(will5000ind_log_rets)) # logrithmic
   will5000ind_log_rets[is.na(will5000ind_log_rets)] <- 0 # usually just the 1st observation
   
-  # will5000ind                # 1st empty xts
+  # will5000ind                       # 1st empty xts
   all_possible_instrument_log_rets <- merge.xts(all_possible_instrument_log_rets, will5000ind_log_rets)
-  all_possible_instrument_dates    <- xts(, index(all_possible_instrument_log_rets))
+  all_possible_instrument_log_rets_dates  <- xts(, index(all_possible_instrument_log_rets))
   
   # "cash"             # no returns good/bad
   cash_log_rets <- xts(rep(0,NROW(all_possible_instrument_log_rets)),index(all_possible_instrument_log_rets))
   colnames(cash_log_rets) <- "cash"
+  cash_log_rets_dates <- index(cash_log_rets)
 
-  # colnames:                                  "cash"    +     "will5000ind"
+  # colnames                                   "cash"    +     "will5000ind"
   all_possible_instrument_log_rets <- merge.xts(cash_log_rets, all_possible_instrument_log_rets)
-  all_possible_instrument_dates    <- xts(, index( all_possible_instrument_log_rets))
+  all_possible_instrument_log_rets_dates    <- xts(, index( all_possible_instrument_log_rets))
   
-  ### ### ### ### ###   ###
-  ### BEGIN INDICATORS  ###
+# like quantmod::tradeModel(. . ., signal.threshold = c(0, 0), . .  )
+# Barclays Capital U.S. Aggregate Bond Index(AGG) in yahoo finance only goes back to 2003.
+# In nasdaq ( https://www.nasdaq.com/symbol/agg/historical ) only goes back 10 years
+#   Lehman Aggregate Bond Index was co-created in 1973 by Art Lipson and John Roundtree
+#   Bloomberg Barclays US Aggregate Bond Index
+#   https://en.wikipedia.org/wiki/Bloomberg_Barclays_US_Aggregate_Bond_Index
+#   was created in 1986 with backdated history going back to 1976
+#   Bloomberg Barclays US Aggregate Bond Index
+#   https://www.bogleheads.org/wiki/Bloomberg_Barclays_US_Aggregate_Bond_Index
+# Consider? instead/with using a 'short of the Wilshire5000/WILL5000IND(St.Louis.FRED)'?
+# Also a 'short of the Wilshire5000' may modernly correct mimic the behavior of the 
+# AGG/stock_market up/down,down/up
+# (When did AGG/market change to up/down,down/up compared to the historical up/up,down/down?)
+  
+  ### ### ### ### ### ###
+  ### BEGIN INDICATORS ###
   
   # as as I gather data, place the value in my indicators xts
   all_possible_indicators <- xts(, zoo::as.Date(0)[0])
-  all_possible_indicator_dates <- index(all_possible_indicators)
+  all_possible_indicators_dates <- index(all_possible_indicators)
   
   # Order is mostly from 
   # RECESSION TO DRAWDOWN
@@ -263,7 +280,7 @@ get_up_side_down_side <- function(){
   
   #                                                             "unrate"
   all_possible_indicators <- merge.xts(all_possible_indicators, unrate_indicator)
-
+  all_possible_indicators_dates <- index(all_possible_indicators)
   
   # PRE/POST RECESSION ONLY
   # PART OF BROAD STATISTIC (UNRATE(ABOVE))
@@ -624,20 +641,157 @@ get_up_side_down_side <- function(){
   #  Return.porfolio # COLUMN order DOES matter
   #  "weights" must have the same number of columns as "R"
   #  "weights" colnames are ignored! 
-  #  ( so the 'weights' column order (names) 
-  #    must physically match to the corresponding Rs column order names )
+  #  (so the 'weights' column order (names) 
+  #  must physically match to the corresponding Rs column order names)
   
   # begin buy and hold weights
   
   # default benchmark: zero percent(0.00) to one hundred percent(1.00) weights
-                                        # 100%
+                                      # 100%
   buyandhold_will5000ind_rules_wts <- xts(rep(1,NROW(all_possible_instrument_log_rets)),index(all_possible_instrument_log_rets))
   # "will5000ind"
   colnames(buyandhold_will5000ind_rules_wts) <- "will5000ind"
-  
+  buyandhold_will5000ind_rules_wts_dates <- index(buyandhold_will5000ind_rules_wts)
   # end buy and hold weights
   
   # begin portfolio weights
+  
+  # unstable structure to debug inside: holds for 2 seconds then bounces out
+  # within.xts IS TOO VOLITILE: CAN NOT browser()/rstudio debug inside: SOMETHING IS NOT RIGHT
+  # 
+  # TODO [ ] REPLACE BELOW WITH
+  # 
+  # # what xts objects ( single column xts objects  ) where specifyModel ( getModelData ( exists ) )  MAY try to see
+  # xs.not.exist <- c(sapply( colnames(x), function(x) { if(!exists(x)) { x } else { NULL }  } ))
+  
+  # # assign where specifyModel ( getModelData ( exists ) ) can find
+  # for(xi in xs.not.exist) {
+  #   assign(xi, x[,xi], envir = .GlobalEnv)
+  # }
+  
+  # specifyModel ( getModelData ( exists ) ) 
+  # quantmod:::buildModel.hardened(custom)
+  # #  quantmod class ->  vtreat ->  as.quantmod -> quandmod class                # LEFT_OFF note
+  # #  quantmod class ->  Boruta(getImpXgboost) ->  as.quantmod -> quantmod class # LEFT_OFF note
+  # #  quantmod class ->  UBL::SmoteRegress( rel = matrix/"auto", C.perc = "balance"/"extreme") # SEE my R function/notes  
+
+  # Handle Imbalanced Dataset
+  # 
+  # For common cases such as ads clickthrough log, 
+  # the dataset is extremely imbalanced. 
+  # This can affect the training of xgboost model, and there are two ways to improve it.
+  # 
+  # If you care only about the ranking order (AUC) of your prediction
+  #   Balance the positive and negative weights, via 
+  #                                           scale_pos_weight
+  #   Use AUC for evaluation
+  # If you care about predicting the right probability
+  #   In such a case, you cannot re-balance the dataset
+  #   In such a case, set parameter 
+  #      max_delta_step to a finite number (say 1) will help convergence
+  # 
+  # http://xgboost.readthedocs.io/en/latest/how_to/param_tuning.html
+  # 
+  #   scale_pos_weight, [default=1]
+  #     Control the balance of positive and negative weights, useful for unbalanced classes.
+  #     Also see Higgs Kaggle competition demo for examples: R, py1, py2, py3
+  # 
+  #       testsize <- 550000
+  #       weight <- as.numeric(dtrain[[32]]) * testsize / length(label)
+  #       sumwpos <- sum(weight * (label==1.0))
+  #       sumwneg <- sum(weight * (label==0.0))
+  #       print(paste("weight statistics: wpos=", sumwpos, "wneg=", sumwneg, "ratio=", sumwneg / sumwpos))
+  #       "scale_pos_weight" = sumwneg / sumwpos
+  # 
+  #       https://github.com/dmlc/xgboost/blob/master/demo/kaggle-higgs/higgs-train.R
+  # 
+  #   max_delta_step [default=0]
+  #     Maximum delta step we allow each tree’s weight estimation to be.
+  #     it might help in logistic regression when class is extremely imbalanced. 
+  #     Set it to value of 1-10 might help control the update
+  # 
+  # http://xgboost.readthedocs.io/en/latest/parameter.html
+  
+  # #    also SEE my notes: Hugh Miller gbm optimization techniques
+
+  # some of the most predictive attributes were not linearly correlated with the targets, ( REALLY! ) 
+  # 
+  #   using single numerical attributes
+  #     we build shallow decision trees (2-4 levels deep)
+  #       and used their predictions as extra features. 
+  # 
+  #   using two features at a time 
+  #     We also build shallow decision trees           'IN THE HOPE' - DID IT WORK?
+  #       and used their prediction as an extra feature 
+  #         (in the hope of capturing some non-additive interactions among features.)
+
+  # SEE other NOTES
+  # quantmod:::buildModel.randomForest
+  #   quantmod:::buildModel.caret(xgboost, weights = ) # roll my own
+  #       simple multi variable testing: 
+  #         could split ors(|) SEE FAR BELOW 
+  #         into threes and/or two pair combos and test using quantmod:::buildModel.OTHER
+  #  single variable testing: make myself a quantmod:::buildModel.lm
+  # tradeModel   ( getModelData ( exists ) ): if the data is already in the passed in "quantmod" object
+  #                                           the just use modelData to get the data
+  #                                           instead of re-recalling getModelData
+  # tradeModel.unrate <- f(. . .) Return.porfolio
+  # tradeModel.unrate <- f(. . ., signal.threshold = c(0, 0), . .  )
+  #   uses a 'short of the 'willshire 5000 index: WILL5000IND(St.Louis.Fred)
+
+  # > methods(class = "quantmod")
+  #  [1] anova         coef          coefficients  fitted        fitted.values
+  #  [6] fittedModel<- formula       logLik        plot          resid
+  # [11] residuals     show          summary       vcov
+  # 
+  # > methods("fittedModel<-")  # NAMESPACE # exportMethods(show,summary,'fittedModel<-')
+  # [1] fittedModel<-,quantmod-method
+  # 
+  # R/zzz.R
+  # setMethod("show","quantmod"
+  # setMethod("summary","quantmod"
+  # "fittedModel"<-function(object) {object@fitted.model}
+  # setReplaceMethod("fittedModel","quantmod", function(object,value)
+  # {
+  #     object@fitted.model <- value
+  #     
+  # }
+  # 
+  # > methods(class = "xgb.Booster")
+  # [1] predict print
+  # 
+  # [105] predict.train                predict.train.recipe*
+  # [107]                              predict.xgb.Booster*
+  # [109] predict.xgb.Booster.handle* 
+  # 
+  # > methods(class = "train")
+  #  [1] confusionMatrix densityplot     fitted          ggplot
+  #  [5] histogram       levels          plot            predict
+  #  [9] predictors      print           residuals       stripplot
+  # [13] summary         update          varImp          xyplot
+  # see '?methods' for accessing help and source code
+  
+  #   modelData(. . . continued from above in 'tradeModel' . . .)
+  #   quantmod:::predictModel.randomForest
+  #   quantmod:::predictModel.caret(xgboost) # roll my own # LEFT_OFF note
+  #       single variable testing: make myself a quantmod:::predictModel.lm
+  #       multiple variable testing: SEE ABOVE
+  #     retuned object becomes a zoo object ( so the object can work in zoo:::ifelse.zoo )
+  #     (I made ifelse.xts(SEE BELOW): I an try this)
+  # 
+  #   # eventually
+  #   quantmodResults <- list(model = quantmod, signal = signal.zoo)
+  #   model.returns <- modelReturn(quantmodResults, trade.dates = trade.dates, leverage = leverage, ret.type = ret.type)
+  #     modelReturn
+  #       # eventually ( but I just need to calculate the xts weights ( to be inputed into Return.portfolio ) )
+  #       model.results <- trade.signal[, 1] * leverage * trade.signal[, 2]
+  #       model.results[which(is.na(model.results))] <- 0
+  #       model.cumret <- cumprod(1 + model.results)
+  
+  # # remove anything new that was placed
+  # for(xi in xs.not.exist) {
+  #   rm(list = xi, envir = .GlobalEnv)
+  # }
   
   # unstable structure to debug inside: holds for 2 seconds then bounces out
   # will5000ind cash            "datetime", "unrate"
@@ -694,10 +848,11 @@ get_up_side_down_side <- function(){
     datetime <- datetime + 1; rm(unrate) # required "rm position"
   
   })
-
+  unrate_will5000ind_rules_wts_dates <- index(unrate_will5000ind_rules_wts)
+  
   bookmark <- 1
 
-  # end portfolio wieghts
+  # end portfolio wieghts 
 
   ### ### ### ### ### ### ### 
   ### BEGIN INTERACTIONS 
