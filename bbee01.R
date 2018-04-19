@@ -708,25 +708,27 @@ get_up_side_down_side <- function(){
   # 100,000 dollars to start
   initial_value <- 100000
   
-  # strategies 
-  # COLUMN order DOES matter
-  #  Return.porfolio
-  #  "weights" must have the same number of columns as "R"
-  message("")
-  message("    portfolio_wts   ")
-  print(tail(unrate_will5000ind_rules_wts))
+  # Return.porfolio
   # rebalance_on: Ignored if 'weights' is an xts object that specifies the rebalancing dates
   # verbose is TRUE, return a list of intermediary calculations
+  
+  # Return.porfolio(R, weights)
+  #   COLUMN order/number_of_columns DOES matter
+  #   Return.porfolio(R, weights)
+  #   "weights" must             have the same number of columns as "R"
+  #   "weights" does not need to have the same column names as "R"
+  #   "weights" columns must    have the same order as the columns of "R"
+  
+  message("")
+  message("    unrate_will5000ind_portf   ")
+  print(tail(unrate_will5000ind_rules_wts))
+
   unrate_will5000ind_portf <- Return.portfolio(R = all_possible_instrument_log_rets, weights =  unrate_will5000ind_rules_wts, value = initial_value, verbose = TRUE)
   # "portfolio.returns"
   unrate_will5000ind_portf_log_rets <- unrate_will5000ind_portf$returns
 
-  # "portfolio.returns"
-  portfolio <- exp(cumsum(unrate_will5000ind_portf_log_rets)) * initial_value
-  colnames(portfolio) <- "portfolio"
- 
   # default class yearmon # type="arithmetic"
-  portfolio_nonlog_monthly_rets <- monthlyReturn(portfolio)
+  unrate_will5000ind_portf_nonlog_monthly_rets <- monthlyReturn(exp(cumsum(unrate_will5000ind_portf_log_rets)) * initial_value)
   
   # extra portfolio information
   
@@ -745,32 +747,36 @@ get_up_side_down_side <- function(){
   
   #          geometric: only used for the cumulative return for each year
   # other table values: just displays whatever is input
-  View(table.CalendarReturns(portfolio_nonlog_monthly_rets, digits = 1, as.perc = TRUE, geometric = TRUE))   
+  View(table.CalendarReturns(unrate_will5000ind_portf_nonlog_monthly_rets, digits = 1, as.perc = TRUE, geometric = TRUE))   
   # WORKS
   
   # end portfolio
   
   # begin default benchmark
 
-  return_buyandhold_will5000ind_res <- Return.portfolio(R = all_possible_instrument_log_rets[,"will5000ind"], weights =  buyandhold_will5000ind_rules_wts, value = initial_value, verbose = TRUE)
-  # "portfolio.returns"
-  return_buyandhold_will5000ind_log_rets <- return_buyandhold_will5000ind_res$returns
+  ### CURRENTLY NOT USEFUL
+  ### message("")
+  ### message("    buyandhold_will5000ind_rules_wts   ")
+  ### print(tail(buyandhold_will5000ind_rules_wts))
 
+  buyandhold_will5000ind_portf <- Return.portfolio(R = all_possible_instrument_log_rets[,"will5000ind"], weights =  buyandhold_will5000ind_rules_wts, value = initial_value, verbose = TRUE)
   # "portfolio.returns"
-  buyandhold_will5000ind_portfolio <- exp(cumsum(return_buyandhold_will5000ind_log_rets)) * initial_value
-  colnames(buyandhold_will5000ind_portfolio) <- "buyandhold"
- 
+  buyandhold_will5000ind_portf_log_rets <- buyandhold_will5000ind_portf$returns
+
   # default class yearmon # type="arithmetic"
-  buyandhold_will5000ind_portfolio_nonlog_monthly_rets <- monthlyReturn(buyandhold_will5000ind_portfolio) 
-  
+  buyandhold_will5000ind_portfolio_nonlog_monthly_rets <- monthlyReturn(exp(cumsum(buyandhold_will5000ind_portf_log_rets)) * initial_value) 
+
   # end default benchmark
-  
-  # begin COMPARE and CONTRAST area 
-  
-    # anything v.s buyandhold_will5000ind_portfolio_nonlog_monthly_rets
 
-  # end COMPARE and CONTRAST area
-
+  ### ### ### ### ### ### ### ### ### ### ### ### ###
+  ### BEGIN EVALUATION STRATEGY(RULES) PERFORMANCE
+  
+  # <anything< v.s buyandhold_will5000ind_portf_nonlog_monthly_rets
+  
+  ### ### ### ### 
+  ### TODO AREA
+  ### 
+  
   # NEXT return of stocks verses return of bonds
   #      willshire_less_agg_equity_premium (6 months) 5% rule
   # NEXT NEXT rolling percentile rank of price /earnings ratio
