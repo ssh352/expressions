@@ -16078,8 +16078,23 @@ from (
 
 
 
--- need any sp company_id now +- 13 months ( SEE FAR ABOVE )
+-- [ ] add MORE: need any sp company_id now +- 13 months ( SEE FAR ABOVE )
 --
+-- LAST REVIEW: APR 20 2018: seems this is a 'slightly off prototype' for a concept
+--   I select all company_ids that that have a membership in the SP in the 
+--   past-01 PP, now PP ( nowpast), and fut-01 PP ( fut )
+--     from those above
+--   then I select all dateindexes 
+--     from each of      dateindexes_fut1 PP, [ and dateindexes_fut2 PP <proof of concept>]
+--   then I select all                 company statistics
+--   ?!? . . .
+--     from each of now PP, fut1 PP, [ and fut02 PP <proof of concept>]
+--
+-- later split off 'nowpast' to ('past' 'now')
+-- later create dateindexes_now [ and get rid of dateindexes_fut2]
+--       create dateindexes_past1
+
+-- change dateindexes_ (plural) to dateindex_ (singulare )
 
 -- company_ids in the sp ever appearing now +- 13 months
 with company_ids as (
