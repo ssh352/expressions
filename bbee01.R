@@ -297,8 +297,6 @@ get_up_side_down_side <- function(){
   # https://fred.stlouisfed.org/data/LNS12032194.txt
   ####lns12032194 <- get_symbols_xts_eox("LNS12032194", src ="FRED", returns = "monthly", pushback_fred_1st_days =  TRUE, month_delay = 1, OHLC = FALSE, indexAt = "lastof")
   
-  
-  
   # RECESSION ONLY
   # BROAD STATISTIC
   # # GOOD EXAMPLE ( notece: EXACTLY when BEFORE/AFTER going in/out OF MAJOR recessions )
@@ -829,6 +827,7 @@ get_up_side_down_side <- function(){
     # 2010: JUN, AUG
     # 2011: MAY, JUN, JUL, SEP(very bad)
     # 2016: JAN(bad)
+    #                                           # Less # need a function # 
     will5000ind <- ifelse( ((SMA(unrate,2)        - SMA(    unrate   ,6)) <= 0)              | 
                            ((SMA(lag(unrate),2)   - SMA(lag(unrate  ),6)) <= 0)              | 
                            ((SMA(lag(unrate,2),2) - SMA(lag(unrate,2),6)) <= 0), 1.00, 0.00) 
@@ -845,6 +844,10 @@ get_up_side_down_side <- function(){
     # what happened last month affects next months decision
     # APROPRIATE # 1st of the NEXT MONTH # all DECISIONS happening in that NEXT MONTH
     # Return.portfolio requirement
+    # PerformanceAnalytics Return.portfolio 
+    #   rebalance_on 
+    #     Ignored if weights is an xts object that specifies 
+    #     the rebalancing dates
     datetime <- datetime + 1; rm(unrate) # required "rm position"
   
   })
@@ -886,6 +889,10 @@ get_up_side_down_side <- function(){
 
   # NEED a Return.portfolio.X safe R/weights form: errors out if many exact common columns do not exist in each
 
+  # TODO [ ] : UPGRADE MATCH
+  # match not-evil
+  # which(match(letters, 'zz', nomatch = 0) != 0) # non-evil
+  
   # very few instruments # very many weights
   
   unrate_will5000ind_portf <- Return.portfolio(R = all_possible_instrument_log_rets[,match(colnames(unrate_will5000ind_rules_wts), colnames(all_possible_instrument_log_rets))], weights =  unrate_will5000ind_rules_wts, value = initial_value, verbose = TRUE)
@@ -894,6 +901,24 @@ get_up_side_down_side <- function(){
 
   # default class yearmon # type="arithmetic"
   unrate_will5000ind_portf_nonlog_monthly_rets <- monthlyReturn(exp(cumsum(unrate_will5000ind_portf_log_rets)) * initial_value)
+  
+  # # NEED TO VERY BY TRACING THE LOOP
+  # # CURRENT LOGIC IS UNVERIFIED
+  # 
+  # # begin of month weight
+  # head(unrate_will5000ind_rules_wts["1970-12-31/1971-12-31"], 12)
+  #            cash will5000ind
+  # 1971-05-01    1           0
+  # 1971-06-01    0           1
+  # 1971-07-01    0           1
+  # 
+  # # end of month returns 
+  # head(unrate_will5000ind_portf_log_rets, 12)
+  #                 portfolio.returns
+  # 1971-05-31  0.0000000000000000000
+  # 1971-06-30  0.0088889474172457739
+  # 1971-07-31 -0.0360399364831966995
+  
   
   # extra portfolio information
   
@@ -931,8 +956,17 @@ get_up_side_down_side <- function(){
   # default class yearmon # type="arithmetic"
   buyandhold_will5000ind_portfolio_nonlog_monthly_rets <- monthlyReturn(exp(cumsum(buyandhold_will5000ind_portf_log_rets)) * initial_value) 
 
+  ## 
+  # View(table.CalendarReturns(buyandhold_will5000ind_portfolio_nonlog_monthly_rets, digits = 1, as.perc = TRUE, geometric = TRUE))
+  
   # end default benchmark
 
+  # begin human + 'machine learning'
+  
+
+  
+  # end   human + 'machine learning'
+  
   ### ### ### ### ### ### ### ### ### ### ### ### ###
   ### BEGIN EVALUATION STRATEGY(RULES) PERFORMANCE
   
