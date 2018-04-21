@@ -684,6 +684,81 @@ get_annualized_xts <- function(x, n) {
 } 
 
 
+
+
+#' @title Ops on xts
+#' @description subtract one xts from anaother
+#' @param x xts object
+#' @param y xts object
+#' @return modified xts object
+#' @details input is one single column xts object only
+#' @examples
+#' \dontrun{
+#' # 
+#' # 
+#' # 
+#' }
+#' @rdname get_less_xts
+#' @export
+get_less_xts <- function(x, y) { 
+
+  ops <- options()
+  
+  options(warn = 1)
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(min.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  if(NCOL(x) > 1) stop("In get_less_xts, only ONE column is allowed.")
+  if(NCOL(y) > 1) stop("In get_less_xts, only ONE column is allowed.")
+  
+  require(xts) 
+  
+  ## VERY BASIC attemped CLASS conversion ##
+  x_orig <- x
+  y_orig <- y
+  cx_orig <- class(x)[1] # original class
+  cy_orig <- class(y)[1] # original class
+  
+  x_try.xts_success <- FALSE
+  x_try.xts <- try(xts::try.xts(x_orig), silent = T)
+  x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("get_less_xts can not make an xts object") } else { x_try.xts_success <- TRUE; x_try.xts }
+
+  y_try.xts_success <- FALSE
+  y_try.xts <- try(xts::try.xts(y_orig), silent = T)
+  y         <- if(any(class(y_try.xts) %in% "try-error")) { stop("get_lagged_xts can not make an xts object") } else { y_try.xts_success <- TRUE; y_try.xts }
+
+  # S3 dispatch xts::lag.xts
+  xy_result <- x - y
+
+  # would/should always be/been true else I may/have/never ever made it his far
+  if(x_try.xts_success && y_try.xts_success) { 
+    xts::reclass(xy_result, x_orig) 
+  } -> xy_result
+  
+  colnames(xy_result) <- "less"
+  # if I did not do this earlier / failsafe / Really should have every only been xts/Date
+  if(inherits(xy_result,"zoo")) index(xy_result) <- zoo::as.Date(index(xy_result))
+
+  less_xts <- xy_result 
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  return(less_xts)
+} 
+# NEED A TEST AND EXAMPLE
+
+
+
+
 #' @title shift observations in time
 #' @description lag or pull-from-forward observations
 #' @param x xts object
