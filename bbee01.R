@@ -963,6 +963,143 @@ get_up_side_down_side <- function(){
 
   # begin human + 'machine learning'
   
+  
+  buildModel.caret <- function(quantmod,training.data,...) {
+  
+    # IN PACKAGE remove 'quantmod:::'
+  
+    if(quantmod:::is.method.available('train','caret')) {
+      rp <- do.call(caret::train,list(quantmod@model.formula,data=training.data,method = list(...)[["method_caret"]], ...))
+      return(list("fitted"=rp, "inputs"=attr(terms(rp),"term.labels")))
+    }
+  }
+  
+  # SHOULD HAVE BEEN PUBLIC
+  # quantmod:::predictModel
+  # IN PACKAGE and predictModel is PUBLIC then remove 'quantmod:::'
+  predictModel.caret <- function (object, data, ...) {
+      if (quantmod:::is.method.available('train','caret')) {
+          predict(object, data, ...)
+      }
+  }
+  
+  # ALSO, as.quantmod SEE MY OTHER NOTES
+  
+  # # tuneGrid ( producton tester )
+  # tg <- expand.grid(
+  #   nrounds   =  10, # TEN TREES
+  #   eta       =  c(0.1,0.01),
+  #   max_depth =  c(4,6,8,10),
+  #   gamma     =  0,
+  #   colsample_bytree = c(1,0.5),
+  #   min_child_weight = 1,
+  #   subsample        = c(1,0.5)
+  # )
+  
+  # tuneGrid ( non-production tester )
+  tg <- expand.grid(
+    nrounds   =  50, # TEN TREES
+    eta       =  c(0.1,0.01),
+    max_depth =  c(4,7,10),
+    gamma     =  0,
+    colsample_bytree = 1,
+    min_child_weight = 1,
+    subsample        = 1
+  )
+  
+  tc <- caret::trainControl(method = "cv", number = 5)
+  
+  new_indicators <- xts(, zoo::as.Date(0)[0])
+  
+  # what xts objects ( single column xts objects  ) where specifyModel ( getModelData ( exists ) )  MAY try to see
+  xs.not.exist <- c(sapply( c(colnames(all_possible_instrument_log_rets), 
+                              colnames(all_possible_indicators),
+                              colnames(new_indicators)            # SHOULD have ALREADY been CLEANED up
+                             ), 
+                  function(x) { 
+                    if(!exists(x)) { x } else { NULL } }
+                  ))
+  
+  x <- merge(all_possible_instrument_log_rets, all_possible_indicators, new_indicators)
+  
+  # assign where specifyModel ( getModelData ( exists ) ) can find
+  for(xi in xs.not.exist) {
+    assign(xi, x[,xi], envir = .GlobalEnv)
+  }
+  
+  # right now just skipping 'preparers'
+  
+  specmodel_unrate1 <- specifyModel(will5000ind ~ Less(SMA(    unrate  , 2), SMA(    unrate   ,6)), na.rm = TRUE)
+  specmodel_unrate2 <- specifyModel(will5000ind ~ Less(SMA(lag(unrate)  ,2), SMA(lag(unrate  ),6)), na.rm = TRUE)
+  specmodel_unrate3 <- specifyModel(will5000ind ~ Less(SMA(lag(unrate,2),2), SMA(lag(unrate,2),6)), na.rm = TRUE)
+  
+  # train
+  # 1970-12-31 . . . 2006-12-31 OR 2014-12-31  
+  # test
+  # 2007-01-31 OR 2015-01-31 . . . 2018-03-31
+  
+  unrate1 <- Less(SMA(    unrate   ,2), SMA(    unrate   ,6))
+  colnames(unrate1) <- "unrate1"
+  unrate2 <- Less(SMA(lag(unrate)  ,2), SMA(lag(unrate  ),6))
+  colnames(unrate2) <- "unrate2"
+  unrate3 <- Less(SMA(lag(unrate,2),2), SMA(lag(unrate,2),6))
+  colnames(unrate3) <- "unrate3"
+  
+  new_indicators <- merge(new_indicators, unrate1, unrate2, unrate3)
+  
+  specmodel_unratef  <- specifyModel(will5000ind ~ unrate1 + unrate2 + unrate3, na.rm = TRUE)
+  builtmodel_unratef <- buildModel(specmodel_unratef,method="caret",training.per=c("1970-12-31","2006-12-31"), method_caret = 'xgbTree', tuneGrid = tg, trControl = tc)
+  
+  builtmodel_unratef_data <- getModelData(builtmodel_unratef, na.rm = TRUE)
+  
+  # real testing
+  # c("2007-01-31","2018-03-31")
+                               
+  builtmodel_unratef_modeldata <- modelData(builtmodel_unratef_data, data.window = c("2007-01-31","2018-03-31"), exclude.training = TRUE)
+  builtmodel_unratef_fitted    <- predictModel.caret(builtmodel_unratef_data@fitted.model, builtmodel_unratef_modeldata)
+  builtmodel_unratef_fitted    <- as.xts(builtmodel_unratef_fitted, index(builtmodel_unratef_modeldata))
+  colnames(builtmodef_unrate1_fitted) <- "builtmodel_unratef_fitted"
+  
+  new_indicators <- merge(new_indicators, builtmodel_unratef_fitted)
+  
+  # uses s3 ifelse.xts
+  # strategy/rule weights
+  will5000ind_unratef_rules_wts <- ifelse( builtmodel_unratef_fitted > 0, 1, 0)
+  colnames(will5000ind_unratef_wts) <- "will5000ind"
+  
+  #  the rebalancing dates
+  will5000ind_unratef_wts <- index(will5000ind_unratef_wts) + 1
+  
+  # last # what percent % is "left over"
+  cash <- 1 - rowSums(will5000ind_unratef_wts)
+  colnames(cash) <- "cash"
+  
+  will5000ind_unratef_rules_wts <- merge(will5000ind_unratef_rules_wts, cash)
+  rm(cash)
+  
+  
+  message("")
+  message("    will5000ind_unratef_rules_wts    ")
+  print(tailwill5000ind_unratef_rules_wts)
+  
+  will5000ind_unratef_portf <- Return.portfolio(R = all_possible_instrument_log_rets[,match(colnames(will5000ind_unratef_rules_wts), colnames(all_possible_instrument_log_rets))], weights =  will5000ind_unratef_rules_wts, value = initial_value, verbose = TRUE)
+  # "portfolio.returns"
+  will5000ind_unratef_portf_log_rets <- will5000ind_unratef_portf$returns
+  
+  # default class yearmon # type="arithmetic"
+  will5000ind_unratef_portf_nonlog_monthly_rets <- monthlyReturn(exp(cumsum(will5000ind_unratef_portf_log_rets)) * initial_value)
+  
+  View(table.CalendarReturns(will5000ind_unratef_portf_nonlog_monthly_rets, digits = 1, as.perc = TRUE, geometric = TRUE))
+  
+  
+  # remove anything new that was placed
+  for(xi in xs.not.exist) {
+    suppressWarnings(rm(list = xi, envir = .GlobalEnv)) # extra new_indicators in environment()
+  }
+  # remove anything new that was placed
+  for(xi in colnames(new_indicators)) {
+    rm(list = xi, envir = environment())
+  }
 
   
   # end   human + 'machine learning'
