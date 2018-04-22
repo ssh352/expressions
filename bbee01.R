@@ -120,6 +120,20 @@ ifelse.xts  <- function(test, yes, no) {
 #  NULL
 
 
+# required to be here so can be seen by buildModel
+buildModel.caret <- function(quantmod,training.data,...) {
+
+  # IN PACKAGE remove 'quantmod:::'
+
+  if(quantmod:::is.method.available('train','caret')) {
+    rp <- do.call(caret::train,list(quantmod@model.formula,data=training.data,method = list(...)[["method_caret"]], ...))
+    return(list("fitted"=rp, "inputs"=attr(terms(rp),"term.labels")))
+  }
+}
+
+# too long
+tc <- PerformanceAnalytics::table.CalendarReturns
+
 
 get_up_side_down_side <- function(){
   
@@ -826,7 +840,7 @@ get_up_side_down_side <- function(){
     # 2000: JAN, APR
     # 2010: JUN, AUG
     # 2011: MAY, JUN, JUL, SEP(very bad)
-    # 2016: JAN(bad)
+    # 2016: JAN(bad)                                                             #  within.xts: ouside need a vector
     #                                           # Less # need a function # 
     will5000ind <- ifelse( ((SMA(unrate,2)        - SMA(    unrate   ,6)) <= 0)              | 
                            ((SMA(lag(unrate),2)   - SMA(lag(unrate  ),6)) <= 0)              | 
@@ -851,6 +865,7 @@ get_up_side_down_side <- function(){
     datetime <- datetime + 1; rm(unrate) # required "rm position"
   
   })
+  rm(will5000ind) # DONE WITH THIS!
   unrate_will5000ind_rules_wts_dates <- index(unrate_will5000ind_rules_wts)
   
   bookmark <- 1
@@ -937,8 +952,10 @@ get_up_side_down_side <- function(){
   #            chaining (FALSE) to aggregate returns, default TRUE
 
   # other table values: just displays whatever is input
-  View(table.CalendarReturns(unrate_will5000ind_portf_nonlog_monthly_rets, digits = 1, as.perc = TRUE, geometric = TRUE))   
-  # WORKS
+  ### 
+  message("   View unrate_will5000ind_portf_nonlog_monthly_rets   ")
+  View(tc(unrate_will5000ind_portf_nonlog_monthly_rets, digits = 1, as.perc = TRUE, geometric = TRUE))   
+  ### WORKS
   
   # end portfolio
   
@@ -956,23 +973,16 @@ get_up_side_down_side <- function(){
   # default class yearmon # type="arithmetic"
   buyandhold_will5000ind_portfolio_nonlog_monthly_rets <- monthlyReturn(exp(cumsum(buyandhold_will5000ind_portf_log_rets)) * initial_value) 
 
-  ## 
-  # View(table.CalendarReturns(buyandhold_will5000ind_portfolio_nonlog_monthly_rets, digits = 1, as.perc = TRUE, geometric = TRUE))
+  ###  
+  ### message("    View buyandhold_will5000ind_portfolio_nonlog_monthly_rets    ")
+  ### View(tc(buyandhold_will5000ind_portfolio_nonlog_monthly_rets, digits = 1, as.perc = TRUE, geometric = TRUE))
   
   # end default benchmark
 
   # begin human + 'machine learning'
   
   
-  buildModel.caret <- function(quantmod,training.data,...) {
-  
-    # IN PACKAGE remove 'quantmod:::'
-  
-    if(quantmod:::is.method.available('train','caret')) {
-      rp <- do.call(caret::train,list(quantmod@model.formula,data=training.data,method = list(...)[["method_caret"]], ...))
-      return(list("fitted"=rp, "inputs"=attr(terms(rp),"term.labels")))
-    }
-  }
+
   
   # SHOULD HAVE BEEN PUBLIC
   # quantmod:::predictModel
@@ -998,7 +1008,7 @@ get_up_side_down_side <- function(){
   
   # tuneGrid ( non-production tester )
   tg <- expand.grid(
-    nrounds   =  50, # TEN TREES
+    nrounds   =  50, # TEST 10 trees - DEV 50 trees - OTHER 500 trees
     eta       =  c(0.1,0.01),
     max_depth =  c(4,7,10),
     gamma     =  0,
@@ -1011,44 +1021,93 @@ get_up_side_down_side <- function(){
   
   new_indicators <- xts(, zoo::as.Date(0)[0])
   
+  # for some CRAZY reason unrate keeps getting reloaded from FRED 
+  #   it has an upper case name UNRATE
+  #   with ONLY three(3) records
+  # kill all variables NOW and figure it OUT LATER
+  suppressWarnings( {rm(cash);rm(unrate);rm(will5000ind);rm(cash, envir = .GlobalEnv);rm(unrate, envir = .GlobalEnv);rm(will5000ind, envir = .GlobalEnv)})
+  
   # what xts objects ( single column xts objects  ) where specifyModel ( getModelData ( exists ) )  MAY try to see
-  xs.not.exist <- c(sapply( c(colnames(all_possible_instrument_log_rets), 
+                  # unknow reason why sapply return a list instead of a vector
+  xs.not.exist <- as.vector(unlist(c(sapply( c(colnames(all_possible_instrument_log_rets), 
                               colnames(all_possible_indicators),
-                              colnames(new_indicators)            # SHOULD have ALREADY been CLEANED up
+                              colnames(new_indicators)  # c() eats NULL names # SHOULD have ALREADY been CLEANED up
                              ), 
                   function(x) { 
                     if(!exists(x)) { x } else { NULL } }
-                  ))
+                  ))))
   
-  x <- merge(all_possible_instrument_log_rets, all_possible_indicators, new_indicators)
+  # Little Inspired by
+  # R: how do you merge/combine two environments?
+  # https://stackoverflow.com/questions/26057400/r-how-do-you-merge-combine-two-environments
+
+  # pre-requisite for list2env
+  has_any_one_name <- function(x) !is.null(names(x)) && any(names(x) != "")
+  
+  all_possibles_list <- list()
+  
+  if(has_any_one_name(all_possible_instrument_log_rets)) 
+    all_possibles_list <- append(all_possibles_list, as.list(all_possible_instrument_log_rets))
+  if(has_any_one_name(all_possible_indicators)) 
+    all_possibles_list <- append(all_possibles_list, as.list(all_possible_indicators))
+  if(has_any_one_name(new_indicators))
+    all_possibles_list <- append(all_possibles_list, as.list(new_indicators))
+    
+  all_possibles_env <- list2env(all_possibles_list)
+  rm(all_possibles_list)
+  
+  # all_possibles <- merge(all_possible_instrument_log_rets, all_possible_indicators, new_indicators)
+  # rm(cash);rm(unrate);rm(will5000ind);rm(cash, envir = .GlobalEnv);rm(unrate, envir = .GlobalEnv);rm(will5000ind, envir = .GlobalEnv)
   
   # assign where specifyModel ( getModelData ( exists ) ) can find
   for(xi in xs.not.exist) {
-    assign(xi, x[,xi], envir = .GlobalEnv)
+    assign(xi, get(xi, envir = all_possibles_env), envir = .GlobalEnv)
   }
   
-  # right now just skipping 'preparers'
-  
-  specmodel_unrate1 <- specifyModel(will5000ind ~ Less(SMA(    unrate  , 2), SMA(    unrate   ,6)), na.rm = TRUE)
-  specmodel_unrate2 <- specifyModel(will5000ind ~ Less(SMA(lag(unrate)  ,2), SMA(lag(unrate  ),6)), na.rm = TRUE)
-  specmodel_unrate3 <- specifyModel(will5000ind ~ Less(SMA(lag(unrate,2),2), SMA(lag(unrate,2),6)), na.rm = TRUE)
+  # right now just skipping 'preparers' 
   
   # train
   # 1970-12-31 . . . 2006-12-31 OR 2014-12-31  
   # test
   # 2007-01-31 OR 2015-01-31 . . . 2018-03-31
   
+  # TTR acceptable
+  # avoid 
+  # specifyModel
+  # Error in runSum(x, n) : Series contains non-leading NAs
+  trmd <- function(x) zoo::na.trim(tail(x), sides = "right")
+  
+  # specifyModel( getModelData ) needs variables in the .GlobalEnv
+  # will5000ind - already in .GlobalEnv
   unrate1 <- Less(SMA(    unrate   ,2), SMA(    unrate   ,6))
   colnames(unrate1) <- "unrate1"
+  assign("unrate1", get("unrate1"),envir = .GlobalEnv)
   unrate2 <- Less(SMA(lag(unrate)  ,2), SMA(lag(unrate  ),6))
   colnames(unrate2) <- "unrate2"
+  assign("unrate2", get("unrate2"),envir = .GlobalEnv)
   unrate3 <- Less(SMA(lag(unrate,2),2), SMA(lag(unrate,2),6))
   colnames(unrate3) <- "unrate3"
+  assign("unrate3", get("unrate3"),envir = .GlobalEnv)
   
-  new_indicators <- merge(new_indicators, unrate1, unrate2, unrate3)
+  # .GlobalEnv
+  xs.not.exist <- c(xs.not.exist, "unrate1", "unrate2", "unrate3")
+  
+  assign("unrate1", unrate1, envir = all_possibles_env)
+  assign("unrate2", unrate2, envir = all_possibles_env)
+  assign("unrate3", unrate3, envir = all_possibles_env)
+  # I ID THIS ABOVE BUT I DO NOT LIKE DOING THIS
+  all_possible_indicators <- merge(all_possible_indicators, unrate1)
+  all_possible_indicators <- merge(all_possible_indicators, unrate2)
+  all_possible_indicators <- merge(all_possible_indicators, unrate3)
+  
+  # some guidance and inspiration from quantmod::tradeModel
   
   specmodel_unratef  <- specifyModel(will5000ind ~ unrate1 + unrate2 + unrate3, na.rm = TRUE)
+
+  message("  Begin machine learning")
   builtmodel_unratef <- buildModel(specmodel_unratef,method="caret",training.per=c("1970-12-31","2006-12-31"), method_caret = 'xgbTree', tuneGrid = tg, trControl = tc)
+  print(tg)
+  message("  End machine learning")
   
   builtmodel_unratef_data <- getModelData(builtmodel_unratef, na.rm = TRUE)
   
@@ -1058,29 +1117,36 @@ get_up_side_down_side <- function(){
   builtmodel_unratef_modeldata <- modelData(builtmodel_unratef_data, data.window = c("2007-01-31","2018-03-31"), exclude.training = TRUE)
   builtmodel_unratef_fitted    <- predictModel.caret(builtmodel_unratef_data@fitted.model, builtmodel_unratef_modeldata)
   builtmodel_unratef_fitted    <- as.xts(builtmodel_unratef_fitted, index(builtmodel_unratef_modeldata))
-  colnames(builtmodef_unrate1_fitted) <- "builtmodel_unratef_fitted"
+  colnames(builtmodel_unratef_fitted) <- "builtmodel_unratef_fitted"
   
-  new_indicators <- merge(new_indicators, builtmodel_unratef_fitted)
-  
-  # uses s3 ifelse.xts
+  # uses S3 ifelse.xts
   # strategy/rule weights
-  will5000ind_unratef_rules_wts <- ifelse( builtmodel_unratef_fitted > 0, 1, 0)
-  colnames(will5000ind_unratef_wts) <- "will5000ind"
+  # "will5000ind"
+  will5000ind_unratef_rules_wts <- ifelse(builtmodel_unratef_fitted > 0, rep(1,NROW(builtmodel_unratef_fitted)), rep(0,NROW(builtmodel_unratef_fitted)))
+  colnames(will5000ind_unratef_rules_wts) <- "will5000ind"
   
   #  the rebalancing dates
-  will5000ind_unratef_wts <- index(will5000ind_unratef_wts) + 1
+  index(will5000ind_unratef_rules_wts) <- index(will5000ind_unratef_rules_wts) + 1
   
   # last # what percent % is "left over"
-  cash <- 1 - rowSums(will5000ind_unratef_wts)
+  cash <-xts(rep(1,NROW(will5000ind_unratef_rules_wts)), index(will5000ind_unratef_rules_wts)) - rowSums(will5000ind_unratef_rules_wts)
   colnames(cash) <- "cash"
   
-  will5000ind_unratef_rules_wts <- merge(will5000ind_unratef_rules_wts, cash)
-  rm(cash)
+  # # local env
+  # new_indicators <- merge(new_indicators, cash)
   
+  assign("cash", cash, envir = all_possibles_env)
+  # I DID THIS ABOVE BUT I DO NOT LIKE DOING THIS
+  all_possible_indicators <- merge(all_possible_indicators, cash)
+  
+  # "cash" # "will5000ind"
+  will5000ind_unratef_rules_wts <- merge(cash, will5000ind_unratef_rules_wts)
+  rm(cash)
   
   message("")
   message("    will5000ind_unratef_rules_wts    ")
-  print(tailwill5000ind_unratef_rules_wts)
+  message("    View will5000ind_unratef_rules_wts    ")
+  View(tail(will5000ind_unratef_rules_wts, 150))  # LONG TAIL
   
   will5000ind_unratef_portf <- Return.portfolio(R = all_possible_instrument_log_rets[,match(colnames(will5000ind_unratef_rules_wts), colnames(all_possible_instrument_log_rets))], weights =  will5000ind_unratef_rules_wts, value = initial_value, verbose = TRUE)
   # "portfolio.returns"
@@ -1089,15 +1155,15 @@ get_up_side_down_side <- function(){
   # default class yearmon # type="arithmetic"
   will5000ind_unratef_portf_nonlog_monthly_rets <- monthlyReturn(exp(cumsum(will5000ind_unratef_portf_log_rets)) * initial_value)
   
-  View(table.CalendarReturns(will5000ind_unratef_portf_nonlog_monthly_rets, digits = 1, as.perc = TRUE, geometric = TRUE))
+  View(tc(will5000ind_unratef_portf_nonlog_monthly_rets, digits = 1, as.perc = TRUE, geometric = TRUE))
   
   
   # remove anything new that was placed
   for(xi in xs.not.exist) {
-    suppressWarnings(rm(list = xi, envir = .GlobalEnv)) # extra new_indicators in environment()
+    rm(list = xi, envir = .GlobalEnv) # suppressWarnings() # extra new_indicators in environment()
   }
   # remove anything new that was placed
-  for(xi in colnames(new_indicators)) {
+  for(xi in colnames(new_indicators)) { # NULL will not LOOP
     rm(list = xi, envir = environment())
   }
 
@@ -1130,7 +1196,7 @@ get_up_side_down_side <- function(){
   Sys.setenv(TZ=oldtz)
   options(ops)
   
-  message("  end get_up_side_down_side")
+  message("end get_up_side_down_side")
   
   up_side_down_side <- NULL
   return(up_side_down_side)
@@ -1138,5 +1204,7 @@ get_up_side_down_side <- function(){
 }
 # up_side_down_side <- get_up_side_down_side()
 
+# [ ] TODO re-weight/smoter/vtreat/Boruta,TTR transforms: get machine learning to work
+# 
 
 # bbee01.R
