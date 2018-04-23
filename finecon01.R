@@ -8162,6 +8162,78 @@ get_quandl_sipro_earnings_per_avg_share_x10_4q_eom_xts <- function() {
 # 2017-09-30             108.8544
 
 
+# get all company_ids that every were/are_now/will_be a member of the sp 500/400/600
+# during now and within the last/future 13 months
+get_sipro_spany_company_ids <- function(
+    ref_dateindex = NULL
+  , restriction = "now.sp in ('500','400','600')"
+  , past_span = 13
+  , fut_span  = 13) {
+
+  ops <- options()
+  
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  message("Begin function get_sipro_spany_company_ids")
+
+  verify_connection()
+  
+  query <- paste0("
+
+    select distinct lat.company_id from (
+
+      select fut.dateindex from (select distinct dateindex 
+      from fe_data_store.si_finecon2 
+      where dateindex > ", ref_dateindex, "                   
+      order by dateindex      limit ", fut_span, ") fut     
+      union all
+      select now.dateindex from (select distinct dateindex 
+      from fe_data_store.si_finecon2 
+      where dateindex  = ", ref_dateindex, "                  
+      order by dateindex desc limit 1) now       
+      union all
+      select past.dateindex from (select distinct dateindex 
+      from fe_data_store.si_finecon2 
+      where dateindex <  ", ref_dateindex, "                  
+      order by dateindex desc limit ", past_span, ") past 
+      order by dateindex
+    ) dateindexes
+    left join lateral ( 
+      select distinct now.company_id
+      from fe_data_store.si_finecon2 now
+      where 
+            now.dateindex = dateindexes.dateindex and 
+            ", restriction, "
+    ) lat on true order by lat.company_id
+
+  ")
+
+  sipro_spany_company_ids <- dbGetQuery(con, query)
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  message("End   function get_sipro_spany_company_ids")
+  
+  return(sipro_spany_company_ids)
+  
+}
+# sipro_spany_company_ids <- get_sipro_spany_company_ids(17011)  
+# str(sipro_spany_company_ids)
+# 'data.frame':	1703 obs. of  1 variable:
+# $ company_id: chr  "000B3" "000EB" "0013D" "0013N" ...
+
+
+
 
 get_sipro_sp500_mktcap_o_netinc <- function() {
 
