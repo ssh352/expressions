@@ -16077,10 +16077,15 @@ from (
 
 
 
-
+-- NOTE: meant to be 'look forward to clean to backfill past_missing_data
+--       ALSO could be generalized to also look for 'future-past PRICE data'
+--
 -- [ ] add MORE: need any sp company_id now +- 13 months ( SEE FAR ABOVE )
 --
 -- LAST REVIEW: APR 20 2018: seems this is a 'slightly off prototype' for a concept
+-- 
+-- notice: and curr.netinc_q1 is null  -- -- CRITERIA TO FIND MISSING RECORDS -- --
+--
 --   I select all company_ids that that have a membership in the SP in the 
 --   past-01 PP, now PP ( nowpast), and fut-01 PP ( fut )
 --     from those above
@@ -16174,7 +16179,7 @@ from (
   where curr.dateindex = 17562        -- monthly production load: max(dateindex) xor 'current index'
     -- and curr.sp in ('500','400','600') 
     and curr.company_id in ( select company_ids.company_id from company_ids )
-    and curr.netinc_q1 is null 
+    and curr.netinc_q1 is null  -- -- CRITERIA TO FIND MISSING RECORDS -- --
                          
 ) now         left join lateral ( -- 17590
 
@@ -16213,4 +16218,118 @@ from (
 --                                fill in netinc_q1_old, netinc_q1, netinc_q1_src, netinc_q1_dt  -- watch out for regex type identifying IN new uploader
 
 -- end -- look forward to try to find missing/more_correct data (netinc_q1)
+
+
+
+
+with company_ids as (
+
+  select distinct now.company_id
+  from fe_data_store.si_finecon2 now where now.dateindex = 17562 and
+  now.sp in ('500','400','600')
+  order by now.company_id
+), 
+dateindexes_fut1 as (
+
+  select fut.dateindex from (select distinct dateindex 
+  from fe_data_store.si_finecon2 
+  where dateindex > 17562                       -- monthly production load: max(dateindex) xor 'current index'
+  order by dateindex      limit 1 offset 0) fut      
+
+), -- 17590
+dateindexes_fut2 as (
+
+  select fut.dateindex from (select distinct dateindex 
+  from fe_data_store.si_finecon2 
+  where dateindex > 17562                        -- monthly production load: max(dateindex) xor 'current index'
+  order by dateindex      limit 1 offset 1) fut      
+
+) -- 17619
+select now.*, 
+  -- fut1.dateindex                   fut1_dateindex,
+  fut1.qs_date                     fut1_qs_date,
+  fut1.perend_q1                   fut1_perend_q1,
+  fut1.now_inbnd_stmtid_dateindex  fut1_now_inbnd_stmtid_dateindex,
+  fut1.last_inbnd_stmtid_dateindex fut1_last_inbnd_stmtid_dateindex,
+  fut1.netinc_q1                   fut1_netinc_q1,
+
+  -- fut2.dateindex                   fut2_dateindex,
+  fut2.qs_date                     fut2_qs_date,
+  fut2.perend_q1                   fut2_perend_q1,
+  fut2.now_inbnd_stmtid_dateindex  fut2_now_inbnd_stmtid_dateindex,
+  fut2.last_inbnd_stmtid_dateindex fut2_last_inbnd_stmtid_dateindex,
+  fut2.netinc_q1                   fut2_netinc_q1
+
+from ( 
+
+  select curr.dateindex, 
+         dateindexes_fut1.dateindex fut1_dateindex,  -- here --
+         dateindexes_fut2.dateindex fut2_dateindex,  -- here --
+         curr.company_id, curr.sp, curr.ticker, curr.company,
+         curr.perend_q1,
+         curr.qs_date,
+         curr.now_inbnd_stmtid_dateindex, 
+         curr.last_inbnd_stmtid_dateindex,
+         curr.netinc_q1
+  from fe_data_store.si_finecon2 curr, 
+       dateindexes_fut1, dateindexes_fut2  
+  where curr.dateindex = 17562        
+    and curr.company_id in ( select company_ids.company_id from company_ids )
+    and curr.netinc_q1 is null  -- -- CRITERIA TO FIND MISSING RECORDS -- --
+                         
+) now         left join lateral ( -- 17590
+
+  -- per item processing: may not be the fastest
+  select curr.dateindex, curr.company_id, 
+         curr.perend_q1,
+         curr.qs_date,
+         curr.now_inbnd_stmtid_dateindex, 
+         curr.last_inbnd_stmtid_dateindex,
+         curr.netinc_q1
+  from fe_data_store.si_finecon2 curr
+  where curr.dateindex = now.fut1_dateindex and curr.company_id = now.company_id
+                         -- here --
+
+) fut1 on true left join lateral ( -- 17619
+
+  -- per item processing: may not be the fastest
+  select curr.dateindex, curr.company_id, 
+         curr.perend_q1,
+         curr.qs_date,
+         curr.now_inbnd_stmtid_dateindex, 
+         curr.last_inbnd_stmtid_dateindex,
+         curr.netinc_q1
+  from fe_data_store.si_finecon2 curr
+  where curr.dateindex = now.fut2_dateindex and curr.company_id = now.company_id
+                         -- here --
+
+) fut2 on true;
+
+--
+-- WHAT ABOUT MY FUNCTION THAT DOES MASS UPDATING
+--
+
+-- [ ] TO DO: share the same qs_date ( OR qs_date is null  -- [ ] TO DO: WORK ON THIS )
+
+-- replacing a null value -- look forward into fut1_netinc_q1 ( and maybe fut2_netinc_q1 )
+update fe_data_store.si_finecon2
+set  netinc_q1      = case when fut1_netinc_q1 is not null then fut1_netinc_q1 else fut1_netinc_q2 end,
+     orig_netinc_q1 = netinc_q1,
+     updated_netinc_q1_src = case when fut1_netinc_q1 is not null then 'fut1_netinc_q1' else 'fut1_netinc_q2' end
+from
+  QUERY
+
+
+-- replacing a bad value
+-- look into the future (fut1 and fut2) and vote (anonymously) to replace the earlier bad value
+update fe_data_store.si_finecon2                                                                                      -- update with self
+set  netinc_q1      = case when netinc_q1 != fut1_netinc_q1 and fut1_netinc_q1 = fut2_netinc_q1 then fut1_netinc_q1 else netinc_q1 end,
+     orig_netinc_q1 = fut1_netinc_q1,
+     updated_netinc_q1_src = case when netinc_q1 != fut1_netinc_q1 and fut1_netinc_q1 = fut2_netinc_q1 then 'vote_same_fut1_fut2' else null end,
+from
+  QUERY
+
+
+
+
 
