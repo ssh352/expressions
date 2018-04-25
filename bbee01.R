@@ -211,7 +211,6 @@ get_up_side_down_side <- function(){
   
   # 1st empty xts
   all_possible_instrument_log_rets <- xts(, zoo::as.Date(0)[0])
-  all_possible_instrument_log_rets_dates    <- xts(, index(all_possible_instrument_log_rets))
   
   ### ### 
   ### WHAT I AM TRYING TO OPTIMIZE 
@@ -238,16 +237,13 @@ get_up_side_down_side <- function(){
   
   # will5000ind                       # 1st empty xts
   all_possible_instrument_log_rets <- merge.xts(all_possible_instrument_log_rets, will5000ind_log_rets)
-  all_possible_instrument_log_rets_dates  <- xts(, index(all_possible_instrument_log_rets))
-  
+
   # "cash"             # no returns good/bad
   cash_log_rets <- xts(rep(0,NROW(all_possible_instrument_log_rets)),index(all_possible_instrument_log_rets))
   colnames(cash_log_rets) <- "cash"
-  cash_log_rets_dates <- index(cash_log_rets)
 
   # colnames                                   "cash"    +     "will5000ind"
   all_possible_instrument_log_rets <- merge.xts(cash_log_rets, all_possible_instrument_log_rets)
-  all_possible_instrument_log_rets_dates    <- xts(, index( all_possible_instrument_log_rets))
   
 # like quantmod::tradeModel(. . ., signal.threshold = c(0, 0), . .  )
 # Barclays Capital U.S. Aggregate Bond Index(AGG) in yahoo finance only goes back to 2003.
@@ -268,7 +264,6 @@ get_up_side_down_side <- function(){
   
   # as as I gather data, place the value in my indicators xts
   all_possible_indicators <- xts(, zoo::as.Date(0)[0])
-  all_possible_indicators_dates <- index(all_possible_indicators)
   
   # Order is mostly from 
   # RECESSION TO DRAWDOWN
@@ -294,7 +289,6 @@ get_up_side_down_side <- function(){
   
   #                                                             "unrate"
   all_possible_indicators <- merge.xts(all_possible_indicators, unrate_indicator)
-  all_possible_indicators_dates <- index(all_possible_indicators)
   
   # PRE/POST RECESSION ONLY
   # PART OF BROAD STATISTIC (UNRATE(ABOVE))
@@ -663,7 +657,7 @@ get_up_side_down_side <- function(){
   buyandhold_will5000ind_rules_wts <- xts(rep(1,NROW(all_possible_instrument_log_rets)),index(all_possible_instrument_log_rets))
   # "will5000ind"
   colnames(buyandhold_will5000ind_rules_wts) <- "will5000ind"
-  buyandhold_will5000ind_rules_wts_dates <- index(buyandhold_will5000ind_rules_wts)
+  
   # end buy and hold weights
   
   # begin portfolio weights
@@ -866,10 +860,7 @@ get_up_side_down_side <- function(){
   
   })
   rm(will5000ind) # DONE WITH THIS!
-  unrate_will5000ind_rules_wts_dates <- index(unrate_will5000ind_rules_wts)
   
-  bookmark <- 1
-
   # end portfolio wieghts 
 
   ### ### ### ### ### ### ### 
