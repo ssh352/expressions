@@ -1528,4 +1528,59 @@ as.quantmod.data.frame  <- function(x, outcomename, order.by, na.rm = TRUE, ...)
 # quantmod <- as.quantmod(as.data.frame(sample_xts),outcomename = "Close", order.by = index(sample_xts))
 
 
+
+
+# quantmod:::is.method.available
+is.method.available <- function(method, package) {
+    if (!package %in% .packages()) {
+        if (package %in% .packages(all.available = TRUE)) {
+            cat(paste("loading required package:", package, "\n"))
+            library(package, character.only = TRUE)
+        }
+        else {
+            stop(paste("package", sQuote(package), "containing",
+                sQuote(method), "unable to be located"))
+        }
+    }
+    return(TRUE)
+}
+
+
+buildModel.train <- function(quantmod,training.data,...) {
+
+  if(is.method.available('train','caret')) {
+    rp <- do.call(train,list(quantmod@model.formula,data=training.data,method = list(...)[["method_train"]], ...))
+    return(list("fitted"=rp, "inputs"=attr(terms(rp),"term.labels")))
+  }
+}
+# buildModel(specmodel,method="train",training.per=c("1970-12-31","2006-12-31"), method_train = 'xgbTree', tuneGrid = tg, trControl = tc)
+
+buildModel.custom <- function(quantmod,training.data,...) {
+
+  if(is.method.available('train','caret')) {
+    rp <- do.call(train,list(quantmod@model.formula,data=training.data,method = list(...)[["method_train"]], ...))
+    return(list("fitted"=rp, "inputs"=attr(terms(rp),"term.labels")))
+  }
+}
+# buildModel(specmodel,method="custom",training.per=c("1970-12-31","2006-12-31"), method_train = 'xgbTree', tuneGrid = tg, trControl = tc)
+
+# quantmod:::predictModel.default
+predictModel.default <- function (object, data, ...)
+{
+    predict(object, data, ...)
+}
+  
+predictModel.train <- function (object, data, ...) {
+    if (is.method.available('train','caret')) {
+        predict(object, data, ...)
+    }
+}
+
+# quantmod:::predictModel
+predictModel <- function(object, data, ...)
+{
+    UseMethod("predictModel")
+}
+
+
 # bbee01.R
