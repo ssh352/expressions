@@ -1198,18 +1198,18 @@ get_up_side_down_side <- function(){
 # [ ] TODO re-weight/smoter/vtreat/Boruta,TTR transforms: get machine learning to work
 # 
 
-# from.envir
-# get some Symbols from an environment (from.envir)
-#   will search first in (from.envir)
-#   if the Symbol is not found in the enviroment (from.envir),
+# source.envir
+# get some Symbols from an environment (source.envir)
+#   will search first in (source.envir)
+#   if the Symbol is not found in the enviroment (source.envir),
 #   then get the Symbol from elsewhere
-# NOTE: do not do: "from.envir = e, "env = e"
+# NOTE: do not do: "source.envir = e, "env = e"
 #       when auto.assign = TRUE(default), .GetSymbols is placed where "env = e"
 # 
 # quantmod::getSymbols ( with NEW CODE )
 getSymbols <- function (Symbols = NULL, env = parent.frame(), reload.Symbols = FALSE,
     verbose = FALSE, warnings = TRUE, src = "yahoo", symbol.lookup = TRUE,
-    auto.assign = getOption("getSymbols.auto.assign", TRUE), from.envir = NULL, # BEGIN/END NEW CODE
+    auto.assign = getOption("getSymbols.auto.assign", TRUE), source.envir = NULL, # BEGIN/END NEW CODE
     ...)                                                                        {
     if (getOption("getSymbols.warning4.0", TRUE)) {
         message(sQuote("getSymbols"), " currently uses auto.assign=TRUE by default, but will\n",
@@ -1272,12 +1272,12 @@ getSymbols <- function (Symbols = NULL, env = parent.frame(), reload.Symbols = F
         for (symbol.source in unique(as.character(Symbols))) {
             current.symbols <- names(Symbols[Symbols == symbol.source])
             # BEGIN NEW CODE #
-            if(!is.null(from.envir)) {
+            if(!is.null(source.envir)) {
                 symbols.returned.from.envir <- character()
                 for(current.symbols_i in current.symbols) {
-                   if(exists(current.symbols_i, envir = from.envir)) { 
+                   if(exists(current.symbols_i, envir = source.envir)) { 
                      symbols.returned_i <- list()
-                     symbols.returned_i[[current.symbols_i]] <- get(current.symbols_i, envir = from.envir)
+                     symbols.returned_i[[current.symbols_i]] <- get(current.symbols_i, envir = source.envir)
                      if (auto.assign) { 
                         # WILL ONLY HAPPEN ONCE
                         assign(current.symbols_i, symbols.returned_i[[current.symbols_i]], env)
@@ -1313,7 +1313,8 @@ getSymbols <- function (Symbols = NULL, env = parent.frame(), reload.Symbols = F
             for (each.symbol in symbols.returned) all.symbols[[each.symbol]] <- symbol.source
             # BEGIN NEW CODE
             # OVERWRITE
-            for(each.symbol in symbols.returned.from.envir) all.symbols[[each.symbol]] <- attr(get(each.symbol, envir = from.envir), "src")
+            if(exists("symbols.returned.from.envir") && length(symbols.returned.from.envir))
+              for(each.symbol in symbols.returned.from.envir) all.symbols[[each.symbol]] <- attr(get(each.symbol, envir = source.envir), "src")
             # END NEW CODE
         }
         req.symbols <- names(all.symbols)
@@ -1343,13 +1344,13 @@ e <- new.env()
 #  $ src    : chr "yahoo"
 #  $ updated: POSIXct[1:1], format: "2018-04-25 18:12:26"
 # rm(AAPL);rm(MSFT) # if any
-# getSymbols(list(AAPL = "yahoo", MSFT = "yahoo"), from.env = e)
-# getSymbol <- getSymbols(list(AAPL = "yahoo"), auto.assign = FALSE, from.env = e)
+# getSymbols(list(AAPL = "yahoo", MSFT = "yahoo"), source.envir = e)
+# getSymbol <- getSymbols(list(AAPL = "yahoo"), auto.assign = FALSE, source.envir = e)
 
-# from.envir
-# get some Symbols from an environment (from.envir)
-#   will search first in (from.envir)
-#   if the Symbol is not found in the enviroment (from.envir),
+# source.envir
+# get some Symbols from an environment (source.envir)
+#   will search first in (source.envir)
+#   if the Symbol is not found in the enviroment (source.envir),
 #   then get the Symbol from elsewhere
 # ...
 # passed to getSymbols
@@ -1357,7 +1358,7 @@ e <- new.env()
 #   maybe useful: src
 #   maybe useful: set per Symbol src using setSymbolLookup
 #
-getModelData <- function (x, na.rm = TRUE, from.envir = NULL, ...) {
+getModelData <- function (x, na.rm = TRUE, source.envir = NULL, ...) {
 
     model <- x
     if (!is.quantmod(model))
@@ -1372,18 +1373,18 @@ getModelData <- function (x, na.rm = TRUE, from.envir = NULL, ...) {
     model.symbols <- vars <- all.vars(model@model.spec)
     env <- new.env()
     lapply(vars, function(V) {
-        if(is.null(from.envir)) {
+        if(is.null(source.envir)) {
             if(!exists(V)) {
-                getSymbols(V, env = env)
+                getSymbols(V, env = env, ...)
             }
             else {
                 assign(V, get(V), env)
             }
         } else {
-            if (!exists(V, envir = from.envir)) {
-                getSymbols(V, env = env)
+            if (!exists(V, envir = source.envir)) {
+                getSymbols(V, env = env, ...)
             } else {
-                assign(V, get(V, envir = from.envir), env) 
+                assign(V, get(V, envir = source.envir), env) 
             }
         }
     })
@@ -1421,10 +1422,10 @@ getModelData <- function (x, na.rm = TRUE, from.envir = NULL, ...) {
     return(model)
 }
 
-# from.envir
-# get some Symbols from an environment (from.envir)
-#   will search first in (from.envir)
-#   if the Symbol is not found in the enviroment (from.envir),
+# source.envir
+# get some Symbols from an environment (source.envir)
+#   will search first in (source.envir)
+#   if the Symbol is not found in the enviroment (source.envir),
 #   then get the Symbol from elsewhere
 # ...
 # passed to getSymbols
@@ -1432,7 +1433,7 @@ getModelData <- function (x, na.rm = TRUE, from.envir = NULL, ...) {
 #   maybe useful: src
 #   maybe useful: set per Symbol src using setSymbolLookup
 #               
-specifyModel <- function (formula, na.rm = TRUE, from.envir = NULL) {
+specifyModel <- function (formula, na.rm = TRUE, source.envir = NULL, ...) {
 
     new.quantmod <- new("quantmod")
     formula <- as.formula(formula)
@@ -1452,9 +1453,17 @@ specifyModel <- function (formula, na.rm = TRUE, from.envir = NULL) {
     vars <- all.vars(formula)
     new.quantmod@symbols <- vars
     new.quantmod@product <- vars[1]
-    new.quantmod <- getModelData(new.quantmod, na.rm = na.rm, from.envir = from.envir, ...)
+    new.quantmod <- getModelData(new.quantmod, na.rm = na.rm, source.envir = source.envir, ...)
     return(new.quantmod)
 }
+# example
+# Symbols <- unlist(lapply( c('MSFT','AAPL'), function(x) { l <- list(); l[[x]] = getSymbols(x, auto.assign = FALSE);l }), recursive = FALSE)
+# Symbols <- list2env(Symbols)
+# ls.str(Symbols)
+# getSymbols( c('AAPL','ORCL'), source.envir = Symbols)
+# rm('AAPL')
+# quantmod <- specifyModel(Next(ClCl(WMT)) ~ Lag(OpCl(AAPL)) + Lag(LoHi(COST),0:2), source.envir = Symbols, from ="2007-01-01", to="2011-12-31")
+
 
 
 
