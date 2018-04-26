@@ -1457,7 +1457,7 @@ specifyModel <- function (formula, na.rm = TRUE, source.envir = NULL, ...) {
     return(new.quantmod)
 }
 # example
-# Symbols <- unlist(lapply( c('MSFT','AAPL'), function(x) { l <- list(); l[[x]] = getSymbols(x, auto.assign = FALSE);l }), recursive = FALSE)
+# Symbols <- unlist(lapply( c('MSFT','AAPL'), function(x) { l <- list(); l[[x]] <- getSymbols(x, auto.assign = FALSE);l }), recursive = FALSE)
 # Symbols <- list2env(Symbols)
 # ls.str(Symbols)
 # getSymbols( c('AAPL','ORCL'), source.envir = Symbols)
@@ -1465,6 +1465,67 @@ specifyModel <- function (formula, na.rm = TRUE, source.envir = NULL, ...) {
 # quantmod <- specifyModel(Next(ClCl(WMT)) ~ Lag(OpCl(AAPL)) + Lag(LoHi(COST),0:2), source.envir = Symbols, from ="2007-01-01", to="2011-12-31")
 
 
+
+# if I have to do preprocessing e.g. vtreat
+# therefore the situation may be cheaper to make a quantmod object
+# from a data.frame
+# 
+as.quantmod.default <- function(x, outcomename, order.by, na.rm = TRUE, ...) { 
+
+  # avoid
+  # Warning: Next.OpCl.AAPL download failed; trying again.
+  # Error: Next.OpCl.AAPL download failed after two attempts. Error message:
+  # HTTP error 404.
+  
+  # see ( on search() )
+  # see quanmod:::DDB_Yahoo, quantmod::attachSymbols, quantmod:::attachSymbols.yahoo quantmod:::create.binding
+  # see ( exist in .GlobalEnv or enclosing env )
+  # setSymbolLookup, getSymbols.csv, getSymbols.RData, getSymbols.oanda, getSymbols.yahoo, getSymbols.google, getSymbols.FRED 
+  # BUT 
+  # getModelData: if(!exists(V)) { getSymbols(V, env=env) } # SHOULD BE 
+  #   ABLE to LOOK ELSEWHERE and NOT the just 'environments/search()'
+
+  NULL 
+
+}
+
+as.quantmod             <- function(x, outcomename, order.by, na.rm = TRUE, ...) { UseMethod("as.quantmod") }
+
+# ...
+# passed to getSymbols
+# 
+#         useful: from, to
+#   maybe useful: src
+#   maybe useful: set per Symbol src using setSymbolLookup
+#    
+# create a quantmod object directly 
+as.quantmod.data.frame  <- function(x, outcomename, order.by, na.rm = TRUE, ...) { 
+
+  x <- DataCombine::MoveFront(x, outcomename )   
+  
+  # place single column where specifyModel ( getModelData ( exists ) ) can find
+  
+  Symbols <- lapply(x, function(x) { 
+    as.xts(x, order.by = order.by)
+  }) 
+  Symbols <- list2env(Symbols)
+  
+  # Little Inspired by
+  # R: how do you merge/combine two environments?
+  # https://stackoverflow.com/questions/26057400/r-how-do-you-merge-combine-two-environments
+  # 
+  # NOTE: to merge environments: loop over "assign(get)"
+  
+  # assign where specifyModel ( getModelData ( exists ) ) can find
+
+  model <- specifyModel(paste0(outcomename, " ~ ", paste0(setdiff(colnames(x), outcomename), collapse = " + ")), na.rm = na.rm, source.envir = Symbols, ...)
+  
+  return(model)
+
+}
+# data(sample_matrix)
+# sample_xts <- as.xts(sample_matrix)
+# quantmod <- as.quantmod(as.data.frame(sample_xts),outcomename = "Close", order.by = index(sample_xts))
 
 
 # bbee01.R
