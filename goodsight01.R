@@ -685,7 +685,7 @@ get_annualized_xts <- function(x, n) {
 
 
 
-
+# NEED A TEST AND EXAMPLE
 #' @title Ops on xts
 #' @description subtract one xts from anaother
 #' @param x xts object
@@ -694,7 +694,6 @@ get_annualized_xts <- function(x, n) {
 #' @details input is one single column xts object only
 #' @examples
 #' \dontrun{
-#' # 
 #' # 
 #' # 
 #' }
@@ -754,8 +753,7 @@ get_less_xts <- function(x, y) {
   
   return(less_xts)
 } 
-# NEED A TEST AND EXAMPLE
-
+Less <- get_less_xts
 
 
 
@@ -1734,6 +1732,92 @@ get_delay_since_last_day_xts <-function(x) {
   return(delay_since_last_day_xts)
 
 } 
+
+
+
+# [ ] NEED TEST(S)
+#' @title quarter end observations
+#' @description get only the exact observation that appears at the end of each calendar quarter
+#' @param x xts object
+#' @return modified xts object ( possibly rows reduced )
+#' @details input is one single column xts object only
+#'          payload NA-gaps matter ( NOT index time gaps )
+#' @examples
+#' \dontrun{
+#' # x <- xts::xts(seq(2,24,2),zoo::as.Date(seq(20,240,20)))
+#' # x
+#' # [,1]
+#' # 1970-01-21    2
+#' # 1970-02-10    4
+#' # 1970-03-02    6
+#' # 1970-03-22    8
+#' # 1970-04-11   10
+#' # 1970-05-01   12
+#' # 1970-05-21   14
+#' # 1970-06-10   16
+#' # 1970-06-30   18
+#' # 1970-07-20   20
+#' # 1970-08-09   22
+#' # 1970-08-29   24
+#' # 
+#' # get_only_qtr_ends_obs_xts(x)
+#' # only_qtr_ends_obs
+#' # 1970-06-30                18
+#' }
+#' @rdname get_delay_since_last_obs_xts
+#' @export
+
+get_only_qtr_ends_obs_xts <-function(x) { 
+  
+  ops <- options()
+  
+  options(warn = 1)
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  if(NCOL(x) > 1) stop("In get_only_qtr_ends_obs_xts, only ONE column is allowed.")
+  
+  require(xts) 
+  # uses function get_only_qtr_ends_obs
+  
+  x_orig <- x
+  c_orig <- class(x)[1] # original class
+  
+  ## VERY BASIC attemped CLASS conversion ##
+  x_try.xts_success <- FALSE
+  x_try.xts <- try(xts::try.xts(x_orig), silent = T)
+  #
+  x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("get_only_qtr_ends_obs_xts could not make an xts") } else { x_try.xts_success <- TRUE; x_try.xts }
+  
+  x_result <- x[unique(zoo::as.Date(as.yearqtr(index(x)), frac = 1))]
+  
+  # Should have always made it here
+  if(x_try.xts_success) { 
+    xts::reclass(x_result, x_orig) 
+  } -> x_result
+  
+  colnames(x_result) <- "only_qtr_ends_obs"
+  # if I did not do this earlier / failsafe / Really should have every only been xts/Date
+  if(inherits(x_result,"zoo")) index(x_result) <- zoo::as.Date(index(x_result))
+  
+  only_qtr_ends_obs_xts <- x_result
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  return(only_qtr_ends_obs_xts)
+  
+} 
+
+
 
 
 
