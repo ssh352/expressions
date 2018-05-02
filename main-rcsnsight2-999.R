@@ -1,5 +1,5 @@
 
-# main-rcsnsight2-999.R
+# main-rcsnsight2-999.R 
 
 # R version 3.4.0 (2017-04-21)
 # Platform: x86_64-w64-mingw32/x64 (64-bit)
@@ -702,11 +702,11 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     #  2. incomplete data exists of current month 
     # THEREFORE
     # this IS       the end of the PREVIOUS MONTH
-    # finDate.TestTrain.Global.Latest    <- "2018-01-31"  # 2014-12-31(perfect) 
+    # finDate.TestTrain.Global.Latest    <- "2018-04-30"  # 2014-12-31(perfect) 
                                                           # march 21, 2015 run: "2015-01-31": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
                                                           # march 21, 2015 run: "2015-02-28": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
                                                           # march 21, 2015 run: "2015-03-31": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
-    finDate.TestTrain.Global.Latest      <- "2018-01-31"  # april  6, 2015 run: "2015-03-31": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
+    finDate.TestTrain.Global.Latest      <- "2018-04-30"  # april  6, 2015 run: "2015-03-31": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
     
     # training and TRUE tests
     list(Test2001 = list(Train=list(initDate = initData.TestTrain.Global.Earliest,finDate ="1998-12-31"),
@@ -2913,7 +2913,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     #
     #  the number of iterations,T(n.trees)
     #  the depth of each tree,K(interaction.depth)
-    #  the shrinkage (or learning rate) parameter,Î»(shrinkage)
+    #  the shrinkage (or learning rate) parameter,N;(shrinkage)
     #  the subsampling rate,p(bag.fraction)
     #
     #  Generalized Boosted Models: A guide to the gbm package Greg Ridgeway August 3, 2007
@@ -3075,7 +3075,7 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     # In W:\New_Economics\rcsnsight1.340
     # Create folder DataYYMMDD  *** where YYMMDD is the date on the .RData files ***
     #   Cut/Move all .Rdata files into DataYYMMDD
-    # Copy     all .R     files into DataYYMMDD
+    # Copy     all .R     files into DataYYMMDD 
     # 
     
     # 
@@ -3112,6 +3112,9 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     # **** SEARCH FOR * finDate.TestTrain.Global.Latest * SEARCH FOR *****
     # 
     # rm(list=ls(all.names=TRUE))
+    # 
+    # DON'T FORGET THAT in R Studio
+    # setwd("W:/New_Economics/rcsnsight1.340") # getwd()
     # 
     # BEST HAVE THE 'ABSOLUTE PATH' 
     # debugSource('W:/New_Economics/rcsnsight1.340/main-rcsnsight2-999.R')
