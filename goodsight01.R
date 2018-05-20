@@ -1240,6 +1240,9 @@ get_smtsortino_xts <- function(x, n) {
 #'          pessimistic means that if a 'few observations' exist
 #'            then the higher value numbers will not generate as low(better) ranks
 #'            compared to the case of 'many observations'
+#' @param n_ranks number of ranks
+#'                e.g. n_ranks = 2: 1=high_value and 2 = low_value
+#'                means 1=above_median, 2=below_median
 #' @return modified xts object
 #' @details input is one single column xts object only
 #' @examples
@@ -1258,7 +1261,7 @@ get_smtsortino_xts <- function(x, n) {
 #' # 2007-01-11 -1.729327001953728127
 #' # 2007-01-12  1.728401658544285180
 #' # 
-#' # amoung the trailing 4, position(a 'higher' value = 1, a 'lower' value = 2)
+#' # among the trailing 4, position(a 'higher' value = 1, a 'lower' value = 2)
 #' # 
 #' # get_smrank_xts(get_smtsortino_xts(get_pctchg_xts(head(sample_xts[,"Open"],11), n = 1), 3), n = 4, n_ranks = 2)
 #' # 
