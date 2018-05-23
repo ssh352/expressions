@@ -124,33 +124,80 @@ ifelse.xts  <- function(test, yes, no) {
 # NBER time slices
 # returns a list whereas each list element is a vector of dates
 #   dates: dates of dates(class Date) observations of test data ( to be split later into subsets )
+#          limiter of the observations returned
 # empties: TRUE, if FALSE, do not include NBER list elements with no dates ( from parameter dates )
 # long_timeslices: include non-recession range that is before this recession range
-#   if I choose long_timeslices = TRUE, then I must choose empties = FALSE
+#   if I choose long_timeslices = TRUE, then internall chooses and sets empties = FALSE
+#     so the empties parameter is ignored
+# window_width: if "growing" then the start value is the beginning of "nber dates"
+# long_timeslices == TRUE AND window_width == "growing" ARE mutually exclusive of each other
 # 
-get_nber_timeslices <- function(dates, empties = TRUE, long_timeslices = FALSE) {
+get_nber_timeslices <- function(dates, empties = TRUE, long_timeslices = FALSE, nber_dates_tranform_fun = NULL, window_width = NULL) {
   
   # uses tis  nberDates
   # uses plyr alply
   
-  plyr::alply(tis::nberDates(), .margins = 1, .fun = function(x, dates, empties) { 
+  if(long_timeslices) empties <- FALSE
+  
+  # tis::nberDates
+  # harcoded: some dates are at month-beginning
+  #           some dates are at month-end
+  
+  # ALT: all dates are at month-beginning
+  # NBER based Recession Indicators for the United States from the Period following the Peak through the Trough (USREC)
+  # https://fred.stlouisfed.org/data/USREC.txt
+  # https://fred.stlouisfed.org/series/USREC
+  
+  nber_dates <- tis::nberDates()
+  
+  # nber_dates_tranform_fun
+  
+  # if I want to change the month/begin/end date
+  # 
+  # nber_dates_tranform_fun
+  # 
+  # function(x) {
+    # x["Start"] <- zoo::as.Date(as.character(x["Start"]))
+    # x["End"]   <- zoo::as.Date(as.character(x["End"]))
+  # }
+  
+  # if I want to change the month/begin/end date
+  if(!is.null(nber_dates_tranform_fun)) 
+    nber_dates <- plyr::aaply(nber_dates, .margins = 1, .fun = match.fun(nber_dates_tranform_fun) )
+  
+  if(!is.null(window_width) && (window_width == "growing")) {
+    first_date <-zoo::as.Date(as.character(nber_dates[1,"Start"][[1]]), format = "%Y%m%d")
+  }
+    
+  plyr::alply(nber_dates, .margins = 1, .fun = function(x, dates, empties, window_width, first_date) { 
     
     require(xts)
     
-    # can not use tis::ti upon EARLY nber dates
+    # can not use tis::ti upon EARLY nber dates 
     # tis::ti(<date>, "daily")
     # Error in ymdToTi(ymd, tif[1]) : ymd too early for tif
     
-    subdaterange <-  seq(zoo::as.Date(as.character(x["Start"]), format = "%Y%m%d"), 
+    # browser( expr = { zoo::as.Date(as.character(x["Start"]  ), format = "%Y%m%d") == zoo::as.Date("2001-04-01") } )
+    
+    if(is.null(window_width)) {
+      seq_start_date <- zoo::as.Date(as.character(x["Start"]  ), format = "%Y%m%d")
+    } else if(window_width == "growing") {
+      seq_start_date <- first_date
+    }
+    
+    subdaterange <-  seq(seq_start_date, 
                          zoo::as.Date(as.character(x["End"]  ), format = "%Y%m%d"), 
                          by = "day")
     
     subindex <- index(xts(,dates)[subdaterange])
     if(!length(subindex) && !empties) { return(invisible()) } else { return(subindex) }
     
-  }, dates = dates, empties = empties) -> time_slices
+  }, dates = dates, empties = empties, window_width = window_width, first_date = first_date) -> time_slices
   
-  if(!empties) time_slices <- time_slices[!sapply(time_slices, is.null)]
+  if(!empties) {
+    time_slices <- time_slices[!sapply(time_slices, is.null)]
+    names(time_slices) <- NULL
+  }
   
   if(!long_timeslices) { return(time_slices) } else {
     
@@ -205,7 +252,7 @@ get_nber_timeslices <- function(dates, empties = TRUE, long_timeslices = FALSE) 
 #  $ 32: Date[1:8], format: "2001-04-30" "2001-05-31" ...
 #  $ 33: Date[1:18], format: "2008-01-31" "2008-02-29" ...
 
-# nber_timeslices_no_empties_long_timeslices <- get_nber_timeslices(dates, empties = FALSE, long_timeslices = TRUE)
+# nber_timeslices_no_empties_long_timeslices <- get_nber_timeslices(dates, long_timeslices = TRUE)
 # nber_timeslices_no_empties_long_timeslices[[3]]
 #  [1] "1980-08-31" "1980-09-30" "1980-10-31" "1980-11-30" "1980-12-31"
 #  [6] "1981-01-31" "1981-02-28" "1981-03-31" "1981-04-30" "1981-05-31"
@@ -214,9 +261,25 @@ get_nber_timeslices <- function(dates, empties = TRUE, long_timeslices = FALSE) 
 # [21] "1982-04-30" "1982-05-31" "1982-06-30" "1982-07-31" "1982-08-31"
 # [26] "1982-09-30" "1982-10-31" "1982-11-30"
 
+# nber_timeslices_no_empties_long_timeslices <- get_nber_timeslices(dates, long_timeslices = TRUE, nber_dates_tranform_fun = identity)
+# nber_timeslices_no_empties_long_timeslices[[3]]
+#  [1] "1980-08-31" "1980-09-30" "1980-10-31" "1980-11-30" "1980-12-31" "1981-01-31" "1981-02-28" "1981-03-31" "1981-04-30" "1981-05-31"
+# [11] "1981-06-30" "1981-07-31" "1981-08-31" "1981-09-30" "1981-10-31" "1981-11-30" "1981-12-31" "1982-01-31" "1982-02-28" "1982-03-31"
+# [21] "1982-04-30" "1982-05-31" "1982-06-30" "1982-07-31" "1982-08-31" "1982-09-30" "1982-10-31" "1982-11-30
+
+# nber_timeslices_no_empties_long_timeslices_growing <- get_nber_timeslices(dates, empties = FALSE, window_width = "growing")
+# str(nber_timeslices_no_empties_long_timeslices_growing)
+# List of 7
+# : Date[1:11], format: "1970-01-31" "1970-02-28" "1970-03-31" "1970-04-30" ...
+# : Date[1:63], format: "1970-01-31" "1970-02-28" "1970-03-31" "1970-04-30" ...
+# : Date[1:127], format: "1970-01-31" "1970-02-28" "1970-03-31" "1970-04-30" ...
+# : Date[1:155], format: "1970-01-31" "1970-02-28" "1970-03-31" "1970-04-30" ...
+# : Date[1:255], format: "1970-01-31" "1970-02-28" "1970-03-31" "1970-04-30" ...
+# : Date[1:383], format: "1970-01-31" "1970-02-28" "1970-03-31" "1970-04-30" ...
+# : Date[1:474], format: "1970-01-31" "1970-02-28" "1970-03-31" "1970-04-30" ...
 
 
-
+ 
 # required to be here so can be seen by buildModel
 buildModel.caret <- function(quantmod,training.data,...) {
 
