@@ -120,6 +120,103 @@ ifelse.xts  <- function(test, yes, no) {
 #  NULL
 
 
+
+# NBER time slices
+# returns a list whereas each list element is a vector of dates
+#   dates: dates of dates(class Date) observations of test data ( to be split later into subsets )
+# empties: TRUE, if FALSE, do not include NBER list elements with no dates ( from parameter dates )
+# long_timeslices: include non-recession range that is before this recession range
+#   if I choose long_timeslices = TRUE, then I must choose empties = FALSE
+# 
+get_nber_timeslices <- function(dates, empties = TRUE, long_timeslices = FALSE) {
+  
+  # uses tis  nberDates
+  # uses plyr alply
+  
+  plyr::alply(tis::nberDates(), .margins = 1, .fun = function(x, dates, empties) { 
+    
+    require(xts)
+    
+    # can not use tis::ti upon EARLY nber dates
+    # tis::ti(<date>, "daily")
+    # Error in ymdToTi(ymd, tif[1]) : ymd too early for tif
+    
+    subdaterange <-  seq(zoo::as.Date(as.character(x["Start"]), format = "%Y%m%d"), 
+                         zoo::as.Date(as.character(x["End"]  ), format = "%Y%m%d"), 
+                         by = "day")
+    
+    subindex <- index(xts(,dates)[subdaterange])
+    if(!length(subindex) && !empties) { return(invisible()) } else { return(subindex) }
+    
+  }, dates = dates, empties = empties) -> time_slices
+  
+  if(!empties) time_slices <- time_slices[!sapply(time_slices, is.null)]
+  
+  if(!long_timeslices) { return(time_slices) } else {
+    
+    ts_index <- 0
+    nber_long_timeslices <- list()
+    for(ts in time_slices) {
+      ts_index <- ts_index + 1
+      
+      if(2 <= ts_index) {
+        
+        nber_long_timeslices  <-  c(nber_long_timeslices, list(dates[(end_of_last_nber_timeslice < dates) & (dates <=  tail(ts,1))]))
+        
+      } 
+      
+      end_of_last_nber_timeslice <- tail(ts,1)
+      
+    }
+    
+    return(nber_long_timeslices)
+    
+  }
+  
+}
+# e.g. month ends
+# dates <- unique(as.Date(zoo::as.yearmon(seq(zoo::as.Date("1970-01-01"), zoo::as.Date("2018-05-22"), by = "day")), frac = 1))
+
+# nber_timeslices <- get_nber_timeslices(dates)
+
+# length(nber_timeslices)
+# [1] 33
+
+# nber_timeslices[[26]]
+# Date of length 0
+
+# nber_timeslices[[27]]
+#  [1] "1970-01-31" "1970-02-28" "1970-03-31" "1970-04-30" "1970-05-31"
+#  [6] "1970-06-30" "1970-07-31" "1970-08-31" "1970-09-30" "1970-10-31"
+# [11] "1970-11-30"
+
+# nber_timeslices_no_empties <- get_nber_timeslices(dates, empties = FALSE)
+
+# length(nber_timeslices_no_empties)
+# [1] 7
+
+# str(nber_timeslices_no_empties)
+# List of 7
+#  $ 27: Date[1:11], format: "1970-01-31" "1970-02-28" ...
+#  $ 28: Date[1:16], format: "1973-12-31" "1974-01-31" ...
+#  $ 29: Date[1:6], format: "1980-02-29" "1980-03-31" ...
+#  $ 30: Date[1:16], format: "1981-08-31" "1981-09-30" ...
+#  $ 31: Date[1:8], format: "1990-08-31" "1990-09-30" ...
+#  $ 32: Date[1:8], format: "2001-04-30" "2001-05-31" ...
+#  $ 33: Date[1:18], format: "2008-01-31" "2008-02-29" ...
+
+# nber_timeslices_no_empties_long_timeslices <- get_nber_timeslices(dates, empties = FALSE, long_timeslices = TRUE)
+# nber_timeslices_no_empties_long_timeslices[[3]]
+#  [1] "1980-08-31" "1980-09-30" "1980-10-31" "1980-11-30" "1980-12-31"
+#  [6] "1981-01-31" "1981-02-28" "1981-03-31" "1981-04-30" "1981-05-31"
+# [11] "1981-06-30" "1981-07-31" "1981-08-31" "1981-09-30" "1981-10-31"
+# [16] "1981-11-30" "1981-12-31" "1982-01-31" "1982-02-28" "1982-03-31"
+# [21] "1982-04-30" "1982-05-31" "1982-06-30" "1982-07-31" "1982-08-31"
+# [26] "1982-09-30" "1982-10-31" "1982-11-30"
+
+
+
+
 # required to be here so can be seen by buildModel
 buildModel.caret <- function(quantmod,training.data,...) {
 
@@ -712,7 +809,7 @@ get_up_side_down_side <- function(){
   #       https://github.com/dmlc/xgboost/blob/master/demo/kaggle-higgs/higgs-train.R
   # 
   #   max_delta_step [default=0]
-  #     Maximum delta step we allow each tree’s weight estimation to be.
+  #     Maximum delta step we allow each tree's weight estimation to be.
   #     it might help in logistic regression when class is extremely imbalanced. 
   #     Set it to value of 1-10 might help control the update
   # 
@@ -1333,7 +1430,7 @@ getSymbols <- function (Symbols = NULL, env = parent.frame(), reload.Symbols = F
 # NOT the same as "env = e"
 # assign("AAPL", getSymbols(list(AAPL = "yahoo"), auto.assign = F), envir = e)
 # ls.str(e)
-# AAPL : An ‘xts’ object on 2007-01-03/2018-04-24 containing:
+# AAPL : An 'xts' object on 2007-01-03/2018-04-24 containing:
 #   Data: num [1:2847, 1:6] 12.3 12 12.3 12.3 12.3 ...
 #  - attr(*, "dimnames")=List of 2
 #   ..$ : NULL
