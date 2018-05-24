@@ -132,7 +132,7 @@ ifelse.xts  <- function(test, yes, no) {
 # window_width: if "growing" then the start value is the beginning of "nber dates"
 # long_timeslices == TRUE AND window_width == "growing" ARE mutually exclusive of each other
 # 
-get_nber_timeslices <- function(dates, empties = TRUE, long_timeslices = FALSE, nber_dates_tranform_fun = NULL, window_width = NULL) {
+get_nber_timeslices <- function(dates, empties = TRUE, long_timeslices = FALSE, window_width = NULL) {
   
   # uses tis  nberDates
   # uses plyr alply
@@ -148,22 +148,20 @@ get_nber_timeslices <- function(dates, empties = TRUE, long_timeslices = FALSE, 
   # https://fred.stlouisfed.org/data/USREC.txt
   # https://fred.stlouisfed.org/series/USREC
   
+                # jagget start/end *near* month end
   nber_dates <- tis::nberDates()
   
-  # nber_dates_tranform_fun
-  
-  # if I want to change the month/begin/end date
-  # 
-  # nber_dates_tranform_fun
-  # 
-  # function(x) {
-    # x["Start"] <- zoo::as.Date(as.character(x["Start"]))
-    # x["End"]   <- zoo::as.Date(as.character(x["End"]))
-  # }
-  
-  # if I want to change the month/begin/end date
-  if(!is.null(nber_dates_tranform_fun)) 
-    nber_dates <- plyr::aaply(nber_dates, .margins = 1, .fun = match.fun(nber_dates_tranform_fun) )
+  # nber_dates tranform
+
+  # force all 
+  nber_dates_tranform_fun <- function(x) {
+    # force start dates to month end ( in the evening after the market has closed)
+    x["Start"] <-as.numeric(format(zoo::as.Date(as.yearmon(zoo::as.Date(as.character(x["Start"]), format = "%Y%m%d") - 5), frac = 1), "%Y%m%d"))
+    # force end dates to month end ( in the evening after the market as closed )
+    x["End"]   <-as.numeric(format(zoo::as.Date(as.yearmon(zoo::as.Date(as.character(x["End"]  ), format = "%Y%m%d") - 5), frac = 1), "%Y%m%d"))
+    return(x)
+  }
+  nber_dates <- plyr::aaply(nber_dates, .margins = 1, .fun = match.fun(nber_dates_tranform_fun) )
   
   if(!is.null(window_width) && (window_width == "growing")) {
     first_date <-zoo::as.Date(as.character(nber_dates[1,"Start"][[1]]), format = "%Y%m%d")
@@ -244,28 +242,20 @@ get_nber_timeslices <- function(dates, empties = TRUE, long_timeslices = FALSE, 
 
 # str(nber_timeslices_no_empties)
 # List of 7
-#  $ 27: Date[1:11], format: "1970-01-31" "1970-02-28" ...
-#  $ 28: Date[1:16], format: "1973-12-31" "1974-01-31" ...
-#  $ 29: Date[1:6], format: "1980-02-29" "1980-03-31" ...
-#  $ 30: Date[1:16], format: "1981-08-31" "1981-09-30" ...
-#  $ 31: Date[1:8], format: "1990-08-31" "1990-09-30" ...
-#  $ 32: Date[1:8], format: "2001-04-30" "2001-05-31" ...
-#  $ 33: Date[1:18], format: "2008-01-31" "2008-02-29" ...
+# $ : Date[1:11], format: "1970-01-31" "1970-02-28" "1970-03-31" ...
+# $ : Date[1:17], format: "1973-11-30" "1973-12-31" "1974-01-31" ...
+# $ : Date[1:7], format: "1980-01-31" "1980-02-29" "1980-03-31" ...
+# $ : Date[1:17], format: "1981-07-31" "1981-08-31" "1981-09-30" ...
+# $ : Date[1:9], format: "1990-07-31" "1990-08-31" "1990-09-30" ...
+# $ : Date[1:9], format: "2001-03-31" "2001-04-30" "2001-05-31" ...
+# $ : Date[1:19], format: "2007-12-31" "2008-01-31" "2008-02-29" ...
 
 # nber_timeslices_no_empties_long_timeslices <- get_nber_timeslices(dates, long_timeslices = TRUE)
 # nber_timeslices_no_empties_long_timeslices[[3]]
-#  [1] "1980-08-31" "1980-09-30" "1980-10-31" "1980-11-30" "1980-12-31"
-#  [6] "1981-01-31" "1981-02-28" "1981-03-31" "1981-04-30" "1981-05-31"
-# [11] "1981-06-30" "1981-07-31" "1981-08-31" "1981-09-30" "1981-10-31"
-# [16] "1981-11-30" "1981-12-31" "1982-01-31" "1982-02-28" "1982-03-31"
-# [21] "1982-04-30" "1982-05-31" "1982-06-30" "1982-07-31" "1982-08-31"
-# [26] "1982-09-30" "1982-10-31" "1982-11-30"
-
-# nber_timeslices_no_empties_long_timeslices <- get_nber_timeslices(dates, long_timeslices = TRUE, nber_dates_tranform_fun = identity)
-# nber_timeslices_no_empties_long_timeslices[[3]]
-#  [1] "1980-08-31" "1980-09-30" "1980-10-31" "1980-11-30" "1980-12-31" "1981-01-31" "1981-02-28" "1981-03-31" "1981-04-30" "1981-05-31"
-# [11] "1981-06-30" "1981-07-31" "1981-08-31" "1981-09-30" "1981-10-31" "1981-11-30" "1981-12-31" "1982-01-31" "1982-02-28" "1982-03-31"
-# [21] "1982-04-30" "1982-05-31" "1982-06-30" "1982-07-31" "1982-08-31" "1982-09-30" "1982-10-31" "1982-11-30
+# [1] "1980-08-31" "1980-09-30" "1980-10-31" "1980-11-30" "1980-12-31" "1981-01-31" "1981-02-28" "1981-03-31"
+# [9] "1981-04-30" "1981-05-31" "1981-06-30" "1981-07-31" "1981-08-31" "1981-09-30" "1981-10-31" "1981-11-30"
+# [17] "1981-12-31" "1982-01-31" "1982-02-28" "1982-03-31" "1982-04-30" "1982-05-31" "1982-06-30" "1982-07-31"
+# [25] "1982-08-31" "1982-09-30" "1982-10-31" "1982-11-30"
 
 # nber_timeslices_no_empties_long_timeslices_growing <- get_nber_timeslices(dates, empties = FALSE, window_width = "growing")
 # str(nber_timeslices_no_empties_long_timeslices_growing)
