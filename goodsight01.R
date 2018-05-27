@@ -3222,10 +3222,27 @@ expand_xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o
 }
 
 
-# goodsight01.R
-# expand_xts
 
-# 
+lag_then_pctchg_xts <- function(x = NULL, whiches = NULL, o_args = NULL) {
+  
+  require(magrittr)
+  
+  res_list <- list()
+  for(which in whiches) {
+    expand_xts(unrate, "lag.xts", which, alt_name = "lag") %>%
+      expand_xts("get_pctchg_xts", which, alt_name = "pctchg", o_args = if(is.null( o_args)) { NULL } else { o_args }  ) ->
+      res
+    # as.list.xts
+    res_list <- c(list(), res_list, as.list(res))
+  }
+  res <- do.call(merge.xts,res_list)
+  return(res)
+  
+}
+# res <- lag_then_pctchg_xts(unrate, 1:6, o_args = list(to_future = TRUE))
+# WORKS
+
+
 
 # goodsight_tests()
 goodsight_tests <- function() {
