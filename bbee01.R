@@ -148,12 +148,12 @@ get_nber_timeslices <- function(dates, empties = TRUE, long_timeslices = FALSE, 
   # https://fred.stlouisfed.org/data/USREC.txt
   # https://fred.stlouisfed.org/series/USREC
   
-                # jagget start/end *near* month end
+  # jagged start/end *near* month end
   nber_dates <- tis::nberDates()
   
   # nber_dates tranform
 
-  # force all 
+  # force all to be 'end of month' (eom)
   nber_dates_tranform_fun <- function(x) {
     # force start dates to month end ( in the evening after the market has closed)
     x["Start"] <-as.numeric(format(zoo::as.Date(as.yearmon(zoo::as.Date(as.character(x["Start"]), format = "%Y%m%d") - 5), frac = 1), "%Y%m%d"))
@@ -1655,6 +1655,9 @@ as.quantmod.data.frame  <- function(x, outcomename, order.by, na.rm = TRUE, ...)
   
   # place single column where specifyModel ( getModelData ( exists ) ) can find
   
+  # NOTE ALSO EXISTS: as.list.xts() ... 
+  #                   USAGE c(as.list.xts(),as.list.xts())
+  # 
   Symbols <- lapply(x, function(x) { 
     as.xts(x, order.by = order.by)
   }) 
@@ -1937,6 +1940,166 @@ get_up_side_down_side2 <- function(){
 
 }
 # up_side_down_side2 <- get_up_side_down_side2()
+
+
+get_up_side_down_side3 <- function(){
+  
+  # SEARCH for LEFT_OFF
+  
+  ops <- options()
+  
+  options(width = 10000) 
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) 
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  require(xts)      # merge.xts
+  require(TTR)      # ROC, SMA
+  require(quantmod) # monthlyReturn
+  require(PerformanceAnalytics) # Return.portfolio # table.CalendarReturns
+  # uses R.utils    hpaste
+  # uses lubridate  `%m+%`
+  `%m+%` <- lubridate::`%m+%`
+  
+  message("begin get_up_side_down_side3")
+  
+  ### ### setup
+  
+  all_possible_instruments          <- xts(, zoo::as.Date(0)[0])
+  all_possible_instruments_log_rets <- xts(, zoo::as.Date(0)[0])
+  
+  will5000ind          <- get_fred_wilshire5000_eom_xts()
+  will5000ind_log_rets <- ROC(will5000ind)               # which(is.na(will5000ind_log_rets)) # logrithmic
+  #                   # 1st empty xts
+  will5000ind_log_rets[is.na(will5000ind_log_rets)] <- 0 # usually just the 1st observation
+  
+  # will5000ind
+  all_possible_instruments          <- merge.xts(all_possible_instruments         , will5000ind         )
+  # will5000ind                       
+  all_possible_instruments_log_rets <- merge.xts(all_possible_instruments_log_rets, will5000ind_log_rets)
+  
+  
+  # "cash"             # no returns good/bad
+  cash          <- xts(rep(0,NROW(all_possible_instruments_log_rets)),index(all_possible_instruments_log_rets))
+  colnames(cash)          <- "cash"
+  cash_log_rets <- xts(rep(0,NROW(all_possible_instruments_log_rets)),index(all_possible_instruments_log_rets))
+  colnames(cash_log_rets) <- "cash"
+  
+  # "cash", "will5000ind"                        "cash"    +     "will5000ind"
+  all_possible_instruments          <- merge.xts(cash         , all_possible_instruments         )
+  all_possible_instruments_log_rets <- merge.xts(cash_log_rets, all_possible_instruments_log_rets)
+  
+  all_possible_indicators <- xts(, zoo::as.Date(0)[0])
+  
+  # unrate
+  unrate <- get_fred_civil_unemp_rate_eom_xts()
+  colnames(unrate) <- "unrate"
+  
+  # "unrate"                                                    "unrate"
+  all_possible_indicators <- merge.xts(all_possible_indicators, unrate)
+  
+  # 100,000 dollars to start
+  initial_value <- 100000
+  
+  ### ###
+  
+           # c - order is NOT garanteed
+  #     # all         "cash", "will5000ind"              "unrate"         
+  Symbols <- c(as.list(all_possible_instruments),as.list(all_possible_indicators))
+  Symbols <- list2env(Symbols)
+  
+  # ALL machine LOGIC goes HERE
+  # 
+  #                                function(<all_possible_indicators>,TTR,lag)
+  #             # machine learning function( ifelse, SMA, lag , |) # index(all_possible_indicators/unrate)
+  #                                                                #  NROW(all_possible_indicators)                 
+  
+  #                                       function(<all_possible_indicators>,TTR,lag)
+
+  
+  # LEFT_OFF
+  res <- lag_then_pctchg_xts(unrate, 1:6, o_args = list(to_future = TRUE))
+  # as.quantmod.data.frame 
+  
+  # xor ...
+  specmodel <- specifyModel(will5000ind ~ PLACEHOLDER                                 , na.rm = FALSE, source.envir = Symbols)
+  
+  tg <- expand.grid(
+    nrounds   =  100, 
+    eta       =  c(0.1,0.01),
+    max_depth =  c(4,6,8,10),
+    gamma     =  0,
+    colsample_bytree = c(1,0.5),
+    min_child_weight = 1,
+    subsample        = c(1,0.5)
+  )
+  tc <- caret::trainControl(method = "cv", number = 5)
+  
+  builtmodel <- buildModel(specmodel,method="train",training.per=c("1970-12-31","2006-12-31"), method_caret = 'xgbTree', tuneGrid = tg, trControl = tc)
+  
+  getted_model_data <- getModelData(builtmodel, na.rm = TRUE, source.envir = Symbols)
+  
+  modeldata <- modelData(getted_model_data, data.window = c("2007-01-31","2018-03-31"), exclude.training = TRUE)
+  
+  #                       # dispatch on caret::train
+  fitted  <- predictModel(getted_model_data@fitted.model, modeldata)
+  fitted  <- as.xts(fitted, index(modeldata))
+  
+  # uses S3 ifelse.xts
+  # strategy/rule weights
+  # "will5000ind"
+  will5000ind_wt <- ifelse(fitted > 0, rep(1,NROW(fitted)), rep(0,NROW(fitted)))
+  colnames(will5000ind_wt) <- "will5000ind"
+  
+  # (IF ANY?!?)
+  # early on - many NAs - not enough info: just CHOSE to be 'IN the instrument'
+  will5000ind_wt[is.na(will5000ind_wt)] <- 1 # 100% allocated
+  colnames(will5000ind_wt) <- "will5000ind"
+  
+  # last # what percent % is "left over"
+  cash_wt <- xts(rep(1,NROW(will5000ind_wt)),index(will5000ind_wt)) - rowSums(will5000ind_wt)
+  colnames(cash_wt) <- "cash"
+  
+  # "cash" "will5000ind"
+  will5000ind_rules_wts <- merge(cash_wt, will5000ind_wt)
+  # tomorrow morning
+  index(will5000ind_rules_wts) <- index(will5000ind_rules_wts) + 1
+  
+  rm(will5000ind_wt, cash_wt)
+  
+  message("")
+  message("    will5000ind_rules_wts   ")
+  print(tail(will5000ind_rules_wts))
+  
+  will5000ind_portf <- Return.portfolio(R = all_possible_instruments_log_rets[,match(colnames(will5000ind_rules_wts), colnames(all_possible_instruments_log_rets))], weights =  will5000ind_rules_wts, value = initial_value, verbose = TRUE)
+  # "portfolio.returns"
+  will5000ind_portf_log_rets <- will5000ind_portf$returns
+  
+  # default class yearmon # type="arithmetic"
+  will5000ind_portf_nonlog_monthly_rets <- monthlyReturn(exp(cumsum(will5000ind_portf_log_rets)) * initial_value)
+  
+  # other table values: just displays whatever is input
+  message("   View unrate_will5000ind_portf_nonlog_monthly_rets   ")
+  View(tc(will5000ind_portf_nonlog_monthly_rets, digits = 1, as.perc = TRUE, geometric = TRUE))   
+  
+  ### ###
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  message("end get_up_side_down_side3")
+  
+  up_side_down_side3 <- NULL
+  return(up_side_down_side3)
+  
+}
+# up_side_down_side3 <- get_up_side_down_side3()
 
 
 # bbee01.R
