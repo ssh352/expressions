@@ -120,6 +120,22 @@ ifelse.xts  <- function(test, yes, no) {
 #  NULL
 
 
+intersect.default <- function (x, y)
+{
+  intersect(x, y)
+}
+
+intersect.Date <- function (x, y) 
+{
+  unique(y[match(x, y, 0L)])
+}
+
+intersect      <- function (x, y) 
+{
+  UseMethod("intersect")
+}
+
+
 
 # NBER time slices
 # returns a list whereas each list element is a vector of dates
