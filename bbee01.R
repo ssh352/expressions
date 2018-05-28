@@ -125,12 +125,13 @@ ifelse.xts  <- function(test, yes, no) {
 # returns a list whereas each list element is a vector of dates
 #   dates: dates of dates(class Date) observations of test data ( to be split later into subsets )
 #          limiter of the observations returned
-# empties: TRUE, if FALSE, do not include NBER list elements with no dates ( from parameter dates )
+# empties: TRUE, if FALSE, do not include NBER list elements that have "no(zero) dates" ( from parameter dates )
 # long_timeslices: include non-recession range that is before this recession range
 #   if I choose long_timeslices = TRUE, then internall chooses and sets empties = FALSE
 #     so the empties parameter is ignored
+#   long_timeslices == TRUE AND window_width == "growing" ARE mutually exclusive of each other
 # window_width: if "growing" then the start value is the beginning of "nber dates"
-# long_timeslices == TRUE AND window_width == "growing" ARE mutually exclusive of each other
+#               long_timeslices == TRUE AND window_width == "growing" ARE mutually exclusive of each other
 # 
 get_nber_timeslices <- function(dates, empties = TRUE, long_timeslices = FALSE, window_width = NULL) {
   
@@ -1963,8 +1964,8 @@ get_up_side_down_side3 <- function(){
   require(TTR)      # ROC, SMA
   require(quantmod) # monthlyReturn
   require(PerformanceAnalytics) # Return.portfolio # table.CalendarReturns
-  # uses R.utils    hpaste
-  # uses lubridate  `%m+%`
+  # uses lag_then_pctchg_xts
+  
   `%m+%` <- lubridate::`%m+%`
   
   message("begin get_up_side_down_side3")
@@ -2024,7 +2025,9 @@ get_up_side_down_side3 <- function(){
 
   
   # LEFT_OFF
-  res <- lag_then_pctchg_xts(unrate, 1:6, o_args = list(to_future = TRUE))
+  these_indicators <- lag_then_pctchg_xts(unrate, 1:6, o_args = list(to_future = TRUE))
+  these_timeslices <- get_nber_timeslices(index(these_indicators), empties = FALSE)
+  
   # as.quantmod.data.frame 
   
   # xor ...
