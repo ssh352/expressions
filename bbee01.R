@@ -2039,15 +2039,42 @@ get_up_side_down_side3 <- function(){
   
   #                                       function(<all_possible_indicators>,TTR,lag)
 
-  
-  # LEFT_OFF
   these_indicators <- lag_then_pctchg_xts(unrate, 1:6, o_args = list(to_future = TRUE))
+  # colnames(these_indicators)
+  # [1] "unrate.lag.1.pctchg.1" "unrate.lag.2.pctchg.2" "unrate.lag.3.pctchg.3" "unrate.lag.4.pctchg.4" "unrate.lag.5.pctchg.5" "unrate.lag.6.pctchg.6"
+  
   these_timeslices <- get_nber_timeslices(index(these_indicators), empties = FALSE)
+  # str(these_timeslices)
+  # List of 11
+  # $ : Date[1:12], format: "1948-11-30" "1948-12-31" "1949-01-31" "1949-02-28" ...
+  # $ : Date[1:11], format: "1953-07-31" "1953-08-31" "1953-09-30" "1953-10-31" ...
+  # $ : Date[1:9], format: "1957-08-31" "1957-09-30" "1957-10-31" "1957-11-30" ...
+  # $ : Date[1:11], format: "1960-04-30" "1960-05-31" "1960-06-30" "1960-07-31" ...
+  # $ : Date[1:12], format: "1969-12-31" "1970-01-31" "1970-02-28" "1970-03-31" ...
+  # $ : Date[1:17], format: "1973-11-30" "1973-12-31" "1974-01-31" "1974-02-28" ...
+  # $ : Date[1:7], format: "1980-01-31" "1980-02-29" "1980-03-31" "1980-04-30" ...
+  # $ : Date[1:17], format: "1981-07-31" "1981-08-31" "1981-09-30" "1981-10-31" ...
+  # $ : Date[1:9], format: "1990-07-31" "1990-08-31" "1990-09-30" "1990-10-31" ...
+  # $ : Date[1:9], format: "2001-03-31" "2001-04-30" "2001-05-31" "2001-06-30" ...
+  # $ : Date[1:19], format: "2007-12-31" "2008-01-31" "2008-02-29" "2008-03-31" ...
+ 
+                                     # y data                         # x TARGET data                                         # generated X data
+  all_train_test_validation_index <- index(will5000ind) %>% intersect(index(xts(,do.call(c,these_timeslices)))) %>% intersect(index(these_indicators))
   
-  # as.quantmod.data.frame 
+  # end of "year 2000 recession"
+  all_train_test_index <- index(xts(,all_train_test_validation_index)["::2001-11-30"])
   
+  # after "year 2000 recession"
+  all_validation_index <- index(xts(,all_train_test_validation_index)["2001-12-31::"])
+  
+  # will5000ind.futpctchg.3 
+  this_predictee <- expand_xts(will5000ind, "get_pctchg_xts", 3, alt_name = "futpctchg", o_args = list(to_future = TRUE))
+  
+  # S3 as.quantmod.data.frame
+  # *** na.rm = TRUE (default ) ***
+  quantmod <- as.quantmod(as.data.frame(merge.xts(this_predictee, these_indicators)[all_train_test_validation_index]), outcomename = "will5000ind.futpctchg.3", order.by = all_train_test_validation_index)
   # xor ...
-  specmodel <- specifyModel(will5000ind ~ PLACEHOLDER                                 , na.rm = FALSE, source.envir = Symbols)
+  # specmodel <- specifyModel(PREDICTEE ~ INDICATORS  , na.rm = FALSE, source.envir = Symbols)
   
   tg <- expand.grid(
     nrounds   =  100, 
@@ -2058,17 +2085,22 @@ get_up_side_down_side3 <- function(){
     min_child_weight = 1,
     subsample        = c(1,0.5)
   )
+                            # intermixed: train_test
   tc <- caret::trainControl(method = "cv", number = 5)
   
-  builtmodel <- buildModel(specmodel,method="train",training.per=c("1970-12-31","2006-12-31"), method_caret = 'xgbTree', tuneGrid = tg, trControl = tc)
+  builtmodel <- buildModel(quantmod, method="train",training.per=c(as.character(head(index(quantmod@model.data),1)), as.character(tail(all_train_test_index,1))), method_train = "xgbTree", tuneGrid = tg, trControl = tc, verbose = 1)
   
-  getted_model_data <- getModelData(builtmodel, na.rm = TRUE, source.envir = Symbols)
+  all_modeldata <- getModelData(builtmodel, na.rm = TRUE, source.envir = list2env(as.list(quantmod@model.data)))
   
-  modeldata <- modelData(getted_model_data, data.window = c("2007-01-31","2018-03-31"), exclude.training = TRUE)
+  modeldata <- modelData(all_modeldata, data.window = all_validation_index)
   
   #                       # dispatch on caret::train
-  fitted  <- predictModel(getted_model_data@fitted.model, modeldata)
+  fitted  <- predictModel(all_modeldata@fitted.model, modeldata)
   fitted  <- as.xts(fitted, index(modeldata))
+  colnames(fitted) <- "fitted" 
+  # dygraphs::dygraph(merge.xts(this_predictee, fitted)[all_validation_index])
+  # **LEFT_OFF ** (LOOKS PROMISING: AT LEAST BELOW ZERO:) # NEED TO ADD A !PANIC VARIABLE
+  # NEXT, ABOUT DATA younger than 2007-08-9 recession: create: new_extended_validation_index
   
   # uses S3 ifelse.xts
   # strategy/rule weights
