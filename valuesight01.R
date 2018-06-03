@@ -1,906 +1,240 @@
 
-# valuesight01.R
+
+# goodsight01.R
 # R 3.4.3 commonly debugged with RStudio-1.1.383
 
+# Note: sinew::makeOxygen helped generate documentation template
 
-get_large_nationals_yearly_gdp_weights_by_month <- function(keep_eom_date_since = "2003-01-01") {
-
-  message("Begin function: get_large_nationals_yearly_gdp_weights_by_month")
-  
-  # R version 3.4.2 (2017-09-28)
-  # NOV 2017
-  
-  oldtz <- Sys.getenv('TZ')
-  if(oldtz=='') {
-    Sys.setenv(TZ="UTC")
-  }
-
-  # Loading required package: RJSONIO
-  # requires package WDI ( otherwise WDI::WDI produces the error: "object 'WDI_data' not found" )
-  require(WDI)
-  
-  # uses package tidyr function spread           # tidyr::spread
-  # uses package DataCombine function MoveFront  # DataCombine::MoveFront
-  # uses package tidyr function fill_            # tidyr::fill_
-  
-  # countries of interest
-  # largest/most-affectioning countries that I would actually care about
-  #
-  # since 1960(NY.GDP.MKTP.CD)
-  large_nationals <- 
-  c(
-     "united_states"
-   , "china"
-   , "japan"
-   , "germany"            # since 1970(NY.GDP.MKTP.CD)
-   , "united_kingdom"
-   , "india"
-   , "france"
-   , "brazil"
-   , "italy"
-   , "canada"
-   , "russian_federation" # since 1989(NY.GDP.MKTP.CD)
-   , "korea_rep"
-   , "australia"
-   , "spain"
-  )
-  
-  # weightings 
-  # GDP (current US$)
-  # World Bank national accounts data, and OECD National Accounts data files.
-  # GDP (current US$) ... scale it ...
-  # https://data.worldbank.org/indicator/NY.GDP.MKTP.CD
-  # Download XLS (  API_NY.GDP.MKTP.CD_DS2_en_excel_v2.xls )
-
-  gross_domestic_product <- WDI(country = "all", start="1900", end = "2100", indicator = "NY.GDP.MKTP.CD")
-  
-  # clean
-  gross_domestic_product<- data.frame(lapply(gross_domestic_product, function(x) { 
-    if(is.character(x)) {
-      # prevent 'drop to factor ... all 1s'
-      # so I can do tidyr and PostgreSQL
-      x <- tolower(x)
-      x <- gsub("(,|[.])","", x)
-      x <- gsub("(&|'| |-)","_", x)
-    }
-    return(x)
-  }), stringsAsFactors = FALSE)
-
-  # rename columns
-  names(gross_domestic_product) <- tolower(names(gross_domestic_product))
-  # rename NY.GDP.MKTP.CD" ... -> ... "measure"
-  names(gross_domestic_product)[3] <- "measure"
-
-  # add a 'real' date
-  gross_domestic_product[["dateindex_dt"]] <- zoo::as.Date(paste0(gross_domestic_product[["year"]], "-12-31"))
-  # change column name 
-  names(gross_domestic_product)[match("year",names(gross_domestic_product))] <- "dateindex" 
-  # add an 'integer' date
-  gross_domestic_product[["dateindex"]] <- as.integer(zoo::as.Date(gross_domestic_product[["dateindex_dt"]]))
-
-  # position columns
-  gross_domestic_product <- DataCombine::MoveFront(gross_domestic_product, c("dateindex", "dateindex_dt"))
-  # sort rows
-  gross_domestic_product <- dplyr::arrange_(gross_domestic_product, "dateindex")
-
-  # reduce to my data of interest
-  gross_domestic_product <- gross_domestic_product[which(gross_domestic_product$country %in% 
-    large_nationals
-      )
-  ,, drop = FALSE]
-  
-  # drop column ( because will produce a 'unique column value, and 'spread' will not work correctly )
-  gross_domestic_product <- gross_domestic_product[ , !names(gross_domestic_product) %in% "iso2c",drop = FALSE]
-
-  # reshape long to wide
-  gross_domestic_product_spreaded_country_measure <- tidyr::spread(gross_domestic_product, key = "country", value = "measure")
-
-  # rename columns to "<country>_gdp"
-  names(gross_domestic_product_spreaded_country_measure) <- gsub("(^.{1,8}$|^.{9}(?<!dateindex).*)", "\\1__gdp", names(gross_domestic_product_spreaded_country_measure ), perl = TRUE )
-
-  # combine dates: observation dates + end of month dates ( since Jan 2003 )
-  gross_domestic_product_spreaded_country_measure_only_dateindex_dt_plus_eom_dates <-
-  data.frame(dateindex_dt = unique(sort(c(gross_domestic_product_spreaded_country_measure$dateindex_dt, zoo::as.Date(zoo::as.yearmon(seq(as.Date(keep_eom_date_since), Sys.Date(), by = "month")), frac = 1)))))
-
-  # put end of month dates into the data.frame
-  gross_domestic_product_spreaded_country_measure_plus_eom_dates <- 
-  merge(gross_domestic_product_spreaded_country_measure, gross_domestic_product_spreaded_country_measure_only_dateindex_dt_plus_eom_dates, all = TRUE)
-  # calculate (for mostly new dateindex_dts) 'dateindex'
-  gross_domestic_product_spreaded_country_measure_plus_eom_dates[["dateindex"]] <- as.integer(zoo::as.Date(gross_domestic_product_spreaded_country_measure_plus_eom_dates[["dateindex_dt"]]))
-  
-  # garantee column order
-  gross_domestic_product_spreaded_country_measure_plus_eom_dates <- DataCombine::MoveFront(gross_domestic_product_spreaded_country_measure_plus_eom_dates, c("dateindex","dateindex_dt"))
-
-  # last observation carried forward
-  gross_domestic_product_spreaded_country_measure_plus_eom_dates_w_locf <-
-  tidyr::fill_(gross_domestic_product_spreaded_country_measure_plus_eom_dates, colnames(gross_domestic_product_spreaded_country_measure_plus_eom_dates))
-
-  # (from 2003 onward) keep dates that are 'end of month dates' 
-  # many rows are removed
-  gross_domestic_product_spreaded_country_measure_eom <- 
-  gross_domestic_product_spreaded_country_measure_plus_eom_dates_w_locf[
-    gross_domestic_product_spreaded_country_measure_plus_eom_dates_w_locf$dateindex_dt %in% zoo::as.Date(zoo::as.yearmon(seq(as.Date(keep_eom_date_since), Sys.Date(), by = "month")), frac = 1)
-  ,, drop = FALSE]
-  
-  # because many rows are removed, re-number
-  row.names(gross_domestic_product_spreaded_country_measure_eom) <- seq_along(row.names(gross_domestic_product_spreaded_country_measure_eom))
-  
-  # prepare 
-  gross_domestic_product_spreaded_country_measure_weighted_eom <- gross_domestic_product_spreaded_country_measure_eom
-  # rename columns from "<country>_gdp" to "<country>_gdp_wtd"
-  names(gross_domestic_product_spreaded_country_measure_weighted_eom) <- gsub("(^.{1,8}$|^.{9}(?<!dateindex).*)", "\\1_wdt", names(gross_domestic_product_spreaded_country_measure_weighted_eom), perl = TRUE )
-
-  # Weighted percentage contribution by row in R
-  # https://stackoverflow.com/questions/36086376/weighted-percentage-contribution-by-row-in-r
-  # rebalance
-  # na.rm = TRUE
-  # "germany"            # since 1970(NY.GDP.MKTP.CD)
-  # "russian_federation" # since 1989(NY.GDP.MKTP.CD)
-  gross_domestic_product_spreaded_country_measure_weighted_eom[,grep("(^.{1,8}$|^.{9}(?<!dateindex).*)", names(gross_domestic_product_spreaded_country_measure_weighted_eom), perl = TRUE, value = TRUE)] <-
-  sweep(
-                as.matrix(gross_domestic_product_spreaded_country_measure_weighted_eom[,grep("(^.{1,8}$|^.{9}(?<!dateindex).*)", names(gross_domestic_product_spreaded_country_measure_weighted_eom), perl = TRUE, value = TRUE)]) 
-    , 1
-    , rowSums(  as.matrix(gross_domestic_product_spreaded_country_measure_weighted_eom[,grep("(^.{1,8}$|^.{9}(?<!dateindex).*)", names(gross_domestic_product_spreaded_country_measure_weighted_eom), perl = TRUE, value = TRUE)]), na.rm = TRUE  )
-    , FUN="/"
-  )
-  
-  on.exit({Sys.setenv(TZ=oldtz)})
-  
-  message("End function: get_large_nationals_yearly_gdp_weights_by_month")
-  
-  return(gross_domestic_product_spreaded_country_measure_weighted_eom)
-  
-}
-# NOV 12 2017
-# NOV 12 2017
-# res <- get_large_nationals_yearly_gdp_weights_by_month()
-# head(res[, colnames(res) %in% c("dateindex","dateindex_dt","china__gdp_wdt","united_states__gdp_wdt")])
-# tail(res[, colnames(res) %in% c("dateindex","dateindex_dt","china__gdp_wdt","united_states__gdp_wdt")])
+# DESCRIPTION
 # 
-# # >  head(res[, colnames(res) %in% c("dateindex","dateindex_dt","china__gdp_wdt","united_states__gdp_wdt")])
-#   dateindex dateindex_dt china__gdp_wdt united_states__gdp_wdt
-# 1     12083   2003-01-31     0.05447564              0.4066555
-# 2     12111   2003-02-28     0.05447564              0.4066555
-# 3     12142   2003-03-31     0.05447564              0.4066555
-# 4     12172   2003-04-30     0.05447564              0.4066555
-# 5     12203   2003-05-31     0.05447564              0.4066555
-# 6     12233   2003-06-30     0.05447564              0.4066555
+# Package: expandxts
+# Version: 0.0.0.9000
+# Title: Real World Xts Assistance functions
+# Description: xts helper functions.
+#   In general, unless an exception is noted otherwise,
+#   input x meant to be an xts object with index class of Date
+# Authors@R: Andre Mikulec <Andre_Mikulec@Hotmail.com> [aut, cre]
+# License: MIT + file LICENSE
+# Encoding: UTF-8
+# LazyData: true
+# ByteCompile: true
+# Suggests: 
+#     testthat
+# Roxygen: list(markdown = TRUE)
+# RoxygenNote: 6.0.1
+
+# NAMESPACE
+# exportPattern("^[^\\.]")
+
+# example data
 # 
-# # > tail(res[, colnames(res) %in% c("dateindex","dateindex_dt","china__gdp_wdt","united_states__gdp_wdt")])
-#     dateindex dateindex_dt china__gdp_wdt united_states__gdp_wdt
-# 174     17347   2017-06-30      0.2005963              0.3326051
-# 175     17378   2017-07-31      0.2005963              0.3326051
-# 176     17409   2017-08-31      0.2005963              0.3326051
-# 177     17439   2017-09-30      0.2005963              0.3326051
-# 178     17470   2017-10-31      0.2005963              0.3326051
-# 179     17500   2017-11-30      0.2005963              0.3326051
-# 
-# # > str(res)
-# > str(res)
-# 'data.frame':	179 obs. of  16 variables:
-#  $ dateindex                  : int  12083 12111 12142 12172 12203 12233 12264 12295 12325 12356 ...
-#  $ dateindex_dt               : Date, format: "2003-01-31" "2003-02-28" "2003-03-31" "2003-04-30" ...
-#  $ australia__gdp_wdt         : num  0.0146 0.0146 0.0146 0.0146 0.0146 ...
-#  $ brazil__gdp_wdt            : num  0.0188 0.0188 0.0188 0.0188 0.0188 ...
-#  $ canada__gdp_wdt            : num  0.0281 0.0281 0.0281 0.0281 0.0281 ...
-#  $ china__gdp_wdt             : num  0.0545 0.0545 0.0545 0.0545 0.0545 ...
-#  $ france__gdp_wdt            : num  0.0556 0.0556 0.0556 0.0556 0.0556 ...
-#  $ germany__gdp_wdt           : num  0.077 0.077 0.077 0.077 0.077 ...
-#  $ india__gdp_wdt             : num  0.0188 0.0188 0.0188 0.0188 0.0188 ...
-#  $ italy__gdp_wdt             : num  0.0469 0.0469 0.0469 0.0469 0.0469 ...
-#  $ japan__gdp_wdt             : num  0.152 0.152 0.152 0.152 0.152 ...
-#  $ korea_rep__gdp_wdt         : num  0.0226 0.0226 0.0226 0.0226 0.0226 ...
-#  $ russian_federation__gdp_wdt: num  0.0128 0.0128 0.0128 0.0128 0.0128 ...
-#  $ spain__gdp_wdt             : num  0.0261 0.0261 0.0261 0.0261 0.0261 ...
-#  $ united_kingdom__gdp_wdt    : num  0.0651 0.0651 0.0651 0.0651 0.0651 ...
-#  $ united_states__gdp_wdt     : num  0.407 0.407 0.407 0.407 0.407 ...
-# 
-# # rebalance on 
-# # "germany"            # since 1970(NY.GDP.MKTP.CD)
-# # "russian_federation" # since 1989(NY.GDP.MKTP.CD)
-# # res2 <- get_large_nationals_yearly_gdp_weights_by_month(keep_eom_date_since = "1980-01-01")
-# # 
-# # res2[, colnames(res2) %in% c("dateindex","dateindex_dt","china__gdp_wdt","united_states__gdp_wdt","germany__gdp_wdt","russian_federation__gdp_wdt")]
-#     dateindex dateindex_dt china__gdp_wdt germany__gdp_wdt russian_federation__gdp_wdt united_states__gdp_wdt
-# 1        3682   1980-01-31     0.02469427       0.12161493                          NA              0.3645832
-# 2        3711   1980-02-29     0.02469427       0.12161493                          NA              0.3645832
+require(quantmod) # puts in path zoo, then xts
+data(sample_matrix)  # from package xts
+
+#' @title investment data
+#' @description OHLC data
+#' @format A data frame with 180 rows and 4 variables:
+#' \describe{
+#'   \item{\code{Open}}{double }
+#'   \item{\code{High}}{double }
+#'   \item{\code{Low}}{double }
+#'   \item{\code{Close}}{double}
+#'}
+#' @details see help("sample_matrix", package = "xts")
+#' @examples
+#' \dontrun{
+#' # require(xts)
+#' # data(sample_matrix)
+#' # str(sample_matrix)
+#' #  num [1:180, 1:4] 50 50.2 50.4 50.4 50.2 ...
+#' #  - attr(*, "dimnames")=List of 2
+#' #   ..$ : chr [1:180] "2007-01-02" "2007-01-03" "2007-01-04" "2007-01-05" ...
+#' #   ..$ : chr [1:4] "Open" "High" "Low" "Close"
+#' # sample_xts <- as.xts(sample_matrix)
+#' # str(sample_xts)
+#' # An 'xts' object on 2007-01-02/2007-06-30 containing:
+#' #   Data: num [1:180, 1:4] 50 50.2 50.4 50.4 50.2 ...
+#' #  - attr(*, "dimnames")=List of 2
+#' #   ..$ : NULL
+#' #   ..$ : chr [1:4] "Open" "High" "Low" "Close"
+#' #   Indexed by objects of class: [POSIXct,POSIXt] TZ:
+#' #   xts Attributes:
+#' #  NULL
+#' }
+#' @rdname sample_xts
+#' @export
+"sample_xts"
+sample_xts <- as.xts(sample_matrix) 
+# rm(sample_matrix) # TEMP for creation
+
+
+#' @title unemployment rate
+#' @description U.S. unemployment rate from the St. Louis FRED
+#' @format A data frame with 3 rows and 1 variables:
+#' \describe{
+#'   \item{\code{UNRATE}}{double percent of workers w/o jobs}
+#'}
+#' @details percent expressed
+#' @examples
+#' \dontrun{
+#' # require(quantmod)
+#' # unrate <- getSymbols("UNRATE", src = "FRED",  auto.assign = FALSE)["1948-01-01/1948-03-01"]
+#' # An 'xts' object on 1948-01-01/1948-03-01 containing:
+#' # str(unrate)
+#' # Data: num [1:3, 1] 3.4 3.8 4
+#' #  - attr(*, "dimnames")=List of 2
+#' #   ..$ : NULL
+#' #   ..$ : chr "UNRATE"
+#' #   Indexed by objects of class: [Date] TZ: UTC
+#' #   xts Attributes:
+#' # List of 2
+#' #  $ src    : chr "FRED"
+#' #  $ updated: POSIXct[1:1], format: "2017-12-16 12:48:06"
+#' }
+#' @rdname unrate
+#' @export
+"unrate"
+unrate <- getSymbols("UNRATE", src = "FRED",  auto.assign = FALSE)["1948-01-01/1948-03-01"]
 
 
 
-get_large_nationals_last_know_bond_ratings_by_month <- function(keep_eom_date_since = "2003-01-01") {
+#' @title unemployment rate in 1948 and 1949
+#' @description U.S. unemployment rate from the St.Louis FRED
+#' @format A data frame with 3 rows and 1 variables:
+#' \describe{
+#'   \item{\code{UNRATE}}{double percent of workers w/o jobs}
+#'}
+#' @details percent expressed
+#' @examples
+#' \dontrun{
+#' # require(quantmod)
+#' # unrate_40s <- getSymbols("UNRATE", src = "FRED",  auto.assign = FALSE)["1948-01-01/1949-03-01"]
+#' # An 'xts' object on 1948-01-01/1949-03-01 containing:
+#' #   Data: num [1:15, 1] 3.4 3.8 4 3.9 3.5 3.6 3.6 3.9 3.8 3.7 ...
+#' #  - attr(*, "dimnames")=List of 2
+#' #   ..$ : NULL
+#' #   ..$ : chr "UNRATE"
+#' #   Indexed by objects of class: [Date] TZ: UTC
+#' #   xts Attributes:
+#' # List of 2
+#' #  $ src    : chr "FRED"
+#' #  $ updated: POSIXct[1:1], format: "2017-12-16 12:48:07"
+#' }
+#' @rdname (unrate_40s
+#' @export
+"unrate_40s"
+unrate_40s <- getSymbols("UNRATE", src = "FRED",  auto.assign = FALSE)["1948-01-01/1949-03-01"]
 
-    message("Begin function: get_large_nationals_last_know_bond_ratings_by_month")
-  
-  # R version 3.4.2 (2017-09-28)
-  # NOV 2017
-  
-  oldtz <- Sys.getenv('TZ')
-  if(oldtz=='') {
-    Sys.setenv(TZ="UTC")
-  }
 
-  # uses package htmltab function htmltab        # htmltab::htmltab
-  # uses package tidyr function spread           # tidyr::spread
-  # uses package DataCombine function MoveFront  # DataCombine::MoveFront
-  # uses package tidyr function fill_            # tidyr::fill_
-  # uses package plyr function join_all          # plyr::join_all
-  
-  # https://tradingeconomics.com/countries
-  #                   # name in WDI and start-of-record comments
-  large_nationals <-
-  c(
-     "united-states"
-   , "china"
-   , "japan"
-   , "germany"        # "germany" # since 1970(NY.GDP.MKTP.CD)
-   , "united-kingdom"
-   , "india"
-   , "france"
-   , "brazil"
-   , "italy"
-   , "canada"
-   , "russia"       # "russian_federation" # since 1989(NY.GDP.MKTP.CD)
-   , "south-korea"  # "korea_rep"
-   , "australia"
-   , "spain"
-  )
-  
-  ## testing
-  # large_nationals <-
-  # c(
-  #    "united-states"
-  #  , "china"
-  # )
-  
-  all_countries <- list()
-  for(large_nationals_i in large_nationals) {
-  
-    message(paste0("Beginning: ", large_nationals_i))
-    # NOTE: may? timeout (curl 10 seconds )
-    # 
-    this_country_historical_ratings <- try( 
-        htmltab::htmltab(doc = paste0("https://tradingeconomics.com/", large_nationals_i, "/rating"), which = 1)
-      , silent = TRUE
-    )
-    # try once more
-    if(inherits(this_country_historical_ratings, 'try-error')) { 
-      this_country_historical_ratings <- try( 
-        htmltab::htmltab(doc = paste0("https://tradingeconomics.com/", large_nationals_i, "/rating"), which = 1)
-      , silent = TRUE
-      )
-      if(inherits(this_country_historical_ratings, 'try-error')) { stop(paste0("counld not browse: ", paste0("https://tradingeconomics.com/", large_nationals_i, "/rating"))) }
-    }
+#' @title international business machines stock price data
+#' @description data from St. Louis FRED
+#' @format A data frame with 7 rows and 6 variables:
+#' \describe{
+#'   \item{\code{IBM.Open}}{double }
+#'   \item{\code{IBM.High}}{double }
+#'   \item{\code{IBM.Low}}{double }
+#'   \item{\code{IBM.Close}}{double }
+#'   \item{\code{IBM.Volume}}{double }
+#'   \item{\code{IBM.Adjusted}}{double }
+#'}
+#' @details price
+#' @examples
+#' \dontrun{
+#' # require(quantmod)
+#' # ibm <- getSymbols("IBM", from = "1970-01-01", to = "1970-01-13", auto.assign = FALSE)
+#' # An 'xts' object on 1970-01-02/1970-01-12 containing:
+#' #   Data: num [1:7, 1:6] 18.2 18.3 18.4 18.4 18.4 ...
+#' #  - attr(*, "dimnames")=List of 2
+#' #   ..$ : NULL
+#' #   ..$ : chr [1:6] "IBM.Open" "IBM.High" "IBM.Low" "IBM.Close" ...
+#' #   Indexed by objects of class: [Date] TZ: UTC
+#' #   xts Attributes:
+#' # List of 2
+#' #  $ src    : chr "yahoo"
+#' #  $ updated: POSIXct[1:1], format: "2017-12-16 12:48:09"
+#' }
+#' @rdname ibm 
+#' @export
+"ibm"
+ibm <- getSymbols("IBM", from = "1970-01-01", to = "1970-01-13", auto.assign = FALSE)
 
-    # remove web-site error repeats ( united-kingdom: Sep 21, 2000 )
-    this_country_historical_ratings <- this_country_historical_ratings[!duplicated(this_country_historical_ratings),, drop = FALSE]
-    
-    # I do not track this one
-    this_country_historical_ratings <- this_country_historical_ratings[this_country_historical_ratings$Agency != "DBRS",,drop = FALSE]
-    
-    # store dates (save for later)
-    this_country_historical_ratings_only_dateindex_dts <- as.Date(this_country_historical_ratings[["Date"]], "%b %d %Y")
 
-    # drop column "Date"
-    this_country_historical_ratings <- this_country_historical_ratings[ , !names(this_country_historical_ratings) %in% "Date",drop = FALSE]
-    
-    # clean ( Rstudio 'unknown reason' parsing error: work around: x[is.na(lapply(x,utf8ToInt))] )
-    this_country_historical_ratings <- data.frame(lapply(this_country_historical_ratings, function(x) { 
-      x[x == "N/A"] <- NA_character_
-      # not-ascii (latin1) A (A is 'nothing')
-      # if ... RStudio parser chokes ... detect
-      x[is.na(lapply(x,utf8ToInt))] <- NA_character_ 
-      # really only 'terating' ( because MY 'agency ratings description table' does not have a ZERO )
-      x[x == "0"]   <- "1"
-      # prevent 'drop to factor ... all 1s'
-      # so I can do tidyr and PostgreSQL
-      x <- tolower(x)
-      x <- gsub("(&|'| )","_", x)
-      return(x)
-    }), stringsAsFactors = FALSE)
-
-    # rename columns
-    names(this_country_historical_ratings) <- tolower(names(this_country_historical_ratings))
-    # add a 'real' date                             # from 'saved'
-    this_country_historical_ratings[["dateindex_dt"]] <- this_country_historical_ratings_only_dateindex_dts 
-    # add an integer date
-    this_country_historical_ratings[["dateindex"]] <- as.integer(zoo::as.Date(this_country_historical_ratings[["dateindex_dt"]]))
-    
-    # garantee column order
-    this_country_historical_ratings <- DataCombine::MoveFront(this_country_historical_ratings, c("dateindex", "dateindex_dt"))
-    ### 'not sort now' because will interfere with the 'order-sensitive' duplicated record removal from below
-    ### # sort
-    ### this_country_historical_ratings <- dplyr::arrange_(this_country_historical_ratings, "dateindex")
-    
-    # begin reshapes
-    #
-    
-    # begin agency-rating reshape
-    
-    # drop column not involved in the reshape(some extra safety)
-    this_country_historical_ratings_spreaded_agency_rating <- this_country_historical_ratings
-    this_country_historical_ratings_spreaded_agency_rating <- this_country_historical_ratings_spreaded_agency_rating[,!names(this_country_historical_ratings_spreaded_agency_rating) %in% "outlook", drop = FALSE]
-
-    # top of the HTML page is the lastest date ( and latest decision )
-    # if two(2)+ decisions in one day ( italy 1996-05-01 ), so eliminate the earliest date
-    # # remove rating agency business repeats (change mind from earlier decision on the SAME day: italy May 01, 1996 )
-    this_country_historical_ratings_spreaded_agency_rating <- this_country_historical_ratings_spreaded_agency_rating[ !duplicated(this_country_historical_ratings_spreaded_agency_rating[, c("dateindex","dateindex_dt", "agency"), drop = FALSE]), , drop = FALSE]
-
-    # reshape long to wide: agency-rating
-    this_country_historical_ratings_spreaded_agency_rating <- tidyr::spread(this_country_historical_ratings_spreaded_agency_rating, key = "agency", value = "rating")
-    
-    ### # reshape long to wide: agency-rating
-    ### this_country_historical_ratings_spreaded_agency_rating <- tidyr::spread(this_country_historical_ratings, key = "agency", value = "rating")
-    
-    # in long form, it was always was a 'shared' character column
-    # in wide form(result of tidyr::spread), it will have its own(alone) data type
-    this_country_historical_ratings_spreaded_agency_rating[["te"]] <- as.numeric(this_country_historical_ratings_spreaded_agency_rating[["te"]])
-
-    # rename columns
-    names(this_country_historical_ratings_spreaded_agency_rating) <- gsub("(^fitch$|^moody_s$|^s_p$|^te$)", "\\1_rating", names(this_country_historical_ratings_spreaded_agency_rating) )
-    
-    ### # drop column
-    ### this_country_historical_ratings_spreaded_agency_rating_less_outlook <- this_country_historical_ratings_spreaded_agency_rating[ , !names(this_country_historical_ratings_spreaded_agency_rating) %in% "outlook",drop = FALSE]
-    
-    # after order-sensitive 'duplicatated' was done
-    this_country_historical_ratings_spreaded_agency_rating <- dplyr::arrange_(this_country_historical_ratings_spreaded_agency_rating, "dateindex")
-
-    # end agency-rating reshape
-    # begin agency-outlook reshape
-    
-    # drop column not involved in the reshape(some extra safety)
-    this_country_historical_ratings_spreaded_agency_outlook <- this_country_historical_ratings
-    this_country_historical_ratings_spreaded_agency_outlook <- this_country_historical_ratings_spreaded_agency_outlook[,!names(this_country_historical_ratings_spreaded_agency_outlook) %in% "rating", drop = FALSE]
-
-    # top of the HTML page is the lastest date ( and latest decision )
-    # if two(2)+ decisions in one day ( italy 1996-05-01 ), so eliminate the earliest date
-    # # remove rating agency business repeats (change mind from earlier decision on the SAME day: italy May 01, 1996 )
-    this_country_historical_ratings_spreaded_agency_outlook <- this_country_historical_ratings_spreaded_agency_outlook[ !duplicated(this_country_historical_ratings_spreaded_agency_outlook[, c("dateindex","dateindex_dt", "agency"), drop = FALSE]), , drop = FALSE]
-
-    # reshape long to wide: agency-rating
-    this_country_historical_ratings_spreaded_agency_outlook <- tidyr::spread(this_country_historical_ratings_spreaded_agency_outlook, key = "agency", value = "outlook")
-    
-    ### # reshape long to wide: agency-outlook
-    ### this_country_historical_ratings_spreaded_agency_outlook <- tidyr::spread(this_country_historical_ratings, key = "agency", value = "outlook")
-    
-    # rename columns
-    names(this_country_historical_ratings_spreaded_agency_outlook) <- gsub("(^fitch$|^moody_s$|^s_p$|^te$)", "\\1_outlook", names(this_country_historical_ratings_spreaded_agency_outlook) )
-    
-    ### # drop column
-    ### this_country_historical_ratings_spreaded_agency_outlook_less_rating <- this_country_historical_ratings_spreaded_agency_outlook[ , !names(this_country_historical_ratings_spreaded_agency_outlook) %in% "rating",drop = FALSE] 
-    
-    # after order-sensitive 'duplicatated' was done
-    this_country_historical_ratings_spreaded_agency_outlook <- dplyr::arrange_(this_country_historical_ratings_spreaded_agency_outlook, "dateindex")
-    
-    # end agency-outlook reshape
-   
-    #
-    # end reshapes
-    
-    # bring together:  agency-rating and agency-outlook
-    this_country_historical_ratings_spreaded <- 
-    merge( this_country_historical_ratings_spreaded_agency_rating, 
-           this_country_historical_ratings_spreaded_agency_outlook
-      , by = c("dateindex", "dateindex_dt")
-      , all = TRUE 
-    )
-    
-    # combine dates: observation dates + end of month dates
-    this_country_historical_ratings_spreaded_only_dateindex_dt_plus_eom_dates <-
-    data.frame(dateindex_dt = unique(sort(c(this_country_historical_ratings_spreaded$dateindex_dt, zoo::as.Date(zoo::as.yearmon(seq(as.Date(keep_eom_date_since), Sys.Date(), by = "month")), frac = 1)))))
-    
-    # put end of month dates into the data.frame
-    this_country_historical_ratings_spreaded_plus_eom_dates <- 
-    merge(this_country_historical_ratings_spreaded, this_country_historical_ratings_spreaded_only_dateindex_dt_plus_eom_dates, all = TRUE)
-    
-    # calculate (for mostly new dateindex_dts) 'dateindex'
-    this_country_historical_ratings_spreaded_plus_eom_dates[["dateindex"]] <- as.integer(zoo::as.Date(this_country_historical_ratings_spreaded_plus_eom_dates[["dateindex_dt"]]))
-      
-    # garantee column order
-    this_country_historical_ratings_spreaded_plus_eom_dates <- DataCombine::MoveFront(this_country_historical_ratings_spreaded_plus_eom_dates, c("dateindex","dateindex_dt"))
-    
-    # last observation carried forward
-    this_country_historical_ratings_spreaded_plus_eom_dates_w_locf <-
-    tidyr::fill_(this_country_historical_ratings_spreaded_plus_eom_dates, colnames(this_country_historical_ratings_spreaded_plus_eom_dates))
-    
-    # (from 2003 onward) keep dates that are 'end of month dates' 
-    this_country_historical_ratings_spreaded_eom <- 
-    this_country_historical_ratings_spreaded_plus_eom_dates_w_locf[
-      this_country_historical_ratings_spreaded_plus_eom_dates_w_locf$dateindex_dt %in% zoo::as.Date(zoo::as.yearmon(seq(as.Date(keep_eom_date_since), Sys.Date(), by = "month")), frac = 1)
-      , 
-      , drop = FALSE
-    ]
-    
-    # because many rows are removed, re-number
-    row.names(this_country_historical_ratings_spreaded_eom) <- seq_along(row.names(this_country_historical_ratings_spreaded_eom))
-
-    # rename columns to "<country>__item"
-    names(this_country_historical_ratings_spreaded_eom) <- gsub("(^.{1,8}$|^.{9}(?<!dateindex).*)", paste0(gsub("-","_", large_nationals_i), "__\\1"), names(this_country_historical_ratings_spreaded_eom), perl = TRUE )
-    
-    # add df to list of data.frames
-         all_countries[[gsub("-","_", large_nationals_i)]] <- this_country_historical_ratings_spreaded_eom
-    attr(all_countries[[gsub("-","_", large_nationals_i)]],"label") <- gsub("-","_", large_nationals_i)
-    
-    message(paste0("Ending: ", large_nationals_i))
-    Sys.sleep(1.0)
-  }
-  
-  # combine all data.frames
-  ### all_countries <- do.call(merge, c(list(), all_countries, by = c("dateindex", "dateindex_dt"), all = TRUE))
-  
-  all_countries <- plyr::join_all(all_countries, by = c("dateindex", "dateindex_dt"), type = "full")
-  
-  on.exit({Sys.setenv(TZ=oldtz)})
-
-  message("End function: get_large_nationals_last_know_bond_ratings_by_month")
-  
-  return(all_countries)
-  
-}
-# res <- get_large_nationals_last_know_bond_ratings_by_month()
-# str(res, list.len = 999)
-# res[1:4, grep("dateindex|dateindex_dt|^italy.*", names(ret), perl = TRUE, value = TRUE)[1:7] , drop = FALSE]
-# colnames(res)
-# 
-# >  res[1:4, grep("dateindex|dateindex_dt|^italy.*", names(res), perl = TRUE, value = TRUE)[1:7] , drop = FALSE]
-#   dateindex dateindex_dt italy__fitch_rating italy__moody_s_rating italy__s_p_rating italy__te_rating italy__fitch_outlook
-# 1     12083   2003-01-31                  aa                   aa2                aa             <NA>               stable
-# 2     12111   2003-02-28                  aa                   aa2                aa             <NA>               stable
-# 3     12142   2003-03-31                  aa                   aa2                aa             <NA>               stable
-# 4     12172   2003-04-30                  aa                   aa2                aa             <NA>               stable
-# > colnames(res)
-#   [1] "dateindex"                       "dateindex_dt"                    "united_states__fitch_rating"     "united_states__moody_s_rating"  
-#   [5] "united_states__s_p_rating"       "united_states__te_rating"        "united_states__fitch_outlook"    "united_states__moody_s_outlook" 
-#   [9] "united_states__s_p_outlook"      "united_states__te_outlook"       "china__fitch_rating"             "china__moody_s_rating"          
-#  [13] "china__s_p_rating"               "china__te_rating"                "china__fitch_outlook"            "china__moody_s_outlook"         
-#  [17] "china__s_p_outlook"              "china__te_outlook"               "japan__fitch_rating"             "japan__moody_s_rating"          
-#  [21] "japan__s_p_rating"               "japan__te_rating"                "japan__fitch_outlook"            "japan__moody_s_outlook"         
-#  [25] "japan__s_p_outlook"              "japan__te_outlook"               "germany__fitch_rating"           "germany__moody_s_rating"        
-#  [29] "germany__s_p_rating"             "germany__te_rating"              "germany__fitch_outlook"          "germany__moody_s_outlook"       
-#  [33] "germany__s_p_outlook"            "germany__te_outlook"             "united_kingdom__fitch_rating"    "united_kingdom__moody_s_rating" 
-#  [37] "united_kingdom__s_p_rating"      "united_kingdom__te_rating"       "united_kingdom__fitch_outlook"   "united_kingdom__moody_s_outlook"
-#  [41] "united_kingdom__s_p_outlook"     "united_kingdom__te_outlook"      "india__fitch_rating"             "india__moody_s_rating"          
-#  [45] "india__s_p_rating"               "india__te_rating"                "india__fitch_outlook"            "india__moody_s_outlook"         
-#  [49] "india__s_p_outlook"              "india__te_outlook"               "france__fitch_rating"            "france__moody_s_rating"         
-#  [53] "france__s_p_rating"              "france__te_rating"               "france__fitch_outlook"           "france__moody_s_outlook"        
-#  [57] "france__s_p_outlook"             "france__te_outlook"              "brazil__fitch_rating"            "brazil__moody_s_rating"         
-#  [61] "brazil__s_p_rating"              "brazil__te_rating"               "brazil__fitch_outlook"           "brazil__moody_s_outlook"        
-#  [65] "brazil__s_p_outlook"             "brazil__te_outlook"              "italy__fitch_rating"             "italy__moody_s_rating"          
-#  [69] "italy__s_p_rating"               "italy__te_rating"                "italy__fitch_outlook"            "italy__moody_s_outlook"         
-#  [73] "italy__s_p_outlook"              "italy__te_outlook"               "canada__fitch_rating"            "canada__moody_s_rating"         
-#  [77] "canada__s_p_rating"              "canada__te_rating"               "canada__fitch_outlook"           "canada__moody_s_outlook"        
-#  [81] "canada__s_p_outlook"             "canada__te_outlook"              "russia__fitch_rating"            "russia__moody_s_rating"         
-#  [85] "russia__s_p_rating"              "russia__te_rating"               "russia__fitch_outlook"           "russia__moody_s_outlook"        
-#  [89] "russia__s_p_outlook"             "russia__te_outlook"              "south_korea__fitch_rating"       "south_korea__moody_s_rating"    
-#  [93] "south_korea__s_p_rating"         "south_korea__te_rating"          "south_korea__fitch_outlook"      "south_korea__moody_s_outlook"   
-#  [97] "south_korea__s_p_outlook"        "south_korea__te_outlook"         "australia__fitch_rating"         "australia__moody_s_rating"      
-# [101] "australia__s_p_rating"           "australia__te_rating"            "australia__fitch_outlook"        "australia__moody_s_outlook"     
-# [105] "australia__s_p_outlook"          "australia__te_outlook"           "spain__fitch_rating"             "spain__moody_s_rating"          
-# [109] "spain__s_p_rating"               "spain__te_rating"                "spain__fitch_outlook"            "spain__moody_s_outlook"         
-# [113] "spain__s_p_outlook"              "spain__te_outlook"              
-#  
-# debugging of italy on May 01, 1996 
-# res2 <- get_large_nationals_last_know_bond_ratings_by_month(keep_eom_date_since = "1990-01-01")
-# res2[, grep("dateindex|dateindex_dt|^italy.*", names(res2), perl = TRUE, value = TRUE)[c(1:2, 3:6)] , drop = FALSE]
-# res2[, grep("dateindex|dateindex_dt|^italy.*", names(res2), perl = TRUE, value = TRUE)[c(1:2,7:10)] , drop = FALSE]
+#' @title international business machines stock price data
+#' @description data from St. Louis FRED
+#' @format A data frame with 7 rows and 6 variables:
+#' \describe{
+#'   \item{\code{IBM.Open}}{double }
+#'   \item{\code{IBM.High}}{double }
+#'   \item{\code{IBM.Low}}{double }
+#'   \item{\code{IBM.Close}}{double }
+#'   \item{\code{IBM.Volume}}{double }
+#'   \item{\code{IBM.Adjusted}}{double }
+#'}
+#' @details price, has two values(cells) of data removed
+#' @examples
+#' \dontrun{
+#' # require(quantmod)
+#' # ibm <- getSymbols("IBM", from = "1970-01-01", to = "1970-01-13", auto.assign = FALSE)
+#' # ibm_missing_data <- local({ t <- ibm; t[2:3,1] <- NA_real_; t})
+#' # str(ibm_missing_data)
+#' # An 'xts' object on 1970-01-02/1970-01-12 containing:
+#' #   Data: num [1:7, 1:6] 18.2 NA NA 18.4 18.4 ...
+#' #  - attr(*, "dimnames")=List of 2
+#' #   ..$ : NULL
+#' #   ..$ : chr [1:6] "IBM.Open" "IBM.High" "IBM.Low" "IBM.Close" ...
+#' #   Indexed by objects of class: [Date] TZ: UTC
+#' #   xts Attributes:
+#' # List of 2
+#' #  $ src    : chr "yahoo"
+#' #  $ updated: POSIXct[1:1], format: "2017-12-16 12:48:09"
+#' }
+#' @rdname ibm_missing_data
+#' @export
+"ibm_missing_data"
+ibm_missing_data <- local({ t <- ibm; t[2:3,1] <- NA_real_; t})
 
 
 
-credit_rating_descs <- function() {
-  
-  message("Begin function: credit_rating_descs")
-  
-  # R version 3.4.2 (2017-09-28)
-  # NOV 2017
-  
-  # uses package htmltab function htmltab        # htmltab::htmltab
-  # uses package tidyr   function fill           # tidyr::fill
-  
-  # NOTE: may? timeout (curl 10 seconds )
-  #                         # SAME on EVERY PAGE
-  credit_rating_descs <- try( 
-      htmltab::htmltab(doc = "https://tradingeconomics.com/israel/rating", which = 3)
-    , silent = TRUE
-  )
-  # try once more
-  if(inherits(credit_rating_descs, 'try-error')) { 
-    Sys.sleep(1.0)
-    credit_rating_descs <- try( 
-      htmltab::htmltab(doc = "https://tradingeconomics.com/israel/rating", which = 3)
-    , silent = TRUE
-    )
-    if(inherits(credit_rating_descs, 'try-error')) { stop(paste0("counld not browse: ","https://tradingeconomics.com/israel/rating")) }
-  }
+#' @title last observation carried forward
+#' @description carry forward up through 'n' observations
+#' @param x xts observations
+#' @param n number of observations to carry forward through, Default: NULL
+#' @return modified xts object
+#' @details input is one single column xts only or an unclassed numeric vector
+#' @examples
+#' \dontrun{
+#' #  vector input
+#' #  get_na_locfl( c(101,NA,NA,NA,102,NA,NA), n = 2)
+#' #  [1] 101 101 101  NA 102 102 102
+#' # 
+#' #  require(xts)
+#' #  xts(c(101,NA,NA,NA,102,NA,NA),zoo::as.Date(seq(10, 10*7, length.out = 7)))
+#' #             [,1]
+#' # 1970-01-11  101
+#' # 1970-01-21   NA
+#' # 1970-01-31   NA
+#' # 1970-02-10   NA
+#' # 1970-02-20  102
+#' # 1970-03-02   NA
+#' # 1970-03-12   NA
+#' # 
+#' # get_na_locfl(xts(c(101,NA,NA,NA,102,NA,NA),zoo::as.Date(seq(10, 10*7, length.out = 7))), n = 2)
+#' #         na_locfl
+#' # 1970-01-11   101
+#' # 1970-01-21   101
+#' # 1970-01-31   101
+#' # 1970-02-10    NA
+#' # 1970-02-20   102
+#' # 1970-03-02   102
+#' # 1970-03-12   102
+#' }
+#' @rdname get_na_locfl
+#' @export
+get_na_locfl <- function(x, n = NULL) {
 
-  # clean
-  credit_rating_descs<- data.frame(lapply(credit_rating_descs, function(x) { 
-    if(is.character(x)) {
-      # prevent 'drop to factor ... all 1s'
-      # so I can do tidyr and PostgreSQL
-      x <- tolower(x)
-      x <- gsub("(,|[.])","", x)
-      x <- gsub("(&|'| )","_", x)
-    }
-    return(x)
-  }), stringsAsFactors = FALSE)
-  
-  # names(credit_rating_descs)    <- tolower(names(credit_rating_descs))
-  # names(credit_rating_descs)[5] <- "credit_rating_long_desc"
-  
-  # But for now, I will just hard code
-  names(credit_rating_descs) <- c("te_rating", "s_p_rating", "moody_s_rating", "fitch_rating", "credit_rating_long_desc")
-  
-  # last observation carried forward
-  credit_rating_descs <- tidyr::fill(credit_rating_descs, te_rating, s_p_rating, moody_s_rating, fitch_rating, credit_rating_long_desc)
-
-  # logical fix at 'very low ratings'
-  credit_rating_descs[20:24,"te_rating"] <- c("7","5","3","2","1")
-  
-  # gives a math rating
-  credit_rating_descs[["te_rating"]]     <- as.numeric(credit_rating_descs[["te_rating"]])
-
-  # CORRECT htmltab::htmltab, definitely an error on row.names (problem: starts at "2", fix: starts at "1")
-  # re-number
-  row.names(credit_rating_descs) <- seq_along(row.names(credit_rating_descs))
-  
-  # SAVE (just in case this 'table of values' changes, then I can refer back)
-  # print(credit_rating_descs)
-  
-  #    te_rating s_p_rating moody_s_rating fitch_rating                       credit_rating_long_desc
-  # 1        100        aaa            aaa          aaa                                         prime
-  # 2         95        aa+            aa1          aa+                                    high_grade
-  # 3         90         aa            aa2           aa                                    high_grade
-  # 4         85        aa-            aa3          aa-                                    high_grade
-  # 5         80         a+             a1           a+                            upper_medium_grade
-  # 6         75          a             a2            a                            upper_medium_grade
-  # 7         70         a-             a3           a-                            upper_medium_grade
-  # 8         65       bbb+           baa1         bbb+                            lower_medium_grade
-  # 9         60        bbb           baa2          bbb                            lower_medium_grade
-  # 10        55       bbb-           baa3         bbb-                            lower_medium_grade
-  # 11        50        bb+            ba1          bb+             non-investment_grade__speculative
-  # 12        45         bb            ba2           bb             non-investment_grade__speculative
-  # 13        40        bb-            ba3          bb-             non-investment_grade__speculative
-  # 14        35         b+             b1           b+                            highly_speculative
-  # 15        30          b             b2            b                            highly_speculative
-  # 16        25         b-             b3           b-                            highly_speculative
-  # 17        20       ccc+           caa1          ccc                             substantial_risks
-  # 18        15        ccc           caa2          ccc                         extremely_speculative
-  # 19        10       ccc-           caa3          ccc in_default_with_little__prospect_for_recovery
-  # 20         7         cc             ca          ccc in_default_with_little__prospect_for_recovery
-  # 21         5          c              c          ccc in_default_with_little__prospect_for_recovery
-  # 22         3          d                        ddd                                    in_default
-  # 23         2          d              //           dd                                    in_default
-  # 24         1          d              /            d                                    in_default
-  
-  message("End function: credit_rating_descs")
-  
-  return(credit_rating_descs)
-  
-}
-# res <- credit_rating_descs()
-# > str(res)
-# 'data.frame':	24 obs. of  5 variables:
-#  $ te_rating              : num  100 95 90 85 80 75 70 65 60 55 ...
-#  $ s_p_rating             : chr  "aaa" "aa+" "aa" "aa-" ...
-#  $ moody_s_rating         : chr  "aaa" "aa1" "aa2" "aa3" ...
-#  $ fitch_rating           : chr  "aaa" "aa+" "aa" "aa-" ...
-#  $ credit_rating_long_desc: chr  "prime" "high_grade" "high_grade" "high_grade" ...
-# > res
-#    te_rating s_p_rating moody_s_rating fitch_rating                       credit_rating_long_desc
-# 1        100        aaa            aaa          aaa                                         prime
-# 2         95        aa+            aa1          aa+                                    high_grade
-# 3         90         aa            aa2           aa                                    high_grade
-# 4         85        aa-            aa3          aa-                                    high_grade
-# 5         80         a+             a1           a+                            upper_medium_grade
-# 6         75          a             a2            a                            upper_medium_grade
-# 7         70         a-             a3           a-                            upper_medium_grade
-# 8         65       bbb+           baa1         bbb+                            lower_medium_grade
-# 9         60        bbb           baa2          bbb                            lower_medium_grade
-# 10        55       bbb-           baa3         bbb-                            lower_medium_grade
-# 11        50        bb+            ba1          bb+             non-investment_grade__speculative
-# 12        45         bb            ba2           bb             non-investment_grade__speculative
-# 13        40        bb-            ba3          bb-             non-investment_grade__speculative
-# 14        35         b+             b1           b+                            highly_speculative
-# 15        30          b             b2            b                            highly_speculative
-# 16        25         b-             b3           b-                            highly_speculative
-# 17        20       ccc+           caa1          ccc                             substantial_risks
-# 18        15        ccc           caa2          ccc                         extremely_speculative
-# 19        10       ccc-           caa3          ccc in_default_with_little__prospect_for_recovery
-# 20         7         cc             ca          ccc in_default_with_little__prospect_for_recovery
-# 21         5          c              c          ccc in_default_with_little__prospect_for_recovery
-# 22         3          d                        ddd                                    in_default
-# 23         2          d              //           dd                                    in_default
-# 24         1          d              /            d                                    in_default
-
-                                                                        # default in internal funcions "2003-01-01"
-get_large_nationals_last_know_bond_ratings_by_month_numeric <- function(keep_eom_date_since = NULL) {
-
-  message("Begin function: get_large_nationals_last_know_bond_ratings_by_month_numeric")
-  
-  # R version 3.4.2 (2017-09-28)
-  # NOV 2017
-  
-  # uses function get_large_nationals_last_know_bond_ratings_by_month
-  # uses function credit_rating_descs
-  
-  oldtz <- Sys.getenv('TZ')
-  if(oldtz=='') {
-    Sys.setenv(TZ="UTC")
-  }
-  
-  if(!is.null(keep_eom_date_since)) {
-    country_bond_rats_by_month  <- get_large_nationals_last_know_bond_ratings_by_month(keep_eom_date_since = keep_eom_date_since)
-  } else {
-    # default in funcions "2003-01-01"
-    country_bond_rats_by_month <- get_large_nationals_last_know_bond_ratings_by_month()
-  }
-  credit_ratings <- credit_rating_descs()
-  
-  # note: FOR RIGHT NOW, I AM NOT DOING "outlook"
-  
-  # trick on unique: end trailing repeated items are reduced to just 'one ' item
-  # e.g. c("/", "/", "/") -> unique -> c("\")
-  
-  moody_s_rating        <- credit_ratings[seq_along(unique(credit_ratings[["moody_s_rating"]])),"te_rating"]
-  names(moody_s_rating) <-                          unique(credit_ratings[["moody_s_rating"]])
-  
-  fitch_rating        <- credit_ratings[seq_along(unique(credit_ratings[["fitch_rating"]])),"te_rating"]
-  names(fitch_rating) <-                          unique(credit_ratings[["fitch_rating"]])
-  
-  s_p_rating         <- credit_ratings[seq_along(unique(credit_ratings[["s_p_rating"]])),"te_rating"]
-  names(s_p_rating)  <-                          unique(credit_ratings[["s_p_rating"]])
-  
-  # prepare
-  country_bond_rats_by_month_numeric  <- country_bond_rats_by_month
-  
-  
-  for(country_col_i in setdiff(gsub("^(.*)(__)(.*)$", "\\1", names(country_bond_rats_by_month), perl = TRUE), c("dateindex","dateindex_dt"))) {
-  
-    for(rating_i in c("s_p_rating", "moody_s_rating", "fitch_rating")) {
-  
-      # assign
-      # country_bond_rats_by_month_numeric[["italy__moody_s_rating"]] <- moody_s_rating[match(country_bond_rats_by_month_numeric[["italy__moody_s_rating"]], names(moody_s_rating))]
-      # country_bond_rats_by_month_numeric[[paste0("italy", "__", "moody_s_rating")]] <- get(paste0("moody_s_rating"))[match(country_bond_rats_by_month_numeric[[paste0("italy", "__", "moody_s_rating")]], names(get(paste0("moody_s_rating"))))]
-      # 
-      # country_col_i <- "italy"
-      # rating_i      <- "moody_s_rating"
-      country_bond_rats_by_month_numeric[[paste0(country_col_i, "__", rating_i)]] <- get(paste0(rating_i))[match(country_bond_rats_by_month_numeric[[paste0(country_col_i, "__", rating_i)]], names(get(paste0(rating_i))))]
-      
-    }
-  
-  }
-
-  on.exit({Sys.setenv(TZ=oldtz)})
-  
-  message("End function: get_large_nationals_last_know_bond_ratings_by_month_numeric")
-  
-  return(country_bond_rats_by_month_numeric)
-
-}
-# res <- get_large_nationals_last_know_bond_ratings_by_month_numeric()
-# > str(res[, c("dateindex","dateindex_dt", grep("^italy.*rating$",names(res), perl = TRUE, value = TRUE))], list.len = 999L)
-# 'data.frame':	179 obs. of  6 variables:
-#  $ dateindex            : int  12083 12111 12142 12172 12203 12233 12264 12295 12325 12356 ...
-#  $ dateindex_dt         : Date, format: "2003-01-31" "2003-02-28" "2003-03-31" "2003-04-30" ...
-#  $ italy__fitch_rating  : num  90 90 90 90 90 90 90 90 90 90 ...
-#  $ italy__moody_s_rating: num  90 90 90 90 90 90 90 90 90 90 ...
-#  $ italy__s_p_rating    : num  90 90 90 90 90 90 90 90 90 90 ...
-#  $ italy__te_rating     : num  NA NA NA NA NA NA NA NA NA NA ...
-
-
-                                                                        # default in internal funcions "2003-01-01"
-get_one_large_nationals_bond_bond_ratings_wtd_by_month  <- function(keep_eom_date_since = NULL) {
-
-  message("Begin function: get_one_large_nationals_bond_bond_ratings_wtd_by_month")
-
-  # R version 3.4.2 (2017-09-28)
-  # NOV 2017
-  
-  # uses function get_large_nationals_yearly_gdp_weights_by_month
-  # uses function get_large_nationals_last_know_bond_ratings_by_month_numeric
-
-  oldtz <- Sys.getenv('TZ')
-  if(oldtz=='') {
-    Sys.setenv(TZ="UTC")
-  }
-  
-  # limit to month ends of interest
-  if(!is.null(keep_eom_date_since)) {
-    large_nationals_yearly_gdp_weights_by_month       <- get_large_nationals_yearly_gdp_weights_by_month(keep_eom_date_since = keep_eom_date_since)
-    large_nationals_last_know_bond_ratings_by_month_numeric <- get_large_nationals_last_know_bond_ratings_by_month_numeric(keep_eom_date_since = keep_eom_date_since)
-  } else {
-    # default in funcions "2003-01-01"
-    large_nationals_yearly_gdp_weights_by_month       <- get_large_nationals_yearly_gdp_weights_by_month()
-    large_nationals_last_know_bond_ratings_by_month_numeric <- get_large_nationals_last_know_bond_ratings_by_month_numeric()
-  }
-  
-  # adjustments
-  names(large_nationals_last_know_bond_ratings_by_month_numeric) <- 
-    gsub("(^south_korea__)", "korea_rep__" ,     names(large_nationals_last_know_bond_ratings_by_month_numeric))
-    
-  names(large_nationals_last_know_bond_ratings_by_month_numeric) <-
-    gsub("(^russia__)", "russian_federation__" , names(large_nationals_last_know_bond_ratings_by_month_numeric))
-  
-  countries_sorted <- sort(setdiff(gsub("^(.*)(__)(.*)$", "\\1", names(large_nationals_last_know_bond_ratings_by_month_numeric), perl = TRUE), c("dateindex","dateindex_dt")))
-
-  for(country_col_i in setdiff(gsub("^(.*)(__)(.*)$", "\\1", names(large_nationals_last_know_bond_ratings_by_month_numeric), perl = TRUE), c("dateindex","dateindex_dt"))) {
-  
-    # I am not doing __te_rating
-  
-    # average rating among the two or three rating agencies
-    large_nationals_last_know_bond_ratings_by_month_numeric[[paste0(country_col_i, "__", "rating_mean")]] <- 
-      rowMeans(large_nationals_last_know_bond_ratings_by_month_numeric[,c(paste0(country_col_i, "__", "fitch_rating"),paste0(country_col_i, "__", "moody_s_rating"),paste0(country_col_i, "__", "s_p_rating")),drop = FALSE], na.rm = TRUE)
-  }
-  
-
-  # join
-  large_nationals_last_know_bond_ratings_by_month_numeric_plus_gdp_weights <- 
-  merge(large_nationals_last_know_bond_ratings_by_month_numeric, large_nationals_yearly_gdp_weights_by_month, all = TRUE)
-
-  # limit to month-ends of interest ( most likely redundant: already done above in arg in inbound functions )
-  if(!is.null(keep_eom_date_since)){
-    large_nationals_last_know_bond_ratings_by_month_numeric_plus_gdp_weights <- 
-      large_nationals_last_know_bond_ratings_by_month_numeric_plus_gdp_weights[
-        large_nationals_last_know_bond_ratings_by_month_numeric_plus_gdp_weights$dateindex_dt %in% zoo::as.Date(zoo::as.yearmon(seq(as.Date(keep_eom_date_since), Sys.Date(), by = "month")), frac = 1)
-      ,, drop = FALSE]
-    
-  }
-  
-  # ( FUTURE: COME_BACK ?)
-  # setdiff # garantee columns ( both 'measures' and 'measure weights' )
-  # large_nationals_last_know_bond_ratings_by_month_numeric_plus_gdp_weights[,  col_vector_column not_found] <- NA_real_
-  # 
-  # REST OVERSIMPLIFIED (because I did NOT garantee columns) ... ( but good-enough for right now )
-  # 
-
-  # possibles
-  #
-  # sweep
-  # apply
-  # rowr::rowApply
-  # matrixStats::rowWeightedMeans
-  
-  # final_result ( uses 'countries_sorted' )
-  large_nationals_last_know_bond_ratings_by_month_numeric_plus_gdp_weights[["all_ratings_mean_gdp_wtd"]] <- 
-  rowSums( as.matrix(large_nationals_last_know_bond_ratings_by_month_numeric_plus_gdp_weights[, paste0(countries_sorted, "__rating_mean"),drop = FALSE]) * as.matrix(large_nationals_last_know_bond_ratings_by_month_numeric_plus_gdp_weights[, paste0(countries_sorted, "__gdp_wdt"),drop = FALSE]), na.rm = TRUE)
-
-  
-         large_nationals_bond_bond_ratings_wtd_by_month <- large_nationals_last_know_bond_ratings_by_month_numeric_plus_gdp_weights
-
-  on.exit({Sys.setenv(TZ=oldtz)})
-         
-  message("End function: get_one_large_nationals_bond_bond_ratings_wtd_by_month")
-         
-  return(large_nationals_bond_bond_ratings_wtd_by_month)
-
-}
-# res <- get_one_large_nationals_bond_bond_ratings_wtd_by_month()
-# > str(res, list.len = 999)
-# 'data.frame':	179 obs. of  143 variables:
-#  $ dateindex                          : int  12083 12111 12142 12172 12203 12233 12264 12295 12325 12356 ...
-#  $ dateindex_dt                       : Date, format: "2003-01-31" "2003-02-28" "2003-03-31" "2003-04-30" ...
-#  $ united_states__fitch_rating        : num  100 100 100 100 100 100 100 100 100 100 ...
-#  $ united_states__moody_s_rating      : num  100 100 100 100 100 100 100 100 100 100 ...
-#  $ united_states__s_p_rating          : num  NA NA NA NA NA NA NA NA NA NA ...
-#  $ united_states__te_rating           : num  NA NA NA NA NA NA NA NA NA NA ...
-#  $ united_states__fitch_outlook       : chr  "stable" "stable" "stable" "stable" ...
-#  $ united_states__moody_s_outlook     : chr  "stable" "stable" "stable" "stable" ...
-#  $ united_states__s_p_outlook         : chr  NA NA NA NA ...
-#  $ united_states__te_outlook          : chr  NA NA NA NA ...
-# ...
-#  $ united_states__rating_mean         : num  100 100 100 100 100 100 100 100 100 100 ...
-#  $ china__rating_mean                 : num  66.7 66.7 66.7 66.7 66.7 ...
-#  $ japan__rating_mean                 : num  90 90 90 90 90 90 90 90 90 90 ...
-#  $ germany__rating_mean               : num  100 100 100 100 100 100 100 100 100 100 ...
-#  $ united_kingdom__rating_mean        : num  100 100 100 100 100 100 100 100 100 100 ...
-#  $ india__rating_mean                 : num  45 46.7 46.7 46.7 46.7 ...
-#  $ france__rating_mean                : num  100 100 100 100 100 100 100 100 100 100 ...
-#  $ brazil__rating_mean                : num  31.7 31.7 31.7 31.7 31.7 ...
-#  $ italy__rating_mean                 : num  90 90 90 90 90 90 90 90 90 90 ...
-#  $ canada__rating_mean                : num  98.3 98.3 98.3 98.3 98.3 ...
-#  $ russian_federation__rating_mean    : num  43.3 43.3 43.3 43.3 46.7 ...
-#  $ korea_rep__rating_mean             : num  71.7 71.7 71.7 71.7 71.7 ...
-#  $ australia__rating_mean             : num  95 98.3 98.3 98.3 98.3 ...
-#  $ spain__rating_mean                 : num  96.7 96.7 96.7 96.7 96.7 ...
-#  $ australia__gdp_wdt                 : num  0.0146 0.0146 0.0146 0.0146 0.0146 ...
-#  $ brazil__gdp_wdt                    : num  0.0188 0.0188 0.0188 0.0188 0.0188 ...
-#  $ canada__gdp_wdt                    : num  0.0281 0.0281 0.0281 0.0281 0.0281 ...
-#  $ china__gdp_wdt                     : num  0.0545 0.0545 0.0545 0.0545 0.0545 ...
-#  $ france__gdp_wdt                    : num  0.0556 0.0556 0.0556 0.0556 0.0556 ...
-#  $ germany__gdp_wdt                   : num  0.077 0.077 0.077 0.077 0.077 ...
-#  $ india__gdp_wdt                     : num  0.0188 0.0188 0.0188 0.0188 0.0188 ...
-#  $ italy__gdp_wdt                     : num  0.0469 0.0469 0.0469 0.0469 0.0469 ...
-#  $ japan__gdp_wdt                     : num  0.152 0.152 0.152 0.152 0.152 ...
-#  $ korea_rep__gdp_wdt                 : num  0.0226 0.0226 0.0226 0.0226 0.0226 ...
-#  $ russian_federation__gdp_wdt        : num  0.0128 0.0128 0.0128 0.0128 0.0128 ...
-#  $ spain__gdp_wdt                     : num  0.0261 0.0261 0.0261 0.0261 0.0261 ...
-#  $ united_kingdom__gdp_wdt            : num  0.0651 0.0651 0.0651 0.0651 0.0651 ...
-#  $ united_states__gdp_wdt             : num  0.407 0.407 0.407 0.407 0.407 ...
-#  $ all_ratings_mean_gdp_wtd           : num  92.3 92.4 92.4 92.4 92.4 ...
-# > 
-# PROB NOT HELPFUL ( GOES UP BEFORE A RECESSION )
-# res[,c("dateindex", "dateindex_dt","all_ratings_mean_gdp_wtd")]
-# 
-# 49      13544   2007-01-31                 92.17384
-# 50      13572   2007-02-28                 92.17384
-# 51      13603   2007-03-31                 92.17384
-# 52      13633   2007-04-30                 92.37025
-# 53      13664   2007-05-31                 92.46629
-# 54      13694   2007-06-30                 92.46629
-# 55      13725   2007-07-31                 92.62947
-# 56      13756   2007-08-31                 92.67748
-# 57      13786   2007-09-30                 92.67748
-# 58      13817   2007-10-31                 92.67748
-# 59      13847   2007-11-30                 92.79680
-# 60      13878   2007-12-31                 92.06020
-# 61      13909   2008-01-31                 92.06020
-# 62      13938   2008-02-29                 92.06020
-# 63      13969   2008-03-31                 92.06020
-# 64      13999   2008-04-30                 92.11469
-# 65      14030   2008-05-31                 92.16918
-# 66      14060   2008-06-30                 92.16918
-# 67      14091   2008-07-31                 92.35841
-# 68      14122   2008-08-31                 92.35841
-# 69      14152   2008-09-30                 92.35841
-# 70      14183   2008-10-31                 92.35841
-# 71      14213   2008-11-30                 92.35841
-# 72      14244   2008-12-31                 91.75374
-# 
-# 103     15186   2011-07-31                 90.37297
-# 104     15217   2011-08-31                 89.65630
-# 105     15247   2011-09-30                 89.58260
-# 106     15278   2011-10-31                 89.03956
-# 107     15308   2011-11-30                 89.15580
-# 108     15339   2011-12-31                 88.64830
-# 109     15370   2012-01-31                 88.08578
-# 110     15399   2012-02-29                 87.83104
-# 111     15430   2012-03-31                 87.83104
-# 112     15460   2012-04-30                 87.73762
-# 113     15491   2012-05-31                 87.35105
-# 114     15521   2012-06-30                 87.07079
-# 115     15552   2012-07-31                 86.92788
-# 116     15583   2012-08-31                 86.96562
-# 
-# 150     16616   2015-06-30                 86.18115
-# 151     16647   2015-07-31                 86.18115
-# 152     16678   2015-08-31                 86.10958
-# 153     16708   2015-09-30                 85.85483
-# 154     16739   2015-10-31                 85.82336
-# 155     16769   2015-11-30                 85.82336
-# 156     16800   2015-12-31                 86.72017 # credit rating jump ( but eoy gdp refresh )
-# 157     16831   2016-01-31                 86.72017
-# 158     16860   2016-02-29                 86.55538
-# 159     16891   2016-03-31                 86.55538
-
-
-
-# returns extended information
-# AND VERY! FAST
-get_symbol_FRED_xts <-function(symbol) {
-
-  # 2018+
-  # future work in limiting return results by the date range
-  # FUTURE 
-  # 
-  # FRED ALT API
-  # 
-  # GOOD LESS DATA
-  # https://fred.stlouisfed.org/graph/fredgraph.csv?cosd=2013-01-05&coed=2018-01-04&id=DGS3MO
-  # GOOD MORE DATA
-  # https://fred.stlouisfed.org/graph/fredgraph.csv?cosd=1800-01-01&coed=2018-01-04&id=DGS3MO
-  #
-  # getSymbols('DTWEXB',src='FRED') broken #209
-  # JAN 06 2018
-  # @AndreMikulec : good work getting the date range 
-  # https://github.com/joshuaulrich/quantmod/issues/209
-  
-  # NOTE: THIS *DOES* WORK AND FAST (COMMA SEPARATED RESULTS),  NO HEADER INFORMATION
-  # fcon <-curl::curl("https://fred.stlouisfed.org/graph/fredgraph.csv?cosd=2013-01-05&coed=2018-01-04&id=DGS3MO")
-  # fres <- readLines(fcon)
-  # close(fcon)
-  # writeLines(fres)
-  
   ops <- options()
   
+  options(warn = 1)
   options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
   options(digits = 22) 
   options(max.print=99999)
@@ -911,1407 +245,155 @@ get_symbol_FRED_xts <-function(symbol) {
   if(oldtz=='') {
     Sys.setenv(TZ="UTC")
   }
-
+  
+  if(NCOL(x) > 1) stop("In get_na_locfl_xts, only ONE column is allowed.")
+  
   require(xts)
-  # uses curl curl
-  
-  message("Begin function get_symbol_FRED_xts")
+  # uses package zoo function rollapply.zoo, 
+  # uses package DescTools function DoCall
 
-  if(is.null(symbol)) stop("get_symbol_FRED_xts: parameter symbol; needs a value")
+  x_orig <- x
+  c_orig <- class(x)[1] # original class
+  
+  x_try.xts_success <- FALSE
+  x_try.xts <- try(  xts::try.xts(x_orig) , silent = T)
 
-  fcon <-curl::curl(paste0("https://fred.stlouisfed.org/data/", symbol, ".txt"))
-  fres <- readLines(fcon)
-  close(fcon)
-
-  # boundary splitter between header area and data area
-  bo_header_area <- 1
-  eo_header_area <- match(TRUE, grepl( "^DATE.*VALUE$",fres)) - 1L
-  bo_data_area   <- eo_header_area + 2L
-  eo_data_area   <- length(fres)
-  header_area <- fres[seq(bo_header_area,eo_header_area,1)]
-  data_area   <- fres[seq(bo_data_area,eo_data_area ,1)]
-
-  # separate dates and values
-  temp <- strsplit(data_area, "[[:blank:]]+")
-  # 
-  # idea from
-  # 
-  # Select first element of nested list
-  # MAR 2017
-  # https://stackoverflow.com/questions/20428742/select-first-element-of-nested-list
-  # 
-  temp     <- unlist(temp)
-  len_temp <- length(temp)
-  # every other one
-  dates  <- temp[seq(1,len_temp,2)]
-  values <- temp[seq(2,len_temp,2)]
-  
-  # read.dcf sometimes does not likes lines with blanks
-  header_area <- header_area[!grepl("^[[:blank:]]+$|^$",header_area)]
-  
-  # collect information about the series
-  tcon <- textConnection(paste0(header_area, collapse = "\n"))
-  series_info <- read.dcf(tcon)
-  close(tcon)
-   
-  # create xts
-  new_xts <- do.call(xts, c(list(), list(as.numeric(values)), list(zoo::as.Date(dates)), as.list(data.frame(series_info, stringsAsFactors = FALSE))) )
-  colnames(new_xts) <- symbol
-
-  symbol_FRED_xts <- new_xts
-  
-  Sys.setenv(TZ=oldtz)
-  options(ops)
-  
-  message("End   function get_symbol_FRED_xts")
-  
-  return(symbol_FRED_xts)
-  
-}
-# Employment Level: Part-Time for Economic Reasons, All Industries
-#
-# returns extended information
-# 
-# symbol_FRED_xts <- get_symbol_FRED_xts("LNS12032194")
-# > str(symbol_FRED_xts)
-# An 'xts' object on 1955-05-01/2018-01-01 containing:
-#   Data: num [1:753, 1] 2063 1982 2123 2203 2133 ...
-#  - attr(*, "dimnames")=List of 2
-#   ..$ : NULL
-#   ..$ : chr "LNS12032194"
-#   Indexed by objects of class: [Date] TZ: UTC
-#   xts Attributes:
-# List of 10
-#  $ Title              : chr "Employment Level: Part-Time for Economic Reasons, All Industries"
-#  $ Series.ID          : chr "LNS12032194"
-#  $ Source             : chr "U.S. Bureau of Labor Statistics"
-#  $ Release            : chr "Employment Situation"
-#  $ Seasonal.Adjustment: chr "Seasonally Adjusted"
-#  $ Frequency          : chr "Monthly"
-#  $ Units              : chr "Thousands of Persons"
-#  $ Date.Range         : chr "1955-05-01 to 2018-01-01"
-#  $ Last.Updated       : chr "2018-02-02 8:01 AM CST"
-#  $ Notes              : chr "The series comes from the 'Current Population Survey (Household\nSurvey)'\nThe source code is: LNS12032194"
-
-
-
-# returns extended information
-# 
-# AND VERY! FAST
-# LIGHTNING LIGHTNING FAST
-# mult-request form symbol_FRED_xts
-# 
-get_multisymbols_FRED_xts <-function(symbols) {
-
-  # R version 3.4.3 (2017-11-30)
-  
-  # 2018+
-  # future work in limiting return results by the date range
-  # FUTURE 
-  # 
-  # FRED ALT API
-  # 
-  # GOOD LESS DATA
-  # https://fred.stlouisfed.org/graph/fredgraph.csv?cosd=2013-01-05&coed=2018-01-04&id=DGS3MO
-  # GOOD MORE DATA
-  # https://fred.stlouisfed.org/graph/fredgraph.csv?cosd=1800-01-01&coed=2018-01-04&id=DGS3MO
-  #
-  # getSymbols('DTWEXB',src='FRED') broken #209
-  # JAN 06 2018
-  # @AndreMikulec : good work getting the date range 
-  # https://github.com/joshuaulrich/quantmod/issues/209
-  
-  ops <- options()
-  
-  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
-  options(digits = 22) 
-  options(max.print=99999)
-  options(scipen=255) # Try these = width
-  
-  #correct for TZ 
-  oldtz <- Sys.getenv('TZ')
-  if(oldtz=='') {
-    Sys.setenv(TZ="UTC")
-  }
-
-  require(xts)
-  # uses package curl functions new_pool curl_fetch_multi multi_run
-  
-  message("Begin function get_multisymbols_FRED_xts")
-
-  if(is.null(symbols)) stop("get_multisymbols_FRED_xts: parameter symbols; needs a value")
-
-  done <- function(res) {
-    
-    new_name <- sub("[.]txt","",sub("https://fred.stlouisfed.org/data/","",res$url))
-    message(paste0("  Request of ",new_name," is done! Status:", res$status_code))
-
-    fres <- rawToChar(res$content)
-    fres <- strsplit(fres,"\r\n")[[1]]
-    
-    # boundary splitter between header area and data area
-    bo_header_area <- 1
-    eo_header_area <- match(TRUE, grepl( "^DATE.*VALUE$", fres)) - 1L
-    bo_data_area   <- eo_header_area + 2L
-    eo_data_area   <- length(fres)
-    header_area <- fres[seq(bo_header_area,eo_header_area,1)]
-    data_area   <- fres[seq(bo_data_area,eo_data_area ,1)]
-  
-    # separate dates and values
-    temp <- strsplit(data_area, "[[:blank:]]+")
-    # 
-    # idea from
-    # 
-    # Select first element of nested list
-    # MAR 2017
-    # https://stackoverflow.com/questions/20428742/select-first-element-of-nested-list
-    # 
-    temp     <- unlist(temp)
-    len_temp <- length(temp)
-    # every other one
-    dates  <- temp[seq(1,len_temp,2)]
-    values <- temp[seq(2,len_temp,2)]
-    
-    # read.dcf sometimes does not likes lines with blanks
-    header_area <- header_area[!grepl("^[[:blank:]]+$|^$",header_area)]
-    
-    # collect information about the series
-    tcon <- textConnection(paste0(header_area, collapse = "\n"))
-    series_info <- read.dcf(tcon)
-    close(tcon)
-     
-    # create xts
-    new_xts <- do.call(xts, c(list(), list(as.numeric(values)), list(zoo::as.Date(dates)), as.list(data.frame(series_info, stringsAsFactors = FALSE))) )
-
-    # see high above
-    colnames(new_xts) <- new_name
-                                  # from the outer env
-    data_content_xts <- c(list(), data_content_xts,list(new_xts))
-    # endpoint
-    names(data_content_xts)[length(data_content_xts)] <- new_name
-    data_content_xts <<- data_content_xts
-    
-  }
-  
-  fail <- function(msg) {
-    message(paste0("  Request failed! ", msg))
-  }
-  
-  data_content_xts <- list()
-  pool <- curl::new_pool()
-  for(symbol_i in symbols) {
-    url <- paste0("https://fred.stlouisfed.org/data/", symbol_i, ".txt")
-    curl::curl_fetch_multi(url, done = done, fail = fail, pool = pool)
-  }
-  out <- curl::multi_run(pool = pool)
-  
-  print(data.frame(out))
-  
-  multisymbols_FRED_xts <- data_content_xts
-  
-  Sys.setenv(TZ=oldtz)
-  options(ops)
-  
-  message("End   function get_multisymbols_FRED_xts")
-  
-  return(multisymbols_FRED_xts)
-  
-}
-#
-# LIGHTNING LIGHTNING FAST
-# mult-request form symbol_FRED_xts
-#
-# Employment Level: Part-Time for Economic Reasons, All Industries
-# Civilian Unemployment Rate
-#
-# returns extended information
-# 
-# > multisymbols_FRED_xts <- get_multisymbols_FRED_xts(c("LNS12032194","UNRATE"))
-# Begin function get_multisymbols_FRED_xts
-#   Request of UNRATE is done! Status:200
-#   Request of LNS12032194 is done! Status:200
-#   success error pending
-# 1       2     0       0
-# End   function get_multisymbols_FRED_xts
-# > names(multisymbols_FRED_xts)
-# [1] "UNRATE"      "LNS12032194"
-# > # str(multisymbols_FRED_xts)
-
-# str(multisymbols_FRED_xts[["LNS12032194"]])
-# str(multisymbols_FRED_xts[["UNRATE"]]
-# 
-
-
-
-# given 
-# two dataframes from two different sources that are close to each other ( but not exactly the same )
-#
-# generate 
-# replacement data.frame(s)
-# (replacement data.frame(s) are meant to be uses with the R package 'unjoin' and 
-# function ( unjoin::unjoin )
-# 
-# NOTE: also, TODO [ ] add a metadata fix ( e.g. column name: table/start_column/end_column  ) (EASY)
-# 
-# NOTE: I did combinations of '1 variable' and 'all variables'
-# I did not (yet!) do combinations ( e.g. combn ) of other variable subsets ( NOT SURE where THIS value GOES )
-# (QUITE DIFFICULT)
-#
-bridge_dfs <- function( dbfs, adjs = list() ) {
-
-  
-  `%like%` <- function(x, pattern) {
-  
-      if (is.factor(x)) {
-          as.integer(x) %in% grep(pattern, levels(x))
-      }
-      else {
-          grepl(pattern, x)
-      }
-  }
-  
-  # one-off (practical/realistic) data adjustments
-  for(adjs_i in adjs) { 
-    
-    temp <-  dbfs[[adjs_i[1]]]
-    # replace column element values
-    temp[[adjs_i[2]]] <- blockmodeling::recode(temp[[adjs_i[2]]], adjs_i[3], adjs_i[4]) 
-    dbfs[[adjs_i[1]]] <- temp
-    rm("temp")
-    
-  }
-    
-  # NEED one-off (practical/realistic) meta-data adjustements
-  # TODO[ ]
-  
-  # all values in all columns
-  dbfs[[paste0(names(dbfs), collapse = "__")]] <- plyr::join_all(dbfs, type = "full")
-  
-  dbfs_new <- list()
-  
-  dbfs_index <- 0L
-  for(dbfs_i in dbfs) {
-    
-    dbfs_index  <- dbfs_index + 1L
-    # specific data.frame name
-    dbfs_i_name <- names(dbfs)[dbfs_index] 
-    
-    # LEFT_OFF ( NOTHING SPECIAL: JUST 'MORE' 'single column values
-    # ( expr = { dbfs_i_name == "house__zoo"  } )
-    
-    # > combn(colnames(dbfs_i), 1, simplify = FALSE)
-    # [[1]]
-    # [1] "animal"
-    
-    # [[2]]
-    # [1] "color"
-    
-    # LEFT_OFF: need to handle the multiple case
-    # > combn(colnames(dbfs_i), 2, simplify = FALSE)
-    # [[1]]
-    # [1] "animal" "color" 
-    
-    # single column ONLY 
-    for(columns_i_name in colnames(dbfs_i)){
-      
-      # in the original data.frames constuct columns of non-unique record identifiers
-      #
-      # column values vector
-      temp <- dbfs[[dbfs_i_name]][[columns_i_name]]
-      # new column
-      dbfs[[dbfs_i_name]][[paste0(dbfs_i_name, "__", columns_i_name, "__id")]] <- seq_along(temp)
-      rm("temp")
-      dbfs[[dbfs_i_name]] <- DataCombine::MoveFront(dbfs[[dbfs_i_name]], paste0(dbfs_i_name, "__", columns_i_name, "__id") )
-      
-      # construct new data.frames of unique values
-      # 
-      # unique column values
-      unique_temp <- sort(unique(dbfs[[dbfs_i_name]][[columns_i_name]]))
-      temp <- data.frame(id = seq_along(unique_temp), value = unique_temp, stringsAsFactors = FALSE)
-      rm("unique_temp")
-      # column names
-      names(temp) <- paste0(paste0(dbfs_i_name, "__", columns_i_name), c("__unique__id", "__unique__value"))
-      temp <- list(temp)
-      # the data.frame name itself
-      names(temp)[1] <- paste0(dbfs_i_name, "__", columns_i_name, "__unique")
-      dbfs_new    <- c(dbfs_new, temp) 
-      rm("temp")
-      
-      # from the data.frames of unique values
-      # assign those unique ids into the original data.frames
-      # 
-      dbfs[[dbfs_i_name]][[paste0(dbfs_i_name, "__", columns_i_name, "__unique__id")]] <-
-      as.integer(
-        blockmodeling::recode(
-            dbfs[[dbfs_i_name]][[columns_i_name]]
-          , dbfs_new[[paste0(dbfs_i_name, "__", columns_i_name, "__unique")]][[paste0(dbfs_i_name, "__", columns_i_name, "__unique__value")]]
-          , dbfs_new[[paste0(dbfs_i_name, "__", columns_i_name, "__unique")]][[paste0(dbfs_i_name, "__", columns_i_name, "__unique__id")]]
-        )
-      )
-      dbfs[[dbfs_i_name]] <- DataCombine::MoveFront(dbfs[[dbfs_i_name]], paste0(dbfs_i_name, "__", columns_i_name, "__unique__id") )
-      
-    }
-  }
-  
-  ## # all single data.frame results
-  ## dbfs_new[[paste(names(dbfs), collapse = "__")]] <- plyr::join_all(dbfs, type = "full")
-  
-  ## 
-  ## # begin multiple data.frame results
-  ## temp <- dbfs_new[[paste(names(dbfs), collapse = "__")]][,!colnames(get(dbfs_i)) %like% "__id$", drop = FALSE]
-  
-  return(list(dbfs=dbfs,dbfs_new=dbfs_new))
-}
-# call-ish
-# bridge_dfs( Hmisc_llist_of_dfs, list( c(table, col,  from_value, to_value ), c(table, col,  from_value, to_value ) )
-
-# # BEGIN TEST
-# house  <- data.frame(animal = c("cat2", "dog","cat2"), color = c("fire", "blue", "blue"), stringsAsFactors = FALSE)
-# 
-# zoo    <- data.frame(animal = c("monkey","cat","cat"), color = c("yellow", "red", "red"), stringsAsFactors = FALSE)
-# 
-# res <- bridge_dfs( 
-#      dbfs = list(house = house, zoo = zoo) # pass a named list
-#    , adjs = list( 
-#        c("house", "animal",  "cat2", "cat" ) # table/column/start_value/replaced_value
-#      , c("house", "color" ,  "fire", "red" )
-#    ) 
-# ) 
-#
-# > str(res$dbfs, vec.len = 999)
-# List of 3
-#  $ house     :'data.frame':	3 obs. of  6 variables:
-#   ..$ house__color__unique__id : int [1:3] 2 1 1
-#   ..$ house__color__id         : int [1:3] 1 2 3
-#   ..$ house__animal__unique__id: int [1:3] 1 2 1
-#   ..$ house__animal__id        : int [1:3] 1 2 3
-#   ..$ animal                   : chr [1:3] "cat" "dog" "cat"
-#   ..$ color                    : chr [1:3] "red" "blue" "blue"
-#  $ zoo       :'data.frame':	3 obs. of  6 variables:
-#   ..$ zoo__color__unique__id : int [1:3] 2 1 1
-#   ..$ zoo__color__id         : int [1:3] 1 2 3
-#   ..$ zoo__animal__unique__id: int [1:3] 2 1 1
-#   ..$ zoo__animal__id        : int [1:3] 1 2 3
-#   ..$ animal                 : chr [1:3] "monkey" "cat" "cat"
-#   ..$ color                  : chr [1:3] "yellow" "red" "red"
-#  $ house__zoo:'data.frame':	5 obs. of  6 variables:
-#   ..$ house__zoo__color__unique__id : int [1:5] 2 2 1 1 3
-#   ..$ house__zoo__color__id         : int [1:5] 1 2 3 4 5
-#   ..$ house__zoo__animal__unique__id: int [1:5] 1 1 2 1 3
-#   ..$ house__zoo__animal__id        : int [1:5] 1 2 3 4 5
-#   ..$ animal                        : chr [1:5] "cat" "cat" "dog" "cat" "monkey"
-#   ..$ color                         : chr [1:5] "red" "red" "blue" "blue" "yellow"
-#   
-# > str(res$dbfs_new, vec.len = 999)
-# List of 6
-#  $ house__animal__unique     :'data.frame':	2 obs. of  2 variables:
-#   ..$ house__animal__unique__id   : int [1:2] 1 2
-#   ..$ house__animal__unique__value: chr [1:2] "cat" "dog"
-#  $ house__color__unique      :'data.frame':	2 obs. of  2 variables:
-#   ..$ house__color__unique__id   : int [1:2] 1 2
-#   ..$ house__color__unique__value: chr [1:2] "blue" "red"
-#  $ zoo__animal__unique       :'data.frame':	2 obs. of  2 variables:
-#   ..$ zoo__animal__unique__id   : int [1:2] 1 2
-#   ..$ zoo__animal__unique__value: chr [1:2] "cat" "monkey"
-#  $ zoo__color__unique        :'data.frame':	2 obs. of  2 variables:
-#   ..$ zoo__color__unique__id   : int [1:2] 1 2
-#   ..$ zoo__color__unique__value: chr [1:2] "red" "yellow"
-#  $ house__zoo__animal__unique:'data.frame':	3 obs. of  2 variables:
-#   ..$ house__zoo__animal__unique__id   : int [1:3] 1 2 3
-#   ..$ house__zoo__animal__unique__value: chr [1:3] "cat" "dog" "monkey"
-#  $ house__zoo__color__unique :'data.frame':	3 obs. of  2 variables:
-#   ..$ house__zoo__color__unique__id   : int [1:3] 1 2 3
-#   ..$ house__zoo__color__unique__value: chr [1:3] "blue" "red" "yellow"
-# 
-# # END TEST
-
-
-
-# NOTE: TODO 
-#            [ ] PULL OUT 'fund_data' to the OUTSIDE so rstudio can see breakpoints
-#            [ ] PULL OUT getFin.advfn_inner FROM getFin.advfn (
-#            [ ] CURRENLTY, CAN NOT GET "MULTISYMBOL" IMPORT TO WORK
-#            [ ] REPLACE replace DANGEROUS cbind with data.table WORK
-# 
-getFin.advfn <- function(
-  Symbol,                       # ticker(s)
-  env=parent.frame(), 
-  auto.assign=TRUE, 
-  n=10, 			                  # number of periods
-  mode=c('quarterly','annual'), # periodicity
-  max.attempts=5,	              # maximum number of attempts to download before exiting
-  ...) {
-
-
-  # SEEN APR 09 2018
-  # Quantmod getFX function error
-  # https://stackoverflow.com/questions/49688058/quantmod-getfx-function-error
-  # 
-  # getFX produces 404 error #226
-  # https://github.com/joshuaulrich/quantmod/issues/226
-  # 
-  # joshuaulrich
-  # Defunct all Google source functions
-  # Google Finance stopped providing historical price data for download
-  # in mid-March, 2018. Mark getSymbols.google() as defunct and suggest
-  # users call getSymbols(..., src = "yahoo") instead. Also mark getFin()
-  # and getFinancials() as defunct.
-  # 
-  # I considered automatically calling getSymbols.yahoo() to try and
-  # return _some_ data, but Ethan Smith rightly commented that Yahoo
-  # and Google data differ enough to potentially cause subtle bugs.
-  # 
-  # See #221.
-  # 
-  # Google Finance no longer providing data #221
-  # https://github.com/joshuaulrich/quantmod/issues/221
-  # 
-  # --
-  # GUTTED:  getFin, getSymbols.google
-  # 
-  # Defunct all Google source functions
-  # 
-  # Google Finance stopped providing historical price data for download
-  # in mid-March, 2018. Mark getSymbols.google() as defunct and suggest
-  # users call getSymbols(..., src = "yahoo") instead. Also mark getFin()
-  # and getFinancials() as defunct.
-  # 
-  # I considered automatically calling getSymbols.yahoo() to try and
-  # return _some_ data, but Ethan Smith rightly commented that Yahoo
-  # and Google data differ enough to potentially cause subtle bugs.
-  # 
-  # https://github.com/joshuaulrich/quantmod/commit/24616e0cc2f5f6e950a7899c68ddade5a67e1332
-  #   
-  # FOUND old FORMAT
-  # INTERNET WAY BACK MACHINE - MAR 09 2016
-  # https://web.archive.org/web/20160309092330/http://www.google.com/finance?fstype=ii&q=MSFT
-  #
-  # (last know good working)
-  # Google Finance ( the last getFin/getFinancials  viewFin/viewFinancials 
-  # APR 09 2018
-  # quantmod    * 0.4-13     2018-01-08 Github (joshuaulrich/quantmod@fa2966a)
-  
-  
-  getFin.advfn_inner <- function(
-    Symbol=NULL,                # ticker(s)
-    env=NULL, 
-    auto.assign=NULL, 
-    n=NULL, 	 		              # number of periods
-    mode=NULL,                  # periodicity
-    max.attempts=NULL,	        # maximum number of attempts to download before exiting
-    ...) {
-    
-    if(is.null(Symbol)      || is.null(env) || 
-       is.null(auto.assign) || is.null(n)   ||
-       is.null(mode)        || is.null(max.attempts) ) 
-         stop("getFin.advfn_inner needs actuall sent parameters not be null")
-    
-    ops <- options()
-    
-    options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
-    options(digits = 22) 
-    options(max.print=99999)
-    options(scipen=255) # Try these = width
-    
-    #correct for TZ 
-    oldtz <- Sys.getenv('TZ')
-    if(oldtz=='') {
-      Sys.setenv(TZ="UTC")
-    }
-    
-    # uses  curl    curl
-    # uses  stringr str_c str_detect str_extract
-    # uses  XML     htmlParse
-    # uses  htmltab htmltab
-    # uses  xml2    read_html
-    # uses  rvest   html_nodes
-    # uses  lubridate parse_date_time
-    # uses  zoo     as.Date as.yearmon
-    # uses  recoder recoder
-    # uses  purrr   transpose
-    # uses  rlist   list.merge
-    
-    # USE OF xml2 and rvest is INSPIRED BY ... ( downloads data from advfn )
-    # https://github.com/artichaud1/stocks/blob/master/download_financials.R
-    
-    # uses 
-    `%>%` <- magrittr::`%>%`
-    
-    # QUANTMOD GETFIN SPECIFIC
-    
-    # I think that it worked better when I called getFin.advfn_inner
-    # come back: I MAY change this back later
-    
-    if(missing(env))
-      env <- parent.frame(1)
-    if(is.null(env))
-      auto.assign <- FALSE
-    Symbol <- strsplit(Symbol,";")[[1]]
-    if(       (length(Symbol)>1) && (auto.assign = TRUE)) { # will 'auto.assign == TRUE' later
-      # I always want it returned to the user
-      return(lapply(Symbol, getFin.advfn, env=env, auto.assign=FALSE      , n = n, mode = mode, max.attempts = max.attempts, ... = ...))
-    } else if((length(Symbol)>1) && (auto.assign = FALSE)) {
-      # unwrap error on unlist() WRAPPER so I REMOVED IT
-      # I always want it returned to the user
-      return(lapply(Symbol, getFin.advfn, env=env, auto.assign=auto.assign, n = n, mode = mode, max.attempts = max.attempts, ... = ...))
-    } else {  } # length(Symbol) == 1L processing continues
-    Symbol.name <- Symbol
-    
-    # ANDRE WILL USE LATER USE CURL
-    ##
-    ## google.fin <- "http://finance.google.com/finance?fstype=ii&q="
-    ## tmp <- tempfile()
-    ## on.exit(unlink(tmp))
-    ## download.file(paste(google.fin,Symbol,sep=""),quiet=TRUE,destfile=tmp)
-    ## Symbol <- readLines(tmp, warn=FALSE)
-  
-    # ADVFN DATA EXRACTION BASE "HEAVILY" (BUT NOT ALL) UPON . . . 
-    # https://github.com/systematicinvestor/SIT/blob/master/R/fundamental.data.r
-    
-    # COULD be USEFUL in ITERATION
-    # 
-    # get all stocks on that exchange
-    # ------------------------------------
-    # A-Z
-    # http://www.advfn.com/nyse/nyse.asp?companies=A
-    # http://www.advfn.com/nasdaq/nasdaq.asp?companies=A
-    # http://www.advfn.com/amex/amex.asp?companies=A
-    # 
-    # SEEN MAR 2018
-    # https://github.com/lanerjo/plutus/blob/master/scrapethis.py
-    
-    # THIS PART WILL BE REREPLACED BY 'MOST-OF SYSTEMATIC" INVESTOR CODE
-    
-    # # thead contains the column names
-    # # tbody contains the data
-    # thead <- grep('thead', Symbol)
-    # tbody <- grep('tbody', Symbol)
-    # 
-    # # extract the column names
-    # c1 <- lapply(seq(1,11,2), function(x) Symbol[thead[x]:thead[x+1]])
-    # c2 <- lapply(c1,gsub,pattern="<.*?>",replacement="")
-    # cnames <- lapply(c2,function(x) x[-which(x=="")][-1])
-    # 
-    # # extract the data.  fnames if financial names (rownames)
-    # d1 <- lapply(seq(1,11,2), function(x) { Symbol[tbody[x]:tbody[x+1]]})
-    # d2 <- lapply(d1, gsub, pattern="<.*?>", replacement="", perl=TRUE)
-    # d3 <- lapply(d2, function(x) x[-which(x=="")])
-    # fnames <- lapply(d3, function(x) {
-    #                  gsub("&amp;","&",x[grep("[A-Za-z]",x)])} )
-    # # extract data and fill NAs where needed
-    # vals   <- lapply(d3, function(x) {
-    #           as.numeric(gsub(",","",
-    #           gsub("^-$",NA,x[-grep("[A-Za-z]",x)]))) })
-    
-    # SYSTEMATIC INVESTOR ( USED IN the function fund.data )
-    # https://github.com/systematicinvestor/SIT/blob/master/pkg/R/utils.r
-    # 
-    spl <- function(
-      s,          # input string
-      delim = ',' # delimiter
-    ) {
-      unlist(strsplit(s,delim))
-    }
-    
-    # SYSTEMATIC INVESTOR
-    # remnove any leading and trailing spaces
-    # trim('  a b c  ')
-    # https://github.com/systematicinvestor/SIT/blob/master/R/utils.r
-    
-    trim <- function
-    (
-      s # string
-    )
-    {
-      s = sub(pattern = '^\\s+', replacement = '', x = s)
-      sub(pattern = '\\s+$', replacement = '', x = s)
-    }
-    
-    # SYSTEMATIC INVESTOR
-    # https://cran.r-project.org/web/packages/purrr/purrr.pdf
-    len <- function
-    (
-      x # vector
-    )
-    {
-      length(x)
-    }
-    
-    # (SLIGHTLY MODIFIED WORK OF: ) SYSTEMATIC INVESTOR
-    # https://github.com/systematicinvestor/SIT/blob/master/R/fundamental.data.r
-    # 
-    fund.data <- function (
-    	Symbol, 		                    # ticker 
-    	n=10, 			                    # number of periods
-    	mode=c('quarterly','annual'),  # periodicity
-    	max.attempts=5,	                # maximum number of attempts to download before exiting
-      ...
-    )
-    {
-    	all.data <- c() 
-    	option.value <- -1
-    	
-    	start_date = spl('istart_date,start_date')
-    	names(start_date) = spl('quarterly,annual')
-    		
-      id_sheets_all <- data.frame()
-      is_sheets_all <- data.frame()
-      bs_sheets_all <- data.frame()
-      cf_sheets_all <- data.frame()
-      rc_sheets_all <- data.frame()
-      
-      all.data.colnames <- character()
-
-    	repeat {
-    		# download Quarterly Financial Report data
-    		if(option.value >= 0) {
-    			url <- paste('https://uk.advfn.com/p.php?pid=financials&symbol=', Symbol, '&btn=', mode[1], '_reports&', start_date[mode[1]], '=', option.value, sep = '')	
-    		} else {
-    			url <- paste('https://uk.advfn.com/p.php?pid=financials&symbol=', Symbol, '&btn=', mode[1], '_reports', sep = '')
-    		}
-    		
-    		cat('Downloading', url, '\n')
-    		
-    		#txt = join(readLines(url))		
-    		for(iattempt in 1:max.attempts) { 
-    			flag <- T
-    		    tryCatch({
-    		      fcon <-curl::curl(url)
-    		      fres <- readLines(fcon)
-    			}, interrupt = function(ex) {
-    				flag <<-  F
-    		  		Sys.sleep(0.1)
-    			}, error = function(ex) {
-    				flag <<-  F
-    				Sys.sleep(0.1)
-    			}, finally = {
-    			  close(fcon)
-    				if(flag) break
-    			})
-    		}
-    		# BETTER IDEA TO DO THIS *outside of the try loop*
-    		# txt = join(readLines(url))
-    		txt  <- stringr::str_c(fres, collapse = "")
-    		# SAVE FOR INPUT TO htmltab::htmltab
-    		txth <- XML::htmlParse(txt, asText = TRUE)
-    		
-        if( !stringr::str_detect(txt, 'INDICATORS') ) {
-          cat('No Data Found for', Symbol, '\n')
-          return(all.data)
-        }
-    		
-    		# get title
-    		# pos = regexpr(pattern = '<title>(.*?)</title>', txt, ignore.case = TRUE, perl = TRUE)
-    		# if(len(pos) == 1)
-    		# 	title = substr(txt, attr(pos, 'capture.start'), attr(pos, 'capture.start') + attr(pos, 'capture.length') - 1)
-        # e.g. "Walmart Inc. Company Financial Information"
-    		title <- stringr::str_extract(txt,'(?<=<title>).*(?=</title>)')
-    		title <- if(!is.na(title)) { title } else { "No Title" } 
-    		
-    		# ANDRE SPECIFIC
-    		# e.g. "All amounts in Millions of   US Dollars except per share items"
-    		units_long_message <- suppressMessages(names(htmltab::htmltab(txth, which = 6))[2])
-    		# e.g. "Millions" (SAVE FOR MATH LATER?)
-    		units              <- stringr::str_extract(units_long_message,'(?<=amounts in ).*(?= of)')
-    		# e.g. "Walmart Inc."
-        company <- str_extract(suppressMessages(names(htmltab::htmltab(txth, which = 5))),"[A-Za-z0-9].*")
-    		
-    		
-    		# extract table from this page
-    		# data = extract.table.from.webpage(txt, 'INDICATORS', has.header = T)
-    		# 	colnames(data) = data[1,]
-    		# 	rownames(data) = data[,1]
-    		# 	data = data[,-1,drop=F]
-    		
-    		# XML code or Goolge chrome XPath selects did not work
-    		data <- htmltab::htmltab(txth, which = 9)
-
-    		# REDONE BELOW ( SEE BELOW )
-    		# only add not already present data
-    		# add.index <- which( is.na(match( colnames(data), colnames(all.data) )) )			
-    		# all.data  <- cbind(data[,add.index,drop=F], all.data)
-    	
-        # new 1st row
-        data    <- rbind(colnames(data),data, stringsAsFactors = FALSE)
-        
-        # index of the row that  has the new column names
-        qed_idx <- which(stringr::str_detect(data[,1,drop = TRUE],'^quarter end date$|^year end date$'))
-        colnames(data)    <- data[qed_idx,,drop = TRUE]
-        colnames(data)[1] <- ""
-        
-        # dated column names
-        colnames(data) <- 
-          lubridate::parse_date_time(colnames(data), orders = c('ym')) %>% zoo::as.Date(.) %>%
-            zoo::as.yearmon(.) %>% zoo::as.Date(., frac = 1) %>% as.character(.)
-        colnames(data)[1] <- ""
-        
-        # 'quarter end date' 'year end date'
-        qed_col_idx <- which(str_detect(as.vector(unlist(data[qed_idx,])), "\\d{4}/\\d{2}"),TRUE)
-        data[qed_idx,qed_col_idx] <- as.vector(unlist(data[qed_idx,qed_col_idx])) %>% 
-          lubridate::parse_date_time(., orders = c('ym')) %>% zoo::as.Date(.) %>% 
-            zoo::as.yearmon(.) %>% zoo::as.Date(., frac = 1) %>% as.character(.)
-        
-        # filter columns
-        # only add not already present data
-        data <- data[,which(is.na(match(colnames(data), all.data.colnames))),drop = FALSE]
-        
-        # remove askterisks in row.names
-        ask_log <- stringr::str_detect(data[,1,drop = TRUE],'[*]')
-        data     <- data[!ask_log,,drop = FALSE]
-        rm(ask_log)
-        rm(qed_idx)
-        
-        # some statistcs are repeated
-        # remove duplicates in the 1st column ( to become row.names )
-        data <- data[!duplicated(data[,1,drop = TRUE]),]
-        
-        # assign new rows.names
-        row.names(data) <- data[,1,drop = TRUE]
-        data <- data[,-1,drop = FALSE]
-        
-        # remove row mini-statement titles
-        first_3_caps_lgl <- stringr::str_detect(row.names(data),'^[A-Z]{3}.*')
-        statements_lgl   <- stringr::str_detect(row.names(data),'^INDICATORS$|^INCOME STATEMENT$|^BALANCE SHEET$|^CASH-FLOW STATEMENT$|^RATIOS CALCULATIONS$')
-        ebits_lgl        <- stringr::str_detect(row.names(data),'^EBIT$|^EBITDA$')
-        data <- data[!(first_3_caps_lgl & !statements_lgl & !ebits_lgl),,drop = FALSE]
-        rm(first_3_caps_lgl,statements_lgl,ebits_lgl)
-        
-        # row indexes of where to do matrix extractions
-        indicators_idx  <- which(str_detect(row.names(data),'INDICATORS'),TRUE)
-        net_income_idx  <- which(str_detect(row.names(data),'INCOME STATEMENT'),TRUE)
-        bal_sheet_idx   <- which(str_detect(row.names(data),'BALANCE SHEET'),TRUE)
-        cash_flow_idx   <- which(str_detect(row.names(data),'CASH-FLOW STATEMENT'),TRUE)
-        ratio_calcs_idx <- which(str_detect(row.names(data),'RATIOS CALCULATIONS'),TRUE)
-        end_idx         <- NROW(data)
-        
-        # create sheets
-        id_sheet <- data[((indicators_idx+1):(net_income_idx-1)),,drop = FALSE] 
-        is_sheet <- data[((net_income_idx+1):(bal_sheet_idx-1)), ,drop = FALSE] 
-        bs_sheet <- data[((bal_sheet_idx+1):(cash_flow_idx-1)),  ,drop = FALSE] 
-        cf_sheet <- data[((cash_flow_idx+1):(ratio_calcs_idx-1)),,drop = FALSE] 
-        rc_sheet <- data[((ratio_calcs_idx+1):(end_idx)),        ,drop = FALSE] 
-        
-        # from CF sheet, move rows of 'auditor name' and 'auditor report' to ID sheet
-        auditor_name_idx   <- which(stringr::str_detect(row.names(cf_sheet),'auditor name'))
-        auditor_report_idx <- which(stringr::str_detect(row.names(cf_sheet),'auditor report'))
-        id_sheet <- rbind(id_sheet, cf_sheet[auditor_name_idx,  ,drop = FALSE], stringsAsFactors = FALSE)
-        id_sheet <- rbind(id_sheet, cf_sheet[auditor_report_idx,,drop = FALSE], stringsAsFactors = FALSE)
-        cf_sheet <- cf_sheet[-auditor_name_idx,  ,drop = FALSE]
-        rm(auditor_name_idx)
-        rm(auditor_report_idx)
-        auditor_report_idx <- which(stringr::str_detect(row.names(cf_sheet),'auditor report'))
-        cf_sheet <- cf_sheet[-auditor_report_idx,,drop = FALSE]
-        rm(auditor_report_idx)
-        
-        # ADD SUPPLEMENTARY INFORMATION TO THE ID SHEET
-        # MOVED FROM OUTSIDE THE REAPEAT LOOP 
-        # TO INSIDE THE REPEAT LOOP
-      	# all.data = rbind(all.data, title)
-        id_sheet <- rbind(id_sheet
-          , title   = title
-          , company = company
-          , symbol  = Symbol.name # so I can tell the calling program what I have sent
-          , units   = units
-          , stringsAsFactors = FALSE
-        )
-      	# LONG TIME AGO I SUGGESTED THIS.
-      	# BUT I PROBABLY WILL NOT KEEP THIS
-      	# rownames(all.data)[nrow(all.data)] = 'HTMLTITLEtext'
-        
-        # BEGIN CLEANING AND TYPE CONVERSIONS
-        
-        clean_to_numeric <- function(x) {
-        
-         `%>%` <- magrittr::`%>%`
-        
-          x %>% lapply(., function(x) { stringr::str_replace(x,",","") %>% as.numeric } ) %>%
-            data.frame(.,stringsAsFactors = FALSE) %>% 
-            `colnames<-`(.,colnames(x)) %>% `row.names<-`(.,row.names(x))  %>% as.matrix 
-        }
-        
-        # cleaned and convert to matrix
-        id_sheet <- id_sheet %>% as.matrix # class is a character
-        
-        # set col_desc attribute
-        # one XOR the_other (quarter/year) will be present
-        # 
-
-        if(any(row.names(id_sheet) == 'quarter end date')) {
-          salutation <- 'quarter end date'
-        }
-        # 
-        if(any(row.names(id_sheet) == 'year end date')) {
-          salutation <- 'year end date'
-        }
-        attr(id_sheet,'col_desc') <- stringr::str_c(salutation, ' ',colnames(id_sheet))
-        
-        # rest: class is numeric
-        # copy over attrib form the ID sheet
-        is_sheet <- is_sheet[,,drop = FALSE] %>% {suppressWarnings(clean_to_numeric(.))} 
-        attr(is_sheet,'col_desc') <- attr(id_sheet,'col_desc') 
-        
-        bs_sheet <- bs_sheet[,,drop = FALSE] %>% {suppressWarnings(clean_to_numeric(.))} 
-        attr(bs_sheet,'col_desc') <- attr(id_sheet,'col_desc')
-        
-        cf_sheet <- cf_sheet[,,drop = FALSE] %>% {suppressWarnings(clean_to_numeric(.))} 
-        attr(cf_sheet,'col_desc') <- attr(id_sheet,'col_desc')
-        
-        rc_sheet <- rc_sheet[,,drop = FALSE] %>% {suppressWarnings(clean_to_numeric(.))} 
-        attr(rc_sheet,'col_desc') <- attr(id_sheet,'col_desc')
-        
-        # END CLEANING AND TYPE CONVERSIONS
-        
-        # accumulate
-         
-        id_sheets_all <- c(list(),list(id_sheet),id_sheets_all)
-        is_sheets_all <- c(list(),list(is_sheet),is_sheets_all)
-        bs_sheets_all <- c(list(),list(bs_sheet),bs_sheets_all)
-        cf_sheets_all <- c(list(),list(cf_sheet),cf_sheets_all)
-        rc_sheets_all <- c(list(),list(rc_sheet),rc_sheets_all)
-        
-        # NOT USED ANYWHERE IN THE PROGRAM
-        # I DO NOT REMEMBER WHAT IT WAS FOR 
-        # BROWSING THE ORIGINAL SYSTEMATIC INVESTOR CODE
-        # AND COMPARING MY WORK, I MAY/MUST HAVE OTHER-WRITTEN THE LOGIC BELOW
-        # all.data.columns  <- c(colnames(id_sheet), all.data.colnames)
-          
-        # GRAND EXIT from FUND.DATA
-        all.data <- list(ID=id_sheets_all,IS=is_sheets_all,BS=bs_sheets_all,CF=cf_sheets_all,RC=rc_sheets_all)
-
-        # check if it is time to stop
-   		  # ABOVE REDONE
-    		# # check if it is time to stop
-    		# #if(ncol(all.data) >= n) break
-    		if(NROW(as.vector(unlist(sapply(id_sheets_all, colnames)))) >= n) break
- 
-    		if(option.value == 0)  break
-    		
-    		# extract option value to go to the next page
-    		# temp = gsub(pattern = '<option', replacement = '<tr>', txt, perl = TRUE)
-    		# temp = gsub(pattern = '</option>', replacement = '</tr>', temp, perl = TRUE)	
-    		# temp = extract.table.from.webpage(temp, 'All amounts', has.header = T)
-    		raw_html <- xml2::read_html(txt)
-    		# temp = apply(temp,1,join)
-    		# S3 dispatch
-    		# From the user drop down box
-    		# vector of "<option>. . .</options"
-        # 
-        if(mode == 'quarterly') {
-    		  temp <- as.character(rvest::html_nodes(raw_html, 'table select#istart_dateid option'))
-        }
-        if(mode == 'annual') {
-    		  temp <- as.character(rvest::html_nodes(raw_html, 'table select#start_dateid option'))
-        }
-        
-        # index.selected = grep('selected', temp)
-        index.selected <- match(TRUE, stringr::str_detect(temp, 'selected'))
-    		
-        option.value <- 0
-        if(	len(index.selected) ) {
-          # option.value = as.double( gsub('.*value=\'([0-9]*).*', '\\1', temp[index.selected]) ) 
-          option.value <-  as.integer(stringr::str_extract(temp[index.selected], "\\d+"))
-        }
-          
-        
-    		if(option.value > 0) {
-    			# can only get 5 time periods at a time
-    			option.value = option.value - 5
-    			option.value = max(0, option.value)		
-    		} else {
-    			break
-    		}
-    	} # end repeat
-    	
-      # REST OF THE PROGAM DOES NOT EXPECT AN 
-      # *INTERMEDIARY BLANK LIST LEVEL*
-      # SO I WILL REMOVE THAT *BLANK LEVEL* HERE
-      # ITER OVER: "ID" "IS" "BS" "CF" "RC"
-      # I WILL ALSO COMBINE(CBIND) ALL DATES/PER (ITER) INTO ONE PLACE
-      
-      # CBIND DOES PRESERVE MATRIX ROWNAMES AND COLNAMES
-      # HOWEVER, IT DOES NOT PRESERVE ATTRIBUTES
-      for(name_i in names(all.data)) {
-      
-        all.data_temp <- all.data[[name_i]]
-        col_desc_temp <- do.call(c,lapply(all.data_temp,function(x) {attr(x,"col_desc")}))
-        # 
-        # ASSUMES perfect rownames are the same ON each sheet ( not garenteed )
-        # so this is dangerous ... rewrite this ( [ ] FIX THIS )
-        # [ ] REQUIRED FIX
-        # mtcars1 and mtcars2 each have distinct row.names and distinct colnmes from each other
-        # cbind PRODUCES the WRONG anser
-        # library(data.table)
-        # NEED A MULTIVARIATE magrittr ( CAN library(rmonads) HELP?)
-        # would like to *dual pass arguments*
-        # data.table:::merge.data.table PRODUCES the RIGHT answer
-        # merge(data.table(mtcars1, keep.rownames = T), data.table(mtcars2, keep.rownames = T), all = TRUE, sort = FALSE) %>% 
-        #   SAVE_ROW_NAMES %>% `[`(, -1) %>% as.matrix %>% ADD BACK ROWNAMES
-        #                      # REMOVE COLUMN # 
-        # 
-        all.data_temp <- do.call(cbind,all.data_temp)
-        attr(all.data_temp,"col_desc") <- col_desc_temp
-        all.data[[name_i]] <- all.data_temp 
-      
-      } 
-      rm(all.data_temp)
-      rm(col_desc_temp)
-      
-      # EQUIVALENT IS BELOW
-    	# remove empty columns
-    	# all.data = all.data[, colSums(nchar(trim(all.data))) > 0, drop=F]
-    	# remove empty columns
-      for(i in seq_along(all.data)) {
-      
-        # keep_lgl <- colSums(nchar(trim(all.data[[i]]))) > 0
-        # I THINK THAT THE ORIGINAL AUTHOR MEANT THIS
-        keep_lgl <- sapply( data.frame(all.data[[i]], stringsAsFactors = F), function(x) { nchar(paste0(trim(as.character(x)), collapse = "")) > 0 } )
-        attr_temp <- attr(all.data[[i]], "col_desc")
-        # SUPRISINGLY THIS CALL "[, keep_lgl, drop=F]" dropS attributes
-        all.data[[i]] <- all.data[[i]][, keep_lgl, drop=F]
-        all.data_temp <- all.data[[i]]
-        attr(all.data_temp, "col_desc") <- attr_temp[keep_lgl]
-        all.data[[i]]  <- all.data_temp
-      }
-      rm(i);rm(all.data_temp);rm(keep_lgl);rm(attr_temp)
-
-      # just in case he gets MORE DATA THAN HE NEEDS from the remote,
-      # THEN and ONLY then DOES  he DECIDE TO filter (if needed) WHAT is returned TO THE USER
-      
-      # I REPLACED all.data using all.data[["ID"]]
-      # I REPLACED ncol WITH 'NCOL'
-    	if( NCOL(all.data[["ID"]]) > n ) {	
-    		return(all.data[,(NCOL(all.data[["ID"]])-n+1):NCOL(all.data[["ID"]]), drop=F])
-    	} else {
-    		return(all.data)
-    	}
-    } # end function fund.data
-  
-    # calls begin
-    fund_data_all <- list()
-    for(mode_i in mode) {
-      fund_data <- fund.data (
-      	Symbol = Symbol, 		            # ticker 
-      	n=n, 			                      # number of periods
-      	mode= mode_i,                   # periodicity
-      	max.attempts=max.attempts,	    # maximum number of attempts to download before exiting
-        ...
-      )
-
-      # GRAND EXIT from FIN 
-      # attrib(GOOG.f[["IS"]][["Q"]],"col_desc") <- c("Quarter End Date YYYY-MM-DD1","Quarter End Date YYYY-MM-DD2") 
-      #
-      # getting fund_data[["IS"]], fund_data[["BS"]], etc, . . .
-      fund_data_all <- c(list(),fund_data_all, list(fund_data))
-      names(fund_data_all)[length(fund_data_all)] <- recoder::recoder( mode_i, ' "quarterly":"Q"; "annual":"A" ' ) 
-
-    } # end calls loop
-
-    # TRANSPOSE THE LIST MAIN with LIST SUB layer
-
-    Q_list <- purrr::transpose(list(Q = fund_data_all$Q))
-    A_list <- purrr::transpose(list(A = fund_data_all$A))
-    fund_data_all <- rlist::list.merge(Q_list, A_list)
-    fin <- fund_data_all
-  
-    # THIS AREA below REPLACE has been repaced with ABOVE
-    #
-    # code from the original "getFinancials
-    #
-    # # convert to a matrix with correct dim and names
-    # make_col_names <- function(name) {
-    #   substr(name, nchar(name)-9, nchar(name))
-    # }
-    # fin <- lapply(1:6,
-    #        function(x) {
-    #          structure(matrix(vals[[x]],nrow=length(fnames[[x]]),byrow=TRUE),
-    #                    .Dimnames=list(fnames[[x]],make_col_names(cnames[[x]])),
-    #                    col_desc=cnames[[x]])})
-    # fin <- list(IS=list(Q=fin[[1]], A=fin[[2]]),
-    #             BS=list(Q=fin[[3]], A=fin[[4]]),
-    #             CF=list(Q=fin[[5]], A=fin[[6]]))
-                
-    # # src = "google"
-    # > getFinancials("GOOG;GE")
-    # 
-    # > mode(GOOG.f[["IS"]][["Q"]])
-    # [1] "numeric"
-    # > class(GOOG.f[["IS"]][["Q"]])
-    # [1] "matrix"
-    # > mode(GOOG.f[["IS"]])
-    # [1] "list"
-    # > class(GOOG.f[["IS"]])
-    # [1] "list"
-    # 
-    # > attributes(GOOG.f[["IS"]][["Q"]])
-    # $dim
-    # [1] 49  5
-    # 
-    # $dimnames
-    # $dimnames[[1]]
-    #  [1] "Revenue"
-    #  [2] "Other Revenue, Total"
-    # 
-    # [47] "Normalized Income Avail to Common"
-    # [48] "Basic Normalized EPS"
-    # [49] "Diluted Normalized EPS"
-    # 
-    # $dimnames[[2]]
-    # [1] "2017-12-31" "2017-09-30" "2017-06-30" "2017-03-31" "2016-12-31"
-    # 
-    # $col_desc ( ADVFN: Quarter End Date  2016/10 )
-    # [1] "3 months ending 2017-12-31" "3 months ending 2017-09-30"
-    # [3] "3 months ending 2017-06-30" "3 months ending 2017-03-31"
-    # [5] "3 months ending 2016-12-31"
-    # 
-    # > attributes(GOOG.f[["IS"]])
-    # $names
-    # [1] "Q" "A"
-    # 
-    # # I THINK HTAT THE CODE BELOW ADDS BELOW)
-    # # 
-    # > attributes(GOOG.f)
-    # $names
-    # [1] "IS" "BS" "CF"
-    # 
-    # $symbol
-    # [1] "GOOG"
-    # 
-    # $class
-    # [1] "financials"
-    # 
-    # $src
-    # [1] "google"
-    # 
-    # $updated
-    # [1] "2018-03-11 03:16:10 GMT"
-    
-    # QUANTMOD/GETFIN SPECIFIC STUFF STAYS ( I MOVED IT down MORE )
-    
-    # TO "auto.assign == TRUE' later"
-    # I have to move this to an OUTER wrapper
-    
-    # if (auto.assign) {
-    #   assign(paste(gsub(":", ".", Symbol.name), "f", sep = "."),
-    #          structure(fin, symbol = Symbol.name, class = "financials",
-    #          src = "advfn", updated = Sys.time()), env)
-    #   return(paste(gsub(":", ".", Symbol.name), "f", sep = "."))
-    # } else {
-    #   return(structure(fin, symbol = Symbol.name, class = "financials",
-    #          src = "advfn", updated = Sys.time()))
-    # }
-    
-    # ALWAYS RETURN - LET THE OUTER FUNCTION HANDLE 
-    # 1. ATTRIBUTES
-    # 2. THE ENVIRONMENT ASSIGNMENT
-    return(list(fin = fin, Symbol.name = Symbol.name))
-    
-  }
-  
-  getFin.advfn_inner(
-    Symbol=Symbol,              # ticker(s)
-    env=env, 
-    auto.assign=auto.assign, 
-    n=n, 			                  # number of periods
-    mode=mode,                  # periodicity
-    max.attempts=max.attempts,	# maximum number of attempts to download before exiting
-    ...
-  ) -> Fin.advfn_inner 
-  
-  fin         <- Fin.advfn_inner$fin
-  Symbol.name <- Fin.advfn_inner$Symbol.name
-  
-  # DOES WORK
-  # Symbol.name <- with ( Fin.advfn_inner$ID, { 
-  #   if(exists('Q')) return(Q[which(rownames(Q) == 'symbol'),1])
-  #   if(exists('A')) return(A[which(rownames(A) == 'symbol'),1])
-  # })
-  
-  browser()
-  
-  if (auto.assign) {
-    assign(paste(gsub(":", ".", Symbol.name), "f", sep = "."),
-           structure(fin, symbol = Symbol.name, class = "financials",
-           src = "advfn", updated = Sys.time()), env)
-    return(paste(gsub(":", ".", Symbol.name), "f", sep = "."))
-  } else {
-    return(structure(fin, symbol = Symbol.name, class = "financials",
-           src = "advfn", updated = Sys.time()))
-  }
-  
-}
-`getFinancials.advfn` <- getFin.advfn
-
-# library(quantmod)
-# getFinancials("GOOG;GE")
-# NOTE: places GOOG.f and GE.f in the .GlobalEnv
-# library(quantmod)
-# 
-# DO NOT DO BELOW, THIS DOES NOT WORK ( SHOULD ASK how to do )
-# IT PRODUCES A STRING OUTPUT
-# Financials <- getFinancials("GOOG;GE", auto.assign = FALSE)
-#
-# tests
-# 
-# getFin.advfn("WMT")
-# str(WMT.f)
-# ViewFin(WMT.f, type="BS", period = "Q")
-#
-
-
-
-startFinPhantomDriver <- function(pjs_cmd = "", port = 4444L, extras = "", ...){
-
-  require(RSelenium)
-  
-  # APR 2018
-  # Download phantomjs-2.1.1-windows.zip (17.4 MB) and extract (unzip) the content.
-  # http://phantomjs.org/download.html
-
-  # phantom help
-  # https://cran.r-project.org/web/packages/RSelenium/vignettes/RSelenium-headless.html
-  # 
-  # place in the PATH
-  # C:\OTHERBIN\phantomjs.exe
-  # 
-  # C:\Users\ComputerUser>echo %PATH%
-  # C:\OTHERBIN
-
-  # phantom exe help
-  # http://phantomjs.org/api/command-line.html
-  # 
-  # consider
-  #
-  # peformance
-  #
-  # --load-images=[true|false]           load all inlined images (default is true). Also accepted: [yes|no].
-  # --max-disk-cache-size=size           limits the size of disk cache (in KB).
-  # 
-  # debugging
-  # 
-  # --debug=[true|false]                          prints additional warning and debug message, default is false. Also accepted: [yes|no].
-  # --local-to-remote-url-access=[true|false]     allows local content to access remote URL (default is false)
-
-  # RSelenium basics
-  # https://cran.r-project.org/web/packages/RSelenium/vignettes/RSelenium-basics.html#sending-mouse-events-to-elements
-
-  ops <- options() 
-  options(warn = 1)
-  
-  pJS <- suppressWarnings(phantom(pjs_cmd = pjs_cmd, port = port, 
-    extras = c("--load-images=false", "--disk-cache=true", paste0("--max-disk-cache-size=size=",10485760), 
-            paste0("--disk-cache-path=", normalizePath(tempdir(), winslash = "/")), 
-            paste0("--cookies-file=",    normalizePath(tempdir(), winslash = "/"), "/cookies.txt"),
-            extras)
-    , ...))
-  Sys.sleep(5)
-  remDr <- remoteDriver(browserName = 'phantomjs')
-  
-  options(ops)
-  return(list(pJS = pJS, remDr = remDr))
-
-}
-# FinPhantomDriver <- startFinPhantomDriver()
-
-
-
-stopFinPhantomDriver <- function(FinPhantomDriver) {
-
-  require(RSelenium)
-
-  ops <- options() 
-  options(warn = 1)
-
-  try( FinPhantomDriver$remDr$close(), silent = TRUE)
-  FinPhantomDriver$pJS$stop() 
-
-  options(ops)
-  invisible()
-
-}
-# stopFinPhantomDriver(FinPhantomDriver)
-#
-# FinPhantomDriver <- startFinPhantomDriver()
-# stopFinPhantomDriver(FinPhantomDriver)
-
-
-
-
-getFin.yahoo <- function(Symbol, env=parent.frame(), src="yahoo", auto.assign=TRUE, FinPhantomDriver = NULL, ...) {
-
-  ops <- options()
-  options(warn = 1)
-  
-  # uses
-  # package XML function htmlParse
-  # package htmltab function htmltab 
-  # package lubridate function parse_date_time
-  # package zoo(attached) various functions and S3 methods
-  
-  # package magrittr function `%>%`
-  `%>%` <-magrittr::`%>%`
-  
-  if(missing(env))
-    env <- parent.frame(1)
-  if(is.null(env))
-    auto.assign <- FALSE
-  Symbol <- strsplit(Symbol,";")[[1]]
-  if(length(Symbol)>1)
-    return(unlist(lapply(Symbol, getFin.yahoo, env=env, src=src, auto.assign=auto.assign, FinPhantomDriver=FinPhantomDriver)))
-  Symbol.name <- Symbol
-  
-  # HTML table on the page ( XPath )
-  #
-  # chrome devtools help
-  # which = 2
-  # //*[@id="Col1-1-Financials-Proxy"]/section
-  # UNUSED instead using 'which = 2' 
-  HTMLTableXPath <- '//*[@id="Col1-1-Financials-Proxy"]/section'
-  # APR 2018
-  
-  # "Quarterly" HTML link on the page ( XPath )
-  #
-  # chrome dev tools help 
-  # //*[@id="Col1-1-Financials-Proxy"]/section/div[1]/div[2]/button/div/span
-  QuarterlyHTMLlinkXPath <- '//*[@id="Col1-1-Financials-Proxy"]/section/div[1]/div[2]/button/div/span'
-  # APR 2018
-  
-  # collection of sheets
-  fin <- list()
-  
-  FinanceRootURL <- "https://finance.yahoo.com/quote/"
-  
-  remDr <- FinPhantomDriver$remDr
-  sink("nul") # Windows OS Platform specific: I should dynamically detect the OS and adjust
-  remDr$open()
-  sink()
-  
-  writeLines(paste0("Begin ", Symbol.name))
-  URL <- paste0(FinanceRootURL, Symbol.name, "/financials?p=", Symbol.name)
-  message(paste0(" ", URL))
-  remDr$navigate(URL)
-  # IS A
-  message("    Collecting Income Statement Annual data")
-  fin[[2]] <- suppressMessages(htmltab::htmltab(XML::htmlParse(remDr$getPageSource()[[1]]), which = 2))
-  
-  webElem <- remDr$findElement(using = 'xpath', QuarterlyHTMLlinkXPath)
-  Sys.sleep(1)            # --load-images=false # OTHERWISE one MUST wait longer
-  webElem$clickElement()
-  Sys.sleep(1)            # --load-images=false # OTHERWISE one MUST wait longer
-  # IS Q
-  message("      Collecting Income Statement Quarterly data")
-  fin[[1]] <- suppressMessages(htmltab::htmltab(XML::htmlParse(remDr$getPageSource()[[1]]), which = 2))
-
-  URL <- paste0(FinanceRootURL, Symbol.name, "/balance-sheet?p=", Symbol.name)
-  message(paste0(" ", URL))
-  remDr$navigate(URL)
-  # BS A
-  message("    Collecting Balance Sheet Annual data")
-  fin[[4]] <- suppressMessages(htmltab::htmltab(XML::htmlParse(remDr$getPageSource()[[1]]), which = 2))
-  
-  webElem <- remDr$findElement(using = 'xpath', QuarterlyHTMLlinkXPath)
-  Sys.sleep(1)            # --load-images=false # OTHERWISE one MUST wait longer
-  webElem$clickElement()
-  Sys.sleep(1)            # --load-images=false # OTHERWISE one MUST wait longer
-  # BS Q
-  message("      Collecting Balance Sheet Quarterly data")
-  fin[[3]] <- suppressMessages(htmltab::htmltab(XML::htmlParse(remDr$getPageSource()[[1]]), which = 2))
-  
-  # CF A
-  URL <- paste0(FinanceRootURL, Symbol.name, "/cash-flow?p=", Symbol.name)
-  message(paste0(" ", URL))
-  remDr$navigate(URL)
-  message("    Collecting Cash Flow Annual data")
-  fin[[6]] <- suppressMessages(htmltab::htmltab(XML::htmlParse(remDr$getPageSource()[[1]]), which = 2))
-  
-  webElem <- remDr$findElement(using = 'xpath', QuarterlyHTMLlinkXPath)
-  Sys.sleep(1)            # --load-images=false # OTHERWISE one MUST wait longer
-  webElem$clickElement()
-  Sys.sleep(1)            # --load-images=false # OTHERWISE one MUST wait longer
-  # CF Q
-  message("      Collecting Cash Flow Quarterly data")
-  fin[[5]] <- suppressMessages(htmltab::htmltab(XML::htmlParse(remDr$getPageSource()[[1]]), which = 2)) 
-  writeLines(paste0("End   ", Symbol.name))
-  
-  fin_iter <- 0L
-  for(fi in fin) {
-    fin_iter <- fin_iter + 1L
-    fini <- fi
-  
-    # dated column names format to YYYY-MM-DD
-    colnames(fini)[2:length(colnames(fini))] <- 
-      lubridate::parse_date_time(colnames(fini)[2:length(colnames(fini))], orders = c("mdy")) %>% 
-      zoo::as.Date(.) %>% as.character(.)
-    colnames(fini)[1] <- ""
-  
-    # remove all character "title" rows
-    # keep any rows that contains a digit OR contains a hyphen("-")
-    fini <- fini[grepl("\\d", fini[[2]]) | grepl("^-$", fini[[2]]), , drop = F]
-    
-    # metadata
-    col_names <- colnames(fini)[-1]
-    row_names <- fini[[1]]
-  
-    # data
-    tmp <- fini[,-1]
-    colnames(tmp) <- NULL
-    fini <- as.matrix(tmp)
-    rm(tmp)
-    
-    # replace "-" with NA
-    fini <- apply(fini, 2, function(x) {  x[ x == "-" ] <- NA_character_; x })
-    # replace commas "," with ""
-    fini <- apply(fini, 2, function(x) { gsub(",", "", x) })
-    # convert to numeric
-    fini <- apply(fini, 2, function(x) { as.numeric(x) })
-    
-    # set metadata
-    rownames(fini)  <- row_names; colnames(fini)  <- col_names
-    if((fin_iter%% 2L) == 1L) {
-      attr(fini, "col_desc") <- paste0("quarter end date ", col_names)
+  x_try_zoo_success <- FALSE
+  if(any(class(x_try.xts) %in% "try-error")) { 
+    x_try_zoo <- try(zoo::as.zoo(x), silent = T)
+    if(any(class(x_try_zoo) %in% "try-error"  )) {
+      # x_orig # ASSUMING I CAN *STILL* DO SOMETHING WITH THIS
+      stop("get_na_locfl: can not make a zoo object")
     } else {
-      attr(fini, "col_desc") <- paste0("year end date ", col_names)
+      x_try_zoo_success <- TRUE
+      x_try_zoo
     }
-    fin[[fin_iter]] <- fini
-    rm(fini)
+  } else { 
+    x_try.xts_success <- TRUE
+    x_try.xts 
+  } -> x
+  
+  # na.locf from the 'company information' last quarterly report
+  # but only carry forward a max of '2 periods'(THAT). XOR '4 periods'
+  # After THAT. NAs follow 
+
+  # NOT USING xts:::rollapply.xts 
+  # NEED "partial = TRUE" support ( to handle early smaller windows )
+  #   so using zoo:::rollapply.zoo
+      
+  # I WANT to USE the ZOO method ( no dispatch )
+  zoo:::rollapply.zoo(zoo::as.zoo(x), width = list(seq(-1*n, 0)),  FUN = function(xx) {
     
-  }
-  rm(fi)
+      # if the 'element of interest'(last) is 'NA'
+      # and in the width range, there exists at least one other element that  is 'not NA'
+      # then about the range 'last observation carry forward'
+      #   to return the 'new element of interest' ( that will now have a "non-NA' value)
+      # othewise ( the entire range stays all 'NA's )
+      #   return just the element of interest ( will be 'NA' )   
+      
+      if( is.na(xx[NROW(xx)]) && (max(as.integer(!is.na(xx))) > 0) ) { 
+        zoo::na.locf(xx) -> y
+        return(y[NROW(y)]) 
+      } else {
+        return(xx[NROW(xx)])
+      }
+    } , partial = 1 # min window size for partial computations 
+  )  -> x_result
   
-  options(ops)
-  
-  fin <- list(IS=list(Q=fin[[1]], A=fin[[2]]),
-              BS=list(Q=fin[[3]], A=fin[[4]]),
-              CF=list(Q=fin[[5]], A=fin[[6]]))
-  
-  if (auto.assign) {
-    assign(paste(gsub(":", ".", Symbol.name), "f", sep = "."),
-           structure(fin, symbol = Symbol.name, class = "financials",
-           src = "yahoo", updated = Sys.time()), env)
-    return(paste(gsub(":", ".", Symbol.name), "f", sep = "."))
+  if(x_try.xts_success) { 
+    xts::reclass(x_result, x_orig) 
   } else {
-    return(structure(fin, symbol = Symbol.name, class = "financials",
-           src = "yahoo", updated = Sys.time()))
-  }
+    if(exists(paste0("as.", c_orig))) {
+      DescTools::DoCall(paste0("as.", c_orig), list(x_result)) 
+    } else {
+      x_result
+    }
+  } -> x_result
+  
+  if(!x_try.xts_success && x_try_zoo_success) {
+    if(exists(paste0("as.", c_orig))) {
+      DescTools::DoCall(paste0("as.", c_orig), list(x_result)) 
+    } else {
+      x_result # THE BEST THAT I CAN DO
+    }
+  } -> x_result
+  
+  if(!is.null(dim(x_result))) colnames(x_result) <- "na_locfl"
+  
+  # if I did not do this earlier / failsafe / Really should have every only been xts/Date
+  if(inherits(x_result,"zoo")) index(x_result) <- zoo::as.Date(index(x_result))
+
+  locfl <- x_result
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  return(locfl)
+  
+  # ORIG FROM
+  # https://github.com/AndreMikulec/expressions/blob/8a910454ea590a30878e97b18d5e9dbe45a9d4fb/main-foresight3-999.R#L2287
+
 }
-getFinancials.yahoo <- getFin.yahoo
-#
-# tests
-# 
-# FinPhantomDriver <- startFinPhantomDriver()
-# getFin.yahoo("WMT", FinPhantomDriver = FinPhantomDriver)
-# getFin.yahoo("WMT;MSFT", FinPhantomDriver = FinPhantomDriver)
-# IBM.f <- getFin.yahoo("IBM", FinPhantomDriver = FinPhantomDriver, auto.assign = FALSE)
-# stopFinPhantomDriver(FinPhantomDriver)
-# 
-# str(WMT.f)
-# ViewFin(WMT.f, type="IS", period = "Q")
-#
 
 
-get_av_agg_eom_xts <- function() {
+
+#' @title get percent change
+#' @description get xts percent change between two different times
+#' @param x xts objects
+#' @param n change in time from observations from the pasts
+#'          percent change from the past through NOW
+#'          only ONE lag is allowed: so "n" must be a vector of size: 1
+#' @param to_future TRUE/FALSE change from the future(FALSE) instead of the past(NULL/FALSE), Default: NULL(FALSE)
+#' @return modifed xts objects
+#' @details input is one single column xts object only
+#' @examples
+#' \dontrun{
+#' # require(xts)
+#' # data(sample_matrix)
+#' # sample_xts <- as.xts(sample_matrix)
+#' # head(sample_xts[,"Open"],4) # x
+#' #                          Open
+#' # 2007-01-02 50.039781911546299
+#' # 2007-01-03 50.230496197795397
+#' # 2007-01-04 50.420955209067003
+#' # 2007-01-05 50.373468054328498
+#' # 
+#' # get_pctchg_xts(head(sample_xts[,"Open"],4), n = 1)
+#' #                           pctchg
+#' # 2007-01-02                    NA
+#' # 2007-01-03  0.381125334611203126 # res
+#' # 2007-01-04  0.379170077320410137
+#' # 2007-01-05 -0.094181386571521211
+#' # 
+#' # #( 50.230496197795397 - 50.039781911546299 ) / abs(50.039781911546299) * 100
+#' # [1] 0.38112533461120313
+#' # 
+#' # get_pctchg_xts(head(sample_xts[,"Open"],4), n = 1, to_future = TRUE )
+#' #                           pctchg
+#' # 2007-01-02 -0.381125334611203126
+#' # 2007-01-03 -0.379170077320410137 # res
+#' # 2007-01-04  0.094181386571521211
+#' # 2007-01-05                    NA
+#' # 
+#' # ( 50.420955209067003 -50.230496197795397) / abs( 50.230496197795397 ) * 100
+#' # [1] 0.37917007732041014
+#' # 
+#' # # NOT(which <= NROW(x))
+#' # get_pctchg_xts(head(sample_xts[,"Open"],4), n = 5, to_future = TRUE )
+#' # 
+#' #          pctchg
+#' # 2007-01-02   NA
+#' # 2007-01-03   NA
+#' # 2007-01-04   NA
+#' # 2007-01-05   NA
+#' }
+#' @rdname get_pctchg_xts
+#' @export
+get_pctchg_xts <- function(x, n, to_future = NULL) { 
 
   ops <- options()
   
+  options(warn = 1)
   options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
   options(digits = 22) 
   options(max.print=99999)
@@ -2323,68 +405,1077 @@ get_av_agg_eom_xts <- function() {
     Sys.setenv(TZ="UTC")
   }
   
-  require(quantmod)
+  if(NCOL(x) > 1) stop("In get_pctchg_xts, only ONE column is allowed.")
+  
+  require(xts) 
+  
+  ## VERY BASIC attemped CLASS conversion ##
+  x_orig <- x
+  c_orig <- class(x)[1] # original class
+  
+  x_try.xts_success <- FALSE
+  x_try.xts <- try(xts::try.xts(x_orig), silent = T)
+  x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("get_pctchg_xts can not make an xts object") } else { x_try.xts_success <- TRUE; x_try.xts }
 
-  message("Begin function get_av_agg_eom_xts.")
+   # normal backwards
+  if(is.null(to_future) || to_future == FALSE) { to_future = FALSE;   lag_direction <- 1 }
 
-  # setDefaults(getSymbols.av, api.key="YOURAPIKEY")
+  if(to_future == TRUE) lag_direction <- -1
+  
+  # xts::lag.xts rules
+  if( n <= NROW(x) ) {
+    # from past
+    if(!to_future) x_result <- ( x - xts::lag.xts(x, n * lag_direction) )/ abs(xts::lag.xts(x, n * lag_direction)) * 100 
+    # to future
+    if( to_future) x_result <- ( xts::lag.xts(x, n * lag_direction) - x )/ abs(                                x ) * 100 
+  } else {
+    x[,] <- NA_real_
+    x_result <- x
+  }
+
+  # would/should always be/been true else I may/have/never ever made it his far
+  if(x_try.xts_success) { 
+    xts::reclass(x_result, x_orig) 
+  } -> x_result
+  
+  colnames(x_result) <- "pctchg"
+  # if I did not do this earlier / failsafe / Really should have every only been xts/Date
+  if(inherits(x_result,"zoo")) index(x_result) <- zoo::as.Date(index(x_result))
+  
+  pctchg_xts <- x_result 
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  return(pctchg_xts)
+} 
+
+
+
+#' @title get a recent xts observation
+#' @description get a recent xts observation deterimined by the higher of values(max)
+#' @param x xts object
+#' @param n number of 'backwards in time xts values' at observations to compare
+#' @return modfiied xts object
+#' @details input is one single column xts object only   
+#'          function is meant to smooth data
+#' @examples
+#' \dontrun{
+#' # require(xts)
+#' # data(sample_matrix)
+#' # sample_xts <- as.xts(sample_matrix)
+#' # 
+#' # head(sample_xts[,"Open"],4)
+#' #                          Open
+#' # 2007-01-02 50.039781911546299
+#' # 2007-01-03 50.230496197795397
+#' # 2007-01-04 50.420955209067003
+#' # 2007-01-05 50.373468054328498
+#' # 
+#' # get_recent_max_xts(head(sample_xts[,"Open"],4), 2)
+#' #                    recent_max
+#' # 2007-01-02 50.039781911546299
+#' # 2007-01-03 50.230496197795397
+#' # 2007-01-04 50.420955209067003
+#' # 2007-01-05 50.420955209067003
+#' }
+#' @rdname get_recent_max_xts
+#' @export
+get_recent_max_xts <- function(x, n) { 
+
+  ops <- options()
+  
+  options(warn = 1)
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  if(NCOL(x) > 1) stop("In get_recent_max, only ONE column is allowed.")
+  
+  require(xts) 
+  
+  ## VERY BASIC attemped CLASS conversion ##
+  x_orig <- x
+  c_orig <- class(x)[1] # original class
+  
+  x_try.xts_success <- FALSE
+  x_try.xts <- try(xts::try.xts(x_orig), silent = T)
+  x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("get_pctchg_xts can not make an xts object") } else { x_try.xts_success <- TRUE; x_try.xts }
+
+  zoo::rollapply(as.zoo(x), width = n, partial = TRUE, align = "right", FUN = function(x, n) { 
+    max(x, na.rm = TRUE)
+  }, n = n) -> x_result
+
+  # would/should always be/been true else I may/have/never ever made it his far
+  if(x_try.xts_success) { 
+    xts::reclass(x_result, x_orig) 
+  } -> x_result
+  
+  colnames(x_result) <- "recent_max"
+  # if I did not do this earlier / failsafe / Really should have every only been xts/Date
+  if(inherits(x_result,"zoo")) index(x_result) <- zoo::as.Date(index(x_result))
+  
+  pctchg_xts <- x_result 
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  return(pctchg_xts)
+} 
+
+
+
+#' @title get a recent xts observation
+#' @description get a recent xts observation deterimined by the higher of values(min)
+#' @param x xts object
+#' @param n number of 'backwards in time xts values' at observations to compare
+#' @return modfiied xts object
+#' @details input is one single column xts object only    
+#'          function is meant to smooth data
+#' @examples
+#' \dontrun{
+#' # require(xts)
+#' # data(sample_matrix)
+#' # sample_xts <- as.xts(sample_matrix)
+#' # 
+#' # head(sample_xts[,"Open"],4)
+#' #                          Open
+#' # 2007-01-02 50.039781911546299
+#' # 2007-01-03 50.230496197795397
+#' # 2007-01-04 50.420955209067003
+#' # 2007-01-05 50.373468054328498
+#' # 
+#' # get_recent_min_xts(head(sample_xts[,"Open"],4), 2)
+#' #                    recent_min
+#' # 2007-01-02 50.039781911546299
+#' # 2007-01-03 50.039781911546299
+#' # 2007-01-04 50.230496197795397
+#' # 2007-01-05 50.373468054328498
+#' }
+#' @rdname get_recent_min_xts
+#' @export
+get_recent_min_xts <- function(x, n) { 
+
+  ops <- options()
+  
+  options(warn = 1)
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(min.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  if(NCOL(x) > 1) stop("In get_recent_min, only ONE column is allowed.")
+  
+  require(xts) 
+  
+  ## VERY BASIC attemped CLASS conversion ##
+  x_orig <- x
+  c_orig <- class(x)[1] # original class
+  
+  x_try.xts_success <- FALSE
+  x_try.xts <- try(xts::try.xts(x_orig), silent = T)
+  x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("get_pctchg_xts can not make an xts object") } else { x_try.xts_success <- TRUE; x_try.xts }
+
+  zoo::rollapply(as.zoo(x), width = n, partial = TRUE, align = "right", FUN = function(x, n) { 
+    min(x, na.rm = TRUE)
+  }, n = n) -> x_result
+
+  # would/should always be/been true else I may/have/never ever made it his far
+  if(x_try.xts_success) { 
+    xts::reclass(x_result, x_orig) 
+  } -> x_result
+  
+  colnames(x_result) <- "recent_min"
+  # if I did not do this earlier / failsafe / Really should have every only been xts/Date
+  if(inherits(x_result,"zoo")) index(x_result) <- zoo::as.Date(index(x_result))
+  
+  pctchg_xts <- x_result 
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  return(pctchg_xts)
+} 
+
+
+
+#' @title adjust as if held using a full year of time
+#' @description multiple xts object by value
+#' @param x xts object
+#' @param n multiple ( e.g monthly = 12, daily = 260 )
+#' @return modified xts object
+#' @details input is one single column xts object only
+#' @examples
+#' \dontrun{
+#' # head(sample_xts[,"Open"],4)
+#' #                          Open
+#' # 2007-01-02 50.039781911546299
+#' # 2007-01-03 50.230496197795397
+#' # 2007-01-04 50.420955209067003
+#' # 2007-01-05 50.373468054328498
+#' # 
+#' # get_annualized_xts(head(sample_xts[,"Open"],4), 2)
+#' #                    annualized
+#' # 2007-01-02 100.07956382309260
+#' # 2007-01-03 100.46099239559079
+#' # 2007-01-04 100.84191041813401
+#' # 2007-01-05 100.74693610865700
+#' }
+#' @rdname get_annualized_xts
+#' @export
+get_annualized_xts <- function(x, n) { 
+
+  ops <- options()
+  
+  options(warn = 1)
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(min.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  if(NCOL(x) > 1) stop("In get_annualized_xts, only ONE column is allowed.")
+  
+  require(xts) 
+  
+  ## VERY BASIC attemped CLASS conversion ##
+  x_orig <- x
+  c_orig <- class(x)[1] # original class
+  
+  x_try.xts_success <- FALSE
+  x_try.xts <- try(xts::try.xts(x_orig), silent = T)
+  x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("get_pctchg_xts can not make an xts object") } else { x_try.xts_success <- TRUE; x_try.xts }
+
+  x_result <- x * n
+
+  # would/should always be/been true else I may/have/never ever made it his far
+  if(x_try.xts_success) { 
+    xts::reclass(x_result, x_orig) 
+  } -> x_result
+  
+  colnames(x_result) <- "annualized"
+  # if I did not do this earlier / failsafe / Really should have every only been xts/Date
+  if(inherits(x_result,"zoo")) index(x_result) <- zoo::as.Date(index(x_result))
+
+  annualized_xts <- x_result 
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  return(annualized_xts)
+} 
+
+
+
+# NEED A TEST AND EXAMPLE
+#' @title Ops on xts
+#' @description subtract one xts from anaother
+#' @param x xts object
+#' @param y xts object
+#' @return modified xts object
+#' @details input is one single column xts object only
+#' @examples
+#' \dontrun{
+#' # 
+#' # 
+#' }
+#' @rdname get_less_xts
+#' @export
+get_less_xts <- function(x, y) { 
+
+  ops <- options()
+  
+  options(warn = 1)
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(min.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  if(NCOL(x) > 1) stop("In get_less_xts, only ONE column is allowed.")
+  if(NCOL(y) > 1) stop("In get_less_xts, only ONE column is allowed.")
+  
+  require(xts) 
+  
+  ## VERY BASIC attemped CLASS conversion ##
+  x_orig <- x
+  y_orig <- y
+  cx_orig <- class(x)[1] # original class
+  cy_orig <- class(y)[1] # original class
+  
+  x_try.xts_success <- FALSE
+  x_try.xts <- try(xts::try.xts(x_orig), silent = T)
+  x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("get_less_xts can not make an xts object") } else { x_try.xts_success <- TRUE; x_try.xts }
+
+  y_try.xts_success <- FALSE
+  y_try.xts <- try(xts::try.xts(y_orig), silent = T)
+  y         <- if(any(class(y_try.xts) %in% "try-error")) { stop("get_lagged_xts can not make an xts object") } else { y_try.xts_success <- TRUE; y_try.xts }
+
+  # S3 dispatch xts::lag.xts
+  xy_result <- x - y
+
+  # would/should always be/been true else I may/have/never ever made it his far
+  if(x_try.xts_success && y_try.xts_success) { 
+    xts::reclass(xy_result, x_orig) 
+  } -> xy_result
+  
+  colnames(xy_result) <- "less"
+  # if I did not do this earlier / failsafe / Really should have every only been xts/Date
+  if(inherits(xy_result,"zoo")) index(xy_result) <- zoo::as.Date(index(xy_result))
+
+  less_xts <- xy_result 
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  return(less_xts)
+} 
+Less <- get_less_xts
+
+
+
+#' @title shift observations in time
+#' @description lag or pull-from-forward observations
+#' @param x xts object
+#' @param  n number of observations to lag by   
+#'        -n number of observations to pull from the future to backward 
+#' @return modified xts object
+#' @details input is one single column xts object only
+#' @examples
+#' \dontrun{
+#' # head(sample_xts[,"Open"],4)
+#' #                          Open
+#' # 2007-01-02 50.039781911546299
+#' # 2007-01-03 50.230496197795397
+#' # 2007-01-04 50.420955209067003
+#' # 2007-01-05 50.373468054328498
+#' # 
+#' # get_lagged_xts(head(sample_xts[,"Open"],4), 2)
+#' #                        lagged
+#' # 2007-01-02                 NA
+#' # 2007-01-03                 NA
+#' # 2007-01-04 50.039781911546299
+#' # 2007-01-05 50.230496197795397
+#' # 
+#' # # pull backwards from the future
+#' # get_lagged_xts(head(sample_xts[,"Open"],4), -2)
+#' #                        lagged
+#' # 2007-01-02 50.420955209067003
+#' # 2007-01-03 50.373468054328498
+#' # 2007-01-04                 NA
+#' # 2007-01-05                 NA
+#' # 
+#' }
+#' @rdname get_lagged_xts
+#' @export
+get_lagged_xts <- function(x, n) { 
+
+  ops <- options()
+  
+  options(warn = 1)
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(min.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  if(NCOL(x) > 1) stop("In get_lagged_xts, only ONE column is allowed.")
+  
+  require(xts) 
+  
+  ## VERY BASIC attemped CLASS conversion ##
+  x_orig <- x
+  c_orig <- class(x)[1] # original class
+  
+  x_try.xts_success <- FALSE
+  x_try.xts <- try(xts::try.xts(x_orig), silent = T)
+  x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("get_lagged_xts can not make an xts object") } else { x_try.xts_success <- TRUE; x_try.xts }
+
+  # S3 dispatch xts::lag.xts
+  x_result <- lag(x, n)
+
+  # would/should always be/been true else I may/have/never ever made it his far
+  if(x_try.xts_success) { 
+    xts::reclass(x_result, x_orig) 
+  } -> x_result
+  
+  colnames(x_result) <- "lagged"
+  # if I did not do this earlier / failsafe / Really should have every only been xts/Date
+  if(inherits(x_result,"zoo")) index(x_result) <- zoo::as.Date(index(x_result))
+
+  lagged_xts <- x_result 
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  return(lagged_xts)
+} 
+
+
+
+#' @title get the simple moving average
+#' @description sma of xts observation
+#' @param x xts object
+#' @param n how many values to 'average over' 
+#'          logical mininum is n = 2
+#' @return modified xts object
+#' @details input is one single column xts object only
+#' @examples
+#' \dontrun{
+#' # head(sample_xts[,"Open"],4)
+#' #                          Open
+#' # 2007-01-02 50.039781911546299
+#' # 2007-01-03 50.230496197795397
+#' # 2007-01-04 50.420955209067003
+#' # 2007-01-05 50.373468054328498
+#' # 
+#' # get_sma_xts(head(sample_xts[,"Open"],4), 2)
+#' #                           sma
+#' # 2007-01-02                 NA
+#' # 2007-01-03 50.135139054670844
+#' # 2007-01-04 50.325725703431203
+#' # 2007-01-05 50.397211631697751
+#' }
+#' @rdname get_sma_xts
+#' @export
+get_sma_xts <- function(x, n) { 
+
+  ops <- options()
+  
+  options(warn = 1)
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(min.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  if(NCOL(x) > 1) stop("In get_sma_xts, only ONE column is allowed.")
+  
+  require(xts) 
+  
+  ## VERY BASIC attemped CLASS conversion ##
+  x_orig <- x
+  c_orig <- class(x)[1] # original class
+  
+  x_try.xts_success <- FALSE
+  x_try.xts <- try(xts::try.xts(x_orig), silent = T)
+  x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("get_sma_xts can not make an xts object") } else { x_try.xts_success <- TRUE; x_try.xts }
+
+  zoo::rollapply(as.zoo(x), width = n, partial = TRUE, align = "right", FUN = function(x, n) { 
+    # if not too short
+    if(n <= length(x)) { mean(x, na.rm = FALSE) } else { NA_real_ }
+  }, n = n) -> x_result
+
+  # would/should always be/been true else I may/have/never ever made it his far
+  if(x_try.xts_success) { 
+    xts::reclass(x_result, x_orig) 
+  } -> x_result
+  
+  colnames(x_result) <- "sma"
+  # if I did not do this earlier / failsafe / Really should have every only been xts/Date
+  if(inherits(x_result,"zoo")) index(x_result) <- zoo::as.Date(index(x_result))
+  
+  sma_xts <- x_result 
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  return(sma_xts)
+} 
+
+
+
+#' @title call an xts function
+#' @description call an xts in/and/out function ( e.g. from package TTR )
+#' @param x xts object
+#' @param fnct xts in/out function
+#' @param which parameter (2nd position passed to fun) 
+#' @param o_args other paramters passed to fnct
+#' @return modified xts object
+#' @details input is one single column xts object only
+#'          simplified(watered down) version of expand_xts
+#' @examples
+#' \dontrun{
+#' # head(sample_xts[,"Open"],4)
+#' #                          Open
+#' # 2007-01-02 50.039781911546299
+#' # 2007-01-03 50.230496197795397
+#' # 2007-01-04 50.420955209067003
+#' # 2007-01-05 50.373468054328498
+#' # 
+#' #get_functxts_xts(head(sample_xts[,"Open"],4), which = 2, lag)
+#' #
+#' #                     functxts
+#' #2007-01-02                 NA
+#' #2007-01-03                 NA
+#' #2007-01-04 50.039781911546299
+#' #2007-01-05 50.230496197795397
+#' #
+#' #get_functxts_xts(head(sample_xts[,"Open"],4), lag, o_args = list(k = 2))
+#' #
+#' #                     functxts
+#' #2007-01-02                 NA
+#' #2007-01-03                 NA
+#' #2007-01-04 50.039781911546299
+#' #2007-01-05 50.230496197795397
+#' # 
+#' }
+#' @rdname get_functxts_xts
+#' @export
+get_functxts_xts <- function(x = NULL, fnct = NULL, which = NULL, o_args = NULL) { 
+
+  ops <- options()
+  
+  options(warn = 1)
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(min.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  if(NCOL(x) > 1) stop("In get_functxts_xts, only ONE column is allowed.")
+  
+  require(xts) 
+  # uses package DescTools function  DoCall
+  
+  has_which <- TRUE     # patch # if does not have a non-null wiches argument, then give it one so it can LASTER do ONE loop
+  if(is.null(which)) { has_which <- FALSE ; which = -Inf }  
+  
+  ## VERY BASIC attemped CLASS conversion ##
+  x_orig <- x
+  c_orig <- class(x)[1] # original class
+  
+  x_try.xts_success <- FALSE
+  x_try.xts <- try(xts::try.xts(x_orig), silent = T)
+  x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("get_functxts_xts can not make an xts object") } else { x_try.xts_success <- TRUE; x_try.xts }
+
+  if(!has_which) which = NULL # send nothing            # global
+  x_result <- DescTools::DoCall(fnct, c(list(x), which, o_args, list()))
+
+  # would/should always be/been true else I may/have/never ever made it his far
+  if(x_try.xts_success) { 
+    xts::reclass(x_result, x_orig) 
+  } -> x_result
+  
+  colnames(x_result) <- "functxts"
+  # if I did not do this earlier / failsafe / Really should have every only been xts/Date
+  if(inherits(x_result,"zoo")) index(x_result) <- zoo::as.Date(index(x_result))
+
+  functxts_xts <- x_result 
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  return(functxts_xts)
+} 
+
+
+
+#' @title get the rolling simple moving function call
+#' @description result of xts observations into the rolling fnct
+#' @param x xts object
+#' @param fnct xts in/out function
+#' @param which parameter (2nd position passed to fun) 
+#'              = n number of rolling observations in the rolling frame 
+#' @param o_args other parameters passed to fnct
+#' @return modified xts object
+#' @details input is one single column xts object only
+#'          liberalized version of get_functxts_xts, get_sma_xts, get_smtsortino_xts, get_smrank_xts
+#' @examples
+#' \dontrun{
+#' # 
+#' # sma <- function(x, n) { if(n <= length(x)) { mean(x, na.rm = FALSE) } else { NA_real_ } }
+#' # get_smfunctxts_xts(head(sample_xts[,"Open"],4), sma, 2)
+#' #                    smfunctxts
+#' # 2007-01-02                 NA
+#' # 2007-01-03 50.135139054670844
+#' # 2007-01-04 50.325725703431203
+#' # 2007-01-05 50.397211631697751
+#' # 
+#' # tsortino <- function(x, n, rf = 0.0, na.rm = FALSE) { if(n <= length(x)) { (mean(x, na.rm = na.rm) - rf )/sd( local({x[x > 0] <- 0; x } ), na.rm = na.rm) } else { NA_real_ } }
+#' # get_smfunctxts_xts(get_pctchg_xts(head(sample_xts[,"Open"],6), n = 1), tsortino, 3, o_args = list(rf = 0.0, na.rm = FALSE))
+#' #                       smfunctxts
+#' # 2007-01-02                    NA
+#' # 2007-01-03                    NA
+#' # 2007-01-04                    NA
+#' # 2007-01-05  4.083408896943601540
+#' # 2007-01-06  0.073562112260411788
+#' # 2007-01-07 -2.231893800843009146
+#' # 
+#' # smrank <- function(x, n, n_ranks) {
+#' # 
+#' #     # if not too short
+#' #     if(n <= length(x)) {  
+#' #       # if zero NAs found
+#' #       if(!any(is.na(x))) { 
+#' #         # tail(_, 1): I only care about the value furthest value to the right
+#' #         # tested: pessimistic 
+#' #         # higher x values produce lower(better) 'sports' rank numbers: keep for now.  I may later change my mind.
+#' #                                                                                        # if any NA, then then 'error'
+#' #         tail(findInterval(-1 * x, tail(head(   quantile(-1 * x, seq(0, 1, 1/n_ranks) , na.rm = FALSE ),-1),-1)) + 1, 1)
+#' #       } else { NA_real_ } } else { NA_real_ } 
+#' #   
+#' # }
+#' # 
+#' # get_smfunctxts_xts(get_smtsortino_xts(get_pctchg_xts(head(sample_xts[,"Open"],11), n = 1), 3), smrank , 4, o_args = list(n_ranks = 2))
+#' #            smfunctxts
+#' # 2007-01-02         NA
+#' # 2007-01-03         NA
+#' # 2007-01-04         NA
+#' # 2007-01-05         NA
+#' # 2007-01-06         NA
+#' # 2007-01-07         NA
+#' # 2007-01-08          2
+#' # 2007-01-09          1
+#' # 2007-01-10          2
+#' # 2007-01-11          1
+#' # 2007-01-12          1
+#' # 
+#' }
+#' @rdname get_smfunctxts_xts
+#' @export                                            
+get_smfunctxts_xts <- function(x = NULL, fnct = NULL, which = NULL, o_args = NULL) { 
+                                                          # = n
+  ops <- options()
+  
+  options(warn = 1)
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(min.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  if(NCOL(x) > 1) stop("In get_smfunctxts_xts, only ONE column is allowed.")
+  
+  require(xts) 
+  # uses package DescTools function  DoCall
+  
+  has_which <- TRUE     # patch # if does not have a non-null wiches argument, then give it one so it can LASTER do ONE loop
+  if(is.null(which)) { has_which <- FALSE ; which = -Inf }  
+  
+  ## VERY BASIC attemped CLASS conversion ##
+  x_orig <- x
+  c_orig <- class(x)[1] # original class
+  
+  x_try.xts_success <- FALSE
+  x_try.xts <- try(xts::try.xts(x_orig), silent = T)
+  x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("get_smfunctxts_xts can not make an xts object") } else { x_try.xts_success <- TRUE; x_try.xts }
+
+  env <- environment()
+  
+  zoo::rollapply(as.zoo(x), width = which, partial = TRUE, align = "right", FUN = function(x, fnct, n, o_args) { 
+    # if not too short
+    if(!has_which) which = NULL # send nothing            # global
+    DescTools::DoCall(fnct, c(list(x), n, o_args, list()))
     
-  AGG <- getSymbols("AGG", src = "av", api.key = Sys.getenv("AV_API_KEY"), output.size = "full", auto.assign = FALSE)
-  temp <- AGG[,"AGG.Close"]
-  colnames(temp)[1] <- "agg"
-  temp <- to.monthly(temp, OHLC = FALSE, indexAt = "lastof") 
-  av_agg_eom_xts <- temp
+  }, fnct = fnct, n = which, o_args = o_args) -> x_result
+
+  # would/should always be/been true else I may/have/never ever made it his far
+  if(x_try.xts_success) { 
+    xts::reclass(x_result, x_orig) 
+  } -> x_result
+  
+  colnames(x_result) <- "smfunctxts"
+  # if I did not do this earlier / failsafe / Really should have every only been xts/Date
+  if(inherits(x_result,"zoo")) index(x_result) <- zoo::as.Date(index(x_result))
+  
+  smfunctxts_xts <- x_result 
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
  
+  return(smfunctxts_xts)
+} 
+
+
+
+# single column xts only
+#
+# simple moving (true)sortino
+# Sortino Ratio: Are you calculating it wrong?
+# https://www.rcmalternatives.com/2013/09/sortino-ratio-are-you-calculating-it-wrong/
+# 
+# n - number of obs
+
+#' @title get the moving (true)sortino ratio
+#' @description (true)sortino of xts observations
+#' @param x xts object
+#' @param n how many values to 'calculate over' 
+#'          logical mininum is n = 2
+#' @return modified xts object
+#' @details input is one single column xts object only
+#' 
+#'          # (true)sortino ratio
+#'          # Sortino Ratio: Are you calculating it wrong?
+#'          # https://www.rcmalternatives.com/2013/09/sortino-ratio-are-you-calculating-it-wrong/
+#' 
+#' @examples
+#' \dontrun{
+#' # get_pctchg_xts(head(sample_xts[,"Open"],6), n = 1)
+#' #                           pctchg
+#' # 2007-01-02                    NA
+#' # 2007-01-03  0.381125334611203126
+#' # 2007-01-04  0.379170077320410137
+#' # 2007-01-05 -0.094181386571521211
+#' # 2007-01-06 -0.256370148090095062
+#' # 2007-01-07 -0.223335115582047300
+#' # 
+#' # get_smtsortino_xts(get_pctchg_xts(head(sample_xts[,"Open"],6), n = 1), 3)
+#' #                       smtsortino
+#' # 2007-01-02                    NA
+#' # 2007-01-03                    NA
+#' # 2007-01-04                    NA
+#' # 2007-01-05  4.083408896943601540
+#' # 2007-01-06  0.073562112260411788
+#' # 2007-01-07 -2.231893800843009146
+#' }
+#' @rdname get_smtsortino_xts
+#' @export
+get_smtsortino_xts <- function(x, n) { 
+
+  ops <- options()
+  
+  options(warn = 1)
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(min.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  if(NCOL(x) > 1) stop("In get_smtsortino_xts, only ONE column is allowed.")
+  
+  require(xts) 
+  
+  ## VERY BASIC attemped CLASS conversion ##
+  x_orig <- x
+  c_orig <- class(x)[1] # original class
+  
+  x_try.xts_success <- FALSE
+  x_try.xts <- try(xts::try.xts(x_orig), silent = T)
+  x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("get_smsortino_xts can not make an xts object") } else { x_try.xts_success <- TRUE; x_try.xts }
+
+  # (true)sortino ratio
+  # Sortino Ratio: Are you calculating it wrong?
+  # https://www.rcmalternatives.com/2013/09/sortino-ratio-are-you-calculating-it-wrong/
+                                   # any NA, then entire thing returns NA
+  tsortino <- function(x, rf = 0.0, na.rm = FALSE) {  (mean(x, na.rm = na.rm) - rf )/sd( local({x[x > 0] <- 0; x } ), na.rm = na.rm) }
+  
+  zoo::rollapply(as.zoo(x), width = n, partial = TRUE, align = "right", FUN = function(x, n) { 
+    # if not too short
+    if(n <= length(x)) { tsortino(x, rf = 0.0, na.rm = FALSE) } else { NA_real_ }
+  }, n = n) -> x_result
+
+  # would/should always be/been true else I may/have/never ever made it his far
+  if(x_try.xts_success) { 
+    xts::reclass(x_result, x_orig) 
+  } -> x_result
+  
+  colnames(x_result) <- "smtsortino"
+  # if I did not do this earlier / failsafe / Really should have every only been xts/Date
+  if(inherits(x_result,"zoo")) index(x_result) <- zoo::as.Date(index(x_result))
+  
+  smtsortino_xts <- x_result 
+  
   Sys.setenv(TZ=oldtz)
   options(ops)
   
-  message("End   function get_av_agg_eom_xts.")
-
-  return(av_agg_eom_xts)
-
-}
-# ret <- get_av_agg_eom_xts()
-# > str(ret)
-# An 'xts' object on 2003-09-30/2017-12-31 containing:
-#   Data: num [1:172, 1] 103 102 102 102 103 ...
-#  - attr(*, "dimnames")=List of 2
-#   ..$ : NULL
-#   ..$ : chr "agg"
-#   Indexed by objects of class: [Date] TZ: UTC
-#   xts Attributes:
-# List of 2
-#  $ src    : chr "alphavantage"
-#  $ updated: Date[1:1], format: "2017-12-01"
-# > head(ret)
-#                           agg
-# 2003-09-30 102.70000000000000
-# 2003-10-31 101.73999999999999
-# 2003-11-30 101.72000000000000
-# 2003-12-31 102.15000000000001
-# 2004-01-31 102.59999999999999
-# 2004-02-29 103.48999999999999
-# > tail(ret)
-#                           agg
-# 2017-07-31 109.65000000000001
-# 2017-08-31 110.45000000000000
-# 2017-09-30 109.59000000000000
-# 2017-10-31 109.47000000000000
-# 2017-11-30 109.08000000000000
-# 2017-12-31 109.16000000000000
+  return(smtsortino_xts)
+} 
 
 
 
-get_fred_wilshire5000_eom_xts <- function() {
+#' @title get the simple moving pessimistic ranks
+#' @description pessimistic ranks of xts observations
+#' @param x xts object
+#' @param n how many values to 'calculate over' 
+#'          logical mininum is n = 2
+#'          pessimistic means that if a 'few observations' exist
+#'            then the higher value numbers will not generate as low(better) ranks
+#'            compared to the case of 'many observations'
+#' @param n_ranks number of ranks
+#'                e.g. n_ranks = 2: 1=high_value and 2 = low_value
+#'                means 1=above_median, 2=below_median
+#' @return modified xts object
+#' @details input is one single column xts object only
+#' @examples
+#' \dontrun{
+#' # get_smtsortino_xts(get_pctchg_xts(head(sample_xts[,"Open"],11), n = 1), 3)
+#' #                       smtsortino
+#' # 2007-01-02                    NA
+#' # 2007-01-03                    NA
+#' # 2007-01-04                    NA
+#' # 2007-01-05  4.083408896943601540
+#' # 2007-01-06  0.073562112260411788
+#' # 2007-01-07 -2.231893800843009146
+#' # 2007-01-08 -7.029534326268571220
+#' # 2007-01-09 -2.217163448868932907
+#' # 2007-01-10 -2.522576361771222242
+#' # 2007-01-11 -1.729327001953728127
+#' # 2007-01-12  1.728401658544285180
+#' # 
+#' # among the trailing 4, position(a 'higher' value = 1, a 'lower' value = 2)
+#' # 
+#' # get_smrank_xts(get_smtsortino_xts(get_pctchg_xts(head(sample_xts[,"Open"],11), n = 1), 3), n = 4, n_ranks = 2)
+#' # 
+#' #            smrank
+#' # 2007-01-02     NA
+#' # 2007-01-03     NA
+#' # 2007-01-04     NA
+#' # 2007-01-05     NA
+#' # 2007-01-06     NA
+#' # 2007-01-07     NA
+#' # 2007-01-08      2
+#' # 2007-01-09      1
+#' # 2007-01-10      2
+#' # 2007-01-11      1
+#' # 2007-01-12      1
+#' }
+#' @rdname get_smrank_xts
+#' @export
+get_smrank_xts <- function(x, n, n_ranks) { 
 
-  # The total market indexes are total market returns, which do include reinvested dividends. 
-  # https://fred.stlouisfed.org/series/WILL5000IND
+  ops <- options()
+  
+  options(warn = 1)
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(min.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  if(NCOL(x) > 1) stop("In get_smrank_xts, only ONE column is allowed.")
+  
+  require(xts) 
+  
+  ## VERY BASIC attemped CLASS conversion ##
+  x_orig <- x
+  c_orig <- class(x)[1] # original class
+  
+  x_try.xts_success <- FALSE
+  x_try.xts <- try(xts::try.xts(x_orig), silent = T)
+  x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("get_smsortino_xts can not make an xts object") } else { x_try.xts_success <- TRUE; x_try.xts }
 
-  # ORIG FROM ( INSPIRED BY )
-  # The equity premium
-  # https://fredblog.stlouisfed.org/2016/07/the-equity-premium/
+  env <- environment()
+  
+  zoo::rollapply(as.zoo(x), width = n, partial = TRUE, align = "right", FUN = function(x, n, n_ranks, e) { 
+    # if not too short
+    if(n <= length(x)) {  
+      # if zero NAs found
+      if(!any(is.na(x))) { 
+        # tail(_, 1): I only care about the value furthest value to the right
+        # tested: pessimistic 
+        # higher x values produce lower(better) 'sports' rank numbers: keep for now.  I may later change my mind.
+                                                                                       # if any NA, then then 'error'
+        tail(findInterval(-1 * x, tail(head(   quantile(-1 * x, seq(0, 1, 1/n_ranks) , na.rm = FALSE ),-1),-1)) + 1, 1)
+      } else { NA_real_ } } else { NA_real_ } 
+  }, n = n, n_ranks = n_ranks, e = env) -> x_result
+
+  # would/should always be/been true else I may/have/never ever made it his far
+  if(x_try.xts_success) { 
+    xts::reclass(x_result, x_orig) 
+  } -> x_result
+  
+  colnames(x_result) <- "smrank"
+  # if I did not do this earlier / failsafe / Really should have every only been xts/Date
+  if(inherits(x_result,"zoo")) index(x_result) <- zoo::as.Date(index(x_result))
+  
+  smrank_xts <- x_result 
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  # if n = 4
+  # NEEDS to return smrank_lag0, smrank_lag1, smrank_lag2, smrank_lag3 
+  
+  return(smrank_xts)
+} 
+
+
+
+
+# single column xts only
+
+#' @title fill in the gaps 
+#' @description of an xts object create missing daily observations
+#' @param x xts object
+#' @return modified xts object
+#' @details input is one single column xts object only
+#'          missing daily observations in an xts series of daily values are inserted
+#' @examples
+#' \dontrun{
+#' # require(xts)
+#' # xts(c(11,13,15),zoo::as.Date(c(1,3,5))) 
+#' #            [,1]
+#' # 1970-01-02   11
+#' # 1970-01-04   13
+#' # 1970-01-06   15
+#' # 
+#' # get_collofdays2daily_xts(xts(c(11,13,15),zoo::as.Date(c(1,3,5))))
+#' #            collofdays2daily
+#' # 1970-01-02               11
+#' # 1970-01-03               NA
+#' # 1970-01-04               13
+#' # 1970-01-05               NA
+#' # 1970-01-06               15
+#' #
+#' # Note: the following is not part of the package tests
+#' #
+#' # as.POSIXct(c(1,10000,200000,400000), origin = "1970-01-01")
+#' # [1] "1970-01-01 00:00:01 UTC" "1970-01-01 02:46:40 UTC" "1970-01-03 07:33:20 UTC" "1970-01-05 15:06:40 UTC"
+#' # xts(11:14, as.POSIXct(c(1,10000,200000,400000), origin = "1970-01-01"))
+#' # 
+#' #                     [,1]
+#' # 1970-01-01 00:00:01   11
+#' # 1970-01-01 02:46:40   12
+#' # 1970-01-03 07:33:20   13
+#' # 1970-01-05 15:06:40   14
+#' # 
+#' # get_collofdays2daily_xts(xp)
+#' #          [,1]
+#' # 1970-01-01 12
+#' # 1970-01-02 NA
+#' # 1970-01-03 13
+#' # 1970-01-04 NA
+#' # 1970-01-05 14
+#' }
+#' @rdname get_collofdays2daily_xts
+#' @export
+get_collofdays2daily_xts <- function(x) {
   
   ops <- options()
   
+  options(warn = 1)
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+
+  if(NCOL(x) > 1) stop("In get_collofdays2daily_xts, only ONE column is allowed.")
+  
+  require(xts) 
+  
+  x_orig <- x
+  c_orig <- class(x)[1] # original class
+  
+  ## VERY BASIC attemped CLASS conversion ##
+  x_try.xts_success <- FALSE
+  x_try.xts <- try(xts::try.xts(x_orig), silent = T)
+  #
+  x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("get_collofdays2daily_xts could not make an xts") } else { x_try.xts_success <- TRUE; x_try.xts }
+  # EXPECTED TO CHANGE THE NUMBER OF ROWS  SO CAN NOT DO 'reclass'
+  
+  # note: index(first/last(x, '1 day')) expected to return ONE single element
+  # reduce a a 'set of first/last '1 day' to ret ONE single element 
+  # also will covert a non-Date index to a Date index
+  # 
+  # zoo::as.Date garantees that a non-Date will become a Date
+  # saved NOW because FUTURE xts::to.daily WILL trim off dates
+  earliest_idx_x <- zoo::as.Date(zoo:::head.zoo(index(x),1))
+  latest_idx_x   <- zoo::as.Date(zoo:::tail.zoo(index(x),1))
+  
+  # trims off dates THAT have a PAYLOAD of NA
+  # Warning in to.period(x, "days", name = name, ...) :
+  # missing values removed from data
+  x <- suppressWarnings(xts::to.daily(x, OHLC = F))
+  
+  # dispatch on xts:::merge.xts, seq.Date, xts:::index.xts, xts:::first/last.xts
+  x_days <- xts(,seq(earliest_idx_x, latest_idx_x, by = 1))
+  
+  # dispach on xts:::merge.xts
+  merged <- merge(x_days, x)
+  
+  colnames(merged) <- "collofdays2daily"
+  # if I did not do this earlier / failsafe / Really should have every only been xts/Date
+  if(class(merged) %in% c("xts","zoo")) index(merged) <- zoo::as.Date(index(merged))
+  
+  collofdays2daily_xts <- merged
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  return(collofdays2daily_xts)
+  
+}
+
+
+
+#' @title get the number of NA values
+#' @description get the number of NA values since the last non-NA observations
+#' @param x numeric vector
+#' @return numeric vector of distances from the last non-NA observation
+#' @details no details
+#' @examples
+#' \dontrun{
+#' # get_delay_since_last_obs(c(101,NA,NA,NA,102,NA,NA))
+#' # [1] 0 1 2 3 0 1 2
+#' }
+#' @rdname get_delay_since_last_obs
+#' @export
+#' @importFrom rowr rowApply
+get_delay_since_last_obs <- function(x) {
+
+  ops <- options()
+  
+  options(warn = 1)
   options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
   options(digits = 22) 
   options(max.print=99999)
@@ -2396,71 +1487,67 @@ get_fred_wilshire5000_eom_xts <- function() {
     Sys.setenv(TZ="UTC")
   }
   
-  require(quantmod)
+  # help from  StreamMetabolism::contiguous.zoo
+  # uses       rowr::rowApply
 
-  message("Begin function get_fred_wilshire5000_eom_xts.")
+  StreamMetabolism__noncontiguous.zoo <- function(x)   {
+      z.rle <- rle(is.na(rowSums(coredata(x))))  # CAN BE EXTENDED HERE
+      ends <- cumsum(z.rle$lengths)
+      starts <- ends - z.rle$lengths + 1
+      indexes <- with(z.rle, data.frame(starts, ends, lengths,
+          values))
+      indexes.sort <- indexes[order(-indexes$lengths), ]
+      indexes.sort[indexes.sort$values, ]
+  }
 
-  WILL5000IND <- getSymbols("WILL5000IND", src = "FRED", from = "1950-01-01", auto.assign = FALSE) # SINCE DEC 1970
-  temp <- WILL5000IND
-  colnames(temp)[1] <- tolower(colnames(temp)[1])
-  temp <- to.monthly(temp, OHLC = FALSE, indexAt = "lastof") 
-  fred_wilshire5000_eom_xts <- temp
+  vec <- x   #  vec <- c(101,NA,NA,NA,102,NA,NA)
+  new_vec <- rep(0,length(vec)) # output of all values found ( optimistic ): zeros : no delays found of elements found
+  
+  # 100% opposite of the below ( delays found )
+
+  snc <- StreamMetabolism__noncontiguous.zoo(data.frame(vec))
+  if(NROW(snc)>0) {
+    rowr::rowApply(snc, fun = function(x) { 
+      with( x, { new_vec[starts:ends] <- seq(1,lengths,1)
+                 assign("new_vec", new_vec , envir= parent.frame(8))  
+               } ) -> discard ; NULL
+    }) -> discard
+  }
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  return(new_vec)
  
-  Sys.setenv(TZ=oldtz)
-  options(ops)
-  
-  message("End   function get_fred_wilshire5000_eom_xts.")
-
-  return(fred_wilshire5000_eom_xts)
-
 }
-# > ret <- get_fred_wilshire5000_eom_xts()
-# Begin function get_fred_wilshire5000_eom_xts.
-# End   function get_fred_wilshire5000_eom_xts.
-# > str(ret)
-# An 'xts' object on 1970-12-31/2017-11-30 containing:
-#   Data: num [1:564, 1] 1 1.05 1.07 1.12 1.16 1.12 1.13 1.09 1.13 1.12 ...
-#  - attr(*, "dimnames")=List of 2
-#   ..$ : NULL
-#   ..$ : chr "will5000ind"
-#   Indexed by objects of class: [Date] TZ: UTC
-#   xts Attributes:
-# List of 3
-#  $ src      : chr "FRED"
-#  $ updated  : POSIXct[1:1], format: "2017-12-03 22:20:50"
-#  $ na.action:Class 'omit'  atomic [1:2550] 2 3 4 5 6 7 8 9 10 11 ...
-#   .. ..- attr(*, "index")= num [1:2550] 31536000 31795200 31881600 31968000 32054400 ...
-# > head(ret)
-#                   will5000ind
-# 1970-12-31 1.0000000000000000
-# 1971-01-31 1.0500000000000000
-# 1971-02-28 1.0700000000000001
-# 1971-03-31 1.1200000000000001
-# 1971-04-30 1.1599999999999999
-# 1971-05-31 1.1200000000000001
-# > tail(ret)
-#                   will5000ind
-# 2017-06-30 111.14000000000000
-# 2017-07-31 113.23000000000000
-# 2017-08-31 113.50000000000000
-# 2017-09-30 116.23999999999999
-# 2017-10-31 118.73999999999999
-# 2017-11-30 122.34999999999999
 
 
 
-# k : number of (past) periods to calculate the percent change over
-get_fred_wilshire5000_Nmo_pctchg_ann_eom_xts <- function(k = 1) {
-
-  # The total market indexes are total market returns, which do include reinvested dividends. 
-  # https://fred.stlouisfed.org/series/WILL5000IND
-
-  # ORIG FROM ( INSPIRED BY )
-  # The equity premium
-  # https://fredblog.stlouisfed.org/2016/07/the-equity-premium/
+#' @title get the number of NA values
+#' @description get the number of NA values since the last non-NA observations
+#' @param x xts object
+#' @return modified xts object
+#' @details input is one single column xts object only
+#'          payload NA-gaps matter ( NOT index time gaps )
+#' @examples
+#' \dontrun{
+#' # get_delay_since_last_obs_xts(xts::xts(c(101,NA,NA,NA,102,NA,NA),zoo::as.Date(seq(10,70,10))))
+#' #            delay_since_last_obs
+#' # 1970-01-11                    0
+#' # 1970-01-21                    1
+#' # 1970-01-31                    2
+#' # 1970-02-10                    3
+#' # 1970-02-20                    0
+#' # 1970-03-02                    1
+#' # 1970-03-12                    2
+#' }
+#' @rdname get_delay_since_last_obs_xts
+#' @export
+get_delay_since_last_obs_xts <-function(x) { 
 
   ops <- options()
   
+  options(warn = 1)
   options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
   options(digits = 22) 
   options(max.print=99999)
@@ -2472,161 +1559,131 @@ get_fred_wilshire5000_Nmo_pctchg_ann_eom_xts <- function(k = 1) {
     Sys.setenv(TZ="UTC")
   }
   
-  # uses function get_fred_wilshire5000_eom_xts
+  if(NCOL(x) > 1) stop("In get_delay_since_last_obs_xts, only ONE column is allowed.")
+  
+  require(xts) 
+  # uses function get_delay_since_last_obs
+  
+  x_orig <- x
+  c_orig <- class(x)[1] # original class
+  
+  ## VERY BASIC attemped CLASS conversion ##
+  x_try.xts_success <- FALSE
+  x_try.xts <- try(xts::try.xts(x_orig), silent = T)
+  #
+  x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("get_delay_since_last_obs_xts could not make an xts") } else { x_try.xts_success <- TRUE; x_try.xts }
 
-  message("Begin function get_fred_wilshire5000_Nmo_pctchg_ann_eom_xts.")
-
-  temp <- get_fred_wilshire5000_eom_xts()
-  temp <- (temp - lag.xts(temp, k = k)) /abs(lag.xts(temp, k = k)) * 100 * 12/k
-  colnames(temp) <- paste0("WILL5000IND_", k, "MO_PCTCHG_ANN")
-  fred_wilshire5000_Nmo_pctchg_ann_eom_xts <- temp
+  x_core  <- as.vector(coredata(x))
+  x_index <- index(x)
+  
+  x_core_new <- get_delay_since_last_obs(x_core)
+  
+  x_result <- xts(x_core_new,x_index)
+  
+  # Should have always made it here
+  if(x_try.xts_success) { 
+    xts::reclass(x_result, x_orig) 
+  } -> x_result
+  
+  colnames(x_result) <- "delay_since_last_obs"
+  # if I did not do this earlier / failsafe / Really should have every only been xts/Date
+  if(inherits(x_result,"zoo")) index(x_result) <- zoo::as.Date(index(x_result))
+  
+  delay_since_last_obs_xts <- x_result
   
   Sys.setenv(TZ=oldtz)
   options(ops)
   
-  message("End   function get_fred_wilshire5000_Nmo_pctchg_ann_eom_xts.")
+  return(delay_since_last_obs_xts)
 
-  return(fred_wilshire5000_Nmo_pctchg_ann_eom_xts)
-
-}
-# k : number of (past) periods to calculate the percent change over
-# wilshire5000_3mo_pctchg_ann <- get_fred_wilshire5000_Nmo_pctchg_ann_eom_xts(k = 3)
-# dygraphs::dygraph(wilshire5000_3mo_pctchg_ann)
-
-
-get_fred_wilshire5000_1mo_pctchg_ann_eom_xts <- function() {
-
-  # The total market indexes are total market returns, which do include reinvested dividends. 
-  # https://fred.stlouisfed.org/series/WILL5000IND
-
-  # ORIG FROM ( INSPIRED BY )
-  # The equity premium
-  # https://fredblog.stlouisfed.org/2016/07/the-equity-premium/
-
-  ops <- options()
-  
-  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
-  options(digits = 22) 
-  options(max.print=99999)
-  options(scipen=255) # Try these = width
-  
-  #correct for TZ 
-  oldtz <- Sys.getenv('TZ')
-  if(oldtz=='') {
-    Sys.setenv(TZ="UTC")
-  }
-
-  message("Begin function get_fred_wilshire5000_1mo_pctchg_ann_eom_xts.")
-
-  fred_wilshire5000_Nmo_pctchg_ann_eom_xts <- get_fred_wilshire5000_Nmo_pctchg_ann_eom_xts(k = 1)
-
-  Sys.setenv(TZ=oldtz)
-  options(ops)
-  
-  message("End   function get_fred_wilshire5000_1mo_pctchg_ann_eom_xts.")
-
-  return(fred_wilshire5000_Nmo_pctchg_ann_eom_xts)
-
-}
-# fred_wilshire5000_1mo_pctchg_ann <- get_fred_wilshire5000_1mo_pctchg_ann_eom_xts()
-# dygraphs::dygraph(wilshire5000_1mo_pctchg_ann)
+} 
 
 
 
-# k : number of (future) periods to calculate the percent change over
-get_fred_wilshire5000_Nmo_futpctchg_ann_eom_xts <- function(k = 1) {
+# single column xts only
+# add a record for each day
 
-  # The total market indexes are total market returns, which do include reinvested dividends. 
-  # https://fred.stlouisfed.org/series/WILL5000IND
-
-  # ORIG FROM ( INSPIRED BY )
-  # The equity premium
-  # https://fredblog.stlouisfed.org/2016/07/the-equity-premium/
-
-  ops <- options()
-  
-  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
-  options(digits = 22) 
-  options(max.print=99999)
-  options(scipen=255) # Try these = width
-  
-  #correct for TZ 
-  oldtz <- Sys.getenv('TZ')
-  if(oldtz=='') {
-    Sys.setenv(TZ="UTC")
-  }
-  
-  # uses function get_fred_wilshire5000_eom_xts
-
-  message("Begin function get_fred_wilshire5000_Nmo_futpctchg_ann_eom_xts.")
-
-  temp <- get_fred_wilshire5000_eom_xts()
-  temp <- (lag.xts(temp, k = -1L * k) - temp) /abs(temp) * 100 * 12/k
-  colnames(temp) <- paste0("WILL5000IND_fut", k, "MO_futpctchg_ANN")
-  fred_wilshire5000_Nmo_futpctchg_ann_eom_xts <- temp
-  
-  Sys.setenv(TZ=oldtz)
-  options(ops)
-  
-  message("End   function get_fred_wilshire5000_Nmo_futpctchg_ann_eom_xts.")
-
-  return(fred_wilshire5000_Nmo_futpctchg_ann_eom_xts)
-
-}
-# k : number of (future) periods to calculate the percent change over
-# wilshire5000_3mo_futpctchg_ann <- get_fred_wilshire5000_Nmo_futpctchg_ann_eom_xts(k = 3)
-# dygraphs::dygraph(wilshire5000_3mo_futpctchg_ann)
-
-
-
-get_fred_wilshire5000_1mo_futpctchg_ann_eom_xts <- function() {
-
-  # The total market indexes are total market returns, which do include reinvested dividends. 
-  # https://fred.stlouisfed.org/series/WILL5000IND
-
-  # ORIG FROM ( INSPIRED BY )
-  # The equity premium
-  # https://fredblog.stlouisfed.org/2016/07/the-equity-premium/
+#' @title get a filled object of observations and delay times since the last non-na observation
+#' @description get a filled xts object of the 
+#'              days and number days since the last xts non-na observation
+#' @param x xts object
+#' @return modified xts object
+#' @details input is one single column xts object only
+#'          payload NA-gaps matter ( NOT index time gaps )
+#' @examples
+#' \dontrun{
+#' # require(xts)
+#' # get_delay_since_last_day_xts(xts(c(101,NA,NA,NA,102,NA,NA),zoo::as.Date(seq(10,70,10))))
+#' #            delay_since_last_day
+#' # 1970-01-11                    0
+#' # 1970-01-12                    1
+#' # 1970-01-13                    2
+#' # 1970-01-14                    3
+#' # 1970-01-15                    4
+#' # 1970-01-16                    5
+#' # 1970-01-17                    6
+#' # 1970-01-18                    7
+#' # 1970-01-19                    8
+#' # 1970-01-20                    9
+#' # 1970-01-21                   10
+#' # 1970-01-22                   11
+#' # 1970-01-23                   12
+#' # 1970-01-24                   13
+#' # 1970-01-25                   14
+#' # 1970-01-26                   15
+#' # 1970-01-27                   16
+#' # 1970-01-28                   17
+#' # 1970-01-29                   18
+#' # 1970-01-30                   19
+#' # 1970-01-31                   20
+#' # 1970-02-01                   21
+#' # 1970-02-02                   22
+#' # 1970-02-03                   23
+#' # 1970-02-04                   24
+#' # 1970-02-05                   25
+#' # 1970-02-06                   26
+#' # 1970-02-07                   27
+#' # 1970-02-08                   28
+#' # 1970-02-09                   29
+#' # 1970-02-10                   30
+#' # 1970-02-11                   31
+#' # 1970-02-12                   32
+#' # 1970-02-13                   33
+#' # 1970-02-14                   34
+#' # 1970-02-15                   35
+#' # 1970-02-16                   36
+#' # 1970-02-17                   37
+#' # 1970-02-18                   38
+#' # 1970-02-19                   39
+#' # 1970-02-20                    0
+#' # 1970-02-21                    1
+#' # 1970-02-22                    2
+#' # 1970-02-23                    3
+#' # 1970-02-24                    4
+#' # 1970-02-25                    5
+#' # 1970-02-26                    6
+#' # 1970-02-27                    7
+#' # 1970-02-28                    8
+#' # 1970-03-01                    9
+#' # 1970-03-02                   10
+#' # 1970-03-03                   11
+#' # 1970-03-04                   12
+#' # 1970-03-05                   13
+#' # 1970-03-06                   14
+#' # 1970-03-07                   15
+#' # 1970-03-08                   16
+#' # 1970-03-09                   17
+#' # 1970-03-10                   18
+#' # 1970-03-11                   19
+#' # 1970-03-12                   20
+#' }
+#' @rdname get_delay_since_last_day_xts
+#' @export
+get_delay_since_last_day_xts <-function(x) { 
 
   ops <- options()
   
-  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
-  options(digits = 22) 
-  options(max.print=99999)
-  options(scipen=255) # Try these = width
-  
-  #correct for TZ 
-  oldtz <- Sys.getenv('TZ')
-  if(oldtz=='') {
-    Sys.setenv(TZ="UTC")
-  }
-
-  message("Begin function get_fred_wilshire5000_1mo_futpctchg_ann_eom_xts.")
-
-  fred_wilshire5000_Nmo_futpctchg_ann_eom_xts <- get_fred_wilshire5000_Nmo_futpctchg_ann_eom_xts(k = 1)
-
-  Sys.setenv(TZ=oldtz)
-  options(ops)
-  
-  message("End   function get_fred_wilshire5000_1mo_futpctchg_ann_eom_xts.")
-
-  return(fred_wilshire5000_Nmo_futpctchg_ann_eom_xts)
-
-}
-# fred_wilshire5000_1mo_futpctchg_ann <- get_fred_wilshire5000_1mo_futpctchg_ann_eom_xts()
-# dygraphs::dygraph(fred_wilshire5000_1mo_futpctchg_ann)
-
-
-
-# competiton from bonds ( any reason )
-get_willshire_less_agg_equity_premium_eom_xts <- function() {
-
-  # ORIG FROM ( INSPIRED BY )
-  # The equity premium
-  # https://fredblog.stlouisfed.org/2016/07/the-equity-premium/
-  
-  ops <- options()
-  
+  options(warn = 1)
   options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
   options(digits = 22) 
   options(max.print=99999)
@@ -2638,164 +1695,912 @@ get_willshire_less_agg_equity_premium_eom_xts <- function() {
     Sys.setenv(TZ="UTC")
   }
   
-  require(xts) # lag.xts
-  # uses get_av_agg_eom_xts
-  # uses get_fred_wilshire5000_eom_xts
+  if(NCOL(x) > 1) stop("In get_delay_since_last_day_xts, only ONE column is allowed.")
+  
+  require(xts) 
+  # uses function get_delay_since_last_obs
+  # uses package xts merge.xts
+  
+  x_orig <- x
+  c_orig <- class(x)[1] # original class
+  
+  ## VERY BASIC attemped CLASS conversion ##
+  x_try.xts_success <- FALSE
+  x_try.xts <- try(xts::try.xts(x_orig), silent = T)
+  #
+  x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("get_delay_since_last_day_xts could not make an xts") } else { x_try.xts_success <- TRUE; x_try.xts }
 
-  message("Begin function get_willshire_less_agg_equity_premium_eom_xts.")
+  # more dates - create temporary rows
+  x_nonsparse <- get_collofdays2daily_xts(x)
+  
+  # find delays(0 - no delay over NA, 1 - one delay 'at' NA)
+  x_nonsparse_delays <- get_delay_since_last_obs_xts(x_nonsparse)
+  
+  x_result <- x_nonsparse_delays
+  
+  # Should have always made it here
+  if(x_try.xts_success) { 
+    xts::reclass(x_result, x_orig) 
+  } -> x_result
+  
+  colnames(x_result) <- "delay_since_last_day"
+  # if I did not do this earlier / failsafe / Really should have every only been xts/Date
+  if(inherits(x_result,"zoo")) index(x_result) <- zoo::as.Date(index(x_result))
+  
+  delay_since_last_day_xts <- x_result
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  return(delay_since_last_day_xts)
 
-  fred_wilshire5000_eom_xts <- get_fred_wilshire5000_eom_xts()  # will5000ind
-  av_agg_eom_xts            <- get_av_agg_eom_xts()             # agg
+} 
+
+
+
+# [ ] NEED TEST(S)
+#' @title quarter end observations
+#' @description get only the exact observation that appears at the end of each calendar quarter
+#' @param x xts object
+#' @return modified xts object ( possibly rows reduced )
+#' @details input is one single column xts object only
+#'          payload NA-gaps matter ( NOT index time gaps )
+#' @examples
+#' \dontrun{
+#' # x <- xts::xts(seq(2,24,2),zoo::as.Date(seq(20,240,20)))
+#' # x
+#' # [,1]
+#' # 1970-01-21    2
+#' # 1970-02-10    4
+#' # 1970-03-02    6
+#' # 1970-03-22    8
+#' # 1970-04-11   10
+#' # 1970-05-01   12
+#' # 1970-05-21   14
+#' # 1970-06-10   16
+#' # 1970-06-30   18
+#' # 1970-07-20   20
+#' # 1970-08-09   22
+#' # 1970-08-29   24
+#' # 
+#' # get_only_qtr_ends_obs_xts(x)
+#' # only_qtr_ends_obs
+#' # 1970-06-30                18
+#' }
+#' @rdname get_delay_since_last_obs_xts
+#' @export
+
+get_only_qtr_ends_obs_xts <-function(x) { 
   
-  tempw01_ann <- ( fred_wilshire5000_eom_xts - lag.xts(fred_wilshire5000_eom_xts, 1) ) / abs(lag.xts(fred_wilshire5000_eom_xts, 1)) * 12.0/ 1.0 * 100.00
-  tempw02_ann <- ( fred_wilshire5000_eom_xts - lag.xts(fred_wilshire5000_eom_xts, 2) ) / abs(lag.xts(fred_wilshire5000_eom_xts, 2)) * 12.0/ 2.0 * 100.00
-  tempw03_ann <- ( fred_wilshire5000_eom_xts - lag.xts(fred_wilshire5000_eom_xts, 3) ) / abs(lag.xts(fred_wilshire5000_eom_xts, 3)) * 12.0/ 3.0 * 100.00
-  tempw06_ann <- ( fred_wilshire5000_eom_xts - lag.xts(fred_wilshire5000_eom_xts, 6) ) / abs(lag.xts(fred_wilshire5000_eom_xts, 6)) * 12.0/ 6.0 * 100.00
-  tempw09_ann <- ( fred_wilshire5000_eom_xts - lag.xts(fred_wilshire5000_eom_xts, 9) ) / abs(lag.xts(fred_wilshire5000_eom_xts, 9)) * 12.0/ 9.0 * 100.00
-  tempw12_ann <- ( fred_wilshire5000_eom_xts - lag.xts(fred_wilshire5000_eom_xts,12) ) / abs(lag.xts(fred_wilshire5000_eom_xts,12)) * 12.0/12.0 * 100.00
+  ops <- options()
   
-  tempa01_ann <- ( av_agg_eom_xts - lag.xts(av_agg_eom_xts, 1) ) / abs(lag.xts(av_agg_eom_xts, 1)) * 12.0/ 1.0 * 100.00
-  tempa02_ann <- ( av_agg_eom_xts - lag.xts(av_agg_eom_xts, 2) ) / abs(lag.xts(av_agg_eom_xts, 2)) * 12.0/ 2.0 * 100.00
-  tempa03_ann <- ( av_agg_eom_xts - lag.xts(av_agg_eom_xts, 3) ) / abs(lag.xts(av_agg_eom_xts, 3)) * 12.0/ 3.0 * 100.00
-  tempa06_ann <- ( av_agg_eom_xts - lag.xts(av_agg_eom_xts, 6) ) / abs(lag.xts(av_agg_eom_xts, 6)) * 12.0/ 6.0 * 100.00
-  tempa09_ann <- ( av_agg_eom_xts - lag.xts(av_agg_eom_xts, 9) ) / abs(lag.xts(av_agg_eom_xts, 9)) * 12.0/ 9.0 * 100.00
-  tempa12_ann <- ( av_agg_eom_xts - lag.xts(av_agg_eom_xts,12) ) / abs(lag.xts(av_agg_eom_xts,12)) * 12.0/12.0 * 100.00
+  options(warn = 1)
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
   
-  temp <- merge.xts( 
-      tempw01_ann - tempa01_ann
-    , tempw02_ann - tempa02_ann
-    , tempw03_ann - tempa03_ann
-    , tempw06_ann - tempa06_ann
-    , tempw09_ann - tempa09_ann
-    , tempw12_ann - tempa12_ann
-    )
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  if(NCOL(x) > 1) stop("In get_only_qtr_ends_obs_xts, only ONE column is allowed.")
+  
+  require(xts) 
+  # uses function get_only_qtr_ends_obs
+  
+  x_orig <- x
+  c_orig <- class(x)[1] # original class
+  
+  ## VERY BASIC attemped CLASS conversion ##
+  x_try.xts_success <- FALSE
+  x_try.xts <- try(xts::try.xts(x_orig), silent = T)
+  #
+  x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("get_only_qtr_ends_obs_xts could not make an xts") } else { x_try.xts_success <- TRUE; x_try.xts }
+  
+  x_result <- x[unique(zoo::as.Date(as.yearqtr(index(x)), frac = 1))]
+  
+  # Should have always made it here
+  if(x_try.xts_success) { 
+    xts::reclass(x_result, x_orig) 
+  } -> x_result
+  
+  colnames(x_result) <- "only_qtr_ends_obs"
+  # if I did not do this earlier / failsafe / Really should have every only been xts/Date
+  if(inherits(x_result,"zoo")) index(x_result) <- zoo::as.Date(index(x_result))
+  
+  only_qtr_ends_obs_xts <- x_result
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  return(only_qtr_ends_obs_xts)
+  
+} 
+
+
+
+
+
+#' @title determine if  observations have the value of NA
+#' @description find whether or not an xts value is NA
+#' @param x xts object
+#' @return modified xts object
+#' @details input is one single column xts object only
+#' @examples
+#' \dontrun{
+#' # require(xts)
+#' # is_na_xts(xts(c(11,NA,NA,14,NA),zoo::as.Date(1:5)))
+#' #              na
+#' # 1970-01-02    2
+#' # 1970-01-03    1
+#' # 1970-01-04    1
+#' # 1970-01-05    2
+#' # 1970-01-06    1
+#' }
+#' @rdname is_na_xts
+#' @export
+is_na_xts <- function(x) {
+  
+  ops <- options()
+  
+  options(warn = 1)
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  if(NCOL(x) > 1) stop("In is_na_xts, only ONE column is allowed.")
+  
+  require(xts) 
+  # uses ojUtils::ifelseC
+  
+  x_orig <- x
+  c_orig <- class(x)[1] # original class
+  
+  ## VERY BASIC attemped CLASS conversion ##
+  x_try.xts_success <- FALSE
+  x_try.xts <- try(xts::try.xts(x_orig), silent = T)
+  #
+  x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("is.na.xts could not make an xts") } else { x_try.xts_success <- TRUE; x_try.xts }
+
+  # expecting a 'single' column xts
+
+  x_vector     <- as.vector(coredata(x))
+  x_vector_len <- length(x_vector)
+
+  coredata_new <- ojUtils::ifelseC(is.na(x_vector), rep(1,x_vector_len), rep(2,x_vector_len))
+  coredata(x)  <- coredata_new
+  x_result     <- x
+
+  # Should have always made it here
+  if(x_try.xts_success) { 
+    xts::reclass(x_result, x_orig) 
+  } -> x_result
+  
+  colnames(x_result) <- "na"
+  # if I did not do this earlier / failsafe / Really should have every only been xts/Date
+  if(inherits(x_result,"zoo")) index(x_result) <- zoo::as.Date(index(x_result))
+  
+  na_xts <- x_result 
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+   
+  return(na_xts)
+
+} 
+
+
+
+#' @title remove observations
+#' @description remove day(Date) 'day of week' observations from an xts object
+#' @param x 
+#' @param rm_what typical entry rm_what = c("Saturday", "Sunday", "BIZHOLIDAYS" )
+#' @return modified xts object
+#' @details input is one single column xts object only
+#' @examples
+#' \dontrun{
+#' # weekends removed
+#' # about 
+#' # 
+#' # RQuantLib::isHoliday(. . ."UnitedStates/NYSE". . .) considers 'weekends' to be holidays
+#' # # JAN 01 2007 to JAN 17 2007
+#' # 
+#' # # weekends     removed
+#' # 
+#' # # Holiday 1st  removed - New Year's Day
+#' # # Holiday 2nd  removed - Day Of Mourning - Gerald Ford ( SUPRISING )
+#' # # Holiday 15th removed - Martin Luther King Day
+#' # 
+#' # require(xts)
+#' # x <- xts(1:17, zoo::as.Date("2007-01-01") -1 + 1:17)
+#' # df <- data.frame( index(x), RQuantLib::isHoliday("UnitedStates/NYSE", index(x)), weekdays(index(x)))
+#' # colnames(df) <- c("index", "is_nyse_holiday", "weekday")
+#' # df
+#' #         index is_nyse_holiday   weekday
+#' # 1  2007-01-01            TRUE    Monday
+#' # 2  2007-01-02            TRUE   Tuesday
+#' # 3  2007-01-03           FALSE Wednesday
+#' # 4  2007-01-04           FALSE  Thursday
+#' # 5  2007-01-05           FALSE    Friday
+#' # 6  2007-01-06            TRUE  Saturday
+#' # 7  2007-01-07            TRUE    Sunday
+#' # 8  2007-01-08           FALSE    Monday
+#' # 9  2007-01-09           FALSE   Tuesday
+#' # 10 2007-01-10           FALSE Wednesday
+#' # 11 2007-01-11           FALSE  Thursday
+#' # 12 2007-01-12           FALSE    Friday
+#' # 13 2007-01-13            TRUE  Saturday
+#' # 14 2007-01-14            TRUE    Sunday
+#' # 15 2007-01-15            TRUE    Monday
+#' # 16 2007-01-16           FALSE   Tuesday
+#' # 17 2007-01-17           FALSE Wednesday             
+#' # 
+#' # rm_days_xts(xts(1:17,zoo::as.Date("2007-01-01") -1 + 1:17), rm_what = c("Saturday", "Sunday", "BIZHOLIDAYS"))
+#' #            days
+#' # 2007-01-03    3
+#' # 2007-01-04    4
+#' # 2007-01-05    5
+#' # 2007-01-08    8
+#' # 2007-01-09    9
+#' # 2007-01-10   10
+#' # 2007-01-11   11
+#' # 2007-01-12   12
+#' # 2007-01-16   16
+#' # 2007-01-17   17
+#' }
+#' @rdname rm_days_xts
+#' @export
+rm_days_xts <- function(x, rm_what = NULL) {
+
+  ops <- options()
+  
+  options(warn = 1)
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  if(NCOL(x) > 1) stop("In rm_days_xts, only ONE column is allowed.")
+  
+  # JUN 2017
+  # .indexwday
+  # http://joshuaulrich.github.io/xts/xts_faq.html
+
+  require(xts) 
+  # uses package RQuantLib function isHoliday
+  # uses package stringr   function str_detect
+  
+  x_orig <- x
+  c_orig <- class(x)[1] # original class
+  
+  ## VERY BASIC attemped CLASS conversion ##
+  x_try.xts_success <- FALSE
+  x_try.xts <- try(xts::try.xts(x_orig), silent = T)
+  #
+  x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("rm_days_xts could not make an xts") } else { x_try.xts_success <- TRUE; x_try.xts }
+
+  if( !is.null(rm_what)     && 
+     ( length(rm_what) > 0) && 
+      any(stringr::str_detect(rm_what,"Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday|HOLIDAYS$"))
+    ) { 
+
+    # 0 - Sunday ... 6 - Saturday  
     
-  # equity premium past(p) XY months
-  colnames(temp) <- c(
-      "equity_prem_p01m_ann"
-    , "equity_prem_p02m_ann"
-    , "equity_prem_p03m_ann"
-    , "equity_prem_p06m_ann"
-    , "equity_prem_p09m_ann"
-    , "equity_prem_p12m_ann"
-    )
+    # .indexwday(xts(,zoo::as.Date("2017-06-18"))) # Sunday
+    # [1] 0
+    # 
+    # weekdays(index(xts(,zoo::as.Date("2017-06-18")))) # format(zoo::as.Date("2017-06-18"), "%A")
+    # [1] "Sunday"
+
+    weekdays_index <- c(Sunday = 0,  Monday = 1, Tuesday = 2, Wednesday = 3, Thursday = 4, Friday = 5, Saturday = 6)
+
+    rm_what_holidays_not <-  rm_what[!stringr::str_detect(rm_what,"HOLIDAYS$")]
+    if(length(rm_what_holidays_not)) {
+    
+      rm_what_weekdays_index   <-  weekdays_index[match(rm_what_holidays_not, names(weekdays_index))]
+      if(length(rm_what_weekdays_index)) {
+      
+        keep_what_weekdays_index <- weekdays_index[-match(names(rm_what_weekdays_index), names(weekdays_index))]
+        x <- x[.indexwday(x) %in% keep_what_weekdays_index]
+      
+      }
+    
+    }
+      
+    rm_what_holidays <-  rm_what[stringr::str_detect(rm_what,"BIZHOLIDAYS$")]
+    if(length(rm_what_holidays)) {
+    
+      if(length(match("BIZHOLIDAYS",rm_what_holidays))) {
+      
+        # "UnitedStates/GovernmentBond"
+        # 2007 Federal Holidays
+        # Monday, January 1   New Year's Day
+        # Monday, January 15  Birthday of Martin Luther King, Jr.
+        # https://archive.opm.gov/Operating_Status_Schedules/fedhol/2007.asp
+        
+        # "UnitedStates/NYSE"
+        # NYSE Holidays from 2000-2010
+        # 01 Jan 2007 Monday  New Years Day
+        # 02 Jan 2007 Tuesday Day Of Mourning - Gerald Ford ( SUPRISING )
+        # 15 Jan 2007 Monday  Martin Luther King Day
+        # http://nyseholidays.blogspot.com/2012/11/nyse-holidays-from-2000-2010.html
+
+        # NYSE Holidays: Market Closings for 2017 - Stock Market Holidays Schedule
+        # Thursday, February 23, 2017
+        # https://mrtopstep.com/nyse-holidays-market-closings-2017-stock-market-holidays-schedule/
+        
+        # NOTE does INCLUDE WEEKENDS
+        x <- x[!RQuantLib::isHoliday("UnitedStates/NYSE", zoo::as.Date(index(x)))] # CHANGED index(x) TO zoo::as.Date(index(x)) # UNTESTED but POSIX__ NOT WORK
+      
+      }
+    }
+  }
   
-  willshire_less_agg_equity_premium_eom_xts <- temp
- 
+  x_result <- x
+
+  # Should have always made it here
+  if(x_try.xts_success) { 
+    xts::reclass(x_result, x_orig) 
+  } -> x_result
+  
+  colnames(x_result) <- "days"
+  # if I did not do this earlier / failsafe / Really should have every only been xts/Date
+  if(inherits(x_result,"zoo")) index(x_result) <- zoo::as.Date(index(x_result))
+  
+  days_xts <- x_result
+  
   Sys.setenv(TZ=oldtz)
   options(ops)
   
-  message("End   function get_willshire_less_agg_equity_premium_eom_xts.")
+  return(days_xts)
+}
 
-  return(willshire_less_agg_equity_premium_eom_xts)
+
+
+#' @title determine if a FRED Holiday is nearby
+#' @description find out whether or not a nearby FRED xts day is a holiday or not
+#' @param x xts object
+#' @param d numeric vector of past days: -1 yesterday, c(-1,-2) yesterday AND the 'day before yesterday' etc ( both must be true )
+#'           e.g. if TRUE and d = c(-1,-2), then 
+#'           BOTH yesterday and the 'day before yesterday' NON-working days of the U.S. Federal Government.
+#'           holdays are based on RQuantlib UnitedStates/GovernmentBond calendar
+#' @return modified xts object
+#' @details input is one single column xts object only
+#'          meant to be a utility function ( input to OTHERS )
+#' @examples
+#' \dontrun{
+#' # require(xts)
+#' # data(sample_matrix)
+#' # sample_xts <- as.xts(sample_matrix)
+#' # 
+#' # are_nearby_fred_holidays_xts(sample_xts[2:16,"Open"], d = c(-1,-2))
+#' #            nearby_fred_holidays
+#' # 2007-01-03                FALSE
+#' # 2007-01-04                FALSE
+#' # 2007-01-05                FALSE
+#' # 2007-01-06                FALSE
+#' # 2007-01-07                FALSE
+#' # 2007-01-08                 TRUE # is TRUE because yesterday and the day before were holidays
+#' # 2007-01-09                FALSE
+#' # 2007-01-10                FALSE
+#' # 2007-01-11                FALSE
+#' # 2007-01-12                FALSE
+#' # 2007-01-13                FALSE
+#' # 2007-01-14                FALSE
+#' # 2007-01-15                 TRUE # is TRUE because SUN(yesterday) and SAT were holidays
+#' # 2007-01-16                 TRUE # is TRUE because MON(yesterday) and SUN were holidays
+#' # 2007-01-17                FALSE
+#' }
+#' @rdname are_nearby_fred_holidays_xts
+#' @export
+are_nearby_fred_holidays_xts <- function(x, d = NULL) {
+ 
+  ops <- options()
+  
+  options(warn = 1)
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  if(NCOL(x) > 1) stop("In are_nearby_fred_holidays_xts, only ONE column is allowed.")
+  
+  # "UnitedStates/GovernmentBond"
+  # 2007 Federal Holidays
+  # Monday, January 1   New Year's Day
+  # Monday, January 15  Birthday of Martin Luther King, Jr.
+  # https://archive.opm.gov/Operating_Status_Schedules/fedhol/2007.asp
+  
+  require(xts) 
+  # uses package RQuantLib function isHoliday, 
+  # uses package rlist     function list.zip
+  # uses package lubridate function `%m+%`
+  # uses package lubridate function days
+  
+  `%M+%` <- lubridate::`%m+%`
+  
+  x_orig <- x
+  c_orig <- class(x)[1] # original class
+  
+  ## VERY BASIC attemped CLASS conversion ##
+  x_try.xts_success <- FALSE
+  x_try.xts <- try(xts::try.xts(x_orig), silent = T)
+  #
+  x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("xxx could not make an xts") } else { x_try.xts_success <- TRUE; x_try.xts }
+
+  # for ONE single day returns multiple days
+  FUN  <- function(x,d) { index(x) %M+% lubridate::days(c(d)) }
+  PARALLEL_LISTS <- Vectorize(FUN, vectorize.args = "d", SIMPLIFY = FALSE)(x, d)
+  TOGETHER_LISTS <- do.call(rlist::list.zip, PARALLEL_LISTS)
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  # if BOTH of those 'multiple days' is a "UnitedStates/GovernmentBond" then return TRUE
+  sapply(TOGETHER_LISTS, function(x) { 
+    xx <- x
+    all(sapply(xx, function(xx) { 
+      RQuantLib::isHoliday("UnitedStates/GovernmentBond",zoo::as.Date(xx)) 
+    })) 
+  }) -> x_result
+  
+  # Should have always made it here
+  if(x_try.xts_success) { 
+    xts::reclass(x_result, x_orig) 
+  } -> x_result
+  
+  colnames(x_result) <- "nearby_fred_holidays"
+  # if I did not do this earlier / failsafe / Really should have every only been xts/Date
+  if(inherits(x_result,"zoo")) index(x_result) <- zoo::as.Date(index(x_result))
+  
+  nearby_fred_holidays_xts <- x_result
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  return(nearby_fred_holidays_xts)
+  
+}
+
+
+
+#' @title replace an xts object date attribute
+#' @description swap out an XTS object index USING my OWN custom INDEX
+#' @param x xts object
+#' @param x_index_new new index to replace the index of the xts(x) object
+#'                    anything one dimensional with a length/NROW(x_index_new) == NROW(x) == length(index(x))
+#'                    numeric values are day(Date) values
+#' @return modified xts object
+#' @details one 'many columned' xts is allowed as input
+#'          columns are not RENAMED
+#' @examples
+#' \dontrun{
+#' # require(quantmod)
+#' # unrate <- getSymbols("UNRATE", src = "FRED",  auto.assign = FALSE)["1948-01-01/1948-03-01"]
+#' #            UNRATE
+#' # 1948-01-01    3.4
+#' # 1948-02-01    3.8
+#' # 1948-03-01    4.0
+#' # 
+#' # do_reindex_xts(unrate, 0:2)
+#' #                        UNRATE
+#' # 1970-01-01 3.3999999999999999
+#' # 1970-01-02 3.7999999999999998
+#' # 1970-01-03 4.0000000000000000
+#' # 
+#' # do_reindex_xts(merge(unrate,unrate), 0:2)
+#' #                        UNRATE           UNRATE.1
+#' # 1970-01-01 3.3999999999999999 3.3999999999999999
+#' # 1970-01-02 3.7999999999999998 3.7999999999999998
+#' # 1970-01-03 4.0000000000000000 4.0000000000000000
+#' }
+#' @rdname do_reindex_xts
+#' @export
+do_reindex_xts <- function(x,  x_index_new ) {
+
+  ops <- options()
+  
+  options(warn = 1)
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+
+  # many columns are allowed
+  
+  require(xts) 
+
+  x_orig <- x
+  c_orig <- class(x)[1] # original class
+  
+  ## VERY BASIC attemped CLASS conversion ##
+  x_try.xts_success <- FALSE
+  x_try.xts <- try(xts::try.xts(x_orig), silent = T)
+  #
+  x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("do_reindex_xts could not make an xts") } else { x_try.xts_success <- TRUE; x_try.xts }
+
+  x_tclass <- tclass(x)
+  x_tzone  <- tzone(x)
+  # INTERNAL STORAGE IS ALWAYS POSIXCT
+  # as.vector(unlist: anything one dimensional # HACK: x_tclass == "Date": SEE index:::index.xts
+  # .index(x) # DESTROYS entire attr(x,"index")
+  .index(x) <- as.vector(unlist(x_index_new)) * if( x_tclass == "Date") { 3600 * 24 } else { 1 }
+  x <- x[order(index(x)),]
+  tclass(x) <- x_tclass
+  tzone(x)  <- x_tzone # get for free( redundant ) == "UTC" if x_tclass == "Date"
+  
+  x_result <- x
+  
+  # Should have always made it here
+  if(x_try.xts_success) { 
+    xts::reclass(x_result, x_orig) 
+  } -> x_result
+  
+  do_reindex <- x_result
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  return(do_reindex)
+}
+
+
+
+#' @title adjust a date to be an earlier data
+#' @description change an xts object index value become an earlier date
+#' @param x xts object
+#' @return modified xts object
+#' @details meant REALY only for St.Louis FRED
+#'          adjust dates that start on the 1st( sometimes 4th, 3rd, or 2nd ) to be the 31st
+#'          be aware of landings on weekend and long holiday weekends and after a Tuesday or Thursday holiday
+#'          one 'many columned' xts is allowed as input
+#'          columns are not RENAMED
+#'          slow: 170 observations per second
+#' @examples
+#' \dontrun{
+#' # require(quantmod)
+#' # unrate <- getSymbols("UNRATE", src = "FRED",  auto.assign = FALSE)["1948-01-01/1948-03-01"]
+#' #            UNRATE
+#' # 1948-01-01    3.4
+#' # 1948-02-01    3.8
+#' # 1948-03-01    4.0
+#' # 
+#' # pushback_fred_1st_days_xts(unrate)
+#' #                        UNRATE
+#' # 1947-12-31 3.3999999999999999
+#' # 1948-01-31 3.7999999999999998
+#' # 1948-02-29 4.0000000000000000
+#' # 
+#' # pushback_fred_1st_days_xts(merge(unrate,unrate))
+#' #                        UNRATE           UNRATE.1
+#' # 1947-12-31 3.3999999999999999 3.3999999999999999
+#' # 1948-01-31 3.7999999999999998 3.7999999999999998
+#' # 1948-02-29 4.0000000000000000 4.0000000000000000
+#' }
+#' @rdname pushback_fred_1st_days_xts
+#' @export
+pushback_fred_1st_days_xts <- function(x) {
+
+  ops <- options()
+  
+  options(warn = 1)
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  # many columns are allowed
+  
+  require(xts)
+  # uses package lubridate function `%m+%`
+  # uses package lubridate function day
+  # uses package lubridate function days
+  # uses package xts function apply.daily
+  # uses function are_nearby_fred_holidays_xts  
+  # uses function do_reindex_xts
+
+  `%M+%` <- lubridate::`%m+%`
+  
+  x_orig <- x
+  c_orig <- class(x)[1] # original class
+  
+  ## VERY BASIC attemped CLASS conversion ##
+  x_try.xts_success <- FALSE
+  x_try.xts <- try(xts::try.xts(x_orig), silent = T)
+  #
+  x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("pushback_fred_1st_days_xts could not make an xts") } else { x_try.xts_success <- TRUE; x_try.xts }
+
+  # If Mutiple POSIXct per day then I just need ONE of them 
+  x_s        <- xts::split.xts( x, f = "days" )
+  x_s_l_last <- lapply( x_s , function(x) { xts::last(x) } ) # xts::last remaining of all the elements
+  # unsplit
+  x <- do.call(xts::rbind.xts, x_s_l_last )
+  
+  # if the 4th is Today and the last 3 days were holidays then shift the index 4 # then done  
+  apply.daily(x, function(xx) { 
+    # only one daily observation in this case so '&&' is O.K.
+    if(lubridate::day(index(xx)) == 4 && are_nearby_fred_holidays_xts(xx, c(-1,-2,-3))) {
+      index(xx) %M+% lubridate::days(-4)
+    } else {
+      index(xx)
+    }
+  }) -> x_4th
+  x <- do_reindex_xts(x, x_4th)
+
+  # if the 3rd is Today and the last 2 days were holidays then shift the index 3 # then done  
+  apply.daily(x, function(xx) { 
+    # only one daily observation in this case so '&&' is O.K.
+    if(lubridate::day(index(xx)) == 3 && are_nearby_fred_holidays_xts(xx, c(-1,-2))) {
+      index(xx) %M+% lubridate::days(-3)
+    } else {
+      index(xx)
+    }
+  }) -> x_3rd
+  x <- do_reindex_xts(x, x_3rd)
+
+  # Tuesday and Thursday(Thanksgiving) holidays
+  # if the 2nd is Today and the last 1 day was a holiday then shift the index 2 # then done  
+  apply.daily(x, function(xx) { 
+    # only one daily observation in this case so '&&' is O.K.
+    if(lubridate::day(index(xx)) == 2 && are_nearby_fred_holidays_xts(xx, c(-1))) {
+      index(xx) %M+% lubridate::days(-2)
+    } else {
+      index(xx)
+    }
+  }) -> x_2nd
+  x <- do_reindex_xts(x, x_2nd)
+
+  # if the 1st is Today then shift the index 1  # then done
+  apply.daily(x, function(xx) { 
+    # only one daily observation in this case so '&&' is O.K.
+    if(lubridate::day(index(xx)) ==  1) {
+      index(xx) %M+% lubridate::days(-1)
+    } else {
+      index(xx)
+    }
+  }) -> x_1st
+  x <- do_reindex_xts(x, x_1st)
+  x_result <- x
+
+  # Should have always made it here
+  if(x_try.xts_success) { 
+    xts::reclass(x_result, x_orig) 
+  } -> x_result
+  
+  # columns are not renamed
+  # if I did not do this earlier / failsafe / Really should have every only been xts/Date
+  if(inherits(x_result,"zoo")) index(x_result) <- zoo::as.Date(index(x_result))
+  
+  fred_1st_days_xts <- x_result
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  return(fred_1st_days_xts)
 
 }
-# willshire_less_agg_equity_premium <- get_willshire_less_agg_equity_premium_eom_xts()
-# 3-MONTH IS TOO VOLITILE TO BE TRUSTED
-# I DID NOT SEE ANY DIFFERENCE BETWEEN 6,9.12-MONTH
-# dygraphs::dygraph(willshire_less_agg_equity_premium[,c("equity_prem_p03m_ann","equity_prem_p06m_ann","equity_prem_p09m_ann","equity_prem_p12m_ann")])
-# 
-#
-# USING THIS
-# zimmerman equity premium
-# willshire_less_agg_equity_premium <- get_willshire_less_agg_equity_premium_eom_xts()
-# dygraphs::dygraph(willshire_less_agg_equity_premium[,c("equity_prem_p06m_ann","equity_prem_p12m_ann")])
-# 
-# 
-# > str(willshire_less_agg_equity_premium)
-# An 'xts' object on 2003-09-30/2017-11-30 containing:
-#   Data: num [1:171, 1:6] NA 84.3 17.1 48.9 21.4 ...
-#  - attr(*, "dimnames")=List of 2
-#   ..$ : NULL
-#   ..$ : chr [1:6] "equity_prem_p01m_ann" "equity_prem_p02m_ann" "equity_prem_p03m_ann" "equity_prem_p06m_ann" ...
-#   Indexed by objects of class: [Date] TZ: UTC
-#   xts Attributes:
-# List of 3
-#  $ src      : chr "FRED"
-#  $ updated  : POSIXct[1:1], format: "2017-12-03 22:56:15"
-#  $ na.action:Class 'omit'  atomic [1:2550] 2 3 4 5 6 7 8 9 10 11 ...
-#   .. ..- attr(*, "index")= num [1:2550] 31536000 31795200 31881600 31968000 32054400 ...
-#   
-# > head(willshire_less_agg_equity_premium)
-#            equity_prem_p01m_ann equity_prem_p02m_ann equity_prem_p03m_ann equity_prem_p06m_ann equity_prem_p09m_ann equity_prem_p12m_ann
-# 2003-09-30                   NA                   NA                   NA                   NA                   NA                   NA
-# 2003-10-31  84.2987450884582472                   NA                   NA                   NA                   NA                   NA
-# 2003-11-30  17.1130481177452651   51.218714679298330                   NA                   NA                   NA                   NA
-# 2003-12-31  48.9323460982841851   33.402967470490964   51.837654936685105                   NA                   NA                   NA
-# 2004-01-31  21.3658774060835412   35.737669848211752   29.913895463481893                   NA                   NA                   NA
-# 2004-02-29   7.0787195864594263   14.393577095692896   26.552312397718790                   NA                   NA                   NA
-# 
-# > tail(willshire_less_agg_equity_premium,12)
-#            equity_prem_p01m_ann equity_prem_p02m_ann equity_prem_p03m_ann equity_prem_p06m_ann equity_prem_p09m_ann equity_prem_p12m_ann
-# 2016-12-31  26.6785409468942873  57.6792731404528567  33.6783351827045294  26.1460287693127249   19.396159765021100   13.318836650160643
-# 2017-01-31  18.8136356428537788  22.9679704390198687  45.2262122134306637  21.9183884075927082   20.889474629676457   23.013005909026440
-# 2017-02-28  39.3219182540622683  29.4595654796353159  28.9949591503358377  27.6768256380941722   22.925214476958740   27.842211472730174
-# 2017-03-31   3.6451575000364063  21.5007272661133726  20.8718471149072045  27.8160222562867538   25.085154797845274   20.451617949694253
-# 2017-04-30   4.1550662765484354   3.9138422275604001  15.8714419300207119  31.4319368317205345   20.390660635441670   20.302472508527266
-# 2017-05-31   6.4993794573965795   5.3709383229494136   4.8115608664173877  17.2213815271180231   20.390816491020793   18.739148244610355
-# 2017-06-30  13.1888542311096923   9.9032154931740166   8.0595718966889791  14.7901341485866489   21.684611732823850   21.310832179009061
-# 2017-07-31  21.0320263311760236  17.2104969234017631  13.7536575930667055  15.1754316734198973   26.251964207042814   19.198544152585530
-# 2017-08-31  -5.8936974764027141   7.5904728289958010   9.5384269155111507   7.2908943998708722   15.050994584742723   18.079013826104507
-# 2017-09-30  38.3127573821949312  16.2781539891988558  18.0630168838048810  13.3311258156569021   16.414348216283905   21.408621110395330
-# 2017-10-31  27.1226602162964525  33.0241164000693956  20.1214408937029035  17.3090251816943663   17.400646991173964   25.602864419556575
-# 2017-11-30  40.7582161337507785  34.3304224021625757  36.1509483630243054  23.3301906712948259   17.476032800731414   21.390696660109594
-# # RUN OF DEC 03 2017
-# 
-# # NOTE ( COMPARE TO : https://fredblog.stlouisfed.org/2016/07/the-equity-premium/ )
-# > willshire_less_agg_equity_premium["2015/2016"]
-#            equity_prem_p01m_ann equity_prem_p02m_ann  equity_prem_p03m_ann  equity_prem_p06m_ann equity_prem_p09m_ann equity_prem_p12m_ann
-# 2015-01-31 -57.8567990386709852 -26.5413755239343239 -10.00440168939763552   2.36547709549237428   4.7117603788284619  9.16153232475986812
-# 2015-02-28  80.9510484434047441  10.7300704238034079   8.71338104452690487   9.73305556262234539  12.4025926472196097 11.60080700164916578
-# 2015-03-31 -16.0413364223876371  32.0817231842582302   1.67299727594256975   9.63858492076925444   6.8873007003371125  8.97285222382645031
-# 2015-04-30  12.7317894346522991  -1.6856762308536708  25.71338484011894110   7.86921663226877488  10.4996198198680872 10.37817303103409117
-# 2015-05-31  22.9442895041154316  17.8614514804051545   6.48643536279191135   7.64750195124236498   8.7199525365108208 11.01401183025542885
-# 2015-06-30  -5.8351614088464032   8.3721959168704920   9.77643481888302368   5.78341837326514607   9.7580635615037554  7.65834232933381820
-# 2015-07-31  12.8787999014850953   3.3899506898527330   9.89069658083005265  17.89533395413536354   8.6317661014064146 10.48931055871820917
-# 2015-08-31 -65.0168926112570915 -26.6672150485021575 -19.41494740991376489  -6.56855480413585280  -1.6528766363349345  1.28620653590337541
-# 2015-09-30 -39.9122732887513152 -51.4746255944353308 -30.61577828607414276 -10.39381546390428390  -6.4922151594906214 -0.81858260693828655
-# 2015-10-31  97.5538675664195125  27.5177036318603960  -4.52374192632552763   2.65303848993806746  10.3205817674240912  5.27267701174492665
-# 2015-11-30  12.5220911169222102  55.2543234061736328  22.62363796858394593   0.93675803498879295   2.7643022479017980  4.26097393923528145
-# 2015-12-31 -14.7936781509440838  -1.2157605464390775  31.21469154050884498  -0.56101723134450809   2.8614859967278492  2.58603347487096480
-# 2016-01-31 -80.3710951539452623 -46.8832888920785535 -27.20417039769123235 -15.70184777722573344  -7.3059356769249355  0.58320974925696012
-# 2016-02-29  -8.6838292139228823 -44.5624714987857189 -34.14983390501353000  -6.57852760019924787 -10.6642215107928848 -6.43335006049919222
-# 2016-03-31  76.7226046806774065  33.9722008189255504  -5.74072679030750876  12.96160095076648489  -2.2784390328552746  0.78021287695523278
-# 2016-04-30   6.9802621241255371  42.1188042050102069  25.15038203007103235  -2.08518886573276063  -2.9015228586525401  0.30080769424144049
-# 2016-05-31  23.7554380275571226  15.4373916150372459  36.56297429717124459  -0.23375839192358372   7.5077058091240403  0.36053082165282424
-# 2016-06-30 -17.0894900474790532   3.3844703901941298   4.63371364852351331  -0.57262641312829121  10.4429189971645826 -0.57596447261033212
-# 2016-07-31  42.8418795950987388  12.9123135442783017  16.84830066734769360  21.88920409132333589   4.2146086172883397  1.95594080488325339
-# 2016-08-31   7.8570491502432116  25.4183825253064484  11.30420175019935236  24.79036997898009531   3.6706420255988430  8.75726049007443486
-# 2016-09-30   2.7046561691669169   5.2790878833225845  17.86235340081689671  11.49162654482293711   5.8101264682378408 12.75750751442655684
-# 2016-10-31 -12.3467649887635815  -4.8402151737854195  -0.64562094891989563   7.95333890913508768  14.1247381985226195  2.94107946015766242
-# 2016-11-30  87.6113938593773725  36.9149049238328786  25.50064217026994484  18.76072948617356673  25.6365221739902545  9.41805354289089891
-# 2016-12-31  26.6785409468942873  57.6792731404528567  33.67833518270452942  26.14602876931272490  19.3961597650210997 13.31883665016064278
-# 
-# # NOTE ( COMPARE TO : https://fredblog.stlouisfed.org/2016/07/the-equity-premium/ )
-# willshire_less_agg_equity_premium["2008"]
-#             equity_prem_p01m_ann  equity_prem_p02m_ann  equity_prem_p03m_ann equity_prem_p06m_ann equity_prem_p09m_ann equity_prem_p12m_ann
-# 2008-01-31 -100.4084757860892410  -48.6917771027152924  -54.6455473379572823 -18.1290358804996004 -11.9348124531106556  -6.5234632388542320
-# 2008-02-29  -29.4604818257940551  -63.7613354597350650  -41.4488737069382793 -23.5321257863188578 -21.0263145424547808  -6.1178404308165248
-# 2008-03-31   -5.3763956078764616  -17.3016022132415763  -44.0371738788008074 -30.1890311778175118 -20.7166451008663444  -8.1610724363520895
-# 2008-04-30   60.6034518011223398   27.4062629061172025    7.9312314352738440 -23.5444044537395101  -9.4549529582493079  -7.0068930832134777
-# 2008-05-31   43.9766081871344028   52.9049227779607349   33.2638018198465346  -5.2700577607560612  -5.2620972313619889  -8.1502654498142277
-# 2008-06-30  -90.7206833410654525  -24.4444444444444891    2.6613781552689755 -20.3256155892188062 -18.9023128301533347 -14.6012865540315815
-# 2008-07-31  -10.3460860362331726  -50.1171051856782412  -19.5321637426900274  -5.9928972375873855 -21.2342760855632910 -11.6547029001954190
-# 2008-08-31   14.5530118965071686    2.0239350227442059  -29.1061139121883166   1.1064432331824068 -12.8556773573571093 -11.0114988118394130
-# 2008-09-30  -85.7510701120621377  -36.4201866686210209  -27.4593912854091933 -12.2094792246333093 -21.4593764465962415 -19.8388758012597606
-# 2008-10-31 -178.8215938497030209 -122.8364557314771304  -78.5410258192981416 -45.8479532163742647 -28.4299931934493983 -31.6890774959226533
-# 2008-11-30 -127.2174882365168003 -144.1639174259655363 -115.7239776818370842 -67.7406820831996725 -37.2502831568011175 -35.2114417389134857
-# 2008-12-31  -49.1979829006260303  -89.9532729102799635 -114.1582891367277171 -66.6426789205679881 -42.8168226380555765 -40.2288045640858485
-
-# NOTE: really(from 'stock for the long run': the 10 month return may MATTER most)
 
 
 
-get_fred_good_corp_bond_yearly_yield_eom_xts <- function() {
+#' @title determine if a year value is less than or equal to a specific value
+#' @description finds if an xts index value is less than a specific value
+#' @param x xts object
+#' @param n meant to pass just the index year numeric YYYY
+#' @return modified xts object with ONE column is returned
+#'         1 - yes # 2 - no
+#' @details input is one 'multiple columned' xts object only
+#'          But, the style would be better to just input one single columned xts object only
+#' @examples
+#' \dontrun{
+#'# require(quantmod)
+#'# unrate_40s <- getSymbols("UNRATE", src = "FRED",  auto.assign = FALSE)["1948-01-01/1949-03-01"]
+#'# 
+#'# is_year_less_than_or_equal_xts(unrate_40s, 1948)
+#'#            year_less_than_or_equal_xts
+#'# 1948-01-01                           1
+#'# 1948-02-01                           1
+#'# 1948-03-01                           1
+#'# 1948-04-01                           1
+#'# 1948-05-01                           1
+#'# 1948-06-01                           1
+#'# 1948-07-01                           1
+#'# 1948-08-01                           1
+#'# 1948-09-01                           1
+#'# 1948-10-01                           1
+#'# 1948-11-01                           1
+#'# 1948-12-01                           1
+#'# 1949-01-01                           2
+#'# 1949-02-01                           2
+#'# 1949-03-01                           2
+#'# 
+#'# is_year_less_than_or_equal_xts(merge(unrate_40s,unrate_40s), 1948)
+#'#            year_less_than_or_equal_xts
+#'# 1948-01-01                           1
+#'# 1948-02-01                           1
+#' }
+#' @rdname is_year_less_than_or_equal_xts
+#' @export
+is_year_less_than_or_equal_xts <- function(x, n = NULL) {
+  
+  ops <- options()
+  
+  options(warn = 1)
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
 
-  # BofA Merrill Lynch US Corporate BBB Effective Yield
-  # https://fred.stlouisfed.org/series/BAMLC0A4CBBBEY
-  # ORIG FROM ( INSPIRED BY )
-  # The equity premium
-  # https://fredblog.stlouisfed.org/2016/07/the-equity-premium/
+  # multiple columns are allowed
+  
+  require(xts) 
+  # uses package lubridate function year
+  # uses package ojUtils   function ifelseC
+  
+  x_orig <- x
+  c_orig <- class(x)[1] # original class
+  
+  ## VERY BASIC attemped CLASS conversion ##
+  x_try.xts_success <- FALSE
+  x_try.xts <- try(xts::try.xts(x_orig), silent = T)
+  #
+  x         <- if(any(class(x_try.xts) %in% "try-error")) { stop("is_year_less_than_or_equal_xts could not make an xts") } else { x_try.xts_success <- TRUE; x_try.xts }
+
+  # only the index is important
+  
+  x_index_len <- length(index(x))
+
+  coredata_new <- ojUtils::ifelseC(lubridate::year(index(x)) <= n, rep(1,x_index_len), rep(2,x_index_len))
+  
+  # coredata(x)  <- coredata_new
+  # safer method if no corredata is passed
+  x <- xts(coredata_new, index(x))
+  x_result <- x
+  
+  # Should have always made it here
+  if(x_try.xts_success) { 
+    xts::reclass(x_result, x_orig) 
+  } -> x_result
+  
+  colnames(x_result) <- "year_less_than_or_equal_xts"
+  # if I did not do this earlier / failsafe / Really should have every only been xts/Date
+  if(inherits(x_result,"zoo")) index(x_result) <- zoo::as.Date(index(x_result))
+  
+  year_less_than_or_equal_xts <- x_result
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+   
+  return(year_less_than_or_equal_xts)
+
+}
+
+
+
+#' @title sends back a list of symbol data converted to raw, weekly, monthly in a list
+#' @description smart wrapper over quantmod getSymbols Quandl Quandl, xts to.period in to.x
+#' @param Symbol one single symbol passed to the finanical function quantmod getSymbols
+#'               if the Symbol contains a slash, then the Symbol instead is passed to 
+#'               the financial function Quandl Quandl
+#'               do not use with the "symbol_raw" paramter
+#' @param symbol_raw actually user suppled xts data. Therefore a finanical function will not be called    
+#'                  do no tuse with the "symbol" parameter         
+#' @param src passed through dots ... to quantmod getSymbols
+#'            if is parameter is in the call then quantmod getSymbols will be used to get the data
+#'            typical values of src are "FRED" and "yahoo" 
+#'            value of "Quandl" will call the "Quandl" function     
+#' @param returns any compbination of "raw","daily", "weekly", "monthly", "quarterly", "ignore"
+#'         currently only supported raw, monthly, weekly
+#'         future support may include daily and/or quarterly
+#' @param truncate_to_returns_frequency  meant for irregularly spaced dates for dates just after the 1st of the month
+#'                                       ignored elsewhere . . . otherwise . . .
+#'                                       for use with a call of 'returns = "monthly"
+#'                                       will be used during an internally detected periodicity == "quarterly"
+#'                                       of the date of that month, will truncate the date back to the 1st
+#'                                       MUST not be called pushback_fred_1st_days and raise_to_returns_frequency
+#' @param raise_to_returns_frequency     meant for spaced dates just after the end of the month
+#'                                       ignored elsewhere . . . otherwise . . .
+#'                                       for use with a call of 'returns = "monthly"
+#'                                       will be used during an internally detected periodicity == "quarterly"
+#'                                       of the date of that month, will truncate the date back to the 1st
+#'                                       MUST not be called pushback_fred_1st_days and truncate_to_returns_frequency                                  
+#' @param  pushback_fred_1st_days if a date(can be a FRED date) appears on the 1st or later and nearby
+#'                                then pull the date back to the beginning of the month
+#'                                meant to use with src = "FRED" data from the U.S. Government
+#'                                case 1: the returns parameter includes "monthly" and 
+#'                                an internal detected periodicity of "monthly"
+#'                                case 2: if used with a call of 'returns = "monthly"
+#'                                and during an internally detected periodicity == "quarterly"
+#'                                MUST not be called with truncate_to_returns_frequency and raise_to_returns_frequency
+
+#' @param month_delay BEST used together with 
+#'                                        truncate_to_returns_frequency
+#'                                        xor raise_to_returns_frequency
+#'                                        xor pushback_fred_1st_days
+#'                    adjustement to shift FRED return data dates to 
+#'                    "actually try to" be "on the date" that the data was published 
+#' @param day_delay BEST used together with data with a periodicity of "daily" or "weekly"
+#'                    adjustement to shift FRED return data dates to 
+#'                    "actually try to" be "on the date" that the data was published
+#' @param case return the column names in "lower"case "upper"case or "ignore"
+#' @param OTHERS ... passthrough to quantmod getSymbols or xts to.period
+#' @return list of xts objects ( determined by the returns parameter )
+#' @details input is one 'multiple columned' xts object only
+#'          But, the style would be better to just input one single columned xts object only
+#'          currenltly only returns value is  returns = "monthly" that is implemented
+#' @examples
+#' \dontrun{
+#' # quantmod_xts_eox <- get_quantmod_xts_eox("USARECM", src ="FRED", returns = "monthly", pushback_fred_1st_days =  TRUE, month_delay = 4) 
+#' # > tail(quantmod_xts_eox[["monthly"]])
+#' #            usarecm
+#' # 2017-08-30       0
+#' # 2017-09-30       0
+#' # 2017-10-30       0
+#' # 2017-11-30       0
+#' # 2017-12-31       0
+#' # 2018-01-30       0
+#' }
+#' @rdname get_symbols_xts_eox
+#' @export
+get_symbols_xts_eox <- function(
+         symbol=NULL,
+         symbol_raw=NULL,
+         case = "lower", # can be "upper", "ignore"
+         returns = c("raw","daily", "weekly", "monthly", "quarterly", "ignore"),
+         truncate_to_returns_frequency = FALSE,
+         raise_to_returns_frequency = FALSE,
+         pushback_fred_1st_days = FALSE, # some FRED series end on the 1st of the month, 
+                                         # if TRUE, I want to push back to the 31st or 'last day of previous month' 
+         day_delay = NULL,               # MOST useful with data of a periodicity of "daily" or "weekly"
+                                         # adjustement to shift FRED return data dates to 'actually try to ' be on the date that the data was published 
+         month_delay = NULL,             # MOST useful with data of a periodicity of "monthly" or "quarterly"
+                                         # adjustement to shift FRED return data dates to 'actually try to ' be on the date that the data was published 
+         ... # quantmod getSymbols; src = "FRED" # Non-FRED(src="yahoo") : _from = ""/to = ""_
+  ) {        # xts  to.period/to.X; OHLC = F, indexAt = "lastof"
+
+  call_expanded     = match.call(expand.dots=TRUE)
+  call_not_expanded = match.call(expand.dots=FALSE)
+  get_dot   <- function(x) { call_expanded[[x]] }
+  is_in_dot <- function(x) { x %in% setdiff(names(call_expanded)[-1], names(call_not_expanded)[-1] ) }
   
   ops <- options()
   
@@ -2810,359 +2615,434 @@ get_fred_good_corp_bond_yearly_yield_eom_xts <- function() {
     Sys.setenv(TZ="UTC")
   }
   
-  require(quantmod)
-
-  message("Begin function get_fred_good_corp_bond_yearly_yield_eom_xts.")
-
-  BAMLC0A4CBBBEY <- getSymbols("BAMLC0A4CBBBEY", src = "FRED", from = "1950-01-01", auto.assign = FALSE) # SINCE DEC 1996
-  temp <- BAMLC0A4CBBBEY
-  colnames(temp)[1] <- tolower(colnames(temp)[1])
-  temp <- to.monthly(temp, OHLC = FALSE, indexAt = "lastof") 
-  fred_good_corp_bond_yearly_yield_eom_xts <- temp
- 
-  Sys.setenv(TZ=oldtz)
-  options(ops)
-  
-  message("End   function get_fred_good_corp_bond_yearly_yield_eom_xts.")
-
-  return(fred_good_corp_bond_yearly_yield_eom_xts)
-
-}
-# ret <- get_fred_good_corp_bond_yearly_yield_eom_xts()
-
-
-
-
-
-# competiton from bonds ( any reason )
-get_fred_zimmermann_equity_premium_eom_xts <- function() {
-
-  # ORIG FROM ( INSPIRED BY )
-  # The equity premium
-  # https://fredblog.stlouisfed.org/2016/07/the-equity-premium/
-  
-  ops <- options()
-  
-  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
-  options(digits = 22) 
-  options(max.print=99999)
-  options(scipen=255) # Try these = width
-  
-  #correct for TZ 
-  oldtz <- Sys.getenv('TZ')
-  if(oldtz=='') {
-    Sys.setenv(TZ="UTC")
-  }
-  
-  require(xts) # lag.xts
-  # uses fred_wilshire5000_eom_xts
-  # uses get_fred_good_corp_bond_yearly_yield_eom_xts
-
-  message("Begin function get_fred_zimmermann_equity_premium_eom_xts.")
-
-  fred_wilshire5000_eom_xts                <- get_fred_wilshire5000_eom_xts()
-  fred_good_corp_bond_yearly_yield_eom_xts <- get_fred_good_corp_bond_yearly_yield_eom_xts()
- 
-  tempw12_ann <- ( fred_wilshire5000_eom_xts - lag.xts(fred_wilshire5000_eom_xts,12) ) / abs(lag.xts(fred_wilshire5000_eom_xts,12)) * 12.0/12.0 * 100.00
- 
-  temp <- tempw12_ann - fred_good_corp_bond_yearly_yield_eom_xts
-  colnames(temp)[1] <- "zimmermann_equity_premium"
-  fred_zimmermann_equity_premium_eom_xts <- temp
-  rm(temp)
- 
-  Sys.setenv(TZ=oldtz)
-  options(ops)
-  
-  message("End   function get_fred_zimmermann_equity_premium_eom_xts.")
-
-  return(fred_zimmermann_equity_premium_eom_xts)
-
-}
-# ret <- get_fred_zimmermann_equity_premium_eom_xts()
-# dygraphs::dygraph(ret)
-# compare TO https://fredblog.stlouisfed.org/2016/07/the-equity-premium/
-#
-# zimmermann_equity_premium_sma_4              <-  get_sma_xts(fred_zimmermann_equity_premium,4)
-# colnames(zimmermann_equity_premium_sma_4)[1] <- "zimmermann_equity_premium_sma_4"
-# # dygraphs::dygraph(zimmermann_equity_premium_sma_4)
-# zimmermann_equity_premium_sma_4_pctchg_2 <- get_pctchg_xts(zimmermann_equity_premium_sma_4,2)
-# colnames(zimmermann_equity_premium_sma_4_pctchg_2)[1] <- "zimmermann_equity_premium_sma_4_pctchg_2"
-# # dygraphs::dygraph(zimmermann_equity_premium_sma_4_pctchg_2)
-# zimmermann_equity_premium_sma_4_pctchg_2_smrank_10_10 <- get_smrank_xts(zimmermann_equity_premium_sma_4_pctchg_2,10,10)
-# colnames(zimmermann_equity_premium_sma_4_pctchg_2_smrank_10_10)[1] <- "zimmermann_equity_premium_sma_4_pctchg_2_smrank_10_10"
-# dygraphs::dygraph(zimmermann_equity_premium_sma_4_pctchg_2_smrank_10_10)
-
-
-
-get_fred_chicago_fed_nat_fin_cond_idx_nonfin_lev_subidx_eom_xts <- function() {
-
-  # The Chicago Fed National Financial Conditions Index (NFCI) provides a 
-  # comprehensive weekly update on U.S. financial conditions in 
-  #   money markets, debt and equity markets, and the traditional ... banking systems.
-  # 
-  # THIS IS IT: ACTUALLY SLOPE AND TREND/DIP MATTER
-  # "Positive values of the NFCI indicate financial conditions that are tighter than average, 
-  # while negative values indicate financial conditions that are looser than average."
-  # The three subindexes of the NFCI (risk, credit and leverage)
-  # https://fred.stlouisfed.org/series/NFCINONFINLEVERAGE
-  # 
-  # NFCI is a weighted average of a large number of variables (105 measures of financial activity)
-  # http://www.chicagofed.org/webpages/publications/nfci/index.cfm
-  
-  # (USEFUL IN ALL RECESSIONS: SLOPE IS MOST USEFUL)
-  # Chicago Fed National Financial Conditions Credit Subindex (NFCICREDIT)
-  # "Positive values of the NFCI indicate financial conditions that are tighter than average, 
-  # while negative values indicate financial conditions that are looser than average."
-  # https://fred.stlouisfed.org/series/NFCICREDIT
-  
-  # (EXCEPT FOR 2001 RECESSION: VERY GOOD)
-  # Chicago Fed National Financial Conditions Leverage Subindex (NFCILEVERAGE)
-  # "Positive values of the NFCI indicate financial conditions that are tighter than average, 
-  # while negative values indicate financial conditions that are looser than average."
-  # https://fred.stlouisfed.org/series/NFCILEVERAGE
-  
-  # (ONLY USEFUL IN 2008 RECESSION)
-  # Chicago Fed National Financial Conditions Risk Subindex (NFCIRISK)
-  # Positive values of the NFCI indicate financial conditions that are tighter than average, 
-  # while negative values indicate financial conditions that are looser than average."
-  # https://fred.stlouisfed.org/series/NFCIRISK
-  
-  ops <- options()
-  
-  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
-  options(digits = 22) 
-  options(max.print=99999)
-  options(scipen=255) # Try these = width
-  
-  #correct for TZ 
-  oldtz <- Sys.getenv('TZ')
-  if(oldtz=='') {
-    Sys.setenv(TZ="UTC")
-  }
-  
-  require(quantmod)
-
-  message("Begin function get_fred_chicago_fed_nat_fin_cond_idx_nonfin_lev_subidx_eom_xts.")
-
-  NFCINONFINLEVERAGE <- getSymbols("NFCINONFINLEVERAGE", src = "FRED", from = "1950-01-01", auto.assign = FALSE) # SINCE JAN 1971
-  temp <- NFCINONFINLEVERAGE
-  colnames(temp)[1] <- tolower(colnames(temp)[1])
-  temp <- to.monthly(temp, OHLC = FALSE, indexAt = "lastof") 
-  fred_chicago_fed_nat_fin_cond_idx_nonfin_lev_subidx_eom_xts <- temp
- 
-  Sys.setenv(TZ=oldtz)
-  options(ops)
-  
-  message("End   function get_fred_chicago_fed_nat_fin_cond_idx_nonfin_lev_subidx_eom_xts.")
-
-  return(fred_chicago_fed_nat_fin_cond_idx_nonfin_lev_subidx_eom_xts)
-
-}
-# ret <- get_fred_chicago_fed_nat_fin_cond_idx_nonfin_lev_subidx_eom_xts()
-# dygraphs::dygraph(ret)
-
-
-
-
-get_fred_civil_unemp_rate_eom_xts <- function() {
-
-  # number of unemployed as a percentage of the labor force
-  # Seasonally Adjusted
-  # https://fred.stlouisfed.org/series/UNRATE
-
-  ops <- options()
-  
-  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
-  options(digits = 22) 
-  options(max.print=99999)
-  options(scipen=255) # Try these = width
-  
-  #correct for TZ 
-  oldtz <- Sys.getenv('TZ')
-  if(oldtz=='') {
-    Sys.setenv(TZ="UTC")
-  }
-  
-  require(quantmod)
+  require(xts) # getSymbols # require(xts) # periodicity
   # uses lubridate `%m+%`
   `%m+%` <- lubridate::`%m+%`
+  # may use quantmod getSymbols
+  # may use Hmisc    truncPOSIXt
+  # may use pushback_fred_1st_days_xts
+
+  message(paste0("Begin function get_symbols_xts_eox: ", symbol))
   
-  message("Begin function get_fred_civil_unemp_rate_eom_xts.")
-
-  # always reports on the 1st as "the beginning (day 1) of the previous month"
-  UNRATE <- getSymbols("UNRATE", src = "FRED", from = "1940-01-01", auto.assign = FALSE) # SINCE JAN 1948
+  if( is.null(symbol) && is.null(symbol_raw)) stop("get_symbols_xts_eox: parameter symbol xor symbol_raw; needed value")
   
-  ## index(UNRATE) <- index(UNRATE) - 5L
 
-  # from the beginning of the month (day 1) to the end of the month 
-  # ( begin in the next month (day 1) and subtract off one day )
-  index(UNRATE) <- index(UNRATE) %m+% months(1) - 1 
-  temp <- UNRATE
-  colnames(temp)[1] <- tolower(colnames(temp)[1])
-  ## temp <- to.monthly(temp, OHLC = FALSE, indexAt = "lastof") 
-  fred_civil_unemp_rate_eom_xts <- temp
- 
-  Sys.setenv(TZ=oldtz)
-  options(ops)
+  if(length(case) > 1)                       stop("case: formal argument was sent to many actual arguements")
+  if(!case %in% c("lower","upper","ignore")) stop("case: formal argument was sent an invalid actual argement")
+
+  if(length(returns) > 5)                                                stop("returns: formal argument; sent to many actual arguements")
+  if(!all(returns %in% c("raw","daily", "weekly", "monthly", "ignore"))) stop("returns: formal argument; sent an invalid actual argement")
+  if("ignore" %in% returns)  { returns_ignore  <- TRUE ;  message("returns: ignore; no data sent back to calling function") }
+  if("raw" %in% returns)     { returns_raw     <- TRUE } 
+  if("daily" %in% returns)   { returns_daily   <- TRUE } 
+  if("weekly" %in% returns)  { returns_weekly  <- TRUE } 
+  if("monthly" %in% returns) { returns_monthly <- TRUE } 
+
+  if(!is.null(symbol_raw)) {
+    # user supplied xts object of data
+    symbol_raw <- symbol_raw
+  } else if(is_in_dot("src") && (get_dot("src") != "Quandl")) {
+    
+    require(quantmod) 
+    # just ONE symbol
+    symbol_raw <- getSymbols(
+           Symbol=symbol,
+           auto.assign = FALSE, 
+           ...
+    ) 
+    # a slash in the Symbol name means that this  must be aQuandle symbol
+  } else if (grepl("/", symbol) || (is_in_dot("src") && (get_dot("src") == "Quandl"))) {
+    
+    require(Quandl)
+    symbol_raw <- Quandl(code=symbol, type="xts", start_date="1800-01-01", ...)
+    # NOTE Quandl does not return a column name
+    # from zoo classes yearqtr or yearmon to Date(beginning of the period)
+    index(symbol_raw) <- zoo::as.Date(index(symbol_raw), frac = 0L) 
+    
+  } else {
+    stop("get_symbols_xts_eox does not know which financial function to call.") 
+  }
+  # NOTE Quandl does not return a column name
+  if(is.null(colnames(symbol_raw))) colnames(symbol_raw) <- gsub("/","_",symbol)
+  # 
+  if(case == "lower") colnames(symbol_raw) <- tolower(colnames(symbol_raw))
+  if(case == "upper") colnames(symbol_raw) <- toupper(colnames(symbol_raw))
+  if(case == "ignore")                        message("case: no column case change")
+
+  # periodicity transforms begin
   
-  message("End   function get_fred_civil_unemp_rate_eom_xts.")
-
-  return(fred_civil_unemp_rate_eom_xts)
-
-}
-# ret <- get_fred_civil_unemp_rate_eom_xts()
-# dygraphs::dygraph(ret)
-
-
-
-# see the PRESSURE the FED is applying
-get_frbdata_federal_funds_eff_rate_eom_xts <- function() {
-
-  # FF:Federal funds effective rate
-  # ? FRBData::GetInterestRates
-
-  ops <- options()
+  symbols_xts_eox <- list()
   
-  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
-  options(digits = 22) 
-  options(max.print=99999)
-  options(scipen=255) # Try these = width
-  
-  #correct for TZ 
-  oldtz <- Sys.getenv('TZ')
-  if(oldtz=='') {
-    Sys.setenv(TZ="UTC")
+  if( exists("returns_raw") && (returns_raw == TRUE) )  {
+    symbols_xts_eox <- c(list(),symbols_xts_eox,list(raw = symbol_raw))
   }
   
-  require(xts)
-  # uses FRBData function GetInterestRates
-
-  message("Begin function get_frbdata_federal_funds_eff_rate_eom_xts.")
-
-  FF <-FRBData::GetInterestRates("FF") # SINCE JUL 1954
-  temp <- FF
-  colnames(temp)[1] <- "ff"
-  temp <- to.monthly(temp, OHLC = FALSE, indexAt = "lastof") 
-  frbdata_federal_funds_eff_rate_eom_xts <- temp
- 
-  Sys.setenv(TZ=oldtz)
-  options(ops)
+  periodicity_original <- periodicity(symbol_raw)$scale
   
-  message("End   function get_frbdata_federal_funds_eff_rate_eom_xts.")
-
-  return(frbdata_federal_funds_eff_rate_eom_xts)
-
-}
-# see the PRESSURE the FED is applying
-# ret <- get_frbdata_federal_funds_eff_rate_eom_xts()
-# dygraphs::dygraph(ret)
-
-
-
-# see the PRESSURE the FED is applying
-get_frbdata_discount_window_primary_credit_rate_eom_xts <- function() {
-
-  # DWPC:Discount window primary credit.The rate charged for primary credit under amendment to the Board's Regulation A
-  # ? FRBData::GetInterestRates
-
-  ops <- options()
+  # ONLY CURRENT IMPLEMENTATION
+  if( exists("returns_monthly") && (returns_monthly == TRUE) )  {
   
-  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
-  options(digits = 22) 
-  options(max.print=99999)
-  options(scipen=255) # Try these = width
+    temp <- symbol_raw
   
-  #correct for TZ 
-  oldtz <- Sys.getenv('TZ')
-  if(oldtz=='') {
-    Sys.setenv(TZ="UTC")
+    if(periodicity_original == "quarterly") {
+    
+       
+       is_done <- FALSE
+       
+       if(truncate_to_returns_frequency == TRUE){
+         
+         # if "irregular quarterly times" or "times not on the 1st of the month"
+         #                                or "times *just after* the 1st of the month"
+         # Hmisc::truncPOSIXt will create a 1st of the month date
+         # Note uses the "current timezone", so be careful
+         # -1L pushes back to yesterday ( that is the last day of the previous month)
+         # NOTE: Hmisc::truncPOSIXt IS NOT VECTORIZED ( single element only )
+         from <- zoo::as.Date(Hmisc::truncPOSIXt(min(index(temp)), units = "months"))
+           to <- zoo::as.Date(Hmisc::truncPOSIXt(max(index(temp)), units = "months"))
+         back_shift <- 1L
+
+         all_dates <- seq.Date(from = from, to = to, by = "month") - back_shift
+         temp <- na.locf(merge.xts(temp, xts(, all_dates) ))
+         is_done <- TRUE
+         
+       } 
+       
+       # IT IS VERY CUMPERSOME AND TIME CONSUMING TO CHECK EACH DATE TO SEE IF 
+       # THE DATE IS NEAR THE END OF THE MONTH.
+       # THE RESPONSIBILTY IS UP THE CALLER TO MAKE SURE THAT THE DATA WALL WORK
+       if(raise_to_returns_frequency == TRUE){
+         
+         # if    "times on the 31st of the month"
+         #    or "times *just near* the end of the month"
+         # Hmisc::roundPOSIXt will create a "last" of the month date
+         # Note uses the "current timezone", so be careful
+         # NOTE: Hmisc::truncPOSIXt IS NOT VECTORIZED ( single element only )
+         # NOTE: Hmisc::roundPOSIXt IS NOT VECTORIZED ( single element only )
+         # rounds UP to the next month
+         from <- zoo::as.Date(Hmisc::roundPOSIXt(min(index(temp)), digits = "months")) 
+           to <- zoo::as.Date(Hmisc::roundPOSIXt(max(index(temp)), digits = "months")) 
+         back_shift <- 1L
+
+         all_dates <- seq.Date(from = from, to = to, by = "month") - back_shift
+         temp <- na.locf(merge.xts(temp, xts(, all_dates) ))
+         is_done <- TRUE
+         
+       } 
+       
+       # would have to know something about the series
+       if(pushback_fred_1st_days) {
+         
+         # keep at 1st date(0L), so seq.Date will work, and so I can do the code below
+         from <- min(index(temp) + 0L)
+         to   <- max(index(temp) + 0L)
+         back_shift <- 0L
+         all_dates <- seq.Date(from = from, to = to, by = "month") - back_shift
+         temp <- na.locf(merge.xts(pushback_fred_1st_days_xts(temp), xts(, all_dates) ))
+         is_done <- TRUE
+       }
+       
+       # temp <- pushback_fred_1st_days_xts(temp)
+       # all_dates <- seq.Date(from = from, to = to, by = "month") - 1L
+       # temp <- na.locf(merge.xts( pushback_fred_1st_days_xts(temp), xts(, all_dates) ))
+       # all_dates <- seq.Date(, , by = "month") - 1L
+       # temp      <- na.locf(merge.xts( temp, xts(, all_dates) ))
+      
+       # AS IS (not recommended)
+       if(!is_done) {
+         from <- min(index(temp))
+         to   <- max(index(temp))
+         back_shift <- 0L
+         all_dates <- seq.Date(from = from, to = to, by = "month") - back_shift
+         temp <- na.locf(merge.xts(temp, xts(, all_dates) ))
+       }
+       rm(all_dates)
+       rm(is_done)
+     
+    }
+    # periodicity(temp)$scale seen in q u a n t s t r a t
+    if(periodicity_original == "monthly") {
+  
+      # would have to know something about the series
+      if(pushback_fred_1st_days) {
+        temp <- pushback_fred_1st_days_xts(temp)
+      }
+      
+    } 
+    if(periodicity_original %in% c("weekly", "daily")) {
+    
+      if(!is.null(day_delay)) {
+        index(temp) <- index(temp) + day_delay
+      }
+      # ALMOST(NOTHING MORE TO DO)
+      # lower periodicity will be handled in to.monthly BELOW
+    }
+    
+    if(!is.null(month_delay)) {
+      index(temp) <- index(temp) %m+% months(month_delay)
+    }
+    
+    if(!is.null(day_delay)) {
+      index(temp) <- index(temp) + day_delay
+    }
+    
+    # convert to a monthly
+    temp <- to.monthly(temp, ...) # dots passed indexAt OHLC
+    symbols_xts_eox <- c(list(),symbols_xts_eox,list(monthly = temp))
+
+    
   }
-  
-  require(xts)
-  # uses FRBData function GetInterestRates
-
-  message("Begin function get_frbdata_discount_window_primary_credit_rate_eom_xts.")
-
-  DWPC <-FRBData::GetInterestRates("DWPC") # SINCE JAN 2003
-  temp <- DWPC
-  colnames(temp)[1] <- "dwpc"
-  temp <- to.monthly(temp, OHLC = FALSE, indexAt = "lastof") 
-  frbdata_discount_window_primary_credit_rate_eom_xts <- temp
- 
-  Sys.setenv(TZ=oldtz)
-  options(ops)
-  
-  message("End   function get_frbdata_discount_window_primary_credit_rate_eom_xts.")
-
-  return(frbdata_discount_window_primary_credit_rate_eom_xts)
-
-}
-# see the PRESSURE the FED is applying
-# ret <- get_frbdata_discount_window_primary_credit_rate_eom_xts()
-# dygraphs::dygraph(ret)
-
-
-
-# related to 'equity premium'
-get_quandl_sp500_pe_ratio_month_4q_eom_xts <- function() {
-  
-  # S&P 500 PE Ratio by Month
-  # https://www.quandl.com/data/MULTPL/SP500_PE_RATIO_MONTH-S-P-500-PE-Ratio-by-Month
-
-  ops <- options()
-  
-  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
-  options(digits = 22) 
-  options(max.print=99999)
-  options(scipen=255) # Try these = width
-  
-  #correct for TZ 
-  oldtz <- Sys.getenv('TZ')
-  if(oldtz=='') {
-    Sys.setenv(TZ="UTC")
-  }
-  
-  message("Begin function get_quandl_sp500_pe_ratio_month_4q_eom_xts.")
-  
-  require(Quandl)
-  # Quandl.api_key(api_key= "YOURKEYHERE")
-  temp <- Quandl("MULTPL/SP500_PE_RATIO_MONTH", type = "xts")   # 
-  index(temp) <- zoo::as.Date(index(temp), frac= 1) # checked date 'are end month anyways'
-  colnames(temp)[1] <- "sp500_pe_ratio_month_4q"
-  quandl_sp500_pe_ratio_month_4q_eom_xts <- temp
   rm(temp)
   
+  # NOT IMPLEMENTED YET
+  # if( exists("returns_weekly") && (returns_weekly == TRUE) ) {
+  # 
+  #   temp <- symbol_raw
+  #   
+  #   # already a weekly?
+  #   if(periodicity(temp)$scale == "weekly") {
+  #     
+  #     # NOTHING TO DO
+  #     # lower periodicity will be handled in to.weekly
+  # 
+  #   }
+  #   
+  #   temp <- to.weekly(temp, ...) # dots passed indexAt OHLC 
+  #   get_quantmod_xts <- c(list(),get_quantmod_xts,list(weekly = temp))
+  #   
+  # }
+  # rm(temp)
+  
+  # OTHERS
+  # 
+  # returns quarterly
+  # returns daily
+  
   Sys.setenv(TZ=oldtz)
   options(ops)
   
-  message("End   function get_quandl_sp500_pe_ratio_month_4q_eom_xts.")
+  message(paste0("End   function get_symbols_xts_eox: ", symbol))
   
-  return(quandl_sp500_pe_ratio_month_4q_eom_xts)
+  return(symbols_xts_eox)
   
 }
-# related to equity premium
-# SEE THE PRESSURE/RELIEF: easingr
-# Cleveland Fed 
-#
-# see the preductions
-# Phildelphia Fed
+# 
 
 
 
-get_aaii_sentiment_survey_eom_xts <- function() {
-
-  # http://www.aaii.com/sentimentsurvey
-  # download file
-  # works in FF
-  # http://www.aaii.com/files/surveys/sentiment.xls
-
+#' @title apply a function across all columns and all 2nd paramter values
+#' @description travers the columns of an xts object an apply functions
+#'              also do a traversal for each velue of 'whiches' 
+#' @param x xts object
+#' @param fnct function to apply to each column in the xts input and to each velue of 'whiches'
+#'             can be for the forms 
+#'               literal closure functions 
+#'                 FUNCTION
+#'               access of interals functions
+#'                 package::function package:::private_function
+#'               literal and accessor of functions sent in the form of strings (anonymous)
+#'                 "FUNCTION"    "package::function"    "package:::private_function"
+#'               literal anonymous functions
+#'                 function(x, n) { . . . }
+#'               anonymous functions in the form of strings (anonymous)
+#'                 "function(x, n) { . . . }"  
+#' @param whiches numeric parameter sent to the 'fnct' second argument
+#'                will be expecting a vector of numeric values
+#' @param alt_name of output xts, of new columns generated, the new 'root' name
+#' @param o_args other arguments
+#'               o_args is a named vector of arguments ( but user should really should use a Curry )
+#'               if o_args IS OF A MIXED DATA.TAPE,  use a list INSTEAD ( of a vector )
+#'               e.g. = list(indexAt = 'lastof', OHLC = FALSE)
+#' @param prefix , to the root, use a prefix(TRUE) instead of a postfix(NULL/FALSE): NULL(FALSE) postfix
+#' @param fixed_sep in output column divider between the root and the post/pre/fix
+#' @return modified xts object
+#' @details Based on the concept of 'automatatic column and column name generation' 
+#'          seen the article of Zachary Mayer
+#'          Time series cross-validation 5
+#'          January 24, 2013
+#'          By Zachary Mayer ( http://www.r-bloggers.com/author/zachary-mayer/ )
+#'          http://www.r-bloggers.com/time-series-cross-validation-5/
+#'          https://gist.github.com/zachmayer/4630129#file-1-load-data-r
+#'          http://moderntoolmaking.blogspot.com/2013/01/time-series-cross-validation-5.html?utm_source=feedburner&utm_medium=feed&utm_campaign=Feed%3A+ModernToolMaking+%28Modern+Tool+Making%29
+#' @examples
+#' \dontrun{
+#' # require(quantmod) 
+#' # ibm <- getSymbols("IBM", from = "1970-01-01", to = "1970-01-13", auto.assign = FALSE)
+#' # 
+#' #                      IBM.Open           IBM.High   IBM.Low          IBM.Close IBM.Volume       IBM.Adjusted
+#' # 1970-01-02 18.225000000000001 18.287500000000001 18.200001 18.237499000000000     315200 5.3213109999999997
+#' # 1970-01-05 18.299999000000000 18.412500000000001 18.299999 18.412500000000001     424000 5.3723760000000000
+#' # 1970-01-06 18.412500000000001 18.450001000000000 18.312500 18.424999000000000     488000 5.3760190000000003
+#' # 1970-01-07 18.424999000000000 18.437500000000000 18.312500 18.437500000000000     457600 5.3796629999999999
+#' # 1970-01-08 18.437500000000000 18.475000000000001 18.375000 18.475000000000001     707200 5.3906080000000003
+#' # 1970-01-09 18.475000000000001 18.524999999999999 18.424999 18.450001000000000     585600 5.3833140000000004
+#' # 1970-01-12 18.450001000000000 18.487499000000000 18.387501 18.387501000000000     379200 5.3650779999999996
+#' # 
+#' # changed prefix = TRUE
+#' # 
+#' # expand_xts(ibm[,c("IBM.Open","IBM.Close")], fnct = "TTR::SMA", whiches = 2:3, prefix = TRUE) # NOT default
+#' #            TTR_SMA.2.IBM.Open TTR_SMA.2.IBM.Close TTR_SMA.3.IBM.Open TTR_SMA.3.IBM.Close
+#' # 1970-01-02                 NA                  NA                 NA                  NA
+#' # 1970-01-05 18.262499500000001  18.324999500000001                 NA                  NA
+#' # 1970-01-06 18.356249500000001  18.418749500000001 18.312499666666668  18.358332666666666
+#' # 1970-01-07 18.418749500000001  18.431249500000000 18.379166000000001  18.424999666666665
+#' # 1970-01-08 18.431249500000000  18.456250000000001 18.424999666666665  18.445833000000000
+#' # 1970-01-09 18.456250000000001  18.462500500000001 18.445833000000000  18.454166999999998
+#' # 1970-01-12 18.462500500000001  18.418751000000000 18.454166999999998  18.437500666666665
+#' # 
+#' # changed    prefix = FALSE  ( default )
+#' # 
+#' # expand_xts(ibm[,c("IBM.Open","IBM.Close")], fnct = "TTR::SMA", whiches = 2:3, prefix = FALSE)  # default
+#' #            IBM.Open.TTR_SMA.2 IBM.Close.TTR_SMA.2 IBM.Open.TTR_SMA.3 IBM.Close.TTR_SMA.3
+#' # 1970-01-02                 NA                  NA                 NA                  NA
+#' # 1970-01-05 18.262499500000001  18.324999500000001                 NA                  NA
+#' # 1970-01-06 18.356249500000001  18.418749500000001 18.312499666666668  18.358332666666666
+#' # 1970-01-07 18.418749500000001  18.431249500000000 18.379166000000001  18.424999666666665
+#' # 1970-01-08 18.431249500000000  18.456250000000001 18.424999666666665  18.445833000000000
+#' # 1970-01-09 18.456250000000001  18.462500500000001 18.445833000000000  18.454166999999998
+#' # 1970-01-12 18.462500500000001  18.418751000000000 18.454166999999998  18.437500666666665
+#' # 
+#' # changed   fixed_sep = "_"
+#' # 
+#' # expand_xts(ibm[,c("IBM.Open","IBM.Close")], fnct = "TTR::SMA", whiches = 2:3, fixed_sep = "_")
+#' #            IBM.Open_TTR_SMA_2 IBM.Close_TTR_SMA_2 IBM.Open_TTR_SMA_3 IBM.Close_TTR_SMA_3
+#' # 1970-01-02                 NA                  NA                 NA                  NA
+#' # 1970-01-05 18.262499500000001  18.324999500000001                 NA                  NA
+#' # 1970-01-06 18.356249500000001  18.418749500000001 18.312499666666668  18.358332666666666
+#' # 1970-01-07 18.418749500000001  18.431249500000000 18.379166000000001  18.424999666666665
+#' # 1970-01-08 18.431249500000000  18.456250000000001 18.424999666666665  18.445833000000000
+#' # 1970-01-09 18.456250000000001  18.462500500000001 18.445833000000000  18.454166999999998
+#' # 1970-01-12 18.462500500000001  18.418751000000000 18.454166999999998  18.437500666666665
+#' # 
+#' # expand_xts(ibm[,c("IBM.Open","IBM.Close")], fnct = "TTR::SMA", whiches = 2:3)
+#' #            IBM.Open.TTR_SMA.2 IBM.Close.TTR_SMA.2 IBM.Open.TTR_SMA.3 IBM.Close.TTR_SMA.3
+#' # 1970-01-02                 NA                  NA                 NA                  NA
+#' # 1970-01-05 18.262499500000001  18.324999500000001                 NA                  NA
+#' # 1970-01-06 18.356249500000001  18.418749500000001 18.312499666666668  18.358332666666666
+#' # 1970-01-07 18.418749500000001  18.431249500000000 18.379166000000001  18.424999666666665
+#' # 1970-01-08 18.431249500000000  18.456250000000001 18.424999666666665  18.445833000000000
+#' # 1970-01-09 18.456250000000001  18.462500500000001 18.445833000000000  18.454166999999998
+#' # 1970-01-12 18.462500500000001  18.418751000000000 18.454166999999998  18.437500666666665
+#' # 
+#' # changed to hard-coded function call   fnct = TTR::SMA
+#' # 
+#' # expand_xts(ibm[,c("IBM.Open","IBM.Close")], fnct = TTR::SMA, whiches = 2:3)
+#' #            IBM.Open.TTR_SMA.2 IBM.Close.TTR_SMA.2 IBM.Open.TTR_SMA.3 IBM.Close.TTR_SMA.3
+#' # 1970-01-02                 NA                  NA                 NA                  NA
+#' # 1970-01-05 18.262499500000001  18.324999500000001                 NA                  NA
+#' # 1970-01-06 18.356249500000001  18.418749500000001 18.312499666666668  18.358332666666666
+#' # 1970-01-07 18.418749500000001  18.431249500000000 18.379166000000001  18.424999666666665
+#' # 1970-01-08 18.431249500000000  18.456250000000001 18.424999666666665  18.445833000000000
+#' # 1970-01-09 18.456250000000001  18.462500500000001 18.445833000000000  18.454166999999998
+#' # 1970-01-12 18.462500500000001  18.418751000000000 18.454166999999998  18.437500666666665
+#' # 
+#' # changed to function sent as a string   fnct = "function(x,n){ TTR::SMA(x,n) }"
+#' # 
+#' # expand_xts(ibm[,c("IBM.Open","IBM.Close")], fnct = "function(x,n){ TTR::SMA(x,n) }", whiches = 2:3)
+#' # 
+#' #               IBM.Open.anon.2   IBM.Close.anon.2    IBM.Open.anon.3   IBM.Close.anon.3
+#' # 1970-01-02                 NA                 NA                 NA                 NA
+#' # 1970-01-05 18.262499500000001 18.324999500000001                 NA                 NA
+#' # 1970-01-06 18.356249500000001 18.418749500000001 18.312499666666668 18.358332666666666
+#' # 1970-01-07 18.418749500000001 18.431249500000000 18.379166000000001 18.424999666666665
+#' # 1970-01-08 18.431249500000000 18.456250000000001 18.424999666666665 18.445833000000000
+#' # 1970-01-09 18.456250000000001 18.462500500000001 18.445833000000000 18.454166999999998
+#' # 1970-01-12 18.462500500000001 18.418751000000000 18.454166999999998 18.437500666666665
+#' # 
+#' # change to function sent as a closure   fnct = function(x,n){ TTR::SMA(x,n) }
+#' # 
+#' # expand_xts(ibm[,c("IBM.Open","IBM.Close")], fnct = function(x,n){ TTR::SMA(x,n) }, whiches = 2:3)
+#' #               IBM.Open.anon.2   IBM.Close.anon.2    IBM.Open.anon.3   IBM.Close.anon.3
+#' # 1970-01-02                 NA                 NA                 NA                 NA
+#' # 1970-01-05 18.262499500000001 18.324999500000001                 NA                 NA
+#' # 1970-01-06 18.356249500000001 18.418749500000001 18.312499666666668 18.358332666666666
+#' # 1970-01-07 18.418749500000001 18.431249500000000 18.379166000000001 18.424999666666665
+#' # 1970-01-08 18.431249500000000 18.456250000000001 18.424999666666665 18.445833000000000
+#' # 1970-01-09 18.456250000000001 18.462500500000001 18.445833000000000 18.454166999999998
+#' # 1970-01-12 18.462500500000001 18.418751000000000 18.454166999999998 18.437500666666665
+#' # 
+#' # check that a specific function works
+#' # 
+#' # ibm_missing_data <- local({ t <- ibm; t[2:3,1] <- NA_real_; t})
+#' # expand_xts(ibm_missing_data[,c("IBM.Open","IBM.Close")], fnct = "na.locf", whiches = 2:3)
+#' #               IBM.Open.anon.2   IBM.Close.anon.2    IBM.Open.anon.3   IBM.Close.anon.3
+#' # 1970-01-02 18.225000000000001 18.237499000000000 18.225000000000001 18.237499000000000
+#' # 1970-01-05 18.225000000000001 18.412500000000001 18.225000000000001 18.412500000000001
+#' # 1970-01-06 18.225000000000001 18.424999000000000 18.225000000000001 18.424999000000000
+#' # 1970-01-07 18.424999000000000 18.437500000000000 18.424999000000000 18.437500000000000
+#' # 1970-01-08 18.437500000000000 18.475000000000001 18.437500000000000 18.475000000000001
+#' # 1970-01-09 18.475000000000001 18.450001000000000 18.475000000000001 18.450001000000000
+#' # 1970-01-12 18.450001000000000 18.387501000000000 18.450001000000000 18.387501000000000
+#' # 
+#' # give the ouput columns and alternate pre/post(append) name
+#' # 
+#' # expand_xts(ibm[,c("IBM.Open","IBM.Close")], fnct = "na.locf", whiches = 2:3, alt_name = "NALOCF")
+#' #             IBM.Open.NALOCF.2 IBM.Close.NALOCF.2  IBM.Open.NALOCF.3 IBM.Close.NALOCF.3
+#' # 1970-01-02 18.225000000000001 18.237499000000000 18.225000000000001 18.237499000000000
+#' # 1970-01-05 18.225000000000001 18.412500000000001 18.225000000000001 18.412500000000001
+#' # 1970-01-06 18.225000000000001 18.424999000000000 18.225000000000001 18.424999000000000
+#' # 1970-01-07 18.424999000000000 18.437500000000000 18.424999000000000 18.437500000000000
+#' # 1970-01-08 18.437500000000000 18.475000000000001 18.437500000000000 18.475000000000001
+#' # 1970-01-09 18.475000000000001 18.450001000000000 18.475000000000001 18.450001000000000
+#' # 1970-01-12 18.450001000000000 18.387501000000000 18.450001000000000 18.387501000000000
+#' # 
+#' # send extra arguements to a function
+#' # 
+#' # expand_xts(ibm[,c("IBM.Open","IBM.Close")], fnct = "get_pctchg_xts", whiches = 2:3, alt_name = "futPCTCHG" , o_args = c(to_future = TRUE ))
+#' #             IBM.Open.futPCTCHG.2 IBM.Close.futPCTCHG.2 IBM.Open.futPCTCHG.3 IBM.Close.futPCTCHG.3
+#' # 1970-01-02 -1.028806584362139898 -1.028101495714955238 -1.09738820301782303  -1.09664707863726441
+#' # 1970-01-05 -0.683060146615308561 -0.135777325186686088 -0.75137162575801408  -0.33944331296673452
+#' # 1970-01-06 -0.135777325186686088 -0.271375862761250308 -0.33944331296673452  -0.13569607249368446
+#' # 1970-01-07 -0.271375862761250308 -0.067802033898306802 -0.13569607249368446   0.27118101694915081
+#' # 1970-01-08 -0.067802033898306802  0.473607577807854341                   NA                    NA
+#' # 1970-01-09                    NA                    NA                   NA                    NA
+#' # 1970-01-12                    NA                    NA                   NA                    NA
+#' # 
+#' # check that the xts function 'to.monthly' works
+#' # 
+#' # expand_xts(ibm[,c("IBM.Open","IBM.Close")], fnct = "to.monthly", alt_name = "MONTHLY", o_args = list(indexAt= 'lastof', OHLC = FALSE))
+#' #            IBM.Open.MONTHLY IBM.Close.MONTHLY
+#' # 1970-01-31        18.450001         18.387501
+#' # 
+#' # check that a specific function 'is_year_less_than_or_equal_xts' works
+#' # 
+#' # expand_xts(xts(,index(ibm)), fnct = "is_year_less_than_or_equal_xts", whiches =  seq(lubridate::year(min(index(ibm))), lubridate::year(max(index(ibm))),by = 1), alt_name = "y_lth_or_eq_to_fact")
+#' # 
+#' #            y_lth_or_eq_to_fact.1970
+#' # 1970-01-02                        1
+#' # 1970-01-05                        1
+#' # 1970-01-06                        1
+#' # 1970-01-07                        1
+#' # 1970-01-08                        1
+#' # 1970-01-09                        1
+#' # 1970-01-12                        1
+#' }
+#' @rdname expand_xts
+#' @export
+expand_xts <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o_args = NULL, prefix = NULL, fixed_sep = NULL) {
+  
+  # concept (Found by RSEEK) BASED ON 
+  #   Time series cross-validation 5
+  #   January 24, 2013
+  #   By Zachary Mayer ( OTHERS BY THIS AUTHOR: http://www.r-bloggers.com/author/zachary-mayer/ )
+  #   Zachary Deane-Mayer  
+  #   CARET GUY
+  #     http://www.r-bloggers.com/time-series-cross-validation-5/
+  #     http://moderntoolmaking.blogspot.com/2013/01/time-series-cross-validation-5.html?utm_source=feedburner&utm_medium=feed&utm_campaign=Feed%3A+ModernToolMaking+%28Modern+Tool+Making%29
+  #     GIST OF THIS ON GITHUB
+  #     https://gist.github.com/zachmayer/4630129#file-1-load-data-r
+  #   AUTHOR OF R CRAN package caretEnsemble and R github package cv.ts 
+  
+  fnct_text   <- as.character(deparse(substitute(fnct)))
+  
+  matched_call <- capture.output(str(match.call()))
+  
   ops <- options()
   
+  options(warn = 1)
   options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
   options(digits = 22) 
   options(max.print=99999)
   options(scipen=255) # Try these = width
-  options(warn=1)
   
   #correct for TZ 
   oldtz <- Sys.getenv('TZ')
@@ -3170,1665 +3050,1211 @@ get_aaii_sentiment_survey_eom_xts <- function() {
     Sys.setenv(TZ="UTC")
   }
   
-  message("Begin function get_aaii_sentiment_survey_eom_xts.")
-  
-  require(xts)
-  # uses TTR function  SMA
-  # uses plyr function ddply
-  
-  tmpf <- tempfile(fileext = ".xls")
-  # weekly data ( every Friday ) since JAN 03 2017
-  download.file(url = "http://www.aaii.com/files/surveys/sentiment.xls"
-      , destfile = tmpf
-      , mode = "wb"
-  )
-  spreadsheet <- suppressWarnings(readxl::read_excel(tmpf, sheet = "SENTIMENT", skip = 5, col_names = FALSE))
-  # Reported Date: POSIXct
-  # % - automatically removed
-  
-  # end
-  # Observations over life of survey summary statistics 
-  #  read_excel converted to 'NA' ( not useful(all statistics): will be removed )		
-  spreadsheet <- spreadsheet[!is.na(spreadsheet[[1]]), , drop = FALSE]
-  
-  
-  spreadsheet <- as.data.frame(spreadsheet, stringsAsFactors = FALSE)
-  
-  # names
-  spreadsheet_col_names <- readxl::read_excel(tmpf, sheet = "SENTIMENT", skip = 1, n_max = 3, col_names = FALSE) 
-  colnames(spreadsheet) <- plyr::laply( spreadsheet_col_names, .fun = function(x) {
-  
-    # aaii specific 
-    temp <- gsub("- ","less ", x)
-    temp <- gsub("\\+S","add S", temp)
+  expand_xts_inner <- function(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o_args = NULL, prefix = NULL, fixed_sep = NULL) {
+
+    require(xts) 
+    # uses package zoo       functions is.zoo, as.zoo, na.locf
+    # uses package xts       functions is.xts, as.xts
+    # uses package xts       fuctiions na.locf.xts(S3dispatch), merge.xts(S3dispatch)
+    # uses package DescTools function  DoCall
+    # uses package plyr      functions join_all, mutate
+    # uses package stringr   functions str_replace_all, str_detect, str_c
+    # uses package rlist     function  list.flatten, list.ungroup 
+
+    if(is.null(     x))  stop("run-time user must provide input data")
+    if(is.null(   fnct)) stop("run-time user must provide a function 'fnct'")
+    if(is.null(prefix))  prefix  <- FALSE # do  I of name fnct/alt_name do a preprend(TRUE) or append(FALSE)(default) 
+    if(is.null(fixed_sep)) fixed_sep = "." # between the root and the pre/post(append) fix of the new column(s) names
     
-    temp <- gsub("( |&|\\+|-|[.])","_", temp)
-    # gsub would have replaced empty row with NA
-    temp <- temp[!is.na(temp)] 
-    temp <- paste0(temp, collapse = "_")
-    temp <- tolower(temp)
-    return(temp)
+    has_whiches <- TRUE     # patch # if does not have a non-null wiches argument, then give it one so it can LASTER do ONE loop
+    if(is.null(whiches)) { has_whiches <- FALSE ; whiches = -Inf }  
+  
+    have_alt_name <- FALSE
+    if(!is.null(alt_name)) have_alt_name <- TRUE # patch # but REALLY the user should use a Curry
+  
+    fnct_pass_type_determined <- FALSE
+    
+    isFunctionSyntax <- function(x) { 
+       stringr::str_detect(x,"^[a-zA-Z][a-zA-Z0-9]*(::|:::)[a-zA-Z]([a-zA-Z0-9])*$") || stringr::str_detect(x,"^[a-zA-Z][a-zA-Z0-9]*$")
+    }
+    
+    # pass by   function_name
+    # pass by   function(x,n){  }
+    if(is.function(fnct) && !fnct_pass_type_determined) { 
+      
+      # because :: and ::: themselves are functions that return function content 
+      # exists("NS::FUNCT", mode = "function")
+      # then return FALSE
+      
+      # pass by   function(x,n){  }
+      if(!isFunctionSyntax(stringr::str_c(fnct_text, collapse = "")) && !fnct_pass_type_determined) { 
+        fnct_pass_type_determined <- TRUE
+        assign( "anon", fnct )
+        fnct <- "anon"
+      }
+      
+      # pass by   function_name   namespace::function_name
+      # NOTE: fnct_text SHOULD HAVE already been collapsed
+      if( isFunctionSyntax(stringr::str_c(fnct_text, collapse = "")) && !fnct_pass_type_determined) { 
+        fnct_pass_type_determined <- TRUE
+        assign(fnct_text, fnct )
+        fnct <- fnct_text
+      }
+      
+    }
+    
+    if(!is.function(fnct) && !fnct_pass_type_determined) {
+
+      # pass by   "function_name"
+      if(is.character(fnct) && is.function(eval(parse(text=fnct))) &&  isFunctionSyntax(fnct) && !fnct_pass_type_determined) {
+        fnct_pass_type_determined <- TRUE
+        # default
+        # fnct = "function_name"
+      }
+      
+      # pass by   "function(x,n){  }"
+      if(is.character(fnct) && is.function(eval(parse(text=fnct))) && !isFunctionSyntax(fnct) && !fnct_pass_type_determined) {
+        fnct_pass_type_determined <- TRUE
+        assign( "anon", eval(parse(text=fnct)))
+        fnct <- "anon"
+      }
+    
+    }
+      
+    x_orig <- x
+    c_orig <- class(x)[1] # original class
+    
+    ## VERY BASIC attemped CLASS conversion ##
+    x_try.xts_success <- FALSE
+    x_try.xts <- try(xts::try.xts(x_orig), silent = T)
+    #
+    x         <- if(any("try-error" %in% class(x_try.xts))) { x_orig } else { x_try.xts_success <- TRUE; x_try.xts }
+    
+    x -> INPUT  
+  
+    # NOTE: INPUT class is typically "xts" "zoo"
+    RETs <- lapply(whiches, function(x) {
+      lapply( INPUT, function(x,whiches) { 
+            # global
+        if(!has_whiches) whiches = NULL # send nothing             # global
+        as.data.frame( DescTools::DoCall(fnct, c(list(x), whiches, o_args, list())), stringsAsFactors = FALSE) -> z # extra list(), so c garanteed to upsize to a list
+        colnames(z) <- NULL
+        return(z) 
+      }, whiches = x ) -> out
+  
+      # Override 
+      if(have_alt_name) fnct <- alt_name
+      
+      if(has_whiches) {
+        if(prefix) { 
+          paste(            stringr::str_replace_all(fnct,"[.]|::","_"), x, names(out), sep= fixed_sep) -> names(out)
+        } else { 
+          paste(names(out), stringr::str_replace_all(fnct,"[.]|::","_"), x            , sep= fixed_sep) -> names(out)
+        }   
+      } else { # no whiches argument e.g. na.locf
+        if(prefix) { 
+          paste(            stringr::str_replace_all(fnct,"[.]|::","_"),    names(out), sep= fixed_sep) -> names(out)
+        } else { 
+          paste(names(out), stringr::str_replace_all(fnct,"[.]|::","_")               , sep= fixed_sep) -> names(out)
+        }   
+      } 
+      # edge case: a column name is null: possible! allowed!: typical case send: xts(,index(<something>))
+      stringr::str_replace_all(names(out),"^[.]","") -> names(out)
+      
+      return(out)
+    })
+    
+    # GREAT ( BUT )
+    # works well in the situation that the row.names(indexes) are ... 
+    # EXACTLY the same as INPUT ( and the same as EACH other )
+    # e.g. to.monthy will reduce the indexes
+    # 
+    # RETs <- data.frame(rlist::list.flatten(RETs))
+    
+    # make mergeable ( upgraded to data type )
+    # 2nd layer of list is promoted to the first level
+    RETsUGtDT <- lapply(rlist::list.ungroup(RETs), function(x) { 
+     
+       # zoo, xts
+      if(!is.null(indexClass(INPUT))) {
+        if(any(indexClass(INPUT) %in% "Date")) {                                        # Global
+           ret <- as.xts(x, DescTools::DoCall(paste0("as.",indexClass(INPUT)[1]),list(row.names(x)))                       )
+        } else { # could be? POSIXct, POSIXlt
+           ret <- as.xts(x, DescTools::DoCall(paste0("as.",indexClass(INPUT)[1]),list(row.names(x))), tzone = indexTZ(INPUT)[1])
+        }
+      } else { # something else - prepare to merge by "index"
+        ret <- plyr::mutate(x, index = row.names(x))
+      }
+      
+      return(ret)
+    
+    })
+    
+    # S3 dispatch xts:::merge.xts
+    RETs <- DescTools::DoCall("merge", RETsUGtDT )
+    
+    x_result <- RETs
+    
+    # Should have always made it here
+    if(x_try.xts_success) { 
+      xts::reclass(x_result, x_orig) 
+    } -> x_result
+    
+    # if I did not do this earlier / failsafe / Really should have every only been xts/Date
+    if(inherits(x_result,"zoo")) index(x_result) <- zoo::as.Date(index(x_result))
+    
+    xts_inner <- x_result
+    
+    Sys.setenv(TZ=oldtz)
+    options(ops)
+     
+    return(xts_inner)
+    
+  }
+  
+  expand_xts_ <- expand_xts_inner(x = x, fnct =  fnct, whiches = whiches, alt_name = alt_name, o_args = o_args, prefix = prefix, fixed_sep = fixed_sep)
+    
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+
+  return(expand_xts_)
+
+}
+
+
+
+lag_then_pctchg_xts <- function(x = NULL, whiches = NULL, o_args = NULL) {
+  
+  require(magrittr)
+  
+  res_list <- list()
+  for(which in whiches) {
+    expand_xts(x, "lag.xts", which, alt_name = "lag") %>%
+      expand_xts("get_pctchg_xts", which, alt_name = "pctchg", o_args = if(is.null( o_args)) { NULL } else { o_args }  ) ->
+      res
+    # as.list.xts
+    res_list <- c(list(), res_list, as.list(res))
+  }
+  res <- do.call(merge.xts,res_list)
+  return(res)
+  
+}
+# res <- lag_then_pctchg_xts(unrate, 1:6, o_args = list(to_future = TRUE))
+# WORKS
+
+
+
+# goodsight_tests()
+goodsight_tests <- function() {
+
+rm(list=setdiff(ls(all.names=TRUE),c("sample_xts","unrate","unrate_40s", "ibm", "ibm_missing_data"))); source(paste0(getwd(),"/","goodsight01.R"))
+
+  if(!exists("sample_xts")) {
+    require(quantmod) # puts in path zoo, then xts
+    data(sample_matrix)  # from package xts
+    # sample_xts <- as.xts(sample_matrix) 
+    sample_xts <- structure(c(50.0397819115463, 50.2304961977954, 50.420955209067, 
+                      50.3734680543285, 50.2443255196795, 50.1321122972067, 50.0355467742705, 
+                      49.9948860954217, 49.9122834457642, 49.8852887132391, 50.2125821224916, 
+                      50.3238453485025, 50.4635862266585, 50.6172355897254, 50.620241173435, 
+                      50.7414981135498, 50.4805101188755, 50.4138129108681, 50.3532310036568, 
+                      50.1618813949374, 50.3600836896748, 50.0396626712588, 50.1095259574076, 
+                      50.2073807897632, 50.1600826681477, 50.0604060861532, 49.9658575219043, 
+                      49.8562442241656, 49.8547727815966, 50.0704896508826, 50.2244845229791, 
+                      50.4450306721515, 50.3721857137319, 50.4818267518265, 50.523893828191, 
+                      50.7166067461433, 50.4932188302243, 50.5853098172462, 50.8333117106257, 
+                      50.6892288304174, 50.6784905984176, 50.8898983760854, 50.9005579809156, 
+                      50.9528277211339, 51.0633014723722, 51.1287929285077, 50.9772173544539, 
+                      51.1841370498561, 51.295021248152, 51.1372463340331, 50.9293966227967, 
+                      50.7211101780551, 50.843921143575, 50.7835976504561, 50.7896013042288, 
+                      50.8816812795241, 50.7433266638814, 50.6943485629562, 50.8162030132845, 
+                      50.6097967963997, 50.7324080081653, 50.3927259270933, 50.2650069647869, 
+                      50.2746373900041, 50.1445762543741, 49.9314929048729, 49.9237734835486, 
+                      49.7936997386099, 49.8306222453665, 49.8276255602479, 49.6962809106445, 
+                      49.3626991517068, 49.5737411878039, 49.4489956783527, 49.5566612908277, 
+                      49.2977796860981, 49.6274672147247, 49.5952884965034, 49.4976451429029, 
+                      49.4230642938896, 49.2728079548362, 48.8663474774338, 48.5064888202386, 
+                      48.3421024422286, 48.2524825106404, 48.3309000601732, 48.5923613368859, 
+                      48.7456190083389, 48.9561619747141, 48.9440668539277, 48.9048836271181, 
+                      49.0607100610899, 49.2257899841075, 49.4143540745659, 49.3362124203641, 
+                      49.4517023124334, 49.5433780166351, 49.444289050952, 49.55703548735, 
+                      49.7454978974624, 49.7507941077393, 49.7070824171387, 49.7415394908976, 
+                      49.7470725636594, 49.7491522227102, 49.846975262063, 49.9379395474831, 
+                      50.0244086177575, 49.7604232552535, 49.989541304844, 50.3120333961183, 
+                      50.3200947473636, 49.8734026465211, 49.7338525835356, 49.8906358262349, 
+                      49.8053048313893, 49.5468840391121, 49.3028935291798, 49.1382464427998, 
+                      49.3457214583033, 49.4706167078959, 49.4632789128586, 49.5996297158354, 
+                      49.3842789199786, 49.1660587256141, 49.4918780475782, 49.1328177423567, 
+                      49.1773905424881, 48.8347914561581, 48.2545634885324, 47.968125028333, 
+                      48.0554956281431, 47.644692571948, 47.6064724380648, 47.7206509536914, 
+                      47.7942981789561, 47.6501318131713, 47.6555190311968, 47.5621026686154, 
+                      47.9658214031213, 47.8183040302612, 47.9359302489862, 47.8904133721512, 
+                      47.9823372258737, 48.1452112358212, 48.0101843888937, 47.9014160029841, 
+                      47.6566546513431, 47.7886603971671, 47.8284532662533, 47.7443173931521, 
+                      47.6022347047868, 47.7121494165901, 47.5151648819698, 47.4109038423752, 
+                      47.3658120027045, 47.420985190709, 47.4844872933481, 47.3866882554947, 
+                      47.7489862263065, 47.2780696035328, 47.194106912618, 47.4613546517325, 
+                      47.4327917992174, 47.3330584316802, 47.3645229105516, 47.2478260931866, 
+                      47.4346993610725, 47.4605472647125, 47.7112586675401, 47.7101167781098, 
+                      47.5684886049305, 47.2287315871627, 47.2399558001892, 47.2047065698809, 
+                      47.4430011919908, 47.6232337843679, 47.6760351295041, 47.6362885503127, 
+                      47.6746805308509, 50.1177772350145, 50.421876002125, 50.420955209067, 
+                      50.3734680543285, 50.2443255196795, 50.2156114607262, 50.1036323973342, 
+                      49.9948860954217, 50.130525854306, 50.239103712694, 50.359801769449, 
+                      50.4799955346125, 50.62395479761, 50.6858336400418, 50.7373052873552, 
+                      50.7733564529701, 50.6071189691962, 50.5562734759594, 50.3532310036568, 
+                      50.4208972428836, 50.4387454378126, 50.1696064309279, 50.2694187981265, 
+                      50.2826849790742, 50.1600826681477, 50.0977658473744, 50.0021694838495, 
+                      49.930381203448, 50.0218043126519, 50.2257790634706, 50.4137614515346, 
+                      50.5348977915646, 50.4691169535685, 50.5550923533772, 50.6978278150252, 
+                      50.7166067461433, 50.696932712043, 50.8473366461113, 50.896827622917, 
+                      50.726959655694, 50.91776061924, 50.9665340950417, 51.0029854532602, 
+                      51.0469861312818, 51.114008680003, 51.1287929285077, 51.1365256784907, 
+                      51.3209005779334, 51.323424806756, 51.1494018613584, 50.9293966227967, 
+                      50.8659669412615, 50.9694609683283, 50.8645263373624, 50.9318744899078, 
+                      50.8816812795241, 50.7890893188517, 50.770905453827, 50.8162030132845, 
+                      50.7206096320916, 50.7324080081653, 50.4088124653177, 50.3404988869915, 
+                      50.3201916131904, 50.2027764867291, 50.0036413740678, 49.9237734835486, 
+                      49.8898404553457, 49.8829457681315, 49.9031130358205, 49.7086250880523, 
+                      49.5373488863704, 49.6231039012457, 49.6528522333934, 49.5566612908277, 
+                      49.6785736159034, 49.6540715276625, 49.6200349582181, 49.5396073979361, 
+                      49.4230642938896, 49.2728079548362, 48.8663474774338, 48.5064888202386, 
+                      48.4463705919766, 48.4157189260319, 48.5359461762133, 48.6998847605209, 
+                      49.0021812307077, 49.097283039653, 48.9781600566663, 49.0839954270775, 
+                      49.245253833598, 49.3733496216003, 49.4143540745659, 49.4189994859189, 
+                      49.6095030005936, 49.5896809020894, 49.5023417359146, 49.7877576550563, 
+                      49.8192485602815, 49.7546976892052, 49.853322329816, 49.7733970805046, 
+                      49.7934102661747, 49.8628865946235, 49.954558677343, 50.0720779787385, 
+                      50.0299098586477, 49.9284741862485, 50.2012292399203, 50.337807096784, 
+                      50.3200947473636, 49.901838155481, 49.8862227667758, 49.8906358262349, 
+                      49.8053048313893, 49.5549664935449, 49.3028935291798, 49.3397448231728, 
+                      49.5263478188825, 49.4706167078959, 49.6909716597571, 49.5996297158354, 
+                      49.4026580314052, 49.4599885580201, 49.4918780475782, 49.2550693689544, 
+                      49.1773905424881, 48.8454913822302, 48.2545634885324, 48.032858055938, 
+                      48.0554956281431, 47.7250498159334, 47.7405271861058, 47.9071682801885, 
+                      47.7942981789561, 47.7511652769296, 47.7798557548305, 47.9308458230391, 
+                      48.029033942613, 47.9482531441853, 48.0824246165765, 48.0307726129326, 
+                      48.1754323314596, 48.1452112358212, 48.0216564098931, 47.9339798198289, 
+                      47.8934158707544, 47.9326701523078, 47.8404415298449, 47.7443173931521, 
+                      47.7454243122342, 47.7121494165901, 47.5354500689903, 47.482170679888, 
+                      47.4123313828473, 47.5063692973413, 47.5308912760639, 47.7476950731972, 
+                      47.7489862263065, 47.3088378144923, 47.4183383185878, 47.5200446580673, 
+                      47.4327917992174, 47.4049049093854, 47.4046284008614, 47.4724863618123, 
+                      47.5633569665608, 47.7335250775606, 47.8175924066148, 47.7101167781098, 
+                      47.5926598454947, 47.2477128773392, 47.3028651846619, 47.4277219359799, 
+                      47.6161097730372, 47.7167299732728, 47.7046027771086, 47.775634540576, 
+                      47.9412667206186, 49.9504146442813, 50.2304961977954, 50.2641365663597, 
+                      50.2210338242788, 50.1112075487643, 49.9918544993091, 49.9697097184701, 
+                      49.8045358090165, 49.9122834457642, 49.8852887132391, 50.1717574121646, 
+                      50.3238453485025, 50.4635862266585, 50.4735909825374, 50.5662652106609, 
+                      50.449321357316, 50.4026921292911, 50.4127813388677, 50.0214153820363, 
+                      50.1604405513317, 50.2112913039383, 50.0366991631639, 50.063868338926, 
+                      50.1291318545355, 49.9405191078187, 49.9726670534334, 49.8746804186122, 
+                      49.7630844122028, 49.7724223081099, 50.0704896508826, 50.191012164208, 
+                      50.3606408837506, 50.298799757062, 50.4020264816621, 50.459767560449, 
+                      50.4986480384182, 50.4932188302243, 50.5853098172462, 50.6768581674052, 
+                      50.6070733856372, 50.6784905984176, 50.8360446014901, 50.8793493835529, 
+                      50.803171907551, 50.9468108768572, 51.0061335218936, 50.952600190595, 
+                      51.1371299879095, 51.1352419149073, 50.9352261443787, 50.6987973947919, 
+                      50.6571814189883, 50.7305961336348, 50.7669213141213, 50.7896013042288, 
+                      50.7548084168209, 50.6187434734297, 50.5988137418271, 50.5645087290095, 
+                      50.5080789844205, 50.4092945808094, 50.2492157707179, 50.2650069647869, 
+                      50.1638044184635, 49.9138089296028, 49.8489346112531, 49.7424150559387, 
+                      49.7038514071734, 49.760310812525, 49.670494239676, 49.3792415099661, 
+                      49.3074568226063, 49.3987553413956, 49.4241619504068, 49.3356413900106, 
+                      49.2977796860981, 49.5160420086702, 49.4232068118256, 49.4160965263844, 
+                      49.3118358542017, 48.9309517223527, 48.5268371665895, 48.3340927379523, 
+                      48.2896926777253, 48.2364771063669, 48.3309000601732, 48.5743179732927, 
+                      48.7456190083389, 48.9561619747141, 48.8096186482138, 48.9048836271181, 
+                      48.9692750768163, 49.1991258503583, 49.3064111174296, 49.3362124203641, 
+                      49.4517023124334, 49.4180628219513, 49.3382782378181, 49.55703548735, 
+                      49.7454978974624, 49.6173171733521, 49.6924492458175, 49.7015885221842, 
+                      49.662988150532, 49.7109114979342, 49.7775439894587, 49.9248422973257, 
+                      49.8394501870147, 49.6980794321414, 49.989541304844, 50.2478765013235, 
+                      49.8757386019976, 49.7276899923422, 49.7338525835356, 49.7489871076424, 
+                      49.5081397146114, 49.2918633073164, 49.0567561810582, 49.1149971640139, 
+                      49.3457214583033, 49.3426131232972, 49.4632789128586, 49.4137530585047, 
+                      49.1031043568417, 49.1660587256141, 49.1357230365042, 49.1328177423567, 
+                      48.7270762056073, 48.3800124679673, 47.9690434191124, 47.8926179087975, 
+                      47.6620855703505, 47.5821240912087, 47.5179560866739, 47.7091322313329, 
+                      47.5513987007966, 47.6501318131713, 47.6053615081546, 47.5621026686154, 
+                      47.7807235394881, 47.811546625574, 47.8876326500158, 47.8841269246251, 
+                      47.9450716031323, 47.9264941691766, 47.9019342884565, 47.6471764517754, 
+                      47.6544603143575, 47.7886603971671, 47.7377986168352, 47.5482040904643, 
+                      47.5679622276754, 47.501976670636, 47.3234230750255, 47.211163022771, 
+                      47.2330580059869, 47.3532002325846, 47.4281355831578, 47.3866882554947, 
+                      47.2868487885989, 47.1466018260288, 47.1815348543221, 47.4308266385453, 
+                      47.3348965212827, 47.2615736095983, 47.2605645709109, 47.2478260931866, 
+                      47.3642401566334, 47.4605472647125, 47.668434910213, 47.6110642732936, 
+                      47.3254940958526, 47.0914419882576, 47.2093194619751, 47.1340495076106, 
+                      47.4430011919908, 47.6001511393257, 47.5724060421453, 47.6173290583887, 
+                      47.6746805308509, 50.1177772350145, 50.3976663383861, 50.3323571013133, 
+                      50.3345948961691, 50.1811210391819, 49.9918544993091, 49.988063256042, 
+                      49.913329335608, 49.9724600550638, 50.239103712694, 50.2851940807548, 
+                      50.4128602347002, 50.6014452374366, 50.4891214813319, 50.6783465243683, 
+                      50.4864408302735, 50.5763196086684, 50.4127813388677, 50.0214153820363, 
+                      50.4208972428836, 50.2112913039383, 50.1696064309279, 50.2314483010655, 
+                      50.2433369933702, 50.070242540723, 50.0109145160256, 49.8809633637625, 
+                      49.9187495029809, 50.0218043126519, 50.2257790634706, 50.3578435161537, 
+                      50.3692756978625, 50.4310899203875, 50.5550923533772, 50.6978278150252, 
+                      50.4986480384182, 50.6061055576287, 50.8138255864256, 50.6768581674052, 
+                      50.695622055169, 50.9115985194411, 50.9665340950417, 50.9010550008819, 
+                      51.0469861312818, 51.0518465248395, 51.0216357806733, 51.1365256784907, 
+                      51.1515142172957, 51.1789930735369, 50.9352261443787, 50.7732543242554, 
+                      50.8659669412615, 50.7649826990875, 50.7953382903315, 50.8477621406292, 
+                      50.7548084168209, 50.6920604718023, 50.770905453827, 50.570749692632, 
+                      50.6155918666066, 50.4103286523541, 50.3263588179421, 50.2956702271079, 
+                      50.1638044184635, 49.9138089296028, 49.9183871340213, 49.8071204530403, 
+                      49.8869833529875, 49.78805814558, 49.7403315550003, 49.3792415099661, 
+                      49.5373488863704, 49.496003986535, 49.5950011884777, 49.3471431527284, 
+                      49.6546261076859, 49.5458954022922, 49.5068963631111, 49.5180739210179, 
+                      49.3968738599656, 48.9309517223527, 48.5268371665895, 48.3397338277091, 
+                      48.2896926777253, 48.30850892202, 48.5359461762133, 48.6998847605209, 
+                      48.9354567345693, 48.974901416968, 48.8703195118646, 49.0631647734845, 
+                      49.245253833598, 49.3473606787059, 49.3377557822211, 49.4189994859189, 
+                      49.5381883056603, 49.4180628219513, 49.5023417359146, 49.7698448660165, 
+                      49.7462345946245, 49.7299649322951, 49.7333931653161, 49.7555215783115, 
+                      49.7094151808194, 49.8388590726778, 49.954558677343, 50.0720779787385, 
+                      49.8394501870147, 49.9110274504956, 50.2012292399203, 50.3255614801967, 
+                      49.8853882678616, 49.7276899923422, 49.8847151942606, 49.7920112943787, 
+                      49.5081397146114, 49.2918633073164, 49.1352904471748, 49.3397448231728, 
+                      49.4713813499697, 49.3852052435403, 49.5867696788652, 49.4137530585047, 
+                      49.1031043568417, 49.4599885580201, 49.1357230365042, 49.1893012571989, 
+                      48.7270762056073, 48.3800124679673, 47.9690434191124, 48.0193547288843, 
+                      47.6620855703505, 47.6592988835332, 47.726862406458, 47.8668317346629, 
+                      47.6293786041021, 47.6842280532209, 47.6053615081546, 47.9308458230391, 
+                      47.7807235394881, 47.8294556467246, 47.9006826430557, 48.0113049442773, 
+                      48.1605755467172, 47.9961340046721, 47.9019342884565, 47.6471764517754, 
+                      47.8725213360129, 47.8329083126244, 47.7377986168352, 47.6512305894323, 
+                      47.7256907018078, 47.501976670636, 47.3764237289667, 47.2292952802724, 
+                      47.4004820908595, 47.4526174659862, 47.4835950385865, 47.7476950731972, 
+                      47.2868487885989, 47.1466018260288, 47.4183383185878, 47.4308266385453, 
+                      47.3488381779215, 47.3677901566039, 47.2605645709109, 47.3952135245457, 
+                      47.3642401566334, 47.6722018616947, 47.668434910213, 47.6292144787367, 
+                      47.3254940958526, 47.2477128773392, 47.2276437542817, 47.4277219359799, 
+                      47.6161097730372, 47.6276905335225, 47.6071583256498, 47.6647123051268, 
+                      47.7671937777376), .Dim = c(180L, 4L), .Dimnames = list(NULL, 
+                          c("Open", "High", "Low", "Close")), index = structure(c(1167717600, 
+                      1167804000, 1167890400, 1167976800, 1168063200, 1168149600, 1168236000, 
+                      1168322400, 1168408800, 1168495200, 1168581600, 1168668000, 1168754400, 
+                      1168840800, 1168927200, 1169013600, 1169100000, 1169186400, 1169272800, 
+                      1169359200, 1169445600, 1169532000, 1169618400, 1169704800, 1169791200, 
+                      1169877600, 1169964000, 1170050400, 1170136800, 1170223200, 1170309600, 
+                      1170396000, 1170482400, 1170568800, 1170655200, 1170741600, 1170828000, 
+                      1170914400, 1171000800, 1171087200, 1171173600, 1171260000, 1171346400, 
+                      1171432800, 1171519200, 1171605600, 1171692000, 1171778400, 1171864800, 
+                      1171951200, 1172037600, 1172124000, 1172210400, 1172296800, 1172383200, 
+                      1172469600, 1172556000, 1172642400, 1172728800, 1172815200, 1172901600, 
+                      1172988000, 1173074400, 1173160800, 1173247200, 1173333600, 1173420000, 
+                      1173506400, 1173592800, 1173675600, 1173762000, 1173848400, 1173934800, 
+                      1174021200, 1174107600, 1174194000, 1174280400, 1174366800, 1174453200, 
+                      1174539600, 1174626000, 1174712400, 1174798800, 1174885200, 1174971600, 
+                      1175058000, 1175144400, 1175230800, 1175317200, 1175403600, 1175490000, 
+                      1175576400, 1175662800, 1175749200, 1175835600, 1175922000, 1176008400, 
+                      1176094800, 1176181200, 1176267600, 1176354000, 1176440400, 1176526800, 
+                      1176613200, 1176699600, 1176786000, 1176872400, 1176958800, 1177045200, 
+                      1177131600, 1177218000, 1177304400, 1177390800, 1177477200, 1177563600, 
+                      1177650000, 1177736400, 1177822800, 1177909200, 1177995600, 1178082000, 
+                      1178168400, 1178254800, 1178341200, 1178427600, 1178514000, 1178600400, 
+                      1178686800, 1178773200, 1178859600, 1178946000, 1179032400, 1179118800, 
+                      1179205200, 1179291600, 1179378000, 1179464400, 1179550800, 1179637200, 
+                      1179723600, 1179810000, 1179896400, 1179982800, 1180069200, 1180155600, 
+                      1180242000, 1180328400, 1180414800, 1180501200, 1180587600, 1180674000, 
+                      1180760400, 1180846800, 1180933200, 1181019600, 1181106000, 1181192400, 
+                      1181278800, 1181365200, 1181451600, 1181538000, 1181624400, 1181710800, 
+                      1181797200, 1181883600, 1181970000, 1182056400, 1182142800, 1182229200, 
+                      1182315600, 1182402000, 1182488400, 1182574800, 1182661200, 1182747600, 
+                      1182834000, 1182920400, 1183006800, 1183093200, 1183179600), tzone = "", tclass = c("POSIXct", 
+                      "POSIXt")), .indexCLASS = c("POSIXct", "POSIXt"), tclass = c("POSIXct", 
+                      "POSIXt"), .indexTZ = "", tzone = "", class = c("xts", "zoo"))
+                          
+    rm(sample_matrix) # TEMP for creation
+  }
+  
+  if(!exists("unrate")) {
+      # unrate <- getSymbols("UNRATE", src = "FRED",  auto.assign = FALSE)["1948-01-01/1948-03-01"]
+      unrate <- structure(c(3.4, 3.8, 4), .indexCLASS = "Date", tclass = "Date", .indexTZ = "UTC", tzone = "UTC", src = "FRED", updated = structure(1513478863.11855, class = c("POSIXct", 
+                    "POSIXt")), class = c("xts", "zoo"), index = structure(c(-694310400, 
+                    -691632000, -689126400), tzone = "UTC", tclass = "Date"), .Dim = c(3L, 
+                    1L), .Dimnames = list(NULL, "UNRATE"))
+        }
+  if(!exists("unrate_40s")) {
+    # unrate_40s <- getSymbols("UNRATE", src = "FRED",  auto.assign = FALSE)["1948-01-01/1949-03-01"]
+    unrate_40s <- structure(c(3.4, 3.8, 4, 3.9, 3.5, 3.6, 3.6, 3.9, 3.8, 3.7, 3.8, 
+                      4, 4.3, 4.7, 5), .indexCLASS = "Date", tclass = "Date", .indexTZ = "UTC", tzone = "UTC", src = "FRED", updated = structure(1513478863.19573, class = c("POSIXct", 
+                      "POSIXt")), class = c("xts", "zoo"), index = structure(c(-694310400, 
+                      -691632000, -689126400, -686448000, -683856000, -681177600, -678585600, 
+                      -675907200, -673228800, -670636800, -667958400, -665366400, -662688000, 
+                      -660009600, -657590400), tzone = "UTC", tclass = "Date"), .Dim = c(15L, 
+                      1L), .Dimnames = list(NULL, "UNRATE"))
+  }
+    
+  if(!exists("ibm") || !exists("ibm_missing_data")) {
+    # ibm <- getSymbols("IBM", from = "1970-01-01", to = "1970-01-13", auto.assign = FALSE)
+    ibm <- structure(c(18.225, 18.299999, 18.4125, 18.424999, 18.4375, 18.475, 
+                18.450001, 18.2875, 18.4125, 18.450001, 18.4375, 18.475, 18.525, 
+                18.487499, 18.200001, 18.299999, 18.3125, 18.3125, 18.375, 18.424999, 
+                18.387501, 18.237499, 18.4125, 18.424999, 18.4375, 18.475, 18.450001, 
+                18.387501, 315200, 424000, 488000, 457600, 707200, 585600, 379200, 
+                5.321311, 5.372376, 5.376019, 5.379663, 5.390608, 5.383314, 5.365078
+                ), index = structure(c(86400, 345600, 432000, 518400, 604800, 
+                691200, 950400), tzone = "UTC", tclass = "Date"), .indexCLASS = "Date", tclass = "Date", .indexTZ = "UTC", tzone = "UTC", src = "yahoo", updated = structure(1513478863.4307, class = c("POSIXct", 
+                "POSIXt")), .Dim = c(7L, 6L), .Dimnames = list(NULL, c("IBM.Open", 
+                "IBM.High", "IBM.Low", "IBM.Close", "IBM.Volume", "IBM.Adjusted"
+                )), class = c("xts", "zoo"))
+    ibm_missing_data <- local({ t <- ibm; t[2:3,1] <- NA_real_; t})
+  }
+
+  require(testthat)
+  context("expanded xts function versions")
+  
+  test_that("package version tests", {
+    
+    # expect_equal(R.Version()$version.string, "R version 3.4.3 (2017-11-30)")
+    expect_equal(R.Version()$version.string, "R version 3.4.4 (2018-03-15)")
+
+
+  })
+
+  test_that("package function get_na_locfl", {
+    
+    expect_equal(
+      get_na_locfl( c(101,NA,NA,NA,102,NA,NA), n = 2)
+    , c(101, 101, 101, NA, 102, 102, 102)
+    )
+    
+    expect_equal(
+        get_na_locfl(xts(c(101,NA,NA,NA,102,NA,NA),zoo::as.Date(seq(10, 10*7, length.out = 7))), n = 2)
+      , structure(c(101, 101, 101, NA, 102, 102, 102), index = structure(c(10, 
+        20, 30, 40, 50, 60, 70), class = "Date"), class = "zoo", .Dim = c(7L, 
+        1L), .Dimnames = list(NULL, "na_locfl"))
+    )
+
+
+  })
+  
+  test_that("package function get_pctchg_xts", {
+  
+    expect_equal(
+        get_pctchg_xts(head(sample_xts[,"Open"],4), n = 1)
+      , structure(c(NA, 0.381125334611203, 0.37917007732041, -0.0941813865715212
+        ), .indexCLASS = "Date", tclass = c("POSIXct", "POSIXt"), .indexTZ = "", tzone = "", index = structure(c(1167696000, 
+        1167782400, 1167868800, 1167955200), tclass = "Date", tzone = "UTC"), .Dim = c(4L, 
+        1L), .Dimnames = list(NULL, "pctchg"), class = c("xts", "zoo"))
+    )
+    
+    # expect_equal(
+    #     get_pctchg_xts(head(sample_xts[,"Open"],4), n = 1, to_future = TRUE )
+    #   , structure(c(-0.381125334611203, -0.37917007732041, 0.0941813865715212, 
+    #     NA), .indexCLASS = "Date", tclass = c("POSIXct", "POSIXt"), .indexTZ = "", tzone = "", index = structure(c(1167696000, 
+    #     1167782400, 1167868800, 1167955200), tclass = "Date", tzone = "UTC"), .Dim = c(4L, 
+    #     1L), .Dimnames = list(NULL, "pctchg"), class = c("xts", "zoo"))
+    # )
   
   })
-  rm(spreadsheet_col_names)
   
-  # future xts index
-  dates <- zoo::as.Date(spreadsheet[[1]])
-  spreadsheet <- spreadsheet[,-1, drop = FALSE]
-  
-  # convert
-  row.names(spreadsheet) <- as.character(dates)
-  spreadsheet <- as.xts(as.matrix(spreadsheet))
-  index(spreadsheet) <- zoo::as.Date(index(spreadsheet))
-
-  # just month end data ( last weekly of the month matters )
-  # smooth all columns
-  
-  temp <- as.zoo(spreadsheet)
-  # MORE user friendly than PACKAGE TTR function SMA
-  # note: TTR::SMA/runMean/runSum
-  #   runSum only supports univariate
-  #   Series contains non-leading NAs
-  #   not enough non-NA values
-  # mean(x, na.rm = FALSE) # default # required # if NA in data # then return NA
-  #                                  # required(partial = TRUE) # to prevent the 'length'(x) from shortening 
-  spreadsheet <- rollapply(temp, width = 4, partial = TRUE, align = "right", FUN = function(x, n) { 
-    # if not enough data 'length'
-    if(n <= length(x)) { mean(x, na.rm = FALSE) } else { NA_real_ }
-  }, n = 4)
-  spreadsheet <- as.xts(spreadsheet, dates)
-  rm(temp)
-  # Warning in to.period(x, "months", indexAt = indexAt, name = name, ...) :
-  # missing values removed from data
-  spreadsheet <- suppressWarnings(to.monthly(spreadsheet, OHLC = FALSE, indexAt = "lastof"))
+  test_that("package function get_recent_min/max_xts", {
     
+    expect_equal(
+        get_recent_min_xts(head(sample_xts[,"Open"],4), 2)
+      , structure(c(50.0397819115463, 50.0397819115463, 50.2304961977954, 
+        50.3734680543285), .Dim = c(4L, 1L), .Dimnames = list(NULL, "recent_min"), index = structure(c(1167696000, 
+        1167782400, 1167868800, 1167955200), tclass = "Date", tzone = "UTC"), .indexCLASS = "Date", .indexTZ = "", tclass = c("POSIXct", 
+        "POSIXt"), tzone = "", class = c("xts", "zoo"))
+    )
+    
+    expect_equal(
+        get_recent_min_xts(head(sample_xts[,"Open"],4), 2)
+      , structure(c(50.0397819115463, 50.0397819115463, 50.2304961977954, 
+        50.3734680543285), .Dim = c(4L, 1L), .Dimnames = list(NULL, "recent_min"), index = structure(c(1167696000, 
+        1167782400, 1167868800, 1167955200), tclass = "Date", tzone = "UTC"), .indexCLASS = "Date", .indexTZ = "", tclass = c("POSIXct", 
+        "POSIXt"), tzone = "", class = c("xts", "zoo"))
+    )
+    
+  })
   
-  aaii_sentiment_survey_eom_xts <- spreadsheet
-                          
-  Sys.setenv(TZ=oldtz)
-  options(ops)
+  test_that("package function get_annualized_xts", {
+    
+    expect_equal(
+        get_annualized_xts(head(sample_xts[,"Open"],4), 2)
+      , structure(c(100.079563823093, 100.460992395591, 100.841910418134, 
+        100.746936108657), .indexCLASS = "Date", tclass = c("POSIXct", 
+        "POSIXt"), .indexTZ = "", tzone = "", index = structure(c(1167696000, 
+        1167782400, 1167868800, 1167955200), tclass = "Date", tzone = "UTC"), .Dim = c(4L, 
+        1L), .Dimnames = list(NULL, "annualized"), class = c("xts", "zoo"))
+    )
+    
+  })
+    
+  test_that("package function get_lagged_xts", {
+    
+    expect_equal(
+        get_lagged_xts(head(sample_xts[,"Open"],4), 2)
+      , structure(c(NA, NA, 50.0397819115463, 50.2304961977954), .indexCLASS = "Date", tclass = c("POSIXct", 
+        "POSIXt"), .indexTZ = "", tzone = "", index = structure(c(1167696000, 
+        1167782400, 1167868800, 1167955200), tclass = "Date", tzone = "UTC"), .Dim = c(4L, 
+        1L), .Dimnames = list(NULL, "lagged"), class = c("xts", "zoo"
+        ))
+    )
+    
+    expect_equal(
+        get_lagged_xts(head(sample_xts[,"Open"],4), -2)
+      , structure(c(50.420955209067, 50.3734680543285, NA, NA), .indexCLASS = "Date", tclass = c("POSIXct", 
+        "POSIXt"), .indexTZ = "", tzone = "", index = structure(c(1167696000, 
+        1167782400, 1167868800, 1167955200), tclass = "Date", tzone = "UTC"), .Dim = c(4L, 
+        1L), .Dimnames = list(NULL, "lagged"), class = c("xts", "zoo"
+        ))
+    )
+    
+  })
   
-  message("End   function get_aaii_sentiment_survey_eom_xts.")
-  
-  return(aaii_sentiment_survey_eom_xts)
+  test_that("package function get_functxts_xts", {
 
+    expect_equal(
+        get_functxts_xts(head(sample_xts[,"Open"],4), which = 2, lag)
+      , structure(c(NA, NA, 50.0397819115463, 50.2304961977954), .indexCLASS = "Date", tclass = c("POSIXct", 
+        "POSIXt"), .indexTZ = "", tzone = "", index = structure(c(1167696000, 
+        1167782400, 1167868800, 1167955200), tclass = "Date", tzone = "UTC"), .Dim = c(4L, 
+        1L), .Dimnames = list(NULL, "functxts"), class = c("xts", "zoo"
+        ))
+    )
+    
+    expect_equal(
+        get_functxts_xts(head(sample_xts[,"Open"],4), lag, o_args = list(k = 2))
+      , structure(c(NA, NA, 50.0397819115463, 50.2304961977954), .indexCLASS = "Date", tclass = c("POSIXct", 
+        "POSIXt"), .indexTZ = "", tzone = "", index = structure(c(1167696000, 
+        1167782400, 1167868800, 1167955200), tclass = "Date", tzone = "UTC"), .Dim = c(4L, 
+        1L), .Dimnames = list(NULL, "functxts"), class = c("xts", "zoo"
+        ))
+    )
+    
+  })
+  
+  test_that("package function get_smfunctxts_xts", {
+  
+    sma <- function(x, n) { if(n <= length(x)) { mean(x, na.rm = FALSE) } else { NA_real_ } }
+
+    expect_equal(
+        get_smfunctxts_xts(head(sample_xts[,"Open"],4), sma, 2)
+      , structure(c(NA, 50.1351390546708, 50.3257257034312, 50.3972116316978
+        ), .Dim = c(4L, 1L), .Dimnames = list(NULL, "smfunctxts"), index = structure(c(1167696000, 
+        1167782400, 1167868800, 1167955200), tclass = "Date", tzone = "UTC"), .indexCLASS = "Date", .indexTZ = "", tclass = c("POSIXct", 
+        "POSIXt"), tzone = "", class = c("xts", "zoo"))
+    )
+    
+    tsortino <- function(x, n, rf = 0.0, na.rm = FALSE) { if(n <= length(x)) { (mean(x, na.rm = na.rm) - rf )/sd( local({x[x > 0] <- 0; x } ), na.rm = na.rm) } else { NA_real_ } }
+    
+    expect_equal(
+        get_smfunctxts_xts(get_pctchg_xts(head(sample_xts[,"Open"],6), n = 1), tsortino, 3, o_args = list(rf = 0.0, na.rm = FALSE))
+      , structure(c(NA, NA, NA, 4.0834088969436, 0.0735621122604118, 
+        -2.23189380084301), .Dim = c(6L, 1L), .Dimnames = list(NULL, 
+        "smfunctxts"), index = structure(c(1167696000, 1167782400, 
+        1167868800, 1167955200, 1168041600, 1168128000), tclass = "Date", tzone = "UTC"), .indexCLASS = "Date", .indexTZ = "UTC", tclass = "Date", tzone = "UTC", class = c("xts", 
+        "zoo"))
+    )
+  
+    smrank <- function(x, n, n_ranks) {
+    
+        # if not too short
+        if(n <= length(x)) {  
+          # if zero NAs found
+          if(!any(is.na(x))) { 
+            # tail(_, 1): I only care about the value furthest value to the right
+            # tested: pessimistic 
+            # higher x values produce lower(better) 'sports' rank numbers: keep for now.  I may later change my mind.
+                                                                                           # if any NA, then then 'error'
+            tail(findInterval(-1 * x, tail(head(   quantile(-1 * x, seq(0, 1, 1/n_ranks) , na.rm = FALSE ),-1),-1)) + 1, 1)
+          } else { NA_real_ } } else { NA_real_ } 
+      
+    }
+    
+    expect_equal(
+        get_smfunctxts_xts(get_smtsortino_xts(get_pctchg_xts(head(sample_xts[,"Open"],11), n = 1), 3), smrank , 4, o_args = list(n_ranks = 2))
+      , structure(c(NA, NA, NA, NA, NA, NA, 2, 1, 2, 1, 1), .Dim = c(11L, 
+        1L), .Dimnames = list(NULL, "smfunctxts"), index = structure(c(1167696000, 
+        1167782400, 1167868800, 1167955200, 1168041600, 1168128000, 1168214400, 
+        1168300800, 1168387200, 1168473600, 1168560000), tclass = "Date", tzone = "UTC"), .indexCLASS = "Date", .indexTZ = "UTC", tclass = "Date", tzone = "UTC", class = c("xts", 
+        "zoo"))
+    )
+  
+  })
+  
+  test_that("package function get_sma_xts", {
+
+    expect_equal(
+      get_sma_xts(head(sample_xts[,"Open"],4), 2)
+    , structure(c(NA, 50.1351390546708, 50.3257257034312, 50.3972116316978
+      ), .Dim = c(4L, 1L), .Dimnames = list(NULL, "sma"), index = structure(c(1167696000, 
+      1167782400, 1167868800, 1167955200), tclass = "Date", tzone = "UTC"), .indexCLASS = "Date", .indexTZ = "", tclass = c("POSIXct", 
+      "POSIXt"), tzone = "", class = c("xts", "zoo"))
+    )
+    
+  })
+
+  test_that("package function get_pctchg_xts", {
+
+    expect_equal(
+        get_pctchg_xts(head(sample_xts[,"Open"],6), n = 1)
+      , structure(c(NA, 0.381125334611203, 0.37917007732041, -0.0941813865715212, 
+        -0.256370148090095, -0.223335115582047), .indexCLASS = "Date", tclass = c("POSIXct", 
+        "POSIXt"), .indexTZ = "", tzone = "", index = structure(c(1167696000, 
+        1167782400, 1167868800, 1167955200, 1168041600, 1168128000), tclass = "Date", tzone = "UTC"), .Dim = c(6L, 
+        1L), .Dimnames = list(NULL, "pctchg"), class = c("xts", "zoo"))
+    )
+    
+  })
+  
+  test_that("package function get_smtsortino_xts", {
+
+    expect_equal(
+        get_smtsortino_xts(get_pctchg_xts(head(sample_xts[,"Open"],6), n = 1), 3)
+      , structure(c(NA, NA, NA, 4.0834088969436, 0.0735621122604118, 
+        -2.23189380084301), .Dim = c(6L, 1L), .Dimnames = list(NULL, 
+        "smtsortino"), index = structure(c(1167696000, 1167782400, 
+        1167868800, 1167955200, 1168041600, 1168128000), tclass = "Date", tzone = "UTC"), .indexCLASS = "Date", .indexTZ = "UTC", tclass = "Date", tzone = "UTC", 
+        class = c("xts", "zoo"))
+    )
+    
+    expect_equal(
+        get_smtsortino_xts(get_pctchg_xts(head(sample_xts[,"Open"],11), n = 1), 3)
+      , structure(c(NA, NA, NA, 4.0834088969436, 0.0735621122604118, 
+        -2.23189380084301, -7.02953432626857, -2.21716344886893, -2.52257636177122, 
+        -1.72932700195373, 1.72840165854429), .Dim = c(11L, 1L), .Dimnames = list(
+        NULL, "smtsortino"), index = structure(c(1167696000, 1167782400, 
+        1167868800, 1167955200, 1168041600, 1168128000, 1168214400, 1168300800, 
+        1168387200, 1168473600, 1168560000), tclass = "Date", tzone = "UTC"), .indexCLASS = "Date", .indexTZ = "UTC", tclass = "Date", tzone = "UTC", 
+        class = c("xts", "zoo"))
+    )
+    
+  })
+  
+  test_that("package function get_smrank_xts", {
+
+    expect_equal(
+        get_smrank_xts(get_smtsortino_xts(get_pctchg_xts(head(sample_xts[,"Open"],11), n = 1), 3), n = 4, n_ranks = 2)
+      , structure(c(NA, NA, NA, NA, NA, NA, 2, 1, 2, 1, 1), .Dim = c(11L, 
+        1L), .Dimnames = list(NULL, "smrank"), index = structure(c(1167696000, 
+        1167782400, 1167868800, 1167955200, 1168041600, 1168128000, 1168214400, 
+        1168300800, 1168387200, 1168473600, 1168560000), tclass = "Date", tzone = "UTC"), .indexCLASS = "Date", .indexTZ = "UTC", tclass = "Date", tzone = "UTC", 
+        class = c("xts", "zoo"))
+    )
+    
+  })
+  
+  test_that("package function get_collofdays2daily_xts", {
+
+    expect_equal(
+        get_collofdays2daily_xts(xts(c(11,13,15),zoo::as.Date(c(1,3,5))))
+      , structure(c(11, NA, 13, NA, 15), .Dim = c(5L, 1L), .Dimnames = list(
+        NULL, "collofdays2daily"), index = structure(c(86400, 172800, 
+        259200, 345600, 432000), tzone = "UTC", tclass = "Date"), .indexCLASS = "Date", .indexTZ = "UTC", tclass = "Date", tzone = "UTC", 
+        class = c("xts", "zoo"))
+    )
+    
+  })
+  
+  test_that("package function get_delay_since_last_obs", {
+
+    expect_equal(
+        get_delay_since_last_obs(c(101,NA,NA,NA,102,NA,NA))
+      , c(0, 1, 2, 3, 0, 1, 2)
+    )
+    
+  })
+  
+  test_that("package function get_delay_since_last_obs_xts", {
+
+    expect_equal(
+        get_delay_since_last_obs_xts(xts::xts(c(101,NA,NA,NA,102,NA,NA),zoo::as.Date(seq(10,70,10))))
+      , structure(c(0, 1, 2, 3, 0, 1, 2), .Dim = c(7L, 1L), index = structure(c(864000, 
+        1728000, 2592000, 3456000, 4320000, 5184000, 6048000), tzone = "UTC", tclass = "Date"), .indexCLASS = "Date", tclass = "Date", .indexTZ = "UTC", tzone = "UTC", .Dimnames = list(
+        NULL, "delay_since_last_obs"), class = c("xts", "zoo"))
+    )
+    
+  })
+  
+  # Warning in if (class(merged) %in% c("xts", "zoo")) index(merged) <- zoo::as.Date(index(merged)) :
+  #   the condition has length > 1 and only the first element will be used
+  test_that("package function get_delay_since_last_day_xts", {
+
+    expect_equal(
+          suppressWarnings(get_delay_since_last_day_xts(xts(c(101,NA,NA,NA,102,NA,NA),zoo::as.Date(seq(10,70,10)))))
+        , structure(c(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 
+          15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 
+          31, 32, 33, 34, 35, 36, 37, 38, 39, 0, 1, 2, 3, 4, 5, 6, 7, 8, 
+          9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20), .Dim = c(61L, 
+          1L), index = structure(c(864000, 950400, 1036800, 1123200, 1209600, 
+          1296000, 1382400, 1468800, 1555200, 1641600, 1728000, 1814400, 
+          1900800, 1987200, 2073600, 2160000, 2246400, 2332800, 2419200, 
+          2505600, 2592000, 2678400, 2764800, 2851200, 2937600, 3024000, 
+          3110400, 3196800, 3283200, 3369600, 3456000, 3542400, 3628800, 
+          3715200, 3801600, 3888000, 3974400, 4060800, 4147200, 4233600, 
+          4320000, 4406400, 4492800, 4579200, 4665600, 4752000, 4838400, 
+          4924800, 5011200, 5097600, 5184000, 5270400, 5356800, 5443200, 
+          5529600, 5616000, 5702400, 5788800, 5875200, 5961600, 6048000
+          ), tzone = "UTC", tclass = "Date"), .indexCLASS = "Date", tclass = "Date", .indexTZ = "UTC", tzone = "UTC", .Dimnames = list(
+              NULL, "delay_since_last_day"), class = c("xts", "zoo"))
+    )
+    
+  })
+  
+  test_that("package function is_na_xts", {
+
+    expect_equal(
+      is_na_xts(xts(c(11,NA,NA,14,NA),zoo::as.Date(1:5)))
+      , structure(c(2, 1, 1, 2, 1), .Dim = c(5L, 1L), index = structure(c(86400, 
+      172800, 259200, 345600, 432000), tzone = "UTC", tclass = "Date"), .indexCLASS = "Date", tclass = "Date", .indexTZ = "UTC", tzone = "UTC", .Dimnames = list(
+          NULL, "na"), class = c("xts", "zoo"))
+    )
+    
+  })
+  
+  test_that("package function rm_days_xts", {
+
+    expect_equal(
+          rm_days_xts(xts(1:17,zoo::as.Date("2007-01-01") -1 + 1:17), rm_what = c("Saturday", "Sunday", "BIZHOLIDAYS"))
+       , structure(c(3L, 4L, 5L, 8L, 9L, 10L, 11L, 12L, 16L, 17L), .indexCLASS = "Date", tclass = "Date", .indexTZ = "UTC", tzone = "UTC", index = structure(c(1167782400, 
+         1167868800, 1167955200, 1168214400, 1168300800, 1168387200, 1168473600, 
+         1168560000, 1168905600, 1168992000), tzone = "UTC", tclass = "Date"), .Dim = c(10L, 
+         1L), .Dimnames = list(NULL, "days"), class = c("xts", "zoo"))
+    )
+    
+  })
+  
+  test_that("package function are_nearby_fred_holidays_xts", {
+
+    expect_equal(
+        are_nearby_fred_holidays_xts(sample_xts[2:16,"Open"], d = c(-1,-2))
+      , structure(c(FALSE, FALSE, FALSE, FALSE, FALSE, TRUE, FALSE, FALSE, 
+        FALSE, FALSE, FALSE, FALSE, TRUE, TRUE, FALSE), .Dim = c(15L, 
+        1L), index = structure(c(1167782400, 1167868800, 1167955200, 
+        1168041600, 1168128000, 1168214400, 1168300800, 1168387200, 1168473600, 
+        1168560000, 1168646400, 1168732800, 1168819200, 1168905600, 1168992000
+        ), tclass = "Date", tzone = "UTC"), .indexCLASS = "Date", .indexTZ = "", tclass = c("POSIXct", 
+        "POSIXt"), tzone = "", .Dimnames = list(NULL, "nearby_fred_holidays"), class = c("xts", "zoo"))
+    )
+    
+  })
+  
+  # PROBLEMS (LOOKS LIKE ROUNDING)
+  test_that("package function do_reindex_xts", {
+
+    # expect_equal(
+    #     do_reindex_xts(unrate, 0:2)
+    #   , structure(c(3.4, 3.8, 4), .indexCLASS = "Date", tclass = "Date", .indexTZ = structure("UTC", .Names = "TZ"), tzone = structure("UTC", .Names = "TZ"), src = "FRED", updated = structure(1513499226.82177, class = c("POSIXct", 
+    #     "POSIXt")), class = c("xts", "zoo"), index = structure(c(0, 86400, 
+    #     172800), tzone = structure("UTC", .Names = "TZ"), tclass = "Date"), .Dim = c(3L, 
+    #     1L), .Dimnames = list(NULL, "UNRATE"))
+    # )
+    
+    # expect_equal(
+    #     do_reindex_xts(merge(unrate,unrate), 0:2)
+    #   , structure(c(3.4, 3.8, 4, 3.4, 3.8, 4), class = c("xts", "zoo"
+    #     ), .indexCLASS = "Date", .indexTZ = structure("UTC", .Names = "TZ"), tclass = "Date", tzone = structure("UTC", .Names = "TZ"), src = "FRED", updated = structure(1513494805.43047, class = c("POSIXct", 
+    #     "POSIXt")), index = structure(c(0, 86400, 172800), tzone = structure("UTC", .Names = "TZ"), tclass = "Date"), .Dim = c(3L, 
+    #     2L), .Dimnames = list(NULL, c("UNRATE", "UNRATE.1")))
+    # )
+    
+  })
+  
+  # PROBLEMS (LOOKS LIKE ROUNDING)
+  test_that("package function pushback_fred_1st_days_xts", {
+
+    # expect_equal(
+    #   pushback_fred_1st_days_xts(unrate)
+    # , structure(c(3.4, 3.8, 4), class = c("xts", "zoo"), .indexCLASS = "Date", .indexTZ = structure("UTC", .Names = "TZ"), tclass = "Date", tzone = structure("UTC", .Names = "TZ"), src = "FRED", updated = structure(1513494805.43047, class = c("POSIXct", 
+    #   "POSIXt")), index = structure(c(-694396800, -691718400, -689212800
+    #   ), tzone = "UTC", tclass = "Date"), .Dim = c(3L, 1L), .Dimnames = list(
+    #   NULL, "UNRATE"))
+    # )
+    
+    # expect_equal(
+    #   pushback_fred_1st_days_xts(merge(unrate,unrate)) 
+    #   , structure(c(3.4, 3.8, 4, 3.4, 3.8, 4), class = c("xts", "zoo"
+    #   ), .indexCLASS = "Date", .indexTZ = structure("UTC", .Names = "TZ"), tclass = "Date", tzone = structure("UTC", .Names = "TZ"), src = "FRED", updated = structure(1513494805.43047, class = c("POSIXct", 
+    #   "POSIXt")), index = structure(c(-694396800, -691718400, -689212800
+    #   ), tzone = "UTC", tclass = "Date"), .Dim = c(3L, 2L), .Dimnames = list(
+    #   NULL, c("UNRATE", "UNRATE.1")))
+    # )
+    
+  })
+  
+  # PROBLEM( BUT I DO NOT KNOW WHAT )
+  test_that("package function is_year_less_than_or_equal_xts", {
+
+    # expect_equal(
+    #     is_year_less_than_or_equal_xts(unrate_40s, 1948)
+    #   , structure(c(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2), .Dim = c(15L, 
+    #     1L), index = structure(c(-694310400, -691632000, -689126400, 
+    #     -686448000, -683856000, -681177600, -678585600, -675907200, -673228800, 
+    #     -670636800, -667958400, -665366400, -662688000, -660009600, -657590400
+    #     ), tzone = "UTC", tclass = "Date"), .indexCLASS = "Date", tclass = "Date", .indexTZ = "UTC", tzone = "UTC", src = "FRED", updated = structure(1513494805.5264, class = c("POSIXct", 
+    #     "POSIXt")), .Dimnames = list(NULL, "year_less_than_or_equal_xts"), 
+    #     class = c("xts", "zoo"))
+    # )
+    
+  })
+  
+
+  test_that("package function expand_xts", {
+
+    expect_equal(
+        colnames( expand_xts(ibm[,c("IBM.Open","IBM.Close")], fnct = "TTR::SMA", whiches = 2:3, prefix = TRUE)  )
+      , c("TTR_SMA.2.IBM.Open", "TTR_SMA.2.IBM.Close", "TTR_SMA.3.IBM.Open", "TTR_SMA.3.IBM.Close")
+    )
+    
+    expect_equal(
+        colnames( expand_xts(ibm[,c("IBM.Open","IBM.Close")], fnct = "TTR::SMA", whiches = 2:3, prefix = FALSE) )
+      , c("IBM.Open.TTR_SMA.2", "IBM.Close.TTR_SMA.2", "IBM.Open.TTR_SMA.3", "IBM.Close.TTR_SMA.3")
+    )
+
+    expect_equal(
+        colnames( expand_xts(ibm[,c("IBM.Open","IBM.Close")], fnct = "TTR::SMA", whiches = 2:3, fixed_sep = "_") )
+      , c("IBM.Open_TTR_SMA_2", "IBM.Close_TTR_SMA_2", "IBM.Open_TTR_SMA_3", "IBM.Close_TTR_SMA_3")
+    )
+
+    expect_equal(
+        colnames( expand_xts(ibm[,c("IBM.Open","IBM.Close")], fnct = "TTR::SMA", whiches = 2:3) )
+      , c("IBM.Open.TTR_SMA.2", "IBM.Close.TTR_SMA.2", "IBM.Open.TTR_SMA.3", "IBM.Close.TTR_SMA.3")
+    )
+
+    expect_equal(
+        colnames( expand_xts(ibm[,c("IBM.Open","IBM.Close")], fnct = TTR::SMA, whiches = 2:3) )
+      , c("IBM.Open.TTR_SMA.2", "IBM.Close.TTR_SMA.2", "IBM.Open.TTR_SMA.3", "IBM.Close.TTR_SMA.3")
+    )
+
+    expect_equal(
+        colnames( expand_xts(ibm[,c("IBM.Open","IBM.Close")], fnct = "function(x,n){ TTR::SMA(x,n) }", whiches = 2:3) )
+      , c("IBM.Open.anon.2", "IBM.Close.anon.2", "IBM.Open.anon.3", "IBM.Close.anon.3")
+    )
+
+    expect_equal(
+        colnames( expand_xts(ibm[,c("IBM.Open","IBM.Close")], fnct = function(x,n){ TTR::SMA(x,n) }, whiches = 2:3) )
+      , c("IBM.Open.anon.2", "IBM.Close.anon.2", "IBM.Open.anon.3", "IBM.Close.anon.3")
+    )
+
+    expect_equal(
+        colnames( expand_xts(ibm_missing_data[,c("IBM.Open","IBM.Close")], fnct = "na.locf", whiches = 2:3) )
+      , c("IBM.Open.anon.2", "IBM.Close.anon.2", "IBM.Open.anon.3", "IBM.Close.anon.3")
+    )
+
+    expect_equal(
+        colnames(  expand_xts(ibm[,c("IBM.Open","IBM.Close")], fnct = "na.locf", whiches = 2:3, alt_name = "NALOCF") )
+      , c("IBM.Open.NALOCF.2", "IBM.Close.NALOCF.2", "IBM.Open.NALOCF.3", "IBM.Close.NALOCF.3")
+    )
+
+    expect_equal(
+        colnames( expand_xts(ibm[,c("IBM.Open","IBM.Close")], fnct = "get_pctchg_xts", whiches = 2:3, alt_name = "futPCTCHG" , o_args = c(to_future = TRUE )) )
+      , c("IBM.Open.futPCTCHG.2", "IBM.Close.futPCTCHG.2", "IBM.Open.futPCTCHG.3", "IBM.Close.futPCTCHG.3")
+    )
+
+    expect_equal(
+        expand_xts(ibm[,c("IBM.Open","IBM.Close")], fnct = "to.monthly", alt_name = "MONTHLY", o_args = list(indexAt= 'lastof', OHLC = FALSE))
+      , structure(c(18.450001, 18.387501), .Dim = 1:2, .Dimnames = list(
+        NULL, c("IBM.Open.MONTHLY", "IBM.Close.MONTHLY")), index = structure(2592000, tzone = "UTC", tclass = "Date"), class = c("xts", 
+        "zoo"), .indexCLASS = "Date", .indexTZ = "UTC", tclass = "Date", tzone = "UTC")
+    )
+
+    expect_equal(
+        colnames( expand_xts(xts(,index(ibm)), fnct = "is_year_less_than_or_equal_xts", whiches =  seq(lubridate::year(min(index(ibm))), lubridate::year(max(index(ibm))),by = 1), alt_name = "y_lth_or_eq_to_fact") )
+      , "y_lth_or_eq_to_fact.1970"
+    )
+    
+  })
+  
 }
-# even AFTER SMOOTHING: gives an IDEA how volitile and clueless the individual is.
-# ignorance(suprise) of the general population
-# ret <- get_aaii_sentiment_survey_eom_xts()
-# dygraphs::dygraph(ret[,"bull_bear_spread"])
-# generally ACCOMPLISHES THE SAME THING: zimmerman e.q. 'WILL5000INDFC - AGG'
-# SO just use ZIMMERMAN
 
 
 
-
-
-# SEE THE PRESSURE/RELIEF
-get_clev_easing_balances_eom_xts <- function() {
+# same as UBL::SmoteRegress ( note: extreme value are ONLY upper/higher/greater values )
+# except the user must pass exactly one of the following: thr.rel xor y.extreme.start
+# y.extreme.start: defines where the extreme values start
+#                  on behalf of the user, parameter y.extreme.start 
+#                  will deterimine the value of the parameter thr.rel 
+SmoteRegressMngd <- function(form, dat, rel = "auto", thr.rel = NULL,
+                         C.perc = "balance", k = 5, repl = FALSE,
+                         dist   = "Euclidean", p = 2, 
+                         y.extreme.start = NULL) {  
   
-  # balance sheet with its components broadly divided into these categories
-  # https://www.clevelandfed.org/our-research/indicators-and-data/credit-easing.aspx
-  # INSPIRED FROM
-  # https://github.com/cran/easingr
+  message("Begin SmoteRegressMngd")
   
-  # In September 2008, the Treasury began issuing short-term debt and 
-  # placing the proceeds at the Fed. This helped offset the large balances 
-  # that other banks were holding at the Fed. 
-  # The SFP has been empty since July 2011; yet, there are still 
-  # large cash holdings to this date. There are two reasons for this: 
-  # First, late in 2008 the Treasury suspended its cash reinvestment program. 
-  # It used to make short-term loans to banks that needed liquidity. 
-  # Given low interest rates and the fact that banks have been 
-  # holding excess reserves, this program hasn't been necessary, 
-  # and so the Treasury is holding more cash. 
-  # Second, since late 2015 the Treasury has been purposefully 
-  # holding more cash to be prepared for any major disruptions, 
-  # such as a potential cyber event or a systemic event like the crisis in 2008.
-  # 
-  # https://fredblog.stlouisfed.org/page/8/
-  # https://fredblog.stlouisfed.org/2017/10/treasuring-cash/
-  
-  # DISCOVERED FEB 2018 *( looks DEAD_EXACTLY like my 'total' "clev_easing_balances" )
-  # Categories > Money, Banking, & Finance > Monetary Data > Factors Affecting Reserve Balances
-  # All Federal Reserve Banks: Total Assets (WALCL)
-  # GAME STARTS AS SOON AS FED STARTS PUTTING DOWN "INTEREST RATES" (GOING DOWN TO MINIMIZED)
-  #   AND when 'walcl' STARTS INCREASING, THE GAME CONTINUES
-  # since December of 2002
-  # Units: Millions of Dollars,
-  # Not Seasonally Adjusted
-  # Frequency: Weekly, As of Wednesday
-  # Factors Affecting Reserve Balances - H.4.1
-  # https://www.federalreserve.gov/releases/h41/
-  # https://fred.stlouisfed.org/data/WALCL.txt
+  # assume that the user knows what he/she is doing
+  if(!is.null(thr.rel)) {
     
-  
-  ops <- options()
-  
-  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
-  options(digits = 22) 
-  options(max.print=99999)
-  options(scipen=255) # Try these = width
-  
-  #correct for TZ 
-  oldtz <- Sys.getenv('TZ')
-  if(oldtz=='') {
-    Sys.setenv(TZ="UTC")
-  }
-  
-  message("Begin function get_clev_easing_balances_eom_xts.")
-  
-  require(xts)
-  
-  tmpf <- tempfile(fileext = ".xls")
-  # weekly data ( every Friday ) since JAN 03 2017
-  download.file(url = "https://www.clevelandfed.org/~/media/files/charting/crediteasingbalancesheet.xls"
-      , destfile = tmpf
-      , mode = "wb"
-  )
-  spreadsheet <- readxl::read_excel(tmpf, sheet = 1L, skip = 1) 
-  spreadsheet <- as.data.frame(spreadsheet, stringsAsFactors = FALSE)
-  
-  # names
-  temp <- spreadsheet 
-  temp <- temp[,!colnames(temp) %in% c("X__1","X__2","X__3","X__4")]
-  colnames(temp) <- gsub("( |-|[.])","_",colnames(temp))
-  colnames(temp) <- tolower(colnames(temp))
-  
-  # convert
-  row.names(temp) <- as.character(zoo::as.Date(temp[[1]]))
-  temp <- temp[,-1, drop = FALSE]
-  temp2 <- as.xts(as.matrix(temp))
-  index(temp2) <- zoo::as.Date(index(temp2))
-  rm(temp)
-  
-  # just month end data ( last weekly of the month matters )
-  temp2 <- to.monthly(temp2, OHLC = FALSE, indexAt = "lastof")
-  spreadsheet <- temp2
-  rm(temp2)
-  
-  clev_easing_balances_eom_xts <- spreadsheet[, "lending_to_financial_institutions"] +
-                          spreadsheet[, "liquidity_to_key_credit_markets"] +
-                          spreadsheet[, "traditional_security_holdings"] + 
-                          spreadsheet[, "federal_agency_debt_and_mortgage_backed_securities_purchases"] +
-                          spreadsheet[, "long_term_treasury_purchases"]
-                          
-  colnames(clev_easing_balances_eom_xts)[1] <- "clev_easing_balances"
-  # flat since NOV 2014, but WITHOUT "clev_easing_balances" ACTUALLY INCREASING!+ since the BEGINNING of 2017          
-
-  
-  
-  Sys.setenv(TZ=oldtz)
-  options(ops)
-  
-  message("End   function get_clev_easing_balances_eom_xts.")
-  
-  return(clev_easing_balances_eom_xts)
-  
-}
-# PRESSURE or LACK_OF - Federal Gov credit easing (money printing)
-# ret <- get_clev_easing_balances_eom_xts()
-# dygraphs::dygraph(ret)
-
-
-
-# NOTE: I HAVE NOT DONE/DO NOT KNOW HOW TO DO PR*obabilities99
-# 
-                                                        # common place override ( by user )                                 # 1 and unemp1/UNRATE sanity/debug check
-#                                                                                                                                       # currently () PART of surveys_of_interest_regex
-get_phil_survey_of_prof_forecasters_eom_xts <- function(file_data_loc = NULL, surveys_of_interest_regex = "^(unemp__|cpi__).*(1|2|3)$", future_dates_regex = "(1|2|3)$") {
-  
- # Individual Forecasts for the Survey of Professional Forecasters
- # https://www.philadelphiafed.org/research-and-data/real-time-center/survey-of-professional-forecasters/historical-data/individual-forecasts
-  
- # doc - read the output
- # https://www.philadelphiafed.org/-/media/research-and-data/real-time-center/survey-of-professional-forecasters/spf-documentation.pdf?la=en
-  
-  ops <- options()
-  
-  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
-  options(digits = 22) 
-  options(max.print=99999)
-  options(scipen=255) # Try these = width
-  
-  #correct for TZ 
-  oldtz <- Sys.getenv('TZ')
-  if(oldtz=='') {
-    Sys.setenv(TZ="UTC")
-  }
-  
-  message("Begin function get_phil_survey_of_prof_forecasters_eom_xts.")
-  
-  require(xts)
-  
-  # uses readxl function read_excel
-  # uses plyr function join_all
-  # uses DataCombine function MoveFront
-  # uses hydroTSM function smry
-  # uses rlist list.zip
-
-  # to save common place (see below)
-  save_file_loc <- "phil_survey_of_prof_forecasters__all_files_in_one.RData"
-  
-  # if not a disk stored file ... then go get them
-  if(is.null(file_data_loc)) {
-  
-    base_url <- "https://www.philadelphiafed.org/-/media/research-and-data/real-time-center/survey-of-professional-forecasters/historical-data/"
+    # regular call
+    RegressMngd <- UBL::SmoteRegress(form = form, dat = dat, rel = rel, thr.rel = thr.rel,
+                                     C.perc = C.perc, k = k, repl = repl,
+                                     dist = dist, p = p)
+  } else {  
     
-    list_of_files <- list()
-    for(file_name_i in c("micro1.xlsx", "micro2.xlsx", "micro3.xlsx", "micro4.xlsx", "micro5.xlsx")) {
-      
-      message(paste0("  Begin file ", file_name_i))
-      
-      tmpf <- tempfile(fileext = ".xlsx")
-      url_file <-  paste0(base_url, file_name_i, "?la=en")
-      
-      # getting data
-      message(paste0("  Starting Downloading url/file ", url_file))
-      download.file(destfile = tmpf, url = url_file,  mode = "wb")
-      message(paste0("  Finished Downloading url/file ", url_file))
-      
-      list_of_sheets <- list()
-      for(excel_sheet_name_i in readxl::excel_sheets(tmpf)) {
-      
-        # unfortuately performs a disk i/o upon EACH sheet access
-        # currently AUTHOR not motivated/not_worth_the_time, to find a 'faster (entire workbook at/a/time ) way
-        message(paste0("    Begin sheet ", excel_sheet_name_i))
-        
-        spreadsheet_i <- suppressWarnings(readxl::read_excel(tmpf, sheet = excel_sheet_name_i, col_types = "numeric"))
-        spreadsheet_i <- as.data.frame(spreadsheet_i, stringsAsFactors = FALSE)
-  
-        # names
-        colnames(spreadsheet_i) <- tolower(colnames(spreadsheet_i))
-        colnames(spreadsheet_i)[!colnames(spreadsheet_i) %in% c("year","quarter","id","industry")] <-
-          paste0(tolower(excel_sheet_name_i), "__", colnames(spreadsheet_i)[!colnames(spreadsheet_i) %in% c("year","quarter","id","industry")])
-        
-        message(paste0("    End   sheet ", excel_sheet_name_i))
-        
-        list_of_sheets[[tolower(excel_sheet_name_i)]] <- spreadsheet_i
-        
-      }
-      
-      message(paste0("  End   file ", file_name_i))
-      
-      # sheet together
-      all_sheets_in_one <- plyr::join_all(list_of_sheets, by =c("year","quarter","id","industry"), type = "full")
-      list_of_files[[file_name_i]] <- all_sheets_in_one
-      
+    if(is.null(y.extreme.start)) stop("  since parameter thr.rel was not provided, then parameter y.extreme.start MUST be provided")
+
+    ops <- options()
+    options(digits = 22) # print small values
+    options(scipen=255)  # print small values
+    options(warn = 1)
+    
+    require(UBL)  
+    # uses UBL SmoteRegress
+           
+    ###############################################
+    # BEGIN "copy of code from UBL::SmoteRegress" #
+                    
+    if (any(is.na(dat))) {
+      stop("The data set provided contains NA values!")
     }
-    # files ( of sheets ) together
-    # "year","quarter", "id"(forecaster) are the 'unique record indicator'
-    # "industry" is the description of the forcaster
-    # by LUCK c("year","quarter","id","industry") STILL produce a 'unique record'
-    #  so I will lazily simply add 'industry' to the join
-    all_files_in_one <- plyr::join_all(list_of_files, by =c("year","quarter","id","industry"), type = "full")
-    
-    # common place
-    message(paste0("  Begin saving file ", save_file_loc))
-    save(all_files_in_one, file = save_file_loc, envir = environment())
-    message(paste0("  End   saving file ", save_file_loc))
-    
-  } else { # !is.null(file_data_loc)
-    
-    # common place override
-    if(!is.null(file_data_loc) || (file_data_loc == "DISK")) {
-      if(file_data_loc == "DISK") {                        # exactly dir/name as hard-coded in the program code
-        message(paste0("  Begin loading file ", save_file_loc))
-        load(file = save_file_loc, envir = environment())
-        message(paste0("  End    loading file ", save_file_loc))
-      }else {
-        # common place override
-        load(file = file_data_loc, envir = environment())  # exactly dir/name as specified in the function call
-      }
-    }
-     
-  }
   
-  # note: many faster and/or R-ish_/ply-ish better-ish ways do/may exist to do this.
-  # but the method below is just simple, flexible, comprehendable ( and thus possibly better-ly extensible )
+    # the column where the target variable is
+    tgt <- which(names(dat) == as.character(form[[2]]))
   
-  # within the same  'survey_i'  I rbind.xts
-  # amoung different 'survey_i'  I merge.xts
-  
-  list_of_xtss <- list()
-  grand_list_of_xtss <- list()
-  
-  survey_i_rbinded_xtss <- xts()
-  
-                                # entered by user           # entered by user
-  # e.g. "cpi__cpi3"
-  for(survey_name_i in sort(grep(surveys_of_interest_regex, colnames(all_files_in_one), value = TRUE, perl = TRUE))) {
-    
-    message(paste0("  Begin survey ", survey_name_i))
-    
-                                              # entered by user
-    # character position in the survey_i string where the 'forecast time end characters are located.'
-    # TO DO:  CHOP OF END NUMBER/CHARACTER "1-6", "a","b" instead
-    forecast_end_represent_id_loc <- regexpr(future_dates_regex, survey_name_i, perl = TRUE)
-    
-    # Release Schedule for the Survey of Professional Forecasters
-    # 
-    # First Quarter	
-    #   February 9, 2018
-    # Second Quarter	
-    #   May 11, 2018
-    # Third Quarter	
-    #   August 10, 2018
-    # Fourth Quarter	
-    #   November 13, 2018
-    # 
-    # Questions may be addressed to:
-    # 
-    # John Chew E-mail: john.chew@phil.frb.org
-    # Senior Economic Analyst
-    # (215) 574-3814
-    # Tom Stark E-mail: tom.stark@phil.frb.org
-    # Assistant Director and Manager, Real-Time Data Research Center
-    # (215) 574-6436
-    # 
-    # https://www.philadelphiafed.org/research-and-data/real-time-center/survey-of-professional-forecasters/schedule
-    
-    # my question about data determination
-    # From: Andre Mikulec <andre_mikulec@hotmail.com>
-    # Sent: Wednesday, February 28, 2018 9:51 PM
-    # To: john.chew@phil.frb.org; tom.stark@phil.frb.org
-    # Subject: Survey of Professional Forecasters question about 'number' determination
-    #     
-    
-    # Re: Survey of Professional Forecasters question about 'number' determination
-    # Stark, Tom C. <tom.stark@phil.frb.org>
-    # Wed 2/28/2018 10:23 PM
-    # Andre Mikulec (andre_mikulec@hotmail.com);Chew, John (john.chew@phil.frb.org)
-    # 
-    # NTERNAL FR/OFFICIAL USE // FRSONLY
-    # 
-    # Andre -
-    # 
-    # The historical values you referenced for payroll employment in the SPF are the quarterly average values, 
-    # where the quarterly average is the average of the three months of the quarter.  
-    # These values are the ones that existed at the time of the survey. 
-    # They do not reflect revision by the U.S. Bureau of Labor Statistics (BLS). 
-    # You seem to be comparing unrevised historical values in the SPF with revised historical values. 
-    # That comparison is invalid. 
-    # Hence, you should not expect a match between the two numbers. 
-    # See the online SPF documentation for more detail on the SPF variables and SPF data transformations. 
-    # 
-    # By the way, the Federal Reserve Bank of St Louis is not an official U.S. government statistical agency and 
-    # you should not in general try to validate data with the observations you locate at that institution. 
-    # It is better to validate with the official observations of the U.S. government source agency (BLS). 
-    # 
-    # Dr. Thomas Stark
-    # Research Officer and Assistant Director, Real-Time Data Research Center
-    # Economic Research Department
-    # Federal Reserve Bank of Philadelphia
-    # Ten Independence Mall
-    # Philadelphia, PA 19106
-    # 
-    # Tel: 215-574-6436
-    # Fax: 215-574-2546
-    # 
-    # E-mail:
-    # Tom.Stark@phil.frb.org
-    # 
-    # Stark Web Page:
-    # www.philadelphiafed.org/research-and-data/research-contacts/stark/
-    # 
-    # Real-Time Data Research Center Web Page:
-    # 
-    # www.philadelphiafed.org/research-and-data/real-time-center/
-    # 
-    # On February 28, 2018 at 9:52:03 PM EST, Andre Mikulec <andre_mikulec@hotmail.com> wrote:
-    # Hello John Chew and Tom Stark,
-    # 
-    # How are you doing today.
-    # I am fine.
-    # 
-    # I do not understand where the "Survey of Forecasters" 
-    # forecasters actually get their 'already known past' data.
-    # Or, I do not understand how the math is done.
-    # 
-    # From the latest spreadsheet
-    # 
-    # latest micro5.xlxs
-    # Surveys 2010:1-present* Excel spreadsheet 
-    # (3.8 MB; last update: February 9, 2018)
-    # https://www.philadelphiafed.org/-/media/research-and-data/real-time-center/survey-of-professional-forecasters/historical-data/micro5.xlsx?la=en
-    # 
-    # The information shows that every forecaster 
-    # predicted for EMP exactly the value of 147197.00
-    # during the previous quarter.
-    # 
-    # EMP    column EMP1
-    # 2018 Q1
-    # 147197.00
-    # 
-    # This makes sense that the values are all the same,
-    # since the information has already been made available to the public here.
-    # 
-    # https://fred.stlouisfed.org/data/PAYEMS.txt
-    # 
-    # Title:               All Employees: Total Nonfarm Payrolls
-    # Series ID:           PAYEMS
-    # Source:              U.S. Bureau of Labor Statistics
-    # Release:             Employment Situation
-    # Seasonal Adjustment: Seasonally Adjusted
-    # Frequency:           Monthly
-    # Units:               Thousands of Persons
-    # Date Range:          1939-01-01 to 2018-01-01
-    # Last Updated:        2018-02-02 8:31 AM CST
-    # Date Range:          1939-01-01 to 2018-01-01
-    # Last Updated:        2018-02-02 8:31 AM CST
-    # ...
-    # 2017-07-01  146728
-    # 
-    # 2017-08-01  146949
-    # 2017-09-01  146963
-    # 2017-10-01  147234
-    # 
-    # 2017-11-01  147450
-    # 2017-12-01  147610
-    # 2018-01-01  147810
-    # 
-    # Since all of the forecasters "know the answer, I do not
-    # understand how the number "147197.00" is determined
-    # 
-    # I try here.
-    # 
-    # 2017-11-01  147450
-    # 2017-12-01  147610
-    # 2018-01-01  147810
-    # 
-    # # ave
-    # > (147450 + 147610 + 147810 ) /3
-    # [1] 147623.3  #  ** not the anwer **
-    # 
-    # # or if I made a mistake and am off by 3 months . . 
-    # 
-    # 2017-08-01  146949
-    # 2017-09-01  146963
-    # 2017-10-01  147234
-    # 
-    # # ave
-    # > ( 146949 + 146963 + 147234 ) /3
-    # [1] 147048.7   # ** still not the answer **
-    # 
-    # I also tried
-    # 
-    # https://fred.stlouisfed.org/data/PAYNSA.txt
-    # 
-    # Title:               All Employees: Total Nonfarm Payrolls
-    # Series ID:           PAYNSA
-    # Source:              U.S. Bureau of Labor Statistics
-    # Release:             Employment Situation
-    # Seasonal Adjustment: Not Seasonally Adjusted
-    # Frequency:           Monthly
-    # Units:               Thousands of Persons
-    # Date Range:          1939-01-01 to 2018-01-01
-    # Last Updated:        2018-02-02 8:32 AM CST
-    # ...
-    # 2017-11-01  148783
-    # 2017-12-01  148558
-    # 2018-01-01  145473
-    # 
-    # > ( 145473 + 148558 + 148783 ) / 3
-    # [1] 147604.7  # ** still not the answer **
-    # 
-    # Where are the forecasters getting their numbers from?
-    # How is the number determined?
-    # 
-    # Thank you,
-    # Andre Mikulec
-    # Andre_Mikulec@Hotmail.com
-    
-    
-    # from the pdf
-    # UNEMP ( FRED: UNRATE?!? )
-    # Quarterly forecasts are for the quarterly average of the underlying monthly levels
-    
-    # The survey's timing is geared to the release of the Bureau of Economic Analysis' advance report (URL is below)
-    #   of the national income and product accounts. 
-    # 
-    # We send our survey questionnaires (and wait less than 3 month until the questionare is returned)
-    # after this report is released to the public.
-    # For the surveys we conducted after the 1990:Q2 survey, 
-    # we have set the deadlines for responses at late 
-    # in the second to third week of the middle month of each quarter. 
-    # 
-    # 2005:Q1. Beginning with this survey, we tightened our production schedule. 
-    # The dates of the deadlines for responses were moved up a few days (in most surveys), 
-    # to the second week of the middle month.
-    
-    # A complete
-    # list of the dates of deadlines for surveys from 1990:Q2 to the present is available on the
-    # Philadelphia Fed's website at:
-    # https://www.philadelphiafed.org/-/media/research-and-data/real-time-center/survey-of-professional-forecasters/spf-release-dates.txt?la=en
-    # 
-    # This report (means'published date') is released 
-    # at/AFTER the end of the first month of each quarter (IN THE 'middle of' the SECOND MONTH).
-    # 
-    # This report 'published date' is released 'just' before the
-    # National Income and Product Accounts Tables (NIPA) 'second report'
-    # https://www.bea.gov/iTable/index_nipa.cfm
-    #
-    # Therefore
-    #               (survey resp. receved)True Deadline Date  + 3-7 days   -> "News Release Date"
-    # excel(YYYY/Q#)                                          + 1.5 months -> "News Release Date" 
-    #                                                                        ('published date'(near the middle of the 2nd month))
-
-    # if I want an "approximation" of the News Release Date('publishing date')
-    #   AND I do not want to READ exactly from 
-    #   https://www.philadelphiafed.org/-/media/research-and-data/real-time-center/survey-of-professional-forecasters/spf-release-dates.txt?la=en
-    # then here is an approximation
-    # zoo::as.Date.yearqtr truncates x to beginning of the quarter/month
-    # zoo::as.Date(zoo::as.yearqtr(x), frac = 0) + add %m+% days(45) -> News Release Date('publishing date')
-    
-    # number  "1" represents the "forecast" for the quarter prior
-    # e.g. ( from pdf )
-    # NGDP1 is the real-time quarterly historical value for the previous quarter-that is, 
-    #   the quarter before the quarter when we conducted the survey. 
-    # NGDP2 is the forecast (nowcast) for the current quarter-that is, 
-    #   the quarter when we conducted the survey. 
-      # 
-      # e.g.
-      # as FEB 28 2018
-      # micro5.xlsx 2018 Q1 sheet UNEMP column E UNEMP1("quarter prior") are ALL 4.10 
-      #                                                                     ( every SURVEYOR responded this way )
-      # because this data(correct answer) was already released by FRED in 
-      # 
-      # https://fred.stlouisfed.org/data/UNRATE.txt
-      # 
-      # Frequency:           Monthly
-      # Units:               Percent
-      # Date Range:          1948-01-01 to 2018-01-01
-      # Last Updated:        2018-02-02 7:41 AM CST (released to the public)
-      # 
-      # 2017-12-01   4.1
-      # 2018-01-01   4.1 # end of previous quarter (the *new released data*)
-          
-    # number  "2" represents the forecast for the current quarter 
-    #   ( defined as the quarter in which the survey is conducted ), 
-    #   so "2" means "publication date" + 1.5 months in the future -> "forecast_target_date"
-    #     ( but would have to wait for a 'later than future' FRED series to back-check for accuracy: e.g. /unemp/UNRATE)
-    # numbers "3" through "6" represent the forecasts for the  four quarters after the current quarter.
-    #   so "3" means "publication date" + 4.5 months in the future -> "forecast_target_date"
-    #     ( but would have to wait for a 'later than future' FRED series to back-check for accuracy: e.g./unemp/UNRATE )
-
-    # letters "a" and "b" (and somtimes "c") represent annual average forecasts for 
-    #   the current year   (the year in which the survey is conducted) 
-    #     and 
-    #   the following year ( the year after 'the year' in which the survey was conducted )
-    # 
-    # determinte the forcast_end_represent_id
-    # e.g. forecast_end_represent_id == "3" (of "cpi__cpi3")
-    forecast_end_represent_id <- substr(survey_name_i, start = attr(forecast_end_represent_id_loc, "capture.start")[1], stop = attr(forecast_end_represent_id_loc, "capture.start")[1] + attr(forecast_end_represent_id_loc, "capture.length")[1])
-    message(paste0("  forecast_end_represent_id ", forecast_end_represent_id))
-    
-    # just cols of interest
-    survey <- all_files_in_one[ ,c("year", "quarter", "id", "industry", survey_name_i), drop = FALSE]
-    
-    # add future dates
-    # currently not yet defined("programed-in") for c("a","b","c") # COME_BACK
-    if(!any(forecast_end_represent_id %in% c("a","b","c"))) {
-      forecast_end_represent_id     <- as.numeric(forecast_end_represent_id)
-      # this the **forecast_target_date DATE**
-      # e.g. 2018 Q1 sheet CPI column CPI3 ("cpi__cpi3") yields "2018-06-30" "forecast_target_date" date
-      # ( RETURN the data of the future prediction )
-      #                              # now             # "next_quarter == 3"
-      # zoo::as.Date(zoo::as.yearmon(1968 + (1/4) + ( (3 - 2) * (1/4) )- 0.00001), frac = 1)
-      dates <- as.character(zoo::as.Date(zoo::as.yearmon(survey[["year"]] + survey[["quarter"]]/4 + ( (forecast_end_represent_id - 2) * (1/4) )- 0.00001), frac = 1))
-      message("  Message max(dates) ", paste0(max(dates)))
-    } else {
-      stop("future is not defined for 'a','b', or 'c'") 
-    }
-    survey <- cbind(date = dates, survey , stringsAsFactors = FALSE) 
-    rm(dates)
-    survey <- DataCombine::MoveFront(survey, "date")
-
-
-    # column subset on the future date
-    survey_summary_by_date_result <- plyr::dlply(survey, "date", function(x) { 
-      
-      # returns a df of 13 summary statistics
-      summary <- hydroTSM::smry(x[survey_name_i], na.rm = TRUE)
-      # remove 0/0 math
-      summary[is.nan(as.vector(unlist(summary))),] <- NA_real_
-      
-      # return a 'named vector
-      temp <- summary[[survey_name_i]]
-      names(temp) <- row.names(summary)
-      # "Min."     "1st Qu."  "Median"   "Mean"     "3rd Qu."  "Max."     "IQR"      "sd"      
-      # "cv" "Skewness" "Kurtosis" "NA's"     "n"
-      
-      # rename
-      names(temp) <- tolower(names(temp))
-      names(temp) <- gsub("([.]|'| )","_",names(temp))
-      names(temp) <- gsub("(\\d)","d\\1", names(temp))
-      
-      x <- temp
-      attr(x, "label") <- survey_name_i # see Hmisc::llist
-      
-      return(x)
-      
-    } )
-    rm(survey)
-    
-    # instead of plyr::dlply returned 'list item names'
-    #   attr(*, "split_type")
-    #   attr(*, "split_labels")
-    survey_summary_by_date_result <- 
-      rlist::list.zip(result = survey_summary_by_date_result, result_date = names(survey_summary_by_date_result))
-    for(survey_summary_by_date_result_i in survey_summary_by_date_result) {
-      
-      message(paste0("    Begin survey result ", survey_summary_by_date_result_i[["result_date"]]))
-      # create each small xts
-      temp <- t(as.matrix(survey_summary_by_date_result_i[["result"]]))
-      colnames(temp) <- paste0(attr(survey_summary_by_date_result_i[["result"]],"label", exact = TRUE), "__", colnames(temp)) 
-      rownames(temp) <- survey_summary_by_date_result_i[["result_date"]]
-      # S3 dispatch as.xts.matrix
-      temp <- as.xts(temp)
-      # because a non-Date index had been created
-      index(temp) <- zoo::as.Date(index(temp))
-    
-      # combine with the grand list
-      list_of_xtss <- c(list(temp), list_of_xtss)
-      
-      message(paste0("    End   survey result ", survey_summary_by_date_result_i[["result_date"]]))
-      
+    if (tgt < ncol(dat)) {
+      orig.order <- colnames(dat)
+      cols <- 1:ncol(dat)
+      cols[c(tgt, ncol(dat))] <- cols[c(ncol(dat), tgt)]
+      dat <- dat[, cols]
     }
     
-    # per survey_i
-    survey_i_rbinded_xtss <- do.call(rbind.xts, list_of_xtss)
+    # END   "copy of code from UBL::SmoteRegress" #
+    ###############################################
     
-    grand_list_of_xtss <- c(list(survey_i_rbinded_xtss), grand_list_of_xtss)
-    # ready for next loop
-    list_of_xtss <- list()
+    ###############################################
+    # BEGIN "copy of code from UBL::SmoteRegress" #
     
-    message(paste0("  End   survey ", survey_name_i))
-    
-  }
+    y <- dat[, ncol(dat)]
+    attr(y, "names") <- rownames(dat)
+    s.y <- sort(y)
   
-  # bring all xtss together
-  many_xtss_in_one <- do.call(merge.xts, grand_list_of_xtss)
-  phil_survey_of_prof_forecasters_eom_xts <- many_xtss_in_one
-  
-  Sys.setenv(TZ=oldtz)
-  options(ops)
-  
-  message("End   function get_phil_survey_of_prof_forecasters_eom_xts.")
-  
-  return(phil_survey_of_prof_forecasters_eom_xts)
-
-}
-# ONLY do 'every so often'. Perhaps, once/month or once/quarter?
-# From the internet gets the the data, then saves it to the current working directory
-# ret <- get_phil_survey_of_prof_forecasters_eom_xts()
-# 
-# From the local directory, get the saved data
-# ret <- get_phil_survey_of_prof_forecasters_eom_xts(file_data_loc = "DISK")
-# 
-# From a user custom location, get the data
-# ret <- get_phil_survey_of_prof_forecasters_eom_xts(file_data_loc = "phil_survey_of_prof_forecasters__all_files_in_one.RData")
-#
-# just two future quarters of unemployment
-# ret <- get_phil_survey_of_prof_forecasters_eom_xts(file_data_loc = "DISK", surveys_of_interest_regex = "^(unemp__).*(3|4)$", future_dates_regex = "(3|4)$")
-#
-
-# # NO REVISIONS
-# > library(alfred)
-# > UNRATE_vintages <- get_alfred_series("UNRATE")
-# > sort(unique(UNRATE_vintages$realtime_period))
-# [671] "2016-01-08" "2016-02-05" "2016-03-04" "2016-04-01" "2016-05-06"
-# [676] "2016-06-03" "2016-07-08" "2016-08-05" "2016-09-02" "2016-10-07"
-# [681] "2016-11-04" "2016-12-02" "2017-01-06" "2017-02-03" "2017-03-10"
-# [686] "2017-04-07" "2017-05-05" "2017-06-02" "2017-07-07" "2017-08-04"
-# [691] "2017-09-01" "2017-10-06" "2017-11-03" "2017-12-08" "2018-01-05"
-# [696] "2018-02-02"
-# 
-# # predictions of the "previous quarter"
-# # in the case of unemp/UNRATE, they alreay had BEEN known AND published, 
-# # 
-# # predictions of 1.5 months in the past
-# #
-# # https://fred.stlouisfed.org/data/UNRATE.txt
-# # SEEN FEB 28 2018
-# 2016-09-01   5.0
-# 2016-10-01   4.9 ** HERE ** ( ave. of 3 past months )
-# 2016-11-01   4.6
-# 2016-12-01   4.7
-# 2017-01-01   4.8 ** HERE ** ( ave. of 3 past months )
-# 2017-02-01   4.7
-# 2017-03-01   4.5
-# 2017-04-01   4.4 ** HERE ** ( ave. of 3 past months )
-# 2017-05-01   4.3
-# 2017-06-01   4.3
-# 2017-07-01   4.3 ** HERE ** ( ave. of 3 past months )
-# 2017-08-01   4.4
-# 2017-09-01   4.2
-# 2017-10-01   4.1 ** HERE ** ( ave. of 3 past months )
-# 2017-11-01   4.1
-# 2017-12-01   4.1
-# 2018-01-01   4.1 ** HERE ** ( ave. of 3 past months )
-# # 
-# # so  emp__unemp1__median SHOULD [HAVE BEEN]/BE exact (TRUE ANSWER)
-# # predictions of 1.5 months in the past
-# #
-# # forecast_target_date"
-# > tail(ret[,c("unemp__unemp1__median","unemp__unemp1__sd")])
-#            unemp__unemp1__median     unemp__unemp1__sd
-# 2016-09-30    4.9000000000000004 0.0074410803055308576
-# 2016-12-31    4.7000000000000002 0.0000000000000000000
-# 2017-03-31    4.7000000000000002 0.0056287273364920131
-# 2017-06-30    4.4000000000000004 0.0092149335320447553 # sd: ONE forecaster said 4.37 
-# 2017-09-30    4.2999999999999998 0.0000000000000000000 # TRUE prediction MASS too high
-# 2017-12-31    4.0999999999999996 0.0000000000000000000
-# 
-# # predictions of 1.5 months into the future
-# # forecast_target_date"
-# > tail(ret[,c("unemp__unemp2__median","unemp__unemp2__sd")])
-#            unemp__unemp2__median    unemp__unemp2__sd
-# 2016-12-31    4.8429000000000002 0.066355975662127697
-# 2017-03-31    4.7000000000000002 0.077102994633000618
-# 2017-06-30    4.5000000000000000 0.113164194459038192
-# 2017-09-30    4.2999999999999998 0.072341674385189972
-# 2017-12-31    4.1900000000000004 0.087862058569284585
-# 2018-03-31    4.0352499999999996 0.072697801286854241
-# 
-# # preductions of 4.5 months into the future
-# # forecast_target_date"
-# > tail(ret[,c("unemp__unemp3__median","unemp__unemp3__sd")])
-#            unemp__unemp3__median   unemp__unemp3__sd
-# 2017-03-31    4.7900000000000000 0.11544976614105495
-# 2017-06-30    4.6313000000000004 0.12262275454630607
-# 2017-09-30    4.4000000000000004 0.15070633099402519
-# 2017-12-31    4.2297000000000002 0.12717873001948621
-# 2018-03-31    4.0999999999999996 0.13069412632505889
-# 2018-06-30    3.9800000000000004 0.10204546752339234
-
-# NO useful PATTERN
-# data.frame(ret[,c("unemp__unemp3__median","unemp__unemp3__sd")], rat = ret[,c("unemp__unemp3__median")] /ret[,("unemp__unemp3__sd")])
-
-# # GOOD EXAMPLE ( notece: EXACTLY when BEFORE/AFTER going in/out OF MAJOR recessions )
-# ret <- get_phil_survey_of_prof_forecasters_eom_xts(file_data_loc = "DISK", surveys_of_interest_regex = "^(unemp__).*(3|4)$", future_dates_regex = "(3|4)$")
-# quantmod::getSymbols("UNRATE", src = "FRED", from = "1940-01-01")
-# # to make eom
-# # actual publication date is "one month later"
-# # keep at "forcast_target" date ( NOTE: UNRATE data is published one month later))
-# index(UNRATE) <- index(UNRATE) - 1 # FRED 1st day shift
-# NOTE: FORECASTERS overshoot downtrends and undershoot up trends
-# ONLY GOOD CONCLUSION: during UNRATE downtrend ( or flat )
-#   when the unemp3 suprisingly undershoots the UNRATE then A RECESSION BEGINS
-# dygraphs::dygraph(merge.xts(UNRATE,ret[,"unemp__unemp3__median"])) # 4.5 months into the future
-# 
-# dygraphs::dygraph(ret)
-
-# 2009:Q3 survey+: annual-average rates on three-month Treasury bills (TBILL) rate
-# https://www.philadelphiafed.org/-/media/research-and-data/real-time-center/survey-of-professional-forecasters/spf-documentation.pdf?la=en
-# 
-# daily 
-# 3-Month Treasury Bill: Secondary Market Rate (DTB3)
-# https://fred.stlouisfed.org/series/DTB3
-# 
-# tbill__tbill3__median # since 1981
-# tbill <- get_phil_survey_of_prof_forecasters_eom_xts(file_data_loc = "DISK", surveys_of_interest_regex = "^(tbill__).*(3|4)$", future_dates_regex = "(3|4)$")
-# DTB3 <- quantmod::getSymbols("DTB3", src = "FRED", from = "1940-01-01", auto.assign = FALSE)
-# DTB3 <-to.monthly(DTB3, OHLC = FALSE, indexAt = "lastof")
-# dygraphs::dygraph(merge.xts(DTB3,tbill[,"tbill__tbill3__median"]))
-# 2007-2008 reality > predictions ... times O.K.                      switch!
-# 2015-2016 reality < predictions ... times O.K. (opposite) "BUT *no* switch!
-
-# 2009:Q3 survey+: annual-average rates on 10-year Treasury bonds (TBOND)
-# https://www.philadelphiafed.org/-/media/research-and-data/real-time-center/survey-of-professional-forecasters/spf-documentation.pdf?la=en
-#
-# daily
-# 10-Year Treasury Constant Maturity Rate (DGS10)
-# https://fred.stlouisfed.org/series/DGS10/
-# 
-# tbond__tbond3__median # since 2010
-# tbond <- get_phil_survey_of_prof_forecasters_eom_xts(file_data_loc = "DISK", surveys_of_interest_regex = "^(tbond__).*(3|4)$", future_dates_regex = "(3|4)$")
-# DGS10 <- quantmod::getSymbols("DGS10", src = "FRED", from = "1940-01-01", auto.assign = FALSE)
-# DGS10 <-to.monthly(DGS10, OHLC = FALSE, indexAt = "lastof")
-# dygraphs::dygraph(merge.xts(DGS10,tbond[,"tbond__tbond3__median"]))
-# 2007-2008 reality > predictions ... times O.K.                      switch!?
-# 2015-2016 reality < predictions ... times O.K. (opposite) "BUT *no* switch!? ( BUT TBILL is "better" )
-
-# 2010:Q1 survey+: rate on Moody Baa corporate bond yields (BAABOND). 
-# https://www.philadelphiafed.org/-/media/research-and-data/real-time-center/survey-of-professional-forecasters/spf-documentation.pdf?la=en
-# 
-# baabond__baabond3__median # since 2010
-# daily
-# Moody's Seasoned Baa Corporate Bond Yield (DBAA)
-# https://fred.stlouisfed.org/series/DBAA
-# 
-# baabond <- get_phil_survey_of_prof_forecasters_eom_xts(file_data_loc = "DISK", surveys_of_interest_regex = "^(baabond__).*(3|4)$", future_dates_regex = "(3|4)$")
-# DBAA  <- quantmod::getSymbols("DBAA", src = "FRED", from = "1940-01-01", auto.assign = FALSE)
-# DBAA  <- to.monthly(DBAA, OHLC = FALSE, indexAt = "lastof")
-# dygraphs::dygraph(merge.xts(DBAA, baabond[,"baabond__baabond3__median"]))
-# 2015-2016<2016 stress builds UP TO AND INCLUDING dec 31 2015 ... then release in a downhill slope
-
-
-get_bankruptcy_filing_counts_eoq_xts <- function(pub_dates = Sys.Date(), updating_file = "bankruptcy_filing_counts_eoq_xts.RData") {
-
-  # JAN 2018 
-  # More recent data that is delivered 'quicker' than the St. Louis FRED 
-    # Delinquency Rate on Commercial and Industrial Loans, All Commercial Banks (DRBLACBS)
-    # https://fred.stlouisfed.org/series/DRBLACBS
-    # https://fred.stlouisfed.org/data/DRBLACBS.txt
-  # (may or may not be as accurate or as good?!)
-  # Bankruptcy Filings
-  # UNITED STATES COURTS
-  # each of 'end of quarer'
-  # U.S. Bankruptcy Courts - Business and Nonbusiness Cases Filed, by Chapter of the Bankruptcy Code F-2 (Three Months)
-  # http://www.uscourts.gov/report-name/bankruptcy-filings
-
-  # end of EACH calendar quarter 
-  # AND delivered QUICKLY just after the END of the calendar quarter
-  
-  # earliest 
-  # http://www.uscourts.gov/statistics/table/f-2-three-months/bankruptcy-filings/2001/03/31
-  
-  # chapter-13-bankruptcy
-  # plan to repay all or part of their debts
-  # http://www.uscourts.gov/services-forms/bankruptcy/bankruptcy-basics/chapter-13-bankruptcy-basics
-  # 
-  # chapter-11-bankruptcy
-  # debtors plan of reorganization is confirmed, 
-  # the debtors case is dismissed or converted to chapter 7, or a chapter 11
-  # http://www.uscourts.gov/services-forms/bankruptcy/bankruptcy-basics/chapter-11-bankruptcy-basics
-  # 
-  # chapter-7-bankruptcy
-  # bankruptcy trustee gathers and sells the debtors nonexempt assets 
-  # and uses the proceeds of such assets to pay holders of claims (creditors)
-  # http://www.uscourts.gov/services-forms/bankruptcy/bankruptcy-basics/chapter-7-bankruptcy-basics
-
-  ops <- options()
-  
-  options(warn = 1)
-  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
-  options(digits = 22) 
-  options(min.print=99999)
-  options(scipen=255) # Try these = width
-  
-  #correct for TZ 
-  oldtz <- Sys.getenv('TZ')
-  if(oldtz=='') {
-    Sys.setenv(TZ="UTC")
-  }
-
-  # uses package stringr
-  # uses package xml2
-  # uses package rvest
-  # uses package readxl
-  library(xts) # also uses package zoo
-
-  message("Begin get_bankruptcy_filing_counts_eoq_xts")
-
-  # special case, just get all of the local data
-  if(is.na(pub_dates) && !is.null(updating_file)) {
-  
-    load(file = updating_file, envir = environment())
-  
-    message("End   get_bankruptcy_filing_counts_eoq_xts")
-    
-    Sys.setenv(TZ=oldtz)
-    options(ops)
-    
-    return(bankruptcy_filing_counts_eoq_xts)
-  
-  }
-  
-  # user error
-  if(is.na(pub_dates) && is.null(updating_file)) {
-  
-    message("missing updating_file ... returning NULL")
-  
-    message("End   get_bankruptcy_filing_counts_eoq_xts")
-    
-    Sys.setenv(TZ=oldtz)
-    options(ops)
-    
-    return(NULL)
-  
-  }
-
-  # get at least SOME data from the internet
-
-  # earliest date
-  # http://www.uscourts.gov/statistics/table/f-2-three-months/bankruptcy-filings/2001/03/31
-  # 'from' must be the first day of a quarter
-  # get everything
-  if(is.null(pub_dates)) {
-    # earliest date
-    # http://www.uscourts.gov/statistics/table/f-2-three-months/bankruptcy-filings/2001/03/31
-    # 'from' must be the first day of a quarter
-    #                                                              # last day of the quarter/first day of next quarter
-    #                                                              # tries to get 'that days publishing'
-    info_data_dates <- seq(from = zoo::as.Date("2001/04/01"), to = (Sys.Date() + 1) , by = "quarter") - 1
-  } else { # default: just get the pub_dates
-    # last recent quarter end date
-    # S3 dispatch as.Date.yearqtr
-    info_data_dates  <- zoo::as.Date(as.yearqtr(zoo::as.Date(pub_dates) + 1), frac = 0) - 1
-  }
-  
-  # multiple value testing SKIP BAD ; NEED TO FIND SOMEHTING else TO READ OLD xls FILES(64BIT)
-  # info_data_dates <- seq(from = zoo::as.Date("2016/04/01"), to = Sys.Date(), by = "quarter") - 1
-  
-  # multi value testing
-  # info_data_dates <- rev(seq(from = zoo::as.Date("2016/04/01"), to = Sys.Date(), by = "quarter") - 1)
-  
-  # single value testing 
-  # (recent data)
-  # info_data_dates <- zoo::as.Date("2017/12/31")
-  # old(est) data
-  # info_data_dates <- zoo::as.Date("2001/03/31")
-
-  # earliest
-  # http://www.uscourts.gov/statistics/table/f-2-three-months/bankruptcy-filings/2001/03/31
-  # info_data_dates <- seq(from = zoo::as.Date("2001/04/01"), to = Sys.Date(), by = "quarter") - 1
-  
-  # single value testing 
-  # (recent data)
-  # info_data_dates <- zoo::as.Date("2017/12/31")
-  # old(est) data
-  # info_data_dates <- zoo::as.Date("2001/03/31")
-  
-  # this two are BAD
-  # 2016/03/31
-  # 2016/06/30
-  # info_data_dates <- zoo::as.Date("2016/03/31")
-  
-  info_data_list <- list()
-  for(info_data_date_i in info_data_dates) {
-    
-    # because the element was unclass-ed.
-    info_data_date_i <-  zoo::as.Date(info_data_date_i)
-    
-    # ONLY pdf is available, so I manually wrote in here
-    # Table F-2 (Three Months) Bankruptcy Filings (December 31, 2004)
-    # http://www.uscourts.gov/sites/default/files/statistics_import_dir/1204_f23.pdf
-    # http://www.uscourts.gov/statistics/table/f-2-three-months/bankruptcy-filings/2004/12/31
-    # download bankruptcy file: http://www.uscourts.gov/file/12705/download
-    # Not an excel file
-    # can not download file or can not read file of date: 2004-12-31
-    # 
-    if(info_data_date_i == zoo::as.Date("2004/12/31")) {
-      message(stringr::str_c("  Begin special processing ", info_data_date_i))
-      info_data <- structure(c(371668, 259531, 1796, 71, 110220, 7778, 5013, 1543, 71, 1104, 363890, 254518, 253, 109116), .Dim = c(1L, 14L), .Dimnames = list(NULL, 
-      c("all_chs_all", 
-      "all_ch_7", "all_ch_11", "all_ch_12", "all_ch_13", "bus_chs_all", 
-      "bus_ch_7", "bus_ch_11", "bus_ch_12", "bus_ch_13", "ind_chs_all", 
-      "ind_ch_7", "ind_ch_11", "ind_ch_13")), index = structure(1104451200, tzone = "UTC", tclass = "Date"), class = c("xts", 
-      "zoo"), .indexCLASS = "Date", tclass = "Date", .indexTZ = "UTC", tzone = "UTC")
-      
-                          # prevent collapse
-      info_data_list <- c(list(info_data), info_data_list)
-      
-      message(stringr::str_c("  End   special processing ", info_data_date_i))
-      next
+    if (is.matrix(rel)) {
+      pc <- phi.control(y, method = "range", control.pts = rel)
+    } else if (is.list(rel)) {
+      pc <- rel
+    } else if (rel == "auto") {
+      pc <- phi.control(y, method = "extremes")
+    } else {# handle other relevance functions and not using the threshold!
+      stop("future work!")
     }
-
-    # ONLY pdf is available, so I manually wrote in here
-    # Table F-2 (Three Months) Bankruptcy Filings (March 31, 2005)
-    # http://www.uscourts.gov/sites/default/files/statistics_import_dir/0305_f23.pdf
-    # http://www.uscourts.gov/statistics/table/f-2-three-months/bankruptcy-filings/2005/03/31
-    # download bankruptcy file: http://www.uscourts.gov/file/12706/download
-    # Not an excel file
-    # can not download file or can not read file of date: 2005-03-31
-    #
-    if(info_data_date_i == zoo::as.Date("2005/03/31")) {
-      message(stringr::str_c("  Begin special processing ", info_data_date_i))
-      info_data <- structure(c(401149, 294520, 1722, 99, 104796, 8063, 5281, 1521, 99, 1150, 393086, 289239, 201, 103646), .Dim = c(1L, 14L), .Dimnames = list(NULL, 
-      c("all_chs_all", 
-      "all_ch_7", "all_ch_11", "all_ch_12", "all_ch_13", "bus_chs_all", 
-      "bus_ch_7", "bus_ch_11", "bus_ch_12", "bus_ch_13", "ind_chs_all", 
-      "ind_ch_7", "ind_ch_11", "ind_ch_13")), index = structure(1112227200, tzone = "UTC", tclass = "Date"), class = c("xts", 
-      "zoo"), .indexCLASS = "Date", tclass = "Date", .indexTZ = "UTC", tzone = "UTC")
-      
-                          # prevent collapse
-      info_data_list <- c(list(info_data), info_data_list)
-      
-      message(stringr::str_c("  End   special processing ", info_data_date_i))
-      next
+  
+    temp <- y.relev <- phi(s.y, pc)
+    if (!length(which(temp < 1))) {
+      stop("All the points have relevance 1.
+           Please, redefine your relevance function!")
     }
-
-    # special processing
-    # readxl::read_xls COULD only read the first column: "  TOTAL"
-    # Therefore, I manually enter the information here
-    if(info_data_date_i == zoo::as.Date("2016/03/31")) {
-      
-      message(stringr::str_c("  Begin special processing ", info_data_date_i))
-      
-      info_data <- structure(c(201906, 126430, 1878, 122, 73430, 6227, 3885, 1596, 122, 578, 195679, 122545, 282, 72852), .Dim = c(1L, 14L), .Dimnames = list(NULL, 
-      c("all_chs_all", 
-      "all_ch_7", "all_ch_11", "all_ch_12", "all_ch_13", "bus_chs_all", 
-      "bus_ch_7", "bus_ch_11", "bus_ch_12", "bus_ch_13", "ind_chs_all", 
-      "ind_ch_7", "ind_ch_11", "ind_ch_13")), index = structure(1459382400, tzone = "UTC", tclass = "Date"), class = c("xts", 
-      "zoo"), .indexCLASS = "Date", tclass = "Date", .indexTZ = "UTC", tzone = "UTC")
-    
-                          # prevent collapse
-      info_data_list <- c(list(info_data), info_data_list)
-      
-      message(stringr::str_c("  End   special processing ", info_data_date_i))
-      next
+    if (!length(which(temp > 0))) {
+      stop("All the points have relevance 0.
+           Please, redefine your relevance function!")
     }
     
-    # special processing
-    # readxl::read_xls COULD only read the first column: "  TOTAL"
-    # Therefore, I manually enter the information here
-    if(info_data_date_i == zoo::as.Date("2016/06/30")) {
-      
-      message(stringr::str_c("  Begin special processing ", info_data_date_i))
+    # END   "copy of code from UBL::SmoteRegress" #
+    ###############################################
+
+    # see
+    # Chapter 3 Utility-based Regression of
+    # Ribeiro, R.P.: Utility-based Regression. PhD thesis, Dep. Computer Science,
+    # Faculty of Sciences - University of Porto (2011)
+    # http://www.dcc.fc.up.pt/~rpribeiro/publ/rpribeiroPhD11.pdf
+    # Rita P. Ribeiro
+    # Faculty of Sciences, University of Porto
+    # Verified email at dcc.fc.up.pt
+    # https://scholar.google.com/citations?user=ptDBgpkAAAAJ&hl=en
+
+    # see
+    # 6.4 The SmoteR Algorithm
+    # UBL: an R package for Utility-based Learning
+    # Paula Branco, Rita P. Ribeiro, Luis Torgo
+    # (Submitted on 27 Apr 2016 (v1), last revised 12 Jul 2016 (this version, v2))
+    # https://arxiv.org/abs/1604.08079
+
+    # *new* code follows
        
-      info_data <- structure(c(208871, 132538, 2298, 135, 73845, 6537, 3760, 1996, 135, 591, 202334, 128778, 302, 73254), .Dim = c(1L, 14L), .Dimnames = list(NULL, 
-      c("all_chs_all", 
-      "all_ch_7", "all_ch_11", "all_ch_12", "all_ch_13", "bus_chs_all", 
-      "bus_ch_7", "bus_ch_11", "bus_ch_12", "bus_ch_13", "ind_chs_all", 
-      "ind_ch_7", "ind_ch_11", "ind_ch_13")), index = structure(1467244800, tzone = "UTC", tclass = "Date"), class = c("xts", 
-      "zoo"), .indexCLASS = "Date", tclass = "Date", .indexTZ = "UTC", tzone = "UTC")
+    writeLines("       relevance function: phi results")
+    txtplot::txtplot(temp, xlab = "s.y position index", ylab = "phi")
     
-                          # prevent collapse
-      info_data_list <- c(list(info_data), info_data_list)
-        
-        
-      message(stringr::str_c("  End   special processing ", info_data_date_i))
-      next 
-    }
+    # where the relevance function value of number 1 first appears
+    temp.one.start.pos <- match(1, temp)
     
+    # s.y value at temp one.start.pos
+    # prefer y.extreme.start to be less then or equal to this value: s.y.start.value.at.temp.one
+    s.y.start.value.at.temp.one <- s.y[temp.one.start.pos]
+    message(paste0("  s.y == ", s.y.start.value.at.temp.one," at the first 'temp == 1' at s.y position index ", temp.one.start.pos))
     
-    # e.g.                     "http://www.uscourts.gov/statistics/table/f-2-three-months/bankruptcy-filings/2017/12/31"
-    read_url <- stringr::str_c("http://www.uscourts.gov/statistics/table/f-2-three-months/bankruptcy-filings/", format(info_data_date_i, "%Y/%m/%d"))
+    y.phi.df <- data.frame(rn = seq_along(s.y), sorty=s.y, y.phi = temp)
 
-    message(str_c("  Begin read_url: ", read_url))
+    # determine where the y value ( y.extreme.start ) 
+    # crosses the line of the relevance function                                                 # not on x-axis                                                                                          # not on x-axis
+    y.phi.df.at.thr.rel.candidate <- y.phi.df[match(TRUE,(y.extreme.start <= y.phi.df$sorty) & ( 0 != y.phi.df$y.phi )),,drop = F]
     
-    webpage <-  try(xml2::read_html(x = read_url), silent = TRUE)
-    if(inherits(webpage, "try-error")) {
-      message(paste0("Nothing found at URL:", read_url))
-      message("  #   ")
-      message("  # Maybe the most recent calendar quarter ending Bankruptcy excel spreadsheet is not available (yet)?")
-      message("  #   ")
-      message("  # just get all of the local data")
-      message("  # bankruptcy_filing_counts_eoq_xts <- get_bankruptcy_filing_counts_eoq_xts(pub_dates = NA)")
-      message("  # or")
-      message("  # just a specific date ( and save )")
-      message("  # bankruptcy_filing_counts_eoq_xts <- get_bankruptcy_filing_counts_eoq_xts(pub_dates = zoo::as.Date(\"2017-06-30\"))")
-      return(NULL)
-    }
-    Sys.sleep(3.0) # be nice; do not attack the website
+    message(paste0("  chose thr.rel == ", y.phi.df.at.thr.rel.candidate$y.phi, " at s.y == ", y.phi.df.at.thr.rel.candidate$sorty), " at s.y position index ", y.phi.df.at.thr.rel.candidate$rn)
+    # unfortunately I can not add this line to a txtplot::txtplot
     
-    download_area <- rvest::html_nodes(webpage, "#content")
-    # S3 dispatch
-    download_area <- as.character(download_area)
-  
-    # always the 2nd(lower (last) link)
-    # some early data does not have a pdf file (1st link)
-    # 1 or 2 links
-    bankruptcy_file_number_part <- stringr::str_extract_all(download_area, "/file/\\d+")[[1]]
-    if(length(bankruptcy_file_number_part) > 1) {
-      # 2nd or last part is garanteed to be the .xls or .xlsx file
-      bankruptcy_file_number_part <- bankruptcy_file_number_part[length(bankruptcy_file_number_part)]
-    }
-    # e.g. [1] "/file/23687"
-  
-    bankruptcy_file <- stringr::str_c("http://www.uscourts.gov", bankruptcy_file_number_part, "/download")
-    # e.g. [1] "http://www.uscourts.gov/file/23687/download"
-  
-    message(stringr::str_c("  Begin download bankruptcy file: ", bankruptcy_file))
+    # thr.rel candidates
+    thr.rel.candidate <- y.phi.df.at.thr.rel.candidate$y.phi
     
-    # excel request "wb"                                 
-    download.file(destfile = "bankruptcy_filing_counts_eoq_xts.excel", url = bankruptcy_file, mode = "wb")
-    # could be an .xls or .xlsx file
-  
-    message(stringr::str_c("  End   download bankruptcy file: ", bankruptcy_file))
+    # final decision
+    thr.rel <- thr.rel.candidate
     
-    file_type <- "unkown"
-                                      # local file
-    # tibble
-    info_data     <- try(readxl::read_xlsx("bankruptcy_filing_counts_eoq_xts.excel", skip = 4, col_names = F, n_max = 1), silent = T)
-    if(inherits(info_data, "try-error")){ # older .xls excel file
-      info_data     <- try(readxl::read_xls("bankruptcy_filing_counts_eoq_xts.excel", skip = 4, col_names = F, n_max = 1), silent = T)
-      if(inherits(info_data, "try-error")) {
-        message(str_c("can not download file or can not read file of date: ", info_data_date_i))
-        message("SO SKIPPING ...")
-        next # next loop iteration
-      } else {
-        file_type <- "xls"
+    ###############################################
+    # BEGIN "copy of code from UBL::SmoteRegress" #
+                    
+  #  temp[which(y.relev >= thr.rel)] <- -temp[which(y.relev >= thr.rel)]
+    bumps <- c()
+    for (i in 1:(length(y) - 1)) {
+  #     if (temp[i] * temp[i + 1] < 0) bumps <- c(bumps, i)
+      if ((temp[i] >= thr.rel && temp[i+1] < thr.rel) ||
+          (temp[i] < thr.rel && temp[i+1] >= thr.rel)) {
+        bumps <- c(bumps, i)
       }
+     }
+    nbump <- length(bumps) + 1 # number of different "classes" 
+  
+    # END   "copy of code from UBL::SmoteRegress" #
+    ###############################################
+    
+    # *new* code follows
+
+    if(nbump == 1) { # becuse bumps is NULL
+      
+      stop("  phi failed to produce a good relevance function: This should not happen.")
+
     } else {
-      file_type <- "xlsx"
-    }
     
-    # expression test is "^\\s+TOTAL" instead of "^TOTAL"
-    # Because
-    # http://www.uscourts.gov/statistics/table/f-2-three-months/bankruptcy-filings/2016/03/31
-    # http://www.uscourts.gov/file/19829/download
-    # "   TOTAL"
-    # has whitespace (3 spaces in front)
-                                            # zero or more space allowed in front
-    # NOTE oldest files: info_data is on line 8
-    if(!stringr::str_detect(info_data[[1]], "^\\s*TOTAL")) {
-      if(file_type == "xlsx") info_data     <- readxl::read_xlsx("bankruptcy_filing_counts_eoq_xts.excel", skip = 7, col_names = F, n_max = 1)
-      if(file_type == "xls")  info_data     <- readxl::read_xls( "bankruptcy_filing_counts_eoq_xts.excel", skip = 7, col_names = F, n_max = 1)
-    }
-    # NOTE less old files: (2004/06/30+) info_data is on line 13
-    if(!stringr::str_detect(info_data[[1]], "^\\s*TOTAL")) {
-      if(file_type == "xlsx") info_data     <- readxl::read_xlsx("bankruptcy_filing_counts_eoq_xts.excel", skip = 12, col_names = F, n_max = 1)
-      if(file_type == "xls")  info_data     <- readxl::read_xls( "bankruptcy_filing_counts_eoq_xts.excel", skip = 12, col_names = F, n_max = 1)
-    }
-    # 2016/03/31
-    
-    # uneeded column
-    # "Sort column"
-    if(file_type == "xlsx") info_data     <- info_data[,-NCOL(info_data)]
-    
-    # remove the first column typically "TOTAL"
-    # remove any empty columns(2 cases this happens: 2006/12/31, 2011/03/31) ( keep only is.numeric)
-    info_data  <- info_data[,sapply(info_data, is.numeric)]
-    
-    # propers
-    colnames(info_data) <- c("all_chs_all", "all_ch_7", "all_ch_11", "all_ch_12", "all_ch_13",
-                             "bus_chs_all", "bus_ch_7", "bus_ch_11", "bus_ch_12", "bus_ch_13",
-                             "ind_chs_all", "ind_ch_7", "ind_ch_11",              "ind_ch_13")
-  
-    
-    info_data <- xts(info_data, info_data_date_i)
-  
-                        # prevent collapse
-    info_data_list <- c(list(info_data), info_data_list)
-    
-    message(stringr::str_c("  End   read_url: ", read_url))
-  
-  }
-
-  # S3 dispatch merge.xts                   
-  bankruptcy_filing_counts_eoq_xts <- do.call(rbind.xts,info_data_list)
-
-  # want to update the local(if exists) .RData file
-  # get the data locally
-  if(!is.null(updating_file) && file.exists(updating_file)) {
-    bankruptcy_filing_counts_eoq_xts_new <- bankruptcy_filing_counts_eoq_xts
-    load(file = updating_file, envir = environment())
-    # update the file -  no need to destroy
-    # delete old values (if any)
-    bankruptcy_filing_counts_eoq_xts <- bankruptcy_filing_counts_eoq_xts[!index(bankruptcy_filing_counts_eoq_xts) %in% index(bankruptcy_filing_counts_eoq_xts_new)]
-    # add (back) values               
-    bankruptcy_filing_counts_eoq_xts <- rbind.xts(bankruptcy_filing_counts_eoq_xts, bankruptcy_filing_counts_eoq_xts_new)
-  } 
-  
-  # in any case, make data permanent
-  if(!is.null(updating_file)) {
-    save(bankruptcy_filing_counts_eoq_xts, file = updating_file, envir = environment())
-  }
-    
-  message("End   get_bankruptcy_filing_counts_eoq_xts")
-  
-  Sys.setenv(TZ=oldtz)
-  options(ops)
-  
-  return(bankruptcy_filing_counts_eoq_xts)
-
-}
-# pub_dates = NULL       # get everything
-# pub_dates = Sys.Date() # get just this end-of-recent-quarter-day information: calls zoo::as.Date(input)
-# updating_file =  NULL # do not create/update and .RData FILE
-# updating_file = "bankruptcy_filing_counts_eoq_xts.RData" # update this file if exists
-#                                                          # if not exists, then create a new file of new data
-# GET EVERYTHING and save/add_to "bankruptcy_filing_counts_eoq_xts.RData"                                                       
-# bankruptcy_filing_counts_eoq_xts <- get_bankruptcy_filing_counts_eoq_xts(pub_dates = NULL)
-# View(bankruptcy_filing_counts_eoq_xts)
-# bus_ch_11 IS A pattern ( 2000-2001, 2007-2008, 2015-2016) try SMA2(sma7 =  2 quarters)(by month)
-# save(bankruptcy_filing_counts_eoq_xts, file = "bankruptcy_filing_counts_eoq_xts.RData")
-# 
-# defaults: ( expect to do manually and end-of-quarterly)
-# bankruptcy_filing_counts_eoq_xts <- get_bankruptcy_filing_counts_eoq_xts(pub_dates = Sys.Date(), updating_file = "bankruptcy_filing_counts_eoq_xts.RData")
-# THIS_ONE
-# bankruptcy_filing_counts_eoq_xts <- get_bankruptcy_filing_counts_eoq_xts()
-#
-# just a specific date ( and save )
-# bankruptcy_filing_counts_eoq_xts <- get_bankruptcy_filing_counts_eoq_xts(pub_dates = zoo::as.Date("2017-06-30"))
-# just a specific date and do not save
-# bankruptcy_filing_counts_eoq_xts <- get_bankruptcy_filing_counts_eoq_xts(pub_dates = zoo::as.Date("2017-09-30"), updating_file = NULL)
-#
-# use with other programs
-# just get all of the local data
-# bankruptcy_filing_counts_eoq_xts <- get_bankruptcy_filing_counts_eoq_xts(pub_dates = NA)
-
-
-
-get_illogical_excitement_eom_xts <- function(pub_dates = Sys.Date(), updating_file = "illogical_excitement_eom_xts.RData") {
-
-  # FEB 2018 
-  
-  # http://www.econ.yale.edu/~shiller/data.htm (some instructions)
-  # EXACTLY HERE *Data* TAB columns
-  # U.S. Stock Markets 1871-Present and CAPE Ratio
-  # http://www.econ.yale.edu/~shiller/data/ie_data.xls
-
-  # Monthly dividend and earnings data are computed from the S&P four-quarter totals for the quarter since 1926, 
-  # with linear interpolation to monthly figures.
-  # 
-  # Dividend and earnings data before 1926 are 
-  # from Cowles and associates (Common Stock Indexes, 2nd ed. [Bloomington, Ind.: Principia Press, 1939]), 
-  # interpolated from annual data. 
-  # 
-  # Stock price data are monthly averages of daily closing prices
-
-  # library(MultipleBubbles) 
-  
-  # the S&P 500 price dividend ratio from January 1871 to December 2010 ( CRAN package )
-  # S&P 500 stock price index and the real S&P 500 stock price index dividend, ( journal article )
-  # both obtained from Robert Shiller???s website.
-  # 
-  # sp_data
-  # 
-  # TESTING FOR MULTIPLE BUBBLES: HISTORICAL EPISODES OF EXUBERANCE AND COLLAPSE IN THE S&P 500
-  # 2015
-  # http://korora.econ.yale.edu/phillips/pubs/art/p1498.pdf
-  # JAN 2018
-  # https://cran.r-project.org/web/packages/MultipleBubbles/index.html
-  
-  ops <- options()
-  
-  options(warn = 1)
-  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
-  options(digits = 22) 
-  options(min.print=99999)
-  options(scipen=255) # Try these = width
-  
-  #correct for TZ 
-  oldtz <- Sys.getenv('TZ')
-  if(oldtz=='') {
-    Sys.setenv(TZ="UTC")
-  }
-
-  # uses package stringr
-  # uses package libridate
-  # uses package readxl
-  library(xts) # also uses package zoo
-
-  message("Begin get_illogical_excitement_eom_xts")
-
-  # special case, just get all of the local data
-  if(length(pub_dates) && is.na(pub_dates) && !is.null(updating_file)) {
-  
-    load(file = updating_file, envir = environment())
-  
-    message("End   get_illogical_excitement_eom_xts")
-    
-    Sys.setenv(TZ=oldtz)
-    options(ops)
-    
-    return(illogical_excitement_eom_xts)
-  
-  }
-  
-  if(!is.null(pub_dates) && !is.na(pub_dates)) {
-    pub_dates <- zoo::as.Date(zoo::as.yearmon(zoo::as.Date(pub_dates)),frac = 1)
-  } 
-  
-  # want to update the local(if exists) .RData file
-  # get the data locally
-  # if ALL OF pub_dates data is already in the local file then get it there, then RETURN
-  if(!is.null(pub_dates) && !is.null(updating_file) && file.exists(updating_file)) {
-    load(file = updating_file, envir = environment())
-    if(all(pub_dates %in% index(illogical_excitement_eom_xts))) {
-    
-      # just the dates of interest
-      illogical_excitement_eom_xts <- illogical_excitement_eom_xts[pub_dates]
+      # regular call
+      Regress <- UBL::SmoteRegress(form = form, dat = dat, rel = rel, thr.rel = thr.rel,
+                                   C.perc = C.perc, k = k, repl = repl,
+                                   dist = dist, p = p)
       
-      message("End   get_illogical_excitement_eom_xts")
+      RegressMngd <- Regress
       
-      Sys.setenv(TZ=oldtz)
       options(ops)
     
-      return(illogical_excitement_eom_xts)
-    
-    }
-    rm(illogical_excitement_eom_xts)
-
-  } 
-  
-  
-  # user error
-  if(length(pub_dates) && is.na(pub_dates) && is.null(updating_file)) {
-  
-    message("missing updating_file ... returning NULL")
-  
-    message("End   get_illogical_excitement_eom_xts")
-    
-    Sys.setenv(TZ=oldtz)
-    options(ops)
-    
-    return(NULL)
-  
+    }  
   }
-
-  # get at least SOME data from the internet
-  # in THIS CASE all of the data becauese everything comes in ONE excel sheet
-
-  data_file <- ("http://www.econ.yale.edu/~shiller/data/ie_data.xls")
-
-  message(stringr::str_c("  Begin download data file: ", data_file))
   
-  # excel request "wb"                                 
-  download.file(destfile = "illogical_excitement_eom_xts.excel", url = data_file, mode = "wb")
-  # could be an .xls or .xlsx file
-
-  message(stringr::str_c("  End   download data file: ", data_file))
+  message("End   SmoteRegressMngd")
   
-  file_type <- "unkown"
-                                    # local file
-  # tibble 
-  info_data     <- try(readxl::read_xlsx("illogical_excitement_eom_xts.excel", sheet = "Data", skip = 8, col_types = "text", col_names = F), silent = T)
-  if(inherits(info_data, "try-error")){ # older .xls excel file
-    info_data     <- try(readxl::read_xls("illogical_excitement_eom_xts.excel", sheet = "Data", skip = 8, col_types = "text", col_names = F), silent = T)
-    if(inherits(info_data, "try-error")) {
-      message("can not download file or can not read file")
-      message("SO SKIPPING ... FAILED")
-
-      message("End   get_illogical_excitement_eom_xts")
-    
-      Sys.setenv(TZ=oldtz)
-      options(ops)
-    
-      return(NULL)
-      
-    } else {
-      file_type <- "xls"
-    }
-  } else {
-    file_type <- "xlsx"
-  }
-  info_data <- data.frame(lapply(info_data, as.numeric))
-  
-  # last line is blank so remove it
-  info_data <- info_data[-NROW(info_data),, drop = FALSE]
-  
-  # propers
-  colnames(info_data) <- c("date", "s_and_p", "dividend", "earnings", "cpi",
-                           "date_fraq_num", "fred_gs10", "real_price", "real_dividend", "real_earnings",
-                           "cape")
-
-  # earliest date JAN 1871
-  info_data_dates  <- zoo::as.Date(zoo::as.yearmon(lubridate::parse_date_time(as.character(info_data[["date"]]), orders = c("y.m"))), frac = 1)
-
-  info_data <- 
-  xts(
-      info_data[, !colnames(info_data) %in% "date"]
-    , info_data_dates
-  )
-
-  # get everything
-  if(is.null(pub_dates)) {
-    illogical_excitement_eom_xts <- info_data
-  }
-
-  if(!is.null(pub_dates)) {
-    illogical_excitement_eom_xts <- info_data[zoo::as.Date(zoo::as.yearmon(zoo::as.Date(pub_dates)),frac = 1)]
-  }
-
-  # want to update the local(if exists) .RData file
-  # get the data locally
-  if(!is.null(updating_file) && file.exists(updating_file)) {
-    illogical_excitement_eom_xts_new <- illogical_excitement_eom_xts
-    load(file = updating_file, envir = environment())
-    # update the file -  no need to destroy
-    # delete old values (if any)
-    illogical_excitement_eom_xts <- illogical_excitement_eom_xts[!index(illogical_excitement_eom_xts) %in% index(illogical_excitement_eom_xts_new)]
-    # add (back) values               
-    illogical_excitement_eom_xts <- rbind.xts(illogical_excitement_eom_xts, illogical_excitement_eom_xts_new)
-  } 
-  
-  # in any case, make data permanent
-  if(!is.null(updating_file)) {
-    save(illogical_excitement_eom_xts, file = updating_file, envir = environment())
-  }
-    
-  message("End   get_illogical_excitement_eom_xts") 
-  
-  Sys.setenv(TZ=oldtz)
-  options(ops)
-  
-  return(illogical_excitement_eom_xts)
-
-}
-# illogical_excitement_eom_xts <- get_illogical_excitement_eom_xts(pub_dates = NULL)
-# NOT EXACT 'real price'/'real dividend' 
-# DO NOT USERSTAND
-# dygraphs::dygraph( illogical_excitement_eom_xts[,"s_and_p"] /  illogical_excitement_eom_xts[,"dividend"] )
-# dygraphs::dygraph( illogical_excitement_eom_xts[,"real_price"] /  illogical_excitement_eom_xts[,"real_dividend"] )
-
-
-
-get_important_bonds_eom_xts <- function() {
-
-  ops <- options()
-
-  options(warn = 1)
-  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
-  options(digits = 22) 
-  options(min.print=99999)
-  options(scipen=255) # Try these = width
-  
-  #correct for TZ 
-  oldtz <- Sys.getenv('TZ')
-  if(oldtz=='') {
-    Sys.setenv(TZ="UTC")
-  }
-
-  require(xts)
-  require(FRBData)
-  require(quantmod)
-  # uses file  valuesight.R  function get_fred_wilshire5000_1mo_pctchg_ann_eom_xts
-  # uses file                         get_clev_easing_balances_eom_xts
-  
-  message("Begin get_important_bonds_eom_xts") 
-  
-  message("Begin WILL5000IND_1MO_PCTCHG_ANN_F3_BBANDS")
-  # future 3 months one month return, back sma 3, annualized
-  WILL5000IND_1MO_PCTCHG_ANN <- get_fred_wilshire5000_1mo_pctchg_ann_eom_xts()
-  WILL5000IND_1MO_PCTCHG_ANN_F3_BBANDS <- BBands(na.trim(lag.xts(WILL5000IND_1MO_PCTCHG_ANN,-3), sides = "right"), n = 3, sd =1)[,"mavg"]
-  colnames(WILL5000IND_1MO_PCTCHG_ANN_F3_BBANDS) <- "WILL5000IND_1MO_PCTCHG_ANN_F3_BBANDS"
-  message("End WILL5000IND_1MO_PCTCHG_ANN_F3_BBANDS")
-  
-  # as of this mornings data
-
-  message("Begin FF")
-  # FF:Federal funds effective rate
-  FF <- GetInterestRates("FF", from = zoo::as.Date("1900-01-01"), to = Sys.Date())
-  FF <- to.monthly(FF, OHLC = F, indexAt = "lastof")
-  colnames(FF) <- "FF"
-  FF_X_20 <- FF * 20
-  colnames(FF_X_20)[1] <- "FF_X_20"
-  message("End FF")
-
-  message("Begin DWPC")
-  # DWPC:Discount window primary credit
-  DWPC <- GetInterestRates("DWPC", from = zoo::as.Date("1900-01-01"), to = Sys.Date())
-  colnames(DWPC) <- "DWPC"
-  DWPC <- to.monthly(DWPC, OHLC = F, indexAt = "lastof")
-  DWPC_X_20 <- DWPC * 20
-  colnames(DWPC_X_20)[1] <- "DWPC_X_20"
-  message("End DWPC")
-  
-  message("Begin JNK")
-  # junk bonds
-  JNK <- getSymbols("JNK", from = "1900-01-01", to = as.character(Sys.Date()), auto.assign = F)
-  # JNK contains missing values.
-  JNK <- JNK[,"JNK.Close"]
-  JNK <- to.monthly(JNK, OHLC = F, indexAt = "lastof")
-  # missing values removed from data
-  colnames(JNK)[1] <- "JNK"
-  message("End JNK")
-
-  message("Begin AGG")
-  # market index of bonds
-  AGG <- getSymbols("AGG", from = "1900-01-01", to = as.character(Sys.Date()), auto.assign = F)
-  # AGG contains missing values.
-  AGG <- AGG[,"AGG.Close"]
-  AGG <- to.monthly(AGG, OHLC = F, indexAt = "lastof")
-  # missing values removed from data
-  colnames(AGG)[1] <- "AGG"
-  AGG_D_5 <- AGG / 5
-  colnames(AGG_D_5)[1] <- "AGG_D_5"
-  message("End AGG")
-
-  message("Begin TCMNOM")
-  # TCMNOM:U.S. government securities/Treasury constant  maturities/Nominal
-  TCMNOM <- GetInterestRates("TCMNOM", from = zoo::as.Date("1900-01-01"), to = Sys.Date())
-  TCMNOM <- TCMNOM[,c("1M","10Y")]
-  message("End TCMNOM")
-  
-  message("Begin GB1M")
-  # risk free rate
-  GB1M  <-  TCMNOM[,"1M"]
-  GB1M <- to.monthly(GB1M, OHLC = F, indexAt = "lastof")
-  # missing values removed from data
-  colnames(GB1M) <- "GB1M"
-  GB1M_X_20 <- GB1M * 20 
-  colnames(GB1M_X_20)[1] <- "GB1M_X_20"
-  message("End GB1M")
-
-  message("Begin GB10Y")
-  # most likey same as GS10
-  GB10Y <-  TCMNOM[,"10Y"] 
-  GB10Y <- to.monthly(GB10Y, OHLC = F, indexAt = "lastof")
-  # missing values removed from data
-  colnames(GB10Y) <- "GB10Y"
-  GB10Y_X_10 <- GB10Y * 10
-  colnames(GB10Y_X_10)[1] <- "GB10Y_X_10"
-  message("End GB10Y")
-
-  message("Begin AAA")
-  # market best bonds
-  # AAA:Corporate bonds/Moody's seasoned Aaa
-  # Moody's Seasoned Aaa Corporate Bond Yield
-  # dailies since 2007
-  # weeklies since 1962
-  # monthlies since 1919
-  # Moody's Seasoned Aaa Corporate Bond Yiel
-  # https://fred.stlouisfed.org/data/AAA.txt
-  # Corporate Bonds
-  # Categories > Money, Banking, & Finance > Interest Rates
-  # https://fred.stlouisfed.org/categories/32348
-  AAA <- getSymbols("AAA", src = "FRED", auto.assign = F)
-  index(AAA) <- index(AAA) - 1
-  AAA_X_10 <- AAA * 10
-  colnames(AAA_X_10)[1] <- "AAA_X_10"
-  message("End AAA")
-
-  message("Begin clev_easing_balances")
-  clev_easing_balances_eom_xts <- get_clev_easing_balances_eom_xts()
-  clev_easing_balances         <- clev_easing_balances_eom_xts[,"clev_easing_balances"]
-  clev_easing_balances_D_10TH <-  clev_easing_balances / 100000
-  colnames(clev_easing_balances_D_10TH)[1] <- "clev_easing_balances_D_10TH"
-  message("End clev_easing_balances")
-
-  important_bonds_eom_xts <- na.locf(merge.xts(WILL5000IND_1MO_PCTCHG_ANN_F3_BBANDS, 
-                                               FF_X_20, DWPC_X_20, JNK, AGG_D_5, GB1M_X_20, GB10Y_X_10, AAA_X_10, 
-                                               clev_easing_balances_D_10TH
-                                             ))
-
-  dygraphs::dygraph(important_bonds_eom_xts, main ="bond comparisons")
-
-  message("End   get_important_bonds_eom_xts") 
-  
-  Sys.setenv(TZ=oldtz)
-  options(ops)
-
-  return(important_bonds_eom_xts)
-
-}
-# important_bonds_eom_xts <- get_important_bonds_eom_xts()
-# ** quick slope SHAPE falling of the GB10Y_X_10 signals? tubulant times ahead ( CURVE FITTING ) ***
-# ** quick slope SHAPE rising of the GB10Y_X_10 signals? improving times ( except FEB 2018 market mini-crash )
-# 2007-2008 # 2015-2016 # NOTICABLE FALL IN JUNK BOND (JNK) PRICE-VALUE GOING INTO THE VALLEY ( USEFUL - COULD B A GOOD SMA)
-# dygraphs::dygraph(important_bonds_eom_xts[,c("WILL5000IND_1MO_PCTCHG_ANN_F3_BBANDS", "GB10Y_X_10", "AGG_D_5", "JNK")])
-# tail(important_bonds_eom_xts)
-
-
-
-get_valuesight <- function() {
-
-  ops <- options()
-  
-  options(warn = 1)
-  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
-  options(digits = 22) 
-  options(min.print=99999)
-  options(scipen=255) # Try these = width
-  
-  #correct for TZ 
-  oldtz <- Sys.getenv('TZ')
-  if(oldtz=='') {
-    Sys.setenv(TZ="UTC")
-  }
-
-  # uses package dygraphs
-  require(lubridate)
-  
-  message("Begin get_valuesight") 
-
-  # Delinquency Rate on Commercial and Industrial Loans, All Commercial Banks
-  DRBLACBS <- getSymbols("DRBLACBS", src = "FRED", auto.assign = F)
-  index(DRBLACBS) <- (index(DRBLACBS) - 1) 
-  index(DRBLACBS) <- index(DRBLACBS) %m+% months(6)
-  DRBLACBS_X_50 <- DRBLACBS * 50
-  colnames(DRBLACBS_X_50) <- "DRBLACBS_X_50"
-
-  # future 3 months one month return, back sma 3, annualized
-
-  WILL5000IND_1MO_PCTCHG_ANN <- get_fred_wilshire5000_1mo_pctchg_ann_eom_xts()
-  WILL5000IND_1MO_PCTCHG_ANN_F3_BBANDS <- BBands(na.trim(lag.xts(WILL5000IND_1MO_PCTCHG_ANN,-3), sides = "right"), n = 3, sd =1)[,"mavg"]
-  colnames(WILL5000IND_1MO_PCTCHG_ANN_F3_BBANDS) <- "WILL5000IND_1MO_PCTCHG_ANN_F3_BBANDS"
-
-  # GOOD
-  # dygraphs::dygraph(merge.xts(DRBLACBS_X_50,WILL5000IND_1MO_PCTCHG_ANN_F3_BBANDS), main = "DRBLACBS_X_50, WILL5000IND_1MO_PCTCHG_ANN_F3_BBANDS")
-
-  # unemployment rate
-  UNRATE <- getSymbols("UNRATE", src = "FRED", auto.assign = F); index(UNRATE) <- index(UNRATE) - 1
-  UNRATE_X_20 <- UNRATE * 20
-  colnames(UNRATE_X_20) <- "UNRATE_X_20"
-
-  # OK
-  # dygraphs::dygraph(merge.xts(DRBLACBS_X_50,WILL5000IND_1MO_PCTCHG_ANN_F3_BBANDS, UNRATE_X_20), main = "DRBLACBS_X_50, WILL5000IND_1MO_PCTCHG_ANN_F3_BBANDS, UNRATE_X_20")
-
-  # three/six month equity premium
-  equity_prem_p06m_ann <- get_willshire_less_agg_equity_premium_eom_xts()[,c("equity_prem_p06m_ann")]
-  # "equity_prem_p06m_ann" 
-  # GOOD
-  # dygraphs::dygraph(merge.xts(DRBLACBS_X_50,WILL5000IND_1MO_PCTCHG_ANN_F3_BBANDS, UNRATE_X_20, equity_prem_p06m_ann), main = "DRBLACBS_X_50, WILL5000IND_1MO_PCTCHG_ANN_F3_BBANDS, UNRATE_X_10, equity_prem_p06m_ann")
-
-  # price/earnings ratio
-  sp500_pe_ratio_month_4q <- get_quandl_sp500_pe_ratio_month_4q_eom_xts()
-  # "sp500_pe_ratio_month_4q"
-  sp500_pe_ratio_month_4q_X_2 <- sp500_pe_ratio_month_4q * 2
-  colnames(sp500_pe_ratio_month_4q_X_2) <- "sp500_pe_ratio_month_4q_X_2"
-
-  bus_ch_13     <- bankruptcy_filing_counts_eoq_xts[,"bus_ch_13"]
-  bus_ch_13_d_4 <- bus_ch_13 / 4 # NOT SURE: DOTS + TOO MANY LINES: MESSUP GRAPH BELOW
-  
-  # SOME? REASON? WILL NOT PLOT FROM INSIDE A FUNCTON ( I HAVE NOT FIGURED THAT ONE OUT YET )                                                  # , bus_ch_13_d_4                                                                                                             # , bus_ch_13_d_4
-  dygraphs::dygraph(merge.xts(DRBLACBS_X_50,WILL5000IND_1MO_PCTCHG_ANN_F3_BBANDS, UNRATE_X_20, equity_prem_p06m_ann, sp500_pe_ratio_month_4q_X_2), main = "DRBLACBS_X_50, WILL5000IND_1MO_PCTCHG_ANN_F3_BBANDS, UNRATE_X_10, equity_prem_p06m_ann, sp500_pe_ratio_month_4q_X_2")
-
-  # assign to the .GlobalEnv (for some flexibility)
-  sapply(ls(), function(x) { assign(x, get(x), envir = .GlobalEnv)  } )
-
-  message("End   get_valuesight") 
-  
-  Sys.setenv(TZ=oldtz)
-  options(ops)
-  
-  message("index of *DRBLACBS* shifted forward six months to reflex its long report behind time")
-  return(tail(merge.xts(DRBLACBS, WILL5000IND_1MO_PCTCHG_ANN, UNRATE, equity_prem_p06m_ann, sp500_pe_ratio_month_4q, bus_ch_13), 7))
-  # ADD AGG  [ ] - supply/demand
-  # ADD GS10 [ ] - the number itself
-  # ADD average net income from AAII (I already have the function ) # FALLING NET_INCOME OF THE S&P 500[400?,600?] BANKING SECTOR
-
-}
-# valuesight <- get_valuesight() 
-# dygraphs::dygraph(merge.xts(DRBLACBS_X_50,WILL5000IND_1MO_PCTCHG_ANN_F3_BBANDS, UNRATE_X_20, equity_prem_p06m_ann, sp500_pe_ratio_month_4q_X_2), main = "DRBLACBS_X_50, WILL5000IND_1MO_PCTCHG_ANN_F3_BBANDS, UNRATE_X_10, equity_prem_p06m_ann, sp500_pe_ratio_month_4q_X_2")
-
-
-
-# valuesight01.R 
-
+  return(RegressMngd)
  
+}
+# old stuff ...
+#
+# # pass thorugh to the default method
+#
+# ir  <- iris[-c(95:130), ]
+# range(ir$Sepal.Width)
+# # [1] 2.0000000000000000 4.4000000000000004
+# rel <- matrix(0, ncol = 3, nrow = 0)
+# rel <- rbind(rel, c(2, 1, 0))
+# rel <- rbind(rel, c(3, 0, 0))
+# rel <- rbind(rel, c(4, 1, 0))
+#
+# # default method
+# RegressMngd <- SmoteRegressMngd(Sepal.Width~., ir, thr.rel = 0.5, dist = "HEOM", C.perc=list(0.5,2.5))
+# 
+# txtplot::txtplot(ir$Sepal.Width)
+# txtplot::txtplot(RegressMngd$Sepal.Width)
+#
+# new stuff ...
+#
+# RegressMngd <- SmoteRegressMngd(Sepal.Width~., ir, y.extreme.start = 4, dist = "HEOM", C.perc=list(0.5,2.5))
+# 
+# txtplot::txtplot(ir$Sepal.Width)
+# txtplot::txtplot(RegressMngd$Sepal.Width)
+
+# # use y.extreme.start to calculate thr.rel
+# 
+# myrel <- matrix(c(1,0,0, 90,1,0), ncol=3, byrow=TRUE)
+# myrel
+# #      [,1] [,2] [,3]
+# # [1,]    1    0    0
+# # [2,]   90    1    0
+# set.seed(1L)
+# xy <- data.frame(x = 1:100, y = rnorm(100, 90, 1))
+# range(xy$y)
+# # [1] 87.78530 92.40162
+# 
+# # I define where the extreme starts
+# RegressMngd <- SmoteRegressMngd(y ~ ., xy, rel=myrel, y.extreme.start = 90, C.perc=list(0.5,2.5))
+# 
+# txtplot::txtplot(xy$y)
+# txtplot::txtplot(RegressMngd$y)
+
+# data(ImbR)
+# mysm <- SmoteRegressMngd(Tgt~., ImbR,  y.extreme.start = 20 , dist="Manhattan", C.perc= list(0.1, 8))
+# txtplot::txtplot(ImbR$Tgt)
+# txtplot::txtplot(mysm$Tgt)
+
+
+
+
+
+# OLD goodsight01.R summary
+# -------------------------
+# 
+#                                                                                                       Practical.Xts
+# (LEAVE HERE FOR NOW)
+# ANDRE SUMMARY                                                                                         ALL PIPEABLE %>%
+# -------------                                                                                         all designed and tested on 'single column xts object
+#                                                                                                       except expandXts that is WHERE all rivers flow
+# # has example: inbound: xts, outboud: xts
+# na.locfl(x, n = NULL)                                                                                 naLoCfLimited.xts
+# 
+# # percent change from the past through NOW 
+# # ( if to_future == TRUE, then from NOW to the FUTURE )
+# 
+# # NOTE: internally coredata of xts can be NUMERIC or INTEGER ( type of NUMERIC )
+# #                  coredata of xts can be CHARACTER ( BUT some/most xts package FUNCTION choke on CHARACTER )
+# 
+# #           but 'inbound and outbound'calls directly: xts::lag.xts
+# #   examples BELOW after CALCULATE all inbound XTS
+# PCTCHG(x, whiches, to_future = NULL)                                                                   pctChg.xts
+# 
+# # examples printed AFTER the function
+# # all IBM with na.locf, lag.xts, PCTCHG, to.monthly
+# # inbound: graceful handle ( 'zoo or xts' ) or 'something else'
+# # outbound: detects if the original 'if had an index'
+# #           if it was     a Date ... as.ORIGINAL no tzone
+# #           if it was not a Date ... as.ORIGINAL no tzone
+# #           if     zoo/xts dispatch on merge
+# #           if not zoo/xts             plyr::join_all
+# calculate(x = NULL, fnct = NULL, whiches = NULL, alt_name = NULL, o_args = NULL, prefix = NULL)        expandXts.xts
+# # example at the end: inbound/outbound: vector of reals
+# delay_since_last_obs.default(x)             GET RID OF THIS ONE [ ]
+# # example at end: inbound xts outbound xts
+# collofdays2daily.xts(x)                                                                                addCollofDaystoDaily.xts                                                             
+# # NO EXAMPLE: inbound xts, outbound: xts  
+# delay_since_last_obs.xts(x)                                                                            whatRangeDelaySinceLastObsOfData.vector  (INTERNAL)                                                      
+#   delay_since_last_obs.default
+# # example at end: inbound xts outbound xts
+# # head(calculate(GDP, fnct = "delay_since_last_day.xts", alt_name = "DELAY"),6)
+# delay_since_last_day.xts(x)                                                                            addRangeDelaySinceLastDayofData.xts ?May? MAKE not ADD data?
+#   collofdays2daily.xts                                                                                 whatRangeDelaySinceLastDayofData <- function(x) { # NO ADD
+#   delay_since_last_obs.xts                                                                                addRangeDelaySinceLastDayofData.xts %>% removeDays.xts }
+# # example at end: inbound xts outbound xts
+# is.xts.na(x)                                                                                           isXtsNA.xts is_na ( MAY ALSO NEED a (XnaLoCf.xtsX) XfillNA.xtsX : "na" -Inf -INTEGER)
+# # typical entry rm_what = c("Saturday", "Sunday", "BIZHOLIDAYS" )
+# # inbound xts outbound xts
+# # example at end: 
+# rm.days.xts(x, rm_what = NULL)                                                                         removeDays.xts ( ADD SPECIFICS removeNonNYSEDays.xts )
+# # inbound: 'zoo or xts'(index) # outbound: vector of bools
+# # example inbound xts(POSIXct) 
+# all.nearby.FRED.holidays(x = NULL, d = NULL) # [ ] FIX name should be 'all.nearby.FRED.not.holidays'   areAllBehindDaysHolidays.xts (INTERNAL) 
+# # inbound xts
+# #  2nd arg: expect xts ( does not properly identifiy ZOO ) 
+# #  2nd arg: if not xts ( assume a vector )
+# # outbound xts ( with a new index from x_index_new )
+# # example BELOW
+# reindex.xts(x, x_index_new)                                                                             reIndex.xts                 
+# pushback.FRED.1st.days.xts(x) BROKEN BECAUSE reindex.xts IS BROKEN                                      pushbackFirstDayOfMonth.xts
+#   reindex.xts(x, x_index_new)
+#   all.nearby.FRED.holidays
+# # inbound xts # outbound xts
+# # examples follow
+# year.less.then.or.equal(x, n = NULL ) #                                                                  isLessThanOrEqualToYear.xts
+# 
+#                                                                                                          ( NEED removeNAVariables.xts(x, regex ) is_na ( look for similar columns )
+#
+
+
+# rm(list=setdiff(ls(all.names=TRUE),c("con","cid", "sample_xts","unrate","unrate_40s", "ibm", "ibm_missing_data"))); debugSource('W:/R-3.4._/finecon01.R');debugSource('W:/R-3.4._/goodsight01.R');debugSource('W:/R-3.4._/valuesight01.R');verify_connection();options(upsert_temp_is_temporary=Inf);Quandl::Quandl.api_key(api_key= "36igkU9Tthi6cGozFTgh");setDefaults(getSymbols.av, api.key="WN6SS6MSDDVU79RZ")
+# tests()
+
+# goodsight01.R
