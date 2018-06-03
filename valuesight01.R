@@ -2984,14 +2984,22 @@ get_fred_civil_unemp_rate_eom_xts <- function() {
   }
   
   require(quantmod)
-
+  # uses lubridate `%m+%`
+  `%m+%` <- lubridate::`%m+%`
+  
   message("Begin function get_fred_civil_unemp_rate_eom_xts.")
 
+  # always reports on the 1st as "the beginning (day 1) of the previous month"
   UNRATE <- getSymbols("UNRATE", src = "FRED", from = "1940-01-01", auto.assign = FALSE) # SINCE JAN 1948
-  index(UNRATE) <- index(UNRATE) - 5L
+  
+  ## index(UNRATE) <- index(UNRATE) - 5L
+
+  # from the beginning of the month (day 1) to the end of the month 
+  # ( begin in the next month (day 1) and subtract off one day )
+  index(UNRATE) <- index(UNRATE) %m+% months(1) - 1 
   temp <- UNRATE
   colnames(temp)[1] <- tolower(colnames(temp)[1])
-  temp <- to.monthly(temp, OHLC = FALSE, indexAt = "lastof") 
+  ## temp <- to.monthly(temp, OHLC = FALSE, indexAt = "lastof") 
   fred_civil_unemp_rate_eom_xts <- temp
  
   Sys.setenv(TZ=oldtz)
