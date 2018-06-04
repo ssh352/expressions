@@ -1525,6 +1525,8 @@ getSymbols <- function (Symbols = NULL, env = parent.frame(), reload.Symbols = F
 #   maybe useful: src
 #   maybe useful: set per Symbol src using setSymbolLookup
 #
+# specifyModel(getModelData) original code ( not changed by me )
+# if na.rm == TRUE then does 'na.exclude' BUT 'without rules' PUTS back (rbind) the last observation
 getModelData <- function (x, na.rm = TRUE, source.envir = NULL, ...) {
 
     model <- x
@@ -1600,6 +1602,8 @@ getModelData <- function (x, na.rm = TRUE, source.envir = NULL, ...) {
 #   maybe useful: src
 #   maybe useful: set per Symbol src using setSymbolLookup
 #               
+# specifyModel(getModelData) original code ( not changed by me )
+# if na.rm == TRUE then does 'na.exclude' BUT 'without rules' PUTS back (rbind) the last observation
 specifyModel <- function (formula, na.rm = TRUE, source.envir = NULL, ...) {
 
     new.quantmod <- new("quantmod")
@@ -1666,6 +1670,9 @@ as.quantmod             <- function(x, outcomename, order.by, na.rm = TRUE, ...)
 #   maybe useful: set per Symbol src using setSymbolLookup
 #    
 # create a quantmod object directly 
+# 
+# specifyModel(getModelData) original code ( not changed by me )
+# if na.rm == TRUE then does 'na.exclude' BUT 'without rules' PUTS back (rbind) the last observation
 as.quantmod.data.frame  <- function(x, outcomename, order.by, na.rm = TRUE, ...) { 
 
   x <- DataCombine::MoveFront(x, outcomename )   
@@ -1688,6 +1695,8 @@ as.quantmod.data.frame  <- function(x, outcomename, order.by, na.rm = TRUE, ...)
   
   # assign where specifyModel ( getModelData ( exists ) ) can find
 
+  # specifyModel original code ( not changed by me )
+  # if na.rm == TRUE then does 'na.exclude' BUT 'without rules' PUTS back (rbind) the last observation
   model <- specifyModel(paste0(outcomename, " ~ ", paste0(setdiff(colnames(x), outcomename), collapse = " + ")), na.rm = na.rm, source.envir = Symbols, ...)
   
   return(model)
@@ -1982,7 +1991,8 @@ get_up_side_down_side3 <- function(){
   require(PerformanceAnalytics) # Return.portfolio # table.CalendarReturns
   # uses lag_then_pctchg_xts
   
-  `%m+%` <- lubridate::`%m+%`
+  # NOT USED yet
+  # `%m+%` <- lubridate::`%m+%`
   
   message("begin get_up_side_down_side3")
   
@@ -2026,10 +2036,11 @@ get_up_side_down_side3 <- function(){
   
   ### ###
   
-           # c - order is NOT garanteed
-  #     # all         "cash", "will5000ind"              "unrate"         
-  Symbols <- c(as.list(all_possible_instruments),as.list(all_possible_indicators))
-  Symbols <- list2env(Symbols)
+  # NOT USED
+  #           # c - order is NOT garanteed
+  #  #     # all         "cash", "will5000ind"              "unrate"         
+  #  Symbols <- c(as.list(all_possible_instruments),as.list(all_possible_indicators))
+  #  Symbols <- list2env(Symbols)
   
   # ALL machine LOGIC goes HERE
   # 
@@ -2039,9 +2050,9 @@ get_up_side_down_side3 <- function(){
   
   #                                       function(<all_possible_indicators>,TTR,lag)
 
-  these_indicators <- lag_then_pctchg_xts(unrate, 1:6, o_args = list(to_future = TRUE))
+  these_indicators <- pctchg_then_lag_xts(unrate, 1:6, o_args = list(to_future = TRUE))
   # colnames(these_indicators)
-  # [1] "unrate.lag.1.pctchg.1" "unrate.lag.2.pctchg.2" "unrate.lag.3.pctchg.3" "unrate.lag.4.pctchg.4" "unrate.lag.5.pctchg.5" "unrate.lag.6.pctchg.6"
+  # [1] "unrate.pctchg.1.lag.1" "unrate.pctchg.2.lag.2" "unrate.pctchg.3.lag.3" "unrate.pctchg.4.lag.4" "unrate.pctchg.5.lag.5" "unrate.pctchg.6.lag.6"
   
   these_timeslices <- get_nber_timeslices(index(these_indicators), empties = FALSE)
   # str(these_timeslices)
@@ -2058,25 +2069,38 @@ get_up_side_down_side3 <- function(){
   # $ : Date[1:9], format: "2001-03-31" "2001-04-30" "2001-05-31" "2001-06-30" ...
   # $ : Date[1:19], format: "2007-12-31" "2008-01-31" "2008-02-29" "2008-03-31" ...
  
+  # through the end of "year 2000/2008 recession"
                                      # y data                         # x TARGET data                                         # generated X data
   all_train_test_validation_index <- index(will5000ind) %>% intersect(index(xts(,do.call(c,these_timeslices)))) %>% intersect(index(these_indicators))
   
-  # end of "year 2000 recession"
+  # through the end of "year 2000/2008 recession" through today ( everything )
+  all_train_test_validation_extended_index <- c(all_train_test_validation_index, index(will5000ind)[tail(all_train_test_validation_index,1) < index(will5000ind)])
+  
+  # through the end of "year 2000 recession"
   all_train_test_index <- index(xts(,all_train_test_validation_index)["::2001-11-30"])
   
-  # after "year 2000 recession"
+  #                                          after "year 2000 recession"
   all_validation_index <- index(xts(,all_train_test_validation_index)["2001-12-31::"])
+  
+  #                                          after "year 2000 recession" through today 
+  all_validation_extended_index <- c(all_validation_index, index(will5000ind)[tail(all_validation_index,1) < index(will5000ind)])
   
   # will5000ind.futpctchg.3 
   this_predictee <- expand_xts(will5000ind, "get_pctchg_xts", 3, alt_name = "futpctchg", o_args = list(to_future = TRUE))
   
+  # will5000ind.futpctchg.1.other
+  other_predictee <- expand_xts(will5000ind, "get_pctchg_xts", 1, alt_name = "futpctchg", o_args = list(to_future = TRUE))
+  colnames(other_predictee) <- paste0(colnames(other_predictee),".other")
+  
   # S3 as.quantmod.data.frame
   # *** na.rm = TRUE (default ) ***
-  quantmod <- as.quantmod(as.data.frame(merge.xts(this_predictee, these_indicators)[all_train_test_validation_index]), outcomename = "will5000ind.futpctchg.3", order.by = all_train_test_validation_index)
+  # specifyModel(getModelData) original code ( not changed by me )
+  # if na.rm == TRUE then does 'na.exclude' BUT 'without rules' PUTS back (rbind) the last observation
+  quantmod <- as.quantmod(as.data.frame(merge.xts(this_predictee, these_indicators)[all_train_test_validation_extended_index]), outcomename = colnames(this_predictee), order.by = all_train_test_validation_extended_index, na.rm = FALSE)
   # xor ...
   # specmodel <- specifyModel(PREDICTEE ~ INDICATORS  , na.rm = FALSE, source.envir = Symbols)
   
-  tg <- expand.grid(
+  tg_xgbTree <- expand.grid(
     nrounds   =  100, 
     eta       =  c(0.1,0.01),
     max_depth =  c(4,6,8,10),
@@ -2085,22 +2109,33 @@ get_up_side_down_side3 <- function(){
     min_child_weight = 1,
     subsample        = c(1,0.5)
   )
+  tg <- tg_xgbTree  
                             # intermixed: train_test
   tc <- caret::trainControl(method = "cv", number = 5)
+ 
+  message("  Begin buildModel")                   # training.per = c(as.character(head(index(quantmod@model.data),1)), as.character(tail(all_train_test_index,1)))
+  builtmodel <- buildModel(quantmod, method="train",training.per = range(all_train_test_index), method_train = "xgbTree", tuneGrid = tg, trControl = tc, verbose = 1)
+  message("  End buildModel")
   
-  builtmodel <- buildModel(quantmod, method="train",training.per=c(as.character(head(index(quantmod@model.data),1)), as.character(tail(all_train_test_index,1))), method_train = "xgbTree", tuneGrid = tg, trControl = tc, verbose = 1)
+  # specifyModel(getModelData) original code ( not changed by me )
+  # if na.rm == TRUE then does 'na.exclude' BUT 'without rules' PUTS back (rbind) the last observation
+  all_modeldata <- getModelData(builtmodel, na.rm = FALSE, source.envir = list2env(as.list(quantmod@model.data)))
   
-  all_modeldata <- getModelData(builtmodel, na.rm = TRUE, source.envir = list2env(as.list(quantmod@model.data)))
+  print(caret::varImp(all_modeldata@fitted.model, scale = FALSE))
   
-  modeldata <- modelData(all_modeldata, data.window = all_validation_index)
+  modeldata <- modelData(all_modeldata, data.window = all_validation_extended_index)
   
-  #                       # dispatch on caret::train
+  #                       # dispatch on caret::train  # JUN 2018: if I do not include the predictee column, then the 'first observation' (by caret) is chopped off
   fitted  <- predictModel(all_modeldata@fitted.model, modeldata)
   fitted  <- as.xts(fitted, index(modeldata))
   colnames(fitted) <- "fitted" 
-  # dygraphs::dygraph(merge.xts(this_predictee, fitted)[all_validation_index])
-  # **LEFT_OFF ** (LOOKS PROMISING: AT LEAST BELOW ZERO:) # NEED TO ADD A !PANIC VARIABLE
-  # NEXT, ABOUT DATA younger than 2007-08-9 recession: create: new_extended_validation_index
+  #                             # will5000ind.futpctchg.3
+  # dygraphs::dygraph(merge.xts(other_predictee[index(fitted)], this_predictee[index(fitted)], fitted))
+  # model/caret/xgboost?  PREDICTION is !upside_down!
+  # if the direction(trend) is up/down buy/sell stock option put/call ?
+  # **LEFT_OFF ** (LOOKS PROMISING: AT LEAST BELOW ZERO:) # NEED TO ADD 
+  # !PANIC VARIABLES: netinc/SPREAD
+  # WED clean MAIN program with the CORRECT netinc ( SOME WORK: ) + textplot TO SEE the distributions
   
   # uses S3 ifelse.xts
   # strategy/rule weights
