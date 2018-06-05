@@ -16311,25 +16311,95 @@ from (
 
 -- [ ] TO DO: share the same qs_date ( OR qs_date is null  -- [ ] TO DO: WORK ON THIS )
 
--- replacing a null value -- look forward into fut1_netinc_q1 ( and maybe fut2_netinc_q1 )
-update fe_data_store.si_finecon2
-set  netinc_q1      = case when fut1_netinc_q1 is not null then fut1_netinc_q1 else fut1_netinc_q2 end,
-     orig_netinc_q1 = netinc_q1,
-     updated_netinc_q1_src = case when fut1_netinc_q1 is not null then 'fut1_netinc_q1' else 'fut1_netinc_q2' end
-from
-  QUERY
+
+
+
+
 
 
 -- replacing a bad value
 -- look into the future (fut1 and fut2) and vote (anonymously) to replace the earlier bad value
-update fe_data_store.si_finecon2                                                                                      -- update with self
-set  netinc_q1      = case when netinc_q1 != fut1_netinc_q1 and fut1_netinc_q1 = fut2_netinc_q1 then fut1_netinc_q1 else netinc_q1 end,
-     orig_netinc_q1 = fut1_netinc_q1,
-     updated_netinc_q1_src = case when netinc_q1 != fut1_netinc_q1 and fut1_netinc_q1 = fut2_netinc_q1 then 'vote_same_fut1_fut2' else null end,
+update fe_data_store.si_finecon2   -f
+set  
+    orig_netinc_q1        = netinc_q1,  
+    updated_netinc_q1_src = case when netinc_q1 is null and fut1_netinc_q1 is not null and fut2_netinc_q1 is not null and fut1_netinc_q1 = fut2_netinc_q1 then 'fut1_netinc_q1 and fut1_netinc_q2' else updated_netinc_q1_src end,  
+            netinc_q1     = case when netinc_q1 is null and fut1_netinc_q1 is not null and fut2_netinc_q1 is not null and fut1_netinc_q1 = fut2_netinc_q1 then  fut1_netinc_q1                     else netinc_q1             end,
 from
   QUERY
+-- GOOD
+-- then run ( must be SECOND )
+-- replacing a null value -- look forward into fut1_netinc_q1 
+update fe_data_store.si_finecon2
+set  
+ -- orig_netinc_q1        = netinc_q1,  -- from above, already did that
+    updated_netinc_q1_src = case when netinc_q1 is null and fut1_netinc_q1 is not null then 'fut1_netinc_q1' else updated_netinc_q1_src end
+            netinc_q1     = case when netinc_q1 is null and fut1_netinc_q1 is not null then  fut1_netinc_q1  else         netinc_q1 end,
+from
+  QUERY
+-- GOOD
+-- 
+-- then run ( must be THIRD )
+-- replacing a null value -- look forward into fut1_netinc_q1 and then look into fut2_netinc_q1
+update fe_data_store.si_finecon2
+set  
+ -- orig_netinc_q1        = netinc_q1,  -- from above, already did that
+    updated_netinc_q1_src = case when netinc_q1 is null and fut1_netinc_q1 is null and fut2_netinc_q1 is not null and updated_netinc_q1_src is null then 'fut2_netinc_q1' else updated_netinc_q1_src end,
+            netinc_q1     = case when netinc_q1 is null and fut1_netinc_q1 is null and fut2_netinc_q1 is not null and updated_netinc_q1_src is null then  fut2_netinc_q1  else         netinc_q1     end,
+from
+  QUERY
+-- GOOD
 
 
 
+-- --
+-- BEGIN: error corrections ( or data unavailablity adjustments )
+-- --
+
+-- updatee
+select company_id, ticker, company, netinc_q1 from fe_data_store.si_finecon2 where dateindex = 17562;
+-- updater1(fut1)
+select company_id, ticker, company, netinc_q1 from fe_data_store.si_finecon2 where dateindex = 17590;
+-- updater2(fut2)
+select company_id, ticker, company, netinc_q1 from fe_data_store.si_finecon2 where dateindex = 17619;
+
+-- -- MEANT (IF INTEGRATABLE: TO BE USING - IF POSSIBLE )
+-- dbWriteTableX <- function (con, table.name, df, fill.null = TRUE, row.names = FALSE
+--   , inbnd_snake_case_cols = TRUE
+--   , skip_insert_recs      = FALSE
+--   , date_to_int           = TRUE  # pre-dbWriteTable
+--   , logical_to_int        = TRUE  # pre-dbWriteTable
+--   , double_to_numeric     = TRUE  # pre-dbWriteTable # RSQLite # USE # "double_to_numeric = "numeric"
+--   , index = NULL
+--   , ...)
+
+-- if col not exists then addcolumn    orig_netinc_q1 numeric(8,2);
+-- if col not exists then addcolumn updated_netinc_q1_src     text;
+
+-- process: from current_date(last_date), traverse backwards
+-- 
+-- get 'go back' date from 
+-- f(dateindex, dir(AAIISIProDBFs))
+-- xor ...
+
+-- fut1 (copy from above)
+-- 
+select fut.dateindex from (select distinct dateindex 
+from fe_data_store.si_finecon2 
+where dateindex > 17562                       -- monthly production load: max(dateindex) xor 'current index'
+order by dateindex      limit 1 offset 0) fut 
+-- 17590
+-- if applicable, if 'no records' returned, then skip fut2
+-- if applicable, if 'no records' returned, then skip action
+
+-- fut2 (copy from above)
+-- 
+ select fut.dateindex from (select distinct dateindex 
+ from fe_data_store.si_finecon2 
+ where dateindex > 17562                        -- monthly production load: max(dateindex) xor 'current index'
+ order by dateindex      limit 1 offset 1) fut  
+-- 17619 
+-- if applicable, if 'no records' returned, then skip/modify action
+
+-- TEMPORARY.sql
 
 
