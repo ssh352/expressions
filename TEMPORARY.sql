@@ -15797,6 +15797,11 @@ select * from (select dateindex from descdipast offset 0 limit 1) sq1
 union all
 select * from (select dateindex from descdipast offset 1 limit 1) sq2
 
+
+-- KEEP SOMEHOW
+-- now, past, and future sp members
+------------------------------------
+
 with 
 descdipast as (
   select distinct dateindex 
@@ -15829,6 +15834,53 @@ where
       p01.sp in ('500','400','600')
 order by company_id desc
 -- 1510
+
+
+-- KEEP SOMEHOW
+-- now, past, and future sp members WITHIN 18 MONTHS
+----------------------------------------------------
+
+-- note: SP membership would HAVE to CHANGE at the DATA EDGES +- 18 
+--       during each TIME a *new* month is added so MAY not? BE be the best for summary storage results 
+--       BECAUSE of the continuous recalculations
+
+with 
+descdipast as (
+  select distinct dateindex 
+  from fe_data_store.si_finecon2 
+  where dateindex <= 17562
+  order by dateindex desc 
+),
+ascdifut as (
+  select distinct dateindex 
+  from fe_data_store.si_finecon2 
+  where dateindex >= 17562
+  order by dateindex  
+)
+select distinct f01.company_id
+from fe_data_store.si_finecon2 f01
+where 
+      f01.dateindex in ( select dateindex from ascdifut offset 1 limit 18) and 
+      f01.sp in ('500','400','600')
+union
+select distinct now.company_id
+from fe_data_store.si_finecon2 now
+where 
+      now.dateindex = ( select dateindex from descdipast offset 0 limit 1) and 
+      now.sp in ('500','400','600')
+union
+select distinct p01.company_id
+from fe_data_store.si_finecon2 p01
+where 
+      p01.dateindex in ( select dateindex from descdipast offset 1 limit 18) and 
+      p01.sp in ('500','400','600')
+order by company_id desc
+--1643
+
+
+
+
+
 
 -- drop function fe_data_store.nearby_sp_members(int); -- LEFT_OFF( dropped )
 
@@ -16210,18 +16262,12 @@ from (
 ) fut2 on true;
 
 
--- LEFT_OFF
--- need UPDATE statement ( a 'best' compare [|fut1_|fut2_]qs_date )
--- if 'now' is empty 
---   and 'fut1' is not empty then fill in                netinc_q1, netinc_q1_src, netinc_q1_dt -- watch out for regex type identifying IN new uploader
--- if 'fut1' and 'fut2' are different than 'now' then 
---                                fill in netinc_q1_old, netinc_q1, netinc_q1_src, netinc_q1_dt  -- watch out for regex type identifying IN new uploader
-
--- end -- look forward to try to find missing/more_correct data (netinc_q1)
+----
+----
 
 
-
-
+create temporary table future_temp as 
+--
 with company_ids as (
 
   select distinct now.company_id
@@ -16246,14 +16292,14 @@ dateindexes_fut2 as (
 
 ) -- 17619
 select now.*, 
-  -- fut1.dateindex                   fut1_dateindex,
+  -- fut1.dateindex                fut1_dateindex,
   fut1.qs_date                     fut1_qs_date,
   fut1.perend_q1                   fut1_perend_q1,
   fut1.now_inbnd_stmtid_dateindex  fut1_now_inbnd_stmtid_dateindex,
   fut1.last_inbnd_stmtid_dateindex fut1_last_inbnd_stmtid_dateindex,
   fut1.netinc_q1                   fut1_netinc_q1,
 
-  -- fut2.dateindex                   fut2_dateindex,
+  -- fut2.dateindex                fut2_dateindex,
   fut2.qs_date                     fut2_qs_date,
   fut2.perend_q1                   fut2_perend_q1,
   fut2.now_inbnd_stmtid_dateindex  fut2_now_inbnd_stmtid_dateindex,
@@ -16304,32 +16350,62 @@ from (
                          -- here --
 
 ) fut2 on true;
+-- 
+-- select * from future_temp;
+-- 11 records 
+
+-- db.q("drop table if exists future_temp;", conn.id = cid)
+-- GOOD
+
+-- LATER: performance help
+-- create index ...
+
+-- LATER TO DO: [ ] TO DO: share the same qs_date ( OR qs_date is null  -- [ ] TO DO: WORK ON THIS )
+-- NEED TO ADD SAFETY CHECK
+-- qs_date = fut1_qs_date and qs_date = fut2_qs_date
+
+
+-- liberalized ( ANY NETINCOME: null or not null ) without the SAFETY CHECK
+-- and now.sp in ('500','400','600')
+-- and curr.netinc_q1 is null  -- -- CRITERIA TO FIND MISSING RECORDS -- -- ( ** TOGGLE to replace BAD RECORD ** )
+--   NOTE: many non-sp companies are missing qs_date SOMETIMES now/last_inbnd_stmtid_dateindex HELPS
+
 
 --
--- WHAT ABOUT MY FUNCTION THAT DOES MASS UPDATING
---
+-- SAFETY ( ACTUALLY VERY IMPORTANT: NUMBER OF RECORDS ARE REDUCED )
+-- LEFT_OFF
+-- in fut1 and fut2 REMOVE 'left'
+--   on true join lateral ** SEEMS REQUIRED **
+-- in fut1 and fut2 ADD ( BUT TO 'WHERE CLAUSE' MAY BE A BETTER IDEA )
+--   and ( curr.qs_date = now.qs_date or curr.last_inbnd_stmtid_dateindex = now.last_inbnd_stmtid_dateindex ADD MATCH perend_q1 )
+-- 335 records ENTIRE sp ( of 1500 ): 11 missing netinc_q1
+-- 1971 records ENDIRE of everythng ( of 6300 ): 69 missing netinc_q1: "EBMT";"Eagle Bancorp Montana Inc" (new perend_q1: new netinc_q1)
+--                                                                     "STBA";"S & T Bancorp Inc"
+--                                                                     "FBNC";"First Bancorp"
+--                                                                     "NBHC";"National Bank Holdings Corp"
+-- OR CHEAPER JUST TO ADD A 'WHERE CLAUSE' AT THE END:!?!        *** LEFT_OFF: BEST RULE perend_q1 MUST MATCH UP *** ( ** [ ] TO BE ADDED ) ***  
+-- LEFT_OFF
 
--- [ ] TO DO: share the same qs_date ( OR qs_date is null  -- [ ] TO DO: WORK ON THIS )
-
-
-
+-- LEFT_OFF ( search text above )
+-- "now, past, and future sp members WITHIN 18 MONTHS"
 
 
 
 
 -- replacing a bad value
 -- look into the future (fut1 and fut2) and vote (anonymously) to replace the earlier bad value
-update fe_data_store.si_finecon2   -f
+update fe_data_store.si_finecon2 f
 set  
     orig_netinc_q1        = netinc_q1,  
     updated_netinc_q1_src = case when netinc_q1 is null and fut1_netinc_q1 is not null and fut2_netinc_q1 is not null and fut1_netinc_q1 = fut2_netinc_q1 then 'fut1_netinc_q1 and fut1_netinc_q2' else updated_netinc_q1_src end,  
             netinc_q1     = case when netinc_q1 is null and fut1_netinc_q1 is not null and fut2_netinc_q1 is not null and fut1_netinc_q1 = fut2_netinc_q1 then  fut1_netinc_q1                     else netinc_q1             end,
 from
   QUERY
+--  where QUERY.dateindex = f.dateindex and QUERY.company_id = 
 -- GOOD
 -- then run ( must be SECOND )
 -- replacing a null value -- look forward into fut1_netinc_q1 
-update fe_data_store.si_finecon2
+update fe_data_store.si_finecon2 f
 set  
  -- orig_netinc_q1        = netinc_q1,  -- from above, already did that
     updated_netinc_q1_src = case when netinc_q1 is null and fut1_netinc_q1 is not null then 'fut1_netinc_q1' else updated_netinc_q1_src end
@@ -16340,7 +16416,7 @@ from
 -- 
 -- then run ( must be THIRD )
 -- replacing a null value -- look forward into fut1_netinc_q1 and then look into fut2_netinc_q1
-update fe_data_store.si_finecon2
+update fe_data_store.si_finecon2 f
 set  
  -- orig_netinc_q1        = netinc_q1,  -- from above, already did that
     updated_netinc_q1_src = case when netinc_q1 is null and fut1_netinc_q1 is null and fut2_netinc_q1 is not null and updated_netinc_q1_src is null then 'fut2_netinc_q1' else updated_netinc_q1_src end,
@@ -16372,14 +16448,22 @@ select company_id, ticker, company, netinc_q1 from fe_data_store.si_finecon2 whe
 --   , index = NULL
 --   , ...)
 
--- if col not exists then addcolumn    orig_netinc_q1 numeric(8,2);
--- if col not exists then addcolumn updated_netinc_q1_src     text;
+-- verify_si_finecon_exists()
+-- GOOD
+
+-- if col not exists then add column    orig_netinc_q1 numeric(8,2);
+-- db.q("alter table si_finecon2 add if not exists orig_netinc_q1 numeric(8,2);", conn.id = cid)
+-- GOOD
+
+-- if col not exists then add column updated_netinc_q1_src     text;
+-- db.q("alter table si_finecon2 add if not exists updated_netinc_q1_src text;", conn.id = cid)
+-- GOOD
 
 -- process: from current_date(last_date), traverse backwards
 -- 
 -- get 'go back' date from 
 -- f(dateindex, dir(AAIISIProDBFs))
--- xor ...
+-- ... xor ...
 
 -- fut1 (copy from above)
 -- 
