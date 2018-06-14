@@ -6,8 +6,6 @@
 # DATA needs left to be fixed [ ] ( but I do not join on it anywhere )
 
 
-#LEFT_OFF see LEFT_OFF.txt unnest(array(...
-
 # finecon01.R   
 
 # QUANTILE FIX ( for pl/r)
@@ -1059,7 +1057,7 @@ verify_connection <- function () {
       # Works well with Npgsql(9.6era)       3.0.8 ( as far as connect/timeout_disconnect )
       # Current version Npgsql(early 10 era) 3.2.x ( will CRASH rstudio on each first attempt in a newly loaded RStudio )
       # Currently last known working well with the 'older' (9.6ish) Npgsql 3.2.6 INSTALLED 12/13/2017
-      # [ ] TODO: LEFT_OFF: FUTURE ... ADJUSTMENT 
+      # [ ] TODO: FUTURE ... ADJUSTMENT 
       
       cid <<- db.connect(user = "postgres", dbname = "finance_econ", default.schemas = "fe_data_store,public")
       # increments up by 1 every time
@@ -4355,7 +4353,8 @@ updated_from_future_upd_netinc_q1 <- function (dir_i = NULL) {
   
   # NOTE: last_inbnd_stmtid_dateindex not 'fully' correct , not fully reliable, can (and has been) sometimes incorrect
   #       qs_date is better
-
+  #       perend_q1 IS MUCH MUCH better THAN all of them ( shows small RE-statements )
+  
   db.q("alter table si_finecon2 add if not exists orig_netinc_q1        numeric(8,2);", conn.id = cid)
   db.q("alter table si_finecon2 add if not exists updated_netinc_q1_src text;",         conn.id = cid)
 
@@ -4375,7 +4374,7 @@ updated_from_future_upd_netinc_q1 <- function (dir_i = NULL) {
   db.q("drop table if exists future_temp;", conn.id = cid)
   ddl <- paste0("
   
-    create temporary table future_temp as 
+    create table future_temp as 
     --
     with company_ids as (
     
@@ -4466,6 +4465,29 @@ updated_from_future_upd_netinc_q1 <- function (dir_i = NULL) {
   
   try( { db.q("create unique index if not exists future_temp_dateindex_company_id_idx on future_temp(dateindex, company_id);", conn.id = cid) }, silent = TRUE )
 
+   # c(perend_q1, pertyp_q1, perlen_q1) make a 'quarterly start_and_range' unique identifier
+  
+   # LEFT_OFF
+   #   -- qs_date
+   # select f.dateindex, f.company_id, f.company_id, f.company, f.sp, f.netinc_q1, t.perend_q1, t.qs_date, t.netinc_q1, t.fut1_perend_q1, t.fut1_qs_date, t.fut1_netinc_q1, t.fut2_perend_q1, t.fut2_qs_date, t.fut2_netinc_q1
+   # from
+   #    future_temp t, fe_data_store.si_finecon2 f
+   #  where t.dateindex = f.dateindex and t.company_id = f.company_id 
+   #    and t.qs_date = t.fut1_qs_date and t.qs_date = t.fut2_qs_date
+   #    and t.netinc_q1 is not null and t.fut1_netinc_q1 is not null and t.fut2_netinc_q1 is not null and t.netinc_q1 != t.fut1_netinc_q1 and t.fut1_netinc_q1 = t.fut2_netinc_q1
+   #    order by company, dateindex;
+   #    
+   # -- perend_q1 IS MORE reliable SHOWS small re-statements
+   # select f.dateindex, f.company_id, f.company_id, f.company, f.sp, f.netinc_q1, t.perend_q1, t.qs_date, t.netinc_q1, t.fut1_perend_q1, t.fut1_qs_date, t.fut1_netinc_q1, t.fut2_perend_q1, t.fut2_qs_date, t.fut2_netinc_q1
+   # from
+   #    future_temp t, fe_data_store.si_finecon2 f
+   #  where t.dateindex = f.dateindex and t.company_id = f.company_id 
+   #    and t.perend_q1 = t.fut1_perend_q1 and t.perend_q1 = t.fut2_perend_q1
+   #    and t.netinc_q1 is not null and t.fut1_netinc_q1 is not null and t.fut2_netinc_q1 is not null and t.netinc_q1 != t.fut1_netinc_q1 and t.fut1_netinc_q1 = t.fut2_netinc_q1
+   #    order by company, dateindex;
+   # 
+   # 
+  
   dml <- paste0("
   -- run ( FIRST )
   -- replacing a bad value
@@ -4491,7 +4513,7 @@ updated_from_future_upd_netinc_q1 <- function (dir_i = NULL) {
   db.q("drop table if exists future_temp;", conn.id = cid)
   ddl <- paste0("
   
-    create temporary table future_temp as 
+    create table future_temp as 
     --
     with company_ids as (
     
@@ -4620,6 +4642,10 @@ updated_from_future_upd_netinc_q1 <- function (dir_i = NULL) {
   options(ops)
 }
 # ONCE ONLY
+# 
+# # LEFT_OFF
+# **** DO NOT RUN INCOMPLETE: NEED [ ] REPLACE qs_date WITH perend_q1 ****
+#                                  [ ] REPLACE "qs_date"create table" WITH "create temporary table"
 # 
 # updated_from_future_upd_netinc_q1(dir_i = 17562)
 # 
@@ -6994,7 +7020,7 @@ liquifyDFM <- function(x, const_cols_regexpr = "^id", fctr_cols_rexpr = "_fct$",
  # $ notissp__allsp500____sum_mktcap                                : num 4789893
  # $ notissp__notissp500____sum_mktcap                              : num 4789893
 
-# LEFT_OFF 
+# FUTURE 
 # [x] NEXT, NEED PARAMETERS TO THE 'create' SQL FUNCTION TO GENERATE LESS COMPLEX FACTOR COMBINATIONS
 # [ ] inbound statement loader ?? # does it NEED original* 
 # DOES IT NEED TO overwrite as NEW CURRENT data COMES in?
@@ -9369,7 +9395,8 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
   
       verify_company_details(dateindex = c(dir_i),  table_f = "si_isq", cnames_e = "^netinc_q.$") -> si_all_g_df
       print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
-      update_from_future_upd_netinc_q1(dateindex = c(dir_i))
+      # NOT READY YET
+      # update_from_future_upd_netinc_q1(dateindex = c(dir_i))
       
       verify_company_details(dateindex = c(dir_i),  table_f = "si_cfq", cnames_e = "^ncc_q.$") -> si_all_g_df
       print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
@@ -11197,7 +11224,7 @@ get_all_raw_by_dateindex <- function(dateindex = NULL, file_type = "fst", aaii_s
 # TO DO: FIX EVERYWHERE FOUND
 # REPLACE   company !~~ '%iShares%' ...   with sp in ('500','400','600')
 
-# LEFT_OFF
+# FUTURE
 
 # ZERO
 # [x] RE-ORGANIZE some R CODE in TEMPORARY.sql
@@ -11281,7 +11308,7 @@ get_all_raw_by_dateindex <- function(dateindex = NULL, file_type = "fst", aaii_s
 
 
 
-# # LEFT_OFF
+# # FUTURE
 # 
 # # -- Index Scan using si_finecon2_dateindex_company_id_key
 # # -- 6608 rows
@@ -11605,7 +11632,7 @@ get_all_raw_by_dateindex <- function(dateindex = NULL, file_type = "fst", aaii_s
 # .getEconomicCalendarBriefing (htmltab) ... maybe...convert into an XTS object
 # blscrapeR: An API Wrapper for the Bureau of Labor Statistics (BLS)
 # [x] !!! - tradingeconomics.com
-# R LEFT_OFF ... factores/values to numbers
+# R FUTURE ... factores/values to numbers
 # [ ] OTHER2 ( at file top )
 #   + Bank for International Settlements
 # C:\Users\AnonymousUser\Desktop\WORKING.txt
