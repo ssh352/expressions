@@ -4558,6 +4558,7 @@ update_from_future_upd_netinc_q1 <- function (dir_i = NULL) {
   # f.netinc_q1 has changed
   # what is different from ABOVE seen BELOW
   # netinc_q1 is null
+  # IF I HAVE 'ONE' FUTURE 
   ddl <- paste0("
   
     create ", if(!is.null(getOption("upsert_temp_is_temporary"))) { "temporary" } else { "" }, " table future_temp as 
@@ -4576,15 +4577,7 @@ update_from_future_upd_netinc_q1 <- function (dir_i = NULL) {
       where dateindex > ", dir_i, "                       -- 17562 -- monthly production load: max(dateindex) xor 'current index'
       order by dateindex      limit 1 offset 0) fut      
     
-    ), -- 17590
-    dateindexes_fut2 as (
-    
-      select fut.dateindex from (select distinct dateindex 
-      from fe_data_store.si_finecon2 
-      where dateindex > ", dir_i, "                       -- 17562 -- monthly production load: max(dateindex) xor 'current index'
-      order by dateindex      limit 1 offset 1) fut      
-    
-    ) -- 17619
+    ) -- 17590
     select now.*, 
       -- fut1.dateindex                fut1_dateindex,
       fut1.qs_date                     fut1_qs_date,
@@ -4592,21 +4585,12 @@ update_from_future_upd_netinc_q1 <- function (dir_i = NULL) {
       fut1.perend_q1                   fut1_perend_q1,
       fut1.now_inbnd_stmtid_dateindex  fut1_now_inbnd_stmtid_dateindex,
       fut1.last_inbnd_stmtid_dateindex fut1_last_inbnd_stmtid_dateindex,
-      fut1.netinc_q1                   fut1_netinc_q1,
-    
-      -- fut2.dateindex                fut2_dateindex,
-      fut2.qs_date                     fut2_qs_date,
-      fut2.date_eq0                    fut2_date_eq0,
-      fut2.perend_q1                   fut2_perend_q1,
-      fut2.now_inbnd_stmtid_dateindex  fut2_now_inbnd_stmtid_dateindex,
-      fut2.last_inbnd_stmtid_dateindex fut2_last_inbnd_stmtid_dateindex,
-      fut2.netinc_q1                   fut2_netinc_q1
-    
+      fut1.netinc_q1                   fut1_netinc_q1
+
     from ( 
     
       select curr.dateindex, 
              dateindexes_fut1.dateindex fut1_dateindex,  -- here --
-             dateindexes_fut2.dateindex fut2_dateindex,  -- here --
              curr.company_id, curr.sp, curr.ticker, curr.company,
              curr.date_eq0,
              curr.perend_q1,
@@ -4615,7 +4599,7 @@ update_from_future_upd_netinc_q1 <- function (dir_i = NULL) {
              curr.last_inbnd_stmtid_dateindex,
              curr.netinc_q1
       from fe_data_store.si_finecon2 curr, 
-           dateindexes_fut1, dateindexes_fut2  
+           dateindexes_fut1
       where curr.dateindex = ", dir_i, " -- 17562        
         and curr.company_id in ( select company_ids.company_id from company_ids )
         and curr.netinc_q1 is null  -- -- CRITERIA TO FIND BAD/MISSING DATUMS -- --
@@ -4634,21 +4618,7 @@ update_from_future_upd_netinc_q1 <- function (dir_i = NULL) {
       where curr.dateindex = now.fut1_dateindex and curr.company_id = now.company_id
                              -- here --
     
-    ) fut1 on true left join lateral ( -- 17619
-    
-      -- per item processing: may not be the fastest
-      select curr.dateindex, curr.company_id, 
-             curr.date_eq0,
-             curr.perend_q1,
-             curr.qs_date,
-             curr.now_inbnd_stmtid_dateindex, 
-             curr.last_inbnd_stmtid_dateindex,
-             curr.netinc_q1
-      from fe_data_store.si_finecon2 curr
-      where curr.dateindex = now.fut2_dateindex and curr.company_id = now.company_id
-                             -- here --
-    
-    ) fut2 on true;
+    ) fut1 on true;
     
   ")
   message(ddl)
