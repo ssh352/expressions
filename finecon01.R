@@ -4366,7 +4366,8 @@ update_from_future_upd_netinc_q1 <- function (dir_i = NULL) {
     set  
      is_null_orig_netinc_q1 = case when f.netinc_q1 is null then 1 else 0 end
     where 
-     f.is_null_orig_netinc_q1 is null and f.dateindex = ", dir_i, "; -- 17562
+          f.is_null_orig_netinc_q1 is null 
+      and f.dateindex = ", dir_i, "; -- 17562
   ")
   message(dml)
   dbExecute(con, dml)
@@ -4378,7 +4379,8 @@ update_from_future_upd_netinc_q1 <- function (dir_i = NULL) {
     set  
       orig_netinc_q1 = f.netinc_q1
     where 
-      f.orig_netinc_q1 is null and f.is_null_orig_netinc_q1 = 0 and f.netinc_q1 is not null and f.dateindex = ", dir_i, "; -- 17562
+          f.orig_netinc_q1 is null and f.is_null_orig_netinc_q1 = 0 and f.netinc_q1 is not null 
+      and f.dateindex = ", dir_i, "; -- 17562 
   ")
   message(dml)
   dbExecute(con, dml)
@@ -4533,7 +4535,7 @@ update_from_future_upd_netinc_q1 <- function (dir_i = NULL) {
       future_temp t
     where t.dateindex = f.dateindex and t.company_id = f.company_id 
       and t.perend_q1 = t.fut1_perend_q1 and t.perend_q1 = t.fut2_perend_q1
-      and t.netinc_q1 is not null and t.fut1_netinc_q1 is not null and t.fut2_netinc_q1 is not null and t.netinc_q1 != t.fut1_netinc_q1 and t.fut1_netinc_q1 = t.fut2_netinc_q1;
+      and t.netinc_q1 is not null and t.fut1_netinc_q1 is not null and t.fut2_netinc_q1 is not null and t.netinc_q1 != t.fut1_netinc_q1 and t.fut1_netinc_q1 = t.fut2_netinc_q1 ;
   ")
   message(dml)
   dbExecute(con, dml)
