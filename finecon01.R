@@ -4787,7 +4787,7 @@ update_from_future_upd_netinc_q1 <- function (dir_i = NULL) {
   Sys.setenv(TZ=oldtz)
   options(ops)
   
-  return(null)
+  return(invisible())
 }
 # ONCE ONLY
 # 
