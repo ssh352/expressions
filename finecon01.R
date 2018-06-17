@@ -4356,20 +4356,33 @@ update_from_future_upd_netinc_q1 <- function (dir_i = NULL) {
   #       perend_q1 IS MUCH MUCH better THAN all of them ( shows small RE-statements )
   
   db.q("alter table si_finecon2 add if not exists orig_netinc_q1        numeric(8,2);", conn.id = cid)
+  db.q("alter table si_finecon2 add if not exists is_null_orig_netinc_q1 integer;",     conn.id = cid)
   db.q("alter table si_finecon2 add if not exists updated_netinc_q1_src text;",         conn.id = cid)
 
   dml <- paste0("
-  -- run ( ZERO-ISH )
+  -- run ( ZERO-ISH - PART 1 OF 2)
+  -- update once ever
+  update fe_data_store.si_finecon2 f
+    set  
+     is_null_orig_netinc_q1 = case when f.netinc_q1 is null then 1 else 0 end
+    where 
+     f.is_null_orig_netinc_q1 is null and f.dateindex = ", dir_i, "; -- 17562
+  ")
+  message(dml)
+  dbExecute(con, dml)
+  
+  dml <- paste0("
+  -- run ( ZERO-ISH - PART 2 OF 2)
   -- update once ever
   update fe_data_store.si_finecon2 f
     set  
       orig_netinc_q1 = f.netinc_q1
     where 
-      f.orig_netinc_q1 is null and f.netinc_q1 is not null and f.dateindex = ", dir_i, "; -- 17562
+      f.orig_netinc_q1 is null and f.is_null_orig_netinc_q1 = 0 and f.netinc_q1 is not null and f.dateindex = ", dir_i, "; -- 17562
   ")
   message(dml)
   dbExecute(con, dml)
-  
+
   # what is different from BELOW
   # netinc_q1 is not null  OR netinc_q1 is null
   db.q("drop table if exists future_temp;", conn.id = cid)
