@@ -4468,17 +4468,28 @@ updated_from_future_upd_netinc_q1 <- function (dir_i = NULL) {
    # c(perend_q1, pertyp_q1, perlen_q1) make a 'quarterly start_and_range' unique identifier
   
    # LEFT_OFF
-   #   -- qs_date
-   # select f.dateindex, f.company_id, f.company_id, f.company, f.sp, f.netinc_q1, t.perend_q1, t.qs_date, t.netinc_q1, t.fut1_perend_q1, t.fut1_qs_date, t.fut1_netinc_q1, t.fut2_perend_q1, t.fut2_qs_date, t.fut2_netinc_q1
+   #
+   # -- qs_date ( 219 rows: many records are 'not right' )
+   # select f.dateindex, f.company_id, f.company_id, f.company, f.sp, t.perend_q1, t.date_eq0, t.qs_date, t.netinc_q1, t.fut1_perend_q1, t.fut1_date_eq0, t.fut1_qs_date, t.fut1_netinc_q1, t.fut2_perend_q1, t.fut2_date_eq0, t.fut2_qs_date, t.fut2_netinc_q1
    # from
    #    future_temp t, fe_data_store.si_finecon2 f
    #  where t.dateindex = f.dateindex and t.company_id = f.company_id 
    #    and t.qs_date = t.fut1_qs_date and t.qs_date = t.fut2_qs_date
    #    and t.netinc_q1 is not null and t.fut1_netinc_q1 is not null and t.fut2_netinc_q1 is not null and t.netinc_q1 != t.fut1_netinc_q1 and t.fut1_netinc_q1 = t.fut2_netinc_q1
    #    order by company, dateindex;
+   # 
+   # -- date_eq0 ( zero(0) records )
+   # select f.dateindex, f.company_id, f.company_id, f.company, f.sp, t.perend_q1, t.date_eq0, t.qs_date, t.netinc_q1, t.fut1_perend_q1, t.fut1_date_eq0, t.fut1_qs_date, t.fut1_netinc_q1, t.fut2_perend_q1, t.fut2_date_eq0, t.fut2_qs_date, t.fut2_netinc_q1
+   # from
+   #    future_temp t, fe_data_store.si_finecon2 f
+   #  where t.dateindex = f.dateindex and t.company_id = f.company_id 
+   #    and t.date_eq0 = t.fut1_date_eq0 and t.qs_date = t.fut2_date_eq0
+   #    and t.netinc_q1 is not null and t.fut1_netinc_q1 is not null and t.fut2_netinc_q1 is not null and t.netinc_q1 != t.fut1_netinc_q1 and t.fut1_netinc_q1 = t.fut2_netinc_q1
+   #    order by company, dateindex;
    #    
-   # -- perend_q1 IS MORE reliable SHOWS small re-statements
-   # select f.dateindex, f.company_id, f.company_id, f.company, f.sp, f.netinc_q1, t.perend_q1, t.qs_date, t.netinc_q1, t.fut1_perend_q1, t.fut1_qs_date, t.fut1_netinc_q1, t.fut2_perend_q1, t.fut2_qs_date, t.fut2_netinc_q1
+   # -- perend_q1 ( 27 records ) 
+   # -- IS MORE reliable SHOWS small re-statements
+   # select f.dateindex, f.company_id, f.company_id, f.company, f.sp, t.perend_q1, t.date_eq0, t.qs_date, t.netinc_q1, t.fut1_perend_q1, t.fut1_date_eq0, t.fut1_qs_date, t.fut1_netinc_q1, t.fut2_perend_q1, t.fut2_date_eq0, t.fut2_qs_date, t.fut2_netinc_q1
    # from
    #    future_temp t, fe_data_store.si_finecon2 f
    #  where t.dateindex = f.dateindex and t.company_id = f.company_id 
