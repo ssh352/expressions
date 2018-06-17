@@ -4826,13 +4826,19 @@ update_from_future_upd_netinc_q1 <- function (dir_i = NULL) {
 # 
 # MASS(MANUAL RUN) (goes backwards in time)
 #
-# for(dir_i sort(as.integer(dir("W:/AAIISIProDBFs")), decreasing = TRUE)) {
-#   
-#   Sys.sleep(2)
+# for(dir_i in sort(as.integer(dir("W:/AAIISIProDBFs")), decreasing = TRUE)) {
+# 
 #   message(paste0("**** Beginning disk dbf dir: ", dir_i," ", dir_i," ****"))
+#   message(paste0("**** Beginning disk dbf dir: ", dir_i," ", dir_i," ****"))
+#   message(paste0("**** Beginning disk dbf dir: ", dir_i," ", dir_i," ****"))
+#   message(paste0("**** Beginning disk dbf dir: ", dir_i," ", dir_i," ****"))
+#   Sys.sleep(2)
 #   
 #   update_from_future_upd_netinc_q1(dir_i = dir_i)
 #   
+#   message(paste0("**** Ending disk dbf dir: ", dir_i," ", dir_i," ****"))
+#   message(paste0("**** Ending disk dbf dir: ", dir_i," ", dir_i," ****"))
+#   message(paste0("**** Ending disk dbf dir: ", dir_i," ", dir_i," ****"))
 #   message(paste0("**** Ending disk dbf dir: ", dir_i," ", dir_i," ****"))
 #   Sys.sleep(2)
 #   
