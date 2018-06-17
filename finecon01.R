@@ -4523,6 +4523,16 @@ update_from_future_upd_netinc_q1 <- function (dir_i = NULL) {
    # 
    # 
   
+   # GOOD 'select part' that is used in TESTING
+   # 
+   # select f.orig_netinc_q1, f.is_null_orig_netinc_q1, f.updated_netinc_q1_src, 
+   #        f.dateindex, f.company_id, f.company_id, f.company, f.sp, t.perend_q1, t.date_eq0, t.qs_date, f.netinc_q1 f_netinc_q1, t.netinc_q1 t_netinc_q1, 
+   #        t.fut1_perend_q1, t.fut1_date_eq0, t.fut1_qs_date, t.fut1_netinc_q1, t.fut2_perend_q1, t.fut2_date_eq0, t.fut2_qs_date, t.fut2_netinc_q1
+   #  from
+   #    future_temp t, fe_data_store.si_finecon2 f
+   #  ...
+   # 
+  
   dml <- paste0("
   -- run ( FIRST )
   -- replacing a 'netinc_q1 is not null' value
@@ -4537,16 +4547,17 @@ update_from_future_upd_netinc_q1 <- function (dir_i = NULL) {
     where t.dateindex = f.dateindex and t.company_id = f.company_id 
       and t.perend_q1 = t.fut1_perend_q1 and t.perend_q1 = t.fut2_perend_q1
       and t.netinc_q1 is not null and t.fut1_netinc_q1 is not null and t.fut2_netinc_q1 is not null and t.netinc_q1 != t.fut1_netinc_q1 and t.fut1_netinc_q1 = t.fut2_netinc_q1 
-      and f.dateindex = ", dir_i, "; -- 17562;
+      and f.dateindex = ", dir_i, "; -- 17562
   ")
   message(dml)
   dbExecute(con, dml)
   
   db.q("drop table if exists future_temp;", conn.id = cid)
   # 
-  # what is different from ABOVE
+  # ABOVE
+  # f.netinc_q1 has changed
+  # what is different from ABOVE seen BELOW
   # netinc_q1 is null
-  db.q("drop table if exists future_temp;", conn.id = cid)
   ddl <- paste0("
   
     create ", if(!is.null(getOption("upsert_temp_is_temporary"))) { "temporary" } else { "" }, " table future_temp as 
@@ -4642,9 +4653,7 @@ update_from_future_upd_netinc_q1 <- function (dir_i = NULL) {
   ")
   message(ddl)
   dbExecute(con, ddl)
-  # NOTE: ABOVE in the second large query
-  # NOTE: ABOVE 'could have' used the results from the first large query
-  #             then subsetted by 'and curr.netinc_q1 is null'
+  
   try( { db.q("create unique index if not exists future_temp_dateindex_company_id_idx on future_temp(dateindex, company_id);", conn.id = cid) }, silent = TRUE )
   
   dml <- paste0("
@@ -4663,6 +4672,108 @@ update_from_future_upd_netinc_q1 <- function (dir_i = NULL) {
   ")
   message(dml)
   dbExecute(con, dml)
+  
+  db.q("drop table if exists future_temp;", conn.id = cid)
+  # 
+  # ABOVE
+  # f.netinc_q1 has changed
+  # what is same from ABOVE seen BELOW
+  # netinc_q1 is null ( SAME AS ABOVE )
+  ddl <- paste0("
+  
+    create ", if(!is.null(getOption("upsert_temp_is_temporary"))) { "temporary" } else { "" }, " table future_temp as 
+    --
+    with company_ids as (
+    
+      select distinct now.company_id
+      from fe_data_store.si_finecon2 now where now.dateindex = ", dir_i, " -- 17562 
+      -- and now.sp in ('500','400','600')
+      order by now.company_id
+    ), 
+    dateindexes_fut1 as (
+    
+      select fut.dateindex from (select distinct dateindex 
+      from fe_data_store.si_finecon2 
+      where dateindex > ", dir_i, "                       -- 17562 -- monthly production load: max(dateindex) xor 'current index'
+      order by dateindex      limit 1 offset 0) fut      
+    
+    ), -- 17590
+    dateindexes_fut2 as (
+    
+      select fut.dateindex from (select distinct dateindex 
+      from fe_data_store.si_finecon2 
+      where dateindex > ", dir_i, "                       -- 17562 -- monthly production load: max(dateindex) xor 'current index'
+      order by dateindex      limit 1 offset 1) fut      
+    
+    ) -- 17619
+    select now.*, 
+      -- fut1.dateindex                fut1_dateindex,
+      fut1.qs_date                     fut1_qs_date,
+      fut1.date_eq0                    fut1_date_eq0,
+      fut1.perend_q1                   fut1_perend_q1,
+      fut1.now_inbnd_stmtid_dateindex  fut1_now_inbnd_stmtid_dateindex,
+      fut1.last_inbnd_stmtid_dateindex fut1_last_inbnd_stmtid_dateindex,
+      fut1.netinc_q1                   fut1_netinc_q1,
+    
+      -- fut2.dateindex                fut2_dateindex,
+      fut2.qs_date                     fut2_qs_date,
+      fut2.date_eq0                    fut2_date_eq0,
+      fut2.perend_q1                   fut2_perend_q1,
+      fut2.now_inbnd_stmtid_dateindex  fut2_now_inbnd_stmtid_dateindex,
+      fut2.last_inbnd_stmtid_dateindex fut2_last_inbnd_stmtid_dateindex,
+      fut2.netinc_q1                   fut2_netinc_q1
+    
+    from ( 
+    
+      select curr.dateindex, 
+             dateindexes_fut1.dateindex fut1_dateindex,  -- here --
+             dateindexes_fut2.dateindex fut2_dateindex,  -- here --
+             curr.company_id, curr.sp, curr.ticker, curr.company,
+             curr.date_eq0,
+             curr.perend_q1,
+             curr.qs_date,
+             curr.now_inbnd_stmtid_dateindex, 
+             curr.last_inbnd_stmtid_dateindex,
+             curr.netinc_q1
+      from fe_data_store.si_finecon2 curr, 
+           dateindexes_fut1, dateindexes_fut2  
+      where curr.dateindex = ", dir_i, " -- 17562        
+        and curr.company_id in ( select company_ids.company_id from company_ids )
+        and curr.netinc_q1 is null  -- -- CRITERIA TO FIND BAD/MISSING DATUMS -- --
+                             
+    ) now         left join lateral ( -- 17590
+    
+      -- per item processing: may not be the fastest
+      select curr.dateindex, curr.company_id, 
+             curr.date_eq0,
+             curr.perend_q1,
+             curr.qs_date,
+             curr.now_inbnd_stmtid_dateindex, 
+             curr.last_inbnd_stmtid_dateindex,
+             curr.netinc_q1
+      from fe_data_store.si_finecon2 curr
+      where curr.dateindex = now.fut1_dateindex and curr.company_id = now.company_id
+                             -- here --
+    
+    ) fut1 on true left join lateral ( -- 17619
+    
+      -- per item processing: may not be the fastest
+      select curr.dateindex, curr.company_id, 
+             curr.date_eq0,
+             curr.perend_q1,
+             curr.qs_date,
+             curr.now_inbnd_stmtid_dateindex, 
+             curr.last_inbnd_stmtid_dateindex,
+             curr.netinc_q1
+      from fe_data_store.si_finecon2 curr
+      where curr.dateindex = now.fut2_dateindex and curr.company_id = now.company_id
+                             -- here --
+    
+    ) fut2 on true;
+    
+  ")
+  message(ddl)
+  dbExecute(con, ddl)
   
   dml <- paste0("
   -- then run ( must be THIRD )
@@ -4684,14 +4795,34 @@ update_from_future_upd_netinc_q1 <- function (dir_i = NULL) {
   
   db.q("drop table if exists future_temp;", conn.id = cid)
   
+  #  -- methods above updated ~ 100 records ( and 12 ? of 13 ? sp companies )
+  #  --
+  #  -- Only 22 records remaining ( out of 6000 ) that do not have a 'net income'
+  #  select f.orig_netinc_q1, f.is_null_orig_netinc_q1, f.updated_netinc_q1_src, f.dateindex, f.company_id, f.company_id, f.company, f.sp, t.perend_q1, t.date_eq0, t.qs_date, f.netinc_q1 f_netinc_q1, t.netinc_q1 t_netinc_q1, 
+  #         t.fut1_perend_q1, t.fut1_date_eq0, t.fut1_qs_date, t.fut1_netinc_q1, t.fut2_perend_q1, t.fut2_date_eq0, t.fut2_qs_date, t.fut2_netinc_q1
+  #   from
+  #     future_temp t, fe_data_store.si_finecon2 f
+  #   where t.dateindex = f.dateindex and t.company_id = f.company_id
+  #     and t.perend_q1 = t.fut1_perend_q1 and t.perend_q1 = t.fut2_perend_q1
+  #     and f.netinc_q1 is null
+  #     and f.dateindex = 17562;
+  # 
+  # -- ONLY 'sp' '600' of the 22
+  # -- Opus Bank
+  # -- AND it does have a 'positive' and recent 'net income'
+  # -- > zoo::as.Date(17562)
+  # -- [1] "2018-01-31"
+  # -- https://www.marketwatch.com/investing/stock/opb/financials/income/quarter 
+  
   Sys.setenv(TZ=oldtz)
   options(ops)
+  
+  return(null)
 }
 # ONCE ONLY
 # 
-# # LEFT_OFF
-# 
 # update_from_future_upd_netinc_q1(dir_i = 17562)
+# [X] DONE
 # 
 # MASS(MANUAL RUN) (goes backwards in time)
 #
@@ -4713,7 +4844,8 @@ update_from_future_upd_netinc_q1 <- function (dir_i = NULL) {
 # 
 # verify_company_details(dateindex = c(dir_i),  table_f = "si_isq", cnames_e = "^netinc_q.$") -> si_all_g_df
 # print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
-# # NEW # LEFT_OFF # [ ] un-comment OUT # LAST
+# # [X] un-comment OUT # LAST
+# # CORRECTIONS
 # # update_from_future_upd_netinc_q1(dateindex = c(dir_i))
 # 
 
@@ -9436,8 +9568,8 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
   
       verify_company_details(dateindex = c(dir_i),  table_f = "si_isq", cnames_e = "^netinc_q.$") -> si_all_g_df
       print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
-      # NOT READY YET
-      # update_from_future_upd_netinc_q1(dateindex = c(dir_i))
+      # CORRECTIONS
+      update_from_future_upd_netinc_q1(dateindex = c(dir_i))
       
       verify_company_details(dateindex = c(dir_i),  table_f = "si_cfq", cnames_e = "^ncc_q.$") -> si_all_g_df
       print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
