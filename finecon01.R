@@ -4385,9 +4385,10 @@ update_from_future_upd_netinc_q1 <- function (dir_i = NULL) {
   message(dml)
   dbExecute(con, dml)
 
+  db.q("drop table if exists future_temp;", conn.id = cid)
+  # 
   # what is different from BELOW
   # netinc_q1 is not null  OR netinc_q1 is null
-  db.q("drop table if exists future_temp;", conn.id = cid)
   ddl <- paste0("
   
     create ", if(!is.null(getOption("upsert_temp_is_temporary"))) { "temporary" } else { "" }, " table future_temp as 
@@ -4535,15 +4536,14 @@ update_from_future_upd_netinc_q1 <- function (dir_i = NULL) {
       future_temp t
     where t.dateindex = f.dateindex and t.company_id = f.company_id 
       and t.perend_q1 = t.fut1_perend_q1 and t.perend_q1 = t.fut2_perend_q1
-      and t.netinc_q1 is not null and t.fut1_netinc_q1 is not null and t.fut2_netinc_q1 is not null and t.netinc_q1 != t.fut1_netinc_q1 and t.fut1_netinc_q1 = t.fut2_netinc_q1 ;
+      and t.netinc_q1 is not null and t.fut1_netinc_q1 is not null and t.fut2_netinc_q1 is not null and t.netinc_q1 != t.fut1_netinc_q1 and t.fut1_netinc_q1 = t.fut2_netinc_q1 
+      and f.dateindex = ", dir_i, "; -- 17562;
   ")
   message(dml)
   dbExecute(con, dml)
   
   db.q("drop table if exists future_temp;", conn.id = cid)
-  
-  ##
-  
+  # 
   # what is different from ABOVE
   # netinc_q1 is null
   db.q("drop table if exists future_temp;", conn.id = cid)
@@ -4645,7 +4645,6 @@ update_from_future_upd_netinc_q1 <- function (dir_i = NULL) {
   # NOTE: ABOVE in the second large query
   # NOTE: ABOVE 'could have' used the results from the first large query
   #             then subsetted by 'and curr.netinc_q1 is null'
-  
   try( { db.q("create unique index if not exists future_temp_dateindex_company_id_idx on future_temp(dateindex, company_id);", conn.id = cid) }, silent = TRUE )
   
   dml <- paste0("
@@ -4657,9 +4656,10 @@ update_from_future_upd_netinc_q1 <- function (dir_i = NULL) {
               netinc_q1     = t.fut1_netinc_q1
     from
       future_temp t
-    where t.dateindex = f.dateindex and t.company_id = f.company_id;
-      and t.perend_q1 = t.fut1_perend_q1
-      and t.netinc_q1 is null and t.fut1_netinc_q1 is not null; 
+    where t.dateindex = f.dateindex and t.company_id = f.company_id
+      and t.perend_q1 = t.fut1_perend_q1 
+      and t.netinc_q1 is null and t.fut1_netinc_q1 is not null 
+      and f.dateindex = ", dir_i, "; -- 17562 
   ")
   message(dml)
   dbExecute(con, dml)
@@ -4674,9 +4674,10 @@ update_from_future_upd_netinc_q1 <- function (dir_i = NULL) {
               netinc_q1     = t.fut2_netinc_q1
       from
         future_temp t
-      where t.dateindex = f.dateindex and t.company_id = f.company_id
-        and t.perend_q1 = t.fut1_perend_q1 and t.perend_q1 = t.fut2_perend_q1
-        and t.netinc_q1 is null and t.fut1_netinc_q1 is null and t.fut2_netinc_q1 is not null;
+      where t.dateindex = f.dateindex and t.company_id = f.company_id 
+        and t.perend_q1 = t.fut1_perend_q1 and t.perend_q1 = t.fut2_perend_q1 
+        and t.netinc_q1 is null and t.fut1_netinc_q1 is null and t.fut2_netinc_q1 is not null 
+        and f.dateindex = ", dir_i, "; -- 17562
   ")
   message(dml)
   dbExecute(con, dml)
