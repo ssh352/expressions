@@ -4365,7 +4365,7 @@ update_from_future_upd_netinc_q1 <- function (dir_i = NULL) {
     set  
       orig_netinc_q1 = f.netinc_q1
     where 
-      f.orig_netinc_q1 is null and f.dateindex = ", dir_i, "; -- 17562
+      f.orig_netinc_q1 is null and f.netinc_q1 is not null and f.dateindex = ", dir_i, "; -- 17562
   ")
   message(dml)
   dbExecute(con, dml)
