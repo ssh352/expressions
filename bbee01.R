@@ -2074,17 +2074,20 @@ get_up_side_down_side3 <- function(){
                                      # y data                         # x TARGET data                                         # generated X data
   all_train_test_validation_index <- index(will5000ind) %>% intersect(index(xts(,do.call(c,these_timeslices)))) %>% intersect(index(these_indicators))
   
-  # through the end of "year 2000/2008 recession" through today ( everything )
+  # through the end of "year 2000/2008 recession" through today ( everything )          # ... "2001-11-30" (large gap) "2007-12-31" ... "2009-06-30" ... index(will5000ind)
   all_train_test_validation_extended_index <- c(all_train_test_validation_index, index(will5000ind)[tail(all_train_test_validation_index,1) < index(will5000ind)])
   
   # through the end of "year 2000 recession"
   all_train_test_index <- index(xts(,all_train_test_validation_index)["::2001-11-30"])
   
   #                                          after "year 2000 recession"
-  all_validation_index <- index(xts(,all_train_test_validation_index)["2001-12-31::"])
+  all_validation_index <- index(xts(,all_train_test_validation_index)["2001-12-31::"]) # ... "2001-11-30" (large gap) "2007-12-31" ... "2009-06-30"
   
-  #                                          after "year 2000 recession" through today 
-  all_validation_extended_index <- c(all_validation_index, index(will5000ind)[tail(all_validation_index,1) < index(will5000ind)])
+  # #                                          after "year 2000 recession" through today # ...                          "2007-12-31" ... index(will5000ind)
+  # all_validation_extended_index <- c(all_validation_index, index(will5000ind)[tail(all_validation_index,1) < index(will5000ind)])
+  
+  # better # "2001-12-31" ... index(will5000ind)
+  all_validation_extended_index <- seq(from = zoo::as.Date("2001-12-31") + 1, to = tail(all_train_test_validation_extended_index,1) + 1, by = "month") - 1
   
   # will5000ind.futpctchg.3 
   this_predictee <- expand_xts(will5000ind, "get_pctchg_xts", 3, alt_name = "futpctchg", o_args = list(to_future = TRUE))
@@ -2097,7 +2100,10 @@ get_up_side_down_side3 <- function(){
   # *** na.rm = TRUE (default ) ***
   # specifyModel(getModelData) original code ( not changed by me )
   # if na.rm == TRUE then does 'na.exclude' BUT 'without rules' PUTS back (rbind) the last observation
-  quantmod <- as.quantmod(as.data.frame(merge.xts(this_predictee, these_indicators)[all_train_test_validation_extended_index]), outcomename = colnames(this_predictee), order.by = all_train_test_validation_extended_index, na.rm = FALSE)
+  #                                                                               removed: I want everything
+  #                                                                               [all_train_test_validation_extended_index]             all_train_test_validation_extended_index
+  quantmod <- as.quantmod(as.data.frame(merge.xts(this_predictee, these_indicators)), outcomename = colnames(this_predictee), order.by = index(merge.xts(this_predictee, these_indicators)), na.rm = FALSE)
+  #           na.rm = FALSE
   # xor ...
   # specmodel <- specifyModel(PREDICTEE ~ INDICATORS  , na.rm = FALSE, source.envir = Symbols)
   
@@ -2120,24 +2126,26 @@ get_up_side_down_side3 <- function(){
   
   # specifyModel(getModelData) original code ( not changed by me )
   # if na.rm == TRUE then does 'na.exclude' BUT 'without rules' PUTS back (rbind) the last observation
-  all_modeldata <- getModelData(builtmodel, na.rm = FALSE, source.envir = list2env(as.list(quantmod@model.data)))
+  allModelData <- getModelData(builtmodel, na.rm = FALSE, source.envir = list2env(as.list(quantmod@model.data)))
   
-  print(caret::varImp(all_modeldata@fitted.model, scale = FALSE))
+  print(caret::varImp(allModelData@fitted.model, scale = FALSE))
   
-  modeldata <- modelData(all_modeldata, data.window = all_validation_extended_index)
+  modeldata <- modelData(allModelData, data.window = all_validation_extended_index)
   
   #                       # dispatch on caret::train  # JUN 2018: if I do not include the predictee column, then the 'first observation' (by caret) is chopped off
   set.seed(1L) # good until the 'next month' unemployment rate comes out
                                                       # will5000ind: returns partial month data rounded to the future (good/bad)
                                                       # all-NA record will not return a predicted datum
-  fitted  <- predictModel(all_modeldata@fitted.model, zoo::na.trim(modeldata, sides = "right", is.na = "all") )
-  fitted  <- as.xts(fitted, index(                    zoo::na.trim(modeldata, sides = "right", is.na = "all")))
+  fitted  <- predictModel(allModelData@fitted.model, zoo::na.trim(modeldata, sides = "right", is.na = "all") )
+  fitted  <- as.xts(fitted, index(                   zoo::na.trim(modeldata, sides = "right", is.na = "all")))
   colnames(fitted) <- "fitted" 
   browser() # stop: dygraphs dos not print non-interactively
   # !!RUN BELOW NOW!!
-  dygraphs::dygraph(fitted)
+  # still 'too late' going into the 2008 recession 
+  # so 'xgboost and unrate alone' does not come up with a 'good enough solution'
+  dygraphs::dygraph(merge.xts(this_predictee[index(fitted)], unrate[index(fitted)],fitted))
   #                             # will5000ind.futpctchg.3
-  dygraphs::dygraph(merge.xts(other_predictee[index(fitted)], this_predictee[index(fitted)], fitted))
+  # dygraphs::dygraph(merge.xts(other_predictee[index(fitted)], this_predictee[index(fitted)], fitted))
   return()
   # model/caret/xgboost?  PREDICTION is !upside_down!
   # if the direction(trend) is up/down buy/sell stock option put/call ?
