@@ -16506,8 +16506,11 @@ select * from future_temp;
 
 -- TEMPORARY.sql
 
+    -- drop table future_temp
 
-    create temporary table future_temp as 
+    -- create temporary table future_temp as 
+
+    create table future_temp as 
     -- 
     with company_ids as (
     
@@ -16535,6 +16538,7 @@ select * from future_temp;
     select now.*, 
       -- fut1.dateindex                fut1_dateindex,
       fut1.qs_date                     fut1_qs_date,
+      fut1.date_eq0                    fut1_date_eq0,
       fut1.perend_q1                   fut1_perend_q1,
       fut1.now_inbnd_stmtid_dateindex  fut1_now_inbnd_stmtid_dateindex,
       fut1.last_inbnd_stmtid_dateindex fut1_last_inbnd_stmtid_dateindex,
@@ -16542,6 +16546,7 @@ select * from future_temp;
     
       -- fut2.dateindex                fut2_dateindex,
       fut2.qs_date                     fut2_qs_date,
+      fut2.date_eq0                    fut2_date_eq0,        
       fut2.perend_q1                   fut2_perend_q1,
       fut2.now_inbnd_stmtid_dateindex  fut2_now_inbnd_stmtid_dateindex,
       fut2.last_inbnd_stmtid_dateindex fut2_last_inbnd_stmtid_dateindex,
@@ -16553,6 +16558,7 @@ select * from future_temp;
              dateindexes_fut1.dateindex fut1_dateindex,  -- here --
              dateindexes_fut2.dateindex fut2_dateindex,  -- here --
              curr.company_id, curr.sp, curr.ticker, curr.company,
+             curr.date_eq0,
              curr.perend_q1,
              curr.qs_date,
              curr.now_inbnd_stmtid_dateindex, 
@@ -16568,6 +16574,7 @@ select * from future_temp;
     
       -- per item processing: may not be the fastest
       select curr.dateindex, curr.company_id, 
+             curr.date_eq0,
              curr.perend_q1,
              curr.qs_date,
              curr.now_inbnd_stmtid_dateindex, 
@@ -16581,6 +16588,7 @@ select * from future_temp;
     
       -- per item processing: may not be the fastest
       select curr.dateindex, curr.company_id, 
+             curr.date_eq0,
              curr.perend_q1,
              curr.qs_date,
              curr.now_inbnd_stmtid_dateindex, 
@@ -16595,22 +16603,336 @@ select * from future_temp;
 
    --
 
-   -- qs_date
-   select f.dateindex, f.company_id, f.company_id, f.company, f.sp, f.netinc_q1, t.perend_q1, t.qs_date, t.netinc_q1, t.fut1_perend_q1, t.fut1_qs_date, t.fut1_netinc_q1, t.fut2_perend_q1, t.fut2_qs_date, t.fut2_netinc_q1
+   -- qs_date ( 219 rows: many records are 'not right' )
+   select f.dateindex, f.company_id, f.company_id, f.company, f.sp, t.perend_q1, t.date_eq0, t.qs_date, t.netinc_q1, t.fut1_perend_q1, t.fut1_date_eq0, t.fut1_qs_date, t.fut1_netinc_q1, t.fut2_perend_q1, t.fut2_date_eq0, t.fut2_qs_date, t.fut2_netinc_q1
    from
       future_temp t, fe_data_store.si_finecon2 f
     where t.dateindex = f.dateindex and t.company_id = f.company_id 
       and t.qs_date = t.fut1_qs_date and t.qs_date = t.fut2_qs_date
       and t.netinc_q1 is not null and t.fut1_netinc_q1 is not null and t.fut2_netinc_q1 is not null and t.netinc_q1 != t.fut1_netinc_q1 and t.fut1_netinc_q1 = t.fut2_netinc_q1
       order by company, dateindex;
+
+   -- date_eq0 ( zero(0) records )
+   select f.dateindex, f.company_id, f.company_id, f.company, f.sp, t.perend_q1, t.date_eq0, t.qs_date, t.netinc_q1, t.fut1_perend_q1, t.fut1_date_eq0, t.fut1_qs_date, t.fut1_netinc_q1, t.fut2_perend_q1, t.fut2_date_eq0, t.fut2_qs_date, t.fut2_netinc_q1
+   from
+      future_temp t, fe_data_store.si_finecon2 f
+    where t.dateindex = f.dateindex and t.company_id = f.company_id 
+      and t.date_eq0 = t.fut1_date_eq0 and t.qs_date = t.fut2_date_eq0
+      and t.netinc_q1 is not null and t.fut1_netinc_q1 is not null and t.fut2_netinc_q1 is not null and t.netinc_q1 != t.fut1_netinc_q1 and t.fut1_netinc_q1 = t.fut2_netinc_q1
+      order by company, dateindex;
       
-   -- perend_q1 IS MORE reliable SHOWS small re-statements
-   select f.dateindex, f.company_id, f.company_id, f.company, f.sp, f.netinc_q1, t.perend_q1, t.qs_date, t.netinc_q1, t.fut1_perend_q1, t.fut1_qs_date, t.fut1_netinc_q1, t.fut2_perend_q1, t.fut2_qs_date, t.fut2_netinc_q1
+   -- perend_q1 ( 27 records ) 
+   -- IS MORE reliable SHOWS small re-statements
+   select f.dateindex, f.company_id, f.company_id, f.company, f.sp, t.perend_q1, t.date_eq0, t.qs_date, t.netinc_q1, t.fut1_perend_q1, t.fut1_date_eq0, t.fut1_qs_date, t.fut1_netinc_q1, t.fut2_perend_q1, t.fut2_date_eq0, t.fut2_qs_date, t.fut2_netinc_q1
    from
       future_temp t, fe_data_store.si_finecon2 f
     where t.dateindex = f.dateindex and t.company_id = f.company_id 
       and t.perend_q1 = t.fut1_perend_q1 and t.perend_q1 = t.fut2_perend_q1
       and t.netinc_q1 is not null and t.fut1_netinc_q1 is not null and t.fut2_netinc_q1 is not null and t.netinc_q1 != t.fut1_netinc_q1 and t.fut1_netinc_q1 = t.fut2_netinc_q1
       order by company, dateindex;
+
+
+select f.is_null_orig_netinc_q1, f.orig_netinc_q1, f.netinc_q1, f.orig_netinc_q1 = f.netinc_q1
+from fe_data_store.si_finecon2 f
+where f.dateindex = 17562
+
+explain analyze
+  select  
+    f.is_null_orig_netinc_q1, orig_netinc_q1, f.netinc_q1
+  from fe_data_store.si_finecon2 f
+    where 
+          f.orig_netinc_q1 is null and f.is_null_orig_netinc_q1 = 0 and f.netinc_q1 is not null 
+      and f.dateindex = 17562; -- 17562 
+
+
+explain analyze
+   select f.orig_netinc_q1, f.is_null_orig_netinc_q1, f.updated_netinc_q1_src, f.dateindex, f.company_id, f.company_id, f.company, f.sp, t.perend_q1, t.date_eq0, t.qs_date, f.netinc_q1 f_netinc_q1, t.netinc_q1 t_netinc_q1, t.fut1_perend_q1, t.fut1_date_eq0, t.fut1_qs_date, t.fut1_netinc_q1, t.fut2_perend_q1, t.fut2_date_eq0, t.fut2_qs_date, t.fut2_netinc_q1
+    from
+      future_temp t, fe_data_store.si_finecon2 f
+    where t.dateindex = f.dateindex and t.company_id = f.company_id 
+      and t.perend_q1 = t.fut1_perend_q1 and t.perend_q1 = t.fut2_perend_q1
+      and t.netinc_q1 is not null and t.fut1_netinc_q1 is not null and t.fut2_netinc_q1 is not null and t.netinc_q1 != t.fut1_netinc_q1 and t.fut1_netinc_q1 = t.fut2_netinc_q1 
+      and f.dateindex = 17562;
+      
+explain analyze
+   select f.orig_netinc_q1, f.is_null_orig_netinc_q1, f.updated_netinc_q1_src, f.dateindex, f.company_id, f.company_id, f.company, f.sp, t.perend_q1, t.date_eq0, t.qs_date, f.netinc_q1 f_netinc_q1, t.netinc_q1 t_netinc_q1, 
+          t.fut1_perend_q1, t.fut1_date_eq0, t.fut1_qs_date, t.fut1_netinc_q1, t.fut2_perend_q1, t.fut2_date_eq0, t.fut2_qs_date, t.fut2_netinc_q1
+    from
+      future_temp t, fe_data_store.si_finecon2 f
+    where t.dateindex = f.dateindex and t.company_id = f.company_id
+      and t.perend_q1 = t.fut1_perend_q1 
+      and t.netinc_q1 is null and t.fut1_netinc_q1 is not null 
+      and f.dateindex = 17562; -- 17562
+
+   select f.orig_netinc_q1, f.is_null_orig_netinc_q1, f.updated_netinc_q1_src, f.dateindex, f.company_id, f.company_id, f.company, f.sp, t.perend_q1, t.date_eq0, t.qs_date, f.netinc_q1 f_netinc_q1, t.netinc_q1 t_netinc_q1, 
+          t.fut1_perend_q1, t.fut1_date_eq0, t.fut1_qs_date, t.fut1_netinc_q1, t.fut2_perend_q1, t.fut2_date_eq0, t.fut2_qs_date, t.fut2_netinc_q1
+    from
+      future_temp t, fe_data_store.si_finecon2 f
+    where t.dateindex = f.dateindex and t.company_id = f.company_id
+      and f. updated_netinc_q1_src =  'fut1_netinc_q1'
+      and f.dateindex = 17562; 
+
+   select f.orig_netinc_q1, f.is_null_orig_netinc_q1, f.updated_netinc_q1_src, f.dateindex, f.company_id, f.company_id, f.company, f.sp, t.perend_q1, t.date_eq0, t.qs_date, f.netinc_q1 f_netinc_q1, t.netinc_q1 t_netinc_q1, 
+          t.fut1_perend_q1, t.fut1_date_eq0, t.fut1_qs_date, t.fut1_netinc_q1, t.fut2_perend_q1, t.fut2_date_eq0, t.fut2_qs_date, t.fut2_netinc_q1
+      from
+        future_temp t, fe_data_store.si_finecon2 f
+      where t.dateindex = f.dateindex and t.company_id = f.company_id 
+        and t.perend_q1 = t.fut1_perend_q1 and t.perend_q1 = t.fut2_perend_q1 
+        and t.netinc_q1 is null and t.fut1_netinc_q1 is null and t.fut2_netinc_q1 is not null 
+        and f.dateindex = 17562; -- 17562
+
+   select f.orig_netinc_q1, f.is_null_orig_netinc_q1, f.updated_netinc_q1_src, f.dateindex, f.company_id, f.company_id, f.company, f.sp, t.perend_q1, t.date_eq0, t.qs_date, f.netinc_q1 f_netinc_q1, t.netinc_q1 t_netinc_q1, 
+          t.fut1_perend_q1, t.fut1_date_eq0, t.fut1_qs_date, t.fut1_netinc_q1, t.fut2_perend_q1, t.fut2_date_eq0, t.fut2_qs_date, t.fut2_netinc_q1
+    from
+      future_temp t, fe_data_store.si_finecon2 f
+    where t.dateindex = f.dateindex and t.company_id = f.company_id
+      and f.updated_netinc_q1_src =  'fut2_netinc_q1'
+      and f.dateindex = 17562; 
+
+   select f.orig_netinc_q1, f.is_null_orig_netinc_q1, f.updated_netinc_q1_src, f.dateindex, f.company_id, f.company_id, f.company, f.sp, t.perend_q1, t.date_eq0, t.qs_date, f.netinc_q1 f_netinc_q1, t.netinc_q1 t_netinc_q1, 
+          t.fut1_perend_q1, t.fut1_date_eq0, t.fut1_qs_date, t.fut1_netinc_q1, t.fut2_perend_q1, t.fut2_date_eq0, t.fut2_qs_date, t.fut2_netinc_q1
+    from
+      future_temp t, fe_data_store.si_finecon2 f
+    where t.dateindex = f.dateindex and t.company_id = f.company_id
+      and t.perend_q1 = t.fut1_perend_q1 and t.perend_q1 = t.fut2_perend_q1
+      and f.netinc_q1 is null
+      and f.dateindex = 17562; 
+
+
+-- IF I HAVE NO FUTURE ( zero records returnd )
+-- 17682
+
+-- IF I HAVE ONE FUTURE ( zero records )
+-- 17651
+
+-- IF I HAVE TWO FUTURES ( six thousand records returned )
+-- 17619
+
+
+    with company_ids as (
+    
+      select distinct now.company_id
+      from fe_data_store.si_finecon2 now where now.dateindex = 17619 -- 17562 
+      -- and now.sp in ('500','400','600')
+      order by now.company_id
+    ), 
+    dateindexes_fut1 as (
+    
+      select fut.dateindex from (select distinct dateindex 
+      from fe_data_store.si_finecon2 
+      where dateindex > 17619                       -- 17562 -- monthly production load: max(dateindex) xor 'current index'
+      order by dateindex      limit 1 offset 0) fut      
+    
+    ), -- 17590
+    dateindexes_fut2 as (
+    
+      select fut.dateindex from (select distinct dateindex 
+      from fe_data_store.si_finecon2 
+      where dateindex > 17619                     -- 17562 -- monthly production load: max(dateindex) xor 'current index'
+      order by dateindex      limit 1 offset 1) fut      
+    
+    ) -- 17619
+    select now.*, 
+      -- fut1.dateindex                fut1_dateindex,
+      fut1.qs_date                     fut1_qs_date,
+      fut1.date_eq0                    fut1_date_eq0,
+      fut1.perend_q1                   fut1_perend_q1,
+      fut1.now_inbnd_stmtid_dateindex  fut1_now_inbnd_stmtid_dateindex,
+      fut1.last_inbnd_stmtid_dateindex fut1_last_inbnd_stmtid_dateindex,
+      fut1.netinc_q1                   fut1_netinc_q1,
+    
+      -- fut2.dateindex                fut2_dateindex,
+      fut2.qs_date                     fut2_qs_date,
+      fut2.date_eq0                    fut2_date_eq0,        
+      fut2.perend_q1                   fut2_perend_q1,
+      fut2.now_inbnd_stmtid_dateindex  fut2_now_inbnd_stmtid_dateindex,
+      fut2.last_inbnd_stmtid_dateindex fut2_last_inbnd_stmtid_dateindex,
+      fut2.netinc_q1                   fut2_netinc_q1
+    
+    from ( 
+    
+      select curr.dateindex, 
+             dateindexes_fut1.dateindex fut1_dateindex,  -- here --
+             dateindexes_fut2.dateindex fut2_dateindex,  -- here --
+             curr.company_id, curr.sp, curr.ticker, curr.company,
+             curr.date_eq0,
+             curr.perend_q1,
+             curr.qs_date,
+             curr.now_inbnd_stmtid_dateindex, 
+             curr.last_inbnd_stmtid_dateindex,
+             curr.netinc_q1
+      from fe_data_store.si_finecon2 curr, 
+           dateindexes_fut1, dateindexes_fut2  
+      where curr.dateindex = 17619 -- 17562        
+        and curr.company_id in ( select company_ids.company_id from company_ids )
+        -- and curr.netinc_q1 is null  -- -- CRITERIA TO FIND BAD/MISSING DATUMS -- --
+                             
+    ) now         left join lateral ( -- BASE + 1 -> 17590
+    
+      -- per item processing: may not be the fastest
+      select curr.dateindex, curr.company_id, 
+             curr.date_eq0,
+             curr.perend_q1,
+             curr.qs_date,
+             curr.now_inbnd_stmtid_dateindex, 
+             curr.last_inbnd_stmtid_dateindex,
+             curr.netinc_q1
+      from fe_data_store.si_finecon2 curr
+      where curr.dateindex = now.fut1_dateindex and curr.company_id = now.company_id
+                             -- here --
+    
+    ) fut1 on true left join lateral ( -- BASE + 2 -> 17619
+    
+      -- per item processing: may not be the fastest
+      select curr.dateindex, curr.company_id, 
+             curr.date_eq0,
+             curr.perend_q1,
+             curr.qs_date,
+             curr.now_inbnd_stmtid_dateindex, 
+             curr.last_inbnd_stmtid_dateindex,
+             curr.netinc_q1
+      from fe_data_store.si_finecon2 curr
+      where curr.dateindex = now.fut2_dateindex and curr.company_id = now.company_id
+                             -- here --
+    
+    ) fut2 on true;
+
+
+
+
+
+-- IF I HAVE 'ONE' FUTURE ( ??? records )
+-- 17651
+
+    with company_ids as (
+    
+      select distinct now.company_id
+      from fe_data_store.si_finecon2 now where now.dateindex = 17651 -- 17562 
+      -- and now.sp in ('500','400','600')
+      order by now.company_id
+    ), 
+    dateindexes_fut1 as (
+    
+      select fut.dateindex from (select distinct dateindex 
+      from fe_data_store.si_finecon2 
+      where dateindex > 17651                      -- 17562 -- monthly production load: max(dateindex) xor 'current index'
+      order by dateindex      limit 1 offset 0) fut      
+    
+    ) -- 17590
+    select now.*, 
+      -- fut1.dateindex                fut1_dateindex,
+      fut1.qs_date                     fut1_qs_date,
+      fut1.date_eq0                    fut1_date_eq0,
+      fut1.perend_q1                   fut1_perend_q1,
+      fut1.now_inbnd_stmtid_dateindex  fut1_now_inbnd_stmtid_dateindex,
+      fut1.last_inbnd_stmtid_dateindex fut1_last_inbnd_stmtid_dateindex,
+      fut1.netinc_q1                   fut1_netinc_q1
+    
+    from ( 
+    
+      select curr.dateindex, 
+             dateindexes_fut1.dateindex fut1_dateindex,  -- here --
+             curr.company_id, curr.sp, curr.ticker, curr.company,
+             curr.date_eq0,
+             curr.perend_q1,
+             curr.qs_date,
+             curr.now_inbnd_stmtid_dateindex, 
+             curr.last_inbnd_stmtid_dateindex,
+             curr.netinc_q1
+      from fe_data_store.si_finecon2 curr, 
+           dateindexes_fut1
+      where curr.dateindex = 17651 -- 17562        
+        and curr.company_id in ( select company_ids.company_id from company_ids )
+        -- and curr.netinc_q1 is null  -- -- CRITERIA TO FIND BAD/MISSING DATUMS -- --
+                             
+    ) now         left join lateral ( -- BASE + 1 -> 17590
+    
+      -- per item processing: may not be the fastest
+      select curr.dateindex, curr.company_id, 
+             curr.date_eq0,
+             curr.perend_q1,
+             curr.qs_date,
+             curr.now_inbnd_stmtid_dateindex, 
+             curr.last_inbnd_stmtid_dateindex,
+             curr.netinc_q1
+      from fe_data_store.si_finecon2 curr
+      where curr.dateindex = now.fut1_dateindex and curr.company_id = now.company_id
+                             -- here --
+    
+    ) fut1 on true;
+
+
+
+
+    --
+    with company_ids as (
+    
+      select distinct now.company_id
+      from fe_data_store.si_finecon2 now where now.dateindex = 17562 -- 17562 
+      -- and now.sp in ('500','400','600')
+      order by now.company_id
+    ), 
+    dateindexes_fut1 as (
+    
+      select fut.dateindex from (select distinct dateindex 
+      from fe_data_store.si_finecon2 
+      where dateindex > 17562                       -- 17562 -- monthly production load: max(dateindex) xor 'current index'
+      order by dateindex      limit 1 offset 0) fut      
+    
+    ) -- 17590
+    select now.*, 
+      -- fut1.dateindex                fut1_dateindex,
+      fut1.qs_date                     fut1_qs_date,
+      fut1.date_eq0                    fut1_date_eq0,
+      fut1.perend_q1                   fut1_perend_q1,
+      fut1.now_inbnd_stmtid_dateindex  fut1_now_inbnd_stmtid_dateindex,
+      fut1.last_inbnd_stmtid_dateindex fut1_last_inbnd_stmtid_dateindex,
+      fut1.netinc_q1                   fut1_netinc_q1
+
+    from ( 
+    
+      select curr.dateindex, 
+             dateindexes_fut1.dateindex fut1_dateindex,  -- here --
+             curr.company_id, curr.sp, curr.ticker, curr.company,
+             curr.date_eq0,
+             curr.perend_q1,
+             curr.qs_date,
+             curr.now_inbnd_stmtid_dateindex, 
+             curr.last_inbnd_stmtid_dateindex,
+             curr.netinc_q1
+      from fe_data_store.si_finecon2 curr, 
+           dateindexes_fut1
+      where curr.dateindex = 17562 -- 17562        
+        and curr.company_id in ( select company_ids.company_id from company_ids )
+        and curr.netinc_q1 is null  -- -- CRITERIA TO FIND BAD/MISSING DATUMS -- --
+                             
+    ) now         left join lateral ( -- 17590
+    
+      -- per item processing: may not be the fastest
+      select curr.dateindex, curr.company_id, 
+             curr.date_eq0,
+             curr.perend_q1,
+             curr.qs_date,
+             curr.now_inbnd_stmtid_dateindex, 
+             curr.last_inbnd_stmtid_dateindex,
+             curr.netinc_q1
+      from fe_data_store.si_finecon2 curr
+      where curr.dateindex = now.fut1_dateindex and curr.company_id = now.company_id
+                             -- here --
+    
+    ) fut1 on true;
+
+
+   select f.orig_netinc_q1, f.is_null_orig_netinc_q1, f.updated_netinc_q1_src, f.dateindex, f.company_id, f.company_id, f.company, f.sp, t.perend_q1, t.date_eq0, t.qs_date, f.netinc_q1 f_netinc_q1, t.netinc_q1 t_netinc_q1, 
+          t.fut1_perend_q1, t.fut1_date_eq0, t.fut1_qs_date, t.fut1_netinc_q1
+    from
+      future_temp t, fe_data_store.si_finecon2 f
+    where t.dateindex = f.dateindex and t.company_id = f.company_id
+      and t.perend_q1 = t.fut1_perend_q1 
+      and t.netinc_q1 is null and t.fut1_netinc_q1 is not null 
+      and f.dateindex = 17562; -- 17562 
+      
+    
+
 
 -- TEMPORARY.sql
