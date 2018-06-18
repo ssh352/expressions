@@ -2001,6 +2001,7 @@ get_up_side_down_side3 <- function(){
   all_possible_instruments          <- xts(, zoo::as.Date(0)[0])
   all_possible_instruments_log_rets <- xts(, zoo::as.Date(0)[0])
   
+  # will5000ind: returns partial month data rounded to the future (good/bad)
   will5000ind          <- get_fred_wilshire5000_eom_xts()
   will5000ind_log_rets <- ROC(will5000ind)               # which(is.na(will5000ind_log_rets)) # logrithmic
   #                   # 1st empty xts
@@ -2069,7 +2070,7 @@ get_up_side_down_side3 <- function(){
   # $ : Date[1:9], format: "2001-03-31" "2001-04-30" "2001-05-31" "2001-06-30" ...
   # $ : Date[1:19], format: "2007-12-31" "2008-01-31" "2008-02-29" "2008-03-31" ...
  
-  # through the end of "year 2000/2008 recession"
+  # through the end of "year 2000/2008 recession"  
                                      # y data                         # x TARGET data                                         # generated X data
   all_train_test_validation_index <- index(will5000ind) %>% intersect(index(xts(,do.call(c,these_timeslices)))) %>% intersect(index(these_indicators))
   
@@ -2101,7 +2102,7 @@ get_up_side_down_side3 <- function(){
   # specmodel <- specifyModel(PREDICTEE ~ INDICATORS  , na.rm = FALSE, source.envir = Symbols)
   
   tg_xgbTree <- expand.grid(
-    nrounds   =  100, 
+    nrounds   =  100, # 1000 is more extreme
     eta       =  c(0.1,0.01),
     max_depth =  c(4,6,8,10),
     gamma     =  0,
@@ -2126,11 +2127,18 @@ get_up_side_down_side3 <- function(){
   modeldata <- modelData(all_modeldata, data.window = all_validation_extended_index)
   
   #                       # dispatch on caret::train  # JUN 2018: if I do not include the predictee column, then the 'first observation' (by caret) is chopped off
-  fitted  <- predictModel(all_modeldata@fitted.model, modeldata)
-  fitted  <- as.xts(fitted, index(modeldata))
+  set.seed(1L) # good until the 'next month' unemployment rate comes out
+                                                      # will5000ind: returns partial month data rounded to the future (good/bad)
+                                                      # all-NA record will not return a predicted datum
+  fitted  <- predictModel(all_modeldata@fitted.model, zoo::na.trim(modeldata, sides = "right", is.na = "all") )
+  fitted  <- as.xts(fitted, index(                    zoo::na.trim(modeldata, sides = "right", is.na = "all")))
   colnames(fitted) <- "fitted" 
+  browser() # stop: dygraphs dos not print non-interactively
+  # !!RUN BELOW NOW!!
+  dygraphs::dygraph(fitted)
   #                             # will5000ind.futpctchg.3
-  # dygraphs::dygraph(merge.xts(other_predictee[index(fitted)], this_predictee[index(fitted)], fitted))
+  dygraphs::dygraph(merge.xts(other_predictee[index(fitted)], this_predictee[index(fitted)], fitted))
+  return()
   # model/caret/xgboost?  PREDICTION is !upside_down!
   # if the direction(trend) is up/down buy/sell stock option put/call ?
   # **LEFT_OFF ** (LOOKS PROMISING: AT LEAST BELOW ZERO:) # NEED TO ADD 
