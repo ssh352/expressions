@@ -7793,6 +7793,8 @@ vacuum_reindex_check_time_looper_checker <- function(vacuum_reindex_every_x_seco
 # this gives me a better idea of what is coming inbound withing the last 10 trilliion 
 # by mktcap
 # NOTE: this is NOT meant to show the FULL set
+# NOTE: perend_q1(get_sipro_rolling_finstats2) 
+#       is generally later in time followed by qs_date(get_sipro_rolling_finstats)
 get_sipro_rolling_finstats <- function(
   dateindex_criteria = NULL,
   other_criteria = NULL,
@@ -7859,21 +7861,23 @@ get_sipro_rolling_finstats <- function(
       and now.qs_date is not null -- 28 of 1500 are NULL ( and OLD )
   order by now.qs_date, now.ticker
   ), 
-  -- select * from dat
-  --  qs_date | dateindex | ticker |  mktcap
-  -- ---------+-----------+--------+-----------
-  --    17379 |     17438 | AAPL   | 791726.10
-  --    17367 |     17438 | MSFT   | 568964.80
-  --    17379 |     17470 | AAPL   | 873130.10
-  --    17465 |     17470 | MSFT   | 641699.60
-  --    17472 |     17500 | AAPL   | 870163.20
-  --    17465 |     17500 | MSFT   | 642933.90
-  --    17472 |     17529 | AAPL   | 878378.10
-  --    17465 |     17529 | MSFT   | 661294.70
-  --    17472 |     17562 | AAPL   | 857276.10
-  --    17562 |     17562 | MSFT   | 715451.10
-  --    17563 |     17590 | AAPL   | 905153.20
-  --    17562 |     17590 | MSFT   | 725320.50
+  -- select ticker, dateindex, qs_date, perend_q1, company_id, ticker, mktcap from dat order by ticker, qs_date, dateindex;
+  -- AAPL 05680
+  -- MSFT 57840
+  --  ticker | dateindex | qs_date | perend_q1 | company_id | ticker |  mktcap
+  -- --------+-----------+---------+-----------+------------+--------+-----------
+  --  AAPL   |     17529 |   17472 |     17439 | 05680      | AAPL   | 878378.10
+  --  AAPL   |     17562 |   17472 |     17439 | 05680      | AAPL   | 857276.10
+  --  AAPL   |     17590 |   17563 |     17530 | 05680      | AAPL   | 905153.20
+  --  AAPL   |     17619 |   17563 |     17530 | 05680      | AAPL   | 844721.70
+  --  AAPL   |     17651 |   17563 |     17530 | 05680      | AAPL   | 833254.40
+  --  AAPL   |     17682 |   17652 |     17621 | 05680      | AAPL   | 923554.40
+  --  MSFT   |     17529 |   17465 |     17439 | 57840      | MSFT   | 661294.70
+  --  MSFT   |     17562 |   17562 |     17531 | 57840      | MSFT   | 715451.10
+  --  MSFT   |     17590 |   17562 |     17531 | 57840      | MSFT   | 725320.50
+  --  MSFT   |     17619 |   17562 |     17531 | 57840      | MSFT   | 688284.50
+  --  MSFT   |     17651 |   17647 |     17621 | 57840      | MSFT   | 725782.50
+  --  MSFT   |     17682 |   17647 |     17621 | 57840      | MSFT   | 753030.20
   -- (12 rows)
   fv_qs as (
     -- per every dateindex, first value ( first time) that a new qs had appeared ( in the past )
@@ -7885,15 +7889,27 @@ get_sipro_rolling_finstats <- function(
   from dat
   order by fv_qs_date, fv_dateindex
   ),
-  -- select * from fv_qs
-  --  fv_qs_date | fv_dateindex | fv_ticker
-  -- ------------+--------------+-----------
-  --       17367 |        17438 | MSFT
-  --       17379 |        17438 | AAPL
-  --       17465 |        17470 | MSFT
-  --       17472 |        17500 | AAPL
-  --       17562 |        17562 | MSFT
-  --       17563 |        17590 | AAPL
+  -- select fv_qs_date, fv_dateindex, fv_company_id from fv_qs order by fv_qs_date, fv_dateindex;
+  --  fv_qs_date | fv_dateindex | fv_company_id
+  -- ------------+--------------+---------------
+  --       17465 |        17529 | 57840
+  --       17472 |        17529 | 05680
+  --       17562 |        17562 | 57840
+  --       17563 |        17590 | 05680
+  --       17647 |        17651 | 57840
+  --       17652 |        17682 | 05680
+  -- (6 rows)
+  -- lead into next 'with'
+  -- select fv_qs_date, fv_dateindex, fv_company_id from fv_qs order by fv_company_id, fv_qs_date desc, fv_dateindex;
+  -- reverse order by fv_qs_date ( in next 'with' ) going to keep the first(last reversed) fv_qs_date 
+  --  fv_qs_date | fv_dateindex | fv_company_id
+  -- ------------+--------------+---------------
+  --       17652 |        17682 | 05680
+  --       17563 |        17590 | 05680
+  --       17472 |        17529 | 05680
+  --       17647 |        17651 | 57840
+  --       17562 |        17562 | 57840
+  --       17465 |        17529 | 57840
   -- (6 rows)
   qs_dateindex_company_id as (
   -- PostgreSQL 10.0 last_value is BROKE(ignored), instead use 'first_value ... order by ... desc'
@@ -7909,32 +7925,39 @@ get_sipro_rolling_finstats <- function(
   from fv_qs
   order by lv_qs_dateindex, lv_qs_company_id
   ),
-  --select * from qs_dateindex_ticker
-  --  lv_qs_ticker | lv_qs_dateindex
-  -- --------------+-----------------
-  --  MSFT         |           17562
-  --  AAPL         |           17590
+  -- select lv_qs_company_id, lv_qs_dateindex from qs_dateindex_company_id order by lv_qs_company_id, lv_qs_dateindex;
+  --  lv_qs_company_id | lv_qs_dateindex
+  -- ------------------+-----------------
+  --  05680            |           17682
+  --  57840            |           17651
   -- (2 rows)
-  -- 
   -- combine to do some inbound statistics
   recent as(
-  select dat.qs_date, dat.dateindex, dat.company_id, dat.ticker, dat.mktcap,  -- 1700000.00 -- small list of tech firms only
-    sum(dat.mktcap) over (order by dat.qs_date desc)                         <= ", rolling_limit, " is_within_last_10t
-  from qs_dateindex_company_id, dat
-    where dat.dateindex   = qs_dateindex_company_id.lv_qs_dateindex 
-      and dat.company_id  = qs_dateindex_company_id.lv_qs_company_id
-  order by dat.qs_date, dat.company_id
+  -- problem: lots of ties at date = qs_date: to fix add row_number
+  --            if at a tie: dat.mktcap desc(prefered to reverse cumsum aggregate = small companies first) preferred (rev) order
+  --          result: so cummulative rolling does not add all the ties on qs_date to be at the same one value
+  select 
+         sq.qs_date, sq.dateindex, sq.company_id, sq.ticker, sq.mktcap,
+         sq.row_number,
+         sum(sq.mktcap) over (order by sq.row_number desc)          <= ", rolling_limit, " is_within_last_10t,
+         sum(sq.mktcap) over (order by sq.row_number desc) rolling
+  from (
+    select dat.qs_date, dat.dateindex, dat.company_id, dat.ticker, dat.mktcap,  -- 1700000.00 -- small list of tech firms only
+      row_number() over(order by dat.qs_date, dat.mktcap desc, dat.company_id) row_number -- tie breaker
+    from qs_dateindex_company_id, dat
+      where dat.dateindex   = qs_dateindex_company_id.lv_qs_dateindex 
+        and dat.company_id  = qs_dateindex_company_id.lv_qs_company_id
+    order by dat.qs_date, dat.mktcap desc, dat.company_id
+    ) sq order by qs_date, mktcap desc
   )
-  -- select * from recent
-  --  qs_date | dateindex | ticker |  mktcap   | is_within_10b
-  -- ---------+-----------+--------+-----------+---------------
-  --    17514 |     17529 | ORCL   | 198324.10 | f
-  --    17549 |     17562 | IBM    | 151478.00 | f
-  --    17562 |     17562 | MSFT   | 715451.10 | t
-  --    17563 |     17590 | AAPL   | 905153.20 | t
-  --    17584 |     17590 | HPQ    |  38695.80 | t
+  --  qs_date | dateindex | company_id | ticker |  mktcap   | row_number | is_within_last_10t |  rolling
+  -- ---------+-----------+------------+--------+-----------+------------+--------------------+------------
+  --    17609 |     17619 | 66610      | ORCL   | 183622.40 |          1 | f                  | 2003074.40
+  --    17638 |     17651 | 4741N      | IBM    | 135153.80 |          2 | f                  | 1819452.00
+  --    17647 |     17651 | 57840      | MSFT   | 725782.50 |          3 | t                  | 1684298.20
+  --    17652 |     17682 | 05680      | AAPL   | 923554.40 |          4 | t                  |  958515.70
+  --    17680 |     17682 | 4302N      | HPQ    |  34961.30 |          5 | t                  |   34961.30
   -- (5 rows)
-  -- select * from qs_dateindex_ticker
   select 
     to_timestamp(dat.qs_date*3600*24)::date   qs_date_dt,
     to_timestamp(dat.dateindex*3600*24)::date dateindex_dt,
@@ -8007,6 +8030,239 @@ get_sipro_rolling_finstats <- function(
 #  , other_criteria     = "now.sp in ('500') and now.industry_desc in ('Money Center Banks', 'Regional Banks', 'Consumer Financial Services', 'S&Ls/Savings Banks')"
 #  , rolling_limit     = "600000.00"
 #  )
+
+
+
+
+# meant for rolling 10 trillion of SP companies reporting
+# this gives me a better idea of what is coming inbound withing the last 10 trilliion 
+# by mktcap
+# NOTE: this is NOT meant to show the FULL set
+# NOTE: perend_q1(get_sipro_rolling_finstats2) 
+#       is generally later in time followed by qs_date(get_sipro_rolling_finstats)
+get_sipro_rolling_finstats2 <- function(
+  dateindex_criteria = NULL,
+  other_criteria = NULL,
+  rolling_limit = NULL
+  ) {
+
+  ops <- options()
+  
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv('TZ')
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  
+  message("Begin function get_sipro_rolling_finstats2.")
+
+  verify_connection()
+  
+  if(is.null(dateindex_criteria)) {
+    dateindex_criteria <- "now.dateindex in ( select distinct dateindex from fe_data_store.si_finecon2 order by dateindex desc offset 0 limit 6 )"
+  } 
+  if(is.null(other_criteria)) {
+    other_criteria <- "now.sp in ('500','400','600')"
+  } 
+  # 10 trillion
+  if(is.null(rolling_limit)) {
+    rolling_limit <- "10000000.00"
+  } 
+  
+  query <- paste0("
+
+  with dat as (
+  -- all data
+  select
+    now.qs_date,
+    now.dateindex,
+    now.perend_q1,
+    now.perlen_q1,
+    now.pertyp_q1,
+    now.company_id,
+    now.ticker,
+    now.mktcap,
+    now.sp,
+    now.company,
+    now.netinc_q1,
+    now.netinc_q2,
+    now.liab_q1,
+    now.liab_q2
+  from fe_data_store.si_finecon2 now
+    -- where now.dateindex in (17590, 17562, 17529, 17500, 17470, 17438)  -- dateindexes now and in the past
+    -- where now.dateindex in ( select distinct dateindex from fe_data_store.si_finecon2 order by dateindex desc offset 0 limit 6 )
+    where 1 = 1
+     and ", dateindex_criteria, "
+      -- original
+      -- and now.ticker in('MSFT','AAPL')
+      -- and now.ticker in('MSFT','AAPL','ORCL','IBM','HPQ')
+      and ", other_criteria,"
+      -- and now.sp in ('500') and sector_desc = 'Financial'
+      and now.perend_q1 is not null -- 28 of 1500 are NULL ( and OLD )
+  order by now.perend_q1, now.ticker
+  ), 
+  -- select ticker, dateindex, qs_date, perend_q1, company_id, ticker, mktcap from dat order by ticker, qs_date, dateindex;
+  --  ticker | dateindex | qs_date | perend_q1 | company_id | ticker |  mktcap
+  -- --------+-----------+---------+-----------+------------+--------+-----------
+  --  AAPL   |     17529 |   17472 |     17439 | 05680      | AAPL   | 878378.10
+  --  AAPL   |     17562 |   17472 |     17439 | 05680      | AAPL   | 857276.10
+  --  AAPL   |     17590 |   17563 |     17530 | 05680      | AAPL   | 905153.20
+  --  AAPL   |     17619 |   17563 |     17530 | 05680      | AAPL   | 844721.70
+  --  AAPL   |     17651 |   17563 |     17530 | 05680      | AAPL   | 833254.40
+  --  AAPL   |     17682 |   17652 |     17621 | 05680      | AAPL   | 923554.40
+  --  MSFT   |     17529 |   17465 |     17439 | 57840      | MSFT   | 661294.70
+  --  MSFT   |     17562 |   17562 |     17531 | 57840      | MSFT   | 715451.10
+  --  MSFT   |     17590 |   17562 |     17531 | 57840      | MSFT   | 725320.50
+  --  MSFT   |     17619 |   17562 |     17531 | 57840      | MSFT   | 688284.50
+  --  MSFT   |     17651 |   17647 |     17621 | 57840      | MSFT   | 725782.50
+  --  MSFT   |     17682 |   17647 |     17621 | 57840      | MSFT   | 753030.20
+  -- (12 rows)
+  fv_qs as (
+    -- per every dateindex, first value ( first time) that a new qs had appeared ( in the past )
+  select
+    distinct
+    dat.perend_q1 fv_perend_q1,
+    first_value(dat.dateindex) over (partition by dat.company_id, dat.perend_q1 order by dat.dateindex) fv_dateindex,
+    dat.company_id fv_company_id
+  from dat
+  order by fv_perend_q1, fv_dateindex
+  ),
+  -- select fv_perend_q1, fv_dateindex, fv_company_id from fv_qs order by fv_perend_q1, fv_dateindex;
+  --  fv_perend_q1 | fv_dateindex | fv_company_id
+  -- --------------+--------------+---------------
+  --         17439 |        17529 | 05680
+  --         17439 |        17529 | 57840
+  --         17530 |        17590 | 05680
+  --         17531 |        17562 | 57840
+  --         17621 |        17651 | 57840
+  --         17621 |        17682 | 05680
+  -- (6 rows)
+  perend_q1index_company_id as (
+  -- PostgreSQL 10.0 last_value is BROKE(ignored), instead use 'first_value ... order by ... desc'
+  -- for real time reporting, per ticker, last time(most recent) a *new* qs appeared 
+  -- the month of the new qs is reported
+  -- modifiable here
+  -- advice: https://www.postgresql.org/docs/10/static/functions-window.html
+  select 
+    distinct
+    -- last_value: written as over(... order by ... desc)
+    first_value(fv_qs.fv_company_id) over (partition by fv_qs.fv_company_id order by fv_qs.fv_perend_q1 desc) lv_qs_company_id,
+    first_value(fv_qs.fv_dateindex)  over (partition by fv_qs.fv_company_id order by fv_qs.fv_perend_q1 desc) lv_perend_q1index
+  from fv_qs
+  order by lv_perend_q1index, lv_qs_company_id
+  ),
+  -- select lv_qs_company_id, lv_perend_q1index from perend_q1index_company_id order by lv_qs_company_id, lv_perend_q1index;
+  --  lv_qs_company_id | lv_perend_q1index
+  -- ------------------+-------------------
+  --  05680            |             17682
+  --  57840            |             17651
+  -- (2 rows)
+  -- combine to do some inbound statistics
+  recent as(
+  -- problem: lots of ties at date = perend_q1: to fix add row_number
+  --            if at a tie: dat.mktcap desc(prefered to reverse cumsum aggregate = small companies first) preferred (rev) order
+  --          result: so cummulative rolling does not add all the ties on perend_q1 to be at the same one value
+  select 
+         sq.perend_q1, sq.dateindex, sq.company_id, sq.ticker, sq.mktcap,
+         sq.row_number,
+         sum(sq.mktcap) over (order by sq.row_number desc)          <= ", rolling_limit, " is_within_last_10t,
+         sum(sq.mktcap) over (order by sq.row_number desc) rolling
+  from (
+    select dat.perend_q1, dat.dateindex, dat.company_id, dat.ticker, dat.mktcap,
+      row_number() over(order by dat.perend_q1, dat.mktcap desc, dat.company_id) row_number -- tie breaker
+    from perend_q1index_company_id, dat
+      where dat.dateindex   = perend_q1index_company_id.lv_perend_q1index 
+        and dat.company_id  = perend_q1index_company_id.lv_qs_company_id
+    order by dat.perend_q1, dat.mktcap desc, dat.company_id
+    ) sq order by perend_q1, mktcap desc
+  )
+  --  perend_q1 | dateindex | company_id | ticker |  mktcap   | row_number | is_within_last_10t |  rolling
+  -- -----------+-----------+------------+--------+-----------+------------+--------------------+------------
+  --      17562 |     17619 | 4302N      | HPQ    |  35601.40 |          1 | f                  | 2003714.50
+  --      17590 |     17619 | 66610      | ORCL   | 183622.40 |          2 | f                  | 1968113.10
+  --      17621 |     17682 | 05680      | AAPL   | 923554.40 |          3 | f                  | 1784490.70
+  --      17621 |     17651 | 57840      | MSFT   | 725782.50 |          4 | t                  |  860936.30
+  --      17621 |     17651 | 4741N      | IBM    | 135153.80 |          5 | t                  |  135153.80
+  -- (5 rows)
+  select 
+    to_timestamp(dat.qs_date*3600*24)::date     qs_date_dt,
+    to_timestamp(dat.dateindex*3600*24)::date dateindex_dt,
+    to_timestamp(dat.perend_q1*3600*24)::date perend_q1_dt,
+    dat.perlen_q1, 
+    dat.pertyp_q1,
+    recent.is_within_last_10t,
+    sum(dat.mktcap)    over (partition by recent.is_within_last_10t) sums_mktcap_within_last,
+    sum(dat.netinc_q1) over (partition by recent.is_within_last_10t) / nullif(sum(dat.netinc_q2) over (partition by recent.is_within_last_10t),0) * 100 rat_sums_recent_netinc_q2q1_x100, 
+    sum(dat.liab_q1)   over (partition by recent.is_within_last_10t) / nullif(sum(dat.liab_q2)   over (partition by recent.is_within_last_10t),0) * 100 rat_sums_recent_liab_q2q1_x100,
+    dat.company_id,
+    dat.ticker,
+    dat.sp,
+    dat.company,
+    dat.mktcap,
+    dat.liab_q1,
+    dat.liab_q2,
+    (dat.liab_q1 - dat.liab_q2)  / nullif(abs(dat.liab_q2),0)   * 100.00 prchg_liab_q2q1,
+    dat.netinc_q1,
+    dat.netinc_q2,
+    (dat.netinc_q1 - dat.netinc_q2)/ nullif(abs(dat.netinc_q2),0) * 100.00 prchg_netinc_q2q1,
+    ( (dat.liab_q1   - dat.liab_q2)  / nullif(abs(dat.liab_q2),0) ) / nullif((dat.netinc_q1 - dat.netinc_q2)/ nullif(abs(dat.netinc_q2),0),0) * 100 rat_prchg_liab_netinc_q1q2_x_100
+  from perend_q1index_company_id, dat, recent
+  where dat.dateindex  = perend_q1index_company_id.lv_perend_q1index 
+    and dat.company_id = perend_q1index_company_id.lv_qs_company_id
+    -- as of 'now.dateindex' in 17590, 17562, 17529, 17500, 17470, 17438
+    -- explicit remove nulls: very little difference in rat_sums_recent_netinc_q2q1_x100 ( 44 percent better net income )
+    -- BUT I do not like the number)
+    and dat.netinc_q1 is not null and dat.netinc_q2 is not null and dat.liab_q1 is not null and dat.liab_q2 is not null
+    and perend_q1index_company_id.lv_perend_q1index  = recent.dateindex
+    and perend_q1index_company_id.lv_qs_company_id = recent.company_id
+  order by dat.perend_q1, dat.company_id
+  ;
+  ")
+    
+  sipro_rolling_finstats <- dbGetQuery(con, query)
+  
+  Sys.setenv(TZ=oldtz)
+  options(ops)
+  
+  message("End   function get_sipro_rolling_finstats2.")
+  
+  return(sipro_rolling_finstats)
+  
+}
+# View each
+# sipro_rolling_finstats <- get_sipro_rolling_finstats2()
+#
+# # PARTIAL view
+# # NOT a GOOD view of the 'ENTIRE'
+# # instantaneous look-at: sp rolling last 10 trillion
+# sipro_rolling_finstats <- get_sipro_rolling_finstats2()
+
+# # PARTIAL view
+# # NOT A GOOD view of the 'ENTIRE'
+# # large financial instititutions
+# sipro_rolling_finstats <- get_sipro_rolling_finstats2(
+#     dateindex_criteria = "now.dateindex in ( select distinct dateindex from fe_data_store.si_finecon2 order by dateindex desc offset 0 limit 6 )"
+#   , other_criteria     = "now.sp in ('500') and now.industry_desc in ('Money Center Banks', 'Regional Banks', 'Consumer Financial Services', 'S&Ls/Savings Banks')"
+#   , rolling_limit     = "600000.00"
+#   )
+
+# USING THIS
+# sipro_rolling_finstats <- get_sipro_rolling_finstats2()
+# View(sipro_rolling_finstats)
+
+# USING THIS ( econ IS MUCH more SENSTIVE to bank PERFORMANCE )
+# sipro_rolling_finstats <- get_sipro_rolling_finstats2(
+#    dateindex_criteria = "now.dateindex in ( select distinct dateindex from fe_data_store.si_finecon2 order by dateindex desc offset 0 limit 6 )"
+#  , other_criteria     = "now.sp in ('500') and now.industry_desc in ('Money Center Banks', 'Regional Banks', 'Consumer Financial Services', 'S&Ls/Savings Banks')"
+#  , rolling_limit     = "600000.00"
+#  )
+
+
 
 
 
