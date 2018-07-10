@@ -4822,7 +4822,7 @@ update_from_future_upd_netinc_q1 <- function (dir_i = NULL) {
 # print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
 # # [X] un-comment OUT # LAST
 # # CORRECTIONS
-# # update_from_future_upd_netinc_q1(dateindex = c(dir_i))
+# # update_from_future_upd_netinc_q1(dir_i = c(dir_i))
 # 
 
 
@@ -9801,7 +9801,7 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
       verify_company_details(dateindex = c(dir_i),  table_f = "si_isq", cnames_e = "^netinc_q.$") -> si_all_g_df
       print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
       # CORRECTIONS
-      update_from_future_upd_netinc_q1(dateindex = c(dir_i))
+      update_from_future_upd_netinc_q1(dir_i = c(dir_i))
       
       verify_company_details(dateindex = c(dir_i),  table_f = "si_cfq", cnames_e = "^ncc_q.$") -> si_all_g_df
       print(dir_i);upsert(si_all_g_df, keys = c("company_id"))
