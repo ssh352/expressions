@@ -4250,7 +4250,8 @@ get_bankruptcy_filing_counts_eoq_xts <- function(pub_dates = Sys.Date(), updatin
       message("  # or")
       message("  # just a specific date ( and save )")
       message("  # bankruptcy_filing_counts_eoq_xts <- get_bankruptcy_filing_counts_eoq_xts(pub_dates = zoo::as.Date(\"2017-06-30\"))")
-      return(NULL)
+      if(!is.null(pub_dates) && (length(pub_dates) == 1)) return(NULL)
+      next
     }
     Sys.sleep(3.0) # be nice; do not attack the website
     
