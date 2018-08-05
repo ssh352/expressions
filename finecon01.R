@@ -9955,8 +9955,16 @@ upload_lwd_sipro_dbfs_to_db <- function(from_dir = "W:/AAIISIProDBFs", months_on
 # after INSTALLING latest 'last business day'(MUST BE) SIPro. . .exe installer # SEE OTHER INSTRUCTOINS ### MONTHLY METHOD BEGINS ####
 # after checking 'latest' 'new' day using as.integer(getAAIISIProDate())       # SEE OTHER INSTRUCTIONS ### MONTHLY METHOD BEGINS ####
 # after COPIED new files using copyAAIISIProDBFs                               # SEE OTHER INSTRUCTIONS ### MONTHLY METHOD BEGINS ####
-# BEST: run the following at the COMMAND PROMPT
+
 # after checking W:\AAIISIProDBFs looking for the latest new directory
+
+# # would have been in RStudio
+# # rm(list=setdiff(ls(all.names=TRUE),c("con","cid"))); debugSource('W:/R-3.5._/finecon01.R');debugSource('W:/R-3.5._/goodsight01.R');debugSource('W:/R-3.5._/valuesight01.R');debugSource('W:/R-3.5._/bbee01.R');debugSource('W:/R-3.5._/experiments.R');verify_connection();options(upsert_temp_is_temporary=Inf)
+
+# BEST: run the REST at the COMMAND PROMPT
+
+# rm(list=setdiff(ls(all.names=TRUE),c("con","cid"))); source('W:/R-3.5._/finecon01.R');source('W:/R-3.5._/goodsight01.R');source('W:/R-3.5._/valuesight01.R');source('W:/R-3.5._/bbee01.R');source('W:/R-3.5._/experiments.R');verify_connection();options(upsert_temp_is_temporary=Inf)
+
 #
  # # typical *new month*                                # *new(top) month*  # assuming all of the previous months isq,bsq,cfq have been loaded                                                    
  # { upload_lwd_sipro_dbfs_to_db(exact_near_month_end_dbf_dirs = c(NEW_INDEX_HERE), exactly_only_aggregates = NULL, exactly_only_aggregates_group_bys_only = NULL,  decreasing_sort_order = FALSE)  
