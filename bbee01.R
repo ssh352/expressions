@@ -285,8 +285,36 @@ get_nber_timeslices <- function(dates, empties = TRUE, long_timeslices = FALSE, 
 # : Date[1:383], format: "1970-01-31" "1970-02-28" "1970-03-31" "1970-04-30" ...
 # : Date[1:474], format: "1970-01-31" "1970-02-28" "1970-03-31" "1970-04-30" ...
 
+# space-saver - meant to be used at the beginning of a function
+initEnv <- function() {
 
- 
+  ops <- options()
+
+  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
+  options(digits = 22) 
+  options(max.print=99999)
+  options(scipen=255) # Try these = width
+  # 
+  assign("ops", ops, envir = parent.frame())
+  
+  #correct for TZ 
+  oldtz <- Sys.getenv("TZ")
+  if(oldtz=='') {
+    Sys.setenv(TZ="UTC")
+  }
+  #
+  assign("oldtz", oldtz, envir = parent.frame())
+
+}
+
+# space-saver - meant to be used at the end of a function
+uninitEnv <- function() {
+
+  Sys.setenv(TZ=get("oldtz", envir = parent.frame()))
+  options(get("ops", envir = parent.frame()))
+
+}
+
 # required to be here so can be seen by buildModel
 buildModel.caret <- function(quantmod,training.data,...) {
 
