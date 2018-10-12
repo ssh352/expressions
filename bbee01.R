@@ -1,6 +1,11 @@
  
 # bbee01.R
 
+# TODO
+# add foodweb
+# TODO
+# add tryCatchLog
+# add sebastian Kranz
 
 # my old work
 #
@@ -188,6 +193,9 @@ get_nber_timeslices <- function(dates, empties = TRUE, long_timeslices = FALSE, 
     
     require(xts)
     
+    print(x)
+    browser( expr = { (x[["Start"]] == 19481130) & (x[["End"]] == 19491031) } )
+    
     # can not use tis::ti upon EARLY nber dates 
     # tis::ti(<date>, "daily")
     # Error in ymdToTi(ymd, tif[1]) : ymd too early for tif
@@ -285,35 +293,7 @@ get_nber_timeslices <- function(dates, empties = TRUE, long_timeslices = FALSE, 
 # : Date[1:383], format: "1970-01-31" "1970-02-28" "1970-03-31" "1970-04-30" ...
 # : Date[1:474], format: "1970-01-31" "1970-02-28" "1970-03-31" "1970-04-30" ...
 
-# space-saver - meant to be used at the beginning of a function
-initEnv <- function() {
 
-  ops <- options()
-
-  options(width = 10000) # LIMIT # Note: set Rterm(64 bit) as appropriate
-  options(digits = 22) 
-  options(max.print=99999)
-  options(scipen=255) # Try these = width
-  # 
-  assign("ops", ops, envir = parent.frame())
-  
-  #correct for TZ 
-  oldtz <- Sys.getenv("TZ")
-  if(oldtz=='') {
-    Sys.setenv(TZ="UTC")
-  }
-  #
-  assign("oldtz", oldtz, envir = parent.frame())
-
-}
-
-# space-saver - meant to be used at the end of a function
-uninitEnv <- function() {
-
-  Sys.setenv(TZ=get("oldtz", envir = parent.frame()))
-  options(get("ops", envir = parent.frame()))
-
-}
 
 # required to be here so can be seen by buildModel
 buildModel.caret <- function(quantmod,training.data,...) {
@@ -1891,6 +1871,7 @@ get_up_side_down_side2 <- function(){
   message("    buyandhold_will5000ind_rules_wts   ")
   print(tail(buyandhold_will5000ind_rules_wts))
   
+  
   buyandhold_will5000ind_portf <- Return.portfolio(R = all_possible_instrument_log_rets[,match(colnames(buyandhold_will5000ind_rules_wts), colnames(all_possible_instrument_log_rets))], weights =  buyandhold_will5000ind_rules_wts, value = initial_value, verbose = TRUE)
   # "portfolio.returns"
   buyandhold_will5000ind_portf_log_rets <- buyandhold_will5000ind_portf$returns
@@ -1906,18 +1887,18 @@ get_up_side_down_side2 <- function(){
   unrate <- all_possible_indicators[,"unrate"]
 
   unrate1_indicator <- Less(SMA(    unrate   ,2), SMA(    unrate   ,6))
-  colnames(unrate1) <- "unrate1"
+  colnames(unrate1_indicator) <- "unrate1"
 
   unrate2_indicator <- Less(SMA(lag(unrate)  ,2), SMA(lag(unrate  ),6))
-  colnames(unrate2) <- "unrate2"
+  colnames(unrate2_indicator) <- "unrate2"
 
   unrate3_indicator <- Less(SMA(lag(unrate,2),2), SMA(lag(unrate,2),6))
-  colnames(unrate3) <- "unrate3"
+  colnames(unrate3_indicator) <- "unrate3"
 
   # "unrate", "unrate1", "unrate2", "unrate3"
   all_possible_indicators <- merge.xts(all_possible_indicators, unrate1_indicator, unrate2_indicator, unrate3_indicator)
 
-  rm(unrate,unrate1,unrate2,unrate3)
+  rm(unrate_indicator,unrate1_indicator,unrate2_indicator,unrate3_indicator)
   
   merged <- merge(all_possible_instrument_log_rets, all_possible_indicators)
   
@@ -1943,7 +1924,7 @@ get_up_side_down_side2 <- function(){
   )
   tc <- caret::trainControl(method = "cv", number = 5)
   
-  builtmodel <- buildModel(specmodel,method="train",training.per=c("1970-12-31","2006-12-31"), method_caret = 'xgbTree', tuneGrid = tg, trControl = tc)
+  builtmodel <- buildModel(specmodel,method="train",training.per=c("1970-12-31","2006-12-31"), method_train = 'xgbTree', tuneGrid = tg, trControl = tc)
   
   getted_model_data <- getModelData(builtmodel, na.rm = TRUE, source.envir = Symbols)
   
