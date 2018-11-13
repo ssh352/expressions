@@ -3458,12 +3458,39 @@ verify_company_basics <- function (dateindex = NULL) {
         # , drop = FALSE] -> si_si_tbl_df 
         
       #    lcase_a_remove_useless_columns(si_si_tbl_df)       -> si_si_tbl_df
-        if(si_tbl_i == "si_ci") {
-           lcase_a_remove_useless_columns(si_si_tbl_df, "ci") -> si_si_tbl_df
-        } else { # "si_exchg","si_mgdsc"
-          # all lower ( PostgreSQL friendly )
-          colnames(si_si_tbl_df) <- tolower(colnames(si_si_tbl_df))
+        # if(si_tbl_i == "si_ci") {
+        #    lcase_a_remove_useless_columns(si_si_tbl_df, "ci") -> si_si_tbl_df
+        # } else { # "si_exchg","si_mgdsc"
+        #   # all lower ( PostgreSQL friendly )
+        #   colnames(si_si_tbl_df) <- tolower(colnames(si_si_tbl_df))
+        # }
+        
+        # CHANGE OF NOV 13 2018
+        # SO NOT ALL COLUMNS ( si_mgdsc shows X X.1, X.2 columns )
+        # duplicate subscripts for columns ERROR
+        # means multiple data.frame columns with the same name e.g. "col" "col"
+        lcase_a_remove_useless_columns(si_si_tbl_df, "ci") -> si_si_tbl_df
+        
+        # CHANGE OF NOV 13 2018
+        # as.integer(zoo::as.Date("2018-10-22")) [1] 17826
+        # [1] 17826
+        # add prefix TRBC because I WOULD rather NOT interfear the the old ones 
+        # ( EASY TO mass UPDATE if I change MY mind )
+        # New sector and industry classifications (10/22/2018 release)
+        # ReadMe.txt: Thomson Reuters Business Classification (TRBC) methodology
+        # INTRO: https://www.aaii.com/stock-investor-pro/newsectors
+        if(si_tbl_i == "si_mgdsc") {
+          with (si_si_tbl_df , { if( any(60000000L <= as.integer(mg_code))                                       ) stop("BAD/NEW  mg_code detected") } )
+          with (si_si_tbl_df , { if( any(   (1210L <= as.integer(mg_code)) & (as.integer(mg_code) < 49999999) )  ) stop("BAD/NEW  mg_code detected") } )
         }
+        if((17826 <= dateindex) && (si_tbl_i == "si_mgdsc")) {
+        
+          # updated
+          si_si_tbl_df$mg_desc <- with (si_si_tbl_df , { ifelse((      50L <= as.integer(mg_code)) & (as.integer(mg_code) <=       59L), str_c("TRBC ", mg_desc) ,mg_desc) } )
+          si_si_tbl_df$mg_desc <- with (si_si_tbl_df , { ifelse((50000000L <= as.integer(mg_code)) & (as.integer(mg_code) <= 59999999L), str_c("TRBC ", mg_desc) ,mg_desc) } )
+          
+        }
+
         
         # unique ids
         
@@ -12923,4 +12950,7 @@ get_all_raw_by_dateindex <- function(dateindex = NULL, file_type = "fst", aaii_s
 # rm(list=setdiff(ls(all.names=TRUE),c("con","cid","GSPC"))); debugSource('W:/R-3.4._/finecon01.R'); debugSource('W:/R-3.4._/goodsight01.R');verify_connection();options(upsert_temp_is_temporary=Inf)
 #
 # rm(list=setdiff(ls(all.names=TRUE),c("con","cid"))); debugSource('W:/R-3.4._/finecon01.R');debugSource('W:/R-3.4._/goodsight01.R');debugSource('W:/R-3.4._/valuesight01.R');verify_connection();options(upsert_temp_is_temporary=Inf);verify_channel();Quandl::Quandl.api_key(api_key= "API_KEY");setDefaults(getSymbols.av, api.key="API.KEY")
+
+# SEP 2018
+# rm(list=setdiff(ls(all.names=TRUE),c("con","cid"))); debugSource('W:/R-3.5._/finecon01.R');debugSource('W:/R-3.5._/goodsight01.R');debugSource('W:/R-3.5._/valuesight01.R');debugSource('W:/R-3.5._/bbee01.R');debugSource('W:/R-3.5._/experiments.R');verify_connection();options(upsert_temp_is_temporary=Inf)
 
