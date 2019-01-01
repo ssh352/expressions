@@ -702,11 +702,11 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     #  2. incomplete data exists of current month 
     # THEREFORE
     # this IS       the end of the PREVIOUS MONTH
-    # finDate.TestTrain.Global.Latest    <- "2018-04-30"  # 2014-12-31(perfect) 
+    # finDate.TestTrain.Global.Latest    <- "2018-12-31"  # 2014-12-31(perfect) 
                                                           # march 21, 2015 run: "2015-01-31": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
                                                           # march 21, 2015 run: "2015-02-28": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
                                                           # march 21, 2015 run: "2015-03-31": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
-    finDate.TestTrain.Global.Latest      <- "2018-04-30"  # april  6, 2015 run: "2015-03-31": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
+    finDate.TestTrain.Global.Latest      <- "2018-12-31"  # april  6, 2015 run: "2015-03-31": Warning message: In to.period(x, "months", indexAt = indexAt, name = name, ...) : missing values removed from data
     
     # training and TRUE tests
     list(Test2001 = list(Train=list(initDate = initData.TestTrain.Global.Earliest,finDate ="1998-12-31"),
@@ -1590,53 +1590,114 @@ main_rcsnsight2_999 <- function(THESEED = 1,pauseat=NULL) {
     
     "TREAST.DELAYZERO.ABS.ADJUSTNOW" -> ALL.OBSERVEES["TREAST.DELAYZERO.ABS.ADJUSTNOW"]
     
+    # Updated: Jun 14, 2018
+    # This series will no longer be updated. 
+    # It is a duplicate of the following series, which will continue to be updated: 
+    # https://fred.stlouisfed.org/series/WSHOMCB (SEE JUST BELOW)
+    # Assets: Securities Held Outright: Mortgage-Backed Securities
+    # 
+    # # smooth start in 2002 ( otherwise zero before that )
+    # 
+    # #     Title:               Mortgage-backed securities held by the Federal Reserve: All Maturities
+    # #     Series ID:           MBST
+    # #     Source:              Board of Governors of the Federal Reserve System (US)
+    # #     Release:             H.4.1 Factors Affecting Reserve Balances
+    # #     Seasonal Adjustment: Not Seasonally Adjusted
+    # #     Frequency:           Weekly, As of Wednesday
+    # #     Units:               Millions of Dollars
+    # #     Date Range:          2002-12-18 to 2015-01-14
+    # #     
+    # #     http://research.stlouisfed.org/fred2/data/MBST.txt
+    # 
+    # retrieveSymbolsQuantmodRdata(
+    #     finSymbol = "MBST"
+    #   , finSymbolRemoteSource = "Quantmod_FRED"
+    #   , finSymbolAttributes = c("Close")
+    #   , initDate = "1950-03-01"
+    #   , subtractOffDaysSpec = 0
+    # ) -> MBST.DELAYZERO.ABS          # head "2002-12-18" 
+    #                                  # Weekly
+    #                                  # ( Last Updated: 2015-04-16 3:46 PM CDT - ??? date - typically 2 days late WITH 2 days old date in 7 day chunks )
+    # 
+    # # really meant for a monthly
+    # as.integer(diff.mondate(c(
+    #   as.mondate(tail(index(MBST.DELAYZERO.ABS),1), displayFormat="%Y-%m-%d",timeunits="months"),
+    #   as.mondate(finDate.TestTrain.Global.Latest, displayFormat="%Y-%m-%d",timeunits="months")
+    # ))) -> pullAheadZOODataMonthShiftAmount
+    # 
+    # merge.xts(MaxAllTestTrainMonthEnds,MBST.DELAYZERO.ABS) -> MBST.DELAYZERO.ABS
+    # MBST.DELAYZERO.ABS[MaxAllTestTrainMonthEndsRange] -> MBST.DELAYZERO.ABS
+    # 
+    # assign("MBST.DELAYZERO.ABS", value=MBST.DELAYZERO.ABS, envir = .GlobalEnv)
+    # 
+    # # if HAD BEEN a Daily
+    # max(pullAheadZOODataMonthShiftAmount,0) -> pullAheadZOODataMonthShiftAmount
+    # 
+    # pullAheadZOOData(MBST.DELAYZERO.ABS,pullAheadZOODataMonthShiftAmount) ->  MBST.DELAYZERO.ABS.ADJUSTNOW
+    # print(paste0("MBST pullAheadZOOData should be DELAYZERO"," Actual: ",pullAheadZOODataMonthShiftAmount))
+    # 
+    # merge.xts(MaxAllTestTrainMonthEnds,MBST.DELAYZERO.ABS.ADJUSTNOW) -> MBST.DELAYZERO.ABS.ADJUSTNOW
+    # MBST.DELAYZERO.ABS.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> MBST.DELAYZERO.ABS.ADJUSTNOW
+    # 
+    # assign("MBST.DELAYZERO.ABS.ADJUSTNOW", value=MBST.DELAYZERO.ABS.ADJUSTNOW, envir = .GlobalEnv)
+    # 
+    # "MBST.DELAYZERO.ABS.ADJUSTNOW" -> ALL.OBSERVEES["MBST.DELAYZERO.ABS.ADJUSTNOW"]
+    
+
+    
+    # NOTE: DATA ENDS UP "NOT APPEARING IN VarImp" 
+    # (DATE(DATA) RANGE IS TOO LATE? TO BE INCLUDED IN TRAIN?)
     
     # smooth start in 2002 ( otherwise zero before that )
     
-    #     Title:               Mortgage-backed securities held by the Federal Reserve: All Maturities
-    #     Series ID:           MBST
-    #     Source:              Board of Governors of the Federal Reserve System (US)
-    #     Release:             H.4.1 Factors Affecting Reserve Balances
-    #     Seasonal Adjustment: Not Seasonally Adjusted
-    #     Frequency:           Weekly, As of Wednesday
-    #     Units:               Millions of Dollars
-    #     Date Range:          2002-12-18 to 2015-01-14
+    # Title:               Assets: Securities Held Outright: Mortgage-Backed Securities
+    # Series ID:           WSHOMCB
+    # Source:              Board of Governors of the Federal Reserve System (US)
+    # Release:             H.4.1 Factors Affecting Reserve Balances
+    # Seasonal Adjustment: Not Seasonally Adjusted
+    # Frequency:           Weekly, As of Wednesday
+    # Units:               Millions of Dollars
+    # Date Range:          2002-12-18 to 2018-12-26
+    # Last Updated:        2018-12-27 3:51 PM CST
+    # Notes:               The current face value of mortgage-backed obligations held by Federal
+    # Reserve Banks. These securities are guaranteed by Fannie Mae, Freddie
+    # Mac, or Ginnie Mae.
     #     
-    #     http://research.stlouisfed.org/fred2/data/MBST.txt
+    # http://research.stlouisfed.org/fred2/data/WSHOMCB.txt
     
     retrieveSymbolsQuantmodRdata(
-        finSymbol = "MBST"
+      finSymbol = "WSHOMCB"
       , finSymbolRemoteSource = "Quantmod_FRED"
       , finSymbolAttributes = c("Close")
       , initDate = "1950-03-01"
       , subtractOffDaysSpec = 0
-    ) -> MBST.DELAYZERO.ABS          # head "2002-12-18" 
-                                     # Weekly
-                                     # ( Last Updated: 2015-04-16 3:46 PM CDT - ??? date - typically 2 days late WITH 2 days old date in 7 day chunks )
+    ) -> WSHOMCB.DELAYZERO.ABS       # head "2002-12-18" 
+    # Weekly
+    # ( Last Updated: 2018-12-27 3:51 PM CST - ??? date - typically 2 days late WITH 2 days old date in 7 day chunks )
     
     # really meant for a monthly
     as.integer(diff.mondate(c(
-      as.mondate(tail(index(MBST.DELAYZERO.ABS),1), displayFormat="%Y-%m-%d",timeunits="months"),
+      as.mondate(tail(index(WSHOMCB.DELAYZERO.ABS),1), displayFormat="%Y-%m-%d",timeunits="months"),
       as.mondate(finDate.TestTrain.Global.Latest, displayFormat="%Y-%m-%d",timeunits="months")
     ))) -> pullAheadZOODataMonthShiftAmount
     
-    merge.xts(MaxAllTestTrainMonthEnds,MBST.DELAYZERO.ABS) -> MBST.DELAYZERO.ABS
-    MBST.DELAYZERO.ABS[MaxAllTestTrainMonthEndsRange] -> MBST.DELAYZERO.ABS
+    merge.xts(MaxAllTestTrainMonthEnds,WSHOMCB.DELAYZERO.ABS) -> WSHOMCB.DELAYZERO.ABS
+    WSHOMCB.DELAYZERO.ABS[MaxAllTestTrainMonthEndsRange] -> WSHOMCB.DELAYZERO.ABS
     
-    assign("MBST.DELAYZERO.ABS", value=MBST.DELAYZERO.ABS, envir = .GlobalEnv)
+    assign("WSHOMCB.DELAYZERO.ABS", value=WSHOMCB.DELAYZERO.ABS, envir = .GlobalEnv)
     
     # if HAD BEEN a Daily
     max(pullAheadZOODataMonthShiftAmount,0) -> pullAheadZOODataMonthShiftAmount
     
-    pullAheadZOOData(MBST.DELAYZERO.ABS,pullAheadZOODataMonthShiftAmount) ->  MBST.DELAYZERO.ABS.ADJUSTNOW
-    print(paste0("MBST pullAheadZOOData should be DELAYZERO"," Actual: ",pullAheadZOODataMonthShiftAmount))
+    pullAheadZOOData(WSHOMCB.DELAYZERO.ABS,pullAheadZOODataMonthShiftAmount) ->  WSHOMCB.DELAYZERO.ABS.ADJUSTNOW
+    print(paste0("WSHOMCB pullAheadZOOData should be DELAYZERO"," Actual: ",pullAheadZOODataMonthShiftAmount))
     
-    merge.xts(MaxAllTestTrainMonthEnds,MBST.DELAYZERO.ABS.ADJUSTNOW) -> MBST.DELAYZERO.ABS.ADJUSTNOW
-    MBST.DELAYZERO.ABS.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> MBST.DELAYZERO.ABS.ADJUSTNOW
+    merge.xts(MaxAllTestTrainMonthEnds,WSHOMCB.DELAYZERO.ABS.ADJUSTNOW) -> WSHOMCB.DELAYZERO.ABS.ADJUSTNOW
+    WSHOMCB.DELAYZERO.ABS.ADJUSTNOW[MaxAllTestTrainMonthEndsRange] -> WSHOMCB.DELAYZERO.ABS.ADJUSTNOW
     
-    assign("MBST.DELAYZERO.ABS.ADJUSTNOW", value=MBST.DELAYZERO.ABS.ADJUSTNOW, envir = .GlobalEnv)
+    assign("WSHOMCB.DELAYZERO.ABS.ADJUSTNOW", value=WSHOMCB.DELAYZERO.ABS.ADJUSTNOW, envir = .GlobalEnv)
     
-    "MBST.DELAYZERO.ABS.ADJUSTNOW" -> ALL.OBSERVEES["MBST.DELAYZERO.ABS.ADJUSTNOW"]
+    "WSHOMCB.DELAYZERO.ABS.ADJUSTNOW" -> ALL.OBSERVEES["WSHOMCB.DELAYZERO.ABS.ADJUSTNOW"]
     
     bookmark_here <- 1
     
