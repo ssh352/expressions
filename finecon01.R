@@ -6211,7 +6211,7 @@ load_inbnd_stmtstats_division_aggregates <- function(dateindex = NULL) {
       sp500_general_financialsim = Hmisc::llist(  
              DESC = Hmisc::llist(
                sp_desc         = "case when fei.sp = '500' then 'sp500' else '_error_' end"
-             , sector_fin_desc = "case when fei.sector_desc = 'Financial' then 'sectfinfinancial' else 'sectfinnotfinancial' end"
+             , sector_fin_desc = "case when ( fei.sector_desc = 'Financial' or fei.sector_desc = 'TRBC Financials') then 'sectfinfinancial' else 'sectfinnotfinancial' end"
              )
            , WHERE           = "and fei.sp in('500')"
            , WHERE_DATEINDEX = local({ 
@@ -8020,6 +8020,8 @@ get_sipro_rolling_finstats <- function(
   ;
   ")
     
+  writeLines(query)
+  
   sipro_rolling_finstats <- dbGetQuery(con, query)
   
   Sys.setenv(TZ=oldtz)
@@ -8312,7 +8314,7 @@ get_sipro_sp500_earnings <- function() {
 
   verify_connection()
   
-  sipro_sp500_earnings <- dbGetQuery(con, "
+  query <- "
 
   -- NOV 29 2017 -- 101.00
   -- res <- Quandl('MULTPL/SP500_EARNINGS_MONTH') 
@@ -8411,7 +8413,10 @@ get_sipro_sp500_earnings <- function() {
   ) t1q on co.dateindex_dt_co = t1q.dateindex_dt_1q 
   order by co.dateindex_dt_co
   ;
-  ")
+  "
+  
+  writeLines(query)
+  sipro_sp500_earnings <- dbGetQuery(con, query)
   
   Sys.setenv(TZ=oldtz)
   options(ops)
@@ -9033,7 +9038,7 @@ get_sipro_sp500_mktcap_o_netinc <- function() {
 
   verify_connection()
   
-  sipro_sp500_mktcap_o_netinc <- dbGetQuery(con, "
+  query <- "
 
   select 
       co.* 
@@ -9111,7 +9116,11 @@ get_sipro_sp500_mktcap_o_netinc <- function() {
   order by co.dateindex_dt_co
   ;
 
-  ")
+  "
+  
+  writeLines(query)
+  
+  sipro_sp500_mktcap_o_netinc <- dbGetQuery(con, query)
   
   Sys.setenv(TZ=oldtz)
   options(ops)
@@ -9316,7 +9325,7 @@ get_sipro_inbnd_netinc_any_marginals_eom_xts <- function(marginals = FALSE) {
     (sum(netinc_q1) - sum(netinc_q2))/ abs( nullif(sum(netinc_q2),0) )* 100 banks_pchg_netinc_q1q2
   from fe_data_store.si_finecon2  
   where 
-        sp in ('500','400','600') and industry_desc     in ('Money Center Banks', 'Regional Banks', 'Consumer Financial Services', 'S&Ls/Savings Banks')
+        sp in ('500','400','600') and sector_desc     in ('Financial','TRBC Financials')
     and netinc_q1 is not null and netinc_q2 is not null and mktcap is not null
     ", if(marginals) {"and now_inbnd_stmtid_dateindex is not null"} else {""}, "
   group by dateindex
@@ -9335,7 +9344,7 @@ get_sipro_inbnd_netinc_any_marginals_eom_xts <- function(marginals = FALSE) {
     (sum(netinc_q1) - sum(netinc_q2))/ abs( nullif(sum(netinc_q2),0) )* 100 notbanks_pchg_netinc_q1q2
   from fe_data_store.si_finecon2  
   where 
-        sp in ('500','400','600') and industry_desc not in ('Money Center Banks', 'Regional Banks', 'Consumer Financial Services', 'S&Ls/Savings Banks')
+        sp in ('500','400','600') and sector_desc not in ('Financial','TRBC Financials')
     and netinc_q1 is not null and netinc_q2 is not null and mktcap is not null
     ", if(marginals) {"and now_inbnd_stmtid_dateindex is not null"} else {""}, "
   group by dateindex
@@ -9343,6 +9352,9 @@ get_sipro_inbnd_netinc_any_marginals_eom_xts <- function(marginals = FALSE) {
   ) notbanks on every.dateindex = notbanks.dateindex 
   "
   )
+  
+  writeLines(query)
+  
   sipro_inbnd_netinc_any_marginals_eom <- dbGetQuery(con, query)
   
   temp <- as.matrix(sipro_inbnd_netinc_any_marginals_eom[ ,!colnames(sipro_inbnd_netinc_any_marginals_eom) %in% c("dateindex_dt"), drop = FALSE])
