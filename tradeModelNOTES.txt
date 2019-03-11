@@ -1,0 +1,1686 @@
+
+
+LEFT_OFF: TODO: (SUNDAY) [X]
+[x] Clean up output columns of
+runRanksMS  ( see runRanksTTR and rollEpochRanks )
+[x] Clean up output columns of
+runRanksMS
+[x] Clean up output columns of
+fancifyXts
+[x] integrate (VERY IMPORTANT)
+rollEpochRanks into eXplode
+[x] integrate (VERY IMPORTANT)
+fancifyXts into eXplode
+
+
+(Wednesday): tradeModel
+[ ] PULL "fastforward"DOWN: CHANGED DATA FROM github
+
+(Wednesday): wake UP 4:50 a.m.
+verify eXplode is TTR:
+
+(WED - go home WAIT for the MECHANIC to finish MY CAR: I will run/walk/trot BACK)
+Clean out workhorse: willShire5000MachineWts
+[ ] Generalize (SEE BELOW): e.g. move PROPER hard coded UNRATE (PRO
+[ ] remove my CUSTOM copy zone (just let UBL do all of that)
+. . .
+[ ]
+make a GSPC data since 1950 (similar to Wilshire): I need a larger range (just add 2%/12 = month)
+. . .
+[ ]
+make   GDP data since 1950 (similar to Wilshire): [GDP] recession sight replacement
+
+
+
+[X]
+LEFT_OFF AUXILARY R
+  rollEpochRanks
+    (trying to replace out data.table method with  runRanksTTR method)
+[ ]
+after make (very simple program: could b from "runMS")
+  runRanksMS ( from matrixStats::rowRanks (SEE MY NOTES )
+    RetOData = TRUE return Original data
+    RetIData = TRUE return Intermediatry data (SEE BELOW)
+    inbound
+    lagColns = c(<ordered> colum names or reguaal expressionsns)
+
+[NO] LEFT_OFF
+    LEFT_OFF_ANY.txt
+      BOTTOM
+        rollEpochRanks
+          should generalize to RollEpochStats
+[ ]
+(set up for CRAN)
+R Package Development 3: Travis/Appveyor and Continuous Integration
+John Muschelli
+Published on Jun 25, 2018
+AUTHOR OF library(usethis)
+https://www.youtube.com/watch?v=As5SM7-F02w&t=78s
+
+
+
+[ ] whether a function is verbose or NOT
+options(PKG__tradeModel__verbose_myFunction=TRUE)
+# BECAUSE 'screen display' is slowing the program down
+#
+if(getOption("PKG_tradeModel__verbose__rollApply", FALSE))
+  message/log*
+
+garanteeData(dirs = NULL, files = NULL, cols = NULL )
+
+(I could not get the AAII data loading in a timely manner)
+(I MAY COME back to this soon(with TIME CONSTRAINTS)
+(Temporaryily using Shiller's delayed data: I AM NOT FULLY comfortable with that IDEA)
+<same logic with the columns>
+Z_FILE_SIPRO_999999_SI_CI_FST_COL_COMPANY_ID_EXISTS_MEMORY
+
+1.	(if appl) check if envir var exists and
+Z_FILE_SIPRO_999999_SI_CI_FST_EXISTS_MEMORY == “TRUE”
+2.	If not exists or FALSE, check if envir var exists and
+Z_FILE_SIPRO_999999_SI_CI_FST_EXISTS_DISK == “TRUE”
+3.	If not exists or FALSE,
+travers named directorie(s) and/or specific file(s): verify/get the named list
+set Z_FILE_SIPRO_999999_SI_CI_FST_EXISTS_DISK = “TRUE”
+4.	if TRUE, read in file to variable File_999999_SIProSICIfst,
+set Z_FILE_SIPRO_999999_SI_CI_FST_EXISTS_DISK   = “TRUE” and
+set Z_FILE_SIPRO_999999_SI_CI_FST_EXISTS_MEMORY = “TRUE”
+5.	IF VERY FALSE, of the missing “FST”s repeat “above” with replacement of “FST” with “DBF”
+(read in file to variable File_999999_SIProSICIDbf)
+(create variable File_999999_SIProSICIDbf and disk file 99999\si_ci.fst)
+
+
+cran/OpenMPController
+
+[ ]
+default "no column" should be "Data" not "V"
+# ** HIGH-IST ** : I can do near the end
+NOTE: my xTs massaging functions
+ MOST return the original data + massaged data.
+ explode xTs expects one column in and one column out (and renames the outbond column)
+ [ ] add paramters NewOnly = FALSE to the xTs massaging functions
+ The function names are too long to put into explodeXts
+ most I will have to make simple lamda like functions to encase the paramters
+   and RetOData = F (so explodeXts) can handle that (SEE ABOVE)
+ (like Torgo did in DMwR book)
+
+
+[ ] simplify code and do not allow "GaussNoiseRegression"
+question about new/replicated UBL data and range of creation area #3
+https://github.com/paobranco/UBL/issues/3
+
+
+[ ] MAKE A NOTE TO USER
+# Apply GForce
+# gfuns = c("sum", "prod", "mean", "median", "var", "sd", ".N", "min", "max", "head", "last", "first", "tail", "[")
+# optfuns = c("max", "min", "mean", "length", "sum", "median", "sd", "var")
+# data.table:::`[.data.table`
+
+# [ ] MAKE A NOTE TO SELF AND FIX CODE
+# else if (jsub[[1L]]=="lapply" && jsub[[2L]]==".SD" && length(xcols))
+# data.table:::`[.data.table`
+
+
+[X] LEFT OFF GET TOO WEEKLY WORKING (SAT MORNING)
+? lastUpdatedDate
+  "Monthly", "Weekly" ( items in recession-sight )
+[X] option on the final obs/month
+  TO correctly subtract off(or just add back non-delay days.)
+[X] option 'no to do To.Monthy, because it had already been done
+
+**** HIGHEST **** ( THURSDAY DURING THE DAY )
+[ ] NEW DATA from Excell (along whith shiller, aaii, and 'philadelphia fed')
+SEARCH MY NOTES: "Goyal data from the US, which both begin from the year 1871"
+(Just use the Shiller function and copy and paste)
+
+[x] HIGH! -> see Examples of "CrashDates" (BETTER)
+diffXts (feature)
+  uses the index(es) and recalcualtes the annualized _ANN rate
+    since last crash/trough/apex "drowdown" (see below)
+
+[x] Rows/rollApply2 FIX
+# rollApply2 ( and rowr::rollApply and/or
+    data.table new column "thread(thread + lag (REQUIRED)" # doBy split by RUN
+                                                           # doBy split by RUN (see MY CODE)
+   foreach(optimal 2) iotools data.table fst
+# omit: window = 5
+fromo::t_running_apx_quantiles(1:20, p = c(0.25, 0.50, 0.75), time_deltas = rep(1,20))
+# rest ...findInterval
+  others besides data.table
+    x library(subprocess) ... issues SEE  r-lib/processx x
+    tcltk::tcl(
+
+    maditr
+    dtplyr
+    rqdatatable
+# (DOES DATA.TABLE do LIST COLUMNS?
+# DataCombine/versions/0.2.21/topics/InsertRow
+#
+Inserts A New Row Into A Data Frame
+Usage
+InsertRow(data, NewRow, RowNum = NULL)
+#
+https://www.rdocumentation.org/packages/DataCombine/versions/0.2.21/topics/InsertRow
+# Also, matrixStats ( + Rfast )
+# Also, fromo, roll(development), "others Roll"
+#
+See STYLE
+See "[SQL] scaleable scale-able" (chunks)
+#
+# better rowr::rollApply ( does not drop single dimension )
+# see rollApply2 ... move into Rows (my version of rowr::rows)
+
+
+
+[ ]
+ rowr::rollApply
+ forward/back
+   update company_id
+      climb the mountain tech
+        company_id_old (empty) 2. copy from company_id
+        company_id_new (empty  1. fill upon detection))
+        company_id             3. update from copany_id new
+      %change in price"
+        METHOD
+control tables
+  ControlCompanyIDs
+  ControlReturns
+
+[ ] MODIFY
+customSort[ing]
+  order(method = "radix")
+
+
+[ ] FIX
+CORRECT ALL OF MY
+xts(rnk,index(tail(x3),1))
+TO BE
+xts(rnk,index(tail(x3,1)))
+
+
+[ ] replace out my quantile -> findInterval calulations with
+data.table::frank(as.data.frame(x3), ties.method="dense", na.last= "keep")  %>%
+  tail(1) %>%
+    { findInterval(., vec = window/ranks * seq_len(ranks), rightmost.closed = T) + 1} ->
+rnk
+rnk <- xts(rnk,index(tail(x3,1)))
+
+[ ]
+swapout some messy logic in
+  willShire5000MachineWts
+    with better logic from
+       rollEpochRanks
+[ ]
+pick you own "Epocs" (NOT WHAT THE FEDERAL GOV TELLS ME)
+willShire5000MachineWts
+
+[ ]
+documenting S3 class generics
+  @describeIn ( replace out @rdname)
+  https://cran.r-project.org/web/packages/roxygen2/vignettes/rd.html
+
+  [ ] MAY review my method to cluserize: maybe a MANUAL foreach:: LOOP is better
+[ ] actually turn on parallel (IN SOME CASES)
+plyr::llply
+function (.data, .fun = NULL, ..., .progress = "none", .inform = FALSE,
+    .parallel = FALSE, .paropts = NULL)
+
+[ ] ** HIGH **
+spaparart out Willshire5000MachineWts
+into
+  <willshort5000PrepCode
+  recessionMachineWts
+
+[ ]
+search code looking for "is.na("
+# replace with
+if(anyNA(x))
+  x[which(is.na(x),array.ind = TRUE)] <- FALSE
+  if(any(x == FALSE)) { ETC }
+
+[ ] fix MY
+@title, @description, and @details
+  can use markdown formatting within roxygen blocks
+  Roxygen: list(markdown = TRUE)
+  https://cran.r-project.org/web/packages/roxygen2/vignettes/rd.html
+  https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet
+
+
+where needed
+\preformatted{
+
+}
+
+-----
+
+addCurrLeadCashLogReturns()
+  currentCashLogReturns
+  leadingCashLogReturns
+
+appendCashWts
+  DOES NOT USE
+    addCurrLeadCashLogReturns()
+JUST REPLACE WITH [ ]  TODO
+  addExcessCash ... does it all
+
+# FIX [ ]
+# instead of passsing by PIPE
+store in a hidden .object ( like Quantstrat does ) # OR something else: database)
+
+----
+
+if PAYEMS
+  JAN 2019 unemployment report 'unemployment rate' went up because some claimed
+  that number of people entering the workforce was greater
+  [ ] add this as a compare constrast xgboost FORMULA (? can I do some math )
+     [X] !!! ADD TO PERMANENT NOTE !!!!
+     increases linearly (almost perfectly) but OBVIOUSLY FLATTENS right before a recession
+     (strange point at MAY 2010)
+     All Employees: Total Nonfarm Payrolls (PAYEMS)
+     https://fred.stlouisfed.org/series/PAYEMS
+     [ ]
+     SOMEONE'S stored graph of the PAYEMS changes
+     https://fred.stlouisfed.org/graph/?g=8eiB&&utm_source=fred.stlouisfed.org&utm_medium=Referral&utm_term=related_resources&utm_content=&utm_campaign=graph?utm_source=series_page&utm_medium=related_content&utm_term=related_resources&utm_campaign=fredblog
+
+LEFT_OFF - FRI
+[x] getSymbols.USFedPhil WIP. Next . . . debug
+[delay] read matt rota PDF
+  [ ] AFTER: GET DATABASES REWORKING
+    [ ] ADD NEW COLUMN DATA.BASE FEATURES
+    [ ] VERIFY GET/RE-UPDATES WORKING
+      [ ] COLUMN NAME CONVERT R "." TO/FROM POSTGRESQL "__"
+
+[ ] where needed(almost everywhere): because I can not import "xts" (or is seems very hard? who did it?)
+# Near publishing of final package End:
+requireNamespace("zoo")
+requireNamespace("xts")
+
+
+[ ] FIX - per subseries ([ ] rewrite/simplify)
+tradeModel UBL: SIMPLE: test for data "out of range" (and eliminate)
+BUT need the first LAG value
+  x range
+    is [LAG value, max(x)]
+  x_new allowed are
+    LAG value < x_new <  Min(Range(x) logical_OR  x_new <=  Max(Range(x)  is acceptable
+*** question about new/replicated UBL data and range of creation area #3 ***
+*** GaussNoiseRegression CAN LEAK OUT ***
+https://github.com/paobranco/UBL/issues/3
+
+
+[ ] HIGH
+Suprise IMPACT - need to know the numer of firms that recorded
+an AAII suprise (or re-suprise - on sheet/statement recalc) within the last month
+This is read into the "modeller" to determine the "quality" of the data.
+
+
+# [ ] # testing
+library(unitizer) # used package "diffobj"
+demo(unitizer) # VERY FAST INTERACTIVE TEST WRITING AND SAVING
+
+[ ] TESTING
+library(testthis)
+  test_this(): Run tests associated with the currently open R script file.
+  lest_this(): “Load and test”; As above, but call devtools::load_all() first
+  test_with_skip(): Like devtools::test(), but does not run test files that contain the line #' @skip.
+  open_testfile(): Opens the associated testfile in an editor window. If the currently open file already is a testfile, it opens the associated file in the /R directory. Can be used to jump back and forth between both.
+    ***
+    EASILY modified to create a test fle if not exists ( does testthat\devtools DOES NOT DO THAT :[X] checked! )
+  use_testdata*_*
+
+# [ ] function relationships
+# library(pkgnet)
+# result <- CreatePackageReport('ggplot2')
+
+# [ ] json and java GUI method tracking
+# (AND MANY ON CRAN)
+NEWER LIST
+https://github.com/End-to-end-provenance
+OLDER LIST?
+https://github.com/ProvTools
+
+
+
+run in Rstudio, determine dependencies locations
+------------------------------------------------
+
+library(itdepends)
+
+double click inside the IDE
+... see the markers pane
+
+itdepends::dep_locate("package", path = "/path/to/dir")
+4:26:17
+Track 2 Schedule
+VIDEO
+It depends: A dialog about dependencies
+Jim Hester, RStudio
+rstudio conference of 2019
+https://www.rstudio.com/conference-track-2/
+https://github.com/topepo/rstudio-conf-2019
+
+
+
+
+NOTE: NOT: foreach examples
+-----------------------------
+
+OVERHEAD: is not workthe the startup time.
+
+library(bit)
+
+require(foreach)
+m <- 10
+k <- 10
+n <- m*k
+
+z <- 0L;
+print(k*system.time({it <- iterators::icount(m); foreach (i = it) %do% { z <- i; print(z); NULL }}))
+z
+z <- 0L;
+print(k*system.time({it <- iterators::icount(m); foreach (i = it) %dopar% { z <- i; print(z); NULL }}))
+z
+
+m <- 10000
+k <- 1000
+n <- m*k
+
+z <- 0L;
+print(k*system.time({it <- iterators::icount(m); foreach (i = it) %do% { z <- i; NULL }}))
+z
+   user  system elapsed
+   1980       0    1990
+> z
+[1] 10000
+
+z <- 0L;
+print(k*system.time({it <- iterators::icount(m); foreach (i = it) %dopar% { z <- i; NULL }}))
+z
+
+   user  system elapsed
+   3080    3300    6390
+> z
+[1] 0
+
+https://www.rdocumentation.org/packages/bit/versions/1.1-14/topics/chunk
+
+
+
+Proper way to use PerformanceAnalytics
+--------------------------------------
+
+library(PerformanceAnalytics)
+
+   Return.calculate
+   Return.portfolio
+
+value of the portfolio at time t
+V(p,t)
+
+portfolio return at time t
+  R(t) <- V(p,t) - V(p,t-1))/V(p,t)-1
+
+weight of asset i, w(i)
+, in the portfolio is defined as
+
+total portfolio value
+V(P)
+
+V(i)
+value of asset i
+
+weight of asset i ( so proportional (linear) )
+w(i) <- V(i)/V(P)
+
+library(quantmod)
+library(PerformanceAnalytics)
+symbols = c(
+  "SPY", # US equities, SP500
+  "AGG"  # US bonds, Barclay Agg
+  )
+
+getSymbols(symbols, from="1970-01-01")
+x.P <- do.call(merge, lapply(symbols, function(x) {
+               Cl(to.monthly(Ad(get(x)), drop.time = TRUE,
+               indexAt='endof'))
+               }))
+colnames(x.P) = paste0(symbols, ".Adjusted")
+x.R <- na.omit(Return.calculate(x.P)) # default # discrete
+            # method == "discrete"
+            # Returns = pr/lag.xts(pr) - 1
+
+head(x.R)
+
+head(x.R)
+#            SPY.Adjusted AGG.Adjusted
+# 2003-10-31   0.05350714 -0.009464182
+# 2003-11-28   0.01095923  0.003380861
+
+res . . . <- Return.portfolio(x.R, . . .
+table.AnnualizedReturns(res, . . .
+
+Case 1
+rebalancing event.
+
+For example, the
+rebalance weights at the end of 1996-12-31
+take effect at the beginning of 1997-01-31. This means that
+the beginning of 1997-01-31 is considered a rebalance event.
+
+V(bop = t,i) = w(i)
+
+Basic definitions
+SEEN JAN 2019
+PerformanceAnalytics/doc/portfolio_returns.pdf
+FROM
+"Ross did a very nice vignette for the function (vignette(portfolio_returns))"
+
+and as usual there’s a lot more detail in the documentation – take a look.
+
+SEP 25 2014
+Peter Carl
+AGGREGATE PORTFOLIO CONTRIBUTIONS THROUGH TIME
+https://tradeblotter.wordpress.com/2014/09/25/aggregate-portfolio-contributions-through-time/
+Aggregate portfolio contributions through time
+September 25, 2014
+By Peter Carl
+https://www.r-bloggers.com/aggregate-portfolio-contributions-through-time/
+https://tradeblotter.wordpress.com/2014/09/25/aggregate-portfolio-contributions-through-time/
+
+
+
+[ ] like recessionsight
+ [ ] need the time_in_days delay (or logical estimate) from publication 'publish dates'
+    see my getSymbols. (I HAVE written some code to do this search my expressions )
+      new name getSymbols.FRED2
+[ ] need better getSymbols.FRED ( I also need to search ALFRED for historical 'publish dates')
+    NOTE: FRED is consistent: better off just estimate the p
+(1)
+xts "percent changes" (add options)
+ [ ] annualized
+   [ ] arithmetic ( I commonly use ) (A:just usually x12 - B:index MAY give the answer)
+   [ ] geometric
+(2)
+business implementation
+  [ ] since last recession (correct annualized %changes% )
+    see "drawdown in NOTES.txt" (see help? from fromo)
+
+[DELAY] switch mine (NOT SEARCHABLE)
+now GITHUB unlimited PRIVATE repos
+JAN 11 2019
+https://channel9.msdn.com/Shows/This+Week+On+Channel+9/TWC9-Unlimited-Free-Private-GitHub-Repos-Python-in-Azure-App-Service-CES-Highlights-and-more#time=1m37s
+
+[ ] indentation change 2 SPACES(prob end up doing) to 4 SPACES
+
+[ ] customSorting redone using order (MAYBE NOT): would neet an ORDER method
+> order(c("a","c","b"))  [ ] if ORDER not available ( see package zoo ) then to factors way
+[1] 1 3 2
+> letters[c(1,3,2)]
+[1] "a" "c" "b"
+[ ] rename to customSort
+
+
+change
+[ ]
+  dfGetPKEYNames function name
+  to
+  dfGetUniqRowColNames function name
+[ ]
+  1:length(
+  seq_along(
+
+GET RID of RPostgres LOGIC
+[ ] prepare.query
+pgUpdate
+
+[ ] get rid of the "tolower %in% tolower" comparisons
+
+[X] put these notes in .R file
+# period.apply on xts object takes about 50x longer than running it on it's core data and recasting. #278
+# https://github.com/joshuaulrich/xts/issues/278
+
+# [R-Forge #5754] GForce functions and row- + col-wise operations on .SD #523
+# https://github.com/Rdatatable/data.table/issues/523
+
+[ ] TUESDAY - 6:00 A.M.
+  [X] aaii update data/software
+  [X] aaii monthly R update
+  [ ] fix REPORTS sectors/industries
+  [ ] query MAYBE debt/mktcap debt/interest_expense interest/expense/net_income
+[x]  recessionsight
+
+[x] RC NegNeg case: (works logically (but may be slow))
+[x] dbpdate -> pgUpdate
+ [x] fix any errors
+   [X]  aaii sentiment data  . .. update last observation
+     .AAIISentimentSurveyPastResults_path2file
+
+JUST AFTER
+ [x] update a matrix
+
+[x] UMICH sentiment data getSymbols.Umich
+  [x] getSymbols("UMich") (IF I do not have it, then MAKE it)
+
+# EVENTUALLY TODO
+# [ ] TODO: fredData 'DO NOT lowercase' return COLUMN NAMES
+      [ ] would have to make sure that the MAIN programs (2) WORK
+      [ ] also changes the expected result
+          in ... getSymbols.UMich  ... that uses fredData("UMCSENT")
+# [ ] TODO
+  splice "store 'new observation' result in the database
+    [X] getSymbols.UMich
+  splice "store 'all observations' ADD/append result in the database
+    [X] getSymbols.AAII
+    [X] getSymbols.YaleU
+  [ ] fredData paramter "New" should have its name changed to "Persistent"
+      # Attempt to get the data first through a persistent location
+  [ ] getNewSymbols name change to
+      get??Symbols Persistent Resolute Sticky "getRSymbols" (Resolute)
+  [ ] change URL.UPPERCASE to URL.CamelCase (match getSymbols.whatever)
+
+  BIGGEST GAIN
+  [ ] predict ahead 6 months ( or 3 months ) instead of 1 month or 3 months
+    [ ] Use OneOf()
+
+  [ ] PER INDICATOR Symbol: loop check each variable compose of diffrent: (shift)base, lag, differences
+    [ ] compare to the Y-solution "up/down" over the next 6-months
+      [ ] choose best per Symbol or (Simbol (shift)base, lag, differences)
+  [ ] kdd cup challenge, find Symbol1 v.s Symbol2 matches than are weakly correllated? whith each other
+      but each are highly correlated with Y: e.g. (Symbol1,Y)
+
+  [ ] depends: magrittr
+    [ ] imports: magrittr %>%
+      [ ] where used `%>%` <- magrittr::`%>%`
+  [ ] raplace magrittr with wrappper 'dot arrow' (I like it better)
+
+  [ ] turn stringr::str_c in  %S%, %Sc% (comma) %Scp% Comma and Parentheses
+
+  If(getOptions("Verbose") || getOptions("MyFunction_Verbose")) {}
+  [ ] futile.logger (MY CUSTOM) one working
+    [ ] printin "match.call()[[1]]: REST"
+
+[x] shillers P/E data getSymbols.YaleU
+  [x] getSymbols("YaleU") (IF I do not have it, then MAKE it)
+
+[ ] prefixer::prefixer() RStudio AddIn
+  IF POSSIBLE
+  [ ] xts(may not this one)  [ ] quantmod [ ] performanceAnaltyics ":: prefix and import them"
+
+SITE showing the "percent change in Loans" (HIGH)
+  [ ] https://www.sifma.org/ ( MAY NEED phantom.js )
+
+    # WRONG ONE, I WANT THIS ONE
+    # https://www.sifma.org/resources/research/bond-chart/
+
+MAYBE -  Forcasters xls sheets: GDP UNRATE CPI forcasts PERCENT_OVER_FRED_CPI_GOAL
+  [ ] getSymbols("PhiForecasters")                      PERCENT_OVER_FRED_UNRATE_GOAL
+                                                        BETTER AGGR FRED aggressiveness
+
+[ ]
+change PostgreSQL saved table information 1st col name from "date" to "index"
+
+# (TO DO)
+# [ ]
+# getSymbols.reuters (skip: no earnings)
+# https://www.reuters.com/finance/stocks/financial-highlights/AAPL
+# https://www.reuters.com/finance/stocks/financial-highlights/IBM
+
+[ ] FINISH the program
+    read .dbf (forward or backup) and update from future/past observatons
+
+[ ] like "checkmate" give equivalent tidyverse snakecase names to functions
+[ ] like "fst" give dot.case.names to functions
+
+[ ]
+DBI::dbQuote* THESE
+  varHint = NULL, valHint = NULL
+
+SORTOF "HIGH"
+[ ] replace OUT first argument "xTs" to be "x" so I can do s3 methods
+
+# use regular expressions(see HMisc)
+[New]MaxAge = "4 hours"
+
+side note: new package
+%gr% %ge% %eq% %not% %notin% %Like% %notlike% %notLike%
+                         %inn% check in groups iteratively
+
+
+
+
+
+OTHERS to be put eventually in tradeModel eventually
+-----------------------------------------------------
+
+Rango "write to/from namespace"
+  RCpp
+ifelseC
+  RCpp
+xts_period_apply (with endpoint fix)
+  to be called interval_apply
+  (or better pacakge data.table method ) # uses threads
+  SEXP
+Plug in a faster BLAS\LAPACK library? [ ] did that
+
+"roll [percent rank]"
+consider replacing with 'percent rank' calculation
+  [ ] TURN ON plyr::llply parallel (where makes sence)
+  llply in parallel
+  llply( data.table(lapply(), fun, ... ) PARALLEL )
+    fun from":QuantTools::roll_percent_rank
+  xor just alone (where applicable)
+  [ ] roll::roll___ # uses RCppParallel threads
+    [ ]
+    replace out Hmisc weighted quantile using
+  [NO] fromo::running_apx_quantiles
+
+
+
+The Mode Ordered-Set Aggregate Function
+ Monday 13 Nov 2017  3 mins read  PostgreSQL, YeSQL
+ SQL  mode  Ordered-Set Aggregates
+https://tapoueh.org/blog/2017/11/the-mode-ordered-set-aggregate-function/
+https://www.postgresql.org/docs/9.5/functions-aggregate.html
+
+[x]
+INSTEAD OF TRUNCATING THE POSTGRESQL TABLE
+  APPENDING RECORDS TO THE POSTGRESQL TABLE
+
+
+(GOOD ONE)
+SHOW THE STAGE: OF THE FED
+pctrank
+  inflation - <interestest rate: ff?/discount?>
+
+
+ADD MISSING S3 CLASSES
+-----------------------
+timeSeries::timeSeries(coredata(fr), charvec = as.character(index(fr))
+
+as.xts.timeSeries
+
+> xts:::as.xts.timeSeries
+function(x,dateFormat="POSIXct",FinCenter,recordIDs,title,documentation,..., .RECLASS=FALSE) {
+index(as.xts(tms))
+c(coredata(as.xts(tms)))
+
+timeSeries:::as.timeSeries.zoo
+function (x, ...)
+{
+    ans <- timeSeries(data = as.matrix(x), charvec = as.character(attr(x,
+        "index")), ...)
+    ans
+}
+-----------------------
+
+
+
+
+practical noise reduction
+-------------------------
+
+(ANDRE PREFERENCE?)
+# min of two values
+MIN(xTs,2) [ ] I may have that
+# simple
+SMA(xTs,2)
+# # risk of next two values
+# SHARP(xTs,2)
+# risk of loss of two values
+SORTINO(xTs,2)
+
+
+
+how good a "curve fitter"
+------------------------
+
+PRESS statistic
+
+
+
+time warp-ing
+-------------
+but I can possibly emulate with
+
+RATE_OF_CHANGE_A/RATE_OF_CHANGE_B
+
+vericle measures and horizontal measures
+ANDRE
+JAN 2019
+
+
+
+SEE MY NOTE
+-----------
+determine a "bear market" begin
+--------------------------------
+
+(I WANT ROLLING RANK SINCE THE LAST CRASH)
+library(quantmod)
+library(PerformanceAnalytics)
+
+sp = getSymbols("^GSPC", from="1900-01-01", auto.assign=F)
+sp.ret = ROC(Cl(sp), type="discrete")
+
+> table.Drawdowns(sp.ret["1970/2001"], top=8)
+        From     Trough         To   Depth Length To Trough Recovery
+1 1973-01-12 1974-10-03 1980-07-17 -0.4820   1898       436     1462
+2 2000-03-27 2001-09-21       <NA> -0.3677    443       373       NA
+3 1987-08-26 1987-12-04 1989-07-26 -0.3351    485        71      414
+4 1980-12-01 1982-08-12 1982-11-03 -0.2711    488       430       58
+5 1970-01-06 1970-05-26 1971-01-19 -0.2586    264        99      165
+6 1990-07-17 1990-10-11 1991-02-13 -0.1992    148        62       86
+7 1998-07-20 1998-08-31 1998-11-23 -0.1934     90        31       59
+8 1983-10-11 1984-07-24 1985-01-21 -0.1438    324       199      125
+
+
+# Objectives
+# [ ] TODO: have a initlag = 0, change initial starting position
+# [NO RESTRICTION] TODO: can do/take +- lags and differences ( no reason not too)
+# [ ] TODO: replace a "diff" by a SMA(of something else)
+# [ ] TODO: custom "lag" lengths between points of coordinations
+# ( allow input of a matrix(m) WITH named dimensions )
+
+
+
+LagIndex <- function
+
+
+( Consider an "abs(deviance)" sortino
+  the X**2 was only convenient in early matrix math)
+[ ] DevianceSortino(xTs = NULL)
+[ ] Neg(xTs = NULL)
+
+
+[ ] MaxXts(xTs = NULL, n = 2)
+# (best month to month NOISE elminator)
+[ ] MinXts(xTs = NULL, n = 2)
+
+PREVIOUS DAILY/WEEKLY *PAST* VOLITILITY (OF SOME KIND)
+------------------------------------------------------
+
+                 S&P500 will do
+  [ ] non-VOLUME volitilty
+  [ ]     VOLUME volitilty
+
+GARCH is.
+
+Generalized Auto-Regressive Conditional Heteroskedasticity
+
+What it means:
+Generalized: a more general form of the
+Auto-Regressive: past values are used as inputs to predict future values.
+Conditional: the current value differs given a past value.
+Heteroskedasticity: varying volatility.
+  That is, consider the VIX. It isn’t one constant level, such as 20.
+    It varies with respect to time.
+
+Or, to summarize: “use past volatility to predict future volatility because it changes over time.”
+
+rugarch ( note: uses LOOK-FORWARD(GLOBAL) global volitility??? )
+https://campus.datacamp.com/courses/garch-models-in-r/the-standard-garch-model-as-the-workhorse-model?ex=1
+
+GARCH and a rudimentary application to Vol Trading
+December 3, 2018
+By Ilya Kipnis
+https://www.r-bloggers.com/garch-and-a-rudimentary-application-to-vol-trading/
+https://quantstrattrader.wordpress.com/2018/12/03/garch-and-a-rudimentary-application-to-vol-trading/
+
+
+
+measure (debt by itself does not mean anything)
+-----------------------------------------------
+'percent increase in net_income' ( could instead be a <stockholders's equity <type> )
+DIVIDING
+'percent increase in interest_expense'
+
+  [ ] from Simfa PCTCHANGE IN "term of corporate bonds"
+      (see one of the excel spread sheets)
+      Corporate-US-Corporate-Issuance-SIFMA.xls "Average Maturity" tab
+
+[ ] TRY HARD!! USING AAII DATA TO MATCH "SHILLERS INCOME SPREADSHEET"
+  SEE THE MULTPL.COM(?) WORDS OF THE FORMULA
+(or [ ] (FIRST) "DO NOT TRY"
+  JUST SUBTRACT OFF 4-6 MONTHS FROM THE KNOWN LAST INCOME)
+  WHICH MONTH IS THE POPULAR TIME FOR REPORTING EARNINGS?(DETERMINS? 4,5,6)
+  (THIS *month* WILL HAVE THE MOST IMPACT ON THE 'MARKET')
+
+SEE BELOW: aaii_sentiment: data since 1987
+
+(RESEARCHINPROGRESS)
+(BEFORE 2008 RECESSION: 14 MONTH LINEAR DECREASE IN SENTIMENT)
+(NOTHING BEFORE 2000 CRASH)
+(1989 SLOW DOWN: INVESTIGATION INPROGRESS: BUT DOES SHOW A DECREASE IN HAPPINES)
+(EXCELLENT) - need a getSymbols
+MAY? WANT to use ADDITIVE measure ONE + ONE + ONE 'strength' of a recession
+
+Realtime Consumer Sentiment Survey
+surveys of consumers UNIVERSITY OF MICHIGAN
+https://data.sca.isr.umich.edu/tables.php
+(EXCELLENT)
+ANDRE CLEANER
+  REMOVE NOISE
+  NOTE: LIKE: LAST TO OBSERVATIONS: DROP THE HIGHEST(MOST OPTIMISTIC ONE)
+  NEXT, TAKE THE ONE PERIOD DIFF %CHANGE, NEXT TAKE THE SORTIO RATIO ON *THAT RANGE* (MEASURE1)
+  ALSO, RECORD IN THAT RANGE THE MOVING PERCENTILE RANK (MEASURE2)
+
+
+
+(REORGANIZEME)
+import and importFrom in R packages
+------------------------------------
+
+library(DMwR)
+
+Torgo DMwR does it (manually)
+
+DESCRIPTION
+Imports: xts (>= 0.6-7), quantmod (>= 0.3-8), zoo (>= 1.6-4), abind (>=
+        1.1-0), rpart (>= 3.1-46), class (>= 7.3-1), ROCR (>= 1.0)
+NAMESPACE
+##import(xts)
+importFrom(xts,as.xts,xts)                  # NOTE: NON OF THESE ARE DESIGNED to be IMPORTED
+##import(quantmod)                          # [ ] performanceAnalytics: consider: I only use 3-4 functions
+importFrom(quantmod,newTA,Delt,candleChart) # [ ] condider: I only user getSymbols
+importFrom(zoo,as.zoo,zoo,coredata,index)   # [ ] POSSIBLE: not designed to be "imported"
+
+CODE
+  trading <- xts(trading,dates)
+
+Imports:
+  packages listed here must be present for your package to work.
+
+  Adding a package dependency here
+  ensures that it’ll be installed.
+  However, it does not mean that it will be attached along
+  with your package (i.e., library(x)).
+
+The best practice is to
+explicitly refer to external functions using the syntax package::function().
+
+http://r-pkgs.had.co.nz/description.html
+
+
+
+(REORGANIZEME)
+
+
+
+NOTE:
+  what does furrr::map DO?
+
+DEC 2018
+
+[x] CLEAN-UP initEnv
+[X] consistenize the code: str_c, DoCall, llply
+
+[x] change variable name AllData to NBERAllData
+[x] changed FocusedData to NBERFocusedData
+
+LEFT_OFF (HIGEST)
+  [BEGIN AFTER BATMAN] clean up and DECOMPOSE
+     "add Machine UnRate Wts" add Prediction Wts and UnRate Wts
+  [ ] clean up and DECOMPOSE      NBERtimeSlices into timeSlices and NBER
+  [ ] clean up and DECOMPOSE                          adjustObservations(UBL) (remove OUT OF ZONE observatoins)
+. . .                                                 replicateObservations
+                                                      timeSliceXts (will NOT USE)
+
+[NA-NOTNEEDED] inbound collect 'timezone offset' e.g. TZ_OFFSET
+
+  [X] USE when new/update PostgreSQL records of type "timestamp with time zone"
+
+HIGH (MAYBE "FIRST" IF I CAN IMPLEMENT QUICKLY?)
+[ ]
+  like caret.train(with OPTION ?#?) ( recipies has something )
+    keep data along the way: so I do not have to RE-CALCULATE
+      xTs attribute "history"
+
+(consider)
+[ ] NON-ERROR SYSTEM LOGGING ( replace out PACKAGE logging )
+futile.logger ( non-error system logging )
+name = "REPORTFINFO"
+(consider)
+[ ] REPORTINFO colors
+cat(crayon::yellow("1\n2\n")) # WORKS IN RDSTUDIO
+  SEE a futile.logger pull request
+> writeLines(crayon::yellow("1\n2\n")) # WORKS IN RSTUDIO
+[ ] "along with envi" ALSO STORE "si" (SessionInfo: so I know search() AND loaded namespaces FOR DEBUGGING)
+
+YES EVEN BETTER ERROR HANDLING ( SEE MY NOTE )
+"withRestarts and invokeRestart in Action"
+
+ELIMINATE predictors THAT 'hurt' MORE then HELP **
+[PARTIALLY DONE - I HAVE LISTS] iml/DALEX/Boruta
+  (BUT Boruta SAYS NO!_SPECIFICALLY May want to go back to this.)
+(DO NOT HAVE ANYTHING ON THE "HURT MORE")
+
+[X] getSymbols(src="shiller")  ***** DEFINITELY HIGH ****** # "sh"
+  SO I CAN GET old income results MUCH earlier than I have IT
+    [NA-has PE eastimate ... I do not care about]
+    the (multpl)website INCLUDES 'income' ESTIMATES
+          REM: Quandl had this (but not the income estimates)
+        NEED a getSymbols ON THIS ONE
+        ( He: www.multpl.com website author still has estimates)
+        STILL IN
+        https://github.com/AndreMikulec/expressions/blob/master/
+          main-rcsnsight2-999.R
+        AND FROM MEMORY: (PROP NEEDS WEB SCRAPING FIX UP)
+        # getSymbols.multpl("SandP.500.12.month.EPS"
+        #                   , finSymbolAttribute = "Close" # finSymbolAttribute
+        #                   , interpolate = TRUE
+
+[x] getSymbols(src="aaii_sentiment") "sm"
+   ( [ ] NOTE: VIX volitility AFTER the crash DETERMINE future STOCK PRICES
+     too MANY zeros AFTER the CRASH
+       ruins my 75% threashold IN/OUT market predictions
+   )
+aaii sentiment.
+  train it(data since 1987) ... flow it back in to the MAIN program as a predictor
+  sentiment (1).xls ( SEE MY HARD DISK )
+
+Survey of Professional Forcasters (see MY CODE )
+[X] getSymbols(src="surveyPF") # "pf"
+
+(FridayEve)
+
+SortinoRatio in caret ( [ ] ( TO BE VISIBLE? caret summary function?:
+  [A]tradeModel::SortinoRatio )
+  https://www.r-bloggers.com/time-series-cross-validation-5/
+  SortinoRatio {PerformanceAnalytics}
+  SortinoRatio(R, MAR = 0, ..., weights = NULL)
+
+  [END UP NOT NECESSARY] -
+  [x] update (close) PerformanceAnalytics SortinoRation ISSUE
+  Add feature zeroMAR to SortinoRatio ( actually DownsideDeviation ) #106
+  https://github.com/braverock/PerformanceAnalytics/issues/106
+
+
+[x] change "UNKNOWN" to "DIDNOTFIND"
+[x] make sure that the namespace as loaded
+[NA] combine the code of "cache" and "environment (BIG DEAL)
+  [X] added ONE option in saveSymbols to save to a target.envir
+[KEEP] REDUCE - not too hard
+  xx"cache" and <memory>
+    to JUST "cache" + prefix xx
+
+[ ] ADD - easy? (COME BACK)
+  2ND CALENDAR THAT 'JUST PRINTS' LINEAR RESULT (OR PROBABILITIES)
+    AND/OR/WITH 'actual monthly return e.g. 35.0/10.0
+
+[ ] JUST AFTER THE URL new records
+    (I THINK? I MAY HAVE DONE THAT ANYWAYS)
+    [?] PRESEARVE validation zone records BEFORE UBLing
+    then check if ANY *NEW ubl* records have entered the VALIDATION range
+      use identical(THIS_ONE) AND intersect and duplicated.data.frame
+
+(WOULD be an overhaul, I probably will not do it.)
+[ ] quantmod model* functions to take AN R LIST OF training BEGIN/END ranges
+                              to ALSO take OTHER (besided Date) time index R classes
+
+Also defined by ‘spacetime’ Found more than one class "xts" in cache; using the first, from namespace 'quantmod' #35
+https://github.com/edzer/spacetime/issues/35
+MORE
+
+loaded packages REPORTING system - Hadley Whickham has a package about this.
+[ ] library(tidyverse)/library(fundManageR)[sp] loaded packages REPORTING system
+[ ] library(randomForest)/library(quantmod) first library load message REPORTING
+
+
+# LEFT_OFF inside off in auxilary.R  willShire5000MachineWts
+-------------------------------------------------------------
+
+(NOT in order)
+
+[SOME] some attempt to stop the "spacetime" problem
+
+[X] update SOME(after index type/index format coversion to[/from?] data.frame to use "xts:::`xtsAttributes<-.xts`"
+    "all.equal(xtsAttributes(Z), names(attributes(Z)))" SEE MY NOTES
+    http://gallery.rcpp.org/articles/getting-attributes-for-xts-example/
+[X] DynamicFittedSignalLowerThreashould - add feature to try to return 75% winners(>#value) and 25% not-winners(<=#value)
+[ ] verify Return.portfolio, xts date + 1 is correct
+[ ] decompose willShire5000MachineWts into a
+    (1) generalized TargetMachineWts
+    (2)? (and maybe OTHERS: Aug) (MANY PARAMS)
+      so I can calculate the [ ] SP500, [ ] GDP, [ ] 'willshire'
+  [ ] CLARIFY timeSliceNBER use of OmitSliceFirstDate
+[ ] adjust so I can easily swap out unrate1(1:3) with something generic
+[x] add package Caret caret.train Summary (Sortino ratio?) function: see
+      Time series cross-validation 5
+      January 24, 2013
+      By Zachary Mayer
+      [ ] BUT see above, I want to swap it out with DevianceSortino
+  http://www.r-bloggers.com/time-series-cross-validation-5/
+[ ] create two quantmod Augment Functions (See Below)
+[x] rename from "addCashWts" to "appendCashWts"
+  ( because it is different than adding (I am just subtracting off)
+[?] split(Df, unique(col1),), then lapply,
+    so can handle multiple distict values in columns
+    [ ] library(lsr) ALTERNATIVE
+  [ ] better document exactly HOW it works
+     ( primary col regex, 2ndary col regex )
+[x] getSymbols.postgresql
+[x] saveSymbols.postgresql
+    # ( SO, I DO NOT keep HITTING/WAITING FRED)
+        [NA] renew once at UTC time
+[ ] In quantmod "quantmod" functions,
+    modify start, end [training] times
+    can take character or "is.timeBased(x)" xts eligible index data types
+  [ ] modify training periods can take "lists of training ranges" SO I DO NOT HAVES SPECIFY ABS-start,ABS-end
+[ ] caret and SuperLearner ?
+[NO] TRY MULTIPLE THINGS AND I WAIT: apply.paramset() and applyStrategy(),
+    implementing a Rolling Walk Forward Analysis (WFA)
+[PROBNOT] Multiple Caret Models (AND/OR)
+    library(modelgrid)
+    Framework for Creating, Managing and Training Multiple Caret Models
+[PROBNOT] LIKE - stepwise [greedy] ensemble selection in R
+    library(medley)?, library(caretEnsemble)?
+    ALSO SEE THE ARTICLE
+    http://www.r-bloggers.com/using-caret-to-compare-models/
+
+[x] OrigIndex
+[x] OrigIndexOut
+[x] xgboost(wts)
+indexSlices    <-
+indexOutSlices <-
+[x] indexOut is the NEXT recession
+[x] indexOut of the LAST Recession is the PREVIOUS recession
+  [ ] FOUND OUT (TOO SMALL models)
+      separate out the code
+
+getSymbols.PostgreSQL
+# old PostreSQL dbExists (exact_schema/permissions ignorant)
+# TODO?  [X] restrict search schema to ONE only (still permissions ignorant)
+# custom [X] dbLivesNearbyTable(): searches the 'current' schema ONLY
+
+[x] FIXED - getSymbols.PostgreSQL
+tryCatchLog # if(match.call()) FIND! that .getSymbols FILE!
+
+[ ] TODO - getSymbols.odbc
+May? be a BETTER idea?
+r-dbi/odbc
+
+[X] TODO ( save 4x the TIME)
+doparallel
+__.train  parallel
+
+exampletestr (NEED EXAMPLES AND TESTTHAT tests)
+  [ ] Make examples into "testthat" tests
+
+(REORGANIZEME)
+library(dyn)
+
+[PROBNOT] FUTURE NEVER: PROABLY WILL NEVER DO:
+generalize WITH
+  packages/rio ( just about any file system type )
+  packages/DatabaseConnector (just about ANY+odbc+jdbc database)
+  pacakges/BatchSymbols (batch management, try-management)
+
+[PROBNOT]SOME LOOP progress
+  ALSO SEEN IN
+  DatabaseConnector::insertTable
+  utils::txtProgressBar
+  https://www.rdocumentation.org/packages/utils/versions/3.5.1/topics/txtProgressBar
+  or
+  hgutils::spinner
+
+VERBOSE level (see quantmod functions) / VERBOSE_LEVEL
+  ALSO
+  futile.logger
+    ftry(expr, error = stop, finally = NULL)
+  INFO [2018-11-25 11:19:41] This song is just 7 words long
+  WARN [2018-11-25 11:21:00] This will print
+  INFO [2018-11-25 11:21:43] This inherits from the ROOT logger
+
+(I STILL DO NOT UNDERSTAND)
+caret's train NEEDS a "model.frame" method
+methods(model.frame)
+WOULD need: model.frame.train
+SEE FILE model.frame.dyn.R
+    dyn:::model.frame.zoo
+    stats:::model.frame.lm
+
+[ ] WARNING disclamer: "this package is under development"
+lsr/html/quantileCut.html
+[ ] RISK disclaimer: "but WITHOUT ANY WARRANTY"
+https://github.com/joshuaulrich/xts/blob/master/src/period_apply.c
+
+
+library(bdrift)
+library(wec)
+recipes::step_log
+recipes::step_date
+recipes::step_holiday
+recipes::step_knnimpute
+recipes::step_rollimpute
+recipes::step_upsample
+recipes::step_window
+recipes::step_rm
+
+# augment
+  xTs # indexes will not be unique
+    and/or
+  specifyModel argument
+    and/or new function
+  augmentModel ( to be caled AFTER specifyModel and BEFORE buildModel )
+    # I CHOSE THIS ONE - LEFT_OFF-ISH
+    append data / change_formula / whatever
+
+    augmentDataByObs < function(x, xi, times) {
+      x@model.data
+    }
+
+    [ ] wrapper ( REDUCE the CODE )
+    augmentDataByThreashold < function(x, ...pass.to.UBL...) {
+      x@model.data
+    }
+
+    [ ] FIX <- assignment ( search for "value" )
+    > `[<-.listof`
+    function (x, i, value)
+    {
+        class(x) <- "list"
+        x[i] <- value
+        class(x) <- c("listof", class(x))
+        x
+    }
+    <bytecode: 0x000000000c21e2e0>
+    <environment: namespace:spatstat>
+
+
+# NEED A THREASHOLD(for package UBL) OF THE worst loss months)
+# [X] I choose over the entire training range # findInterval on xTs
+
+# LEFT_OFF #
+[1/2] SOME testthat tests (HIGH!) ... ran my MAINS [x] [x] BOTH work
+[NOT FALING] xgBoost is failing
+[x]   profie system + production xgBoost profile: 500 trees?! ( ENDED UP BEGIN xgboost repeating the same predictions
+
+      [NA] re-balancing
+      scale_pos_weight [default=1]
+      Control the balance of positive and negative weights
+        https://github.com/dmlc/xgboost/blob/master/demo/kaggle-higgs/higgs-train.R
+      https://xgboost.readthedocs.io/en/latest/parameter.html
+
+
+[ ] update README
+[ ]   update VERSION
+[ ]     update NEWS
+[ ] fold branch into Develop
+[ ]   fold Devel into master
+[ ]     lightweight TAG master???
+[X] NBER timeslices
+[X] doLiquify.data.frame, doLiqify.xts
+[X] eXpand.xts (HIGH)
+[ ] modelr + MaxKuhn modelverse
+[FUTURE?] Boruta or ILM : feature selection
+[FUTURE?] mount vtreating
+[THU] UBL smoting                       [WORK IN PROGRESS] [THU] caret timeslices ...
+                                                           [THU] all the data (see Torgo: .. Under...(removing data: less effective) AND
+                                                           [x] duplicate deep recession records
+                                                           [THU] duplicate HIGH loss records
+[ ] xgboost internally HANDLING imbalancing see its parameters
+[x] xgboost weights
+     SEE my TEXT
+     "xgboost case weights and class weights"
+     AND
+     fix(xgboost)
+
+  quantico
+NOTE:
+  Need: [x][x][3RD ISSUE IS LEFT]FIXes of quantmod::tradeModel ( end of _xts_ .txt sheet ) [ ] WED - EVE - write up ISSUE
+  Need: [WROTEUPISSUE] ENHANC of PerformanceAnalytics 'Sortino ratio' find/see 'TRUE Sortino' [ ] WED - EVE - write up ISSUE
+  Need: [x] liquifyDF ( or and liquifyXts )
+  Need:   [x] eXpandxTs ( cleaned up(tidized) and Published )
+  May Need: [X] 'rollapply.zoo expansion (see some of my code) to wrap some TTR functions
+  May Need: [mostly] TTR missing (handle internal NAs) internal data: other alternatives(index mapping and re-mappping) to na.locf
+
+[ ]  MORE
+rollApply  ( apply MARGIN =2 subcase )
+code from rowr::rollApply (add back early NA padding to replicate zoo)
+  data.table summary all over OpenMP ( see my function wrapper )
+  fastmatch::ctapply
+    (input to "data.table summary all over OpenMP")
+    many orders of magnitude faster than the classical
+    lapply(split(), ...)
+  same place as hyperframe ... make list element accessible by []
+    or grr::extract
+[ ] common rolls using package fromo[ ]
+
+[PROBNOT]
+--- begin vintage system ----
+
+"Symbols" table
+  Think if it as a Library's Card Catalog
+
+NOTE: FEATURE
+  Symbols: CAN EXIST (BE CREATED/MANIPULATED) IN "TEMP" tables
+  AS SQL QUERIES NEED THEM: Symbols CAN BE ADDED [TO TEMP TABLES] ON THE FLY
+
+RefreshDataMethod=
+  "TruncateOnly"
+  "DropTable"
+  "db[pg]UpsertRecords": duplicated and "merge" and split/(library(rowr) rollApply/OTHERS) and
+                         "if(is.null(.))/if(is.na(.))" and "Jan Gorecki"
+
+use the 'vintage organizatoin system' (OR NOT)
+Vintages=NULL,  VintageSystem = "On"
+         "Off"                = "Off"
+         "On"
+
+if NULL then read
+vintage_system
+"On","Off"
+
+  user entered
+  vn=,VintageName=<useentered>
+
+VintageNaming="Auto"
+              "Manual"
+
+use_vintage_exprs
+="Yes" ... use below
+="No"  ... (no conversion ... in/out "AS IS")
+
+Vintage stored names
+ to_vintage_name_expr  (R expression) used by "Auto"
+                     Reads user entered "VintageName" (may want some validatation to prevent mangling)
+                     e.g. <DBID1>"vn"<DBID2>
+from_vintage_name_expr (R expression)
+                     Converts back to the user originally entered Vintage Name
+                     e.g. <DBID2>
+
+acquired (date actually stored): different from xts property: updated
+
+select_most_recent_vintage
+"On"  MSFT ... use most recent vintage
+"Off" MSFT ... "user must name the vintage" or can not find: MSFT
+
+(e.g. storage record)
+most_recent_vintage
+"MSFTd20181126"
+
+vintage_storage
+  "composition" - many vintages in one table
+  "separate"    - each vintage has its own table
+
+vintage_orientation ( performance Orientatated )
+  "symbol" -  each symbol has its own table ( see "vintage storage" )
+  "value"  -  each "value of symbol" has its own table
+              e.g. "Close"     of "MSFT" and "AAPL"
+              e.g. "netinc_q1"    "MSFT" and "AAPL"
+
+ (e.g. "V" system changes refrence: last known owner is "Verizon" )
+start_symbol_life, end_symbol_life
+
+correlatedSymbol
+ e.g.
+ Symbol correlatedSymbol SymbolLongName          SymbolAddress
+ "MSFT" "1A2B3C"         "Microsoft Corporation" "One Microsoft Way"
+
+symbol_varietal
+"Common"
+"Merlot"
+"Cabernet Sauvignon"
+<before a type change>
+"numeric"
+<after a type change>
+"character"
+
+   # e.g. AAII data change data types (ONLY happened ONCE)
+   to_vintage_storage_expr ( HINT: TRY to make "numeric" or "character" )
+     "function(x) { as.numeric(x) }"
+   from_vintage_storage_exp
+     "function(x) { as.character(x) } )"
+
+---- End vintage system ----
+
+
+
+# TODO
+# [x] UnRateMachinetradeModel() # calandar is missing the previous month (IMPORTANT)
+
+# [x] examples structure
+# [x] tests - structure
+# [x] examples && [x] tests
+
+# [NO] Kranz restorepoint
+# [X] tryCatchLog
+# [X] add TESTS ... [ONES THAT MATTTER] convert that ONE example
+# [x] quantmod functions that return a warning SHOULD remerge with the MISSING
+# [DIDTHAT!?!] fix CashLogReturns being 1 too early
+#   [[DIDTHAT!?!] need to KEEP next months preduction
+# [[DIDTHAT!?!] fix input to Return.porfolio: should it be last/day or first day?
+# [[DIDTHAT!?!] MATH does not match what is IN BEE.R
+
+# [[DIDTHAT!?!] fledge ( I have to be working on dev THEN push to master,
+#       then do it there ( on master )
+# https://www.rdocumentation.org/packages/fledge/versions/0.0.0.9005
+
+# [PROB WONT DO] foodweb and FuncMap
+
+[ ] below PUT BACK testthat tests
+  [ ] add tests: 20% of the area perform 80% of the work
+
+[ ] [ ] customSortOrder(. . . , removeExcess, prependExcess)
+
+# # OUT of project/package
+#
+# rm(list=ls(all.names = T)); debugSource('W:/projects/quantico/R/auxilary.R');debugSource('W:/projects/quantico/R/main.R')
+# returnsUnRateEyeBall()
+
+# in project package
+# RStudio-1.1.453 - RStudio-1.1.456 errors
+# devtools::check(args = c('--as-cran')) FAIL
+# Fixed: coplied 'gtools' to R library
+#
+# Clean and Rebuild/Build Source Package/Build Binary Package
+# ERRORFULLY changes TO the previous directory
+# next, any further commands, . . .
+#   Unrecongnized build type
+# SO RUN THEM manually
+# Sys.setenv(HOME="W:\\R-3.5._\\R_USER_3.5._")
+# getwd()
+# setwd("W:\\R-3.5._\\quantico")
+# Load All
+# devtools::load_all(".") ## THIS ONE ##
+# Document
+# devtools::document(roclets=c('rd', 'collate', 'namespace')) ## THIS ONE ##
+# START OF DAY ## THIS ONE ##
+# UnRateEyeBalltradeModel()
+# UnRateMachinetradeModel()
+# Clean and Rebuild
+# devtools::install(".", args = "-preclean --no-multiarch --with-keep.source")
+# Test package
+# devtools::test(".")
+# Check
+# devtools::check(args = c('--as-cran')) ## THIS ONE (ONCE PER DAY) ##
+# Build source packages
+# devtools::build()
+# Build binary package
+# devtools::build(binary = TRUE, args = c('--preclean'))
+# returnsUnRateEyeBall()
+
+
+
+# fill_window_dups_rev not available for .Call() for package xts #276
+# https://github.com/joshuaulrich/xts/issues/276
+# in-non package
+
+unloadNamespace("quantmod");unloadNamespace("PerformanceAnalytics");unloadNamespace("TTR");unloadNamespace("xts");devtools::load_all("./xts")
+debug(library)
+library(quantmod)
+# at the right spot
+# just before    .getRequiredPackages2(pkgInfo, quietly = quietly)
+# pkgInfo$Depends$xts <- NULL
+undebug(library)
+
+# program with requires
+rm(list=setdiff(ls(all.names=TRUE),c("con","cid"))); debugSource('W:/R-3.5._/finecon01.R');debugSource('W:/R-3.5._/goodsight01.R');debugSource('W:/R-3.5._/valuesight01.R');debugSource('W:/R-3.5._/bbee01.R');debugSource('W:/R-3.5._/experiments.R');verify_connection();options(upsert_temp_is_temporary=Inf)
+
+up_side_down_side2 <- get_up_side_down_side2()
+up_side_down_side3 <- get_up_side_down_side3()
+
+
+
+-- OLD test-that ( I WILL RETURN SOMEDAY ) --
+
+context("all")
+
+
+test_that("safe object intitialization", {
+
+  require(xts)
+
+  expect_identical( initDate(date = NULL), structure(numeric(0), class = "Date"))
+
+
+
+  expect_identical( initXts(xTs = NULL), structure(numeric(0),
+                                                   index = structure(
+                                                       numeric(0)
+                                                     , tzone = "UTC"
+                                                     , tclass = "Date")
+                                                   , class = c("xts", "zoo"), .indexCLASS = "Date"
+                                                   , tclass = "Date", .indexTZ = "UTC"
+                                                   , tzone = "UTC")
+
+  )
+
+  expect_identical( initXts(xTs = zoo::as.Date(0)[0])
+               , structure(numeric(0), index = structure(numeric(0)
+               , tzone = "UTC", tclass = "Date")
+               , class = c("xts", "zoo")
+               , .indexCLASS = "Date", tclass = "Date"
+               , .indexTZ = "UTC", tzone = "UTC")
+               )
+
+  expect_identical( Coredata(NULL),       NULL)
+  expect_identical( Coredata(numeric(0)), NULL)
+  expect_identical( Coredata(11:13),     structure(11:13, .Dim = c(3L, 1L)))
+
+})
+
+
+test_that("setup and unsetup env", {
+
+  options(max.print=88888L)
+  if(Sys.getenv("TZ") != "UTC") {tz <-Sys.getenv("TZ")} else {tz <- "US/Central"}
+  Sys.setenv(TZ=tz)
+  initEnv()
+  expect_identical(getOption("max.print"), 99999L)
+  expect_identical(Sys.getenv("TZ"), "UTC")
+
+  uninitEnv()
+  expect_identical(getOption("max.print"), 88888L)
+  expect_identical(Sys.getenv("TZ"), tz)
+
+  if(getOption("digits") != 22L) {ops <- options()} else {ops <- options(digits=12L)}
+  options(ops)
+  initPrintEnv()
+  expect_identical(getOption("digits"), 5L)
+  uninitEnv()
+  expect_identical(options(), ops)
+
+})
+
+
+test_that("aquire and massage [FRED] data", {
+
+  fd <- head(fredData("GDP"),1)
+  xtsAttributes(fd) <- list(updated = NULL)
+
+  expect_identical(fd, structure(243.164, class = c("xts", "zoo")
+                        , .indexCLASS = "Date", tclass = "Date"
+                        , .indexTZ = "UTC", tzone = "UTC"
+                        , src = "FRED", index = structure(-725846400, tzone = "UTC", tclass = "Date")
+                        , .Dim = c(1L, 1L), .Dimnames = list(NULL, "gdp")
+                        )
+
+  )
+
+  require(xts)
+  xTs <- xts(c(1,NA_real_,2), zoo::as.Date(c(1,11,21)))
+
+  expect_identical( eomData(xTs = xTs), structure(2, class = c("xts", "zoo")
+                                          , .indexCLASS = "Date", tclass = "Date"
+                                          , .indexTZ = c(TZ = "UTC"), tzone = c(TZ = "UTC")
+                                          , index = structure(2592000, tclass = "Date", tzone = "UTC")
+                                          , .Dim = c(1L, 1L)
+                                        )
+
+  )
+
+  # weekly
+  ff <- head(fredEomData("FF"),1)
+  xtsAttributes(ff) <- list(updated = NULL)
+
+  expect_identical(ff, structure(0.63, class = c("xts", "zoo")
+                         , .indexCLASS = "Date", tclass = "Date"
+                         , .indexTZ = c(TZ = "UTC"), tzone = c(TZ = "UTC")
+                         , src = "FRED", index = structure(-486691200, tclass = "Date", tzone = "UTC")
+                         , .Dim = c(1L, 1L), .Dimnames = list(NULL, "ff"))
+
+
+  )
+
+})
+
+
+test_that("date lubrication", {
+
+  expect_identical("nextMonthfromYesterday.default", "nextMonthfromYesterday.default")
+
+  require(xts)
+
+  expect_identical(nextMonthfromYesterday(zoo::as.Date("1970-01-12")), structure(30, class = "Date"))
+
+  xTs <- xts(, zoo::as.Date("1970-01-12"))
+
+  expect_identical(nextMonthfromYesterday(xTs), structure(numeric(0), index = structure(2592000
+                                                  , tzone = "UTC", tclass = "Date")
+                                                  , class = c("xts", "zoo")
+                                                  , .indexCLASS = "Date", tclass = "Date"
+                                                  , .indexTZ = "UTC", tzone = "UTC"
+                                                )
+
+  )
+
+
+})
+
+
+test_that("instrument data", {
+
+  expect_identical("wilshire5000indEomData", "wilshire5000indEomData")
+  expect_identical("unRateEomData",                   "unRateEomData")
+
+})
+
+
+test_that("xTs manipulation", {
+
+  # logReturns
+  xTs  <- xts(10:12,zoo::as.Date(0:2))
+  lr <- logReturns(xTs)
+  expect_equal(as.vector(coredata(xTs)) ,as.vector(coredata(exp(cumsum(lr)) * 10L)))
+
+  expect_identical("wilshire5000LogReturns", "wilshire5000LogReturns")
+  expect_identical("cashLogReturns",         "cashLogReturns")
+  expect_identical("unRateEomData",          "unRateEomData")
+
+})
+
+
+test_that("predicton", {
+
+  expect_identical("willShire5000Wts", "willShire5000Wts")
+  expect_identical("cashWts", "cashWts")
+
+})
+
+
+test_that("add indicators and predicton", {
+
+  expect_identical("addUnRateEomData",       "addUnRateEomData")
+
+  expect_identical("addWts", "addWts")
+  expect_identical("addWillShire5000Wts", "addWillShire5000Wts")
+  expect_identical("addCashWts", "addCashWts")
+
+})
+
+
+test_that("combinations", {
+
+  require(xts)
+
+  expect_identical(combineXts( initXts(NULL),xts(,zoo::as.Date(0)) )
+                 , structure(numeric(0), index = structure(0, tzone = "UTC", tclass = "Date")
+                 , class = c("xts", "zoo")
+                 , .indexCLASS = "Date", tclass = "Date"
+                 , .indexTZ = "UTC", tzone = "UTC")
+                 )
+
+  expect_identical(combineXts( xts(,zoo::as.Date(1)), xts(,zoo::as.Date(0)) )
+                 , structure(numeric(0), index = structure(c(0, 86400), tzone = "UTC", tclass = "Date")
+                 , class = c("xts", "zoo")
+                 , .indexCLASS = "Date", tclass = "Date"
+                 , .indexTZ = "UTC", tzone = "UTC")
+                 )
+
+  expect_identical("combineLogReturns", "combineLogReturns")
+
+  expect_identical("addWilshire5000LogReturns", "addWilshire5000LogReturns")
+  expect_identical("addCashLogReturns",         "addCashLogReturns")
+
+})
+
+
+test_that("column roles", {
+
+  require(xts)
+
+  xTs <- xts(matrix(1:3, ncol = 3, dimnames = list(NULL,c("a","b","b_wts"))),zoo::as.Date(0))[0]
+
+  expect_identical("safeClms",     "safeClms")
+  expect_identical(indClms(xTs),   "a")
+  expect_identical(valueClms(xTs), "b")
+  expect_identical(wtsClms(xTs),   "b_wts")
+
+})
+
+
+test_that("porfolio", {
+
+  expect_identical("portfolioLogReturns",      "portfolioLogReturns")
+  expect_identical("portfolioMonthlyReturns",  "portfolioMonthlyReturns")
+  expect_identical("returnsUnRateEyeBall",     "returnsUnRateEyeBall")
+
+})
+
+
+test_that("printing", {
+
+  expect_identical("printTail",  "printTail")
+  expect_identical("printCalendar", "printCalendar")
+
+})
+
+
+--------
+
+[ ] deal with this "integer" later: NOTE: REALLY is AN integer 'number of people'
+
+fredData(Symbol = "PAYEMS", NewMaxAge = "1 secs", placeNewRecords = "AddOnlyNew")
+
+-- Table: "PAYEMS"
+
+-- DROP TABLE "PAYEMS";
+
+CREATE TABLE "PAYEMS"
+(
+  date date NOT NULL,
+  "PAYEMS" integer,        == # SHOULD HAVE BEEN NUMERIC
+  CONSTRAINT "PAYEMS_pkey" PRIMARY KEY (date)
+)
+WITH (
+  OIDS=FALSE
+);
+ALTER TABLE "PAYEMS"
+  OWNER TO "Symbols";
+
+> attributes(pa) <- NULL
+> pa
+[1] 29923
+> class(.Last.value)
+[1] "integer"
+
+getSymbols.FRED
+  read.csv(tmp, na.string = ".")
+    read.table
+      .External(C_readtablehead
+         scan
+           Internal(scan
+
+----
+
+
