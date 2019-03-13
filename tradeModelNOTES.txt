@@ -17,12 +17,123 @@ fancifyXts into eXplode
 [ ] PULL "fastforward"DOWN: CHANGED DATA FROM github
 
 (Wednesday): wake UP 4:50 a.m.
-verify eXplode is TTR:
+
 
 (WED - go home WAIT for the MECHANIC to finish MY CAR: I will run/walk/trot BACK)
+
+
+[ ] (WED)
+swapout some messy logic in
+  willShire5000MachineWts
+    with better logic from
+       rollEpochRanks
+
+[ ] ** HIGH **
+separate out Willshire5000MachineWts
+into
+  <willshort5000PrepCode
+  recessionMachineWts
+
+[ ] 
+  SEE google EMAIL about OBJECTIVES
+  MON TODO
+
+practical noise reduction
+-------------------------
+
+(ANDRE PREFERENCE?)
+# min of two values
+MIN(xTs,2) [ ] I may have that
+# simple
+SMA(xTs,2)
+# # risk of next two values
+# SHARP(xTs,2)
+# risk of loss of two values
+SORTINO(xTs,2)
+
+
+Realtime Consumer Sentiment Survey
+surveys of consumers UNIVERSITY OF MICHIGAN
+https://data.sca.isr.umich.edu/tables.php
+(EXCELLENT)
+ANDRE CLEANER
+  REMOVE NOISE
+  NOTE: LIKE: LAST TO OBSERVATIONS: DROP THE HIGHEST(MOST OPTIMISTIC ONE)
+  NEXT, TAKE THE ONE PERIOD DIFF %CHANGE, NEXT TAKE THE SORTIO RATIO ON *THAT RANGE* (MEASURE1)
+  ALSO, RECORD IN THAT RANGE THE MOVING PERCENTILE RANK (MEASURE2)
+
+
+
+how good a "curve fitter"
+------------------------
+
+PRESS statistic
+
+
+
+time warp-ing
+-------------
+but I can possibly emulate with
+
+RATE_OF_CHANGE_A/RATE_OF_CHANGE_B
+
+vericle measures and horizontal measures
+ANDRE
+JAN 2019
+
+
+  BIGGEST GAIN
+  [ ] predict ahead 6 months ( or 3 months ) instead of 1 month or 3 months
+    [ ] Use OneOf()
+
+  [ ] PER INDICATOR Symbol: loop check each variable compose of diffrent: (shift)base, lag, differences
+    [ ] compare to the Y-solution "up/down" over the next 6-months
+      [ ] choose best per Symbol or (Simbol (shift)base, lag, differences)
+  [ ] kdd cup challenge, find Symbol1 v.s Symbol2 matches than are weakly correllated? whith each other
+      but each are highly correlated with Y: e.g. (Symbol1,Y)
+
+( Consider an "abs(deviance)" sortino )
+  the X**2 was only convenient in early matrix math)
+[ ] DevianceSortino(xTs = NULL)
+[ ] Neg(xTs = NULL)
+
+
+[ ] MaxXts(xTs = NULL, n = 2)
+# (best month to month NOISE elminator)
+[ ] MinXts(xTs = NULL, n = 2)
+
+
+PREVIOUS DAILY/WEEKLY *PAST* VOLITILITY (OF SOME KIND)
+------------------------------------------------------
+
+                 S&P500 will do
+  [ ] non-VOLUME volitilty
+  [ ]     VOLUME volitilty
+
+
+Sentiment-ish
+MAYBE -  Forcasters xls sheets: GDP UNRATE CPI forcasts PERCENT_OVER_FRED_CPI_GOAL
+  [ ] getSymbols("PhiForecasters")                      PERCENT_OVER_FRED_UNRATE_GOAL
+                                                        BETTER AGGR FRED aggressiveness
+
+[ ] simplify code and do not allow "GaussNoiseRegression"
+question about new/replicated UBL data and range of creation area #3
+https://github.com/paobranco/UBL/issues/3
+
+
 Clean out workhorse: willShire5000MachineWts
 [ ] Generalize (SEE BELOW): e.g. move PROPER hard coded UNRATE (PRO
 [ ] remove my CUSTOM copy zone (just let UBL do all of that)
+
+[ ]
+LEFT_OFF (HIGEST)
+  [BEGIN AFTER BATMAN] clean up and DECOMPOSE
+     "add Machine UnRate Wts" add Prediction Wts and UnRate Wts
+  [ ] clean up and DECOMPOSE      NBERtimeSlices into timeSlices and NBER
+  [ ] clean up and DECOMPOSE                          adjustObservations(UBL) (remove OUT OF ZONE observatoins)
+. . .                                                 replicateObservations
+                                                      timeSliceXts (will NOT USE)
+
 . . .
 [ ]
 make a GSPC data since 1950 (similar to Wilshire): I need a larger range (just add 2%/12 = month)
@@ -30,6 +141,18 @@ make a GSPC data since 1950 (similar to Wilshire): I need a larger range (just a
 [ ]
 make   GDP data since 1950 (similar to Wilshire): [GDP] recession sight replacement
 
+
+
+(soon)
+verify eXplode is 
+  TTR::runCor(x, y, n = 10, use = "all.obs", sample = TRUE, cumulative = FALSE)
+  PerformanceAnalytics::BetaCoVariance(Ra, Rb)
+  PerformanceAnalytics::ActiveReturn(Ra, Rb, scale = NA, ...) # ... any other passthru parameters to Return.annualized (e.g., geometric=FALSE)
+
+[ ]
+pick you own "Epocs" (NOT WHAT THE FEDERAL GOV TELLS ME)
+willShire5000MachineWts
+[ ] ACTUALLY MAKE THE LIST
 
 
 [X]
@@ -104,9 +227,6 @@ NOTE: my xTs massaging functions
  (like Torgo did in DMwR book)
 
 
-[ ] simplify code and do not allow "GaussNoiseRegression"
-question about new/replicated UBL data and range of creation area #3
-https://github.com/paobranco/UBL/issues/3
 
 
 [ ] MAKE A NOTE TO USER
@@ -142,6 +262,9 @@ diffXts (feature)
     data.table new column "thread(thread + lag (REQUIRED)" # doBy split by RUN
                                                            # doBy split by RUN (see MY CODE)
    foreach(optimal 2) iotools data.table fst
+     [ ] BETTER TO BACKWARD INTEGRATE my .fst FILES into MY OLD CODE (instead of trying to create NEW CODE)
+   
+[TRIED - BAD BIAS: can not work in findInterval: *MY run*Ranks* has the solution anyways] 
 # omit: window = 5
 fromo::t_running_apx_quantiles(1:20, p = c(0.25, 0.50, 0.75), time_deltas = rep(1,20))
 # rest ...findInterval
@@ -169,8 +292,7 @@ See "[SQL] scaleable scale-able" (chunks)
 # better rowr::rollApply ( does not drop single dimension )
 # see rollApply2 ... move into Rows (my version of rowr::rows)
 
-
-
+(if I do a *NEW* fst READER)
 [ ]
  rowr::rollApply
  forward/back
@@ -197,21 +319,14 @@ TO BE
 xts(rnk,index(tail(x3,1)))
 
 
-[ ] replace out my quantile -> findInterval calulations with
+[I ALREADY HAVE - BETTER] replace out my quantile -> findInterval calulations with
 data.table::frank(as.data.frame(x3), ties.method="dense", na.last= "keep")  %>%
   tail(1) %>%
     { findInterval(., vec = window/ranks * seq_len(ranks), rightmost.closed = T) + 1} ->
 rnk
 rnk <- xts(rnk,index(tail(x3,1)))
 
-[ ]
-swapout some messy logic in
-  willShire5000MachineWts
-    with better logic from
-       rollEpochRanks
-[ ]
-pick you own "Epocs" (NOT WHAT THE FEDERAL GOV TELLS ME)
-willShire5000MachineWts
+
 
 [ ]
 documenting S3 class generics
@@ -224,11 +339,8 @@ plyr::llply
 function (.data, .fun = NULL, ..., .progress = "none", .inform = FALSE,
     .parallel = FALSE, .paropts = NULL)
 
-[ ] ** HIGH **
-spaparart out Willshire5000MachineWts
-into
-  <willshort5000PrepCode
-  recessionMachineWts
+
+
 
 [ ]
 search code looking for "is.na("
@@ -237,7 +349,7 @@ if(anyNA(x))
   x[which(is.na(x),array.ind = TRUE)] <- FALSE
   if(any(x == FALSE)) { ETC }
 
-[ ] fix MY
+[x] fix MY
 @title, @description, and @details
   can use markdown formatting within roxygen blocks
   Roxygen: list(markdown = TRUE)
@@ -259,7 +371,7 @@ addCurrLeadCashLogReturns()
 appendCashWts
   DOES NOT USE
     addCurrLeadCashLogReturns()
-JUST REPLACE WITH [ ]  TODO
+JUST REPLACE WITH [x]  TODO
   addExcessCash ... does it all
 
 # FIX [ ]
@@ -488,20 +600,23 @@ https://tradeblotter.wordpress.com/2014/09/25/aggregate-portfolio-contributions-
 
 
 
-[ ] like recessionsight
- [ ] need the time_in_days delay (or logical estimate) from publication 'publish dates'
+[x] like recessionsight
+ [x] need the time_in_days delay (or logical estimate) from publication 'publish dates'
     see my getSymbols. (I HAVE written some code to do this search my expressions )
       new name getSymbols.FRED2
 [ ] need better getSymbols.FRED ( I also need to search ALFRED for historical 'publish dates')
     NOTE: FRED is consistent: better off just estimate the p
 (1)
+SEE MY SIMPLIFICATION FUNCTIONS
 xts "percent changes" (add options)
- [ ] annualized
-   [ ] arithmetic ( I commonly use ) (A:just usually x12 - B:index MAY give the answer)
-   [ ] geometric
+ [x] annualized
+   [x] arithmetic ( I commonly use ) (A:just usually x12 - B:index MAY give the answer)
+   [x] geometric
 (2)
+
+
 business implementation
-  [ ] since last recession (correct annualized %changes% )
+  [X] since last recession (correct annualized %changes% )
     see "drawdown in NOTES.txt" (see help? from fromo)
 
 [DELAY] switch mine (NOT SEARCHABLE)
@@ -561,9 +676,9 @@ JUST AFTER
   [x] getSymbols("UMich") (IF I do not have it, then MAKE it)
 
 # EVENTUALLY TODO
-# [ ] TODO: fredData 'DO NOT lowercase' return COLUMN NAMES
-      [ ] would have to make sure that the MAIN programs (2) WORK
-      [ ] also changes the expected result
+# [X] TODO: fredData 'DO NOT lowercase' return COLUMN NAMES
+      [X] would have to make sure that the MAIN programs (2) WORK
+      [X] also changes the expected result
           in ... getSymbols.UMich  ... that uses fredData("UMCSENT")
 # [ ] TODO
   splice "store 'new observation' result in the database
@@ -577,15 +692,7 @@ JUST AFTER
       get??Symbols Persistent Resolute Sticky "getRSymbols" (Resolute)
   [ ] change URL.UPPERCASE to URL.CamelCase (match getSymbols.whatever)
 
-  BIGGEST GAIN
-  [ ] predict ahead 6 months ( or 3 months ) instead of 1 month or 3 months
-    [ ] Use OneOf()
 
-  [ ] PER INDICATOR Symbol: loop check each variable compose of diffrent: (shift)base, lag, differences
-    [ ] compare to the Y-solution "up/down" over the next 6-months
-      [ ] choose best per Symbol or (Simbol (shift)base, lag, differences)
-  [ ] kdd cup challenge, find Symbol1 v.s Symbol2 matches than are weakly correllated? whith each other
-      but each are highly correlated with Y: e.g. (Symbol1,Y)
 
   [ ] depends: magrittr
     [ ] imports: magrittr %>%
@@ -606,14 +713,13 @@ JUST AFTER
   [ ] xts(may not this one)  [ ] quantmod [ ] performanceAnaltyics ":: prefix and import them"
 
 SITE showing the "percent change in Loans" (HIGH)
-  [ ] https://www.sifma.org/ ( MAY NEED phantom.js )
-
+  [x] https://www.sifma.org/ ( MAY NEED phantom.js )
+  
+    [ ] ???
     # WRONG ONE, I WANT THIS ONE
     # https://www.sifma.org/resources/research/bond-chart/
 
-MAYBE -  Forcasters xls sheets: GDP UNRATE CPI forcasts PERCENT_OVER_FRED_CPI_GOAL
-  [ ] getSymbols("PhiForecasters")                      PERCENT_OVER_FRED_UNRATE_GOAL
-                                                        BETTER AGGR FRED aggressiveness
+
 
 [ ]
 change PostgreSQL saved table information 1st col name from "date" to "index"
@@ -715,43 +821,12 @@ function (x, ...)
 
 
 
-practical noise reduction
--------------------------
-
-(ANDRE PREFERENCE?)
-# min of two values
-MIN(xTs,2) [ ] I may have that
-# simple
-SMA(xTs,2)
-# # risk of next two values
-# SHARP(xTs,2)
-# risk of loss of two values
-SORTINO(xTs,2)
-
-
-
-how good a "curve fitter"
-------------------------
-
-PRESS statistic
-
-
-
-time warp-ing
--------------
-but I can possibly emulate with
-
-RATE_OF_CHANGE_A/RATE_OF_CHANGE_B
-
-vericle measures and horizontal measures
-ANDRE
-JAN 2019
 
 
 
 SEE MY NOTE
 -----------
-determine a "bear market" begin
+determine a "bear market" begin [NA-I AM GOING TO DO THIS MANUALLY]
 --------------------------------
 
 (I WANT ROLLING RANK SINCE THE LAST CRASH)
@@ -785,24 +860,12 @@ sp.ret = ROC(Cl(sp), type="discrete")
 LagIndex <- function
 
 
-( Consider an "abs(deviance)" sortino
-  the X**2 was only convenient in early matrix math)
-[ ] DevianceSortino(xTs = NULL)
-[ ] Neg(xTs = NULL)
 
 
-[ ] MaxXts(xTs = NULL, n = 2)
-# (best month to month NOISE elminator)
-[ ] MinXts(xTs = NULL, n = 2)
 
-PREVIOUS DAILY/WEEKLY *PAST* VOLITILITY (OF SOME KIND)
-------------------------------------------------------
-
-                 S&P500 will do
-  [ ] non-VOLUME volitilty
-  [ ]     VOLUME volitilty
 
 GARCH is.
+--------
 
 Generalized Auto-Regressive Conditional Heteroskedasticity
 
@@ -853,15 +916,6 @@ SEE BELOW: aaii_sentiment: data since 1987
 (EXCELLENT) - need a getSymbols
 MAY? WANT to use ADDITIVE measure ONE + ONE + ONE 'strength' of a recession
 
-Realtime Consumer Sentiment Survey
-surveys of consumers UNIVERSITY OF MICHIGAN
-https://data.sca.isr.umich.edu/tables.php
-(EXCELLENT)
-ANDRE CLEANER
-  REMOVE NOISE
-  NOTE: LIKE: LAST TO OBSERVATIONS: DROP THE HIGHEST(MOST OPTIMISTIC ONE)
-  NEXT, TAKE THE ONE PERIOD DIFF %CHANGE, NEXT TAKE THE SORTIO RATIO ON *THAT RANGE* (MEASURE1)
-  ALSO, RECORD IN THAT RANGE THE MOVING PERCENTILE RANK (MEASURE2)
 
 
 
@@ -916,13 +970,7 @@ DEC 2018
 [x] change variable name AllData to NBERAllData
 [x] changed FocusedData to NBERFocusedData
 
-LEFT_OFF (HIGEST)
-  [BEGIN AFTER BATMAN] clean up and DECOMPOSE
-     "add Machine UnRate Wts" add Prediction Wts and UnRate Wts
-  [ ] clean up and DECOMPOSE      NBERtimeSlices into timeSlices and NBER
-  [ ] clean up and DECOMPOSE                          adjustObservations(UBL) (remove OUT OF ZONE observatoins)
-. . .                                                 replicateObservations
-                                                      timeSliceXts (will NOT USE)
+
 
 [NA-NOTNEEDED] inbound collect 'timezone offset' e.g. TZ_OFFSET
 
@@ -1036,7 +1084,7 @@ loaded packages REPORTING system - Hadley Whickham has a package about this.
     "all.equal(xtsAttributes(Z), names(attributes(Z)))" SEE MY NOTES
     http://gallery.rcpp.org/articles/getting-attributes-for-xts-example/
 [X] DynamicFittedSignalLowerThreashould - add feature to try to return 75% winners(>#value) and 25% not-winners(<=#value)
-[ ] verify Return.portfolio, xts date + 1 is correct
+[x] verify Return.portfolio, xts date + 1 is correct
 [ ] decompose willShire5000MachineWts into a
     (1) generalized TargetMachineWts
     (2)? (and maybe OTHERS: Aug) (MANY PARAMS)
